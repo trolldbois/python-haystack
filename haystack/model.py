@@ -12,7 +12,9 @@ from memory_mapping import readProcessMappings
 import logging
 log=logging.getLogger('model')
 
-
+#import copy
+''' replace c_char_p '''
+ctypes.original_c_char_p = ctypes.c_char_p
 
 ''' returns if the address of the struct is in the mapping area
 '''
@@ -186,7 +188,7 @@ NotNull=NotNullComparable()
 
 class CString(ctypes.Union):
   _fields_=[
-  ("string", ctypes.c_char_p),
+  ("string", ctypes.original_c_char_p),
   ("ptr", ctypes.POINTER(ctypes.c_ubyte) )
   ]
   def toString(self):
@@ -698,4 +700,4 @@ for klass,typ in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     setattr(sys.modules[__name__], '%s_py'%(klass), type('%s_py'%(klass),(pyObj,),{}) )
 
 ''' replace c_char_p '''
-ctypes.c_char_p = CString
+#ctypes.c_char_p = CString
