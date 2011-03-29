@@ -18,6 +18,7 @@ from memory_mapping import readProcessMappings, MemoryDumpMemoryMapping
 
 log=logging.getLogger('haystack')
 
+environSep = ':'
 
 
 class StructFinder:
@@ -128,7 +129,8 @@ class StructFinder:
     import time
     t0=time.time()
     p=0
-    for offset in xrange(start, end-structlen, plen):
+    # xrange sucks. long int not ok
+    for offset in range(start, end-structlen, plen):
       if offset % (1024<<6) == 0:
         p2=offset-start
         log.info('processed %d bytes  - %02.02f test/sec'%(p2, (p2-p)/(plen*(time.time()-t0)) ))
@@ -165,7 +167,9 @@ def hasValidPermissions(memmap):
 
 
 def _callFinder(cmd_line):
-  p = subprocess.Popen(cmd_line, stdin=None, stdout=subprocess.PIPE, close_fds=True )
+  env = os.environ
+  env['PYTHONPATH'] = environSep.join(sys.path) # add possible pythonpaths to environnement
+  p = subprocess.Popen(cmd_line, stdin=None, stdout=subprocess.PIPE, close_fds=True , env=env)
   p.wait()
   instance=p.stdout.read()
   instance=pickle.loads(instance)
@@ -174,11 +178,21 @@ def _callFinder(cmd_line):
 def getMainFile():
   return os.path.abspath(sys.modules[__name__].__file__)
 
+def checkModulePath(typ):
+  name = typ.__name__
+  module,sep,kname = name.rpartition('.')
+  # add the __file__ module to sys.path for it to be reachable by subprocess
+  moddir = os.path.dirname(sys.modules[typ.__module__].__file__)
+  if moddir not in sys.path:
+    sys.path.append( moddir )
+  return
 
 def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
   ''' '''
-  if type(struct) != str:
-    struct = '.'.join([struct.__module__,struct.__name__])
+  if type(struct) != type(ctypes.Structure):
+    raise TypeError('struct arg must be a ctypes.Structure')
+  checkModulePath(struct) # add to sys.path
+  struct = '.'.join([struct.__module__,struct.__name__]) # we pass a str anyway...
   cmd_line=[sys.executable, getMainFile(), "%s"%struct, "--pid", "%d"%pid, 'search',  '--maxnum', str(int(maxNum))] #, '--nommap'
   if fullScan:
     cmd_line.append('--fullscan')
@@ -193,8 +207,10 @@ def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
 
 def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False):
   ''' '''
-  if type(struct) != str:
-    struct = '.'.join([struct.__module__,struct.__name__])
+  if type(struct) != type(ctypes.Structure):
+    raise TypeError('struct arg must be a ctypes.Structure')
+  checkModulePath(struct) # add to sys.path
+  struct = '.'.join([struct.__module__,struct.__name__])
   cmd_line=[sys.executable, getMainFile(), "--debug", "%s"%struct, "--fromdump", filename, 'search',  '--maxnum', str(int(maxNum))] #, '--nommap'
   if fullScan:
     cmd_line.append('--fullscan')
@@ -209,8 +225,10 @@ def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False):
 
 def refreshStruct(pid, struct, offset):
   ''' '''
-  if type(struct) != str:
-    struct = '.'.join([struct.__module__,struct.__name__])
+  if type(struct) != type(ctypes.Structure):
+    raise TypeError('struct arg must be a ctypes.Structure')
+  checkModulePath(struct) # add to sys.path
+  struct = '.'.join([struct.__module__,struct.__name__])
   cmd_line=[sys.executable, getMainFile(),  '%s'%struct, '--pid', "%d"%pid ,'refresh',  "0x%lx"%offset ]
   instance,validated=_callFinder(cmd_line)
   if not validated:
@@ -263,7 +281,6 @@ def search(args):
   else : # from dump
     finder = StructFinder(memdump=args.memdump)
     log.debug('starting a memory file dump search')
-  
   outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
   #return
   if args.human:
@@ -334,6 +351,7 @@ def main(argv):
     opts.func(opts)
   except ImportError,e:
     log.error('Struct type does not exists.')
+    log.error('sys.path is %s'%sys.path)
     print e
 
   if opts.pid:  
