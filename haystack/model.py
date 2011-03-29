@@ -14,7 +14,8 @@ log=logging.getLogger('model')
 
 #import copy
 ''' replace c_char_p '''
-ctypes.original_c_char_p = ctypes.c_char_p
+if ctypes.c_char_p.__name__ == 'c_char_p':
+  ctypes.original_c_char_p = ctypes.c_char_p
 
 ''' returns if the address of the struct is in the mapping area
 '''
@@ -463,7 +464,7 @@ class LoadableMembers(ctypes.Structure):
       txt,full = memoryMap.readCString(attr_obj_address, MAX_SIZE )
       if not full:
         log.warning('buffer size was too small for this CString')
-      attr.string=txt
+      attr.string = txt
       return True
     else:
       _attrname='_'+attrname
@@ -700,4 +701,5 @@ for klass,typ in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     setattr(sys.modules[__name__], '%s_py'%(klass), type('%s_py'%(klass),(pyObj,),{}) )
 
 ''' replace c_char_p '''
-#ctypes.c_char_p = CString
+if ctypes.c_char_p.__name__ == 'c_char_p':
+  ctypes.c_char_p = CString
