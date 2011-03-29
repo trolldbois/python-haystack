@@ -3,3 +3,6 @@ biblio
 *.pyc
 test/*
 *.xml
+build
+dist
+haystack.egg-info
