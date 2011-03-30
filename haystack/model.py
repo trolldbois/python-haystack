@@ -572,6 +572,8 @@ class LoadableMembers(ctypes.Structure):
           s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
       elif isCStringPointer(attr):
         s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
+      elif type(attr) is long or type(attr) is int:
+        s+='%s : %s\n'%(field, hex(attr) )  
       else:
         #print '*** attr cannot be __str__ ***',field, type(attr)
         s+='%s : %s\n'%(field, repr(attr) )  
