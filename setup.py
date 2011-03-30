@@ -23,6 +23,7 @@ setup(name="haystack",
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
     packages = ['haystack'],
+    scripts = ['scripts/haystack'],
     extras_require = {
         'ptrace':  ["python-ptrace"],
     },
