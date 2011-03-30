@@ -696,9 +696,14 @@ def pasteLoadableMemberMethodsOn(klass):
 ''' Load all model classes and create a similar non-ctypes Python class  
   thoses will be used to translate non pickable ctypes into POPOs.
 '''
-for klass,typ in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-  if typ.__module__ == __name__:
-    setattr(sys.modules[__name__], '%s_py'%(klass), type('%s_py'%(klass),(pyObj,),{}) )
+def createPOPO(modulename):
+  for klass,typ in inspect.getmembers(sys.modules[modulename], inspect.isclass):
+    if typ.__module__ == modulename:
+      setattr(sys.modules[modulename], '%s_py'%(klass), type('%s_py'%(klass),(pyObj,),{}) )
+      ##print sys.modules[modulename], '%s_py'%(klass)
+
+createPOPO(__name__)
+
 
 ''' replace c_char_p '''
 if ctypes.c_char_p.__name__ == 'c_char_p':
