@@ -36,6 +36,7 @@ class StructFinder:
   def initMemdump(self,memdump):
     mem = MemoryDumpMemoryMapping(memdump, 0, os.fstat(memdump.fileno()).st_size) ## is that valid ?
     self.mappings=[mem]
+    log.debug('memdump initialised %s'%(self.mappings[0]))
   
   def initPid(self,pid, mmap):
     self.dbg = PtraceDebugger()
@@ -298,6 +299,7 @@ def search(args):
 
 
 def refresh(args):
+
   addr=int(args.addr,16)
   structType=getKlass(args.structType)
 
@@ -306,8 +308,12 @@ def refresh(args):
   else : # from dump
     finder = StructFinder(memdump=args.memdump)
     log.debug('starting a memory file dump search')
-
-  instance,validated = finder.loadAt( model.is_valid_address_value(addr, finder.mappings), 
+  
+  memoryMap = model.is_valid_address_value(addr, finder.mappings)
+  if not memoryMap:
+    log.error("the address is not accessible in the memoryMap")
+    raise ValueError("the address is not accessible in the memoryMap")
+  instance,validated = finder.loadAt( memoryMap , 
           addr, structType)
   if validated:
     if args.human:
