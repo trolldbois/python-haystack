@@ -11,10 +11,11 @@ __doc__ = '''
 
 '''
 
-import sys
+import os, sys
 from haystack import abouchet 
 
 if __name__ == "__main__":
+  sys.path.append(os.getcwd())
   abouchet.main(sys.argv[1:])
 
 
