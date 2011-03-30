@@ -7,6 +7,78 @@ HOWTO:
 
 It's easy to add new structures (check ctypeslib or do it by hand )
 
+a) Your class must extend haystack.model.LoadableMembers.
+b) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure 
+c) You can add an expectedValues dict() to your class to refine your search
+
+Advanced use : You can override methods to fine tune some validation or loading
+
+The global algoritm :
+a)  A ctypes structure is mapped at a memory address.
+b)  The method laodMembers id called.
+c)  The method isValid is called on self.
+c2) A validation test is done for each members, it's expected values and memory space validity (pointers) are tested.
+    The validation does not recurse.
+c)  Each members is then 'loaded' to local space. 
+    If the value is a pointer or a model.LoadableMembers type, it's recursively Loaded. ( and validated).
+    If the recursive loading fails, the calls fails. bye-bye.
+d) see next offset, goto a)
+
+Extension examples :
+---------------------
+from haystack.model import LoadableMembers, RangeValue, NotNull
+
+class OpenSSLStruct(LoadableMembers):
+  pass
+
+class RSA(OpenSSLStruct):
+  ''' rsa/rsa.h '''
+  _fields_ = [
+  ("pad",  ctypes.c_int), 
+  ("version",  ctypes.c_long),
+  ("meth",ctypes.POINTER(BIGNUM)),#const RSA_METHOD *meth;
+  ("engine",ctypes.POINTER(ENGINE)),#ENGINE *engine;
+  ('n', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+  ('e', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+  ('d', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+  ('p', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+  ('q', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+  ('dmp1', ctypes.POINTER(BIGNUM) ),
+  ('dmq1', ctypes.POINTER(BIGNUM) ),
+  ('iqmp', ctypes.POINTER(BIGNUM) ),
+  ("ex_data", CRYPTO_EX_DATA ),
+  ("references", ctypes.c_int),
+  ("flags", ctypes.c_int),
+  ("_method_mod_n", ctypes.POINTER(BN_MONT_CTX) ),
+  ("_method_mod_p", ctypes.POINTER(BN_MONT_CTX) ),
+  ("_method_mod_q", ctypes.POINTER(BN_MONT_CTX) ),
+  ("bignum_data",ctypes.POINTER(ctypes.c_ubyte)), ## moue c_char_p ou POINTER(c_char) ?
+  ("blinding",ctypes.POINTER(BIGNUM)),#BN_BLINDING *blinding;
+  ("mt_blinding",ctypes.POINTER(BIGNUM))#BN_BLINDING *mt_blinding;
+  ]
+  expectedValues={
+    "pad": [0], 
+    "version": [0], 
+    "references": RangeValue(0,0xfff),
+    "n": [NotNull],
+    "e": [NotNull],
+    "d": [NotNull],
+    "p": [NotNull],
+    "q": [NotNull],
+    "dmp1": [NotNull],
+    "dmq1": [NotNull],
+    "iqmp": [NotNull]
+  }
+  def loadMembers(self, mappings, maxDepth):
+    self.bignum_data = None
+    self.blinding = None
+    self.mt_blinding = None
+    if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+      log.debug('RSA not loaded')
+      return False
+    return True
+
+
 
 not so FAQ :
 ============
