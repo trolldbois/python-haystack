@@ -1,16 +1,14 @@
-import ctypes, struct, mmap, logging
-# local
-from memory_mapping import MemoryDumpMemoryMapping 
-# TODO check ctypes_tools.bytes2array in ptrace
-
-log = logging.getLogger('filememdump')
-
+import mmap, logging
+import os, time
 
 # linux only ?
 from ptrace.debugger.debugger import PtraceDebugger
-# ptrace fork
-from memory_mapping import readProcessMappings
-import os, time
+# local
+from memory_mapping import MemoryDumpMemoryMapping , readProcessMappings
+
+log = logging.getLogger('mapper')
+
+
 
 class MemoryMapper:
   def __init__(self, args):
