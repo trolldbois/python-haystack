@@ -21,8 +21,8 @@ environSep = ':'
 
 class StructFinder:
   ''' Generic tructure mapping '''
-  def __init__(self, args):
-    self.mappings = MemoryMapper(args).getMappings()
+  def __init__(self, mappings):
+    self.mappings = mappings
     return
 
   def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 , fullScan=False):
@@ -235,11 +235,9 @@ def getKlass(name):
 def search(args):
   print args
   structType=getKlass(args.structType)
-  if args.pid :
-    finder = StructFinder(args)
-  else : # from dump
-    finder = StructFinder(args)
-    log.debug('starting a memory file dump search')
+  mappings = MemoryMapper(args).getMappings()
+  finder = StructFinder(mappings)
+
   outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
   #return
   if args.human:
@@ -261,11 +259,8 @@ def refresh(args):
   addr=int(args.addr,16)
   structType=getKlass(args.structType)
 
-  if args.pid :
-    finder = StructFinder(args)
-  else : # from dump
-    finder = StructFinder(args)
-    log.debug('starting a memory file dump search')
+  mappings = MemoryMapper(args).getMappings()
+  finder = StructFinder(mappings)
   
   memoryMap = model.is_valid_address_value(addr, finder.mappings)
   if not memoryMap:
