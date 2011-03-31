@@ -187,17 +187,17 @@ class MemoryDumpMemoryMapping(MemoryMapping):
 
     def readWord(self, address):
         """Address have to be aligned!"""
-        laddr = address-self.start
+        laddr = self.vtop(address)
         word = ctypes.c_ulong.from_buffer_copy(self.local_mmap, laddr).value # is non-aligned a pb ?
         return word
 
     def readBytes(self, address, size):
-        laddr = address-self.start
+        laddr = self.vtop(address)
         data = self.local_mmap[laddr:laddr+size]
         return data
 
     def readStruct(self, address, structType):
-        laddr = address-self.start
+        laddr = self.vtop(address)
         structLen = ctypes.sizeof(structType)
         st = self.local_mmap[laddr:laddr+structLen]
         structtmp = model.bytes2array(st, ctypes.c_ubyte)
@@ -205,9 +205,12 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         return struct
 
     def readArray(self, address, basetype, count):
-        laddr = address-self.start
+        laddr = self.vtop(address)
         array = (basetype *count).from_buffer_copy(self.local_mmap, laddr)
         return array
+
+    def vtop(self, vaddr):
+        return vaddr - self.start
 
     def __str__(self):
         text = "0x%lx-%s" % (self.start, formatAddress(self.end))
