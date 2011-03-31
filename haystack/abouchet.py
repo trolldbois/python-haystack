@@ -11,66 +11,19 @@ import subprocess
 
 import model
 
-# linux only ?
-from ptrace.debugger.debugger import PtraceDebugger
-# ptrace fork
-from memory_mapping import readProcessMappings, MemoryDumpMemoryMapping
+from file_mapping import MemoryMapper
 
 log=logging.getLogger('haystack')
 
 environSep = ':'
 
 
+
 class StructFinder:
   ''' Generic tructure mapping '''
-  def __init__(self, pid=None, mmap=False, memdump=None):
-    if pid is None and memdump is None:
-      raise ValueError('You have to choose pid or dumpfile')
-    if not (pid is None) and not (memdump is None):
-      raise ValueError('You have to choose pid or dumpfile')
-    if not (pid is None):
-      self.initPid(pid,mmap)
-    elif not (memdump is None):
-      self.initMemdump(memdump)
-
-  def initMemdump(self,memdump):
-    mem = MemoryDumpMemoryMapping(memdump, 0, os.fstat(memdump.fileno()).st_size) ## is that valid ?
-    self.mappings=[mem]
-    log.debug('memdump initialised %s'%(self.mappings[0]))
-  
-  def initPid(self,pid, mmap):
-    self.dbg = PtraceDebugger()
-    self.process = self.dbg.addProcess(pid,is_attached=False)
-    if self.process is None:
-      log.error("Error initializing Process debugging for %d"% pid)
-      raise IOError
-      # ptrace exception is raised before that
-    tmp = readProcessMappings(self.process)
-    self.mappings=[]
-    remains=[]
-    t0=time.time()
-    for m in tmp :
-      if mmap:
-        ### mmap memory in local space
-        m.mmap()
-        #log.warning('mmap() : %d'%(len(m.local_mmap)))
-      if ( m.pathname == '[heap]' or 
-           m.pathname == '[vdso]' or
-           m.pathname == '[stack]' or
-           m.pathname is None ):
-        self.mappings.append(m)
-        continue
-      remains.append(m)
-    #tmp = [x for x in remains if not x.pathname.startswith('/')] # delete memmapped dll
-    tmp=remains
-    tmp.sort(key=lambda x: x.start )
-    tmp.reverse()
-    self.mappings.extend(tmp)
-    self.mappings.reverse()
-    if mmap:
-      ### mmap done, we can release process...
-      self.process.cont()
-      log.info('Memory mmaped, process released after %02.02f secs'%(time.time()-t0))
+  def __init__(self, args):
+    self.mappings = MemoryMapper(args).getMappings()
+    return
 
   def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 , fullScan=False):
     if not fullScan:
@@ -251,14 +204,15 @@ def argparser():
   
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
-  target.add_argument('--fromdump', type=argparse.FileType('r'), dest='memdump', action='store', default=None, help='Use a memory dump instead of a live process ID')
-  
+  target.add_argument('--fromdump', type=argparse.FileType('r'), dest='memfile', action='store', default=None, help='Use a memory dump instead of a live process ID')
+  target.add_argument('--memdump', type=argparse.FileType('r'), dest='memdump', action='store', default=None, help='Use a memdump dump.')
+    
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
   search_parser.add_argument('--hint', type=int, action='store', default=1, help='hintOffset to start at')
-  search_parser.add_argument('--nommap', action='store_const', const=True, default=False, help='disable mmap()-ing')
+  search_parser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   search_parser.set_defaults(func=search)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
@@ -278,9 +232,9 @@ def getKlass(name):
 def search(args):
   structType=getKlass(args.structType)
   if args.pid :
-    finder = StructFinder(pid=args.pid, mmap=(not args.nommap))
+    finder = StructFinder(args)
   else : # from dump
-    finder = StructFinder(memdump=args.memdump)
+    finder = StructFinder(args)
     log.debug('starting a memory file dump search')
   outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
   #return
@@ -304,9 +258,9 @@ def refresh(args):
   structType=getKlass(args.structType)
 
   if args.pid :
-    finder = StructFinder(pid=args.pid, mmap=(not args.nommap))
+    finder = StructFinder(args)
   else : # from dump
-    finder = StructFinder(memdump=args.memdump)
+    finder = StructFinder(args)
     log.debug('starting a memory file dump search')
   
   memoryMap = model.is_valid_address_value(addr, finder.mappings)
