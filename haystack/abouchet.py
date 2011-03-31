@@ -141,17 +141,32 @@ def checkModulePath(typ):
     sys.path.append( moddir )
   return
 
-def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
+def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1, 
+              fullScan=False, nommap=False, hint=None, debug=None ):
   ''' '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
   checkModulePath(struct) # add to sys.path
   struct = '.'.join([struct.__module__,struct.__name__]) # we pass a str anyway...
-  cmd_line=[sys.executable, getMainFile(), "%s"%struct, "--pid", "%d"%pid, 'search',  '--maxnum', str(int(maxNum))] #, '--nommap'
+  cmd_line=[sys.executable, getMainFile(), "%s"%struct]
+  if debug:
+    cmd_line.insert(2,"--debug")
+  # three cases  
+  if pid:       
+    ### live PID. with mmap or not 
+    cmd_line.extend(["--pid", "%d"%pid ])
+  elif memfile: 
+    ### proc mappings dump file
+    cmd_line.extend([ "--memfile", memfile] )
+  # always add search
+  cmd_line.extend(['search',  '--maxnum', str(int(maxNum))] )
   if fullScan:
     cmd_line.append('--fullscan')
+  if hint:
+    cmd_line.extend(['--hint', str(hex(hint))])
   if nommap:
     cmd_line.append('--nommap')
+  # call me
   outs=_callFinder(cmd_line)
   if len(outs) == 0:
     log.error("The %s has not been found."%(struct))
@@ -159,23 +174,12 @@ def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
   #
   return outs
 
+def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
+  return _findStruct(pid=pid, struct=struct, maxNum=1, fullScan=False, nommap=False)
+  
 def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False):
-  ''' '''
-  if type(struct) != type(ctypes.Structure):
-    raise TypeError('struct arg must be a ctypes.Structure')
-  checkModulePath(struct) # add to sys.path
-  struct = '.'.join([struct.__module__,struct.__name__])
-  cmd_line=[sys.executable, getMainFile(), "--debug", "%s"%struct, "--fromdump", filename, 'search',  '--maxnum', str(int(maxNum))] #, '--nommap'
-  if fullScan:
-    cmd_line.append('--fullscan')
-  if hint:
-    cmd_line.extend(['--hint', str(hex(hint))])
-  outs=_callFinder(cmd_line)
-  if len(outs) == 0:
-    log.error("The %s has not been found."%(struct))
-    return None
-  #
-  return outs
+  return _findStruct(memfile=filename, struct=struct, maxNum=1, fullScan=False, nommap=False)
+
 
 def refreshStruct(pid, struct, offset):
   ''' '''
@@ -194,8 +198,7 @@ def refreshStruct(pid, struct, offset):
 def usage(parser):
   parser.print_help()
   sys.exit(-1)
-
-
+  
 def argparser():
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
   rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
@@ -204,8 +207,8 @@ def argparser():
   
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
-  target.add_argument('--fromdump', type=argparse.FileType('r'), dest='memfile', action='store', default=None, help='Use a memory dump instead of a live process ID')
-  target.add_argument('--memdump', type=argparse.FileType('r'), dest='memdump', action='store', default=None, help='Use a memdump dump.')
+  target.add_argument('--memfile', type=argparse.FileType('r'), dest='memfile', action='store', default=None, 
+                                    help='Use a memory dump instead of a live process ID')
     
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')
@@ -230,6 +233,7 @@ def getKlass(name):
 
 
 def search(args):
+  print args
   structType=getKlass(args.structType)
   if args.pid :
     finder = StructFinder(args)

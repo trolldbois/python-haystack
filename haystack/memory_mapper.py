@@ -11,15 +11,6 @@ from ptrace.debugger.debugger import PtraceDebugger
 # ptrace fork
 from memory_mapping import readProcessMappings
 import os, time
-def getDTB(systemmap):
-  systemmap.seek(0)
-  for l in systemmap.readlines():
-    if '__init_end' in l:
-      addr,d,n = l.split()
-      log.info('found __init_end @ %s'%(addr))
-      return int(addr,16)
-  return None
-
 
 class MemoryMapper:
   def __init__(self, args):
