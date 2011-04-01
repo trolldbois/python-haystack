@@ -22,12 +22,18 @@ if ctypes.Structure.__name__ == 'Structure':
   ctypes.original_Structure = ctypes.Structure
 
 __refs = list()
+__register = dict()
 
 def keepRef(obj):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
     they might be transient (if obj == somepointer.contents).'''
   __refs.append(obj)
   return
+
+def register(klass):
+  klass.classRef = __register
+  __register[ctypes.POINTER(klass)] = klass
+  return klass
 
 
 ''' returns if the address of the struct is in the mapping area
@@ -721,11 +727,26 @@ def createPOPOClasses( targetmodule ):
       if typ.__module__ != targetmodule.__name__: # copy also to generated
         setattr(sys.modules[typ.__module__], '%s_py'%(klass), kpy )
         #log.debug("Created %s_py"%klass)
-  log.debug('created %d POPO types'%( _created))
+  log.info('created %d POPO types'%( _created))
   return
+
+def registerModule( targetmodule ):
+  ''' register a ctypes module. To be run by target module.
+      all members is module will be registered, against their pointer types,
+      in a lookup table
+  '''
+  _registered = 0
+  for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
+    if typ.__module__.startswith(targetmodule.__name__):
+      register( typ )
+      _registered += 1
+  log.info('registered %d types'%( _registered))
+  return
+
 
 createPOPOClasses(sys.modules[__name__] )
 
+register(LoadableMembers)
 
 
 ''' replace c_char_p '''
