@@ -17,6 +17,10 @@ log=logging.getLogger('model')
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.original_c_char_p = ctypes.c_char_p
 
+''' keep orig class '''
+if ctypes.Structure.__name__ == 'Structure':
+  ctypes.original_Structure = ctypes.Structure
+
 __refs = list()
 
 def keepRef(obj):
@@ -696,6 +700,7 @@ def findCtypesInPyObj(obj):
       
 import inspect,sys
 
+''' Useless. ctypes.Structure is LoadableMembers now... '''
 def pasteLoadableMemberMethodsOn(klass):
   for n,func in inspect.getmembers(LoadableMembers, inspect.ismethod):
     #setattr(klass, n, types.MethodType(func, klass) )  # bad self type. need LoadableMembers not Struct
@@ -719,6 +724,14 @@ def createPOPO(modulename):
 createPOPO(__name__)
 
 
+#pasteLoadableMemberMethodsOn(ctypes.Structure)
+
+
 ''' replace c_char_p '''
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.c_char_p = CString
+
+''' switch class '''
+if ctypes.Structure.__name__ == 'Structure':
+  ctypes.Structure = LoadableMembers
+
