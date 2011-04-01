@@ -761,12 +761,15 @@ def registerModule( targetmodule ):
   ''' register a ctypes module. To be run by target module.
       all members is module will be registered, against their pointer types,
       in a lookup table
+      Creates POPO's to be able to unpickle ctypes.
   '''
   _registered = 0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
     if typ.__module__.startswith(targetmodule.__name__):
       register( typ )
       _registered += 1
+  # create POPO's
+  createPOPOClasses( targetmodule )
   log.info('registered %d types'%( _registered))
   return
 
