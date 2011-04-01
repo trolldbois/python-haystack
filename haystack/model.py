@@ -207,6 +207,7 @@ class NotNullComparable:
 NotNull=NotNullComparable()
 
 class CString(ctypes.Union):
+  ''' ctypes.c_char_p can not be used for memory parsing. it tries to load the string itself '''
   _fields_=[
   ("string", ctypes.original_c_char_p),
   ("ptr", ctypes.POINTER(ctypes.c_ubyte) )
@@ -217,17 +218,6 @@ class CString(ctypes.Union):
     return self.string
   pass
 
-class EVP_CIPHER_CTX_APP_DATA(ctypes.c_ubyte):
-#ByteArray=ctypes.c_ubyte*1
-#class EVP_CIPHER_CTX_APP_DATA(ByteArray):
-  #_field_=[('_length_=1
-#  _length_=1024
-#  _type_=ctypes.c_ubyte
-  pass
-
-EVP_CIPHER_CTX_APP_DATA_PTR=ctypes.POINTER(EVP_CIPHER_CTX_APP_DATA)
-#MYEVP_CTX_PTR=ctypes.POINTER(ctypes.c_ubyte)
-#class EVP_CIPHER_CTX_APP_DATA_PTR(ctypes.POINTER(ctypes.c_ubyte)):
 
 
 #debug
@@ -398,10 +388,14 @@ class LoadableMembers(ctypes.Structure):
 
   def loadMembers(self, mappings, maxDepth):
     ''' 
-    isValid() should have been tested before, otherwise.. it's gonna fail...
-    we copy memory from process for each pointer
-    and assign it to a python object _here, then we assign 
-    the member to be a pointer to _here'''
+    The validity of the memebrs will be assessed.
+    Each members that can be ( structures, pointers), will be evaluated for validity and loaded recursively.
+    
+    @param mappings: list of memoryMappings for the process.
+    @param maxDepth: limitation of depth after which the loading/validation will stop and return results.
+
+    @returns True if everything has been loaded, False if something went wrong. 
+    '''
     if maxDepth == 0:
       log.warning('Maximum depth reach. Not loading any deeper members.')
       log.warning('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
@@ -521,6 +515,7 @@ class LoadableMembers(ctypes.Structure):
     return True
   
   def toString(self,prefix=''):
+    ''' return a string formatted description of this Structure. '''
     s="%s # %s\n"%(prefix,repr(self) )
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     for field,typ in _fieldsTuple:
@@ -602,6 +597,8 @@ class LoadableMembers(ctypes.Structure):
     return s
     
   def toPyObject(self):
+    ''' returns a Plain Old python object as a perfect copy of this ctypes object.
+    '''
     # get self class.
     #log.info("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
     my_class=getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
@@ -647,6 +644,15 @@ class LoadableMembers(ctypes.Structure):
 
 
 class pyObj(object):
+  ''' Base class for a plain old python object.
+  all haystack/ctypes classes will be translated in this format before pickling.
+  
+  Operations :
+    - toString(self, prefix):  print a nicely formatted data structure
+        @param prefix: str to insert before each line (\t after that)
+    - findCtypes(self) : checks if a ctypes is to be found somewhere is the object.
+                      Useful to check if the object can be pickled.
+  '''
   def toString(self, prefix=''):
     s='{\n'
     for attrname,typ in self.__dict__.items():
@@ -696,6 +702,7 @@ class pyObj(object):
     return ret
 
 def findCtypesInPyObj(obj):
+  ''' check function to help in unpickling errors correction '''
   ret = False
   if isinstance(obj, pyObj):
     if obj.findCtypes():
@@ -773,17 +780,17 @@ def registerModule( targetmodule ):
   log.debug('registered %d types'%( _registered))
   return
 
-
+# create local POPO ( lodableMembers )
 createPOPOClasses(sys.modules[__name__] )
-
+# register LoadableMembers 
 register(LoadableMembers)
 
 
-''' replace c_char_p '''
+''' replace c_char_p - it can handle memory parsing without reading it '''
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.c_char_p = CString
 
-''' switch class '''
+''' switch class - we need our methods on ctypes.Structures for generated classes to work  '''
 if ctypes.Structure.__name__ == 'Structure':
   ctypes.Structure = LoadableMembers
 
