@@ -339,7 +339,7 @@ class LoadableMembers(ctypes.Structure):
             return False
           log.debug('%s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
-      if ( not is_valid_address_value( myaddress, mappings) ) :
+      if (myaddress != 0) and ( not is_valid_address_value( myaddress, mappings) )   :
         log.debug('%s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
         return False
       log.debug('%s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
@@ -462,9 +462,12 @@ class LoadableMembers(ctypes.Structure):
       return True
     # we have PointerType here . Basic or complex
     # exception cases
-    if isCStringPointer(attr):
+    if isCStringPointer(attr) : 
       # can't use basic c_char_p because we can't load in foreign memory
       attr_obj_address = getaddress(attr.ptr)
+      if not bool(attr_obj_address):
+        log.debug('%s %s is a CString, the pointer is null (validation must have occurred earlier) '%(attrname, attr))
+        return True
       memoryMap = is_valid_address_value(attr_obj_address, mappings)
       if not memoryMap :
         log.warning('Error on addr while fetching a CString. should not happen')
