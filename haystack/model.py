@@ -710,6 +710,33 @@ def findCtypesInPyObj(obj):
       
 import inspect,sys
 
+def copyGeneratedClasses(src, dst):
+  ''' 
+    Copies the members of a generated module into a classic module.
+    Name convention : 
+    generated: ctypes_libraryname_generated.py
+    classic  : ctypes_libraryname.py
+    
+  @param me : dst module
+  @param src : src module, generated
+  '''
+  __root_module_name,__dot,__module_name = dst.__name__.rpartition('.')
+  _loaded=0
+  _registered=0
+  for (name, klass) in inspect.getmembers(src, inspect.isclass):
+    if type(klass) == type(ctypes.Structure):
+      if klass.__module__.endswith('%s_generated'%(__module_name) ) :
+        setattr(dst, name, klass)
+        _loaded+=1
+    else:
+      #log.debug("%s - %s"%(name, klass))
+      pass
+  log.debug('loaded %d C structs from %s structs'%( _loaded, src.__name__))
+  log.debug('registered %d Pointers types'%( _registered))
+  log.debug('There is %d members in %s'%(len(src.__dict__), src.__name__))
+  return 
+
+
 def createPOPOClasses( targetmodule ):
   ''' Load all model classes and create a similar non-ctypes Python class  
     thoses will be used to translate non pickable ctypes into POPOs.
