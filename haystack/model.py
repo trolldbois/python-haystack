@@ -754,7 +754,7 @@ def createPOPOClasses( targetmodule ):
       if typ.__module__ != targetmodule.__name__: # copy also to generated
         setattr(sys.modules[typ.__module__], '%s_py'%(klass), kpy )
         #log.debug("Created %s_py"%klass)
-  log.info('created %d POPO types'%( _created))
+  log.debug('created %d POPO types'%( _created))
   return
 
 def registerModule( targetmodule ):
@@ -770,7 +770,7 @@ def registerModule( targetmodule ):
       _registered += 1
   # create POPO's
   createPOPOClasses( targetmodule )
-  log.info('registered %d types'%( _registered))
+  log.debug('registered %d types'%( _registered))
   return
 
 
