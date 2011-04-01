@@ -652,7 +652,7 @@ class pyObj(object):
     ret = False
     for attrname,typ in self.__dict__.items():
       attr = getattr(self, attrname)
-      if self._attrFindCtypes(self, attr, attrname,typ ):
+      if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
         ret = True
 
