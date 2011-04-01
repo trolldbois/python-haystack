@@ -17,6 +17,14 @@ log=logging.getLogger('model')
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.original_c_char_p = ctypes.c_char_p
 
+__refs = list()
+
+def keepRef(obj):
+  ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
+    they might be transient (if obj == somepointer.contents).'''
+  __refs.append(obj)
+  return
+
 ''' returns if the address of the struct is in the mapping area
 '''
 def is_valid_address(obj,mappings, structType=None):
@@ -675,12 +683,16 @@ class pyObj(object):
 
 def findCtypesInPyObj(obj):
   ret = False
-  if type(obj) is tuple or type(obj) is list:
+  if isinstance(obj, pyObj):
+    if obj.findCtypes():
+      log.warning('Found a ctypes in array/tuple')
+      return True
+  elif type(obj) is tuple or type(obj) is list:
     for el in obj:
-      if el.findCtypes():
+      if findCtypesInPyObj(el):
         log.warning('Found a ctypes in array/tuple')
         return True
-  obj.findCtypes()
+  return False
       
 import inspect,sys
 
