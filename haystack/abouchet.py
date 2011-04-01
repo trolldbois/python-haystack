@@ -174,11 +174,11 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
   #
   return outs
 
-def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False):
-  return _findStruct(pid=pid, struct=struct, maxNum=1, fullScan=False, nommap=False)
+def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False, debug=False):
+  return _findStruct(pid=pid, struct=struct, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug)
   
-def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False):
-  return _findStruct(memfile=filename, struct=struct, maxNum=1, fullScan=False, nommap=False)
+def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False, debug=False):
+  return _findStruct(memfile=filename, struct=struct, maxNum=maxNum, fullScan=fullScan, debug=debug)
 
 
 def refreshStruct(pid, struct, offset):
