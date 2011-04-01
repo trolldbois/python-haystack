@@ -26,7 +26,6 @@ class MemoryMapper:
   def initMemfile(self,args):
     mem = MemoryDumpMemoryMapping(args.memfile, 0, os.fstat(args.memfile.fileno()).st_size) ## is that valid ?
     mappings=[mem]
-    log.debug('memdump initialised %s'%(mappings[0]))
     return mappings
 
   def initPid(self, args):
@@ -44,7 +43,7 @@ class MemoryMapper:
       if args.mmap:
         ### mmap memory in local space
         m.mmap()
-        #log.warning('mmap() : %d'%(len(m.local_mmap)))
+        log.debug('mmap() : %d'%(len(m.local_mmap)))
       if ( m.pathname == '[heap]' or 
            m.pathname == '[vdso]' or
            m.pathname == '[stack]' or
@@ -58,7 +57,7 @@ class MemoryMapper:
     tmp.reverse()
     mappings.extend(tmp)
     mappings.reverse()
-    if mmap:
+    if args.mmap:
       ### mmap done, we can release process...
       process.cont()
       log.info('Memory mmaped, process released after %02.02f secs'%(time.time()-t0))
