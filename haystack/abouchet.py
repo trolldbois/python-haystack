@@ -11,7 +11,7 @@ import subprocess
 
 import model
 
-from file_mapping import MemoryMapper
+from memory_mapper import MemoryMapper
 
 log=logging.getLogger('haystack')
 
@@ -23,6 +23,7 @@ class StructFinder:
   ''' Generic tructure mapping '''
   def __init__(self, mappings):
     self.mappings = mappings
+    log.debug('StructFinder on %s'%(self.mappings[0]) )
     return
 
   def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 , fullScan=False):
@@ -151,6 +152,8 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
   cmd_line=[sys.executable, getMainFile(), "%s"%struct]
   if debug:
     cmd_line.insert(2,"--debug")
+  if nommap:
+    cmd_line.insert(2,'--nommap')
   # three cases  
   if pid:       
     ### live PID. with mmap or not 
@@ -164,8 +167,6 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
     cmd_line.append('--fullscan')
   if hint:
     cmd_line.extend(['--hint', str(hex(hint))])
-  if nommap:
-    cmd_line.append('--nommap')
   # call me
   outs=_callFinder(cmd_line)
   if len(outs) == 0:
@@ -181,13 +182,26 @@ def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False, debu
   return _findStruct(memfile=filename, struct=struct, maxNum=maxNum, fullScan=fullScan, debug=debug)
 
 
-def refreshStruct(pid, struct, offset):
+def refreshStruct(pid, struct, offset, debug=False, nommap=False):
   ''' '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
   checkModulePath(struct) # add to sys.path
   struct = '.'.join([struct.__module__,struct.__name__])
-  cmd_line=[sys.executable, getMainFile(),  '%s'%struct, '--pid', "%d"%pid ,'refresh',  "0x%lx"%offset ]
+  cmd_line=[sys.executable, getMainFile(),  '%s'%struct]
+  if debug:
+    cmd_line.insert(2,"--debug")
+  if nommap:
+    cmd_line.insert(2,'--nommap')
+  # three cases  
+  if pid:       
+    ### live PID. with mmap or not 
+    cmd_line.extend(["--pid", "%d"%pid ])
+  elif memfile: 
+    ### proc mappings dump file
+    cmd_line.extend([ "--memfile", memfile] )
+  # always add search
+  cmd_line.extend(['refresh',  "0x%lx"%offset] )
   instance,validated=_callFinder(cmd_line)
   if not validated:
     log.error("The session_state has not been re-validated. You should look for it again.")
@@ -203,6 +217,7 @@ def argparser():
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
   rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
+  rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   rootparser.add_argument('structType', type=str, help='Structure type name')
   
   target = rootparser.add_mutually_exclusive_group(required=True)
@@ -215,7 +230,6 @@ def argparser():
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
   search_parser.add_argument('--hint', type=int, action='store', default=1, help='hintOffset to start at')
-  search_parser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   search_parser.set_defaults(func=search)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
@@ -233,7 +247,7 @@ def getKlass(name):
 
 
 def search(args):
-  print args
+  log.debug('args: %s'%args)
   structType=getKlass(args.structType)
   mappings = MemoryMapper(args).getMappings()
   finder = StructFinder(mappings)
@@ -249,12 +263,14 @@ def search(args):
   else:
     ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
     log.info("%s %s"%(ret[0], type(ret[0]) )   )
-    #model.findCtypesInPyObj(ret)
+    if model.findCtypesInPyObj(ret):
+      log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
     print pickle.dumps(ret)
   return outs
 
 
 def refresh(args):
+  log.debug(args)
 
   addr=int(args.addr,16)
   structType=getKlass(args.structType)
@@ -273,6 +289,8 @@ def refresh(args):
        print '( %s, %s )'%(instance.toString(),validated)
     else:
       d=(instance.toPyObject(),validated)
+      if model.findCtypesInPyObj(d[0]):
+        log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
       print pickle.dumps(d)
   else:
     if args.human:
