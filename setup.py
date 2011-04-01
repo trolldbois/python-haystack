@@ -24,7 +24,5 @@ setup(name="haystack",
     author_email="loic.jaquemet+python@gmail.com",
     packages = ['haystack'],
     scripts = ['scripts/haystack'],
-    extras_require = {
-        'ptrace':  ["python-ptrace"],
-    },
+    install_requires = ["python-ptrace"],
 )
