@@ -704,16 +704,28 @@ def findCtypesInPyObj(obj):
       
 import inspect,sys
 
-''' Load all model classes and create a similar non-ctypes Python class  
-  thoses will be used to translate non pickable ctypes into POPOs.
-'''
-def createPOPO(modulename):
-  for klass,typ in inspect.getmembers(sys.modules[modulename], inspect.isclass):
-    if typ.__module__ == modulename:
-      setattr(sys.modules[modulename], '%s_py'%(klass), type('%s_py'%(klass),(pyObj,),{}) )
-      ##print sys.modules[modulename], '%s_py'%(klass)
+def createPOPOClasses( targetmodule ):
+  ''' Load all model classes and create a similar non-ctypes Python class  
+    thoses will be used to translate non pickable ctypes into POPOs.
+  '''
+  _created=0
+  for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
+    if typ.__module__.startswith(targetmodule.__name__):
+      kpy = type('%s_py'%(klass),( pyObj ,),{})
+      # we have to keep a local (model) ref because the class is being created here.
+      # and we have a targetmodule ref. because it's asked.
+      # and another ref on the real module for the basic type, because, that is probably were it's gonna be used.
+      setattr(sys.modules[__name__], '%s_py'%(klass), kpy )
+      setattr(targetmodule, '%s_py'%(klass), kpy )
+      _created+=1
+      if typ.__module__ != targetmodule.__name__: # copy also to generated
+        setattr(sys.modules[typ.__module__], '%s_py'%(klass), kpy )
+        #log.debug("Created %s_py"%klass)
+  log.debug('created %d POPO types'%( _created))
+  return
 
-createPOPO(__name__)
+createPOPOClasses(sys.modules[__name__] )
+
 
 
 ''' replace c_char_p '''
