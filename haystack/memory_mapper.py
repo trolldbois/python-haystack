@@ -40,7 +40,7 @@ class MemoryMapper:
     remains=[]
     t0=time.time()
     for m in tmp :
-      if args.mmap:
+      if hasattr(args,'mmap') and args.mmap:
         ### mmap memory in local space
         m.mmap()
         log.debug('mmap() : %d'%(len(m.local_mmap)))
@@ -57,7 +57,7 @@ class MemoryMapper:
     tmp.reverse()
     mappings.extend(tmp)
     mappings.reverse()
-    if args.mmap:
+    if hasattr(args,'mmap') and args.mmap:
       ### mmap done, we can release process...
       process.cont()
       log.info('Memory mmaped, process released after %02.02f secs'%(time.time()-t0))
