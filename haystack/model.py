@@ -29,6 +29,7 @@ def keepRef(obj):
   __refs.append(obj)
   return
 
+
 ''' returns if the address of the struct is in the mapping area
 '''
 def is_valid_address(obj,mappings, structType=None):
@@ -703,18 +704,6 @@ def findCtypesInPyObj(obj):
       
 import inspect,sys
 
-''' Useless. ctypes.Structure is LoadableMembers now... '''
-def pasteLoadableMemberMethodsOn(klass):
-  for n,func in inspect.getmembers(LoadableMembers, inspect.ismethod):
-    #setattr(klass, n, types.MethodType(func, klass) )  # bad self type. need LoadableMembers not Struct
-    # Py2.x
-    setattr(klass, n, func.im_func)
-  if not hasattr(klass, 'expectedValues' ):
-    setattr( klass, 'expectedValues', dict() )
-  if not hasattr(klass, 'classRef' ):
-    setattr( klass, 'classRef', dict() )
-  return klass
-
 ''' Load all model classes and create a similar non-ctypes Python class  
   thoses will be used to translate non pickable ctypes into POPOs.
 '''
@@ -725,9 +714,6 @@ def createPOPO(modulename):
       ##print sys.modules[modulename], '%s_py'%(klass)
 
 createPOPO(__name__)
-
-
-#pasteLoadableMemberMethodsOn(ctypes.Structure)
 
 
 ''' replace c_char_p '''
