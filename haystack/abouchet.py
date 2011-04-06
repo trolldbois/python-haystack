@@ -133,6 +133,7 @@ def _callFinder(cmd_line):
 def getMainFile():
   return os.path.abspath(sys.modules[__name__].__file__)
 
+
 def checkModulePath(typ):
   name = typ.__name__
   module,sep,kname = name.rpartition('.')
@@ -140,16 +141,29 @@ def checkModulePath(typ):
   moddir = os.path.dirname(sys.modules[typ.__module__].__file__)
   if moddir not in sys.path:
     sys.path.append( moddir )
-  return
+  # check if it's a generated module
+  if typ.__module__.endswith('_generated'):
+    # try to import the ctypes_name to get aliases up and running
+    # otherwise, pyObj will not be created, and the module will not be registered in haystack model
+    try:
+      plainmod = typ.__module__.replace('_generated','')
+      mod = __import__( plainmod, globals(), locals(), [kname])
+      struct = '.'.join([plainmod , kname])
+      log.info('trying %s instead of %s'%(struct, name))
+      return struct
+    except ImportError:
+      # shhh  
+      pass
+  struct = '.'.join([typ.__module__,typ.__name__]) # we pass a str anyway...
+  return struct
 
 def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1, 
               fullScan=False, nommap=False, hint=None, debug=None ):
   ''' '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
-  checkModulePath(struct) # add to sys.path
-  struct = '.'.join([struct.__module__,struct.__name__]) # we pass a str anyway...
-  cmd_line=[sys.executable, getMainFile(), "%s"%struct]
+  structname = checkModulePath(struct) # add to sys.path
+  cmd_line=[sys.executable, getMainFile(), "%s"%structname]
   if debug:
     cmd_line.insert(2,"--debug")
   if nommap:
@@ -186,9 +200,8 @@ def refreshStruct(pid, struct, offset, debug=False, nommap=False):
   ''' '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
-  checkModulePath(struct) # add to sys.path
-  struct = '.'.join([struct.__module__,struct.__name__])
-  cmd_line=[sys.executable, getMainFile(),  '%s'%struct]
+  structname = checkModulePath(struct) # add to sys.path
+  cmd_line=[sys.executable, getMainFile(),  '%s'%structname]
   if debug:
     cmd_line.insert(2,"--debug")
   if nommap:
@@ -241,8 +254,14 @@ def argparser():
 
 def getKlass(name):
   module,sep,kname=name.rpartition('.')
-  mod = __import__(module, globals(), locals(), [kname])
+  #mod = __import__(module, globals(), locals(), [kname])
+  mod = __import__(module)
   klass = getattr(mod, kname)  
+
+  log.error('klass: %s'%(name))
+  log.error('module: %s'%(module))
+  log.error(getattr(mod, kname))
+  #log.error(getattr(mod, kname+'_py'))
   return klass
 
 
@@ -254,6 +273,8 @@ def search(args):
   try:
     outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
   except KeyboardInterrupt,e:
+    from meliae import scanner
+    scanner.dump_all_objects('haystack-search.dump')
     if not args.debug:
       raise e
     import code
