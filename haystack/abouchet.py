@@ -251,8 +251,14 @@ def search(args):
   structType=getKlass(args.structType)
   mappings = MemoryMapper(args).getMappings()
   finder = StructFinder(mappings)
-
-  outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
+  try:
+    outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
+  except KeyboardInterrupt,e:
+    if not args.debug:
+      raise e
+    import code
+    code.interact(local=locals())
+    return None
   #return
   if args.human:
     print '[',
