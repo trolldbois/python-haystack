@@ -290,7 +290,7 @@ def search(args):
   else:
     ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
     if len(ret) >0:
-      log.info("%s %s"%(ret[0], type(ret[0]) )   )
+      log.debug("%s %s"%(ret[0], type(ret[0]) )   )
     if model.findCtypesInPyObj(ret):
       log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
     print pickle.dumps(ret)
