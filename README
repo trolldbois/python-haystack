@@ -1,33 +1,41 @@
 HOWTO:
 ------
 
+
+Run as command line :
+
+$ sudo haystack --pid 26725 ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+$ sudo haystack --pid 26725 <your ctypes Structure > search > instance.pickled
+
+Run in a python script :
 >>> import haystack
 >>> haystack.findStruct( pid , 'ctypes.c_int')
 >>> haystack.findStruct( pid , 'ctypes_example.big_struct')
 
-It's easy to add new structures (check ctypeslib or do it by hand )
+It's easy to add new structures (check ctypeslib or do it by hand or check sslsnoop on github)
 
 a) Your class must extend haystack.model.LoadableMembers.
 b) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure 
 c) You can add an expectedValues dict() to your class to refine your search
+d) call model.registerModule(sys.modules[__name__])
 
 Advanced use : You can override methods to fine tune some validation or loading
 
 The global algoritm :
 a)  A ctypes structure is mapped at a memory address.
-b)  The method laodMembers id called.
+b)  The method loadMembers id called.
 c)  The method isValid is called on self.
-c2) A validation test is done for each members, it's expected values and memory space validity (pointers) are tested.
+d) A validation test is done for each members, it's expected values and memory space validity (pointers) are tested.
     The validation does not recurse.
-c)  Each members is then 'loaded' to local space. 
+e)  Each members is then 'loaded' to local space. 
     If the value is a pointer or a model.LoadableMembers type, it's recursively Loaded. ( and validated).
     If the recursive loading fails, the calls fails. bye-bye.
-d) see next offset, goto a)
+f) see next offset, goto a)
 
 Extension examples :
 ---------------------
 @ see sslsnoop in the Pypi repo. openssl and nss structures are generated.
-@ see ctypes-kernel on my github. Linux kernel structure are generated.
+@ see ctypes-kernel on my github. Linux kernel structure are generated. (VMM is abitch)
 
 
 Pseudo Example :
