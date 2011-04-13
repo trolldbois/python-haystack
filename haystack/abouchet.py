@@ -254,8 +254,7 @@ def argparser():
 
 def getKlass(name):
   module,sep,kname=name.rpartition('.')
-  #mod = __import__(module, globals(), locals(), [kname])
-  mod = __import__(module)
+  mod = __import__(module, globals(), locals(), [kname])
   klass = getattr(mod, kname)  
 
   log.debug('klass: %s'%(name))
@@ -267,7 +266,7 @@ def getKlass(name):
 
 def search(args):
   log.debug('args: %s'%args)
-  structType=getKlass(args.structType)
+  structType = getKlass(args.structType)
   mappings = MemoryMapper(args).getMappings()
   finder = StructFinder(mappings)
   try:
