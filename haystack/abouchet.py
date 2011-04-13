@@ -45,7 +45,7 @@ class StructFinder:
       outputs.extend(self.find_struct_in( m, struct, hintOffset=hintOffset, maxNum=maxNum, maxDepth=maxDepth))
       # check out
       if len(outputs) >= maxNum:
-        log.info('Found enough instance. returning results.')
+        log.debug('Found enough instance. returning results.')
         break
     # if we mmap, we could yield
     return outputs
@@ -88,7 +88,7 @@ class StructFinder:
     for offset in range(start, end-structlen, plen):
       if offset % (1024<<6) == 0:
         p2=offset-start
-        log.info('processed %d bytes  - %02.02f test/sec'%(p2, (p2-p)/(plen*(time.time()-t0)) ))
+        log.debug('processed %d bytes  - %02.02f test/sec'%(p2, (p2-p)/(plen*(time.time()-t0)) ))
         t0=time.time()
         p=p2
       instance,validated= self.loadAt( memoryMap, offset, struct, maxDepth) 
@@ -97,7 +97,7 @@ class StructFinder:
         # do stuff with it.
         outputs.append( (instance,offset) )
       if len(outputs) >= maxNum:
-        log.info('Found enough instance. returning results. find_struct_in')
+        log.debug('Found enough instance. returning results. find_struct_in')
         break
     return outputs
 
@@ -258,9 +258,9 @@ def getKlass(name):
   mod = __import__(module)
   klass = getattr(mod, kname)  
 
-  log.error('klass: %s'%(name))
-  log.error('module: %s'%(module))
-  log.error(getattr(mod, kname))
+  log.debug('klass: %s'%(name))
+  log.debug('module: %s'%(module))
+  log.debug(getattr(mod, kname))
   #log.error(getattr(mod, kname+'_py'))
   return klass
 
@@ -342,9 +342,6 @@ def devnull(arg, **args):
   return
 
 def main(argv):
-  #log.debug = devnull
-  #model.log.debug = devnull
-  #logging.debug(argv)
   
   parser = argparser()
   opts = parser.parse_args(argv)
@@ -360,9 +357,9 @@ def main(argv):
     print e
 
   if opts.pid:  
-    log.info("done for pid %d"%opts.pid)
+    log.debug("done for pid %d"%opts.pid)
   else:
-    log.info("done for file %s"%opts.memdump.name)
+    log.debug("done for file %s"%opts.memdump.name)
   return 0
 
 
