@@ -4,7 +4,7 @@ HOWTO:
 
 Run as command line :
 
-$ sudo haystack --pid 26725 ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+$ sudo haystack --pid 26725 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
 $ sudo haystack --pid 26725 <your ctypes Structure > search > instance.pickled
 
 Run in a python script :
