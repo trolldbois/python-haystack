@@ -106,7 +106,7 @@ bytestr_fmt={
   'c_void_p': 'P'
   }
 def array2bytes_(array, typ):
-  arrayLen=len(array)
+  arrayLen = len(array)
   if arrayLen == 0:
     return b''
   if typ not in bytestr_fmt:
@@ -168,6 +168,8 @@ def isPointerType(obj):
 
 def isBasicTypeArrayType(obj):
   if isArrayType(obj):
+    if len(obj) == 0:
+      return True
     if isBasicType(obj[0]):
       return True
   return False
@@ -670,10 +672,10 @@ class pyObj(object):
     elif not hasattr(attr,'__dict__'):
       s = '%s,'%( repr(attr) )
     elif  isinstance( attr , pyObj):
-      s = ' { %s\n},'%( attr.toString(prefix) )
+      s = '%s,'%( attr.toString(prefix) )
     else:
       s = '%s,'%(repr(attr) )
-      print 'ELSE type: %s %s'%(type(attr), type(type(attr)) )
+      #print 'ELSE type: %s %s'%(type(attr), type(type(attr)) )
     return s
 
   def findCtypes(self):
