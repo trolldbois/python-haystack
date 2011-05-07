@@ -3,7 +3,7 @@ from setuptools import setup
 from glob import glob
 
 setup(name="haystack",
-    version="0.6",
+    version="0.7",
     description="Search C Structures in a process' memory",
     long_description=open('README').read(),
 
