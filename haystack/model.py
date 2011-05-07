@@ -164,7 +164,7 @@ def isStructType(obj):
 def isPointerType(obj):
   if isBasicType(obj) or isStructType(obj):
     return False
-  return type(obj).__class__.__name__== 'PointerType'
+  return 'PointerType' in type(obj).__class__.__name__ 
 
 def isBasicTypeArrayType(obj):
   if isArrayType(obj):
@@ -175,10 +175,10 @@ def isBasicTypeArrayType(obj):
   return False
 
 def isArrayType(obj):
-  return type(obj).__class__.__name__=='ArrayType'
+  return 'ArrayType' in type(obj).__class__.__name__
 
 def isFunctionType(obj):
-  return type(obj).__class__.__name__=='CFuncPtrType'
+  return 'CFuncPtrType' in type(obj).__class__.__name__
 
 def isCStringPointer(obj):
   return obj.__class__.__name__ == 'CString'
@@ -376,7 +376,8 @@ class LoadableMembers(ctypes.Structure):
     if isUnionType(attr):
       #log.warning('Union are not validated , yet ')
       return True
-    log.error('What type are You ?: %s'%attrname)
+    log.error('What type are You ?: %s/%s'%(attrname,attrtype))
+    printWhois(attr)
     return True
 
   def _isLoadableMember(self, attr):
