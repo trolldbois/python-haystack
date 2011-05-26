@@ -1,5 +1,5 @@
 import logging
-import argparse, os, time, sys
+import argparse, os, pickle, time, sys
 
 
 import model 
@@ -8,6 +8,7 @@ import model
 from ptrace.debugger.debugger import PtraceDebugger
 # local
 from memory_mapping import MemoryDumpMemoryMapping , readProcessMappings
+import memory_mapping
 
 log = logging.getLogger('mapper')
 
@@ -37,12 +38,10 @@ class MemoryDumper:
       if m.pathname != '[heap]':
         continue
       m.mmap()
-      return self.dump(m.local_mmap)
+      return self.dump(m)
   
-  def dump(self, mmap):
-    out = self.args.output
-    out.write(mmap)
-    out.close()
+  def dump(self, m):
+    mmap = pickle.dump(m, self.args.output)
     return self.args.output.name
 
 def dump(opt):
@@ -51,6 +50,10 @@ def dump(opt):
   print '\n'.join(str(dumper.mappings).split(','))
   out = dumper.dumpMemfile()
   print out
+
+def load(dumpfile):
+  memdump = pickle.load(dumpfile)
+  return memdump
 
 def argparser():
   rootparser = argparse.ArgumentParser(prog='memory_dumper', description='Dump process memory.')

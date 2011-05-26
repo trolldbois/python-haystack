@@ -167,6 +167,18 @@ class MemoryMapping:
             address += chunk_length
         return ''.join(string), truncated
 
+    def __getstate__(self):
+      d = dict(self.__dict__)
+      del d['_process'] #= d['_process'].pid
+      d['local_mmap'] = model.array2bytes(d['local_mmap'])
+      return d
+
+    def __setstate__(self, state):
+      for k,v in state.items():
+        self.__dict__[k] = v
+      #d['_process'] = 
+      d['local_mmap'] = model.bytes2array(d['local_mmap'],ctypes.c_ubyte)
+     
 
 class MemoryDumpMemoryMapping(MemoryMapping):
     """ A memoryMapping wrapper around a memory file dump"""
