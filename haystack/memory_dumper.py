@@ -10,7 +10,7 @@ from ptrace.debugger.debugger import PtraceDebugger
 from memory_mapping import MemoryDumpMemoryMapping , readProcessMappings
 import memory_mapping
 
-log = logging.getLogger('mapper')
+log = logging.getLogger('dumper')
 
 
 
@@ -30,26 +30,54 @@ class MemoryDumper:
       raise IOError
       # ptrace exception is raised before that
     self.mappings = readProcessMappings(process)
+    log.debug('mappings read.')
     return
     
   def dumpMemfile(self):
+    import tempfile
+    tmpdir = tempfile.mkdtemp()
     # test dump only the heap
     for m in self.mappings:
       if m.pathname != '[heap]':
         continue
-      m.mmap()
-      return self.dump(m)
-  
-  def dump(self, m):
-    mmap = pickle.dump(m, self.args.output)
-    return self.args.output.name
+      self.dump(m, tmpdir)
+    log.debug('Making a archive ')
+    archive_name = os.path.normpath(self.args.output.name)
+    self.archive(tmpdir, archive_name)
+    #shutil.rmtree(tmpdir)
+    log.debug('tmpdir is %s'%(tmpdir)) 
+    log.debug('Dumped to %s'%(archive_name))
+    return archive_name
+      
+  def dump(self, m, tmpdir):
+    log.debug('Dumping %s to %s'%(m,tmpdir))
+    # dump files to tempdir
+    mmap_fname = "0x%lx-%s" % (m.start, memory_mapping.formatAddress(m.end))
+    mmap_fname = os.path.join(tmpdir, mmap_fname)
+    # we are dumping the memorymap content
+    m.mmap()
+    log.debug('Dumping the memorymap content')
+    with open(mmap_fname,'wb') as mmap_fout:
+      mmap_fout.write(m.local_mmap)
+    log.debug('Dumping the memorymap metadata')
+    with open(mmap_fname+'.pickled','w') as mmap_fout:
+      pickle.dump(m, mmap_fout)
+    return 
+
+  def archive(self, srcdir, name):
+    import tempfile, shutil
+    tmpdir = tempfile.mkdtemp()
+    tmpname = os.path.join(tmpdir, os.path.basename(name))
+    log.debug('running shutil.make_archive')
+    archive = shutil.make_archive(tmpname, 'gztar', srcdir)
+    shutil.move(archive, name )
+    shutil.rmtree(tmpdir)
 
 def dump(opt):
   dumper = MemoryDumper(opt)
   dumper.initPid()
-  print '\n'.join(str(dumper.mappings).split(','))
+  #print '\n'.join(str(dumper.mappings).split(','))
   out = dumper.dumpMemfile()
-  print out
 
 def load(dumpfile):
   memdump = pickle.load(dumpfile)
@@ -63,6 +91,7 @@ def argparser():
   return rootparser
 
 def main(argv):
+  logging.basicConfig(level=logging.DEBUG)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
