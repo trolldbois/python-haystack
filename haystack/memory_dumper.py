@@ -1,5 +1,5 @@
 import logging
-import argparse, os, pickle, time, sys
+import argparse, ctypes, os, pickle, time, sys
 
 
 import model 
@@ -15,12 +15,12 @@ log = logging.getLogger('dumper')
 
 
 class MemoryDumper:
+  ''' Dumps a process memory maps to a tgz '''
   def __init__(self,args):
     self.args = args
   
   def getMappings(self):
     return self.mappings
-    
 
   def initPid(self):
     dbg = PtraceDebugger()
@@ -42,7 +42,7 @@ class MemoryDumper:
         continue
       self.dump(m, tmpdir)
     log.debug('Making a archive ')
-    archive_name = os.path.normpath(self.args.output.name)
+    archive_name = os.path.normpath(self.args.dumpfile.name)
     self.archive(tmpdir, archive_name)
     #shutil.rmtree(tmpdir)
     log.debug('tmpdir is %s'%(tmpdir)) 
@@ -73,21 +73,60 @@ class MemoryDumper:
     shutil.move(archive, name )
     shutil.rmtree(tmpdir)
 
+
+
+
+class MemoryDumpLoader:
+  ''' Loads a memory dump done by MemoryDumper.
+  It's basically a tgz of all memorymaps '''
+  def __init__(self, opt):
+    self.args = opt
+    self.loadMappings()
+  
+  def loadMappings(self):
+    import tarfile
+    self.archive = tarfile.open(None,'r', self.args.dumpfile)
+    self.archive.list()
+    members = self.archive.getnames()
+    mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
+    self.mappings = []
+    for content,md in mmaps:
+      mmap = pickle.load(self.archive.extractfile(md))
+      mmap_content = self.archive.extractfile(content).read()
+      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+      mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      self.mappings.append(mmap)
+    
+  def getMappings(self):
+    return self.mappings
+
 def dump(opt):
   dumper = MemoryDumper(opt)
   dumper.initPid()
   #print '\n'.join(str(dumper.mappings).split(','))
   out = dumper.dumpMemfile()
+  log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
 
-def load(dumpfile):
-  memdump = pickle.load(dumpfile)
-  return memdump
+def load(opt):
+  memdump = MemoryDumpLoader(opt)
+  log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
+  for m in memdump.getMappings():
+    log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )
+    
+  return 
 
 def argparser():
   rootparser = argparse.ArgumentParser(prog='memory_dumper', description='Dump process memory.')
-  rootparser.add_argument('pid', type=int, action='store', help='Target PID')
-  rootparser.add_argument('output', type=argparse.FileType('wb'), action='store', help='Target PID')
-  rootparser.set_defaults(func=dump)  
+  subparsers = rootparser.add_subparsers(help='sub-command help')
+
+  dump_parser = subparsers.add_parser('dump', help="dump a pid's memory to file")
+  dump_parser.add_argument('pid', type=int, action='store', help='Target PID')
+  dump_parser.add_argument('dumpfile', type=argparse.FileType('wb'), action='store', help='The dump file')
+  dump_parser.set_defaults(func=dump)  
+
+  load_parser = subparsers.add_parser('load', help='search help')
+  load_parser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='The dump file')
+  load_parser.set_defaults(func=load)  
   return rootparser
 
 def main(argv):
