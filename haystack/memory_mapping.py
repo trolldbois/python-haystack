@@ -7,7 +7,7 @@ import re
 from weakref import ref
 import ctypes, struct, mmap
 # local
-import model # TODO check ctypes_tools.bytes2array in ptrace
+#from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
 
 PROC_MAP_REGEX = re.compile(
     # Address range: '08048000-080b0000 '
@@ -170,14 +170,15 @@ class MemoryMapping:
     def __getstate__(self):
       d = dict(self.__dict__)
       del d['_process'] #= d['_process'].pid
-      d['local_mmap'] = model.array2bytes(d['local_mmap'])
+      #d['local_mmap'] = model.array2bytes(d['local_mmap'])
+      del d['local_mmap']
       return d
 
-    def __setstate__(self, state):
-      for k,v in state.items():
-        self.__dict__[k] = v
-      #d['_process'] = 
-      d['local_mmap'] = model.bytes2array(d['local_mmap'],ctypes.c_ubyte)
+    #def __setstate__(self, state):
+    #  for k,v in state.items():
+    #    self.__dict__[k] = v
+    #  #d['_process'] = 
+    #  #d['local_mmap'] = model.bytes2array(d['local_mmap'],ctypes.c_ubyte)
      
 
 class MemoryDumpMemoryMapping(MemoryMapping):
@@ -209,10 +210,11 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         return data
 
     def readStruct(self, address, structType):
+        from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
         laddr = self.vtop(address)
         structLen = ctypes.sizeof(structType)
         st = self.local_mmap[laddr:laddr+structLen]
-        structtmp = model.bytes2array(st, ctypes.c_ubyte)
+        structtmp = bytes2array(st, ctypes.c_ubyte)
         struct = structType.from_buffer(structtmp)
         return struct
 
