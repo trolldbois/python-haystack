@@ -18,16 +18,15 @@ class MyWidget(QtGui.QWidget):
     #self.resize(800, 600)
     self.setWindowTitle('memory analysis')
     #self.setWindowIcon(QtGui.QIcon('icons/web.png'))
-    #self.makeExit()
+    self.makeGui()
     self.mappings = mappings
     self.heap = [m for m in mappings if m.pathname == '[heap]'][0]
 
-  def makeExit(self):
-    quit = QtGui.QPushButton('Close', self)
-    quit.setGeometry(10, 10, 60, 35)
-
-    self.connect(quit, QtCore.SIGNAL('clicked()'),
-        QtGui.qApp, QtCore.SLOT('quit()'))
+  def makeGui(self):
+    shell = QtGui.QPushButton('Interactive', self)
+    shell.setGeometry(10, 10, 60, 35)
+    #self.connect(shell, QtCore.SIGNAL('clicked()'), QtGui.qApp, QtCore.SLOT(('dropToInteractive()'))    
+    self.connect(shell, QtCore.SIGNAL('clicked()'), dropToInteractive)
 
   def closeEvent(self, event):
     reply = QtGui.QMessageBox.question(self, 'Message',
@@ -44,7 +43,7 @@ class MyWidget(QtGui.QWidget):
     qp.begin(self)
     self.drawPointers(event, qp)
     qp.end()
-
+    return
 
   def drawPointers(self, event, qp):
     #qp.setPen(QtGui.QColor(168, 34, 3))
@@ -61,19 +60,30 @@ class MyWidget(QtGui.QWidget):
     for off in xrange(0,nb,4):
       i = off + self.heap.start
       word = self.heap.readWord(i)
+      #offset = (float(i - self.heap.start) / mx_offset) * mx
+      offset = i - self.heap.start
+      x = 1+ (offset % size.width() )
+      y = 1+ (offset // size.height())
       if word in self.heap:
         found +=1
-        #
-        offset = (float(i - self.heap.start) / mx_offset) * mx
-        
-        x = offset % size.width()
-        y = offset // size.height()
-        if found % 100 == 0:
-          log.debug( 'found %d possible pointers (last one at %s (%d,%d)'%(found, hex(i), x,y ) )
-    
-        #y = size.height() * ((word & 0xffff0000 ) >> 4 ) / 0xffff )
-        #x = size.width()  * (word & 0x0000ffff )  / 0xffff)
-        qp.drawPoint(x, y)     
+        qp.setPen(QtCore.Qt.red)
+        #if found % 100 == 0:
+        #  log.debug( 'found %d possible pointers (last one at %s (%d,%d)'%(found, hex(i), x,y ) )
+      elif word == 0:
+        qp.setPen(QtCore.Qt.black)
+      # color the word
+      qp.drawPoint(x, y)
+      for add in [1,2,3]:
+        x = 1+ add + (offset % size.width() )
+        y = 1+ add + (offset // size.height())
+        qp.drawPoint(x, y)
+           
+    return
+
+def dropToInteractive():
+  import code
+  code.interact(local=locals())
+
               
 def gui(opt):
   app = QtGui.QApplication(sys.argv)
