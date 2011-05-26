@@ -86,12 +86,13 @@ class MemoryDumpLoader:
   def loadMappings(self):
     import tarfile
     self.archive = tarfile.open(None,'r', self.args.dumpfile)
-    self.archive.list()
+    #self.archive.list()
     members = self.archive.getnames()
     mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
     self.mappings = []
     for content,md in mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
+      log.debug('Loading %s'%(mmap))
       mmap_content = self.archive.extractfile(content).read()
       # use that or mmap, anyway, we need to convert to ctypes :/ that costly
       mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
@@ -106,14 +107,16 @@ def dump(opt):
   #print '\n'.join(str(dumper.mappings).split(','))
   out = dumper.dumpMemfile()
   log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
+  return opt.dumpfile.name
 
 def load(opt):
+  #print sys.path
   memdump = MemoryDumpLoader(opt)
   log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
   for m in memdump.getMappings():
     log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )
     
-  return 
+  return memdump.getMappings()
 
 def argparser():
   rootparser = argparse.ArgumentParser(prog='memory_dumper', description='Dump process memory.')

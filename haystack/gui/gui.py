@@ -1,9 +1,9 @@
 import logging
 import argparse, os, pickle, time, sys
 
-from haystack import memory_dumper
-from haystack import memory_mapping
-from haystack.memory_mapping import MemoryMapping
+from .. import memory_dumper
+from .. import memory_mapping
+#from ..memory_mapping import MemoryMapping
 
 
 log = logging.getLogger('gui')
@@ -11,14 +11,16 @@ log = logging.getLogger('gui')
 from PyQt4 import QtGui, QtCore
 
 class MyWidget(QtGui.QWidget):
-  def __init__(self, mapping, parent=None):
+  def __init__(self, mappings, parent=None):
     QtGui.QWidget.__init__(self, parent)
 
-    self.setGeometry(800, 600, 250, 150)
+    self.setGeometry(100, 100, 800, 600)
+    #self.resize(800, 600)
     self.setWindowTitle('memory analysis')
     #self.setWindowIcon(QtGui.QIcon('icons/web.png'))
     #self.makeExit()
-    self.mapping = mapping
+    self.mappings = mappings
+    self.heap = [m for m in mappings if m.pathname == '[heap]'][0]
 
   def makeExit(self):
     quit = QtGui.QPushButton('Close', self)
@@ -49,20 +51,35 @@ class MyWidget(QtGui.QWidget):
     #qp.setFont(QtGui.QFont('Decorative', 10))
     #qp.drawText(event.rect(), QtCore.Qt.AlignCenter, self.text)
     qp.setPen(QtCore.Qt.red)
+    log.debug('parsing heap mapping')
+    size = self.size()
+    # scale the offsets to the window
+    mx = size.height() * size.width() 
+    mx_offset = self.heap.end - self.heap.start
+    found = 0 
+    nb = self.heap.end - self.heap.start
+    for off in xrange(0,nb,4):
+      i = off + self.heap.start
+      word = self.heap.readWord(i)
+      if word in self.heap:
+        found +=1
+        #
+        offset = (float(i - self.heap.start) / mx_offset) * mx
+        
+        x = offset % size.width()
+        y = offset // size.height()
+        if found % 100 == 0:
+          log.debug( 'found %d possible pointers (last one at %s (%d,%d)'%(found, hex(i), x,y ) )
     
-    for i in xrange(self.mapping.start,self.mapping.end,4):
-      word = self.mapping.readWord(i)
-      if word in self.mapping:
-        print 'found a pointer value', hex(word)
-        x = (word & 0xffff0000 ) >> 4
-        y = (word & 0x0000ffff )
+        #y = size.height() * ((word & 0xffff0000 ) >> 4 ) / 0xffff )
+        #x = size.width()  * (word & 0x0000ffff )  / 0xffff)
         qp.drawPoint(x, y)     
               
 def gui(opt):
   app = QtGui.QApplication(sys.argv)
 
-  memdump = memory_dumper.load(opt.dumpfile)
-  root = MyWidget(memdump)
+  mappings = memory_dumper.load(opt)
+  root = MyWidget(mappings)
   root.show()
 
   sys.exit(app.exec_())
@@ -74,6 +91,7 @@ def argparser():
   return rootparser
 
 def main(argv):
+  logging.basicConfig(level=logging.DEBUG)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
