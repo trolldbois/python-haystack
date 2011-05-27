@@ -19,6 +19,7 @@ class MyWidget(QtGui.QMainWindow):
     self.loadMapping(self.heap)
 
   def initUI(self):        
+    self.widgets = dict()
     self.setGeometry(100, 100, 800, 600)
     #self.resize(800, 600)
     self.setWindowTitle('memory analysis')
@@ -33,36 +34,34 @@ class MyWidget(QtGui.QMainWindow):
     file.addAction(exit)
             
     self.scene = QtGui.QGraphicsScene(self)
-    rect = self.scene.addRect(QtCore.QRectF(0, 0, 100, 100))
-    line = self.scene.addLine(QtCore.QLineF(100, 100, 200, 200))
+    rect = self.scene.addRect(QtCore.QRectF(0, 0, 500, 500), QtCore.Qt.black)
     self.view = QtGui.QGraphicsView(self.scene,self)
-    self.view.resize(500,600)
-    self.view.centerOn(line)
+    self.view.resize(500,620)
     self.view.show()  
     self.initLeftSide()
+    
       
   def initLeftSide(self):
     cb = QtGui.QCheckBox('Show possible pointers', self)
     cb.setFocusPolicy(QtCore.Qt.NoFocus)
     cb.move(550, 10)
     cb.resize(200,20)
-    cb.toggle()
     self.connect(cb, QtCore.SIGNAL('stateChanged(int)'), 
         self._checkPointers)
-    cb2 = QtGui.QCheckBox('Show possible structure', self)
+    cb2 = QtGui.QCheckBox('Show null words', self)
     cb2.setFocusPolicy(QtCore.Qt.NoFocus)
     cb2.move(550, 50)
     cb2.resize(200,20)
-    #cb2.toggle()
+    self.connect(cb2, QtCore.SIGNAL('stateChanged(int)'), 
+        self._checkNulls)
+    self.widgets['checkPointers'] = cb
+    self.widgets['checkNulls'] = cb2
 
   def initModel(self):
     self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
     self.pointers = None
     self.nullWords = None
   
-  def loadMapping(self, m):
-    #self.drawPointers()
-    pass
 
   def makeGui(self):
     shell = QtGui.QPushButton('Interactive', self)
@@ -85,15 +84,16 @@ class MyWidget(QtGui.QMainWindow):
       event.ignore()
 
   def _checkPointers(self):
-    if not self.pointers or not self.nullWords:
-      self.makePointers()
-    # check it
-    #for line in self.pointers:
-    #  self.scene.addLine(line, QtCore.Qt.red)
-    self.scene.addItem(self.pointers)
-    self.pointers.show()
-    self.view.centerOn(self.pointers)
-    self.scene.addLine(QtCore.QLineF(100, 100, 250, 240), QtCore.Qt.red)
+    if not self.widgets['checkPointers'].checkState():
+      self.pointers.hide()
+    else:
+      self.pointers.show()
+    
+  def _checkNulls(self):
+    if not self.widgets['checkNulls'].checkState():
+      self.nullWords.hide()
+    else:
+      self.nullWords.show()
     
   def _makeQLineWord(self,offset):
     lines = set()
@@ -110,7 +110,7 @@ class MyWidget(QtGui.QMainWindow):
     lines.add(QtCore.QLineF(x1, y1, x2, y2 ) )
     return lines
 
-  def makePointers(self):
+  def loadMapping(self, mmaping):
     log.debug('parsing heap mapping')
     self.pointers = QtGui.QGraphicsItemGroup()
     self.nullWords = QtGui.QGraphicsItemGroup()
@@ -125,7 +125,12 @@ class MyWidget(QtGui.QMainWindow):
           self.pointers.addToGroup(self.scene.addLine(l, QtCore.Qt.red))
       elif word == 0:
         for l in self._makeQLineWord(offset):
-          self.nullWords.addToGroup(self.scene.addLine(l, QtCore.Qt.black))
+          self.nullWords.addToGroup(self.scene.addLine(l, QtCore.Qt.gray))
+    # fill the scene
+    self.scene.addItem(self.pointers)
+    self.scene.addItem(self.nullWords)
+    self.pointers.hide()
+    self.nullWords.hide()
     return
 
 def dropToInteractive():
