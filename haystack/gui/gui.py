@@ -10,17 +10,59 @@ log = logging.getLogger('gui')
 
 from PyQt4 import QtGui, QtCore
 
-class MyWidget(QtGui.QWidget):
+class MyWidget(QtGui.QMainWindow):
   def __init__(self, mappings, parent=None):
-    QtGui.QWidget.__init__(self, parent)
+    QtGui.QMainWindow.__init__(self, parent)
+    self.mappings = mappings
+    self.initUI()
+    self.initModel()
+    self.loadMapping(self.heap)
 
+  def initUI(self):        
     self.setGeometry(100, 100, 800, 600)
     #self.resize(800, 600)
     self.setWindowTitle('memory analysis')
     #self.setWindowIcon(QtGui.QIcon('icons/web.png'))
-    self.makeGui()
-    self.mappings = mappings
-    self.heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    exit = QtGui.QAction(QtGui.QIcon('icons/exit.png'), 'Exit', self)
+    exit.setShortcut('Ctrl+Q')
+    exit.setStatusTip('Exit application')
+    self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+    self.statusBar()
+    menubar = self.menuBar()
+    file = menubar.addMenu('&File')
+    file.addAction(exit)
+            
+    self.scene = QtGui.QGraphicsScene(self)
+    rect = self.scene.addRect(QtCore.QRectF(0, 0, 100, 100))
+    line = self.scene.addLine(QtCore.QLineF(100, 100, 200, 200))
+    self.view = QtGui.QGraphicsView(self.scene,self)
+    self.view.resize(500,600)
+    self.view.centerOn(line)
+    self.view.show()  
+    self.initLeftSide()
+      
+  def initLeftSide(self):
+    cb = QtGui.QCheckBox('Show possible pointers', self)
+    cb.setFocusPolicy(QtCore.Qt.NoFocus)
+    cb.move(550, 10)
+    cb.resize(200,20)
+    cb.toggle()
+    self.connect(cb, QtCore.SIGNAL('stateChanged(int)'), 
+        self._checkPointers)
+    cb2 = QtGui.QCheckBox('Show possible structure', self)
+    cb2.setFocusPolicy(QtCore.Qt.NoFocus)
+    cb2.move(550, 50)
+    cb2.resize(200,20)
+    #cb2.toggle()
+
+  def initModel(self):
+    self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
+    self.pointers = None
+    self.nullWords = None
+  
+  def loadMapping(self, m):
+    #self.drawPointers()
+    pass
 
   def makeGui(self):
     shell = QtGui.QPushButton('Interactive', self)
@@ -29,6 +71,10 @@ class MyWidget(QtGui.QWidget):
     self.connect(shell, QtCore.SIGNAL('clicked()'), dropToInteractive)
 
   def closeEvent(self, event):
+    #debug
+    event.accept()
+    return
+    #
     reply = QtGui.QMessageBox.question(self, 'Message',
         "Are you sure to quit?", QtGui.QMessageBox.Yes | 
         QtGui.QMessageBox.No, QtGui.QMessageBox.No)
@@ -38,19 +84,29 @@ class MyWidget(QtGui.QWidget):
     else:
       event.ignore()
 
-  def paintEvent(self, event):
-    qp = QtGui.QPainter()
-    qp.begin(self)
-    self.drawPointers(event, qp)
-    qp.end()
-    return
+  def _checkPointers(self):
+    if not self.pointers or not self.nullWords:
+      self.makePointers()
+    # check it
+    size = self.view.size()    
+    for offset in self.pointers:
+      x1 = (offset % size.width() )
+      y1 = (offset // size.height())
+      for add in [1,2,3,4]:
+        x2 = 1+ ((offset+add) % size.width() )
+        if x2 < x1: # goto next line
+          line = self.scene.addLine(QtCore.QLineF(x1, y1, size.width(), y1), QtCore.Qt.red)    
+          x1 = x2
+          y1 = y1+1          
+        y2 = ((offset+add) // size.height())
+      line = self.scene.addLine(QtCore.QLineF(x1, y1, x2, y2 ), QtCore.Qt.red)    
+    
+    pass
 
-  def drawPointers(self, event, qp):
-    #qp.setPen(QtGui.QColor(168, 34, 3))
-    #qp.setFont(QtGui.QFont('Decorative', 10))
-    #qp.drawText(event.rect(), QtCore.Qt.AlignCenter, self.text)
-    qp.setPen(QtCore.Qt.red)
+  def makePointers(self):
     log.debug('parsing heap mapping')
+    self.pointers = set()
+    self.nullWords = set()
     size = self.size()
     # scale the offsets to the window
     mx = size.height() * size.width() 
@@ -61,23 +117,12 @@ class MyWidget(QtGui.QWidget):
       i = off + self.heap.start
       word = self.heap.readWord(i)
       #offset = (float(i - self.heap.start) / mx_offset) * mx
-      offset = i - self.heap.start
-      x = 1+ (offset % size.width() )
-      y = 1+ (offset // size.height())
+      offset = off #i - self.heap.start
       if word in self.heap:
         found +=1
-        qp.setPen(QtCore.Qt.red)
-        #if found % 100 == 0:
-        #  log.debug( 'found %d possible pointers (last one at %s (%d,%d)'%(found, hex(i), x,y ) )
+        self.pointers.add(offset)
       elif word == 0:
-        qp.setPen(QtCore.Qt.black)
-      # color the word
-      qp.drawPoint(x, y)
-      for add in [1,2,3]:
-        x = 1+ add + (offset % size.width() )
-        y = 1+ add + (offset // size.height())
-        qp.drawPoint(x, y)
-           
+        self.nullWords.add(offset)
     return
 
 def dropToInteractive():
