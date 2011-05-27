@@ -88,41 +88,44 @@ class MyWidget(QtGui.QMainWindow):
     if not self.pointers or not self.nullWords:
       self.makePointers()
     # check it
-    size = self.view.size()    
-    for offset in self.pointers:
-      x1 = (offset % size.width() )
-      y1 = (offset // size.height())
-      for add in [1,2,3,4]:
-        x2 = 1+ ((offset+add) % size.width() )
-        if x2 < x1: # goto next line
-          line = self.scene.addLine(QtCore.QLineF(x1, y1, size.width(), y1), QtCore.Qt.red)    
-          x1 = x2
-          y1 = y1+1          
-        y2 = ((offset+add) // size.height())
-      line = self.scene.addLine(QtCore.QLineF(x1, y1, x2, y2 ), QtCore.Qt.red)    
+    #for line in self.pointers:
+    #  self.scene.addLine(line, QtCore.Qt.red)
+    self.scene.addItem(self.pointers)
+    self.pointers.show()
+    self.view.centerOn(self.pointers)
+    self.scene.addLine(QtCore.QLineF(100, 100, 250, 240), QtCore.Qt.red)
     
-    pass
+  def _makeQLineWord(self,offset):
+    lines = set()
+    size = self.view.size()    
+    x1 = (offset % size.width() )
+    y1 = (offset // size.height())
+    for add in [1,2,3,4]:
+      x2 = 1+ ((offset+add) % size.width() )
+      if x2 < x1: # goto next line
+        lines.add(QtCore.QLineF(x1, y1, size.width(), y1))
+        x1 = x2
+        y1 = y1+1          
+      y2 = ((offset+add) // size.height())
+    lines.add(QtCore.QLineF(x1, y1, x2, y2 ) )
+    return lines
 
   def makePointers(self):
     log.debug('parsing heap mapping')
-    self.pointers = set()
-    self.nullWords = set()
-    size = self.size()
-    # scale the offsets to the window
-    mx = size.height() * size.width() 
-    mx_offset = self.heap.end - self.heap.start
+    self.pointers = QtGui.QGraphicsItemGroup()
+    self.nullWords = QtGui.QGraphicsItemGroup()
     found = 0 
-    nb = self.heap.end - self.heap.start
-    for off in xrange(0,nb,4):
-      i = off + self.heap.start
+    nb = self.heap.end - self.heap.start    
+    for offset in xrange(0,nb,4):
+      i = offset + self.heap.start
       word = self.heap.readWord(i)
-      #offset = (float(i - self.heap.start) / mx_offset) * mx
-      offset = off #i - self.heap.start
       if word in self.heap:
         found +=1
-        self.pointers.add(offset)
+        for l in self._makeQLineWord(offset):
+          self.pointers.addToGroup(self.scene.addLine(l, QtCore.Qt.red))
       elif word == 0:
-        self.nullWords.add(offset)
+        for l in self._makeQLineWord(offset):
+          self.nullWords.addToGroup(self.scene.addLine(l, QtCore.Qt.black))
     return
 
 def dropToInteractive():
