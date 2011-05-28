@@ -26,6 +26,7 @@ class View(QtGui.QGraphicsView):
     #Set-up the scene
     scene =  QtGui.QGraphicsScene(self)
     self.setScene(scene)
+    self.scene = scene
  
     #Populate the scene
     for x in xrange(0,1000,25):
@@ -46,6 +47,8 @@ class View(QtGui.QGraphicsView):
     self.setCursor(Qt.OpenHandCursor)
     return
 
+  def GetScene(self):
+    return self.scene
   def GetCenter(self):
     return self.CurrentCenterPoint
   '''
