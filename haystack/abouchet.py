@@ -263,6 +263,19 @@ def getKlass(name):
   #log.error(getattr(mod, kname+'_py'))
   return klass
 
+def searchIn(structType, mappings, maxNum=-1):
+  log.debug('searchIn: %s - %s'%(structType,mappings))
+  structType = getKlass(structType)
+  finder = StructFinder(mappings)
+  # find all possible struct instance
+  outs=finder.find_struct( structType, maxNum=maxNum, fullScan=True)
+  # prepare outputs
+  ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
+  if len(ret) >0:
+    log.debug("%s %s"%(ret[0], type(ret[0]) )   )
+  if model.findCtypesInPyObj(ret):
+    log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
+  return ret
 
 def search(args):
   log.debug('args: %s'%args)
