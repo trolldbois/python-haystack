@@ -38,8 +38,6 @@ class MemoryDumper:
     tmpdir = tempfile.mkdtemp()
     # test dump only the heap
     for m in self.mappings:
-      if m.pathname != '[heap]':
-        continue
       self.dump(m, tmpdir)
     log.debug('Making a archive ')
     archive_name = os.path.normpath(self.args.dumpfile.name)
