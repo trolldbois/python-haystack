@@ -164,14 +164,14 @@ class MyWidget(QtGui.QMainWindow):
     ''' return size of structure and list off addresses and values )'''
     from haystack import abouchet
     import ctypes, sslsnoop
-    import sslsnoop.ctypes_openssh
     instances = abouchet.searchIn(structType='sslsnoop.ctypes_openssh.session_state', mappings=self.mappings, maxNum=999)
-    size = ctypes.sizeof(sslsnoop.ctypes_openssh.session_state)
+    if len(instances) > 0:
+      log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
     # init graphical element
     self.sessionStateList = QtGui.QGraphicsItemGroup()
     for value, addr in instances:
       offset = addr - self.heap.start
-      for l in self._makeStruct(offset,size):
+      for l in self._makeStruct(offset, len(value)):
         self.sessionStateList.addToGroup(self.scene.addRect(l, QtCore.Qt.green))
     # fill the scene
     self.scene.addItem(self.sessionStateList)
