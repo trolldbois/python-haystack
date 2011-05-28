@@ -10,6 +10,9 @@ log = logging.getLogger('gui')
 
 from PyQt4 import QtGui, QtCore
 
+import view
+
+
 class MyWidget(QtGui.QMainWindow):
   def __init__(self, mappings, parent=None):
     QtGui.QMainWindow.__init__(self, parent)
@@ -35,7 +38,8 @@ class MyWidget(QtGui.QMainWindow):
             
     self.scene = QtGui.QGraphicsScene(self)
     rect = self.scene.addRect(QtCore.QRectF(0, 0, 500, 500), QtCore.Qt.black)
-    self.view = QtGui.QGraphicsView(self.scene,self)
+    #self.view = view.View(self.scene,self)
+    self.view = view.View(self)
     self.view.resize(500,620)
     self.view.show()  
     self.initLeftSide()

@@ -6,3 +6,10 @@ test/*
 build
 dist
 haystack.egg-info
+haystack-search.dump
+haystack/gui/noname.cpp
+haystack/gui/noname.h
+haystack/gui/test.fbp
+haystack/test
+haystack/outputs/
+
