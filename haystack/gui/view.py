@@ -7,6 +7,8 @@ log = logging.getLogger('view')
 from PyQt4 import QtGui, QtCore
 from PyQt4.Qt import Qt
 
+
+LINE_SIZE=512
  
 
 class View(QtGui.QGraphicsView):
@@ -29,8 +31,17 @@ class View(QtGui.QGraphicsView):
     self.scene = scene
  
     #Populate the scene
-    for x in xrange(0,1000,25):
-      for y in xrange(0,1000,25):
+    self._debugFill(scene)
+    
+    #Set-up the view
+    self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE)
+    self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
+    self.setCursor(Qt.OpenHandCursor)
+    return
+
+  def _debugFill(self,scene):
+    for x in xrange(0,LINE_SIZE,25):
+      for y in xrange(0,LINE_SIZE,25):
         if (x % 100 == 0 )and ( y % 100 == 0):
           scene.addRect(x, y, 2, 2)
           pointString = QtCore.QString()
@@ -41,11 +52,6 @@ class View(QtGui.QGraphicsView):
         else:
           scene.addRect(x, y, 1, 1)
  
-    #Set-up the view
-    self.setSceneRect(0, 0, 1000, 1000)
-    self.SetCenter(QtCore.QPointF(500.0, 500.0)) #A modified version of centerOn(), handles special cases
-    self.setCursor(Qt.OpenHandCursor)
-    return
 
   def GetScene(self):
     return self.scene

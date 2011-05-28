@@ -14,6 +14,9 @@ import view
 
 
 class MyWidget(QtGui.QMainWindow):
+  sessionStateList = None
+  pointers = None
+  nullWords = None
   def __init__(self, mappings, parent=None):
     QtGui.QMainWindow.__init__(self, parent)
     self.mappings = mappings
@@ -23,7 +26,7 @@ class MyWidget(QtGui.QMainWindow):
 
   def initUI(self):        
     self.widgets = dict()
-    self.setGeometry(100, 100, 800, 600)
+    self.setGeometry(400, 100, 800, 600)
     #self.resize(800, 600)
     self.setWindowTitle('memory analysis')
     #self.setWindowIcon(QtGui.QIcon('icons/web.png'))
@@ -36,12 +39,12 @@ class MyWidget(QtGui.QMainWindow):
     file = menubar.addMenu('&File')
     file.addAction(exit)
             
-    self.scene = QtGui.QGraphicsScene(self)
-    rect = self.scene.addRect(QtCore.QRectF(0, 0, 500, 500), QtCore.Qt.black)
     #self.view = view.View(self.scene,self)
     self.view = view.View(self)
-    self.view.resize(500,620)
+    self.view.resize(512,620)
     self.view.show()  
+    self.scene = self.view.GetScene()
+    rect = self.scene.addRect(QtCore.QRectF(0, 0, view.LINE_SIZE, view.LINE_SIZE), QtCore.Qt.black)
     self.initLeftSide()
     
       
@@ -58,8 +61,16 @@ class MyWidget(QtGui.QMainWindow):
     cb2.resize(200,20)
     self.connect(cb2, QtCore.SIGNAL('stateChanged(int)'), 
         self._checkNulls)
+    # search session_state button        
+    search = QtGui.QCheckBox('Search session_state', self)
+    search.setFocusPolicy(QtCore.Qt.NoFocus)
+    search.setGeometry(550, 90, 160, 35)
+    self.connect(search, QtCore.SIGNAL('stateChanged(int)'), self.showSessionState)
+        
+        
     self.widgets['checkPointers'] = cb
     self.widgets['checkNulls'] = cb2
+    self.widgets['session_state'] = search
 
   def initModel(self):
     self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
@@ -99,20 +110,22 @@ class MyWidget(QtGui.QMainWindow):
     else:
       self.nullWords.show()
     
-  def _makeQLineWord(self,offset):
-    lines = set()
-    size = self.view.size()    
-    x1 = (offset % size.width() )
-    y1 = (offset // size.height())
-    for add in [1,2,3,4]:
-      x2 = 1+ ((offset+add) % size.width() )
+  def _makeStruct(self,offset,size):
+    ''' fix line length to 4K '''
+    width = 512 # use PAGE_SIZE ?
+    words = set()
+    x1 = (offset % width )
+    y = (offset // width )
+    for add in xrange(1,size):
+      x2 = ((offset+add) % width )
       if x2 < x1: # goto next line
-        lines.add(QtCore.QLineF(x1, y1, size.width(), y1))
+        words.add(QtCore.QRectF(x1, y, width-x1, 1)) # finish line
         x1 = x2
-        y1 = y1+1          
-      y2 = ((offset+add) // size.height())
-    lines.add(QtCore.QLineF(x1, y1, x2, y2 ) )
-    return lines
+        y = (offset+add) // width 
+        y = y+1          
+    y = ((offset+add) // width)
+    words.add(QtCore.QRectF(x1, y, x2-x1, 1 ) )
+    return words
 
   def loadMapping(self, mmaping):
     log.debug('parsing heap mapping')
@@ -123,19 +136,48 @@ class MyWidget(QtGui.QMainWindow):
     for offset in xrange(0,nb,4):
       i = offset + self.heap.start
       word = self.heap.readWord(i)
+      # find pointers
       if word in self.heap:
         found +=1
-        for l in self._makeQLineWord(offset):
-          self.pointers.addToGroup(self.scene.addLine(l, QtCore.Qt.red))
-      elif word == 0:
-        for l in self._makeQLineWord(offset):
-          self.nullWords.addToGroup(self.scene.addLine(l, QtCore.Qt.gray))
+        for l in self._makeStruct(offset,4):
+          self.pointers.addToGroup(self.scene.addRect(l, QtCore.Qt.red))
+      elif word == 0: # find null values
+        for l in self._makeStruct(offset,4):
+          self.nullWords.addToGroup(self.scene.addRect(l, QtCore.Qt.gray))
     # fill the scene
     self.scene.addItem(self.pointers)
     self.scene.addItem(self.nullWords)
     self.pointers.hide()
     self.nullWords.hide()
     return
+
+  def showSessionState(self):
+    if self.sessionStateList is None:
+      self.searchSessionState()
+    if not self.widgets['session_state'].checkState():
+      self.sessionStateList.hide()
+    else:
+      self.sessionStateList.show()
+    
+
+  def searchSessionState(self):
+    ''' return size of structure and list off addresses and values )'''
+    from haystack import abouchet
+    import ctypes, sslsnoop
+    import sslsnoop.ctypes_openssh
+    instances = abouchet.searchIn(structType='sslsnoop.ctypes_openssh.session_state', mappings=self.mappings, maxNum=999)
+    size = ctypes.sizeof(sslsnoop.ctypes_openssh.session_state)
+    # init graphical element
+    self.sessionStateList = QtGui.QGraphicsItemGroup()
+    for value, addr in instances:
+      offset = addr - self.heap.start
+      for l in self._makeStruct(offset,size):
+        self.sessionStateList.addToGroup(self.scene.addRect(l, QtCore.Qt.green))
+    # fill the scene
+    self.scene.addItem(self.sessionStateList)
+    self.sessionStateList.hide()
+    log.debug('Found %d instances'%(len(instances)) )
+    return len(instances)
 
 def dropToInteractive():
   import code
@@ -159,6 +201,8 @@ def argparser():
 
 def main(argv):
   logging.basicConfig(level=logging.DEBUG)
+  logging.getLogger('haystack').setLevel(logging.INFO)
+  logging.getLogger('model').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
