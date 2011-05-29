@@ -12,10 +12,10 @@ __doc__ = '''
 '''
 
 import os, sys
-from haystack import abouchet 
 
 if __name__ == "__main__":
   sys.path.append(os.getcwd())
+  from haystack import abouchet 
   abouchet.main(sys.argv[1:])
 
 

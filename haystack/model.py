@@ -345,9 +345,6 @@ class LoadableMembers(ctypes.Structure):
       return True
     # e) 
     if isPointerType(attr):
-      #### try to debug mem
-      setattr(self,attrname+'ContentAddress',getaddress(attr))
-      ####
       if attrname in self.expectedValues:
         # test if NULL is an option
         if not bool(attr):
@@ -469,6 +466,7 @@ class LoadableMembers(ctypes.Structure):
     if isCStringPointer(attr) : 
       # can't use basic c_char_p because we can't load in foreign memory
       attr_obj_address = getaddress(attr.ptr)
+      setattr(self,'__'+attrname,attr_obj_address)
       if not bool(attr_obj_address):
         log.debug('%s %s is a CString, the pointer is null (validation must have occurred earlier) '%(attrname, attr))
         return True
@@ -476,7 +474,6 @@ class LoadableMembers(ctypes.Structure):
       if not memoryMap :
         log.warning('Error on addr while fetching a CString. should not happen')
         return False
-      setattr(self,'__'+attrname,attr_obj_address)
       MAX_SIZE=255
       log.debug("%s %s is defined as a CString, loading from 0x%lx is_valid_address %s"%(
                       attrname,attr,attr_obj_address, is_valid_address(attr,mappings) ))
@@ -491,9 +488,6 @@ class LoadableMembers(ctypes.Structure):
       attr_obj_address=getaddress(attr)
       setattr(self,'__'+attrname,attr_obj_address)
       ####
-      previous=getattr(self,attrname+'ContentAddress')
-      if attr_obj_address !=previous:
-        log.warning('Change of pointer value between validation and loading... 0x%lx 0x%lx'%(previous,attr_obj_address))
       # memcpy and save objet ref + pointer in attr
       # we know the field is considered valid, so if it's not in memory_space, we can ignore it
       memoryMap = is_valid_address( attr, mappings, _attrType)
@@ -505,7 +499,7 @@ class LoadableMembers(ctypes.Structure):
       ##### VALID INSTR.
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
       #####
-      log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr,attr_obj_address, (getaddress(attr))   ))
+      log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
       if not bool(attr):
         log.warning('Member %s is null after copy: %s'%(attrname,attr))

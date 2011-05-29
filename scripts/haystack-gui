@@ -15,8 +15,8 @@ import os, sys
 
 if __name__ == "__main__":
   #debug
-  sys.path.append(os.getcwd())
-  sys.path.append(os.path.join(os.getcwd(),'haystack'))
+  sys.path.insert(0,os.getcwd())
+  sys.path.insert(0,os.path.join(os.getcwd(),'haystack'))
   from haystack import gui
   from haystack.gui import gui
   gui.main(sys.argv[1:])

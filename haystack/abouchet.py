@@ -230,6 +230,7 @@ def argparser():
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
   rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
+  rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
   rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   rootparser.add_argument('structType', type=str, help='Structure type name')
   
@@ -293,6 +294,11 @@ def search(args):
     code.interact(local=locals())
     return None
   #return
+  ## debug
+  if args.interactive:
+    import code
+    code.interact(local=locals())
+  ##
   if args.human:
     print '[',
     for ss, addr in outs:
@@ -324,6 +330,10 @@ def refresh(args):
     raise ValueError("the address is not accessible in the memoryMap")
   instance,validated = finder.loadAt( memoryMap , 
           addr, structType)
+  ##
+  if args.interactive:
+    import code
+    code.interact(local=locals())
   if validated:
     if args.human:
        print '( %s, %s )'%(instance.toString(),validated)
