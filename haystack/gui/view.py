@@ -9,9 +9,9 @@ from PyQt4.Qt import Qt
 
 
 LINE_SIZE=512
- 
+PAGE_SIZE=4096 
 
-class View(QtGui.QGraphicsView):
+class MemoryMappingView(QtGui.QGraphicsView):
   #Holds the current centerpoint for the view, used for panning and zooming
   CurrentCenterPoint = QtCore.QPointF()
   #From panning the view
@@ -32,6 +32,7 @@ class View(QtGui.QGraphicsView):
  
     #Populate the scene
     self._debugFill(scene)
+    self.drawPages(PAGE_SIZE)
     
     #Set-up the view
     self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE)
@@ -39,6 +40,13 @@ class View(QtGui.QGraphicsView):
     self.setCursor(Qt.OpenHandCursor)
     return
 
+  def drawPages(self, pageSize ):
+    # 15 is the mapping's size/PAGE_SIZE
+    for y in xrange(0,15 * PAGE_SIZE/LINE_SIZE, PAGE_SIZE/LINE_SIZE):
+      if (y % (PAGE_SIZE/LINE_SIZE) == 0 ):
+        self.scene.addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.DotLine))
+  
+  
   def _debugFill(self,scene):
     for x in xrange(0,LINE_SIZE,25):
       for y in xrange(0,LINE_SIZE,25):

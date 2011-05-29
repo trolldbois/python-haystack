@@ -11,7 +11,7 @@ class Structure(QtGui.QGraphicsItemGroup):
   '''
     Represente une structure dans notre MemoryScene.
   '''
-  def __init__(self, offset, loadable, color = QtCore.Qt.red, scene=None, parent=None):
+  def __init__(self, offset, loadable, color = QtCore.Qt.green, scene=None, parent=None):
     QtGui.QGraphicsItemGroup.__init__(self, parent, scene)
     self.scene = scene
     self.struct = loadable

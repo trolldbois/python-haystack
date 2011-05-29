@@ -22,6 +22,7 @@ class MyWidget(QtGui.QMainWindow):
     QtGui.QMainWindow.__init__(self, parent)
     self.mappings = mappings
     self.initUI()
+    # load memorymapping
     self.initModel()
     self.loadMapping(self.heap)
 
@@ -40,8 +41,7 @@ class MyWidget(QtGui.QMainWindow):
     file = menubar.addMenu('&File')
     file.addAction(exit)
             
-    #self.view = view.View(self.scene,self)
-    self.view = view.View(self)
+    self.view = view.MemoryMappingView(self)
     self.view.resize(512,620)
     self.view.show()  
     self.scene = self.view.GetScene()
@@ -188,6 +188,7 @@ def gui(opt):
   app = QtGui.QApplication(sys.argv)
 
   mappings = memory_dumper.load(opt)
+  #mappings = None
   root = MyWidget(mappings)
   root.show()
 
