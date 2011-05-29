@@ -11,6 +11,7 @@ log = logging.getLogger('gui')
 from PyQt4 import QtGui, QtCore
 
 import view
+import widgets
 
 
 class MyWidget(QtGui.QMainWindow):
@@ -171,8 +172,7 @@ class MyWidget(QtGui.QMainWindow):
     self.sessionStateList = QtGui.QGraphicsItemGroup()
     for value, addr in instances:
       offset = addr - self.heap.start
-      for l in self._makeStruct(offset, len(value)):
-        self.sessionStateList.addToGroup(self.scene.addRect(l, QtCore.Qt.green))
+      self.sessionStateList.addToGroup(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
     # fill the scene
     self.scene.addItem(self.sessionStateList)
     self.sessionStateList.hide()

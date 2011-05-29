@@ -752,8 +752,11 @@ def createPOPOClasses( targetmodule ):
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
     if typ.__module__.startswith(targetmodule.__name__):
       kpy = type('%s_py'%(klass),( pyObj ,),{})
+      # add the structure size to the class
       if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
         setattr(kpy, '_len_',ctypes.sizeof(typ) )
+      else:
+        setattr(kpy, '_len_', None )
       # we have to keep a local (model) ref because the class is being created here.
       # and we have a targetmodule ref. because it's asked.
       # and another ref on the real module for the basic type, because, that is probably were it's gonna be used.
