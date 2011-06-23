@@ -73,6 +73,10 @@ class MemoryMapping:
         return text
     __repr__ = __str__
 
+    def __len__(self):
+      print self.end - self.start
+      return int(self.end - self.start)
+
     def search(self, bytestr):
         process = self._process()
 
