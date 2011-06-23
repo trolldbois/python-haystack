@@ -14,17 +14,21 @@ import view
 import widgets
 
 
+class Dummy:
+  def __init__(self,len_):
+    self._len_= len_
+  def __len__(self):
+    return self._len_
+
 class MyWidget(QtGui.QMainWindow):
   sessionStateList = None
   pointers = None
   nullWords = None
-  def __init__(self, mappings, parent=None):
+  def __init__(self, argv, parent=None):
     QtGui.QMainWindow.__init__(self, parent)
-    self.mappings = mappings
     self.initUI()
-    # load memorymapping
-    self.initModel()
-    self.loadMapping(self.heap)
+    widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
+    self.argv = argv
 
   def initUI(self):        
     self.widgets = dict()
@@ -36,12 +40,19 @@ class MyWidget(QtGui.QMainWindow):
     exit.setShortcut('Ctrl+Q')
     exit.setStatusTip('Exit application')
     self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+    # open memdump
+    openDump = QtGui.QAction(QtGui.QIcon('icons/open.png'), 'Open...', self)
+    openDump.setShortcut('Ctrl+O')
+    openDump.setStatusTip('Open...')
+    self.connect(openDump, QtCore.SIGNAL('triggered()'), self.openDump)
+    #
     self.statusBar()
     menubar = self.menuBar()
     file = menubar.addMenu('&File')
+    file.addAction(openDump)
     file.addAction(exit)
             
-    self.view = view.MemoryMappingView(self)
+    self.view = view.MemoryMappingView(mapping = None, parent = self)
     self.view.resize(512,620)
     self.view.show()  
     self.scene = self.view.GetScene()
@@ -74,11 +85,25 @@ class MyWidget(QtGui.QMainWindow):
     self.widgets['session_state'] = search
 
   def initModel(self):
+    mappings = memory_dumper.load(self.argv)
+    self.mappings = mappings
     self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
     self.pointers = None
     self.nullWords = None
+    #reinit the view
+    self.view.hide()  
+    self.view = view.MemoryMappingView(mapping = self.heap, parent = self)
+    self.view.resize(520, 620)
+    #self.view.resize(view.LINE_SIZE, (len(self.heap) // view.LINE_SIZE)+1 )
+    self.view.show()  
+    self.scene = self.view.GetScene()
   
-
+  def openDump(self):
+    # load memorymapping
+    self.initModel()
+    self.loadMapping(self.heap)
+    pass
+  
   def makeGui(self):
     shell = QtGui.QPushButton('Interactive', self)
     shell.setGeometry(10, 10, 60, 35)
@@ -111,25 +136,9 @@ class MyWidget(QtGui.QMainWindow):
     else:
       self.nullWords.show()
     
-  def _makeStruct(self,offset,size):
-    ''' fix line length to 4K '''
-    width = 512 # use PAGE_SIZE ?
-    words = set()
-    x1 = (offset % width )
-    y = (offset // width )
-    for add in xrange(1,size):
-      x2 = ((offset+add) % width )
-      if x2 < x1: # goto next line
-        words.add(QtCore.QRectF(x1, y, width-x1, 1)) # finish line
-        x1 = x2
-        y = (offset+add) // width 
-        y = y+1          
-    y = ((offset+add) // width)
-    words.add(QtCore.QRectF(x1, y, x2-x1, 1 ) )
-    return words
-
   def loadMapping(self, mmaping):
     log.debug('parsing heap mapping')
+    
     self.pointers = QtGui.QGraphicsItemGroup()
     self.nullWords = QtGui.QGraphicsItemGroup()
     found = 0 
@@ -140,16 +149,20 @@ class MyWidget(QtGui.QMainWindow):
       # find pointers
       if word in self.heap:
         found +=1
-        for l in self._makeStruct(offset,4):
-          self.pointers.addToGroup(self.scene.addRect(l, QtCore.Qt.red))
+        self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
       elif word == 0: # find null values
-        for l in self._makeStruct(offset,4):
-          self.nullWords.addToGroup(self.scene.addRect(l, QtCore.Qt.gray))
+        self.nullWords.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.gray) )
     # fill the scene
     self.scene.addItem(self.pointers)
     self.scene.addItem(self.nullWords)
     self.pointers.hide()
+    self.pointers.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
     self.nullWords.hide()
+    self.nullWords.setEnabled(False)
+    # still not letting me trough the boundingRect
+    self.nullWords.setToolTip('Null value words')
+    log.debug(self.pointers)
+    log.debug(self.nullWords)
     return
 
   def showSessionState(self):
@@ -187,9 +200,9 @@ def dropToInteractive():
 def gui(opt):
   app = QtGui.QApplication(sys.argv)
 
-  mappings = memory_dumper.load(opt)
-  #mappings = None
-  root = MyWidget(mappings)
+  #mappings = memory_dumper.load(opt)
+  mappings = None
+  root = MyWidget(opt)
   root.show()
 
   sys.exit(app.exec_())

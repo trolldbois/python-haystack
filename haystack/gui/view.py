@@ -11,6 +11,13 @@ from PyQt4.Qt import Qt
 LINE_SIZE=512
 PAGE_SIZE=4096 
 
+
+class MemoryMappingScene(QtGui.QGraphicsScene):
+  ''' attach a mapping to a QGraphicsScene '''
+  def __init__(self, mapping, parent=None):  
+    QtGui.QGraphicsScene.__init__(self,parent)
+    self.mapping = mapping
+
 class MemoryMappingView(QtGui.QGraphicsView):
   #Holds the current centerpoint for the view, used for panning and zooming
   CurrentCenterPoint = QtCore.QPointF()
@@ -21,23 +28,28 @@ class MemoryMappingView(QtGui.QGraphicsView):
   zoom-able view.
   from http://www.qtcentre.org/wiki/index.php?title=QGraphicsView:_Smooth_Panning_and_Zooming
   '''
-  def __init__(self, parent=None):  
-    QtGui.QGraphicsView.__init__(self,parent)
+  def __init__(self, mapping, parent=None):  
+    QtGui.QGraphicsView.__init__(self,parent)    
     self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
  
     #Set-up the scene
-    scene =  QtGui.QGraphicsScene(self)
+    scene =  MemoryMappingScene(mapping, parent=self)
     self.setScene(scene)
     self.scene = scene
  
     #Populate the scene
-    self._debugFill(scene)
+    #self._debugFill(scene)
     self.drawPages(PAGE_SIZE)
     
     #Set-up the view
-    self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE)
+    if mapping :
+      self.setSceneRect(0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1)
+    else:
+      self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE) 
     self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
-    self.setCursor(Qt.OpenHandCursor)
+    #print self.getCursor()
+    #self.setCursor(Qt.OpenHandCursor)
+    self.setCursor(Qt.ArrowCursor)
     return
 
   def drawPages(self, pageSize ):
@@ -117,16 +129,33 @@ class MemoryMappingView(QtGui.QGraphicsView):
     * Handles when the mouse button is pressed
   '''
   def mousePressEvent(self, event):
+    ''' todo 
+    wierd, quand pointers et nullwords sont affiches, on ne peut plus selecter le pointer..
+    ca tombe sur l'itemgroup des null words.
+    '''
     #For panning the view
     self.LastPanPoint = event.pos()
     self.setCursor(Qt.ClosedHandCursor)
+    item = self.itemAt(event.pos())
+    if item is None:
+      return
+    log.debug('Mouse press on '+str(item))
+    for previous in self.scene.selectedItems(): 
+      #if previous != item and previous != item.parentItem():
+      print 'was', previous
+      previous.setSelected(False)
+    print 'selecting ', item
+    item.setSelected(True)
+    item = item.parentItem()
+    log.debug(item)
     return
  
   '''
     * Handles when the mouse button is released
   '''
   def mouseReleaseEvent(self,event):
-    self.setCursor(Qt.OpenHandCursor)
+    #self.setCursor(Qt.OpenHandCursor)
+    self.setCursor(Qt.ArrowCursor)
     self.LastPanPoint = QtCore.QPoint()
     return
  
