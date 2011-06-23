@@ -91,9 +91,12 @@ class MemoryDumpLoader:
     for content,md in mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
       log.debug('Loading %s'%(mmap))
-      mmap_content = self.archive.extractfile(content).read()
-      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      if mmap.pathname == '[heap]':
+        mmap_content = self.archive.extractfile(content).read()
+        # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+        mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      else:
+        mmap.local_mmap = model.bytes2array('plop', ctypes.c_ubyte)
       self.mappings.append(mmap)
     
   def getMappings(self):
