@@ -1,6 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
+
 import logging
 import argparse, os, pickle, time, sys
 
+import statushandler
 from .. import memory_dumper
 from .. import memory_mapping
 #from ..memory_mapping import MemoryMapping
@@ -176,7 +183,8 @@ class MemoryDumpWidget(QtGui.QWidget):
       self.sessionStateList.addToGroup(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
     # fill the scene
     self.scene.addItem(self.sessionStateList)
-    self.sessionStateList.hide()
+    #self.sessionStateList.hide()
+    self.sessionStateList.setZValue(20) # zValue has to be  > 0
     log.debug('Found %d instances'%(len(instances)) )
     # TODO : set self.mappings in weakref ?
     return len(instances)
@@ -202,6 +210,14 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # connect menu
     #self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
     self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
+    self.tabWidget.removeTab(0)
+    self.tabWidget.removeTab(0)
+    # plug logging to the statusBar
+    statusbarhandler = statushandler.StatusBarHandler(self.statusBar())
+    logging.getLogger('haystack').addHandler(statusbarhandler)
+    logging.getLogger('dumper').addHandler(statusbarhandler)
+    logging.getLogger('gui').addHandler(statusbarhandler)
+    logging.getLogger('view').addHandler(statusbarhandler)
 
   def make_memory_tab(self, dump_name, mapping, mappings):
     if dump_name in self.memorydump_tabs:
@@ -212,6 +228,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     
     tab = MemoryDumpWidget(dump_name)
     log.debug('Tab Created')
+    self.statusBar().showMessage('Tab Created')
     self.tabWidget.addTab(tab, _fromUtf8(dump_name))
     self.tabWidget.setTabText(self.tabWidget.indexOf(tab), QtGui.QApplication.translate("MainWindow", dump_name, None, QtGui.QApplication.UnicodeUTF8))
     nb = self.tabWidget.count()
