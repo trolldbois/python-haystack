@@ -91,16 +91,33 @@ class MemoryDumpLoader:
     for content,md in mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
       log.debug('Loading %s'%(mmap))
-      if mmap.pathname == '[heap]':
-        mmap_content = self.archive.extractfile(content).read()
-        # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-        mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
-      else:
-        mmap.local_mmap = model.bytes2array('plop', ctypes.c_ubyte)
+      mmap_content = self.archive.extractfile(content).read()
+      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+      mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
       self.mappings.append(mmap)
     
   def getMappings(self):
     return self.mappings
+
+class LazyMemoryDumpLoader(MemoryDumpLoader):
+  def loadMappings(self):
+    import tarfile
+    self.archive = tarfile.open(None,'r', self.args.dumpfile)
+    #self.archive.list()
+    members = self.archive.getnames()
+    mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
+    self.mappings = []
+    for content,md in mmaps:
+      mmap = pickle.load(self.archive.extractfile(md))
+      log.debug('Loading %s'%(mmap))
+      if mmap.pathname == '[heap]': #if True: 
+        mmap_content = self.archive.extractfile(content).read()
+        # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+        mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      else:
+        mmap.local_mmap = None
+      self.mappings.append(mmap)
+
 
 def dump(opt):
   dumper = MemoryDumper(opt)
@@ -110,13 +127,14 @@ def dump(opt):
   log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
   return opt.dumpfile.name
 
-def load(opt):
-  #print sys.path
-  memdump = MemoryDumpLoader(opt)
-  log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-  for m in memdump.getMappings():
-    log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )
-    
+def load(opt, lazy=False):
+  if lazy:
+    memdump = LazyMemoryDumpLoader(opt)
+  else:  
+    memdump = MemoryDumpLoader(opt)
+    log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
+    for m in memdump.getMappings():
+      log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )    
   return memdump.getMappings()
 
 def argparser():
