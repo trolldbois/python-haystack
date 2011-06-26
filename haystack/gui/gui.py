@@ -13,6 +13,12 @@ from PyQt4 import QtGui, QtCore
 import view
 import widgets
 
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    _fromUtf8 = lambda s: s
+
+from mainwindow import Ui_MainWindow
 
 class Dummy:
   def __init__(self,len_):
@@ -20,69 +26,84 @@ class Dummy:
   def __len__(self):
     return self._len_
 
-class MyWidget(QtGui.QMainWindow):
+
+class MemoryDumpWidget(QtGui.QWidget):
+  def __init__(self, name):
+    ''' from mainwindow.ui '''
+    QtGui.QWidget.__init__(self)
+    self.tab = self
+    self.tab.setObjectName(_fromUtf8(name))
+    self.gridLayout_3 = QtGui.QGridLayout(self.tab)
+    self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
+    self.graphicsView = QtGui.QGraphicsView(self.tab)
+    self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
+    self.gridLayout_3.addWidget(self.graphicsView, 0, 0, 1, 1)
+    self.groupBox = QtGui.QGroupBox(self.tab)
+    self.groupBox.setEnabled(True)
+    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    sizePolicy.setHorizontalStretch(0)
+    sizePolicy.setVerticalStretch(0)
+    sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+    self.groupBox.setSizePolicy(sizePolicy)
+    self.groupBox.setMaximumSize(QtCore.QSize(16777215, 70))
+    self.groupBox.setObjectName(_fromUtf8("groupBox"))
+    self.show_null = QtGui.QCheckBox(self.groupBox)
+    self.show_null.setGeometry(QtCore.QRect(17, 25, 125, 16))
+    self.show_null.setObjectName(_fromUtf8("show_null"))
+    self.show_pointers = QtGui.QCheckBox(self.groupBox)
+    self.show_pointers.setGeometry(QtCore.QRect(17, 45, 125, 16))
+    self.show_pointers.setObjectName(_fromUtf8("show_pointers"))
+    self.show_search = QtGui.QCommandLinkButton(self.groupBox)
+    self.show_search.setGeometry(QtCore.QRect(610, 0, 161, 36))
+    self.show_search.setObjectName(_fromUtf8("show_search"))
+    self.gridLayout_3.addWidget(self.groupBox, 1, 0, 1, 1)
+    self.tabWidget.addTab(self.tab, _fromUtf8(""))
+ 
+
+class MyMain(QtGui.QMainWindow, Ui_MainWindow):
+
   sessionStateList = None
   pointers = None
   nullWords = None
   def __init__(self, argv, parent=None):
     QtGui.QMainWindow.__init__(self, parent)
-    self.initUI()
+    # draw the window
+    self.setupUi(self)
+    # populate useful data
+    self.setupUi2()
     widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
 
-  def initUI(self):        
-    self.widgets = dict()
-    self.setGeometry(400, 100, 800, 600)
-    #self.resize(800, 600)
-    self.setWindowTitle('memory analysis')
-    #self.setWindowIcon(QtGui.QIcon('icons/web.png'))
-    exit = QtGui.QAction(QtGui.QIcon('icons/exit.png'), 'Exit', self)
-    exit.setShortcut('Ctrl+Q')
-    exit.setStatusTip('Exit application')
-    self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
-    # open memdump
-    openDump = QtGui.QAction(QtGui.QIcon('icons/open.png'), 'Open...', self)
-    openDump.setShortcut('Ctrl+O')
-    openDump.setStatusTip('Open...')
-    self.connect(openDump, QtCore.SIGNAL('triggered()'), self.openDump)
-    #
-    self.statusBar()
-    menubar = self.menuBar()
-    file = menubar.addMenu('&File')
-    file.addAction(openDump)
-    file.addAction(exit)
-            
-    self.view = view.MemoryMappingView(mapping = None, parent = self)
-    self.view.resize(512,620)
-    self.view.show()  
-    self.scene = self.view.GetScene()
-    rect = self.scene.addRect(QtCore.QRectF(0, 0, view.LINE_SIZE, view.LINE_SIZE), QtCore.Qt.black)
-    self.initLeftSide()
+  def setupUi2(self):        
+    # connect menu
+    self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+    self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
+    # regroup tabs in a dict
+    self.memorydump_tabs = dict()
+
+  def make_memory_tab(self, dump_name):
+    if dump_name in self.memorydump_tabs:
+      # switch to tab
+      #self.throw
+      return
     
+    tab = QtGui.QWidget()
+    tab.setObjectName(_fromUtf8(dump_name))
+    self.tabWidget.addTab(tab, _fromUtf8(os.path.basename(dump_name)))
+    self.tabWidget.setCurrentIndex(self.tabWidget.count())
+    self.memorydump_tabs[dump_name] = tab
+
+    #for each tab
+    # connect higlighting options
+    self.connect(self.show_pointers, QtCore.SIGNAL('stateChanged(int)'), self._checkPointers)
+    self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._checkNulls)
+    self.connect(self.show_search, QtCore.SIGNAL('stateChanged(int)'), self.showSessionState)
       
-  def initLeftSide(self):
-    cb = QtGui.QCheckBox('Show possible pointers', self)
-    cb.setFocusPolicy(QtCore.Qt.NoFocus)
-    cb.move(550, 10)
-    cb.resize(200,20)
-    self.connect(cb, QtCore.SIGNAL('stateChanged(int)'), 
-        self._checkPointers)
-    cb2 = QtGui.QCheckBox('Show null words', self)
-    cb2.setFocusPolicy(QtCore.Qt.NoFocus)
-    cb2.move(550, 50)
-    cb2.resize(200,20)
-    self.connect(cb2, QtCore.SIGNAL('stateChanged(int)'), 
-        self._checkNulls)
-    # search session_state button        
-    search = QtGui.QCheckBox('Search session_state', self)
-    search.setFocusPolicy(QtCore.Qt.NoFocus)
-    search.setGeometry(550, 90, 160, 35)
-    self.connect(search, QtCore.SIGNAL('stateChanged(int)'), self.showSessionState)
-        
-        
-    self.widgets['checkPointers'] = cb
-    self.widgets['checkNulls'] = cb2
-    self.widgets['session_state'] = search
+    #self.graphicsView
+    ''' = view.MemoryMappingView(mapping = None, parent = self)
+    self.view.resize(512,620)
+    '''
+    #self.scene = self.view.GetScene()
 
   def initModel(self):
     mappings = memory_dumper.load(self.argv)
@@ -192,6 +213,10 @@ class MyWidget(QtGui.QMainWindow):
     log.debug('Found %d instances'%(len(instances)) )
     return len(instances)
 
+
+ 
+
+
 def dropToInteractive():
   import code
   code.interact(local=locals())
@@ -202,7 +227,7 @@ def gui(opt):
 
   #mappings = memory_dumper.load(opt)
   mappings = None
-  root = MyWidget(opt)
+  root = MyMain(opt)
   root.show()
 
   sys.exit(app.exec_())
