@@ -28,35 +28,40 @@ class MemoryMappingView(QtGui.QGraphicsView):
   zoom-able view.
   from http://www.qtcentre.org/wiki/index.php?title=QGraphicsView:_Smooth_Panning_and_Zooming
   '''
-  def __init__(self, mapping, parent=None):  
+  def __init__(self, parent=None):  
     QtGui.QGraphicsView.__init__(self,parent)    
     self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
- 
+    #self.setCursor(Qt.OpenHandCursor)
+    self.setCursor(Qt.ArrowCursor)
+    self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
+    
+  def loadMapping(self, mapping):
     #Set-up the scene
     scene =  MemoryMappingScene(mapping, parent=self)
     self.setScene(scene)
-    self.scene = scene
- 
-    #Populate the scene
-    #self._debugFill(scene)
-    self.drawPages(PAGE_SIZE)
-    
+     
     #Set-up the view
     if mapping :
-      self.setSceneRect(0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1)
+     #Populate the scene
+     #self._debugFill(scene)
+     self.drawPages(mapping)
+     self.setSceneRect(0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1)
+     log.debug('set sceneRect to %d,%d'%(LINE_SIZE, (len(mapping) // LINE_SIZE)+1)) 
     else:
       self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE) 
     self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
-    #print self.getCursor()
-    #self.setCursor(Qt.OpenHandCursor)
-    self.setCursor(Qt.ArrowCursor)
     return
 
-  def drawPages(self, pageSize ):
-    # 15 is the mapping's size/PAGE_SIZE
-    for y in xrange(0,15 * PAGE_SIZE/LINE_SIZE, PAGE_SIZE/LINE_SIZE):
-      if (y % (PAGE_SIZE/LINE_SIZE) == 0 ):
-        self.scene.addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.DotLine))
+  def drawPages(self, mapping ):
+    ''' draw a page delimitor every PAGE_SIZE '''
+    pageSize = PAGE_SIZE
+    # 15 is the mapping's size//PAGE_SIZE
+    y = 0
+    #self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.SolidLine))
+    for y in xrange(PAGE_SIZE//LINE_SIZE, (len(mapping)//LINE_SIZE)-1, PAGE_SIZE//LINE_SIZE):
+      self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.DotLine))
+    #y = len(mapping)//LINE_SIZE
+    #self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.SolidLine))
   
   
   def _debugFill(self,scene):
@@ -72,9 +77,9 @@ class MemoryMappingView(QtGui.QGraphicsView):
         else:
           scene.addRect(x, y, 1, 1)
  
-
   def GetScene(self):
-    return self.scene
+    return self.scene()
+    
   def GetCenter(self):
     return self.CurrentCenterPoint
   '''
@@ -140,7 +145,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
     if item is None:
       return
     log.debug('Mouse press on '+str(item))
-    for previous in self.scene.selectedItems(): 
+    for previous in self.scene().selectedItems(): 
       #if previous != item and previous != item.parentItem():
       print 'was', previous
       previous.setSelected(False)

@@ -25,6 +25,9 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QTabWidget" name="tabWidget">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -35,17 +38,24 @@
          <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <attribute name="title">
           <string>Tab 1</string>
          </attribute>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="0">
-           <widget class="QGraphicsView" name="graphicsView"/>
+           <widget class="QGraphicsView" name="graphicsView">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QGroupBox" name="groupBox">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -88,10 +98,13 @@
               <string>Pointer values</string>
              </property>
             </widget>
-            <widget class="QCommandLinkButton" name="show_search">
+            <widget class="QCheckBox" name="show_search">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="geometry">
               <rect>
-               <x>610</x>
+               <x>590</x>
                <y>0</y>
                <width>161</width>
                <height>36</height>
@@ -106,6 +119,9 @@
          </layout>
         </widget>
         <widget class="QWidget" name="tab_2">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <attribute name="title">
           <string>Tab 2</string>
          </attribute>
@@ -168,5 +184,22 @@
   </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>menu_file_exit</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>319</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -13,10 +13,10 @@ class Structure(QtGui.QGraphicsItemGroup):
     Represente une structure dans notre MemoryScene.
     QGraphicsItem::ItemIsSelectable
   '''
-  def __init__(self, offset, loadable, color = QtCore.Qt.green, scene=None, parent=None):
+  def __init__(self, offset, value, color = QtCore.Qt.green, scene=None, parent=None):
     QtGui.QGraphicsItemGroup.__init__(self, parent, scene)
     self.scene = scene
-    self.struct = loadable
+    self.struct = value
     self.offset = offset
     self.color = color
     log.debug('size: %d'%len(self.struct))
@@ -25,6 +25,7 @@ class Structure(QtGui.QGraphicsItemGroup):
     self.setAcceptsHoverEvents(True)
     self.setHandlesChildEvents(True)
     self.setFlags(QtGui.QGraphicsItem.ItemIsSelectable)
+    self.setToolTip(str(type(value)))
   
   def _makeStruct(self, offset, size):
     ''' fix line length to 4K '''

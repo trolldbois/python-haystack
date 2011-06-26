@@ -26,18 +26,42 @@ class Dummy:
   def __len__(self):
     return self._len_
 
-
 class MemoryDumpWidget(QtGui.QWidget):
-  def __init__(self, name):
+  def __init__(self, mapping_name):
     ''' from mainwindow.ui '''
     QtGui.QWidget.__init__(self)
+    # model
+    self.mapping_name = mapping_name
+    self._dirty = True
+    self._init()
+
+  def _init(self):
+    if self._dirty:
+      self.initData()
+      self.setupUi()
+      self.retranslateUi()
+      self.setupSignals()
+      self._dirty = False
+
+  def initData(self):
+    self.pointers = None
+    self.nullWords = None
+    self.mapping = None
+    self.mappings = None    
+    self.scene = None
+    self.sessionStateList = None
+    
+  def setupUi(self):
+    #UI    
     self.tab = self
-    self.tab.setObjectName(_fromUtf8(name))
+    self.tab.setObjectName(_fromUtf8(self.mapping_name))
     self.gridLayout_3 = QtGui.QGridLayout(self.tab)
     self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
-    self.graphicsView = QtGui.QGraphicsView(self.tab)
-    self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
-    self.gridLayout_3.addWidget(self.graphicsView, 0, 0, 1, 1)
+    # make the view
+    self.view = view.MemoryMappingView(self.tab)
+    self.view.setObjectName(_fromUtf8("view"))
+    self.gridLayout_3.addWidget(self.view, 0, 0, 1, 1)
+    # back to normal
     self.groupBox = QtGui.QGroupBox(self.tab)
     self.groupBox.setEnabled(True)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -53,12 +77,110 @@ class MemoryDumpWidget(QtGui.QWidget):
     self.show_pointers = QtGui.QCheckBox(self.groupBox)
     self.show_pointers.setGeometry(QtCore.QRect(17, 45, 125, 16))
     self.show_pointers.setObjectName(_fromUtf8("show_pointers"))
-    self.show_search = QtGui.QCommandLinkButton(self.groupBox)
-    self.show_search.setGeometry(QtCore.QRect(610, 0, 161, 36))
+    self.show_search = QtGui.QCheckBox(self.groupBox)
+    self.show_search.setGeometry(QtCore.QRect(590, 0, 161, 36))
     self.show_search.setObjectName(_fromUtf8("show_search"))
     self.gridLayout_3.addWidget(self.groupBox, 1, 0, 1, 1)
-    self.tabWidget.addTab(self.tab, _fromUtf8(""))
+    # mine
+    self.pointers = QtGui.QGraphicsItemGroup() #self.view.GetScene().createItemGroup(items) 
+    self.nullWords = QtGui.QGraphicsItemGroup()
+
+  def retranslateUi(self):
+    self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "Highlight", None, QtGui.QApplication.UnicodeUTF8))
+    self.show_null.setText(QtGui.QApplication.translate("MainWindow", "Null values", None, QtGui.QApplication.UnicodeUTF8))
+    self.show_pointers.setText(QtGui.QApplication.translate("MainWindow", "Pointer values", None, QtGui.QApplication.UnicodeUTF8))
+    self.show_search.setText(QtGui.QApplication.translate("MainWindow", "Find session_state", None, QtGui.QApplication.UnicodeUTF8))
+    
+  def setupSignals(self):
+    #for each tab
+    # signals - connect higlighting options
+    self.connect(self.show_pointers, QtCore.SIGNAL('stateChanged(int)'), self._showPointers)
+    self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._showNull)
+    self.connect(self.show_search, QtCore.SIGNAL('stateChanged(int)'), self._showSessionState)
  
+  def _showPointers(self):
+    log.debug('show_pointers')
+    if not self.show_pointers.checkState():
+      self.pointers.hide()
+    else:
+      self.pointers.show()
+    
+  def _showNull(self):
+    log.debug('show_null')
+    if not self.show_null.checkState():
+      self.nullWords.hide()
+    else:
+      self.nullWords.show()
+
+  def _showSessionState(self):
+    log.debug('show session_state')
+    if self.sessionStateList is None:
+      self.searchSessionState()
+    if not self.show_search.checkState():
+      self.sessionStateList.hide()
+    else:
+      self.sessionStateList.show()
+  
+  def loadMapping(self, mapping, mappings):
+    ''' 
+    update the widget with a new mapping
+    we also have to keep a reference to all mappings to be able to search for structures..
+    '''
+    self._init() # pass if not self._dirty
+    self.mapping = mapping
+    self.mappings = mappings
+    if self.mapping not in self.mappings:
+      raise ValueError('mapping not in mapping list.')
+    # init the view
+    self.view.loadMapping(mapping)
+    self.scene = self.view.GetScene()
+    self._dirty = True # reload will clean it    
+    # start
+    log.debug('parsing %s mapping'%(self.mapping_name))
+    found = 0 
+    nb = self.mapping.end - self.mapping.start    
+    for offset in xrange(0,nb,4):
+      i = offset + self.mapping.start
+      word = self.mapping.readWord(i)
+      # find pointers
+      if word in self.mapping:
+        found +=1
+        self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
+      elif word == 0: # find null values
+        self.nullWords.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.gray) )
+    # fill the scene
+    self.scene.addItem(self.pointers)
+    self.scene.addItem(self.nullWords)
+    self.pointers.hide()
+    self.pointers.setZValue(10) # zValue has to be  > 0
+    #self.pointers.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+    self.nullWords.hide()
+    self.nullWords.setEnabled(False)
+    self.nullWords.setZValue(1) # zValue has to be  > 0
+    # still not letting me trough the boundingRect
+    self.nullWords.setToolTip('Null value words')
+    return
+
+
+  def searchSessionState(self):
+    ''' return size of structure and list of addresses and values )'''
+    from haystack import abouchet
+    import ctypes, sslsnoop
+    instances = abouchet.searchIn(structType='sslsnoop.ctypes_openssh.session_state', mappings=self.mappings, maxNum=999)
+    if len(instances) > 0:
+      log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
+    # init graphical element
+    self.sessionStateList = QtGui.QGraphicsItemGroup()
+    for value, addr in instances:
+      offset = addr - self.mapping.start
+      self.sessionStateList.addToGroup(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
+    # fill the scene
+    self.scene.addItem(self.sessionStateList)
+    self.sessionStateList.hide()
+    log.debug('Found %d instances'%(len(instances)) )
+    # TODO : set self.mappings in weakref ?
+    return len(instances)
+
 
 class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
@@ -71,66 +193,54 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     self.setupUi(self)
     # populate useful data
     self.setupUi2()
-    widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
+    #widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
 
   def setupUi2(self):        
-    # connect menu
-    self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
-    self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
     # regroup tabs in a dict
     self.memorydump_tabs = dict()
+    # connect menu
+    #self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+    self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
 
-  def make_memory_tab(self, dump_name):
+  def make_memory_tab(self, dump_name, mapping, mappings):
     if dump_name in self.memorydump_tabs:
       # switch to tab
       #self.throw
+      log.info('dump %s is already opened'%(dump_name))
       return
     
-    tab = QtGui.QWidget()
-    tab.setObjectName(_fromUtf8(dump_name))
-    self.tabWidget.addTab(tab, _fromUtf8(os.path.basename(dump_name)))
-    self.tabWidget.setCurrentIndex(self.tabWidget.count())
+    tab = MemoryDumpWidget(dump_name)
+    log.debug('Tab Created')
+    self.tabWidget.addTab(tab, _fromUtf8(dump_name))
+    self.tabWidget.setTabText(self.tabWidget.indexOf(tab), QtGui.QApplication.translate("MainWindow", dump_name, None, QtGui.QApplication.UnicodeUTF8))
+    nb = self.tabWidget.count()
+    self.tabWidget.setCurrentIndex(nb-1)
+    log.debug('Switched to tab %d'%(nb))
     self.memorydump_tabs[dump_name] = tab
+    log.debug('Populate the QGraphicsScene')
+    tab.loadMapping(mapping, mappings)
+    log.debug('QGraphicsScene populated')
+    return
 
-    #for each tab
-    # connect higlighting options
-    self.connect(self.show_pointers, QtCore.SIGNAL('stateChanged(int)'), self._checkPointers)
-    self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._checkNulls)
-    self.connect(self.show_search, QtCore.SIGNAL('stateChanged(int)'), self.showSessionState)
-      
-    #self.graphicsView
-    ''' = view.MemoryMappingView(mapping = None, parent = self)
-    self.view.resize(512,620)
-    '''
-    #self.scene = self.view.GetScene()
-
-  def initModel(self):
-    mappings = memory_dumper.load(self.argv)
-    self.mappings = mappings
-    self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
-    self.pointers = None
-    self.nullWords = None
-    #reinit the view
-    self.view.hide()  
-    self.view = view.MemoryMappingView(mapping = self.heap, parent = self)
-    self.view.resize(520, 620)
-    #self.view.resize(view.LINE_SIZE, (len(self.heap) // view.LINE_SIZE)+1 )
-    self.view.show()  
-    self.scene = self.view.GetScene()
-  
   def openDump(self):
     # load memorymapping
-    self.initModel()
-    self.loadMapping(self.heap)
-    pass
-  
+    mappings = memory_dumper.load(self.argv) #, lazy=True)
+    self.mappings = mappings
+    # TODO : make a mapping chooser and kick self.heap and self.mappings
+    self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
+    self.make_memory_tab( os.path.sep.join( [os.path.basename(self.argv.dumpfile.name),self.heap.pathname]), self.heap, self.mappings)
+    log.info('Dump opened')
+    return
+
+  '''  
   def makeGui(self):
     shell = QtGui.QPushButton('Interactive', self)
     shell.setGeometry(10, 10, 60, 35)
     #self.connect(shell, QtCore.SIGNAL('clicked()'), QtGui.qApp, QtCore.SLOT(('dropToInteractive()'))    
     self.connect(shell, QtCore.SIGNAL('clicked()'), dropToInteractive)
-
+  '''
+  
   def closeEvent(self, event):
     #debug
     event.accept()
@@ -144,74 +254,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
       event.accept()
     else:
       event.ignore()
-
-  def _checkPointers(self):
-    if not self.widgets['checkPointers'].checkState():
-      self.pointers.hide()
-    else:
-      self.pointers.show()
     
-  def _checkNulls(self):
-    if not self.widgets['checkNulls'].checkState():
-      self.nullWords.hide()
-    else:
-      self.nullWords.show()
-    
-  def loadMapping(self, mmaping):
-    log.debug('parsing heap mapping')
-    
-    self.pointers = QtGui.QGraphicsItemGroup()
-    self.nullWords = QtGui.QGraphicsItemGroup()
-    found = 0 
-    nb = self.heap.end - self.heap.start    
-    for offset in xrange(0,nb,4):
-      i = offset + self.heap.start
-      word = self.heap.readWord(i)
-      # find pointers
-      if word in self.heap:
-        found +=1
-        self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
-      elif word == 0: # find null values
-        self.nullWords.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.gray) )
-    # fill the scene
-    self.scene.addItem(self.pointers)
-    self.scene.addItem(self.nullWords)
-    self.pointers.hide()
-    self.pointers.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
-    self.nullWords.hide()
-    self.nullWords.setEnabled(False)
-    # still not letting me trough the boundingRect
-    self.nullWords.setToolTip('Null value words')
-    log.debug(self.pointers)
-    log.debug(self.nullWords)
-    return
-
-  def showSessionState(self):
-    if self.sessionStateList is None:
-      self.searchSessionState()
-    if not self.widgets['session_state'].checkState():
-      self.sessionStateList.hide()
-    else:
-      self.sessionStateList.show()
-    
-
-  def searchSessionState(self):
-    ''' return size of structure and list off addresses and values )'''
-    from haystack import abouchet
-    import ctypes, sslsnoop
-    instances = abouchet.searchIn(structType='sslsnoop.ctypes_openssh.session_state', mappings=self.mappings, maxNum=999)
-    if len(instances) > 0:
-      log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
-    # init graphical element
-    self.sessionStateList = QtGui.QGraphicsItemGroup()
-    for value, addr in instances:
-      offset = addr - self.heap.start
-      self.sessionStateList.addToGroup(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
-    # fill the scene
-    self.scene.addItem(self.sessionStateList)
-    self.sessionStateList.hide()
-    log.debug('Found %d instances'%(len(instances)) )
-    return len(instances)
 
 
  
