@@ -208,7 +208,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # regroup tabs in a dict
     self.memorydump_tabs = dict()
     # connect menu
-    #self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+    self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
     self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
     self.tabWidget.removeTab(0)
     self.tabWidget.removeTab(0)
@@ -218,6 +218,8 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     logging.getLogger('dumper').addHandler(statusbarhandler)
     logging.getLogger('gui').addHandler(statusbarhandler)
     logging.getLogger('view').addHandler(statusbarhandler)
+    # be nice
+    self.statusBar().showMessage('Please Open a memory dump')
 
   def make_memory_tab(self, dump_name, mapping, mappings):
     if dump_name in self.memorydump_tabs:

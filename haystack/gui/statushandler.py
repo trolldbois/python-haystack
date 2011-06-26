@@ -11,7 +11,6 @@ class StatusBarHandler(logging.Handler):
     self.statusbar = statusbar
     logging.Handler.__init__(self)
   def emit(self, record):
-    self.statusbar.showMessage(record.getMessage())
-    self.statusbar.repaint()
+    self.statusbar.showMessage(record.getMessage(), 2000)
   
 

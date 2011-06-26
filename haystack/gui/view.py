@@ -8,7 +8,7 @@ import logging
 
 log = logging.getLogger('view')
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.Qt import Qt
 
 
@@ -35,6 +35,8 @@ class MemoryMappingView(QtGui.QGraphicsView):
   def __init__(self, parent=None):  
     QtGui.QGraphicsView.__init__(self,parent)    
     self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
+    #opengl ? !
+    self.setViewport(QtOpenGL.QGLWidget(QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers)))
     #self.setCursor(Qt.OpenHandCursor)
     self.setCursor(Qt.ArrowCursor)
     self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
@@ -43,14 +45,16 @@ class MemoryMappingView(QtGui.QGraphicsView):
     #Set-up the scene
     scene =  MemoryMappingScene(mapping, parent=self)
     self.setScene(scene)
-     
+    self.mapping = mapping
     #Set-up the view
     if mapping :
-     #Populate the scene
-     #self._debugFill(scene)
-     self.drawPages(mapping)
-     self.setSceneRect(0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1)
-     log.debug('set sceneRect to %d,%d'%(LINE_SIZE, (len(mapping) // LINE_SIZE)+1)) 
+      #Populate the scene
+      #self._debugFill(scene)
+      self.drawPages(mapping)
+      self.setSceneRect(0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1)
+      # draw a square around      
+      self.scene().addRect(  0, 0, LINE_SIZE, (len(mapping) // LINE_SIZE)+1, QtGui.QPen(Qt.SolidLine))
+      log.debug('set sceneRect to %d,%d'%(LINE_SIZE, (len(mapping) // LINE_SIZE)+1)) 
     else:
       self.setSceneRect(0, 0, LINE_SIZE, LINE_SIZE) 
     self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
@@ -60,13 +64,9 @@ class MemoryMappingView(QtGui.QGraphicsView):
     ''' draw a page delimitor every PAGE_SIZE '''
     pageSize = PAGE_SIZE
     # 15 is the mapping's size//PAGE_SIZE
-    y = 0
-    #self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.SolidLine))
     for y in xrange(PAGE_SIZE//LINE_SIZE, (len(mapping)//LINE_SIZE)-1, PAGE_SIZE//LINE_SIZE):
       self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.DotLine))
-    #y = len(mapping)//LINE_SIZE
-    #self.scene().addLine(0, y, LINE_SIZE, y, QtGui.QPen(Qt.SolidLine))
-  
+    
   
   def _debugFill(self,scene):
     for x in xrange(0,LINE_SIZE,25):
@@ -146,17 +146,19 @@ class MemoryMappingView(QtGui.QGraphicsView):
     self.LastPanPoint = event.pos()
     self.setCursor(Qt.ClosedHandCursor)
     item = self.itemAt(event.pos())
-    if item is None:
-      return
     log.debug('Mouse press on '+str(item))
-    for previous in self.scene().selectedItems(): 
-      #if previous != item and previous != item.parentItem():
-      print 'was', previous
-      previous.setSelected(False)
-    print 'selecting ', item
     item.setSelected(True)
     item = item.parentItem()
-    log.debug(item)
+    if item is None:
+      if self.mapping:
+        # read mapping value 
+        addr = event.pos().y()* LINE_SIZE + event.pos().x()
+        value = self.mapping.readWord(self.mapping.start+addr)
+        log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))
+    else:
+      # print status for pointers and nulls
+      log.debug(item)
+    
     return
  
   '''

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
 
 import logging
 
@@ -29,7 +34,7 @@ class Structure(QtGui.QGraphicsItemGroup):
   
   def _makeStruct(self, offset, size):
     ''' fix line length to 4K '''
-    width = 512 # use PAGE_SIZE ?
+    width = view.LINE_SIZE # use PAGE_SIZE ?
     x1 = (offset % width )
     y = (offset // width )
     # if offset+xoff > width, draw first line to the end.
@@ -77,5 +82,5 @@ class Word(Structure):
       addr = self.offset
     else:
       addr = self.scene.mapping.start + self.offset
-    return "<Word %s @%s>"%(hex(self.value), hex(addr))
+    return "<Word (@0x%x) 0x%x>"%(addr, self.value)
 
