@@ -235,6 +235,45 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         text += " (%s)" % self.permissions
         return text
 
+def fileMemoryMapping_process(self):
+  ''' fake it like a process and mmap it now'''
+  import model
+  if self.local_mmap is None:
+    if hasattr(self.memdump,'fileno'):
+      self.local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+      log.info('Lazy Memory Mapping content mmap-ed() : %s'%(self))
+    else:
+      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+      self.local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
+      log.info('Lazy Memory Mapping content loaded : %s'%(self))
+  return self
+
+def FileMemoryMapping(memoryMapping, memdump):
+  """ A memoryMapping wrapper backed by a around a memory file dump for mmap() 
+  @param memoryMapping: a MemoryMapping
+  @param memdump: memorydump File
+  """
+  import copy, types
+  p = None
+  m = None
+  # we del _process
+  if hasattr(memoryMapping,'_process'):
+    p = memoryMapping._process
+  # we keep local__map
+  if not hasattr(memoryMapping,'local_mmap'):
+    memoryMapping.local_mmap = None
+  memoryMapping._process = None
+  ret = copy.deepcopy(memoryMapping)
+  if hasattr(memoryMapping,'_process'):
+    memoryMapping._process = p
+  ret.memdump = memdump
+  ret._process = types.MethodType(fileMemoryMapping_process, ret, MemoryMapping)
+  #if memoryMapping.local_mmap is not None:
+  if not hasattr(ret,'local_mmap'):
+    ret.local_mmap = None
+  return ret
+
+
 
 def readProcessMappings(process):
     """
@@ -252,6 +291,7 @@ def readProcessMappings(process):
         mapsfile = openProc("%s/maps" % process.pid)
     except ProcError, err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
+    
     try:
         for line in mapsfile:
             line = line.rstrip()

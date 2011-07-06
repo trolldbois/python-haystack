@@ -13,7 +13,7 @@ import model
 # linux only ?
 from ptrace.debugger.debugger import PtraceDebugger
 # local
-from memory_mapping import MemoryDumpMemoryMapping , readProcessMappings
+from memory_mapping import MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
 import memory_mapping
 
 log = logging.getLogger('dumper')
@@ -115,14 +115,9 @@ class LazyMemoryDumpLoader(MemoryDumpLoader):
     self.mappings = []
     for content,md in mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
-      log.debug('Loading %s'%(mmap))
-      if mmap.pathname == '[heap]': #if True: 
-        mmap_content = self.archive.extractfile(content).read()
-        # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-        mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
-      else:
-        mmap.local_mmap = None
-      self.mappings.append(mmap)
+      log.debug('Lazy Loading %s'%(mmap))
+      mmap_file = self.archive.extractfile(content)
+      self.mappings.append(FileMemoryMapping(mmap, mmap_file))
 
 
 def dump(opt):
@@ -133,8 +128,8 @@ def dump(opt):
   log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
   return opt.dumpfile.name
 
-def load(opt, lazy=False):
-  if lazy:
+def load(opt):
+  if opt.lazy:
     memdump = LazyMemoryDumpLoader(opt)
   else:  
     memdump = MemoryDumpLoader(opt)
@@ -154,6 +149,7 @@ def argparser():
 
   load_parser = subparsers.add_parser('load', help='search help')
   load_parser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='The dump file')
+  load_parser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
   load_parser.set_defaults(func=load)  
   return rootparser
 
