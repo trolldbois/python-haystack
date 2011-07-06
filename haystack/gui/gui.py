@@ -6,6 +6,8 @@
 
 import logging
 import argparse, os, pickle, time, sys
+import itertools
+import operator
 
 import statushandler
 from .. import memory_dumper
@@ -28,10 +30,15 @@ except AttributeError:
 from mainwindow import Ui_MainWindow
 
 class Dummy:
-  def __init__(self,len_):
+  def __init__(self,len_, value=None):
     self._len_= len_
+    self.value = value
   def __len__(self):
     return self._len_
+  def __repr__(self):
+    if not self.value is None:
+      return repr(value)
+    return 'Dummy'
 
 class MemoryDumpWidget(QtGui.QWidget):
   def __init__(self, mapping_name):
@@ -145,7 +152,8 @@ class MemoryDumpWidget(QtGui.QWidget):
     # start
     log.debug('parsing %s mapping'%(self.mapping_name))
     found = 0 
-    nb = self.mapping.end - self.mapping.start    
+    nb = self.mapping.end - self.mapping.start
+    tmpnull = []
     for offset in xrange(0,nb,4):
       i = offset + self.mapping.start
       word = self.mapping.readWord(i)
@@ -154,7 +162,18 @@ class MemoryDumpWidget(QtGui.QWidget):
         found +=1
         self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
       elif word == 0: # find null values
-        self.nullWords.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.gray) )
+        tmpnull.append(offset/4) # save offset aligned indices, cause i don't get "lambda (i,x):i-x" . Shame on me.
+    # filter and 
+    nb = 0
+    should = 0
+    for k, g in itertools.groupby(enumerate(tmpnull), lambda (i,x):i-x):
+      rang = [v*4 for v in map(operator.itemgetter(1), g)] # still not getting lambdas....
+      # add an structure of len(range)*4 bytes
+      self.nullWords.addToGroup(widgets.Structure(rang[0], Dummy(4*len(rang),value=0),scene = self.scene, color = QtCore.Qt.gray) )
+      log.debug("Adding a zero struct of %d len"%( len(rang) ))
+      nb+=1
+      should+=len(rang)
+    log.debug('Created %d qrect instead of %d words'%(nb,should))
     # fill the scene
     self.scene.addItem(self.pointers)
     self.scene.addItem(self.nullWords)
@@ -244,7 +263,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
   def openDump(self):
     # load memorymapping
-    mappings = memory_dumper.load(self.argv) #, lazy=True)
+    mappings = memory_dumper.load(self.argv)
     self.mappings = mappings
     # TODO : make a mapping chooser and kick self.heap and self.mappings
     self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
@@ -297,6 +316,7 @@ def gui(opt):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-gui', description='Graphical tool.')
   rootparser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='Source memdump')
+  rootparser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
   rootparser.set_defaults(func=gui)  
   return rootparser
 
@@ -304,6 +324,7 @@ def main(argv):
   logging.basicConfig(level=logging.DEBUG)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
+  logging.getLogger('widget').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
