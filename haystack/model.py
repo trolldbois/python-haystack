@@ -605,6 +605,9 @@ class LoadableMembers(ctypes.Structure):
       attr=getattr(self,field)
       member=self._attrToPyObject(attr,field,typ)
       setattr(my_self, field, member)
+    # save the original type (me) and the field
+    setattr(my_self, '_ctype_', type(self))    
+    setattr(my_self, '_fields_',_fieldsTuple)    
     return my_self
     
   def _attrToPyObject(self,attr,field,typ):
@@ -701,6 +704,13 @@ class pyObj(object):
       ret = False
     return ret
 
+  def __iter__(self):
+    ''' iterate on a instance's members following the original type field order '''
+    for k,typ in self._fields_:
+      v = getattr(self,k)
+      yield (k,v,typ)
+    pass
+
 def findCtypesInPyObj(obj):
   ''' check function to help in unpickling errors correction '''
   ret = False
@@ -751,7 +761,7 @@ def createPOPOClasses( targetmodule ):
   _created=0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
     if typ.__module__.startswith(targetmodule.__name__):
-      kpy = type('%s_py'%(klass),( pyObj ,),{})
+      kpy = type('%s.%s_py'%(targetmodule.__name__, klass),( pyObj ,),{})
       # add the structure size to the class
       if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
         setattr(kpy, '_len_',ctypes.sizeof(typ) )
@@ -760,7 +770,8 @@ def createPOPOClasses( targetmodule ):
       # we have to keep a local (model) ref because the class is being created here.
       # and we have a targetmodule ref. because it's asked.
       # and another ref on the real module for the basic type, because, that is probably were it's gonna be used.
-      setattr(sys.modules[__name__], '%s_py'%(klass), kpy )
+      setattr(sys.modules[__name__], '%s.%s_py'%(targetmodule.__name__, klass), kpy )
+      #setattr(sys.modules[__name__], '%s_py'%(klass), kpy )
       setattr(targetmodule, '%s_py'%(klass), kpy )
       _created+=1
       if typ.__module__ != targetmodule.__name__: # copy also to generated
@@ -784,6 +795,9 @@ def registerModule( targetmodule ):
   createPOPOClasses( targetmodule )
   log.debug('registered %d types'%( _registered))
   return
+
+def isRegistered(cls):
+  return cls in sys.modules[__name__].__dict__.values()
 
 # create local POPO ( lodableMembers )
 createPOPOClasses(sys.modules[__name__] )
