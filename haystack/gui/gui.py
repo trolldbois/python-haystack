@@ -30,6 +30,9 @@ except AttributeError:
 from mainwindow import Ui_MainWindow
 
 class Dummy:
+  ''' Dummy class with a len a a value.
+  Quite useful to create Dummy structure of %d len.
+  '''
   def __init__(self,len_, value=None):
     self._len_= len_
     self.value = value
@@ -37,10 +40,14 @@ class Dummy:
     return self._len_
   def __repr__(self):
     if not self.value is None:
-      return repr(value)
+      return repr(self.value)
     return 'Dummy'
 
 class MemoryDumpWidget(QtGui.QWidget):
+  '''
+    MemoryDumpWidget are used as tab. They are made of a QGraphicsView of 
+    a QGraphicsScene representation of ONE memory mapping.
+  '''
   def __init__(self, mapping_name):
     ''' from mainwindow.ui '''
     QtGui.QWidget.__init__(self)
@@ -187,27 +194,35 @@ class MemoryDumpWidget(QtGui.QWidget):
     self.nullWords.setToolTip('Null value words')
     return
 
-
-  def searchSessionState(self):
-    ''' return size of structure and list of addresses and values )'''
+  def searchStructure(self, structType='sslsnoop.ctypes_openssh.session_state'):
+    ''' 
+    return size of structure and list of addresses and values )
+    '''
     from haystack import abouchet
-    import ctypes, sslsnoop
-    instances = abouchet.searchIn(structType='sslsnoop.ctypes_openssh.session_state', mappings=self.mappings, maxNum=999)
+    import ctypes
+    #import sslsnoop #?
+    instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping] ,maxNum=999)
     if len(instances) > 0:
       log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
     # init graphical element
-    self.sessionStateList = QtGui.QGraphicsItemGroup()
+    instanceList = []
     for value, addr in instances:
       offset = addr - self.mapping.start
-      self.sessionStateList.addToGroup(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
+      instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
     # fill the scene
-    self.scene.addItem(self.sessionStateList)
-    #self.sessionStateList.hide()
-    self.sessionStateList.setZValue(20) # zValue has to be  > 0
+    #self.scene.addItem(instanceList)
+    instanceList.setZValue(20) # zValue has to be  > 0
     log.debug('Found %d instances'%(len(instances)) )
-    # TODO : set self.mappings in weakref ?
-    return len(instances)
+    gitemgroup = QtGui.QGraphicsItemGroup()#scene=self.scene)
+    for s in instanceList:
+      gitemgroup.addToGroup(s)
+    self.scene.addItem(gitemgroup)
+    # add self.instanceList to 
+    return instanceList,gitemgroup
 
+  def searchSessionState(self):
+    log.error('please delete me: searchSessionState() ')
+    return
 
 class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
@@ -222,6 +237,10 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     self.setupUi2()
     #widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
+    # if command line, to command line
+    return
+    if hasattr(self.argv,'dumpfile'):
+      self.openDump()
 
   def setupUi2(self):        
     # regroup tabs in a dict
@@ -229,7 +248,8 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # connect menu
     self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
     self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
-    self.tabWidget.removeTab(0)
+    self.connect(self.menu_search_structure, QtCore.SIGNAL('triggered()'), self.searchStructure)
+    self.tabWidget.removeTab(0)    
     self.tabWidget.removeTab(0)
     # plug logging to the statusBar
     statusbarhandler = statushandler.StatusBarHandler(self.statusBar())
@@ -271,13 +291,16 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     log.info('Dump opened')
     return
 
-  '''  
-  def makeGui(self):
-    shell = QtGui.QPushButton('Interactive', self)
-    shell.setGeometry(10, 10, 60, 35)
-    #self.connect(shell, QtCore.SIGNAL('clicked()'), QtGui.qApp, QtCore.SLOT(('dropToInteractive()'))    
-    self.connect(shell, QtCore.SIGNAL('clicked()'), dropToInteractive)
-  '''
+  def searchStructure(self):
+    import searchview
+    #save a ref ?
+    self.searchStructureDialog = searchview.SearchStructDialog(self)
+    self.searchStructureDialog.show()
+    return
+  
+  def currentTab(self):
+    return self.tabWidget.currentWidget()
+
   
   def closeEvent(self, event):
     #debug
@@ -315,7 +338,7 @@ def gui(opt):
 
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-gui', description='Graphical tool.')
-  rootparser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='Source memdump')
+  rootparser.add_argument('--dumpfile', type=argparse.FileType('rb'), action='store', help='Source memdump')
   rootparser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
   rootparser.set_defaults(func=gui)  
   return rootparser
@@ -324,6 +347,8 @@ def main(argv):
   logging.basicConfig(level=logging.DEBUG)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
+  logging.getLogger('widget').setLevel(logging.INFO)
+  logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
