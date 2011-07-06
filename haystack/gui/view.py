@@ -17,21 +17,25 @@ PAGE_SIZE=4096
 
 
 class MemoryMappingScene(QtGui.QGraphicsScene):
-  ''' attach a mapping to a QGraphicsScene '''
+  ''' 
+  Binds a Memory mapping to a QGraphicsScene 
+  '''
   def __init__(self, mapping, parent=None):  
     QtGui.QGraphicsScene.__init__(self,parent)
     self.mapping = mapping
 
 class MemoryMappingView(QtGui.QGraphicsView):
+  '''
+  We need to define our own QGraphicsView to play with.
+  zoom-able QGraphicsView.
+  
+  from http://www.qtcentre.org/wiki/index.php?title=QGraphicsView:_Smooth_Panning_and_Zooming
+  '''
   #Holds the current centerpoint for the view, used for panning and zooming
   CurrentCenterPoint = QtCore.QPointF()
   #From panning the view
   LastPanPoint = QtCore.QPoint()
 
-  '''
-  zoom-able view.
-  from http://www.qtcentre.org/wiki/index.php?title=QGraphicsView:_Smooth_Panning_and_Zooming
-  '''
   def __init__(self, parent=None):  
     QtGui.QGraphicsView.__init__(self,parent)    
     self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
@@ -147,6 +151,8 @@ class MemoryMappingView(QtGui.QGraphicsView):
     self.setCursor(Qt.ClosedHandCursor)
     item = self.itemAt(event.pos())
     log.debug('Mouse press on '+str(item))
+    if item is None:
+      return
     item.setSelected(True)
     item = item.parentItem()
     if item is None:
@@ -158,7 +164,6 @@ class MemoryMappingView(QtGui.QGraphicsView):
     else:
       # print status for pointers and nulls
       log.debug(item)
-    
     return
  
   '''
