@@ -9,6 +9,9 @@ import ctypes, struct, mmap
 # local
 #from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
 
+import logging
+log = logging.getLogger('memory_mapping')
+
 PROC_MAP_REGEX = re.compile(
     # Address range: '08048000-080b0000 '
     r'([0-9a-f]+)-([0-9a-f]+) '
