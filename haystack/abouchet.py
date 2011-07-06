@@ -20,25 +20,33 @@ environSep = ':'
 
 
 class StructFinder:
-  ''' Generic tructure mapping '''
-  def __init__(self, mappings):
+  ''' Generic structure finder.
+  Will search a structure defined by it's pointer and other constraints.
+  Address space is defined by  mappings.
+  Target memory perimeter is defined by targetMappings.
+  targetMappings is included in mappings.
+  
+  @param mappings: address space
+  @param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+  
+  '''
+  def __init__(self, mappings, targetMappings=None):
     self.mappings = mappings
-    log.debug('StructFinder on %s'%(self.mappings[0]) )
+    self.targetMappings = targetMappings
+    if targetMappings is None:
+      self.targetMappings = mappings
+    log.debug('StructFinder on %d memorymappings. Search Perimeter on %d mappings.'%(len(self.mappings), len(self.targetMappings)) )
     return
 
-  def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 , fullScan=False):
-    if not fullScan:
-      log.warning("Restricting search to heap.")
+  def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 ):
+    log.warning("Restricting search to %d memory mapping."%(len(self.targetMappings)))
     outputs=[]
-    for m in self.mappings:
+    for m in self.targetMappings:
       ##debug, most structures are on head
-      if not fullScan and m.pathname != '[heap]':
-        continue
+      log.info("Looking at %s (%d bytes)"%(m, m.end-m.start))
       if not hasValidPermissions(m):
         log.warning("Invalid permission for memory %s"%m)
         continue
-      if fullScan:
-        log.info("Looking at %s (%d bytes)"%(m, m.end-m.start))
       else:
         log.debug("%s,%s"%(m,m.permissions))
       log.debug('look for %s'%(struct))
@@ -264,12 +272,12 @@ def getKlass(name):
   #log.error(getattr(mod, kname+'_py'))
   return klass
 
-def searchIn(structType, mappings, maxNum=-1):
+def searchIn(structType, mappings, targetMappings=None, maxNum=-1):
   log.debug('searchIn: %s - %s'%(structType,mappings))
   structType = getKlass(structType)
-  finder = StructFinder(mappings)
+  finder = StructFinder(mappings, targetMappings)
   # find all possible struct instance
-  outs=finder.find_struct( structType, maxNum=maxNum, fullScan=True)
+  outs=finder.find_struct( structType, maxNum=maxNum)
   # prepare outputs
   ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
   if len(ret) >0:
@@ -282,9 +290,15 @@ def search(args):
   log.debug('args: %s'%args)
   structType = getKlass(args.structType)
   mappings = MemoryMapper(args).getMappings()
+  if args.fullscan:
+    targetMapping = mappings
+  else:
+    targetMapping = [m for m in mappings if m.pathname == '[heap]']
+    if len(targetMapping) == 0:
+      log.warning('No [heap] memorymapping found. Searching everywhere.')
   finder = StructFinder(mappings)
   try:
-    outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum, fullScan=args.fullscan)
+    outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)
   except KeyboardInterrupt,e:
     from meliae import scanner
     scanner.dump_all_objects('haystack-search.dump')
