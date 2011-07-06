@@ -6,7 +6,7 @@
 
 import logging
 
-log = logging.getLogger('view')
+log = logging.getLogger('widget')
 
 from PyQt4 import QtGui, QtCore
 from PyQt4.Qt import Qt
