@@ -11,6 +11,7 @@ log = logging.getLogger('view')
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.Qt import Qt
 
+from .. import model
 
 LINE_SIZE=512
 PAGE_SIZE=4096 
@@ -40,7 +41,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
     QtGui.QGraphicsView.__init__(self,parent)    
     self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
     #opengl ? !
-    self.setViewport(QtOpenGL.QGLWidget(QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers)))
+    ###self.setViewport(QtOpenGL.QGLWidget(QtOpenGL.QGLFormat(QtOpenGL.QGL.SampleBuffers)))
     #self.setCursor(Qt.OpenHandCursor)
     self.setCursor(Qt.ArrowCursor)
     self.SetCenter(QtCore.QPointF(0.0, 0.0)) #A modified version of centerOn(), handles special cases
@@ -154,16 +155,24 @@ class MemoryMappingView(QtGui.QGraphicsView):
     if item is None:
       return
     item.setSelected(True)
-    item = item.parentItem()
-    if item is None:
+    pitem = item.parentItem()
+    if pitem is None:
+      # no parent item, that must be lonely....
       if self.mapping:
         # read mapping value 
         addr = event.pos().y()* LINE_SIZE + event.pos().x()
         value = self.mapping.readWord(self.mapping.start+addr)
         log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))
     else:
-      # print status for pointers and nulls
-      log.debug(item)
+      # parent item, check for types
+      if model.isStructType(item):
+        log.debug('showing info for %s'%(item))
+        # update info view
+        self.parent().showInfo(item)
+      else:
+        # print status for pointers and nulls
+        log.debug(pitem)
+      
     return
  
   '''

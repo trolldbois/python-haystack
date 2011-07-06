@@ -27,7 +27,9 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
+from memmaptab import Ui_MemoryMappingWidget
 from mainwindow import Ui_MainWindow
+
 
 class Dummy:
   ''' Dummy class with a len a a value.
@@ -43,13 +45,13 @@ class Dummy:
       return repr(self.value)
     return 'Dummy'
 
-class MemoryDumpWidget(QtGui.QWidget):
+class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
   '''
-    MemoryDumpWidget are used as tab. They are made of a QGraphicsView of 
+    MemoryMappingWidget are used as tab. They are made of a QGraphicsView of 
     a QGraphicsScene representation of ONE memory mapping.
+    Code is mostly duplicated from the mainwindow.ui .
   '''
   def __init__(self, mapping_name):
-    ''' from mainwindow.ui '''
     QtGui.QWidget.__init__(self)
     # model
     self.mapping_name = mapping_name
@@ -60,7 +62,6 @@ class MemoryDumpWidget(QtGui.QWidget):
     if self._dirty:
       self.initData()
       self.setupUi()
-      self.retranslateUi()
       self.setupSignals()
       self._dirty = False
 
@@ -73,51 +74,29 @@ class MemoryDumpWidget(QtGui.QWidget):
     self.sessionStateList = None
     
   def setupUi(self):
-    #UI    
-    self.tab = self
-    self.tab.setObjectName(_fromUtf8(self.mapping_name))
-    self.gridLayout_3 = QtGui.QGridLayout(self.tab)
-    self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
-    # make the view
-    self.view = view.MemoryMappingView(self.tab)
-    self.view.setObjectName(_fromUtf8("view"))
-    self.gridLayout_3.addWidget(self.view, 0, 0, 1, 1)
-    # back to normal
-    self.groupBox = QtGui.QGroupBox(self.tab)
-    self.groupBox.setEnabled(True)
+    #setupUi()
+    super(MemoryMappingWidget,self).setupUi(self)
+    # ours
+    self.setObjectName(_fromUtf8(self.mapping_name))
+    #change the graphics view.
+    self.graphicsView = view.MemoryMappingView(self)
+    self.graphicsView.setEnabled(True)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(0)
-    sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
-    self.groupBox.setSizePolicy(sizePolicy)
-    self.groupBox.setMaximumSize(QtCore.QSize(16777215, 70))
-    self.groupBox.setObjectName(_fromUtf8("groupBox"))
-    self.show_null = QtGui.QCheckBox(self.groupBox)
-    self.show_null.setGeometry(QtCore.QRect(17, 25, 125, 16))
-    self.show_null.setObjectName(_fromUtf8("show_null"))
-    self.show_pointers = QtGui.QCheckBox(self.groupBox)
-    self.show_pointers.setGeometry(QtCore.QRect(17, 45, 125, 16))
-    self.show_pointers.setObjectName(_fromUtf8("show_pointers"))
-    self.show_search = QtGui.QCheckBox(self.groupBox)
-    self.show_search.setGeometry(QtCore.QRect(590, 0, 161, 36))
-    self.show_search.setObjectName(_fromUtf8("show_search"))
-    self.gridLayout_3.addWidget(self.groupBox, 1, 0, 1, 1)
+    sizePolicy.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
+    self.graphicsView.setSizePolicy(sizePolicy)
+    self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
+    self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
     # mine
-    self.pointers = QtGui.QGraphicsItemGroup() #self.view.GetScene().createItemGroup(items) 
+    self.pointers = QtGui.QGraphicsItemGroup() #self.graphicsView.GetScene().createItemGroup(items) 
     self.nullWords = QtGui.QGraphicsItemGroup()
-
-  def retranslateUi(self):
-    self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "Highlight", None, QtGui.QApplication.UnicodeUTF8))
-    self.show_null.setText(QtGui.QApplication.translate("MainWindow", "Null values", None, QtGui.QApplication.UnicodeUTF8))
-    self.show_pointers.setText(QtGui.QApplication.translate("MainWindow", "Pointer values", None, QtGui.QApplication.UnicodeUTF8))
-    self.show_search.setText(QtGui.QApplication.translate("MainWindow", "Find session_state", None, QtGui.QApplication.UnicodeUTF8))
     
   def setupSignals(self):
     #for each tab
     # signals - connect higlighting options
     self.connect(self.show_pointers, QtCore.SIGNAL('stateChanged(int)'), self._showPointers)
     self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._showNull)
-    self.connect(self.show_search, QtCore.SIGNAL('stateChanged(int)'), self._showSessionState)
  
   def _showPointers(self):
     log.debug('show_pointers')
@@ -133,14 +112,6 @@ class MemoryDumpWidget(QtGui.QWidget):
     else:
       self.nullWords.show()
 
-  def _showSessionState(self):
-    log.debug('show session_state')
-    if self.sessionStateList is None:
-      self.searchSessionState()
-    if not self.show_search.checkState():
-      self.sessionStateList.hide()
-    else:
-      self.sessionStateList.show()
   
   def loadMapping(self, mapping, mappings):
     ''' 
@@ -153,8 +124,8 @@ class MemoryDumpWidget(QtGui.QWidget):
     if self.mapping not in self.mappings:
       raise ValueError('mapping not in mapping list.')
     # init the view
-    self.view.loadMapping(mapping)
-    self.scene = self.view.GetScene()
+    self.graphicsView.loadMapping(mapping)
+    self.scene = self.graphicsView.GetScene()
     self._dirty = True # reload will clean it    
     # start
     log.debug('parsing %s mapping'%(self.mapping_name))
@@ -211,38 +182,51 @@ class MemoryDumpWidget(QtGui.QWidget):
       instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
     # fill the scene
     #self.scene.addItem(instanceList)
-    instanceList.setZValue(20) # zValue has to be  > 0
     log.debug('Found %d instances'%(len(instances)) )
-    gitemgroup = QtGui.QGraphicsItemGroup()#scene=self.scene)
+    gitemgroup = QtGui.QGraphicsItemGroup(scene=self.scene)
     for s in instanceList:
       gitemgroup.addToGroup(s)
-    self.scene.addItem(gitemgroup)
+    gitemgroup.setZValue(20) # zValue has to be  > 0
     # add self.instanceList to 
     return instanceList,gitemgroup
 
-  def searchSessionState(self):
-    log.error('please delete me: searchSessionState() ')
+  def showInfo(self, structure):
+    log.info('show info on %s'%(structure))
+    self.info_tableview = QtGui.QTableWidget()
+    self.info_tableview.setRowCount(len(structure._fields_) )
+    self.info_tableview.setColumnCount(2)
+    row = 0
+    for k,v,e in structure._fields_:
+      field = QtGui.QTableWidgetItem(k)
+      value = QtGui.QTableWidgetItem(v)
+      self.info_tableview.setItem(row, 0, field)
+      self.info_tableview.setItem(row, 1, value)
+    log.debug('self.info_tableview populated with %d rows'%(line))
     return
 
-class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
+
+class MyMain(QtGui.QMainWindow, Ui_MainWindow):
+  '''
+    Main Window app.
+    Status bar + tabwidget mostly.
+  '''
   sessionStateList = None
   pointers = None
   nullWords = None
   def __init__(self, argv, parent=None):
     QtGui.QMainWindow.__init__(self, parent)
     # draw the window
-    self.setupUi(self)
     # populate useful data
-    self.setupUi2()
+    self.setupUi(self)
     #widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
     # if command line, to command line
-    return
     if hasattr(self.argv,'dumpfile'):
       self.openDump()
 
-  def setupUi2(self):        
+  def setupUi(self,me):
+    super(MyMain,self).setupUi(self)
     # regroup tabs in a dict
     self.memorydump_tabs = dict()
     # connect menu
@@ -267,7 +251,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
       log.info('dump %s is already opened'%(dump_name))
       return
     
-    tab = MemoryDumpWidget(dump_name)
+    tab = MemoryMappingWidget(dump_name)
     log.debug('Tab Created')
     self.statusBar().showMessage('Tab Created')
     self.tabWidget.addTab(tab, _fromUtf8(dump_name))
