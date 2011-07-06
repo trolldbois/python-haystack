@@ -21,11 +21,11 @@ class Structure(QtGui.QGraphicsItemGroup):
   def __init__(self, offset, value, color = QtCore.Qt.green, scene=None, parent=None):
     QtGui.QGraphicsItemGroup.__init__(self, parent, scene)
     self.scene = scene
-    self.struct = value
+    self.value = value # ctypes_py structure
     self.offset = offset
     self.color = color
-    log.debug('size: %d'%len(self.struct))
-    self._makeStruct(self.offset, len(self.struct))
+    log.debug('size: %d'%len(self.value))
+    self._makeStruct(self.offset, len(self.value))
     log.debug('hover: %s handleChildEvents: %s'%( self.acceptsHoverEvents(), self.handlesChildEvents()) )
     self.setAcceptsHoverEvents(True)
     self.setHandlesChildEvents(True)
@@ -60,9 +60,9 @@ class Structure(QtGui.QGraphicsItemGroup):
 
   def __repr__(self):
     s=''
-    if repr(self.struct) != '':
-      s=": %s"%(repr(self.struct))
-    return "<Structure of %d bytes%s>"%(len(self.struct),s)
+    if repr(self.value) != '':
+      s=": %s"%(repr(self.value))
+    return "<Structure of %d bytes%s>"%(len(self.value),s)
 
 class Word(Structure):
   ''' QtCore.QRectF is not a graphicsitem '''

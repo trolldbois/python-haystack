@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Wed Jul  6 16:11:52 2011
+# Created: Wed Jul  6 17:08:10 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -30,7 +30,7 @@ class Ui_MemoryMappingWidget(object):
         self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
         self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
         self.tab_search_structures = QtGui.QToolBox(MemoryMappingWidget)
-        self.tab_search_structures.setEnabled(False)
+        self.tab_search_structures.setEnabled(True)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -41,11 +41,12 @@ class Ui_MemoryMappingWidget(object):
         self.page.setGeometry(QtCore.QRect(0, 0, 563, 372))
         self.page.setObjectName(_fromUtf8("page"))
         self.info_tableview = QtGui.QTableView(self.page)
+        self.info_tableview.setEnabled(True)
         self.info_tableview.setGeometry(QtCore.QRect(0, 0, 571, 391))
         self.info_tableview.setObjectName(_fromUtf8("info_tableview"))
         self.tab_search_structures.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 571, 383))
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 563, 372))
         self.page_2.setObjectName(_fromUtf8("page_2"))
         self.tab_search_structures.addItem(self.page_2, _fromUtf8(""))
         self.gridLayout.addWidget(self.tab_search_structures, 0, 1, 1, 1)

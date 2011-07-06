@@ -21,14 +21,15 @@ from PyQt4 import QtGui, QtCore
 
 import view
 import widgets
+import infomodel
+from memmaptab import Ui_MemoryMappingWidget
+from mainwindow import Ui_MainWindow
+
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
     _fromUtf8 = lambda s: s
-
-from memmaptab import Ui_MemoryMappingWidget
-from mainwindow import Ui_MainWindow
 
 
 class Dummy:
@@ -187,21 +188,37 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     for s in instanceList:
       gitemgroup.addToGroup(s)
     gitemgroup.setZValue(20) # zValue has to be  > 0
-    # add self.instanceList to 
+    # add self.instanceList to
+    if len(instanceList) >0 :
+      self.showInfo(instanceList[0])
     return instanceList,gitemgroup
 
   def showInfo(self, structure):
     log.info('show info on %s'%(structure))
-    self.info_tableview = QtGui.QTableWidget()
-    self.info_tableview.setRowCount(len(structure._fields_) )
-    self.info_tableview.setColumnCount(2)
-    row = 0
-    for k,v,e in structure._fields_:
-      field = QtGui.QTableWidgetItem(k)
-      value = QtGui.QTableWidgetItem(v)
-      self.info_tableview.setItem(row, 0, field)
-      self.info_tableview.setItem(row, 1, value)
-    log.debug('self.info_tableview populated with %d rows'%(line))
+    pyObj = structure.value
+    rows = [ (k,str(v)) for k,v,typ in pyObj]
+    log.debug('self.info_tableview populated with %d rows'%(len(rows)))    
+    # set the table model
+    header = ['field', 'value']
+    tm = infomodel.StructureInfoTableModel(rows, header, self) 
+    self.info_tableview.setModel(tm)
+    # set the font
+    font = QtGui.QFont("Courier New", 8)
+    self.info_tableview.setFont(font)
+    # hide vertical header
+    vh = self.info_tableview.verticalHeader()
+    vh.setVisible(False)
+    # set horizontal header properties
+    hh = self.info_tableview.horizontalHeader()
+    hh.setStretchLastSection(True)
+    # set column width to fit contents
+    self.info_tableview.resizeColumnsToContents()
+    # set row height
+    nrows = len(rows)
+    for row in xrange(nrows):
+        self.info_tableview.setRowHeight(row, 18)
+    # enable sorting
+    self.info_tableview.setSortingEnabled(True)
     return
 
 
@@ -224,6 +241,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # if command line, to command line
     if hasattr(self.argv,'dumpfile'):
       self.openDump()
+      self.currentTab().searchStructure()
 
   def setupUi(self,me):
     super(MyMain,self).setupUi(self)

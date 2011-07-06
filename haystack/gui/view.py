@@ -165,7 +165,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
         log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))
     else:
       # parent item, check for types
-      if model.isStructType(item):
+      if hasattr(item,'value') and model.isRegistered(item.value):
         log.debug('showing info for %s'%(item))
         # update info view
         self.parent().showInfo(item)
