@@ -23,6 +23,7 @@ if ctypes.Structure.__name__ == 'Structure':
 
 __refs = list()
 __register = dict()
+__registerModules = set()
 
 def keepRef(obj):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
@@ -786,6 +787,9 @@ def registerModule( targetmodule ):
       in a lookup table
       Creates POPO's to be able to unpickle ctypes.
   '''
+  if targetmodule in __registerModules:
+    log.warning('Module %s already registered. Skipping.'%(targetmodule))
+    return
   _registered = 0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
     if typ.__module__.startswith(targetmodule.__name__):
@@ -793,6 +797,7 @@ def registerModule( targetmodule ):
       _registered += 1
   # create POPO's
   createPOPOClasses( targetmodule )
+  __registerModules.add(targetmodule)
   log.debug('registered %d types'%( _registered))
   return
 
