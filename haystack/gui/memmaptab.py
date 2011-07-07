@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Wed Jul  6 17:08:10 2011
+# Created: Thu Jul  7 15:09:56 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -29,27 +29,6 @@ class Ui_MemoryMappingWidget(object):
         self.graphicsView.setSizePolicy(sizePolicy)
         self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
         self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
-        self.tab_search_structures = QtGui.QToolBox(MemoryMappingWidget)
-        self.tab_search_structures.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tab_search_structures.sizePolicy().hasHeightForWidth())
-        self.tab_search_structures.setSizePolicy(sizePolicy)
-        self.tab_search_structures.setObjectName(_fromUtf8("tab_search_structures"))
-        self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 563, 372))
-        self.page.setObjectName(_fromUtf8("page"))
-        self.info_tableview = QtGui.QTableView(self.page)
-        self.info_tableview.setEnabled(True)
-        self.info_tableview.setGeometry(QtCore.QRect(0, 0, 571, 391))
-        self.info_tableview.setObjectName(_fromUtf8("info_tableview"))
-        self.tab_search_structures.addItem(self.page, _fromUtf8(""))
-        self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 563, 372))
-        self.page_2.setObjectName(_fromUtf8("page_2"))
-        self.tab_search_structures.addItem(self.page_2, _fromUtf8(""))
-        self.gridLayout.addWidget(self.tab_search_structures, 0, 1, 1, 1)
         self.groupBox = QtGui.QGroupBox(MemoryMappingWidget)
         self.groupBox.setEnabled(True)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -66,6 +45,28 @@ class Ui_MemoryMappingWidget(object):
         self.show_pointers.setGeometry(QtCore.QRect(17, 45, 125, 16))
         self.show_pointers.setObjectName(_fromUtf8("show_pointers"))
         self.gridLayout.addWidget(self.groupBox, 1, 0, 1, 1)
+        self.tab_search_structures = QtGui.QToolBox(MemoryMappingWidget)
+        self.tab_search_structures.setEnabled(True)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.tab_search_structures.sizePolicy().hasHeightForWidth())
+        self.tab_search_structures.setSizePolicy(sizePolicy)
+        self.tab_search_structures.setObjectName(_fromUtf8("tab_search_structures"))
+        self.page = QtGui.QWidget()
+        self.page.setGeometry(QtCore.QRect(0, 0, 563, 372))
+        self.page.setObjectName(_fromUtf8("page"))
+        self.gridLayout_3 = QtGui.QGridLayout(self.page)
+        self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
+        self.info_tableview = QtGui.QTableView(self.page)
+        self.info_tableview.setObjectName(_fromUtf8("info_tableview"))
+        self.gridLayout_3.addWidget(self.info_tableview, 0, 0, 1, 1)
+        self.tab_search_structures.addItem(self.page, _fromUtf8(""))
+        self.page_2 = QtGui.QWidget()
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 563, 372))
+        self.page_2.setObjectName(_fromUtf8("page_2"))
+        self.tab_search_structures.addItem(self.page_2, _fromUtf8(""))
+        self.gridLayout.addWidget(self.tab_search_structures, 0, 1, 1, 1)
 
         self.retranslateUi(MemoryMappingWidget)
         self.tab_search_structures.setCurrentIndex(0)
@@ -73,9 +74,9 @@ class Ui_MemoryMappingWidget(object):
 
     def retranslateUi(self, MemoryMappingWidget):
         MemoryMappingWidget.setWindowTitle(QtGui.QApplication.translate("MemoryMappingWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
-        self.tab_search_structures.setItemText(self.tab_search_structures.indexOf(self.page), QtGui.QApplication.translate("MemoryMappingWidget", "Page 1", None, QtGui.QApplication.UnicodeUTF8))
-        self.tab_search_structures.setItemText(self.tab_search_structures.indexOf(self.page_2), QtGui.QApplication.translate("MemoryMappingWidget", "Page 2", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MemoryMappingWidget", "Highlight", None, QtGui.QApplication.UnicodeUTF8))
         self.show_null.setText(QtGui.QApplication.translate("MemoryMappingWidget", "Null values", None, QtGui.QApplication.UnicodeUTF8))
         self.show_pointers.setText(QtGui.QApplication.translate("MemoryMappingWidget", "Pointer values", None, QtGui.QApplication.UnicodeUTF8))
+        self.tab_search_structures.setItemText(self.tab_search_structures.indexOf(self.page), QtGui.QApplication.translate("MemoryMappingWidget", "Page 1", None, QtGui.QApplication.UnicodeUTF8))
+        self.tab_search_structures.setItemText(self.tab_search_structures.indexOf(self.page_2), QtGui.QApplication.translate("MemoryMappingWidget", "Page 2", None, QtGui.QApplication.UnicodeUTF8))
 
