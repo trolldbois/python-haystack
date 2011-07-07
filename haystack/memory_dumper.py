@@ -118,6 +118,7 @@ class LazyMemoryDumpLoader(MemoryDumpLoader):
       log.debug('Lazy Loading %s'%(mmap))
       mmap_file = self.archive.extractfile(content)
       self.mappings.append(FileMemoryMapping(mmap, mmap_file))
+      #self.mappings.append(memory_mapping.getFileBackedMemoryMapping(mmap, mmap_file))
 
 
 def dump(opt):

@@ -80,8 +80,6 @@ class MemoryMapping:
       return int(self.end - self.start)
 
     def search(self, bytestr):
-        process = self._process()
-
         bytestr_len = len(bytestr)
         buf_len = 64 * 1024 
 
@@ -189,18 +187,14 @@ class MemoryMapping:
 
 class MemoryDumpMemoryMapping(MemoryMapping):
     """ A memoryMapping wrapper around a memory file dump"""
-    def __init__(self, memdump, start, end):
+    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+        MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._process = None
-        self.start = start
-        self.end = end
-        self.permissions = 'rwx-'
-        self.offset = 0x0
-        self.major_device = 0x0
-        self.minor_device = 0x0
-        self.inode = 0x0
-        self.pathname = 'MEMORYDUMP'
         self.local_mmap = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ)
 
+    def _err(self):
+        raise 
+        
     def search(self, bytestr):
         self.local_mmap.find(bytestr)
 
@@ -276,7 +270,61 @@ def FileMemoryMapping(memoryMapping, memdump):
     ret.local_mmap = None
   return ret
 
+def getFileBackedMemoryMapping(memoryMapping, memdump):
+  return FileBackedMemoryMapping(memdump, memoryMapping.start, memoryMapping.end, 
+              memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device, 
+              memoryMapping.inode, memoryMapping.pathname)
 
+class LazyMmap:
+  ''' lazy mmap no memory.
+   useless.
+  '''
+  def __init__(self,memdump):
+    memdump.seek(2**64)
+    self.size = memdump.tell()
+    self.memdump = memdump
+  
+  def __len__(self):
+    return self.size
+    
+  def __getitem__(self,key):
+    if type(key) == slice :
+      start = key.start
+      size = key.stop - key.start
+    elif type(key) == int :
+      start = key
+      size = 1
+    else :
+      raise ValueError('bad index type')
+    return self._get(start, size)
+  
+  def _get(self, offset,size):
+    import model 
+    self.memdump.seek(offset)
+    #me = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ)
+    me = model.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
+    return me
+
+class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
+  '''
+    don't mmap the memoryMap. use the file to read offsets.
+  '''
+  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+    MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    self.memdump = memdump
+    self.local_mmap = LazyMmap(self.memdump)
+    return    
+  def readWord(self, address):
+    """Address have to be aligned!"""
+    laddr = self.vtop(address)
+    size = ctypes.sizeof((ctypes.c_int))
+    word = ctypes.c_ulong.from_buffer_copy(self.local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
+    return word
+  def readArray(self, address, basetype, count):
+    laddr = self.vtop(address)
+    size = ctypes.sizeof((basetype *count))
+    array = (basetype *count).from_buffer_copy(self.local_mmap[laddr:laddr+size], 0)
+    return array
 
 def readProcessMappings(process):
     """
