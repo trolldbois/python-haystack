@@ -21,21 +21,46 @@ if ctypes.c_char_p.__name__ == 'c_char_p':
 if ctypes.Structure.__name__ == 'Structure':
   ctypes.original_Structure = ctypes.Structure
 
-__refs = list()
-__register = dict()
-__registerModules = set()
+#__refs = list()
+#__register = dict()
+
+class _book(object):
+  modules = set()
+  classes = dict()
+  refs = list()
+  def __init__(self):
+    pass
+  def addModule(self, mod):
+    self.modules.add(mod)
+    print 'add', mod
+  def addClass(self,cls):
+    self.classes[ctypes.POINTER(cls)] = cls
+  def addRef(self,obj):
+    self.refs.append(obj)
+  def getModules(self):
+    return set(self.modules)
+  def getClasses(self):
+    return dict(self.classes)
+
+# central model book register
+__book = _book()
 
 def keepRef(obj):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
     they might be transient (if obj == somepointer.contents).'''
-  __refs.append(obj)
+  #__refs.append(obj)
+  __book.addRef(obj)
   return
 
 def register(klass):
-  klass.classRef = __register
-  __register[ctypes.POINTER(klass)] = klass
+  #klass.classRef = __register
+  #__register[ctypes.POINTER(klass)] = klass
+  __book.addClass(klass)
+  klass.classRef = __book.classes
   return klass
 
+def registeredModules():
+  return sys.modules[__name__].__book.getModules()
 
 ''' returns if the address of the struct is in the mapping area
 '''
@@ -787,7 +812,7 @@ def registerModule( targetmodule ):
       in a lookup table
       Creates POPO's to be able to unpickle ctypes.
   '''
-  if targetmodule in __registerModules:
+  if targetmodule in registeredModules():
     log.warning('Module %s already registered. Skipping.'%(targetmodule))
     return
   _registered = 0
@@ -797,12 +822,14 @@ def registerModule( targetmodule ):
       _registered += 1
   # create POPO's
   createPOPOClasses( targetmodule )
-  __registerModules.add(targetmodule)
+  __book.addModule(targetmodule)
   log.debug('registered %d types'%( _registered))
+  log.debug('regisered %d module total'%(len(__book.getModules())))
   return
 
 def isRegistered(cls):
-  return cls in sys.modules[__name__].__dict__.values()
+  #return cls in sys.modules[__name__].__dict__.values()
+  return cls in __book.getClasses()
 
 # create local POPO ( lodableMembers )
 createPOPOClasses(sys.modules[__name__] )
