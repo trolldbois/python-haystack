@@ -100,8 +100,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.splitter.setSizePolicy(sizePolicy) # resize
     self.splitter.setObjectName(_fromUtf8("splitter_graphics_info"))
     # mine
-    self.pointers = QtGui.QGraphicsItemGroup() #self.graphicsView.GetScene().createItemGroup(items) 
-    self.nullWords = QtGui.QGraphicsItemGroup()
+    self.pointers = None
+    self.nullWords = None
     
   def setupSignals(self):
     #for each tab
@@ -110,14 +110,16 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._showNull)
  
   def _showPointers(self):
-    log.debug('show_pointers')
+    if self.pointers is None:
+      self.searchPointers()
     if not self.show_pointers.checkState():
       self.pointers.hide()
     else:
       self.pointers.show()
     
   def _showNull(self):
-    log.debug('show_null')
+    if self.nullWords is None:
+      self.searchNullWords()
     if not self.show_null.checkState():
       self.nullWords.hide()
     else:
@@ -137,20 +139,49 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # init the view
     self.graphicsView.loadMapping(mapping)
     self.scene = self.graphicsView.GetScene()
-    self._dirty = True # reload will clean it    
-    # start
-    log.debug('parsing %s mapping'%(self.mapping_name))
+    self._dirty = True # reload will clean it
+    return
+
+  def searchValue(self, value):
+    ''' value is what type ? '''
+    resultGroup = QtGui.QGraphicsItemGroup() #self.graphicsView.GetScene().createItemGroup(items)     
+    log.debug('parsing %s mapping for value %s'%(self.mapping_name, value))
     found = 0 
-    nb = len(self.mapping)
-    tmpnull = []
-    for offset in xrange(0,nb,4):
+    for res in self.mapping.search(value):
+      found +=1
+      resultGroup.addToGroup(widgets.Word(offset,value,scene = self.scene, color = QtCore.Qt.yellow) )
+    resultGroup.show()
+    self.scene.addItem(resultGroup)
+    return resultGroup
+
+
+  def searchPointers(self):
+    self.pointers = QtGui.QGraphicsItemGroup(scene=self.scene) 
+    log.info('search %s mapping for pointer'%(self.mapping_name))
+    found = 0 
+    for offset in xrange(0,len(self.mapping),4):
       i = offset + self.mapping.start
       word = self.mapping.readWord(i)
       # find pointers
       if word in self.mapping:
         found +=1
         self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
-      elif word == 0: # find null values
+    # fill the scene
+    self.scene.addItem(self.pointers)
+    self.pointers.hide()
+    self.pointers.setZValue(10) # zValue has to be  > 0
+    #self.pointers.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+    return
+
+  def searchNullWords(self):
+    self.nullWords = QtGui.QGraphicsItemGroup(scene=self.scene)
+    log.info('search %s mapping for null words'%(self.mapping_name))
+    found = 0 
+    tmpnull = []
+    for offset in xrange(0, len(self.mapping), 4):
+      i = offset + self.mapping.start
+      word = self.mapping.readWord(i)
+      if word == 0: # find null values
         tmpnull.append(offset/4) # save offset aligned indices, cause i don't get "lambda (i,x):i-x" . Shame on me.
     # filter and 
     nb = 0
@@ -163,18 +194,14 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
       nb+=1
       should+=len(rang)
     log.debug('Created %d qrect instead of %d words'%(nb,should))
-    # fill the scene
-    self.scene.addItem(self.pointers)
     self.scene.addItem(self.nullWords)
-    self.pointers.hide()
-    self.pointers.setZValue(10) # zValue has to be  > 0
-    #self.pointers.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
     self.nullWords.hide()
     self.nullWords.setEnabled(False)
     self.nullWords.setZValue(1) # zValue has to be  > 0
     # still not letting me trough the boundingRect
     self.nullWords.setToolTip('Null value words')
     return
+  
 
   def searchStructure(self, structType='sslsnoop.ctypes_openssh.session_state'):
     ''' 
@@ -250,8 +277,8 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     self.argv = argv
     # if command line, to command line
     if self.argv.dumpfile is not None:
-      self.openDump()
-      self.currentTab().searchStructure()
+      self._openDumpfile(self.argv.dumpfile)
+      #self.currentTab().searchStructure()
     else:
       ##DEBUG
       m = Dummy(0,value=0)
@@ -304,13 +331,17 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     for filename in filenames:
       log.info('Opening %s'%(filename))
       dumpfile = file(str(filename))
-      # load memorymapping
-      mappings = memory_dumper.load(dumpfile)
-      # TODO : make a mapping chooser 
-      heap = [m for m in mappings if m.pathname == '[heap]'][0]
-      self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
+      self._openDumpfile(dumpfile)
       log.info('Dump opened')
     return
+  
+  def _openDumpfile(self, dumpfile):
+    # load memorymapping
+    mappings = memory_dumper.load(dumpfile)
+    # TODO : make a mapping chooser 
+    heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    return self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
+  
   
   def closeTab(self):
     self.tabWidget.removeTab(self.tabWidget.currentIndex())    
@@ -375,6 +406,7 @@ def main(argv):
   logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
+  logging.getLogger('gui').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
