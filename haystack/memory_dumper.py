@@ -83,13 +83,13 @@ class MemoryDumper:
 class MemoryDumpLoader:
   ''' Loads a memory dump done by MemoryDumper.
   It's basically a tgz of all memorymaps '''
-  def __init__(self, opt):
-    self.args = opt
+  def __init__(self, dumpfile):
+    self.dumpfile = dumpfile
     self.loadMappings()
   
   def loadMappings(self):
     import tarfile
-    self.archive = tarfile.open(None,'r', self.args.dumpfile)
+    self.archive = tarfile.open(None,'r', self.dumpfile)
     #self.archive.list()
     members = self.archive.getnames()
     mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
@@ -108,7 +108,7 @@ class MemoryDumpLoader:
 class LazyMemoryDumpLoader(MemoryDumpLoader):
   def loadMappings(self):
     import tarfile
-    self.archive = tarfile.open(None,'r', self.args.dumpfile)
+    self.archive = tarfile.open(None,'r', self.dumpfile)
     #self.archive.list()
     members = self.archive.getnames()
     mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
@@ -128,11 +128,14 @@ def dump(opt):
   log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
   return opt.dumpfile.name
 
-def load(opt):
-  if opt.lazy:
-    memdump = LazyMemoryDumpLoader(opt)
+def _load(opt):
+  return load(opt.dumpfile,opt.lazy)
+
+def load(dumpfile,lazy=True):
+  if lazy:
+    memdump = LazyMemoryDumpLoader(dumpfile)
   else:  
-    memdump = MemoryDumpLoader(opt)
+    memdump = MemoryDumpLoader(dumpfile)
     log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
     for m in memdump.getMappings():
       log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )    
@@ -150,7 +153,7 @@ def argparser():
   load_parser = subparsers.add_parser('load', help='search help')
   load_parser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='The dump file')
   load_parser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
-  load_parser.set_defaults(func=load)  
+  load_parser.set_defaults(func=_load)  
   return rootparser
 
 def main(argv):
