@@ -52,8 +52,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     a QGraphicsScene representation of ONE memory mapping.
     Code is mostly duplicated from the mainwindow.ui .
   '''
-  def __init__(self, mapping_name):
-    QtGui.QWidget.__init__(self)
+  def __init__(self, mapping_name, parent=None):
+    QtGui.QWidget.__init__(self,parent)
     # model
     self.mapping_name = mapping_name
     self._dirty = True
@@ -79,6 +79,9 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     super(MemoryMappingWidget,self).setupUi(self)
     # ours
     self.setObjectName(_fromUtf8(self.mapping_name))
+    # delete 
+    self.graphicsView.setParent(None)
+    del self.graphicsView
     #change the graphics view.
     self.graphicsView = view.MemoryMappingView(self)
     self.graphicsView.setEnabled(True)
@@ -89,6 +92,13 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.graphicsView.setSizePolicy(sizePolicy)
     self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
     self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
+    # add QSplitter
+    self.splitter = QtGui.QSplitter(self)
+    self.splitter.addWidget(self.graphicsView)
+    self.splitter.addWidget(self.tab_search_structures)
+    self.gridLayout.addWidget(self.splitter, 0, 0, 1, 2)    
+    self.splitter.setSizePolicy(sizePolicy) # resize
+    self.splitter.setObjectName(_fromUtf8("splitter_graphics_info"))
     # mine
     self.pointers = QtGui.QGraphicsItemGroup() #self.graphicsView.GetScene().createItemGroup(items) 
     self.nullWords = QtGui.QGraphicsItemGroup()
@@ -131,7 +141,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # start
     log.debug('parsing %s mapping'%(self.mapping_name))
     found = 0 
-    nb = self.mapping.end - self.mapping.start
+    nb = len(self.mapping)
     tmpnull = []
     for offset in xrange(0,nb,4):
       i = offset + self.mapping.start
@@ -239,9 +249,13 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     #widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
     # if command line, to command line
-    if hasattr(self.argv,'dumpfile'):
+    if self.argv.dumpfile is not None:
       self.openDump()
       self.currentTab().searchStructure()
+    else:
+      ##DEBUG
+      m = Dummy(0,value=0)
+      self.make_memory_tab('/dev/null',m,[m])
 
   def setupUi(self,me):
     super(MyMain,self).setupUi(self)
@@ -269,7 +283,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
       log.info('dump %s is already opened'%(dump_name))
       return
     
-    tab = MemoryMappingWidget(dump_name)
+    tab = MemoryMappingWidget(dump_name, self.tabWidget)
     log.debug('Tab Created')
     self.statusBar().showMessage('Tab Created')
     self.tabWidget.addTab(tab, _fromUtf8(dump_name))
@@ -284,13 +298,17 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     return
 
   def openDump(self):
-    # load memorymapping
-    mappings = memory_dumper.load(self.argv)
-    self.mappings = mappings
-    # TODO : make a mapping chooser and kick self.heap and self.mappings
-    self.heap = [m for m in self.mappings if m.pathname == '[heap]'][0]
-    self.make_memory_tab( os.path.sep.join( [os.path.basename(self.argv.dumpfile.name),self.heap.pathname]), self.heap, self.mappings)
-    log.info('Dump opened')
+    #self.fileChooser = QtGui.QFileDialog(self)
+    filenames = QtGui.QFileDialog.getOpenFileNames(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
+    for filename in filenames:
+      log.info('Opening %s'%(filename))
+      dumpfile = file(str(filename))
+      # load memorymapping
+      mappings = memory_dumper.load(dumpfile)
+      # TODO : make a mapping chooser 
+      heap = [m for m in mappings if m.pathname == '[heap]'][0]
+      self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
+      log.info('Dump opened')
     return
 
   def searchStructure(self):
