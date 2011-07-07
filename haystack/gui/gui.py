@@ -264,6 +264,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # connect menu
     self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
     self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
+    self.connect(self.menu_file_close, QtCore.SIGNAL('triggered()'), self.closeTab)
     self.connect(self.menu_search_structure, QtCore.SIGNAL('triggered()'), self.searchStructure)
     self.tabWidget.removeTab(0)    
     self.tabWidget.removeTab(0)
@@ -310,7 +311,14 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
       self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
       log.info('Dump opened')
     return
-
+  
+  def closeTab(self):
+    self.tabWidget.removeTab(self.tabWidget.currentIndex())    
+    return
+    
+  def currentTab(self):
+    return self.tabWidget.currentWidget()
+  
   def searchStructure(self):
     import searchview
     #save a ref ?
@@ -318,9 +326,6 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     self.searchStructureDialog.show()
     return
   
-  def currentTab(self):
-    return self.tabWidget.currentWidget()
-
   
   def closeEvent(self, event):
     #debug

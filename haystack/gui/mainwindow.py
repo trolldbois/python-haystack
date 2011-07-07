@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui.ui'
 #
-# Created: Thu Jul  7 15:09:56 2011
+# Created: Thu Jul  7 15:35:06 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -73,7 +73,10 @@ class Ui_MainWindow(object):
         self.menu_search_value.setObjectName(_fromUtf8("menu_search_value"))
         self.menu_search_structure = QtGui.QAction(MainWindow)
         self.menu_search_structure.setObjectName(_fromUtf8("menu_search_structure"))
+        self.menu_file_close = QtGui.QAction(MainWindow)
+        self.menu_file_close.setObjectName(_fromUtf8("menu_file_close"))
         self.menuFile.addAction(self.menu_file_open)
+        self.menuFile.addAction(self.menu_file_close)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.menu_file_exit)
         self.menuSearch.addAction(self.menu_search_structure)
@@ -104,4 +107,6 @@ class Ui_MainWindow(object):
         self.menu_search_value.setText(QtGui.QApplication.translate("MainWindow", "Search value", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_search_structure.setText(QtGui.QApplication.translate("MainWindow", "Search Structure", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_search_structure.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+F", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_close.setText(QtGui.QApplication.translate("MainWindow", "Close tab", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_close.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+W", None, QtGui.QApplication.UnicodeUTF8))
 

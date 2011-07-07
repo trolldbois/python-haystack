@@ -74,6 +74,7 @@
      <string>File</string>
     </property>
     <addaction name="menu_file_open"/>
+    <addaction name="menu_file_close"/>
     <addaction name="separator"/>
     <addaction name="menu_file_exit"/>
    </widget>
@@ -134,6 +135,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="menu_file_close">
+   <property name="text">
+    <string>Close tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
  </widget>
