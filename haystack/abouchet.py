@@ -43,7 +43,7 @@ class StructFinder:
     outputs=[]
     for m in self.targetMappings:
       ##debug, most structures are on head
-      log.info("Looking at %s (%d bytes)"%(m, m.end-m.start))
+      log.info("Looking at %s (%d bytes)"%(m, len(m)))
       if not hasValidPermissions(m):
         log.warning("Invalid permission for memory %s"%m)
         continue
