@@ -3,7 +3,7 @@ from setuptools import setup
 from glob import glob
 
 setup(name="haystack",
-    version="0.7",
+    version="0.8",
     description="Search C Structures in a process' memory",
     long_description=open('README').read(),
 
@@ -14,6 +14,7 @@ setup(name="haystack",
         "Topic :: System :: Networking",
         "Topic :: Security",
         "Environment :: Console",
+        "Environment :: X11 Applications :: Qt",        
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",
@@ -23,6 +24,8 @@ setup(name="haystack",
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
     packages = ['haystack'],
-    scripts = ['scripts/haystack'],
+    scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump'],
     install_requires = ["python-ptrace","argparse"],
 )
+
+

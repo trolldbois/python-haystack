@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
+__doc__ = '''
+  Dump a process memory mappings to a file.
+'''
+
+import os, sys
+
+if __name__ == "__main__":
+  sys.path.append(os.getcwd())
+  from haystack import memory_dumper 
+  memory_dumper.main(sys.argv[1:])
+
+

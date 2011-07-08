@@ -14,7 +14,7 @@ import model
 from ptrace.debugger.debugger import PtraceDebugger
 # local
 from memory_mapping import MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
-import memory_mapping
+from . import memory_mapping
 
 log = logging.getLogger('dumper')
 
