@@ -357,9 +357,9 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     return
 
   def dialog_addModule(self):
-    import addmodule
-    self.searchStructureDialog = searchview.SearchStructDialog(self)
-    self.searchStructureDialog.show()
+    import addmoduleview
+    self.addModuleDialog = addmoduleview.AddModuleDialog(self)
+    self.addModuleDialog.show()
     return
   
   

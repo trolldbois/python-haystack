@@ -78,7 +78,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
         fullname = '.'.join([mod.__name__,cls])      
         if typ.__module__.startswith(mod.__name__) and model.isStructType(typ()):
           it = QtGui.QTreeWidgetItem(root, [cls] )
-          it.setFont(font)
+          it.setFont(0,font)
           self.classes.add(fullname)
       if it is not None:
         items.append(root)
@@ -98,7 +98,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
         if (typ.__module__.startswith(mod.__name__) and model.isRegistered(typ) 
             and txt in fullname ):
           it = QtGui.QTreeWidgetItem(root, [cls] )
-          it.setFont(font)
+          it.setFont(0,font)
       if it is not None:
         items.append(root)
     self.searchWidget_tree.clear()
