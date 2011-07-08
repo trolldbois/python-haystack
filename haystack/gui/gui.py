@@ -278,9 +278,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # if command line, to command line
     if self.argv.dumpfile is not None:
       self._openDumpfile(self.argv.dumpfile)
-      #self.currentTab().searchStructure()
     else:
-      ##DEBUG
       m = Dummy(0,value=0)
       self.make_memory_tab('/dev/null',m,[m])
 
@@ -292,7 +290,8 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     self.connect(self.menu_file_exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
     self.connect(self.menu_file_open, QtCore.SIGNAL('triggered()'), self.openDump)
     self.connect(self.menu_file_close, QtCore.SIGNAL('triggered()'), self.closeTab)
-    self.connect(self.menu_search_structure, QtCore.SIGNAL('triggered()'), self.searchStructure)
+    self.connect(self.menu_search_structure, QtCore.SIGNAL('triggered()'), self.dialog_searchStructure)
+    self.connect(self.menu_tools_addmodule, QtCore.SIGNAL('triggered()'), self.dialog_addModule)
     self.tabWidget.removeTab(0)    
     self.tabWidget.removeTab(0)
     # plug logging to the statusBar
@@ -350,9 +349,15 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
   def currentTab(self):
     return self.tabWidget.currentWidget()
   
-  def searchStructure(self):
+  def dialog_searchStructure(self):
     import searchview
     #save a ref ?
+    self.searchStructureDialog = searchview.SearchStructDialog(self)
+    self.searchStructureDialog.show()
+    return
+
+  def dialog_addModule(self):
+    import addmodule
     self.searchStructureDialog = searchview.SearchStructDialog(self)
     self.searchStructureDialog.show()
     return

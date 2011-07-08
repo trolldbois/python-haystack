@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui.ui'
 #
-# Created: Thu Jul  7 15:35:06 2011
+# Created: Fri Jul  8 08:50:08 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -57,6 +57,8 @@ class Ui_MainWindow(object):
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
         self.menuSearch = QtGui.QMenu(self.menubar)
         self.menuSearch.setObjectName(_fromUtf8("menuSearch"))
+        self.menu_tools = QtGui.QMenu(self.menubar)
+        self.menu_tools.setObjectName(_fromUtf8("menu_tools"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
@@ -75,14 +77,18 @@ class Ui_MainWindow(object):
         self.menu_search_structure.setObjectName(_fromUtf8("menu_search_structure"))
         self.menu_file_close = QtGui.QAction(MainWindow)
         self.menu_file_close.setObjectName(_fromUtf8("menu_file_close"))
+        self.menu_tools_addmodule = QtGui.QAction(MainWindow)
+        self.menu_tools_addmodule.setObjectName(_fromUtf8("menu_tools_addmodule"))
         self.menuFile.addAction(self.menu_file_open)
         self.menuFile.addAction(self.menu_file_close)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.menu_file_exit)
         self.menuSearch.addAction(self.menu_search_structure)
         self.menuSearch.addAction(self.menu_search_value)
+        self.menu_tools.addAction(self.menu_tools_addmodule)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuSearch.menuAction())
+        self.menubar.addAction(self.menu_tools.menuAction())
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
@@ -95,6 +101,7 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "Tab 2", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
         self.menuSearch.setTitle(QtGui.QApplication.translate("MainWindow", "Search", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_tools.setTitle(QtGui.QApplication.translate("MainWindow", "Tools", None, QtGui.QApplication.UnicodeUTF8))
         self.actionExit.setText(QtGui.QApplication.translate("MainWindow", "Exit", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_open.setText(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_open.setToolTip(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
@@ -109,4 +116,6 @@ class Ui_MainWindow(object):
         self.menu_search_structure.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+F", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_close.setText(QtGui.QApplication.translate("MainWindow", "Close tab", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_close.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+W", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_tools_addmodule.setText(QtGui.QApplication.translate("MainWindow", "Add haystack module", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_tools_addmodule.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+M", None, QtGui.QApplication.UnicodeUTF8))
 
