@@ -32,7 +32,6 @@ class _book(object):
     pass
   def addModule(self, mod):
     self.modules.add(mod)
-    print 'add', mod
   def addClass(self,cls):
     self.classes[ctypes.POINTER(cls)] = cls
   def addRef(self,obj):
@@ -41,6 +40,8 @@ class _book(object):
     return set(self.modules)
   def getClasses(self):
     return dict(self.classes)
+  def isRegisteredType(self, typ):
+    return typ in self.classes.values()
 
 # central model book register
 __book = _book()
@@ -829,7 +830,7 @@ def registerModule( targetmodule ):
 
 def isRegistered(cls):
   #return cls in sys.modules[__name__].__dict__.values()
-  return cls in __book.getClasses()
+  return __book.isRegisteredType(cls)
 
 # create local POPO ( lodableMembers )
 createPOPOClasses(sys.modules[__name__] )
