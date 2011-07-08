@@ -23,7 +23,7 @@ setup(name="haystack",
     keywords=['memory','analysis','forensics','struct','ptrace'],
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
-    packages = ['haystack'],
+    packages = ['haystack','haystack.gui'],
     scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump'],
     install_requires = ["python-ptrace","argparse"],
 )
