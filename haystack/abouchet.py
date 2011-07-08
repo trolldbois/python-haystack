@@ -32,6 +32,8 @@ class StructFinder:
   '''
   def __init__(self, mappings, targetMappings=None):
     self.mappings = mappings
+    if type(mappings) == bool:
+      raise TypeError()
     self.targetMappings = targetMappings
     if targetMappings is None:
       self.targetMappings = mappings
