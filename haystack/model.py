@@ -637,8 +637,7 @@ class LoadableMembers(ctypes.Structure):
       member=self._attrToPyObject(attr,field,typ)
       setattr(my_self, field, member)
     # save the original type (me) and the field
-    setattr(my_self, '_ctype_', type(self))    
-    setattr(my_self, '_fields_',_fieldsTuple)    
+    setattr(my_self, '_ctype_', type(self))
     return my_self
     
   def _attrToPyObject(self,attr,field,typ):
@@ -713,6 +712,9 @@ class pyObj(object):
   def findCtypes(self):
     ret = False
     for attrname,typ in self.__dict__.items():
+      # ignore _ctype_, it's a ctype class type, we know that.
+      if attrname == '_ctype_' :
+        continue
       attr = getattr(self, attrname)
       if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
@@ -736,8 +738,8 @@ class pyObj(object):
     return ret
 
   def __iter__(self):
-    ''' iterate on a instance's members following the original type field order '''
-    for k,typ in self._fields_:
+    ''' iterate on a instance's type's _fields_ members following the original type field order '''
+    for k,typ in self._ctype_._fields_:
       v = getattr(self,k)
       yield (k,v,typ)
     pass
