@@ -298,7 +298,8 @@ def search(args):
     targetMapping = [m for m in mappings if m.pathname == '[heap]']
     if len(targetMapping) == 0:
       log.warning('No [heap] memorymapping found. Searching everywhere.')
-  finder = StructFinder(mappings)
+      targetMapping = mappings
+  finder = StructFinder(mappings, targetMapping)
   try:
     outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)
   except KeyboardInterrupt,e:
