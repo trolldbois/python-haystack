@@ -721,7 +721,7 @@ class pyObj(object):
         if self._attrFindCtypes(el, 'element', None):
           log.warning('Found a ctypes in array/tuple')
           return True
-    elif type(attr).__module__ == 'ctypes':
+    elif type(attr).__module__ in ['ctypes','_ctypes']:
       log.warning('Found a ctypes in self  %s'%(attr))
       return True
     elif not hasattr(attr,'__dict__'):
