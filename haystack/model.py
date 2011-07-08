@@ -178,6 +178,10 @@ def pointer2bytes(attr,nbElement):
   array=(type(attr.contents)*nbElement).from_address(firstElementAddr)
   # we have an array type starting at attr.contents[0]
   return array2bytes(array)
+
+def isCTypes(obj):
+  ''' pointer or type'''
+  return  (type(obj).__module__ in ['ctypes','_ctypes']) 
     
 def isBasicType(obj):
   return  (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
@@ -721,7 +725,7 @@ class pyObj(object):
         if self._attrFindCtypes(el, 'element', None):
           log.warning('Found a ctypes in array/tuple')
           return True
-    elif type(attr).__module__ in ['ctypes','_ctypes']:
+    elif isCTypes(attr):
       log.warning('Found a ctypes in self  %s'%(attr))
       return True
     elif not hasattr(attr,'__dict__'):
