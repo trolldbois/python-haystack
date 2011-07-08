@@ -15,7 +15,7 @@ import inspect
 from searchStruct import Ui_Search_Structure
 
 # IMPORTANT: we need to keep the module hierarchy, otherwise the book register/singleton is dead
-from .. import model 
+from haystack import model 
 
 class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
 
@@ -65,6 +65,8 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     return 
   
   def fillTree(self):
+    # DEBUG 
+    import sslsnoop.ctypes_openssh
     # we have to use haystack.model (.. .model) and not only model
     mods = model.registeredModules()
     log.debug('loading %d registered modules'%(len(mods)) )

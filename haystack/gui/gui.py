@@ -10,10 +10,8 @@ import itertools
 import operator
 
 import statushandler
-from .. import memory_dumper
-from .. import memory_mapping
-#from ..memory_mapping import MemoryMapping
-
+from haystack import memory_dumper
+from haystack import memory_mapping
 
 log = logging.getLogger('gui')
 

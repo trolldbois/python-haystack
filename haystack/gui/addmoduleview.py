@@ -14,9 +14,6 @@ import inspect
 
 from addmodule import Ui_addModuleDialog
 
-# IMPORTANT: we need to keep the module hierarchy, otherwise the book register/singleton is dead
-from .. import model 
-
 class AddModuleDialog(QtGui.QDialog, Ui_addModuleDialog):
 
   def __init__(self, parent=None):
