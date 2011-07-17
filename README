@@ -13,8 +13,9 @@ $ haystack-gui
 
 Run in a python script :
 >>> import haystack
->>> haystack.findStruct( pid , 'ctypes.c_int')
->>> haystack.findStruct( pid , 'ctypes_example.big_struct')
+>>> pid = 12345
+>>> haystack.findStruct( pid , sslsnoop.ctypes_openssh.session_state)
+>>> haystack.findStruct( pid , ctypes_example.big_struct)
 
 It's easy to add new structures (check ctypeslib or do it by hand or check sslsnoop on github)
 
@@ -23,6 +24,7 @@ b) You must give your class a completed _fields_ (with one _ ), like all ctypes.
 c) You can add an expectedValues dict() to your class to refine your search
 d) call model.registerModule(sys.modules[__name__])
 
+Easy 'creation' : use h2xml and xml2py from ctypeslib
 Advanced use : You can override methods to fine tune some validation or loading
 
 The global algoritm :

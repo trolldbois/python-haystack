@@ -48,7 +48,7 @@ class StructFinder:
     log.debug('StructFinder on %d memorymappings. Search Perimeter on %d mappings.'%(len(self.mappings), len(self.targetMappings)) )
     return
 
-  def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 ):
+  def find_struct(self, structType, hintOffset=0, maxNum = 10, maxDepth=10 ):
     """ Iterate on all targetMappings to find a structure. """
     log.warning("Restricting search to %d memory mapping."%(len(self.targetMappings)))
     outputs=[]
@@ -60,8 +60,8 @@ class StructFinder:
         continue
       else:
         log.debug("%s,%s"%(m,m.permissions))
-      log.debug('look for %s'%(struct))
-      outputs.extend(self.find_struct_in( m, struct, hintOffset=hintOffset, maxNum=maxNum, maxDepth=maxDepth))
+      log.debug('look for %s'%(structType))
+      outputs.extend(self.find_struct_in( m, structType, hintOffset=hintOffset, maxNum=maxNum, maxDepth=maxDepth))
       # check out
       if len(outputs) >= maxNum:
         log.debug('Found enough instance. returning results.')
@@ -69,14 +69,14 @@ class StructFinder:
     # if we mmap, we could yield
     return outputs
 
-  def find_struct_in(self, memoryMap, struct, hintOffset=0, maxNum=10, maxDepth=99 ):
+  def find_struct_in(self, memoryMap, structType, hintOffset=0, maxNum=10, maxDepth=99 ):
     '''
-      Looks for struct in memory, using :
-        hints from struct (default values, and such)
-        guessing validation with instance(struct)().isValid()
-        and confirming with instance(struct)().loadMembers()
+      Looks for structType instances in memory, using :
+        hints from structType (default values, and such)
+        guessing validation with instance(structType)().isValid()
+        and confirming with instance(structType)().loadMembers()
       
-      returns POINTERS to struct.
+      returns POINTERS to structType instances.
     '''
 
     # update process mappings
@@ -86,7 +86,7 @@ class StructFinder:
     start=memoryMap.start  
     end=memoryMap.end
     plen=ctypes.sizeof(ctypes.c_void_p) # use aligned words only
-    structlen=ctypes.sizeof(struct)
+    structlen=ctypes.sizeof(structType)
     #ret vals
     outputs=[]
     # alignement
@@ -97,7 +97,7 @@ class StructFinder:
       align=hintOffset%plen
       start=start+ (hintOffset-align)
      
-    # parse for struct on each aligned word
+    # parse for structType on each aligned word
     log.debug("checking 0x%lx-0x%lx by increment of %d"%(start, (end-structlen), plen))
     instance=None
     import time
@@ -110,7 +110,7 @@ class StructFinder:
         log.debug('processed %d bytes  - %02.02f test/sec'%(p2, (p2-p)/(plen*(time.time()-t0)) ))
         t0=time.time()
         p=p2
-      instance,validated= self.loadAt( memoryMap, offset, struct, maxDepth) 
+      instance,validated= self.loadAt( memoryMap, offset, structType, maxDepth) 
       if validated:
         log.debug( "found instance @ 0x%lx"%(offset) )
         # do stuff with it.
@@ -121,16 +121,16 @@ class StructFinder:
     return outputs
 
 
-  def loadAt(self, memoryMap, offset, struct, depth=99 ):
+  def loadAt(self, memoryMap, offset, structType, depth=99 ):
     ''' 
       loads a haystack ctypes structure from a specific offset. 
-        return (instance,validated) with isntance being the haystack ctypes structure instance and validated a boolean True/False.
+        return (instance,validated) with instance being the haystack ctypes structure instance and validated a boolean True/False.
     '''
-    log.debug("Loading %s from 0x%lx "%(struct,offset))
+    log.debug("Loading %s from 0x%lx "%(structType,offset))
     instance=struct.from_buffer_copy(memoryMap.readStruct(offset,struct))
     # check if data matches
     if ( instance.loadMembers(self.mappings, depth) ):
-      log.info( "found instance %s @ 0x%lx"%(struct,offset) )
+      log.info( "found instance %s @ 0x%lx"%(structType,offset) )
       # do stuff with it.
       validated=True
     else:
@@ -177,16 +177,16 @@ def checkModulePath(typ):
     try:
       plainmod = typ.__module__.replace('_generated','')
       mod = __import__( plainmod, globals(), locals(), [kname])
-      struct = '.'.join([plainmod , kname])
-      log.info('trying %s instead of %s'%(struct, name))
-      return struct
+      structName = '.'.join([plainmod , kname])
+      log.info('trying %s instead of %s'%(structName, name))
+      return structName
     except ImportError:
       # shhh  
       pass
-  struct = '.'.join([typ.__module__,typ.__name__]) # we pass a str anyway...
-  return struct
+  structName = '.'.join([typ.__module__,typ.__name__]) # we pass a str anyway...
+  return structName
 
-def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1, 
+def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1, 
               fullScan=False, nommap=False, hint=None, debug=None ):
   ''' 
     Find all occurences of a specific structure from a process memory.
@@ -197,14 +197,14 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
     @param pid is the process PID.
     @param memfile the file containing a direct dump of the memory mapping ( optionnal)
     @param memdump the file containing a memory dump 
-    @param struct the structure name.
+    @param structType the structure type.
     @param offset the offset from which the structure must be loaded.
     @param debug if True, activate debug logs.
     @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
   '''
-  if type(struct) != type(ctypes.Structure):
-    raise TypeError('struct arg must be a ctypes.Structure')
-  structname = checkModulePath(struct) # add to sys.path
+  if type(structType) != type(ctypes.Structure):
+    raise TypeError('structType arg must be a ctypes.Structure')
+  structname = checkModulePath(structType) # add to sys.path
   cmd_line=[sys.executable, getMainFile(), "%s"%structname]
   if debug:
     cmd_line.insert(2,"--debug")
@@ -231,46 +231,46 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
   #
   return outs
 
-def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False, debug=False):
+def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=False):
   ''' 
     Find all occurences of a specific structure from a process memory.
     
     @param pid is the process PID.
-    @param struct the structure name.
+    @param structType the structure type.
     @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
     @param fullScan obselete
     @param nommap if True, do not use mmap while searching.
     @param debug if True, activate debug logs.
   '''
-  return _findStruct(pid=pid, struct=struct, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug)
+  return _findStruct(pid=pid, structType=structType, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug)
   
-def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False, debug=False):
+def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, debug=False):
   ''' 
     Find all occurences of a specific structure from a process memory in a file.
     
     @param filename is the file containing the memory mapping content.
-    @param struct the structure name.
+    @param structType the structure type.
     @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
     @param hint obselete
     @param fullScan obselete
     @param debug if True, activate debug logs.
   '''
-  return _findStruct(memfile=filename, struct=struct, maxNum=maxNum, fullScan=fullScan, debug=debug)
+  return _findStruct(memfile=filename, structType=structType, maxNum=maxNum, fullScan=fullScan, debug=debug)
 
 
-def refreshStruct(pid, struct, offset, debug=False, nommap=False):
+def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   ''' 
     returns the pickled or text representation of a structure, from a given offset in a process memory.
     
     @param pid is the process PID.
-    @param struct the structure name.
+    @param structType the structure Type.
     @param offset the offset from which the structure must be loaded.
     @param debug if True, activate debug logs.
     @param nommap if True, do not use mmap when mapping the memory
   '''
-  if type(struct) != type(ctypes.Structure):
-    raise TypeError('struct arg must be a ctypes.Structure')
-  structname = checkModulePath(struct) # add to sys.path
+  if type(structType) != type(ctypes.Structure):
+    raise TypeError('structType arg must be a ctypes.Structure')
+  structname = checkModulePath(structType) # add to sys.path
   cmd_line=[sys.executable, getMainFile(),  '%s'%structname]
   if debug:
     cmd_line.insert(2,"--debug")
@@ -301,7 +301,7 @@ def argparser():
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
   rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
   rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
-  rootparser.add_argument('structType', type=str, help='Structure type name')
+  rootparser.add_argument('structureTypeName', dest='structName', type=str, help='Structure type name')
   
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
@@ -339,22 +339,22 @@ def getKlass(name):
   #log.error(getattr(mod, kname+'_py'))
   return klass
 
-def searchIn(structType, mappings, targetMappings=None, maxNum=-1):
+def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
   """
     Search a structure in a specific memory mapping.
     
     if targetMappings is not specified, the search will occur in each memory mappings
      in mappings.
     
-    @param structType should be text.
+    @param structName the structure name.
     @param mappings the memory mappings list.
     @param targetMappings the list of specific mapping to look into.
     @param maxNum the maximum number of results expected. -1 for infinite.
   """
-  log.debug('searchIn: %s - %s'%(structType,mappings))
-  structType = getKlass(structType)
+  log.debug('searchIn: %s - %s'%(structName,mappings))
+  structType = getKlass(structName)
   finder = StructFinder(mappings, targetMappings)
-  # find all possible struct instance
+  # find all possible structType instance
   outs=finder.find_struct( structType, maxNum=maxNum)
   # prepare outputs
   ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
@@ -373,7 +373,7 @@ def search(args):
   See the command line --help .
   """
   log.debug('args: %s'%args)
-  structType = getKlass(args.structType)
+  structType = getKlass(args.structName)
   mappings = MemoryMapper(args).getMappings()
   if args.fullscan:
     targetMapping = mappings
@@ -426,7 +426,7 @@ def refresh(args):
   log.debug(args)
 
   addr=int(args.addr,16)
-  structType=getKlass(args.structType)
+  structType=getKlass(args.structName)
 
   mappings = MemoryMapper(args).getMappings()
   finder = StructFinder(mappings)
@@ -470,7 +470,7 @@ def main(argv):
   try:
     opts.func(opts)
   except ImportError,e:
-    log.error('Struct type does not exists.')
+    log.error('Structure type does not exists.')
     log.error('sys.path is %s'%sys.path)
     print e
 
