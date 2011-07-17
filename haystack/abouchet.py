@@ -127,7 +127,7 @@ class StructFinder:
         return (instance,validated) with instance being the haystack ctypes structure instance and validated a boolean True/False.
     '''
     log.debug("Loading %s from 0x%lx "%(structType,offset))
-    instance=structType.from_buffer_copy(memoryMap.readStruct(offset,struct))
+    instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
     # check if data matches
     if ( instance.loadMembers(self.mappings, depth) ):
       log.info( "found instance %s @ 0x%lx"%(structType,offset) )
@@ -204,8 +204,8 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
   '''
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
-  structname = checkModulePath(structType) # add to sys.path
-  cmd_line=[sys.executable, getMainFile(), "%s"%structname]
+  structName = checkModulePath(structType) # add to sys.path
+  cmd_line=[sys.executable, getMainFile(), "%s"%structName]
   if debug:
     cmd_line.insert(2,"--debug")
   if nommap:
@@ -226,7 +226,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
   # call me
   outs=_callFinder(cmd_line)
   if len(outs) == 0:
-    log.error("The %s has not been found."%(struct))
+    log.error("The %s has not been found."%(structName))
     return None
   #
   return outs
@@ -270,8 +270,8 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   '''
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
-  structname = checkModulePath(structType) # add to sys.path
-  cmd_line=[sys.executable, getMainFile(),  '%s'%structname]
+  structName = checkModulePath(structType) # add to sys.path
+  cmd_line=[sys.executable, getMainFile(),  '%s'%structName]
   if debug:
     cmd_line.insert(2,"--debug")
   if nommap:
