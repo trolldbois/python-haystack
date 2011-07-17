@@ -271,8 +271,15 @@ def FileMemoryMapping(memoryMapping, memdump):
   return ret
 
 def getFileBackedMemoryMapping(memoryMapping, memdump):
+  """
+    Transform a MemoryMapping to a file-backed MemoryMapping using FileBackedMemoryMapping.
+    
+    memoryMapping is the MemoryMapping instance.
+    memdump is used as memory_mapping content.
+    
+  """
   return FileBackedMemoryMapping(memdump, memoryMapping.start, memoryMapping.end, 
-              memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device, 
+              memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
               memoryMapping.inode, memoryMapping.pathname)
 
 class LazyMmap:

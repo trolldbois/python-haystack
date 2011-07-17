@@ -6,16 +6,24 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import argparse, logging, os, pickle, sys, time, ctypes
+import argparse
+import logging
+import os
+import pickle
+import sys
+import time
+import ctypes
 import subprocess
 
 import model
-
-from memory_mapper import MemoryMapper
+from haystack.memory_mapper import MemoryMapper as MemoryMapper
 
 log=logging.getLogger('haystack')
 
-environSep = ':'
+if not sys.platform.startswith('win'):
+  environSep = ':'
+else:
+  environSep = ';'
 
 
 
@@ -41,6 +49,7 @@ class StructFinder:
     return
 
   def find_struct(self, struct, hintOffset=0, maxNum = 10, maxDepth=10 ):
+    """ Iterate on all targetMappings to find a structure. """
     log.warning("Restricting search to %d memory mapping."%(len(self.targetMappings)))
     outputs=[]
     for m in self.targetMappings:
@@ -113,6 +122,10 @@ class StructFinder:
 
 
   def loadAt(self, memoryMap, offset, struct, depth=99 ):
+    ''' 
+      loads a haystack ctypes structure from a specific offset. 
+        return (instance,validated) with isntance being the haystack ctypes structure instance and validated a boolean True/False.
+    '''
     log.debug("Loading %s from 0x%lx "%(struct,offset))
     instance=struct.from_buffer_copy(memoryMap.readStruct(offset,struct))
     # check if data matches
@@ -132,6 +145,7 @@ def hasValidPermissions(memmap):
 
 
 def _callFinder(cmd_line):
+  """ Call the haystack finder in a subprocess. Will use pickled objects to communicate results. """
   env = os.environ
   env['PYTHONPATH'] = environSep.join(sys.path) # add possible pythonpaths to environnement
   p = subprocess.Popen(cmd_line, stdin=None, stdout=subprocess.PIPE, close_fds=True , env=env)
@@ -145,6 +159,11 @@ def getMainFile():
 
 
 def checkModulePath(typ):
+  '''
+    add typ module's path to sys.path
+    If the type is a generated haystack structure type, 
+    dump the '_generated' string from the module name and import it under the new module name.
+  '''
   name = typ.__name__
   module,sep,kname = name.rpartition('.')
   # add the __file__ module to sys.path for it to be reachable by subprocess
@@ -169,7 +188,20 @@ def checkModulePath(typ):
 
 def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1, 
               fullScan=False, nommap=False, hint=None, debug=None ):
-  ''' '''
+  ''' 
+    Find all occurences of a specific structure from a process memory.
+    Returns occurences as objects.
+
+    Call a subprocess to ptrace a process. That way, self.process is not attached to the target PID by any means.
+    
+    @param pid is the process PID.
+    @param memfile the file containing a direct dump of the memory mapping ( optionnal)
+    @param memdump the file containing a memory dump 
+    @param struct the structure name.
+    @param offset the offset from which the structure must be loaded.
+    @param debug if True, activate debug logs.
+    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+  '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
   structname = checkModulePath(struct) # add to sys.path
@@ -200,14 +232,42 @@ def _findStruct(pid=None, memfile=None, memdump=None, struct=None, maxNum=1,
   return outs
 
 def findStruct(pid, struct, maxNum=1, fullScan=False, nommap=False, debug=False):
+  ''' 
+    Find all occurences of a specific structure from a process memory.
+    
+    @param pid is the process PID.
+    @param struct the structure name.
+    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+    @param fullScan obselete
+    @param nommap if True, do not use mmap while searching.
+    @param debug if True, activate debug logs.
+  '''
   return _findStruct(pid=pid, struct=struct, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug)
   
 def findStructInFile(filename, struct, hint=None, maxNum=1, fullScan=False, debug=False):
+  ''' 
+    Find all occurences of a specific structure from a process memory in a file.
+    
+    @param filename is the file containing the memory mapping content.
+    @param struct the structure name.
+    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+    @param hint obselete
+    @param fullScan obselete
+    @param debug if True, activate debug logs.
+  '''
   return _findStruct(memfile=filename, struct=struct, maxNum=maxNum, fullScan=fullScan, debug=debug)
 
 
 def refreshStruct(pid, struct, offset, debug=False, nommap=False):
-  ''' '''
+  ''' 
+    returns the pickled or text representation of a structure, from a given offset in a process memory.
+    
+    @param pid is the process PID.
+    @param struct the structure name.
+    @param offset the offset from which the structure must be loaded.
+    @param debug if True, activate debug logs.
+    @param nommap if True, do not use mmap when mapping the memory
+  '''
   if type(struct) != type(ctypes.Structure):
     raise TypeError('struct arg must be a ctypes.Structure')
   structname = checkModulePath(struct) # add to sys.path
@@ -231,12 +291,11 @@ def refreshStruct(pid, struct, offset, debug=False, nommap=False):
     return None,None
   return instance,offset
 
-
-def usage(parser):
-  parser.print_help()
-  sys.exit(-1)
-  
 def argparser():
+  """
+    Builds the argparse tree.
+    See the command line --help .
+  """
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
   rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
@@ -264,6 +323,12 @@ def argparser():
 
 
 def getKlass(name):
+  '''
+    Returns the class type from a structure name.
+    The class' module is dynamically loaded.
+    
+    @param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
+  '''
   module,sep,kname=name.rpartition('.')
   mod = __import__(module, globals(), locals(), [kname])
   klass = getattr(mod, kname)  
@@ -275,6 +340,17 @@ def getKlass(name):
   return klass
 
 def searchIn(structType, mappings, targetMappings=None, maxNum=-1):
+  """
+    Search a structure in a specific memory mapping.
+    
+    if targetMappings is not specified, the search will occur in each memory mappings
+     in mappings.
+    
+    @param structType should be text.
+    @param mappings the memory mappings list.
+    @param targetMappings the list of specific mapping to look into.
+    @param maxNum the maximum number of results expected. -1 for infinite.
+  """
   log.debug('searchIn: %s - %s'%(structType,mappings))
   structType = getKlass(structType)
   finder = StructFinder(mappings, targetMappings)
@@ -289,6 +365,13 @@ def searchIn(structType, mappings, targetMappings=None, maxNum=-1):
   return ret
 
 def search(args):
+  """
+  Default function for the search command line option.
+  Search a process's memory for a specific Structure.
+  Returns findings in pickled or text format.
+  
+  See the command line --help .
+  """
   log.debug('args: %s'%args)
   structType = getKlass(args.structType)
   mappings = MemoryMapper(args).getMappings()
@@ -333,6 +416,13 @@ def search(args):
 
 
 def refresh(args):
+  """
+  Default function for the refresh command line option.
+  Try to map a Structure from a specific offset in memory.
+  Returns it in pickled or text format.
+  
+  See the command line --help .
+  """
   log.debug(args)
 
   addr=int(args.addr,16)
@@ -368,17 +458,6 @@ def refresh(args):
       print pickle.dumps(d)
   return instance,validated
 
-def test():
-  import subprocess
-  cmd_line=['python', 'abouchet.py', 'refresh', '2442', 'ctypes_openssh.session_state', '0xb822a268']
-  p = subprocess.Popen(cmd_line, stdin=None, stdout=subprocess.PIPE, close_fds=True )
-  p.wait()
-  instance=p.stdout.read()
-  instance=eval(instance)
-  return instance
-
-def devnull(arg, **args):
-  return
 
 def main(argv):
   
