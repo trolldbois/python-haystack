@@ -127,7 +127,7 @@ class StructFinder:
         return (instance,validated) with instance being the haystack ctypes structure instance and validated a boolean True/False.
     '''
     log.debug("Loading %s from 0x%lx "%(structType,offset))
-    instance=struct.from_buffer_copy(memoryMap.readStruct(offset,struct))
+    instance=structType.from_buffer_copy(memoryMap.readStruct(offset,struct))
     # check if data matches
     if ( instance.loadMembers(self.mappings, depth) ):
       log.info( "found instance %s @ 0x%lx"%(structType,offset) )
