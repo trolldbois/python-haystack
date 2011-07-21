@@ -49,7 +49,7 @@ class MemoryMapper:
       if hasattr(args,'mmap') and args.mmap:
         ### mmap memory in local space
         m.mmap()
-        log.debug('mmap() : %d'%(len(m.local_mmap)))
+        log.debug('mmap() : %d'%(len(m.mmap())))
       if ( m.pathname == '[heap]' or 
            m.pathname == '[vdso]' or
            m.pathname == '[stack]' or
