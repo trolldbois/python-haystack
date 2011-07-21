@@ -739,7 +739,7 @@ class pyObj(object):
 
   def __iter__(self):
     ''' iterate on a instance's type's _fields_ members following the original type field order '''
-    for k,typ in self._ctype_._fields_:
+    for k,typ in [ (f[0],f[1]) for f in self._ctype_._fields_]:
       v = getattr(self,k)
       yield (k,v,typ)
     pass
