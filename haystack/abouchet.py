@@ -36,9 +36,8 @@ class StructFinder:
   
   @param mappings: address space
   @param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
-  
   '''
-  def __init__(self, mappings, targetMappings=None):
+  def __init__(self, mappings, targetMappings=None, updateCb=None):
     self.mappings = mappings
     if type(mappings) == bool:
       raise TypeError()
@@ -47,7 +46,7 @@ class StructFinder:
       self.targetMappings = mappings
     log.debug('StructFinder on %d memorymappings. Search Perimeter on %d mappings.'%(len(self.mappings), len(self.targetMappings)) )
     return
-
+    
   def find_struct(self, structType, hintOffset=0, maxNum = 10, maxDepth=10 ):
     """ Iterate on all targetMappings to find a structure. """
     log.warning("Restricting search to %d memory mapping."%(len(self.targetMappings)))
@@ -137,6 +136,37 @@ class StructFinder:
       log.debug("Address not validated")
       validated=False
     return instance,validated
+
+
+class VerboseStructFinder(StructFinder):
+  ''' structure finder with a update callback to be more verbose.
+  Will search a structure defined by it's pointer and other constraints.
+  Address space is defined by  mappings.
+  Target memory perimeter is defined by targetMappings.
+  targetMappings is included in mappings.
+  
+  @param mappings: address space
+  @param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+  @param updateCb: callback func. for periodic status update
+  '''
+  def __init__(self,mappings, targetMappings=None, updateCb=None):
+    StructFinder.__init__(self,mappings, targetMappings)
+    self.updateCb = updateCb
+    self._updateCb_init()
+    
+  def _updateCb_init(self):
+    # approximation
+    nb = lambda x : ((x.end-x.start)/4)
+    self._update_nb_steps = sum([nb(m) for m in self.targetMappings])
+    self._update_i = 0
+
+  def loadAt(self, memoryMap, offset, structType, depth=99 ):
+    self._update_i+=1
+    self.updateCb(self._update_i)
+    StructFinder.loadAt(memoryMap, offset, structType, depth=depth )
+
+
+
 
 def hasValidPermissions(memmap):
   ''' memmap must be 'rw..' or shared '...s' '''
