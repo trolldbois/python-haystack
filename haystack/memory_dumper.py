@@ -6,6 +6,8 @@
 
 import logging
 import argparse, ctypes, os, pickle, time, sys
+import tarfile
+import tempfile, shutil
 
 
 import model 
@@ -14,7 +16,7 @@ import model
 from ptrace.debugger.debugger import PtraceDebugger
 # local
 from memory_mapping import MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
-from . import memory_mapping
+from haystack import memory_mapping
 
 log = logging.getLogger('dumper')
 
@@ -40,7 +42,6 @@ class MemoryDumper:
     return
     
   def dumpMemfile(self):
-    import tempfile
     tmpdir = tempfile.mkdtemp()
     # test dump only the heap
     for m in self.mappings:
@@ -62,14 +63,13 @@ class MemoryDumper:
     m.mmap()
     log.debug('Dumping the memorymap content')
     with open(mmap_fname,'wb') as mmap_fout:
-      mmap_fout.write(m.local_mmap)
+      mmap_fout.write(m.mmap())
     log.debug('Dumping the memorymap metadata')
     with open(mmap_fname+'.pickled','w') as mmap_fout:
       pickle.dump(m, mmap_fout)
     return 
 
   def archive(self, srcdir, name):
-    import tempfile, shutil
     tmpdir = tempfile.mkdtemp()
     tmpname = os.path.join(tmpdir, os.path.basename(name))
     log.debug('running shutil.make_archive')
@@ -79,46 +79,98 @@ class MemoryDumper:
 
 
 
-
 class MemoryDumpLoader:
   ''' Loads a memory dump done by MemoryDumper.
   It's basically a tgz of all memorymaps '''
   def __init__(self, dumpfile):
     self.dumpfile = dumpfile
+    if not self.isValid():
+      raise ValueError('memory dump not valid for %s '%(self.__class__))
     self.loadMappings()
-  
+  def getMappings(self):
+    return self.mappings
   def loadMappings(self):
-    import tarfile
-    self.archive = tarfile.open(None,'r', self.dumpfile)
-    #self.archive.list()
-    members = self.archive.getnames()
-    mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
+    raise NotImplementedError()
+    
+
+class ProcessMemoryDumpLoader(MemoryDumpLoader):
+
+  def isValid(self):
+    try :
+      self.archive = tarfile.open(None,'r', self.dumpfile)
+      #self.archive.list()
+      members = self.archive.getnames()
+      self.mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
+      if len(self.mmaps)>0:
+        return True
+    except tarfile.ReadError,e:
+      return False
+        
+  def loadMappings(self):
     self.mappings = []
-    for content,md in mmaps:
+    for content,md in self.mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
       log.debug('Loading %s'%(mmap))
       mmap_content = self.archive.extractfile(content).read()
       # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      mmap.local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      mmap._local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
       self.mappings.append(mmap)
     
-  def getMappings(self):
-    return self.mappings
 
-class LazyMemoryDumpLoader(MemoryDumpLoader):
+class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
   def loadMappings(self):
-    import tarfile
-    self.archive = tarfile.open(None,'r', self.dumpfile)
-    #self.archive.list()
-    members = self.archive.getnames()
-    mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
     self.mappings = []
-    for content,md in mmaps:
+    for content,md in self.mmaps:
       mmap = pickle.load(self.archive.extractfile(md))
       log.debug('Lazy Loading %s'%(mmap))
       mmap_file = self.archive.extractfile(content)
       self.mappings.append(FileMemoryMapping(mmap, mmap_file))
       #self.mappings.append(memory_mapping.getFileBackedMemoryMapping(mmap, mmap_file))
+
+
+class KCoreDumpLoader(MemoryDumpLoader):
+  def isValid(self):
+    # debug we need a system map to validate...... probably
+    return True
+    
+  def getBaseOffset(self,systemmap):
+    systemmap.seek(0)
+    for l in systemmap.readlines():
+      if 'T startup_32' in l:
+        addr,d,n = l.split()
+        log.info('found base_offset @ %s'%(addr))
+        return int(addr,16)
+    return None
+
+
+  def getInitTask(self,systemmap):
+    systemmap.seek(0)
+    for l in systemmap.readlines():
+      if 'D init_task' in l:
+        addr,d,n = l.split()
+        log.info('found init_task @ %s'%(addr))
+        return int(addr,16)
+    return None
+    
+  def getDTB(self,systemmap):
+    systemmap.seek(0)
+    for l in systemmap.readlines():
+      if '__init_end' in l:
+        addr,d,n = l.split()
+        log.info('found __init_end @ %s'%(addr))
+        return int(addr,16)
+    return None
+    
+  def loadMappings(self):
+    #DEBUG
+    #start = 0xc0100000
+    start = 0xc0000000
+    end = 0xc090d000
+    kmap = MemoryDumpMemoryMapping(self.dumpfile, start, end, permissions='rwx-', offset=0x0, 
+            major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpfile.name)
+    self.mappings = [kmap]
+
+
 
 
 def dump(opt):
@@ -132,14 +184,22 @@ def dump(opt):
 def _load(opt):
   return load(opt.dumpfile,opt.lazy)
 
+loaders = [LazyProcessMemoryDumpLoader,ProcessMemoryDumpLoader,KCoreDumpLoader]
+
 def load(dumpfile,lazy=True):
-  if lazy:
-    memdump = LazyMemoryDumpLoader(dumpfile)
-  else:  
-    memdump = MemoryDumpLoader(dumpfile)
-    log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-    for m in memdump.getMappings():
-      log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.local_mmap)) )    
+  try:
+    if lazy:
+      memdump = LazyProcessMemoryDumpLoader(dumpfile)
+    else:  
+      memdump = ProcessMemoryDumpLoader(dumpfile)
+      log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
+      for m in memdump.getMappings():
+        log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
+  except ValueError,e:
+    log.warning(e)
+    log.warning('trying a KCore')
+    #last chance
+    memdump = KCoreDumpLoader(dumpfile)
   return memdump.getMappings()
 
 def argparser():
