@@ -158,6 +158,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     log.info('search %s mapping for pointer'%(self.mapping_name))
     found = 0 
     for offset in xrange(0,len(self.mapping),4):
+      if offset%1024:
+        log.info('searching pointers at @0x%x'%(offset+self.mapping.start))
       i = offset + self.mapping.start
       word = self.mapping.readWord(i)
       # find pointers
@@ -208,7 +210,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     from haystack import abouchet
     import ctypes
     #import sslsnoop #?
-    instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping] ,maxNum=999)
+    instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping] ,maxNum=5)
     if len(instances) > 0:
       log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
     # init graphical element
@@ -336,7 +338,10 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # load memorymapping
     mappings = memory_dumper.load(dumpfile)
     # TODO : make a mapping chooser 
-    heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    if len(mappings) > 1:
+      heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    else:
+      heap = mappings[0]
     return self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
   
   
