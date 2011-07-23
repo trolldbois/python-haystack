@@ -27,30 +27,48 @@ if ctypes.Structure.__name__ == 'Structure':
 class _book(object):
   modules = set()
   classes = dict()
-  refs = list()
+  refs = dict()
   def __init__(self):
     pass
   def addModule(self, mod):
     self.modules.add(mod)
   def addClass(self,cls):
     self.classes[ctypes.POINTER(cls)] = cls
-  def addRef(self,obj):
-    self.refs.append(obj)
+  def addRef(self,obj, typ, addr):
+    self.refs[(typ,addr)]=obj
   def getModules(self):
     return set(self.modules)
   def getClasses(self):
     return dict(self.classes)
+  def getRef(self,typ,addr):
+    return self.refs[(typ,addr)]
   def isRegisteredType(self, typ):
     return typ in self.classes.values()
 
+    
 # central model book register
 __book = _book()
 
-def keepRef(obj):
+def printRefs():
+  l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]
+  for i in l:
+    print l
+
+def hasRef(typ,origAddr):
+  return (typ,origAddr) in __book.refs
+
+def getRef(typ,origAddr):
+  if (typ,origAddr) in __book.refs:
+    return __book.getRef(typ,origAddr)
+  return None
+
+def keepRef(obj,typ=None,origAddr=None):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
     they might be transient (if obj == somepointer.contents).'''
   #__refs.append(obj)
-  __book.addRef(obj)
+  if (typ,origAddr) in __book.refs:
+    log.warning('references already in cache %s/%x'%(typ,origAddr))
+  __book.addRef(obj,typ,origAddr)
   return
 
 def register(klass):
@@ -461,7 +479,7 @@ class LoadableMembers(ctypes.Structure):
         if not self._loadMember(attr,attrname,attrtype,mappings, maxDepth):
           return False
       except ValueError, e:
-        #log.error( 'maxDepth was %d'% maxDepth)
+        log.error( 'maxDepth was %d'% maxDepth)
         raise e
 
     log.debug('%s END loadMembers ----------------'%(self.__class__.__name__))
@@ -536,9 +554,18 @@ class LoadableMembers(ctypes.Structure):
         # big BUG Badaboum, why did pointer changed validity/value ?
         log.warning("%s %s not loadable 0x%lx but VALID "%(attrname, attr,attr_obj_address ))
         return True
+      ref=getRef(_attrType,attr_obj_address)
+      if ref:
+        log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
+        attr.contents = ref
+        return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### VALID INSTR.
+      if attrname == 'real_parent':
+        print __book.refs
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
+      # save that ref and original addr so we dont need to recopy it later
+      keepRef( attr.contents, _attrType,attr_obj_address)
       #####
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
@@ -641,6 +668,10 @@ class LoadableMembers(ctypes.Structure):
     #log.info("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
     my_class=getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
     my_self=my_class()
+    #keep ref
+    if hasRef(my_class, ctypes.addressof(self) ):
+      return getRef(my_class, ctypes.addressof(self) )
+    keepRef(my_self, my_class, ctypes.addressof(self) )
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     for field,typ in _fieldsTuple:
       attr=getattr(self,field)
@@ -668,6 +699,10 @@ class LoadableMembers(ctypes.Structure):
       else:
         contents=attr.contents
         if isStructType(contents) :
+          attr_py_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
+          cache = getRef(attr_py_class, getaddress(attr) )
+          if cache:
+            return cache
           obj=contents.toPyObject()
         elif isPointerType(contents):
           obj=self._attrToPyObject(contents,None,None)
@@ -693,24 +728,26 @@ class pyObj(object):
     - findCtypes(self) : checks if a ctypes is to be found somewhere is the object.
                       Useful to check if the object can be pickled.
   '''
-  def toString(self, prefix=''):
+  def toString(self, prefix='',maxDepth=10):
+    if maxDepth < 0:
+      return '#(- not printed by Excessive recursion - )'
     s='{\n'
     for attrname,typ in self.__dict__.items():
       attr = getattr(self, attrname)
-      s += "%s%s: %s\n"%( prefix, attrname, self._attrToString(attr, attrname, typ, prefix+'\t') )
+      s += "%s%s: %s\n"%( prefix, attrname, self._attrToString(attr, attrname, typ, prefix+'\t', maxDepth=maxDepth-1) )
     s+='}'
     return s
 
-  def _attrToString(self, attr, attrname, typ, prefix ):
+  def _attrToString(self, attr, attrname, typ, prefix, maxDepth):
     s=''
     if type(attr) is tuple or type(attr) is list:
       for i in xrange(0,len(attr)):
-        s += '%s,'%(self._attrToString(attr[i], i ,None, prefix+'\t' ) )
+        s += '%s,'%(self._attrToString(attr[i], i ,None, prefix+'\t', maxDepth) )
       s = "[%s],"%(s)
     elif not hasattr(attr,'__dict__'):
       s = '%s,'%( repr(attr) )
     elif  isinstance( attr , pyObj):
-      s = '%s,'%( attr.toString(prefix) )
+      s = '%s,'%( attr.toString(prefix,maxDepth) )
     else:
       s = '%s,'%(repr(attr) )
       #print 'ELSE type: %s %s'%(type(attr), type(type(attr)) )
