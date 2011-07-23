@@ -8,7 +8,7 @@ from weakref import ref
 import ctypes, struct, mmap
 # local
 #from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
-
+import os
 import logging
 log = logging.getLogger('memory_mapping')
 
@@ -121,9 +121,9 @@ class MemoryMapping:
         self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
       return self._local_mmap
     def unmmap(self):
-      if isMmaped():
-        del self._local__mmap
-        self._local__mmap = None
+      if self.isMmaped():
+        del self._local_mmap
+        self._local_mmap = None
       return
 
     def readWord(self, address):
@@ -204,11 +204,22 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=True):
         MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._process = None
+        self.memdump = memdump
         if preload:
           self.mmap()
+        s = os.fstat(memdump.fileno()).st_size
+        if offset > s:
+          raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     
     def mmap(self):
-        self._local_mmap = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ, offset=offset)
+        if not self.isMmaped():
+          try:
+            self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ, offset=self.offset)
+            #if len != real len, raise error
+          except ValueError,e:
+            log.warning('error while loading mmap size 0x%x for offset 0x%x'%(self.end-self.start, self.offset))
+            raise e
+        return self._local_mmap
     
     def _err(self):
         raise 
@@ -219,26 +230,27 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     def readWord(self, address):
         """Address have to be aligned!"""
         laddr = self.vtop(address)
-        word = ctypes.c_ulong.from_buffer_copy(self._local_mmap, laddr).value # is non-aligned a pb ?
+        word = ctypes.c_ulong.from_buffer_copy(self.mmap(), laddr).value # is non-aligned a pb ?
         return word
 
     def readBytes(self, address, size):
         laddr = self.vtop(address)
-        data = self._local_mmap[laddr:laddr+size]
+        data = self.mmap()[laddr:laddr+size]
         return data
 
     def readStruct(self, address, structType):
         from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
         laddr = self.vtop(address)
+        #print 'vaddr:0x%x paddr:0x%x lenmmap:0x%x'%(address,laddr,len(self.mmap()))
         structLen = ctypes.sizeof(structType)
-        st = self._local_mmap[laddr:laddr+structLen]
+        st = self.mmap()[laddr:laddr+structLen]
         structtmp = bytes2array(st, ctypes.c_ubyte)
         struct = structType.from_buffer(structtmp)
         return struct
 
     def readArray(self, address, basetype, count):
         laddr = self.vtop(address)
-        array = (basetype *count).from_buffer_copy(self._local_mmap, laddr)
+        array = (basetype *count).from_buffer_copy(self.mmap(), laddr)
         return array
 
     def vtop(self, vaddr):
