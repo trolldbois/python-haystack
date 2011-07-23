@@ -10,11 +10,11 @@ import os, time
 # linux only ?
 from ptrace.debugger.debugger import PtraceDebugger
 # local
-from memory_mapping import MemoryDumpMemoryMapping , readProcessMappings
+from memory_mapping import MemoryDumpMemoryMapping , FileBackedMemoryMapping, readProcessMappings
 
 log = logging.getLogger('mapper')
 
-
+MAX_DUMP_SIZE=200000000
 
 class MemoryMapper:
   def __init__(self, args):
@@ -30,7 +30,12 @@ class MemoryMapper:
     return self.mappings
     
   def initMemfile(self,args):
-    mem = MemoryDumpMemoryMapping(args.memfile, 0, os.fstat(args.memfile.fileno()).st_size) ## is that valid ?
+    size = os.fstat(args.memfile.fileno()).st_size
+    if size > MAX_DUMP_SIZE:
+      mem = FileBackedMemoryMapping(args.memfile, args.baseOffset, args.baseOffset+size) ## is that valid ?
+      log.warning('Dump file size is big. Using file backend memory mapping. Its gonna be slooow')
+    else:
+      mem = MemoryDumpMemoryMapping(args.memfile, args.baseOffset, args.baseOffset+size) ## is that valid ?
     mappings=[mem]
     return mappings
 

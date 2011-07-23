@@ -77,6 +77,7 @@ class MemoryMapping:
     __repr__ = __str__
 
     def __len__(self):
+      print self.end,self.start
       return int(self.end - self.start)
 
     def search(self, bytestr):
@@ -276,7 +277,11 @@ def fileMemoryMapping_process(self):
   return self
 
 def FileMemoryMapping(memoryMapping, memdump):
-  """ A memoryMapping wrapper backed by a around a memory file dump for mmap() 
+  """ 
+  A memoryMapping wrapper backed by a around a memory file dump for mmap() 
+  Use it when you have a pickled MemoryMapping without data content and you want to attach it
+  to data content in a file.
+  
   @param memoryMapping: a MemoryMapping
   @param memdump: memorydump File
   """
@@ -317,7 +322,10 @@ class LazyMmap:
    useless.
   '''
   def __init__(self,memdump):
-    memdump.seek(2**64)
+    try:
+      memdump.seek(2**64)
+    except OverflowError:
+      memdump.seek(os.fstat(memdump.fileno()).st_size)
     self.size = memdump.tell()
     self.memdump = memdump
   
@@ -350,7 +358,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self.memdump = memdump
     self._local_mmap = LazyMmap(self.memdump)
-    return    
+    return
   def readWord(self, address):
     """Address have to be aligned!"""
     laddr = self.vtop(address)

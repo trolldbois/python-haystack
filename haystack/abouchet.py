@@ -331,7 +331,8 @@ def argparser():
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
   rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
   rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
-  rootparser.add_argument('structureTypeName', dest='structName', type=str, help='Structure type name')
+  rootparser.add_argument('structName', type=str, help='Structure type name')
+  rootparser.add_argument('--baseOffset', type=str, help='base offset of the memory map in the dump file.')
   
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
@@ -404,6 +405,8 @@ def search(args):
   """
   log.debug('args: %s'%args)
   structType = getKlass(args.structName)
+  if args.baseOffset:
+    args.baseOffset=int(args.baseOffset,16)
   mappings = MemoryMapper(args).getMappings()
   if args.fullscan:
     targetMapping = mappings
