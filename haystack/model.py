@@ -109,6 +109,16 @@ def getaddress(obj):
     #print 'object pointer is null'
     return 0  
 
+def container_of(memberaddr, typ, membername):
+  '''      const typeof( ((typ *)0)->member ) *__mptr = (ptr);    
+        (type *)( (char *)__mptr - offsetof(type,member) );}) '''
+  return typ.from_address( memberaddr - offsetof(typ, membername) )
+
+def offsetof(typ, membername):
+  T=typ()
+  return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
+
+
 ''' MISSING
 d 	double 	float 	8 	(4)
 p 	char[] 	string 	  	 
@@ -388,7 +398,7 @@ class LoadableMembers(ctypes.Structure):
       # all case, 
       _attrType=None
       if attrtype not in self.classRef:
-        log.debug("I can't know the size of the basic type behind the %s pointer, it's a pointer to basic type")
+        log.debug("I can't know the size of the basic type behind the %s pointer, it's a pointer to basic type"%(attrname))
         _attrType=None
       else:
         # test valid address mapping
@@ -428,8 +438,8 @@ class LoadableMembers(ctypes.Structure):
     @returns True if everything has been loaded, False if something went wrong. 
     '''
     if maxDepth == 0:
-      log.warning('Maximum depth reach. Not loading any deeper members.')
-      log.warning('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
+      log.debug('Maximum depth reach. Not loading any deeper members.')
+      log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
       return True
     maxDepth-=1
     log.debug('%s loadMembers'%(self.__class__.__name__))
@@ -451,7 +461,7 @@ class LoadableMembers(ctypes.Structure):
         if not self._loadMember(attr,attrname,attrtype,mappings, maxDepth):
           return False
       except ValueError, e:
-        log.error( 'maxDepath was %d'% maxDepth)
+        #log.error( 'maxDepth was %d'% maxDepth)
         raise e
 
     log.debug('%s END loadMembers ----------------'%(self.__class__.__name__))
