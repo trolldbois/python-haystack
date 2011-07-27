@@ -562,7 +562,7 @@ class LoadableMembers(ctypes.Structure):
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### VALID INSTR.
       if attrname == 'real_parent':
-        print __book.refs
+        print 'real_parent',__book.refs
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
       # save that ref and original addr so we dont need to recopy it later
       keepRef( attr.contents, _attrType,attr_obj_address)
@@ -592,9 +592,6 @@ class LoadableMembers(ctypes.Structure):
     s=''
     if isStructType(attr):
       s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t'),prefix )  
-    #elif isBasicTypeArrayType(attr):
-    #  #s=prefix+'"%s": %s,\n'%(field, array2bytes(attr) )  
-    #  s='['+','.join(["%lx"%(val) for val in attr ])
     elif isBasicTypeArrayType(attr): ## array of something else than int
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
@@ -614,7 +611,9 @@ class LoadableMembers(ctypes.Structure):
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         contents=attr.contents
-        if isStructType(contents):
+        if type(self) == type(contents):
+          s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), type(attr.contents), prefix) # use struct printer
+        elif isStructType(contents): # do not enter in lists
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), attr.contents.toString(prefix+'\t'),prefix) # use struct printer
         elif isPointerType(contents):
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), self._attrToString(attr.contents, None, None, prefix+'\t'), prefix ) # use struct printer
@@ -622,8 +621,10 @@ class LoadableMembers(ctypes.Structure):
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), attr.contents, prefix) # use struct printer
     elif isCStringPointer(attr):
       s=prefix+'"%s": "%s" , #(CString)\n'%(field, attr.string)  
-    else:
-      s=prefix+'"%s": %s, # DEFAULT toString\n'%(field, repr(attr) )  
+    elif isBasicType(attr): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
+      s=prefix+'"%s": %s, \n'%(field, repr(attr) )  
+    else: # wtf ?
+      s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr\n'%(field, repr(attr) )  
     return s
 
   def __str__(self):
@@ -647,10 +648,9 @@ class LoadableMembers(ctypes.Structure):
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+        elif type(self) == type(attr.contents): # do not recurse in lists
+          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(attr.contents) ) # use struct printer
         else:
-          # we can read the pointers contents
-          # if isBasicType(attr.contents): ?
-          # if isArrayType(attr.contents): ?
           s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
       elif isCStringPointer(attr):
         s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
