@@ -117,7 +117,7 @@ class MemoryMapping:
       
     def mmap(self):
       ''' mmap-ed access gives a 20% perf increase on by tests '''
-      if not isMmaped():
+      if not self.isMmaped():
         self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
       return self._local_mmap
     def unmmap(self):
