@@ -217,7 +217,7 @@ def checkModulePath(typ):
   return structName
 
 def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1, 
-              fullScan=False, nommap=False, hint=None, debug=None ):
+              fullScan=False, nommap=False, hint=None, debug=None, quiet=True ):
   ''' 
     Find all occurences of a specific structure from a process memory.
     Returns occurences as objects.
@@ -236,7 +236,9 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
     raise TypeError('structType arg must be a ctypes.Structure')
   structName = checkModulePath(structType) # add to sys.path
   cmd_line=[sys.executable, getMainFile(), "%s"%structName]
-  if debug:
+  if quiet:
+    cmd_line.insert(2,"--quiet")
+  elif debug:
     cmd_line.insert(2,"--debug")
   if nommap:
     cmd_line.insert(2,'--nommap')
@@ -261,7 +263,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
   #
   return outs
 
-def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=False):
+def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=False, quiet=True):
   ''' 
     Find all occurences of a specific structure from a process memory.
     
@@ -272,9 +274,9 @@ def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=Fa
     @param nommap if True, do not use mmap while searching.
     @param debug if True, activate debug logs.
   '''
-  return _findStruct(pid=pid, structType=structType, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug)
+  return _findStruct(pid=pid, structType=structType, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug, quiet=quiet)
   
-def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, debug=False):
+def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, debug=False, quiet=True):
   ''' 
     Find all occurences of a specific structure from a process memory in a file.
     
@@ -285,7 +287,7 @@ def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, 
     @param fullScan obselete
     @param debug if True, activate debug logs.
   '''
-  return _findStruct(memfile=filename, structType=structType, maxNum=maxNum, fullScan=fullScan, debug=debug)
+  return _findStruct(memfile=filename, structType=structType, maxNum=maxNum, fullScan=fullScan, debug=debug, quiet=quiet)
 
 
 def refreshStruct(pid, structType, offset, debug=False, nommap=False):
@@ -329,6 +331,7 @@ def argparser():
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
   rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
+  rootparser.add_argument('--quiet', dest='quiet', action='store_const', const=True, help='setLevel to ERROR only')
   rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
   rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   rootparser.add_argument('structName', type=str, help='Structure type name')
@@ -498,6 +501,8 @@ def main(argv):
   opts = parser.parse_args(argv)
   if opts.debug:
     logging.basicConfig(level=logging.DEBUG)
+  elif opts.quiet:
+    logging.basicConfig(level=logging.ERROR)    
   else:
     logging.basicConfig(level=logging.INFO)
   try:
