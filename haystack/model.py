@@ -72,8 +72,6 @@ def keepRef(obj,typ=None,origAddr=None):
       origAddr='None'
     if typ is not None:
       log.warning('references already in cache %s/%s'%(typ,origAddr))
-    else:
-      raise NotImplementedError()
   __book.addRef(obj,typ,origAddr)
   return
 
