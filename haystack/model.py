@@ -65,13 +65,15 @@ def getRef(typ,origAddr):
 def keepRef(obj,typ=None,origAddr=None):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
     they might be transient (if obj == somepointer.contents).'''
-  #__refs.append(obj)
   if (typ,origAddr) in __book.refs:
     if origAddr is not None:
       origAddr=hex(origAddr)
     else:
       origAddr='None'
-    log.warning('references already in cache %s/%s'%(typ,origAddr))
+    if typ is not None:
+      log.warning('references already in cache %s/%s'%(typ,origAddr))
+    else:
+      raise NotImplementedError()
   __book.addRef(obj,typ,origAddr)
   return
 
