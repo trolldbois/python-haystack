@@ -67,7 +67,11 @@ def keepRef(obj,typ=None,origAddr=None):
     they might be transient (if obj == somepointer.contents).'''
   #__refs.append(obj)
   if (typ,origAddr) in __book.refs:
-    log.warning('references already in cache %s/%x'%(typ,origAddr))
+    if origAddr is not None:
+      origAddr=hex(origAddr)
+    else:
+      origAddr='None'
+    log.warning('references already in cache %s/%s'%(typ,origAddr))
   __book.addRef(obj,typ,origAddr)
   return
 
@@ -699,7 +703,7 @@ class LoadableMembers(ctypes.Structure):
       else:
         contents=attr.contents
         if isStructType(contents) :
-          attr_py_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
+          attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
           cache = getRef(attr_py_class, getaddress(attr) )
           if cache:
             return cache
