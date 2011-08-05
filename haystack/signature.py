@@ -7,16 +7,17 @@
 import logging
 import argparse, os, pickle, time, sys
 import struct
-import itertools
-import operator
+import ctypes
 
 from haystack import memory_dumper
-from haystack import memory_mapping
 
-log = logging.getLogger('classification')
+log = logging.getLogger('signature')
 
 
-''' see bsdiff python-bsdiff '''
+''' 
+see bsdiff python-bsdiff 
+see cmp --list
+'''
 
 class FeedbackGiver:
   def _initSteps(self, _len, steps=10):
@@ -24,16 +25,23 @@ class FeedbackGiver:
   
   def _checkSteps(self):
     pass
+  
+  def feedback(self, step, val):
+    ''' make a feedback'''
+    #log.info('processing offset 0x%x'%(val))
+    pass
 
-class AbstractSearcher:
+class AbstractSearcher(FeedbackGiver):
   ''' Search for something in memspace. '''
+  WORDSIZE = ctypes.sizeof(ctypes.c_void_p) # config
   def __init__(self, mapping):
     self.mapping = mapping
-    self.wordSize = ctypes.sizeof(ctypes.c_void_p) # config
+    self._initSteps(len(self.mapping))
 
-  def _getStepOffset(self, _len, steps=10):
+  def _initSteps(self, _len, steps=10):
     ''' calculate the offsets at which feedback would be given '''
-    self.steps = [o for o in range(0,_len/steps)] # py 3 compatible
+    self.steps = [o for o in range(0,_len, _len/steps)] # py 3 compatible
+    return
   
   def _checkSteps(self, step):
     if len(self.steps) == 0:
@@ -41,12 +49,13 @@ class AbstractSearcher:
     if step > self.steps[0]:
       val = self.steps.pop(0)
       self.feedback(step, val)
+    return
 
   def search(self):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
     log.debug('search %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.wordSize):
+    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
       self._checkSteps(offset) # be verbose
       if self.testMatch(offset):
         self.values.add(offset)
@@ -55,7 +64,7 @@ class AbstractSearcher:
   def __iter__(self):
     ''' Iterate over the mapping to find all valid matches '''
     log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.wordSize):
+    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
       self._checkSteps(offset) # be verbose
       if self.testMatch(offset):
         yield offset
@@ -99,7 +108,7 @@ class SignatureMaker(AbstractSearcher):
   OTHER = 0x4
 
   def __init__(self, mapping):
-    self.mapping = mapping
+    AbstractSearcher.__init__(self,mapping)
     self.pSearch = PointerSearcher(self.mapping) 
     self.nSearch = NullSearcher(self.mapping) 
     
@@ -115,7 +124,7 @@ class SignatureMaker(AbstractSearcher):
     ''' returns the memspace signature. Dont forget to del that object, it's big. '''
     self.values = b''
     log.debug('search %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.wordSize):
+    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
       self._checkSteps(offset) # be verbose
       self.values += struct.pack('B',self.testMatch(offset))
     return self.values    
@@ -123,13 +132,13 @@ class SignatureMaker(AbstractSearcher):
   def __iter__(self):
     ''' Iterate over the mapping to return the signature of that memspace '''
     log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.wordSize):
+    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
       self._checkSteps(offset) # be verbose
       yield struct.pack('B',self.testMatch(offset))
     return 
   
 
-def _openDumpfile(self, dumpfile):
+def _openDumpfile(dumpfile):
   # load memorymapping
   mappings = memory_dumper.load(dumpfile)
   # TODO : make a mapping chooser 
@@ -140,7 +149,9 @@ def _openDumpfile(self, dumpfile):
   return heap
 
 def toFile(dumpFile, outputFile):
-  mapping = _openDumpfile
+  log.info('Loading the mappings in the memory dump file.')
+  mapping = _openDumpfile(dumpFile)
+  log.info('Make the signature.')
   sigMaker = SignatureMaker(mapping)
   sig = sigMaker.search()
   outputFile.write(sig)
@@ -161,7 +172,7 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
