@@ -268,11 +268,11 @@ def fileMemoryMapping_process(self):
   if self._local_mmap is None:
     if hasattr(self.memdump,'fileno'):
       self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-      log.info('Lazy Memory Mapping content mmap-ed() : %s'%(self))
+      log.debug('Lazy Memory Mapping content mmap-ed() : %s'%(self))
     else:
       # use that or mmap, anyway, we need to convert to ctypes :/ that costly
       self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
-      log.info('Lazy Memory Mapping content loaded : %s'%(self))
+      log.debug('Lazy Memory Mapping content loaded : %s'%(self))
   return self
 
 def FileMemoryMapping(memoryMapping, memdump):
