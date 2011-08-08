@@ -15,12 +15,13 @@ import model
 # linux only ?
 from ptrace.debugger.debugger import PtraceDebugger
 # local
-from memory_mapping import MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
+from memory_mapping import MemoryMapping,MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
 from haystack import memory_mapping
 
 log = logging.getLogger('dumper')
 
-
+class Dummy:
+  pass
 
 class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
@@ -43,9 +44,11 @@ class MemoryDumper:
     
   def dumpMemfile(self):
     tmpdir = tempfile.mkdtemp()
+    self.index = file(os.path.join(tmpdir,'mappings'),'w+')
     # test dump only the heap
     for m in self.mappings:
       self.dump(m, tmpdir)
+    self.index.close()
     log.debug('Making a archive ')
     archive_name = os.path.normpath(self.args.dumpfile.name)
     self.archive(tmpdir, archive_name)
@@ -57,16 +60,17 @@ class MemoryDumper:
   def dump(self, m, tmpdir):
     log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
-    mmap_fname = "0x%lx-%s" % (m.start, memory_mapping.formatAddress(m.end))
-    mmap_fname = os.path.join(tmpdir, mmap_fname)
+    mname = "0x%lx-%s" % (m.start, memory_mapping.formatAddress(m.end))
+    mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
     m.mmap()
     log.debug('Dumping the memorymap content')
     with open(mmap_fname,'wb') as mmap_fout:
       mmap_fout.write(m.mmap())
     log.debug('Dumping the memorymap metadata')
-    with open(mmap_fname+'.pickled','w') as mmap_fout:
-      pickle.dump(m, mmap_fout)
+    self.index.write('%s,%s\n'%(mname, m.pathname))
+    #with open(mmap_fname+'.pickled','w') as mmap_fout:
+    #  pickle.dump(m, mmap_fout)
     return 
 
   def archive(self, srcdir, name):
@@ -98,24 +102,33 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
   def isValid(self):
     try :
       self.archive = tarfile.open(None,'r', self.dumpfile)
-      #self.archive.list()
-      members = self.archive.getnames()
-      self.mmaps = [ (m,m+'.pickled') for m in members if m+'.pickled' in members]
+      members = self.archive.getnames() # get the ./away
+      if './mappings' not in members:
+        log.error('no mappings index file in the archive.')
+        return False
+      self.mmaps = [ m for m in members if m.startswith('./0x')]
       if len(self.mmaps)>0:
         return True
     except tarfile.ReadError,e:
       return False
         
   def loadMappings(self):
+    mappingsFile = self.archive.extractfile('./mappings')
+    self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
     self.mappings = []
-    for content,md in self.mmaps:
-      mmap = pickle.load(self.archive.extractfile(md))
-      log.debug('Loading %s'%(mmap))
-      mmap_content = self.archive.extractfile(content).read()
+    #for mmap_fname in self.mmaps:
+    for mmap_fname, mmap_pathname in self.metalines:
+      start,end = mmap_fname.split('-') # get the './' away
+      start,end = int(start,16),int(end,16 )
+      log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
+      mmap_content_file = self.archive.extractfile('./'+mmap_fname)
+      mmap = MemoryMapping(Dummy(),start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+      mmap = FileMemoryMapping(mmap, mmap_content_file)
+      #mmap_content = pickle.load(self.archive.extractfile(mmap_fname))
       # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      mmap._local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
+      #mmap._local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
       self.mappings.append(mmap)
-    
+    return    
 
 class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
   def loadMappings(self):
@@ -192,9 +205,10 @@ def load(dumpfile,lazy=True):
       memdump = LazyProcessMemoryDumpLoader(dumpfile)
     else:  
       memdump = ProcessMemoryDumpLoader(dumpfile)
-      log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-      for m in memdump.getMappings():
-        log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
+      if log.isEnabledFor(logging.DEBUG):
+        log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
+        for m in memdump.getMappings(): # will mmap() all
+          log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
   except ValueError,e:
     log.warning(e)
     log.warning('trying a KCore')
