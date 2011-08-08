@@ -19,6 +19,15 @@ see bsdiff python-bsdiff
 see cmp --list
 '''
 
+py_xrange=xrange
+
+def xrange(start, end, step):
+  ''' stoupid int xrange... '''
+  end=end-start
+  for val in py_xrange(0, end, step):
+    yield start+val
+  return
+  
 class FeedbackGiver:
   def _initSteps(self, _len, steps=10):
     pass
@@ -28,19 +37,21 @@ class FeedbackGiver:
   
   def feedback(self, step, val):
     ''' make a feedback'''
-    #log.info('processing offset 0x%x'%(val))
+    #log.info('processing vaddr 0x%x'%(val))
     pass
 
 class AbstractSearcher(FeedbackGiver):
-  ''' Search for something in memspace. '''
+  ''' Search for something in memspace. 
+    feedback(step, val) will be called each step  
+  '''
   WORDSIZE = ctypes.sizeof(ctypes.c_void_p) # config
-  def __init__(self, mapping):
+  def __init__(self, mapping, steps=10, feedback=None):
     self.mapping = mapping
-    self._initSteps(len(self.mapping))
+    self._initSteps(self.mapping.start, self.mapping.end, steps)
 
-  def _initSteps(self, _len, steps=10):
-    ''' calculate the offsets at which feedback would be given '''
-    self.steps = [o for o in range(0,_len, _len/steps)] # py 3 compatible
+  def _initSteps(self, start, end, steps):
+    ''' calculate the vaddr at which feedback would be given '''
+    self.steps = [o for o in range(start,end, (end-start)/steps)] # py 3 compatible
     return
   
   def _checkSteps(self, step):
@@ -55,22 +66,22 @@ class AbstractSearcher(FeedbackGiver):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
     log.debug('search %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
-      self._checkSteps(offset) # be verbose
-      if self.testMatch(offset):
-        self.values.add(offset)
+    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+      self._checkSteps(vaddr) # be verbose
+      if self.testMatch(vaddr):
+        self.values.add(vaddr)
     return self.values    
     
   def __iter__(self):
     ''' Iterate over the mapping to find all valid matches '''
     log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
-      self._checkSteps(offset) # be verbose
-      if self.testMatch(offset):
-        yield offset
+    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+      self._checkSteps(vaddr) # be verbose
+      if self.testMatch(vaddr):
+        yield vaddr
     return 
 
-  def testMatch(self, offset):
+  def testMatch(self, vaddr):
     ''' implement this methods to test for a match at that offset '''
     raise NotImplementedError
 
@@ -78,8 +89,7 @@ class PointerSearcher(AbstractSearcher):
   ''' 
   Search for pointers by checking if the word value is a valid addresses in memspace.
   '''
-  def testMatch(self, offset):
-    vaddr = offset + self.mapping.start
+  def testMatch(self, vaddr):
     word = self.mapping.readWord(vaddr)
     if word in self.mapping:
       return True
@@ -89,8 +99,7 @@ class NullSearcher(AbstractSearcher):
   ''' 
   Search for Nulls words in memspace.
   '''
-  def testMatch(self,offset):
-    vaddr = offset + self.mapping.start
+  def testMatch(self, vaddr):
     word = self.mapping.readWord(vaddr)
     if word == 0:
       return True
@@ -112,11 +121,11 @@ class SignatureMaker(AbstractSearcher):
     self.pSearch = PointerSearcher(self.mapping) 
     self.nSearch = NullSearcher(self.mapping) 
     
-  def testMatch(self,offset):
+  def testMatch(self, vaddr):
     ''' return either NULL, POINTER or OTHER '''
-    if self.nSearch.testMatch(offset):
+    if self.nSearch.testMatch(vaddr):
       return self.NULL
-    if self.pSearch.testMatch(offset):
+    if self.pSearch.testMatch(vaddr):
       return self.POINTER
     return self.OTHER
 
@@ -124,17 +133,17 @@ class SignatureMaker(AbstractSearcher):
     ''' returns the memspace signature. Dont forget to del that object, it's big. '''
     self.values = b''
     log.debug('search %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
-      self._checkSteps(offset) # be verbose
-      self.values += struct.pack('B',self.testMatch(offset))
+    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+      self._checkSteps(vaddr) # be verbose
+      self.values += struct.pack('B', self.testMatch(vaddr))
     return self.values    
     
   def __iter__(self):
     ''' Iterate over the mapping to return the signature of that memspace '''
     log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for offset in xrange(0,len(self.mapping), self.WORDSIZE):
-      self._checkSteps(offset) # be verbose
-      yield struct.pack('B',self.testMatch(offset))
+    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+      self._checkSteps(vaddr) # be verbose
+      yield struct.pack('B',self.testMatch(vaddr))
     return 
   
 
