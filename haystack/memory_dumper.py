@@ -130,16 +130,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       self.mappings.append(mmap)
     return    
 
-class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
-  def loadMappings(self):
-    self.mappings = []
-    for content,md in self.mmaps:
-      mmap = pickle.load(self.archive.extractfile(md))
-      log.debug('Lazy Loading %s'%(mmap))
-      mmap_file = self.archive.extractfile(content)
-      self.mappings.append(FileMemoryMapping(mmap, mmap_file))
-      #self.mappings.append(memory_mapping.getFileBackedMemoryMapping(mmap, mmap_file))
-
 
 class KCoreDumpLoader(MemoryDumpLoader):
   def isValid(self):
@@ -195,25 +185,24 @@ def dump(opt):
   return opt.dumpfile.name
 
 def _load(opt):
+  print opt
   return load(opt.dumpfile,opt.lazy)
 
-loaders = [LazyProcessMemoryDumpLoader,ProcessMemoryDumpLoader,KCoreDumpLoader]
+loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]
 
 def load(dumpfile,lazy=True):
   try:
-    if lazy:
-      memdump = LazyProcessMemoryDumpLoader(dumpfile)
-    else:  
-      memdump = ProcessMemoryDumpLoader(dumpfile)
-      if log.isEnabledFor(logging.DEBUG):
-        log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-        for m in memdump.getMappings(): # will mmap() all
-          log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
+    memdump = ProcessMemoryDumpLoader(dumpfile)
+    log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
+    #if log.isEnabledFor(logging.DEBUG):
+      #for m in memdump.getMappings(): # will mmap() all
+      #  log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
   except ValueError,e:
     log.warning(e)
-    log.warning('trying a KCore')
+    #log.warning('trying a KCore')
     #last chance
-    memdump = KCoreDumpLoader(dumpfile)
+    #memdump = KCoreDumpLoader(dumpfile)
+    raise e
   return memdump.getMappings()
 
 def argparser():
