@@ -12,6 +12,7 @@ import operator
 import statushandler
 from haystack import memory_dumper
 from haystack import memory_mapping
+from haystack import signature
 
 log = logging.getLogger('gui')
 
@@ -157,15 +158,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.pointers = QtGui.QGraphicsItemGroup(scene=self.scene) 
     log.info('search %s mapping for pointer'%(self.mapping_name))
     found = 0 
-    for offset in xrange(0,len(self.mapping),4):
-      if offset%1024:
-        log.info('searching pointers at @0x%x'%(offset+self.mapping.start))
-      i = offset + self.mapping.start
-      word = self.mapping.readWord(i)
-      # find pointers
-      if word in self.mapping:
-        found +=1
-        self.pointers.addToGroup(widgets.Word(offset,word,scene = self.scene, color = QtCore.Qt.red) )
+    start = self.mapping.start
+    searcher = signature.PointerSearcher(self.mapping)
+    for vaddr in searcher:
+      word = self.mapping.readWord(vaddr)
+      offset = vaddr - start
+      self.pointers.addToGroup(widgets.Word(offset, word, scene = self.scene, color = QtCore.Qt.red) )
     # fill the scene
     self.scene.addItem(self.pointers)
     self.pointers.hide()
