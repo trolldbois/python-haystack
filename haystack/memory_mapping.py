@@ -12,6 +12,15 @@ import os
 import logging
 log = logging.getLogger('memory_mapping')
 
+'''
+Memory mappings.
+- MemoryMapping : memory space from a live process with the possibility to mmap the memspace at any moment.
+- MemoryDumpMemoryMapping : memory space dumped to a raw file. 
+- FileMemoryMapping : tool to initialize an existing memory mapping from the content of a file/tarfilecontent backup memory dump.
+- FileBackedMemoryMapping/getFileBackedMemoryMapping : memory space based on a file, with direct read no cache from file.
+'''
+
+
 PROC_MAP_REGEX = re.compile(
     # Address range: '08048000-080b0000 '
     r'([0-9a-f]+)-([0-9a-f]+) '
@@ -369,6 +378,8 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     size = ctypes.sizeof((basetype *count))
     array = (basetype *count).from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
     return array
+
+
 
 def readProcessMappings(process):
     """
