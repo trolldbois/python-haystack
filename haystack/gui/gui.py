@@ -176,12 +176,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     log.info('search %s mapping for null words'%(self.mapping_name))
     found = 0 
     tmpnull = []
-    for offset in xrange(0, len(self.mapping), 4):
-      i = offset + self.mapping.start
-      word = self.mapping.readWord(i)
-      if word == 0: # find null values
-        tmpnull.append(offset/4) # save offset aligned indices, cause i don't get "lambda (i,x):i-x" . Shame on me.
-    # filter and 
+    start = self.mapping.start
+    searcher = signature.NullSearcher(self.mapping)
+    for vaddr in searcher:
+      offset = vaddr - start
+      tmpnull.append(offset/searcher.WORDSIZE)
+    # filter and regroup null word by bunches
     nb = 0
     should = 0
     for k, g in itertools.groupby(enumerate(tmpnull), lambda (i,x):i-x):
