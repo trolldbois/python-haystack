@@ -6,6 +6,7 @@
 
 import logging
 import argparse, os, pickle, time, sys
+import re
 import struct
 import ctypes
 
@@ -145,6 +146,66 @@ class SignatureMaker(AbstractSearcher):
       self._checkSteps(vaddr) # be verbose
       yield struct.pack('B',self.testMatch(vaddr))
     return 
+
+
+
+class RegexpSearcher(AbstractSearcher):
+  ''' 
+  Search by regular expression in memspace.
+  '''
+  def __init__(self, mapping, regexp):
+    AbstractSearcher.__init__(self,mapping)
+    self.regexp = regexp
+    self.pattern = re.compile(regexp, re.IGNORECASE)
+
+  def search(self):
+    ''' find all valid matches offsets in the memory space '''
+    self.values = set()
+    log.debug('search %s mapping for matching values %s'%(self.mapping, self.regexp))
+    for match in self.pattern.finditer(self.mapping.mmap()):
+      offset = match.start()
+      if type(value) == list :
+        value = ''.join([chr(x) for x in match.group()])
+      vaddr = offset+self.mapping.start
+      self._checkSteps(vaddr) # be verbose
+      self.values.add((vaddr,value) )
+    return self.values    
+    
+  def __iter__(self):
+    ''' Iterate over the mapping to find all valid matches '''
+    log.debug('iterate %s mapping for matching values'%(self.mapping))
+    for match in self.pattern.finditer(self.mapping.mmap()):
+      offset = match.start()
+      value = match.group(0) # [] of int ?
+      if type(value) == list :
+        value = ''.join([chr(x) for x in match.group()])
+      print value
+      vaddr = offset+self.mapping.start
+      self._checkSteps(vaddr) # be verbose
+      yield (vaddr,value) 
+    return 
+
+  def testMatch(self, vaddr):
+    return True
+
+#EmailRegexpSearcher = RegexpSearcher(regexp=r'[a-zA-Z0-9+_\-\.]+@[0-9a-zA-Z][.-0-9a-zA-Z]*.[a-zA-Z]+' )
+#URLRegexpSearcher = RegexpSearcher(regexp=r'[a-zA-Z0-9]+://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+' )
+#IPv4RegexpSearcher = RegexpSearcher(regexp=r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' )
+
+'''
+lib["email"] = re.compile(r"(?:^|\s)[-a-z0-9_.]+@(?:[-a-z0-9]+\.)+[a-z]{2,6}(?:\s|$)",re.IGNORECASE)
+lib["postcode"] = re.compile("[a-z]{1,2}\d{1,2}[a-z]?\s*\d[a-z]{2}",re.IGNORECASE)
+lib["zipcode"] = re.compile("\d{5}(?:[-\s]\d{4})?")
+lib["ukdate"] = re.compile \
+("[0123]?\d[-/\s\.](?:[01]\d|[a-z]{3,})[-/\s\.](?:\d{2})?\d{2}",re.IGNORECASE)
+lib["time"] = re.compile("\d{1,2}:\d{1,2}(?:\s*[aApP]\.?[mM]\.?)?")
+lib["fullurl"] = re.compile("https?://[-a-z0-9\.]{4,}(?::\d+)?/[^#?]+(?:#\S+)?",re.IGNORECASE)
+lib["visacard"] = re.compile("4\d{3}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}")
+lib["mastercard"] = re.compile("5[1-5]\d{2}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}")
+lib["phone"] = re.compile("0[-\d\s]{10,}")
+lib["ninumber"] = re.compile("[a-z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[a-z]",re.IGNORECASE)
+lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
+  '''
   
 
 def _openDumpfile(dumpfile):

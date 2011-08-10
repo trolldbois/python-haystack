@@ -16,6 +16,8 @@ from haystack import model
 LINE_SIZE=512
 PAGE_SIZE=4096 
 
+#LINE_SIZE=512*4
+#PAGE_SIZE=4096*16 
 
 class MemoryMappingScene(QtGui.QGraphicsScene):
   ''' 
@@ -158,20 +160,23 @@ class MemoryMappingView(QtGui.QGraphicsView):
     pitem = item.parentItem()
     if pitem is None:
       # no parent item, that must be lonely....
-      if self.mapping:
+      if self.mapping :
         # read mapping value 
         addr = event.pos().y()* LINE_SIZE + event.pos().x()
         value = self.mapping.readWord(self.mapping.start+addr)
-        log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))
+        log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))      
     else:
-      # parent item, check for types
+      # parent item, check for haystack types
       if hasattr(item,'value') and model.isRegistered(item.value):
         log.debug('showing info for %s'%(item))
         # update info view
         self.parent().showInfo(item)
-      else:
+      elif hasattr(item, 'onSelect' ):
         # print status for pointers and nulls
+        pitem.onSelect()
+      else:
         log.debug(pitem)
+        pitem.onSelect()
       
     return
  

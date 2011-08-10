@@ -33,6 +33,8 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     self.gridLayout.addWidget(self.searchWidget_tree, 3, 0, 1, 2)
     self.setTabOrder(self.lineEdit_filter,self.searchWidget_tree)
     self.setTabOrder(self.searchWidget_tree,self.dialog_search_structure_buttonbox)
+    self.lineEdit_filter.setFocus()
+    #QTimer::singleShot(0, line, SLOT(setFocus());
     return
     
   def setupSignals(self):
@@ -52,6 +54,19 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     return
   
   def search(self):
+    ''' triage between tabs '''
+    currentTabIndex = self.tabWidget.currentIndex()
+    if currentTabIndex == 0:
+      self.search_struct()
+    elif currentTabIndex == 1:
+      self.search_regexp()
+    elif currentTabIndex == 2:
+      self.search_classics()
+    else:
+      log.warning('Did not known that tab : %d'%(currentTabIndex))
+    return
+    
+  def search_struct(self):
     ''' get the current selection and launch the search on it'''
     # lock on target classe name
     targetClassName = self.selectedItem()
@@ -63,6 +78,19 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       structs, gitemgroup = tab.searchStructure(targetClassName)
       log.debug('The tab has found %d instances'%(len(structs)))
     return 
+  
+  def search_regexp(self):
+    log.debug('Looking for a regexp r"%s" '%(self.lineEdit_regexp.text()) )
+    tab = self.parent().currentTab()
+    if tab is not None:
+      items = tab.search_regexp(str(self.lineEdit_regexp.text()))
+      log.debug('The tab has found %d instances'%(len(items)))
+    pass
+    
+  def search_classics(self):
+    log.debug('Looking for a classic %s'%('aa') )
+    
+    pass
   
   def fillTree(self):
     # DEBUG 
