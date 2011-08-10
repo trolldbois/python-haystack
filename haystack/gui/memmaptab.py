@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Tue Aug  9 19:47:43 2011
+# Created: Tue Aug  9 20:26:23 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!

@@ -260,7 +260,6 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     reSearcher = signature.RegexpSearcher(self.mapping, regexp)
     res=[]
     for addr, value in reSearcher:
-      print addr, value
       offset = addr-self.mapping.start
       # make Structure...
       it = widgets.Structure( offset, value, color=QtCore.Qt.black, scene=self.scene)
