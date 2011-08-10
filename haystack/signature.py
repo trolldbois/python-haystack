@@ -179,7 +179,6 @@ class RegexpSearcher(AbstractSearcher):
       value = match.group(0) # [] of int ?
       if type(value) == list :
         value = ''.join([chr(x) for x in match.group()])
-      print value
       vaddr = offset+self.mapping.start
       self._checkSteps(vaddr) # be verbose
       yield (vaddr,value) 
@@ -188,9 +187,9 @@ class RegexpSearcher(AbstractSearcher):
   def testMatch(self, vaddr):
     return True
 
-#EmailRegexpSearcher = RegexpSearcher(regexp=r'[a-zA-Z0-9+_\-\.]+@[0-9a-zA-Z][.-0-9a-zA-Z]*.[a-zA-Z]+' )
-#URLRegexpSearcher = RegexpSearcher(regexp=r'[a-zA-Z0-9]+://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+' )
-#IPv4RegexpSearcher = RegexpSearcher(regexp=r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' )
+EmailRegexp = r'[a-zA-Z0-9+_\-\.]+@[0-9a-zA-Z][.-0-9a-zA-Z]*.[a-zA-Z]+' 
+URLRegexp = r'[a-zA-Z0-9]+://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+' 
+IPv4Regexp = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' 
 
 '''
 lib["email"] = re.compile(r"(?:^|\s)[-a-z0-9_.]+@(?:[-a-z0-9]+\.)+[a-z]{2,6}(?:\s|$)",re.IGNORECASE)

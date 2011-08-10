@@ -16,6 +16,7 @@ from searchStruct import Ui_Search_Structure
 
 # IMPORTANT: we need to keep the module hierarchy, otherwise the book register/singleton is dead
 from haystack import model 
+from haystack import signature
 
 class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
 
@@ -88,7 +89,25 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     pass
     
   def search_classics(self):
+    regs = dict([('email',signature.EmailRegexp),
+    ('url',signature.URLRegexp),
+    ('file',r'--------NONON---'),
+    ('utf8',r'--------NONONO---'),
+    ('ipv4',signature.IPv4Regexp)
+    ])
+
     log.debug('Looking for a classic %s'%('aa') )
+    tab = self.parent().currentTab()
+    if tab is None:
+      return
+    myRe = r'qwodhoiqwhd'
+    for choice in ['email','url','file','utf8']:
+      box, color = getattr(self, 'checkBox_%s'%(choice)), getattr(self, 'toolButton_%s'%(choice))
+      if box.checkState():
+        print choice, box, color
+        tab.search_regexp( regs[choice], color )
+    #get select checkboxes, and search for each one of them
+    
     
     pass
   
