@@ -256,6 +256,17 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.info_tableview.setSortingEnabled(True)
     return
 
+  def search_regexp(self, regexp, color=None):
+    reSearcher = signature.RegexpSearcher(self.mapping, regexp)
+    res=[]
+    for addr, value in reSearcher:
+      print addr, value
+      offset = addr-self.mapping.start
+      # make Structure...
+      it = widgets.Structure( offset, value, color=QtCore.Qt.black, scene=self.scene)
+      res.append(it)
+    return res
+
 
 
 class MyMain(QtGui.QMainWindow, Ui_MainWindow):
@@ -409,6 +420,7 @@ def main(argv):
   logging.basicConfig(level=logging.DEBUG)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
+  logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)

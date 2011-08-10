@@ -25,6 +25,12 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
     </widget>
    </item>
    <item row="1" column="0">
@@ -125,5 +131,22 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>info_tableview</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>info_tableview</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>860</x>
+     <y>225</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>860</x>
+     <y>225</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

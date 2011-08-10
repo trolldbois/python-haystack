@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Fri Jul  8 09:10:45 2011
+# Created: Tue Aug  9 19:47:43 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -27,6 +27,8 @@ class Ui_MemoryMappingWidget(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
         self.graphicsView.setSizePolicy(sizePolicy)
+        self.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
         self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
         self.groupBox = QtGui.QGroupBox(MemoryMappingWidget)
@@ -70,6 +72,7 @@ class Ui_MemoryMappingWidget(object):
 
         self.retranslateUi(MemoryMappingWidget)
         self.tab_search_structures.setCurrentIndex(0)
+        QtCore.QObject.connect(self.info_tableview, QtCore.SIGNAL(_fromUtf8("clicked(QModelIndex)")), self.info_tableview.setFocus)
         QtCore.QMetaObject.connectSlotsByName(MemoryMappingWidget)
 
     def retranslateUi(self, MemoryMappingWidget):
