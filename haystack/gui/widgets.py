@@ -46,12 +46,12 @@ class Structure(QtGui.QGraphicsItemGroup):
         we should create a QRectF, use it in the QgraphicItem(rect, parent=self)
         ans use setData on items
       '''
-      gi = self.scene.addRect(QtCore.QRectF(x1, y, width-x1, 1), self.color, QtGui.QBrush(self.color))
+      gi = self.scene.addRect(QtCore.QRectF(x1, y, width-x1, 1), brush=QtGui.QBrush(self.color))
       gi.setAcceptsHoverEvents(True)
       self.addToGroup(gi)
       log.debug('line %d : %d,%d,%d,%d first'%(y, x1, y, width-x1, 1))
     else:
-      gi = self.scene.addRect(QtCore.QRectF(x1, y, size, 1), self.color, QtGui.QBrush(self.color))
+      gi = self.scene.addRect(QtCore.QRectF(x1, y, size, 1), brush=QtGui.QBrush(self.color))
       gi.setAcceptsHoverEvents(True)
       self.addToGroup(gi)
       #log.debug('line 1 : %d,%d,%d,%d stop'%(x1, y, size, 1))
@@ -60,13 +60,13 @@ class Structure(QtGui.QGraphicsItemGroup):
     yf = ((offset+size) // width)
     if ( yf > y+1 ):
       for ya in xrange(y+1, yf):
-        gi = self.scene.addRect(QtCore.QRectF(0, ya, width, 1), self.color, QtGui.QBrush(self.color))
+        gi = self.scene.addRect(QtCore.QRectF(0, ya, width, 1), brush=QtGui.QBrush(self.color))
         gi.setAcceptsHoverEvents(True)
         self.addToGroup(gi)
         log.debug('line %d : %d,%d,%d,%d'%(ya, 0, ya, width, 1))
     # then draw last line from x = 0 to x = offset+size // width
     xf = ((offset+size) % width )
-    gi = self.scene.addRect(QtCore.QRectF(0, yf, width-xf, 1), self.color, QtGui.QBrush(self.color))
+    gi = self.scene.addRect(QtCore.QRectF(0, yf, width-xf, 1), brush=QtGui.QBrush(self.color))
     gi.setAcceptsHoverEvents(True)
     self.addToGroup(gi)
     log.debug('line %d : %d,%d,%d,%d stop'%(yf, 0, yf, width-xf, 1))

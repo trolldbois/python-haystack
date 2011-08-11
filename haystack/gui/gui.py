@@ -10,9 +10,9 @@ import itertools
 import operator
 
 import statushandler
-from haystack import memory_dumper
-from haystack import memory_mapping
-from haystack import signature
+from .. import memory_dumper
+from .. import memory_mapping
+from .. import signature
 
 log = logging.getLogger('gui')
 
@@ -23,7 +23,7 @@ import widgets
 import infomodel
 from memmaptab import Ui_MemoryMappingWidget
 from mainwindow import Ui_MainWindow
-
+import searchinfoview
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -98,6 +98,9 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.gridLayout.addWidget(self.splitter, 0, 0, 1, 2)    
     self.splitter.setSizePolicy(sizePolicy) # resize
     self.splitter.setObjectName(_fromUtf8("splitter_graphics_info"))
+    #
+    while self.tab_search_structures.count() > 0:
+      self.tab_search_structures.removeItem(0)    
     # mine
     self.pointers = None
     self.nullWords = None
@@ -212,22 +215,29 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     if len(instances) > 0:
       log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
     # init graphical element
+    resultsViewer = searchinfoview.SearchInfoView(self.scene, parent=self.tab_search_structures)
     instanceList = []
     for value, addr in instances:
       offset = addr - self.mapping.start
-      instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
+      #instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
+      resultsViewer.addResult( offset, value, color=QtCore.Qt.green)
+      instanceList.append(value)
     # fill the scene
     #self.scene.addItem(instanceList)
     log.debug('Found %d instances'%(len(instances)) )
-    gitemgroup = QtGui.QGraphicsItemGroup(scene=self.scene)
-    for s in instanceList:
-      gitemgroup.addToGroup(s)
-    gitemgroup.setZValue(20) # zValue has to be  > 0
+    #gitemgroup = QtGui.QGraphicsItemGroup(scene=self.scene)
+    #for s in instanceList:
+    #  gitemgroup.addToGroup(s)
+    #gitemgroup.setZValue(20) # zValue has to be  > 0
     # add self.instanceList to
-    if len(instanceList) >0 :
-      self.showInfo(instanceList[0])
-    return instanceList,gitemgroup
-
+    #if len(instanceList) >0 :
+    #  self.showInfo(instanceList[0])
+    searchName = 'Results for %s'%(structType)
+    self.tab_search_structures.addItem(resultsViewer, searchName)
+    nb = self.tab_search_structures.count()
+    self.tab_search_structures.setItemEnabled(nb-1, True)
+    return instanceList
+  '''
   def showInfo(self, structure):
     log.info('show info on %s'%(structure))
     pyObj = structure.value
@@ -255,15 +265,20 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # enable sorting
     self.info_tableview.setSortingEnabled(True)
     return
-
-  def search_regexp(self, regexp, color=None):
+  '''
+  def search_regexp(self, regexp, searchName, color=QtCore.Qt.black):
     reSearcher = signature.RegexpSearcher(self.mapping, regexp)
+    # add a entry into the tabView on the right so we can play with it more easily
+    resultsViewer = searchinfoview.SearchInfoView(self.scene, parent=self.tab_search_structures)
     res=[]
     for addr, value in reSearcher:
       offset = addr-self.mapping.start
-      # make Structure...
-      it = widgets.Structure( offset, value, color=QtCore.Qt.black, scene=self.scene)
+      # add item to viewer + graphicsScene
+      it = resultsViewer.addResult( offset, value, color)
       res.append(it)
+    self.tab_search_structures.addItem(resultsViewer, searchName)
+    nb = self.tab_search_structures.count()
+    self.tab_search_structures.setItemEnabled(nb-1, True)
     return res
 
 

@@ -77,7 +77,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     log.debug('searching....')
     tab = self.parent().currentTab()
     if tab is not None:
-      structs, gitemgroup = tab.searchStructure(targetClassName)
+      structs = tab.searchStructure(targetClassName)
       log.debug('The tab has found %d instances'%(len(structs)))
     return 
   
@@ -108,9 +108,11 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     #get select checkboxes
     for choice in regs.keys():
       box, color = getattr(self, 'checkBox_%s'%(choice)), getattr(self, 'toolButton_%s'%(choice))
+      ## DEBUG TODO
+      color = None # pick the tooltip color picker color...
       if box.checkState():
         log.debug('%s %s %s'%(choice, box, color))
-        tab.search_regexp( regs[choice], color )
+        tab.search_regexp( regs[choice], "Results for '%s' Regexp"%choice, color )
     
     
     pass

@@ -74,6 +74,7 @@
      <string>File</string>
     </property>
     <addaction name="menu_file_open"/>
+    <addaction name="menu_file_open_process"/>
     <addaction name="menu_file_close"/>
     <addaction name="separator"/>
     <addaction name="menu_file_exit"/>
@@ -103,13 +104,13 @@
   </action>
   <action name="menu_file_open">
    <property name="text">
-    <string>Open</string>
+    <string>Open dumpfile</string>
    </property>
    <property name="toolTip">
-    <string>Open</string>
+    <string>Open a nenory dump file</string>
    </property>
    <property name="statusTip">
-    <string>Open a memory dump</string>
+    <string>Open a memory dump file</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -158,6 +159,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="menu_file_open_process">
+   <property name="text">
+    <string>Open process</string>
+   </property>
+   <property name="statusTip">
+    <string>Open a live process</string>
    </property>
   </action>
  </widget>

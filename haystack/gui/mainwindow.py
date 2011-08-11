@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui.ui'
 #
-# Created: Tue Aug  9 20:26:22 2011
+# Created: Wed Aug 10 23:48:54 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -79,7 +79,10 @@ class Ui_MainWindow(object):
         self.menu_file_close.setObjectName(_fromUtf8("menu_file_close"))
         self.menu_tools_addmodule = QtGui.QAction(MainWindow)
         self.menu_tools_addmodule.setObjectName(_fromUtf8("menu_tools_addmodule"))
+        self.menu_file_open_process = QtGui.QAction(MainWindow)
+        self.menu_file_open_process.setObjectName(_fromUtf8("menu_file_open_process"))
         self.menuFile.addAction(self.menu_file_open)
+        self.menuFile.addAction(self.menu_file_open_process)
         self.menuFile.addAction(self.menu_file_close)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.menu_file_exit)
@@ -103,9 +106,9 @@ class Ui_MainWindow(object):
         self.menuSearch.setTitle(QtGui.QApplication.translate("MainWindow", "Search", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_tools.setTitle(QtGui.QApplication.translate("MainWindow", "Tools", None, QtGui.QApplication.UnicodeUTF8))
         self.actionExit.setText(QtGui.QApplication.translate("MainWindow", "Exit", None, QtGui.QApplication.UnicodeUTF8))
-        self.menu_file_open.setText(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
-        self.menu_file_open.setToolTip(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
-        self.menu_file_open.setStatusTip(QtGui.QApplication.translate("MainWindow", "Open a memory dump", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_open.setText(QtGui.QApplication.translate("MainWindow", "Open dumpfile", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_open.setToolTip(QtGui.QApplication.translate("MainWindow", "Open a nenory dump file", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_open.setStatusTip(QtGui.QApplication.translate("MainWindow", "Open a memory dump file", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_open.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+O", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_exit.setText(QtGui.QApplication.translate("MainWindow", "Exit", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_file_exit.setStatusTip(QtGui.QApplication.translate("MainWindow", "Exit Application", None, QtGui.QApplication.UnicodeUTF8))
@@ -118,4 +121,6 @@ class Ui_MainWindow(object):
         self.menu_file_close.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+W", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_tools_addmodule.setText(QtGui.QApplication.translate("MainWindow", "Add haystack module", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_tools_addmodule.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+M", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_open_process.setText(QtGui.QApplication.translate("MainWindow", "Open process", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_file_open_process.setStatusTip(QtGui.QApplication.translate("MainWindow", "Open a live process", None, QtGui.QApplication.UnicodeUTF8))
 

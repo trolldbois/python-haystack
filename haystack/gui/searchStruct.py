@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'searchStruct.ui'
 #
-# Created: Wed Aug 10 20:09:49 2011
+# Created: Wed Aug 10 23:48:55 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -734,7 +734,7 @@ class Ui_Search_Structure(object):
         self.gridLayout_2.addLayout(self.gridLayout_3, 0, 0, 1, 1)
 
         self.retranslateUi(Search_Structure)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QObject.connect(self.dialog_search_structure_buttonbox, QtCore.SIGNAL(_fromUtf8("accepted()")), Search_Structure.accept)
         QtCore.QObject.connect(self.dialog_search_structure_buttonbox, QtCore.SIGNAL(_fromUtf8("rejected()")), Search_Structure.reject)
         QtCore.QMetaObject.connectSlotsByName(Search_Structure)
