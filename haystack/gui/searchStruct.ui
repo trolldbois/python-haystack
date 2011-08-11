@@ -133,7 +133,7 @@
            <x>2</x>
            <y>0</y>
            <width>371</width>
-           <height>161</height>
+           <height>301</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
@@ -604,16 +604,16 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QCheckBox" name="checkBox_file">
+           <widget class="QCheckBox" name="checkBox_winfile">
             <property name="text">
-             <string>Filenames</string>
+             <string>Windows Filenames</string>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QCheckBox" name="checkBox_utf8">
+           <widget class="QCheckBox" name="checkBox_ipv4">
             <property name="text">
-             <string>UTF8 Strings</string>
+             <string>IPv4</string>
             </property>
            </widget>
           </item>
@@ -1070,7 +1070,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QToolButton" name="toolButton_file">
+           <widget class="QToolButton" name="toolButton_winfile">
             <property name="palette">
              <palette>
               <active>
@@ -1522,7 +1522,7 @@
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QToolButton" name="toolButton_utf8">
+           <widget class="QToolButton" name="toolButton_ipv4">
             <property name="palette">
              <palette>
               <active>
@@ -1970,6 +1970,76 @@
             </property>
             <property name="text">
              <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="checkBox_ipv6">
+            <property name="text">
+             <string>IPv6</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QToolButton" name="toolButton_ipv6">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="checkBox_sql">
+            <property name="text">
+             <string>SQL Statements</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QToolButton" name="toolButton_sql">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QCheckBox" name="checkBox_cc">
+            <property name="text">
+             <string>Credit Cards {VISA,Mastercard,Amex}</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QToolButton" name="toolButton_cc">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QCheckBox" name="checkBox_ssn">
+            <property name="text">
+             <string>SSN (North America)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QToolButton" name="toolButton_ssn">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QCheckBox" name="checkBox_guid">
+            <property name="text">
+             <string>GUID/UUID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QToolButton" name="toolButton_guid">
+            <property name="text">
+             <string>...</string>
             </property>
            </widget>
           </item>
