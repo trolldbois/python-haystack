@@ -107,13 +107,16 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       return
     #get select checkboxes
     import random
+    colors=[Qt.black, Qt.white, Qt.gray, Qt.lightGray, 
+          Qt.red, Qt.green, Qt.blue, Qt.cyan, Qt.magenta, Qt.yellow, 
+          Qt.darkRed, Qt.darkGreen, Qt.darkBlue, Qt.darkCyan, Qt.darkMagenta, Qt.darkYellow]
     for choice in regs.keys():
       box, color = getattr(self, 'checkBox_%s'%(choice)), getattr(self, 'toolButton_%s'%(choice))
       ## DEBUG TODO
-      color = random.randrange(9) # pick the tooltip color picker color...
+      color = random.randrange( len(colors) ) # pick the tooltip color picker color...
       if box.checkState():
-        log.debug('%s %s %s'%(choice, box, color))
-        tab.search_regexp( regs[choice], "Results for '%s' Regexp"%choice, color )
+        log.debug('%s %s %s'%(choice, box, colors[color]))
+        tab.search_regexp( regs[choice], "Results for '%s' Regexp"%choice, colors[color] )
     
     
     pass
