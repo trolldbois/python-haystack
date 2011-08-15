@@ -211,6 +211,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     from haystack import abouchet
     import ctypes
     #import sslsnoop #?
+    self.mapping.unmmap()
     instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping] ,maxNum=5)
     if len(instances) > 0:
       log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
