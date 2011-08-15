@@ -50,9 +50,13 @@ class AbstractSearcher(FeedbackGiver):
     feedback(step, val) will be called each step  
   '''
   WORDSIZE = ctypes.sizeof(ctypes.c_void_p) # config
-  def __init__(self, mapping, steps=10, feedback=None):
-    self.mapping = mapping
-    self._initSteps(self.mapping.start, self.mapping.end, steps)
+  
+  def __init__(self, searchMapping, steps=10, feedback=None):
+    '''
+      search in searchMapping for something.
+    '''
+    self.searchMapping = searchMapping
+    self._initSteps(self.searchMapping.start, self.searchMapping.end, steps)
 
   def _initSteps(self, start, end, steps):
     ''' calculate the vaddr at which feedback would be given '''
@@ -66,12 +70,15 @@ class AbstractSearcher(FeedbackGiver):
       val = self.steps.pop(0)
       self.feedback(step, val)
     return
-
+  
+  def getSearchMapping(self):
+    return self.searchMapping
+  
   def search(self):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
-    log.debug('search %s mapping for matching values'%(self.mapping))
-    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+    log.debug('search %s mapping for matching values'%(self.getSearchMapping()))
+    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
       self._checkSteps(vaddr) # be verbose
       if self.testMatch(vaddr):
         self.values.add(vaddr)
@@ -79,8 +86,8 @@ class AbstractSearcher(FeedbackGiver):
     
   def __iter__(self):
     ''' Iterate over the mapping to find all valid matches '''
-    log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+    log.debug('iterate %s mapping for matching values'%(self.getSearchMapping()))
+    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
       self._checkSteps(vaddr) # be verbose
       if self.testMatch(vaddr):
         yield vaddr
@@ -95,17 +102,39 @@ class PointerSearcher(AbstractSearcher):
   Search for pointers by checking if the word value is a valid addresses in memspace.
   '''
   def testMatch(self, vaddr):
-    word = self.mapping.readWord(vaddr)
-    if word in self.mapping:
+    word = self.getSearchMapping().readWord(vaddr)
+    if word in self.getSearchMapping():
       return True
     return False
+
+class TargetMappingPointerSearcher(AbstractSearcher):
+  ''' 
+  Search for pointers by checking if the word value is a valid addresses in memspace of another mapping.
+  '''
+  def __init__(self, targetMapping, searchMapping, steps=10, feedback=None):
+    AbstractSearcher.__init__(self, searchMapping, steps, feedback)
+    self.setTargetMapping(targetMapping)
+  
+  def setTargetMapping(self, m):
+    self.targetMapping = m
+    return
+  def getTargetMapping(self):
+    return self.targetMapping
+  
+  def testMatch(self, vaddr):
+    word = self.getSearchMapping().readWord(vaddr)
+    if word in self.getTargetMapping():
+      return True
+    return False
+
+
 
 class NullSearcher(AbstractSearcher):
   ''' 
   Search for Nulls words in memspace.
   '''
   def testMatch(self, vaddr):
-    word = self.mapping.readWord(vaddr)
+    word = self.getSearchMapping().readWord(vaddr)
     if word == 0:
       return True
     return False
@@ -123,8 +152,8 @@ class SignatureMaker(AbstractSearcher):
 
   def __init__(self, mapping):
     AbstractSearcher.__init__(self,mapping)
-    self.pSearch = PointerSearcher(self.mapping) 
-    self.nSearch = NullSearcher(self.mapping) 
+    self.pSearch = PointerSearcher(self.getSearchMapping()) 
+    self.nSearch = NullSearcher(self.getSearchMapping()) 
     
   def testMatch(self, vaddr):
     ''' return either NULL, POINTER or OTHER '''
@@ -137,16 +166,16 @@ class SignatureMaker(AbstractSearcher):
   def search(self):
     ''' returns the memspace signature. Dont forget to del that object, it's big. '''
     self.values = b''
-    log.debug('search %s mapping for matching values'%(self.mapping))
-    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+    log.debug('search %s mapping for matching values'%(self.getSearchMapping()))
+    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
       self._checkSteps(vaddr) # be verbose
       self.values += struct.pack('B', self.testMatch(vaddr))
     return self.values    
     
   def __iter__(self):
     ''' Iterate over the mapping to return the signature of that memspace '''
-    log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for vaddr in xrange(self.mapping.start, self.mapping.end, self.WORDSIZE):
+    log.debug('iterate %s mapping for matching values'%(self.getSearchMapping()))
+    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
       self._checkSteps(vaddr) # be verbose
       yield struct.pack('B',self.testMatch(vaddr))
     return 
@@ -165,25 +194,25 @@ class RegexpSearcher(AbstractSearcher):
   def search(self):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
-    log.debug('search %s mapping for matching values %s'%(self.mapping, self.regexp))
-    for match in self.pattern.finditer(self.mapping.mmap()):
+    log.debug('search %s mapping for matching values %s'%(self.getSearchMapping(), self.regexp))
+    for match in self.getSearchMapping().finditer(self.getSearchMapping().mmap()):
       offset = match.start()
       if type(value) == list :
         value = ''.join([chr(x) for x in match.group()])
-      vaddr = offset+self.mapping.start
+      vaddr = offset+self.getSearchMapping().start
       self._checkSteps(vaddr) # be verbose
       self.values.add((vaddr,value) )
     return self.values    
     
   def __iter__(self):
     ''' Iterate over the mapping to find all valid matches '''
-    log.debug('iterate %s mapping for matching values'%(self.mapping))
-    for match in self.pattern.finditer(self.mapping.mmap()):
+    log.debug('iterate %s mapping for matching values'%(self.getSearchMapping()))
+    for match in self.pattern.finditer(self.getSearchMapping().mmap()):
       offset = match.start()
       value = match.group(0) # [] of int ?
       if type(value) == list :
         value = ''.join([chr(x) for x in match.group()])
-      vaddr = offset+self.mapping.start
+      vaddr = offset+self.getSearchMapping().start
       self._checkSteps(vaddr) # be verbose
       yield (vaddr,value) 
     return 

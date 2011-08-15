@@ -79,7 +79,7 @@ class MemoryDumper:
     log.debug('running shutil.make_archive')
     archive = shutil.make_archive(tmpname, 'gztar', srcdir)
     shutil.move(archive, name )
-    shutil.rmtree(tmpdir)
+    shutil.rmtree(tmpdir ) # not working ?
 
 
 
