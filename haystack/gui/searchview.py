@@ -106,10 +106,11 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     if tab is None:
       return
     #get select checkboxes
+    import random
     for choice in regs.keys():
       box, color = getattr(self, 'checkBox_%s'%(choice)), getattr(self, 'toolButton_%s'%(choice))
       ## DEBUG TODO
-      color = None # pick the tooltip color picker color...
+      color = random.randrange(9) # pick the tooltip color picker color...
       if box.checkState():
         log.debug('%s %s %s'%(choice, box, color))
         tab.search_regexp( regs[choice], "Results for '%s' Regexp"%choice, color )
