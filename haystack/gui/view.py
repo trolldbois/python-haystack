@@ -173,7 +173,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
         self.parent().showInfo(item)
       elif hasattr(item, 'onSelect' ):
         # print status for pointers and nulls
-        pitem.onSelect()
+        item.onSelect()
       else:
         log.debug(pitem)
         pitem.onSelect()

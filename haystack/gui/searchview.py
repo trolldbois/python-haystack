@@ -107,7 +107,8 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       return
     #get select checkboxes
     import random
-    colors=[Qt.black, Qt.white, Qt.gray, Qt.lightGray, 
+    colors=[#Qt.black, Qt.white, 
+          Qt.gray, Qt.lightGray, 
           Qt.red, Qt.green, Qt.blue, Qt.cyan, Qt.magenta, Qt.yellow, 
           Qt.darkRed, Qt.darkGreen, Qt.darkBlue, Qt.darkCyan, Qt.darkMagenta, Qt.darkYellow]
     for choice in regs.keys():

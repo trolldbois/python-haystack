@@ -211,20 +211,19 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     from haystack import abouchet
     import ctypes
     #import sslsnoop #?
-    self.mapping.unmmap()
-    instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping] ,maxNum=5)
+    #self.mapping.unmmap()
+    # DEBUG stop at the first instance, lazy me  
+    instances = abouchet.searchIn(structType, mappings=self.mappings, targetMappings=[self.mapping], maxNum=1)
     if len(instances) > 0:
       log.debug('received %d struct of size %d'%(len(instances),len(instances[0][0])))
     # init graphical element
-    resultsViewer = searchinfoview.SearchInfoView(self.scene, parent=self.tab_search_structures)
-    instanceList = []
+    resultsViewer = searchinfoview.SearchInfoView(self.scene, QtCore.Qt.green, withDetails=True, parent=self.tab_search_structures)
     for value, addr in instances:
       offset = addr - self.mapping.start
       #instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
+      print 'the value is an ',type(value)
       resultsViewer.addResult( offset, value, color=QtCore.Qt.green)
-      instanceList.append(value)
     # fill the scene
-    #self.scene.addItem(instanceList)
     log.debug('Found %d instances'%(len(instances)) )
     #gitemgroup = QtGui.QGraphicsItemGroup(scene=self.scene)
     #for s in instanceList:
@@ -233,11 +232,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # add self.instanceList to
     #if len(instanceList) >0 :
     #  self.showInfo(instanceList[0])
+    ## make the toolbox title and add the widget
     searchName = 'Results for %s'%(structType)
     self.tab_search_structures.addItem(resultsViewer, searchName)
     nb = self.tab_search_structures.count()
-    self.tab_search_structures.setItemEnabled(nb-1, True)
-    return instanceList
+    ##self.tab_search_structures.setItemEnabled(nb-1, True)
+    return instances
   '''
   def showInfo(self, structure):
     log.info('show info on %s'%(structure))
@@ -270,7 +270,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
   def search_regexp(self, regexp, searchName, color=QtCore.Qt.black):
     reSearcher = signature.RegexpSearcher(self.mapping, regexp)
     # add a entry into the tabView on the right so we can play with it more easily
-    resultsViewer = searchinfoview.SearchInfoView(self.scene, parent=self.tab_search_structures)
+    resultsViewer = searchinfoview.SearchInfoView(self.scene, color, parent=self.tab_search_structures)
+    print resultsViewer
     res=[]
     for addr, value in reSearcher:
       offset = addr-self.mapping.start
