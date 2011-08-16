@@ -47,13 +47,6 @@ class Structure(QtGui.QGraphicsItemGroup):
     width = view.LINE_SIZE # use PAGE_SIZE ?
     x1 = (offset % width )
     y = (offset // width )
-    #QtGui.QGraphicsRectItem(parent=self) 
-    #rectItem.setAcceptsHoverEvents(True)
-    #pen = QtGui.QPen(self.color)
-    #brush = QtGui.QBrush(self.color, style=Qt.SolidPattern)
-    #rectItem.setPen(pen)
-    #rectItem.setBrush(brush)
-
     ############ try to assemble RectF together
     ##### FIRST LINE
     # make an item
@@ -61,24 +54,11 @@ class Structure(QtGui.QGraphicsItemGroup):
     # if offset+xoff > width, draw first line to the end.
     # else, draw the rect and quit
     if (x1 + size > width):
-      #QGraphicsRectItem ( const QRectF & rect, QGraphicsItem * parent = 0 )
-      #self.addToGroup(QtCore.QGraphicsRectItem(QtCore.QRectF(x1, y, width-x1, 1), self.color, QtGui.QBrush(self.color)))
-      '''
-        we should create a QRectF, use it in the QgraphicItem(rect, parent=self)
-        ans use setData on items
-      '''
-      #gi = self.scene.addRect(QtCore.QRectF(x1, y, width-x1, 1), pen, brush)
-      ## gi is graphics item
-      #gi.setAcceptsHoverEvents(True)
-      #self.addToGroup(gi)
       rectItem.setRect( QtCore.QRectF(x1, y, width-x1, 1) )
       log.debug('line %d : %d,%d,%d,%d first'%(y, x1, y, width-x1, 1))
     else:
-      #gi = self.scene.addRect(QtCore.QRectF(x1, y, size, 1), pen, brush)
-      #gi.setAcceptsHoverEvents(True)
-      #self.addToGroup(gi)
       rectItem.setRect( QtCore.QRectF(x1, y, size, 1) )
-      #log.debug('line 1 : %d,%d,%d,%d stop'%(x1, y, size, 1))
+      log.debug('line 1 : %d,%d,%d,%d stop'%(x1, y, size, 1))
       return
     ##### MIDDLE LINES
     # then draw big rect full lines from ya = y+1  to yb = ((offset+size) // width) - 1
@@ -88,9 +68,6 @@ class Structure(QtGui.QGraphicsItemGroup):
         # make an item
         rectItem = self._makeRectItem() # no need to add to scene      
         rectItem.setRect( QtCore.QRectF(0, ya, width, 1) )
-        #gi = self.scene.addRect(QtCore.QRectF(0, ya, width, 1), pen, brush)
-        #gi.setAcceptsHoverEvents(True)
-        #self.addToGroup(gi)
         log.debug('line %d : %d,%d,%d,%d'%(ya, 0, ya, width, 1))
     ##### LAST LINE
     # then draw last line from x = 0 to x = offset+size // width
@@ -98,9 +75,6 @@ class Structure(QtGui.QGraphicsItemGroup):
     # make an item
     rectItem = self._makeRectItem() # no need to add to scene      
     rectItem.setRect( QtCore.QRectF(0, yf, width-xf, 1) )
-    #gi = self.scene.addRect(QtCore.QRectF(0, yf, width-xf, 1), pen, brush)
-    #gi.setAcceptsHoverEvents(True)
-    #self.addToGroup(gi)
     log.debug('line %d : %d,%d,%d,%d stop'%(yf, 0, yf, width-xf, 1))
     return
 
