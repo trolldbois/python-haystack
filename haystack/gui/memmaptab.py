@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Mon Aug 15 22:57:05 2011
+# Created: Mon Aug 15 23:03:05 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -49,7 +49,7 @@ class Ui_MemoryMappingWidget(object):
         self.gridLayout.addWidget(self.groupBox, 1, 0, 1, 1)
         self.tab_search_structures = QtGui.QToolBox(MemoryMappingWidget)
         self.tab_search_structures.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tab_search_structures.sizePolicy().hasHeightForWidth())

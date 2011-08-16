@@ -280,6 +280,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.tab_search_structures.addItem(resultsViewer, searchName)
     nb = self.tab_search_structures.count()
     self.tab_search_structures.setItemEnabled(nb-1, True)
+    # resize 
+    #self.tab_search_structures
     return res
 
 

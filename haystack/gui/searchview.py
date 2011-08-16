@@ -118,7 +118,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       if box.checkState():
         log.debug('%s %s %s'%(choice, box, colors[color]))
         tab.search_regexp( regs[choice], "Results for '%s' Regexp"%choice, colors[color] )
-    
+    # 
     
     pass
   
