@@ -24,7 +24,7 @@ setup(name="haystack",
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
     packages = ['haystack','haystack.gui'],
-    scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump'],
+    scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump', 'scripts/haystack-pointer-merge'],
     install_requires = ["python-ptrace","argparse"],
 )
 
