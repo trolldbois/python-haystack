@@ -440,7 +440,6 @@ def main(argv):
   logging.getLogger('dumper').setLevel(logging.INFO)
   #logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
-  logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('gui').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)

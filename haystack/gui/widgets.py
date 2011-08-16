@@ -30,7 +30,10 @@ class Structure(QtGui.QGraphicsItemGroup):
     self.setAcceptsHoverEvents(True)
     self.setHandlesChildEvents(True)
     self.setFlags(QtGui.QGraphicsItem.ItemIsSelectable)
-    self.setToolTip(str(type(value)))
+    if type(value) == str:
+      self.setToolTip(value) # baaaad
+    else:
+      self.setToolTip(str(type(value)))
 
   def _makeRectItem(self):
     pen = QtGui.QPen(self.color)
@@ -55,27 +58,28 @@ class Structure(QtGui.QGraphicsItemGroup):
     # else, draw the rect and quit
     if (x1 + size > width):
       rectItem.setRect( QtCore.QRectF(x1, y, width-x1, 1) )
-      log.debug('line %d : %d,%d,%d,%d first'%(y, x1, y, width-x1, 1))
+      log.debug('line %d : x:%d,y:%d,w:%d,h:%d first'%(y, x1, y, width-x1, 1))
     else:
       rectItem.setRect( QtCore.QRectF(x1, y, size, 1) )
-      log.debug('line 1 : %d,%d,%d,%d stop'%(x1, y, size, 1))
+      log.debug('line %d : x:%d,y:%d,w:%d,h:%d first'%(y, x1, y, width-x1, 1))
       return
     ##### MIDDLE LINES
     # then draw big rect full lines from ya = y+1  to yb = ((offset+size) // width) - 1
-    yf = ((offset+size) // width)
+    yf = ((offset+size) // width) # on calcule la ligne de fin
+    log.debug('yf:%d offset:%d size:%d width:%d y:%d'%(    yf,offset,size,width, y) )
     if ( yf > y+1 ):
       for ya in xrange(y+1, yf):
         # make an item
         rectItem = self._makeRectItem() # no need to add to scene      
         rectItem.setRect( QtCore.QRectF(0, ya, width, 1) )
-        log.debug('line %d : %d,%d,%d,%d'%(ya, 0, ya, width, 1))
+        log.debug('line %d : x:%d,y:%d,w:%d,h:%d first'%(ya-y, 0, ya, width, 1))
     ##### LAST LINE
     # then draw last line from x = 0 to x = offset+size // width
     xf = ((offset+size) % width )
     # make an item
     rectItem = self._makeRectItem() # no need to add to scene      
-    rectItem.setRect( QtCore.QRectF(0, yf, width-xf, 1) )
-    log.debug('line %d : %d,%d,%d,%d stop'%(yf, 0, yf, width-xf, 1))
+    rectItem.setRect( QtCore.QRectF(0, yf, xf, 1) )
+    log.debug('line %d : x:%d,y:%d,w:%d,h:%d first'%(yf, 0, yf, xf, 1))
     return
 
   def onSelect(self):
