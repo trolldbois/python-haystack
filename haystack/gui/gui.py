@@ -221,7 +221,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     for value, addr in instances:
       offset = addr - self.mapping.start
       #instanceList.append(widgets.Structure( offset, value, color=QtCore.Qt.green, scene=self.scene))
-      print 'the value is an ',type(value)
+      log.debug('the value is an %s'%type(value) )
       resultsViewer.addResult( offset, value, color=QtCore.Qt.green)
     # fill the scene
     log.debug('Found %d instances'%(len(instances)) )
@@ -271,7 +271,6 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     reSearcher = signature.RegexpSearcher(self.mapping, regexp)
     # add a entry into the tabView on the right so we can play with it more easily
     resultsViewer = searchinfoview.SearchInfoView(self.scene, color, parent=self.tab_search_structures)
-    print resultsViewer
     res=[]
     for addr, value in reSearcher:
       offset = addr-self.mapping.start
@@ -437,7 +436,7 @@ def main(argv):
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
-  logging.getLogger('widget').setLevel(logging.INFO)
+  #logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
   logging.getLogger('gui').setLevel(logging.INFO)

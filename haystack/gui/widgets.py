@@ -78,6 +78,7 @@ class Structure(QtGui.QGraphicsItemGroup):
   def onSelect(self):
     ''' draw a rectangle around the boucingRect '''
     log.debug('a structure %s'%(self.value))
+    # self.parent().currentTab().showInfo() # blabla
     pass
 
   def hoverEnterEvent(self,event):

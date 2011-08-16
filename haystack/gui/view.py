@@ -167,16 +167,20 @@ class MemoryMappingView(QtGui.QGraphicsView):
         log.debug('@0x%x: 0x%x'%(self.mapping.start+addr,value))      
     else:
       # parent item, check for haystack types
-      if hasattr(item,'value') and model.isRegistered(item.value):
-        log.debug('showing info for %s'%(item))
+      log.debug('Mouse press on parent item '+str(pitem))
+      if hasattr(pitem,'value') and model.isRegistered(pitem.value):
+        log.debug('showing info for %s'%(pitem))
         # update info view
-        self.parent().showInfo(item)
-      elif hasattr(item, 'onSelect' ):
+        self.parent().showInfo(pitem)
+      elif hasattr(pitem, 'onSelect' ):
         # print status for pointers and nulls
-        item.onSelect()
-      else:
-        log.debug(pitem)
+        log.debug('running parent onSelect')
         pitem.onSelect()
+      elif hasattr(item, 'onSelect' ):
+        log.debug('running item onSelect')
+        pitem.onSelect()
+      else:
+        log.debug('%s has no onSelect method'%item)
       
     return
  
