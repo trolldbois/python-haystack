@@ -14,27 +14,28 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="0">
-    <widget class="QTableView" name="info_tableview"/>
-   </item>
    <item row="0" column="0">
     <widget class="QListView" name="info_listview"/>
-   </item>
-   <item row="1" column="0">
-    <spacer name="spacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>info_listview</sender>
+   <signal>activated(QModelIndex)</signal>
+   <receiver>info_listview</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>104</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>104</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

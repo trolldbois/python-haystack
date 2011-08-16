@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'memmaptab.ui'
 #
-# Created: Wed Aug 10 23:48:55 2011
+# Created: Mon Aug 15 22:57:05 2011
 #      by: PyQt4 UI code generator 4.8.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -60,9 +60,6 @@ class Ui_MemoryMappingWidget(object):
         self.page.setObjectName(_fromUtf8("page"))
         self.gridLayout_3 = QtGui.QGridLayout(self.page)
         self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
-        self.info_tableview = QtGui.QTableView(self.page)
-        self.info_tableview.setObjectName(_fromUtf8("info_tableview"))
-        self.gridLayout_3.addWidget(self.info_tableview, 0, 0, 1, 1)
         self.tab_search_structures.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
         self.page_2.setGeometry(QtCore.QRect(0, 0, 563, 372))
@@ -72,7 +69,6 @@ class Ui_MemoryMappingWidget(object):
 
         self.retranslateUi(MemoryMappingWidget)
         self.tab_search_structures.setCurrentIndex(0)
-        QtCore.QObject.connect(self.info_tableview, QtCore.SIGNAL(_fromUtf8("clicked(QModelIndex)")), self.info_tableview.setFocus)
         QtCore.QMetaObject.connectSlotsByName(MemoryMappingWidget)
 
     def retranslateUi(self, MemoryMappingWidget):

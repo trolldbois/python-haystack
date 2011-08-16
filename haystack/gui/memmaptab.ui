@@ -107,11 +107,7 @@
       <attribute name="label">
        <string>Page 1</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QTableView" name="info_tableview"/>
-       </item>
-      </layout>
+      <layout class="QGridLayout" name="gridLayout_3"/>
      </widget>
      <widget class="QWidget" name="page_2">
       <property name="geometry">
@@ -131,22 +127,5 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>info_tableview</sender>
-   <signal>clicked(QModelIndex)</signal>
-   <receiver>info_tableview</receiver>
-   <slot>setFocus()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>860</x>
-     <y>225</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>860</x>
-     <y>225</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
