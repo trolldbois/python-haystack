@@ -32,14 +32,14 @@ class MemoryDumper:
     return self.mappings
 
   def initPid(self):
-    dbg = PtraceDebugger()
-    process = dbg.addProcess(self.args.pid, is_attached=False)
-    if process is None:
+    self.dbg = PtraceDebugger()
+    self.process = self.dbg.addProcess(self.args.pid, is_attached=False)
+    if self.process is None:
       log.error("Error initializing Process debugging for %d"% self.args.pid)
       raise IOError
       # ptrace exception is raised before that
-    self.mappings = readProcessMappings(process)
-    log.debug('mappings read.')
+    self.mappings = readProcessMappings(self.process)
+    log.debug('mappings read. Dropping ptrace on pid.')
     return
     
   def dumpMemfile(self):
@@ -49,6 +49,10 @@ class MemoryDumper:
     for m in self.mappings:
       self.dump(m, tmpdir)
     self.index.close()
+    #continue() the process
+    self.process.cont()
+    self.dbg.deleteProcess(process=self.process)
+    # 
     log.debug('Making a archive ')
     archive_name = os.path.normpath(self.args.dumpfile.name)
     self.archive(tmpdir, archive_name)
