@@ -1,8 +1,15 @@
-from ptrace.os_tools import HAS_PROC
-if HAS_PROC:
-     from ptrace.linux_proc import openProc, ProcError
-from ptrace.debugger.process_error import ProcessError
-from ptrace.ctypes_tools import formatAddress
+
+from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
+
+#import platform
+#if platform.system() != 'Windows':
+#  from ptrace.os_tools import HAS_PROC
+#  if HAS_PROC:
+#       from ptrace.linux_proc import openProc, ProcError
+#  from ptrace.debugger.process_error import ProcessError
+#  from ptrace.ctypes_tools import formatAddress
+#else:
+#  HAS_PROC=False
 import re
 from weakref import ref
 import ctypes, struct, mmap
@@ -394,7 +401,7 @@ def readProcessMappings(process):
     if not HAS_PROC:
         return maps
     try:
-        mapsfile = openProc("%s/maps" % process.pid)
+        mapsfile = openProc(process.pid)
     except ProcError, err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
     
@@ -416,6 +423,7 @@ def readProcessMappings(process):
                 match.group(8))
             maps.append(map)
     finally:
+      if type(mapsfile) is file:
         mapsfile.close()
     return maps
 

@@ -7,8 +7,7 @@
 import mmap, logging
 import os, time
 
-# linux only ?
-from ptrace.debugger.debugger import PtraceDebugger
+from dbg import PtraceDebugger
 # local
 from memory_mapping import MemoryDumpMemoryMapping , FileBackedMemoryMapping, readProcessMappings
 

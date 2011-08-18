@@ -11,9 +11,8 @@ import tempfile, shutil
 
 
 import model 
+from dbg import PtraceDebugger
 
-# linux only ?
-from ptrace.debugger.debugger import PtraceDebugger
 # local
 from memory_mapping import MemoryMapping,MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
 from haystack import memory_mapping
