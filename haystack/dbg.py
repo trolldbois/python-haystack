@@ -25,6 +25,7 @@ if platform.system() != 'Windows':
   formatAddress = ptrace.ctypes_tools.formatAddress 
 
 else:
+  import ctypes
   import winappdbg
   from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
   class WinAppDebugger:
@@ -46,15 +47,15 @@ else:
     memoryMap       = process.get_memory_map()
     mappedFilenames = process.get_mapped_filenames()
     # 08048000-080b0000 r-xp 0804d000 fe:01 3334030  /usr/myfile  
+    lines = []
     for mbi in memoryMap:
       addr = ''
-      perm = '---' 
+      perm = '--- ' 
       offset=''
       device = ''
       inode=''
       filename = ''
       
-      lines = ''
         
       # Address and size of memory block.
       BaseAddress = HexDump.address(mbi.BaseAddress)
@@ -73,7 +74,7 @@ else:
 
       # Page protection bits (R/W/X/G).
       if mbiState != win32.MEM_COMMIT:
-        Protect = "---"
+        Protect = "--- "
       else:
         mbiProtect = mbi.Protect
         if   mbiProtect & win32.PAGE_NOACCESS:
@@ -94,18 +95,20 @@ else:
             Protect = "RCX "
         else:
             Protect = "??? "
+        '''    
         if   mbiProtect & win32.PAGE_GUARD:
             Protect += "G"
-        else:
-            Protect += "-"
+        #else:
+        #    Protect += "-"
         if   mbiProtect & win32.PAGE_NOCACHE:
             Protect += "N"
-        else:
-            Protect += "-"
+        #else:
+        #    Protect += "-"
         if   mbiProtect & win32.PAGE_WRITECOMBINE:
             Protect += "W"
-        else:
-            Protect += "-"
+        #else:
+        #    Protect += "-"
+        '''
       perm = Protect
       
       # Type (file mapping, executable image, or private memory).
@@ -121,15 +124,18 @@ else:
       else:
           Type    = "Unknown"
       
-      print BaseAddress
-      addr = '0x%08x-0x%08x'%(int(BaseAddress,16), int(BaseAddress,16)+int(RegionSize,16) )
-      filename = mappedFilenames.get(mbi.BaseAddress, '')
-      offset = 0
+      #print BaseAddress
+      addr = '%08x-%08x'%(int(BaseAddress,16), int(BaseAddress,16)+int(RegionSize,16) )
+      perm = perm.lower()
+      offset = '00000000'
       device = 'fe:01'
       inode = 24422442
+      filename = mappedFilenames.get(mbi.BaseAddress, ' ')
+
       # 08048000-080b0000 r-xp 0804d000 fe:01 3334030  /usr/myfile  
-      lines+='%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename)
-      print   '%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename)
+      lines.append('%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename) )
+      #print   '%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename)
+
     return lines
     
     process         = Process(pid)
@@ -186,6 +192,6 @@ else:
   
   def formatAddress(addr):
     if ctypes.sizeof(ctypes.c_void_p) == 4:
-      return u"0x%08x" % value
+      return u"0x%08x" % addr
     else:
-      return u"0x%016x" % value
+      return u"0x%016x" % addr

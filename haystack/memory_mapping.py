@@ -134,7 +134,10 @@ class MemoryMapping:
     def mmap(self):
       ''' mmap-ed access gives a 20% perf increase on by tests '''
       if not self.isMmaped():
-        self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
+        if hasattr(self._process(), 'readArray'):
+          self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
+        else:
+          self._local_mmap = self._process().read(self.start, self.end-self.start)
       return self._local_mmap
     def unmmap(self):
       if self.isMmaped():
@@ -406,6 +409,7 @@ def readProcessMappings(process):
         raise ProcessError(process, "Unable to read process maps: %s" % err)
     
     try:
+        #print ''.join(mapsfile)
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)

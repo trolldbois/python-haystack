@@ -45,8 +45,15 @@ class MemoryDumper:
     tmpdir = tempfile.mkdtemp()
     self.index = file(os.path.join(tmpdir,'mappings'),'w+')
     # test dump only the heap
+    err=0
     for m in self.mappings:
-      self.dump(m, tmpdir)
+      try:
+        m.mmap()
+        self.dump(m, tmpdir)
+      except Exception,e:
+        err+=1
+        pass # no se how to read windows
+    log.warning('%d mapping in error'%err)
     self.index.close()
     log.debug('Making a archive ')
     archive_name = os.path.normpath(self.args.dumpfile.name)
@@ -62,7 +69,7 @@ class MemoryDumper:
     mname = "0x%lx-%s" % (m.start, memory_mapping.formatAddress(m.end))
     mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
-    m.mmap()
+    #m.mmap()
     log.debug('Dumping the memorymap content')
     with open(mmap_fname,'wb') as mmap_fout:
       mmap_fout.write(m.mmap())
@@ -220,7 +227,7 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
