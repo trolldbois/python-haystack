@@ -312,49 +312,46 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     else :
       return 0
 
-  """
-'''
-// Name: hexDumpLeft() const
-// Desc: returns the x coordinate of the hex-dump field left edge
-'''
-int QHexView.hexDumpLeft() const :
-  return line1() + (font_width_ / 2);
-}
+  
+  '''
+  // Name: hexDumpLeft() const
+  // Desc: returns the x coordinate of the hex-dump field left edge
+  '''
+  def hexDumpLeft(self) :
+    return self.line1() + (self.font_width / 2)
+  
+  '''
+  // Name: asciiDumpLeft() const
+  // Desc: returns the x coordinate of the ascii-dump field left edge
+  '''
+  def asciiDumpLeft(self) :
+    return self.line2() + (self.font_width / 2)
+  
+  '''
+  // Name: commentLeft() const
+  // Desc: returns the x coordinate of the comment field left edge
+  '''
+  def commentLeft(self) :
+    return self.line3() + (self.font_width / 2)
+  
+  '''
+  // Name: charsPerWord() const
+  // Desc: returns how many characters each word takes up
+  '''
+  def charsPerWord(self ) :
+    return self.word_width_ * 2
+  
+  '''
+  // Name: addressLen() const
+  // Desc: returns the lenth in characters the address will take up
+  '''
+  def addressLen(self) :
+    addressLength = (ctypes.sizeof(address_t) * CHAR_BIT) / 4
+    if self.show_address_separator:
+      return addressLength + 1
+    return addressLength + 0
 
-'''
-// Name: asciiDumpLeft() const
-// Desc: returns the x coordinate of the ascii-dump field left edge
-'''
-int QHexView.asciiDumpLeft() const :
-  return line2() + (font_width_ / 2);
-}
 
-'''
-// Name: commentLeft() const
-// Desc: returns the x coordinate of the comment field left edge
-'''
-int QHexView.commentLeft() const :
-  return line3() + (font_width_ / 2);
-}
-
-'''
-// Name: charsPerWord() const
-// Desc: returns how many characters each word takes up
-'''
- QHexView.charsPerWord() const :
-  return word_width_ * 2;
-}
-
-'''
-// Name: addressLen() const
-// Desc: returns the lenth in characters the address will take up
-'''
- QHexView.addressLen() const :
-  static  addressLength = (sizeof(address_t) * CHAR_BIT) / 4;
-  return addressLength + (show_address_separator_ ? 1 : 0);
-}
-
-  """
 
   '''
   // Name: updateScrollbars()
@@ -458,70 +455,65 @@ int QHexView.commentLeft() const :
   def bytesPerRow(self) :
     return self.row_width * self.word_width
   
+
+  '''
+  // Name: pixelToWord(int x, int y) const
+  '''
+  def pixelToWord(self, x, y) :
+    word = -1
+    if self.highlighting == Highlighting_Data:
+      #// the right edge of a box is kinda quirky, so we pretend there is one
+      #// extra character there
+      x = self.qBound(self.line1(), x, self.line2() + self.font_width)
+  
+      #// the selection is in the data view portion
+      x -= self.line1()
+  
+      #// scale x/y down to character from pixels
+      x = x / self.font_width + (x % self.font_width >= self.font_width / 2 ? 1 : 0)
+      y /= self.font_height
+  
+      #// make x relative to rendering mode of the bytes
+      x /= (self.charsPerWord() + 1)
+    elif self.highlighting == Highlighting_Ascii:
+      x = self.qBound(self.asciiDumpLeft(), x, self.line3())
+  
+      #// the selection is in the ascii view portion
+      x -= self.asciiDumpLeft()
+  
+      #// scale x/y down to character from pixels
+      x /= self.font_width
+      y /= self.font_height
+  
+      #// make x relative to rendering mode of the bytes
+      x /= self.word_width
+    else:
+      #Q_ASSERT(0)
+      pass
+  
+    #// starting offset in bytes
+    start_offset = self.verticalScrollBar().value() * self.bytesPerRow()
+  
+    #// take into account the origin
+    if(origin_ != 0) :
+      if(start_offset > 0) :
+        start_offset += self.origin
+        start_offset -= self.bytesPerRow()
+      
+    
+  
+    #// convert byte offset to word offset, rounding up
+    start_offset /= self.word_width
+  
+    if((self.origin % self.word_width) != 0) :
+      start_offset += 1
+    
+  
+    word = ((y * self.row_width) + x) + start_offset
+  
+    return word
+
 """
-'''
-// Name: pixelToWord(int x, int y) const
-'''
-int QHexView.pixelToWord(int x, int y) const :
-  int word = -1;
-
-  switch(highlighting_) :
-  case Highlighting_Data:
-    // the right edge of a box is kinda quirky, so we pretend there is one
-    // extra character there
-    x = qBound(line1(), x, line2() + font_width_);
-
-    // the selection is in the data view portion
-    x -= line1();
-
-    // scale x/y down to character from pixels
-    x = x / font_width_ + (x % font_width_ >= font_width_ / 2 ? 1 : 0);
-    y /= font_height_;
-
-    // make x relative to rendering mode of the bytes
-    x /= (charsPerWord() + 1);
-    break;
-  case Highlighting_Ascii:
-    x = qBound(asciiDumpLeft(), x, line3());
-
-    // the selection is in the ascii view portion
-    x -= asciiDumpLeft();
-
-    // scale x/y down to character from pixels
-    x /= font_width_;
-    y /= font_height_;
-
-    // make x relative to rendering mode of the bytes
-    x /= word_width_;
-    break;
-  default:
-    Q_ASSERT(0);
-    break;
-  }
-
-  // starting offset in bytes
-   start_offset = verticalScrollBar().value() * bytesPerRow();
-
-  // take into account the origin
-  if(origin_ != 0) :
-    if(start_offset > 0) :
-      start_offset += origin_;
-      start_offset -= bytesPerRow();
-    }
-  }
-
-  // convert byte offset to word offset, rounding up
-  start_offset /= word_width_;
-
-  if((origin_ % word_width_) != 0) :
-    start_offset += 1;
-  }
-
-  word = ((y * row_width_) + x) + start_offset;
-
-  return word;
-}
-
 '''
 // Name: mouseDoubleClickEvent(QMouseEvent *event)
 '''
