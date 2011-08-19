@@ -372,94 +372,93 @@ int QHexView.commentLeft() const :
     return
 
 
-"""
-'''
-// Name: scrollTo( offset)
-// Desc: scrolls view to given byte offset
-'''
-void QHexView.scrollTo( offset) :
 
-  bpr = bytesPerRow();
-  origin_ = offset % bpr;
-  address_t address = offset / bpr;
+  '''
+  // Name: scrollTo( offset)
+  // Desc: scrolls view to given byte offset
+  '''
+  def scrollTo( self, offset) :
+  
+    bpr = self.bytesPerRow()
+    self.origin = offset % bpr
+    address = offset / bpr
+  
+    self.updateScrollbars()
+  
+    if(self.origin != 0) :
+      address+=1
+    self.verticalScrollBar().setValue(address)
+    self.repaint()
+    return
 
-  updateScrollbars();
 
-  if(origin_ != 0) :
-    ++address;
+  '''
+  // Name: setShowAddress(bool show)
+  // Desc: sets if we are to display the address column
+  '''
+  def setShowAddress(self, show) :
+    self.show_address = show
+    self.updateScrollbars()
+    self.repaint()
+    return
+  
+  '''
+  // Name: setShowHexDump(bool show)
+  // Desc: sets if we are to display the hex-dump column
+  '''
+  def setShowHexDump(self, show) :
+    self.show_hex = show
+    self.updateScrollbars()
+    self.repaint()
+    return
+
+  '''
+  // Name: setShowComments(bool show)
+  // Desc: sets if we are to display the comments column
+  '''
+  def setShowComments(self, show) :
+    self.show_comments = show
+    self.updateScrollbars()
+    self.repaint()
+    return
+  
+  '''
+  // Name: setShowAsciiDump(bool show)
+  // Desc: sets if we are to display the ascii-dump column
+  '''
+  def setShowAsciiDump(self, show) :
+    self.show_ascii = show
+    self.updateScrollbars()
+    self.repaint()
   }
 
-  verticalScrollBar().setValue(address);
-  repaint();
-}
+  '''
+  // Name: setRowWidth(int rowWidth)
+  // Desc: sets the row width (units is words)
+  '''
+  de setRowWidth(self, rowWidth) :
+    self.row_width = rowWidth
+    self.updateScrollbars()
+    self.repaint()
+    return
+  
+  '''
+  // Name: setWordWidth(int wordWidth)
+  // Desc: sets how many bytes represent a word
+  '''
+  def setWordWidth(self, wordWidth) :
+    self.word_width = wordWidth
+    self.updateScrollbars()
+    self.repaint()
+    return
 
-'''
-// Name: setShowAddress(bool show)
-// Desc: sets if we are to display the address column
-'''
-void QHexView.setShowAddress(bool show) :
-  show_address_ = show;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: setShowHexDump(bool show)
-// Desc: sets if we are to display the hex-dump column
-'''
-void QHexView.setShowHexDump(bool show) :
-  show_hex_ = show;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: setShowComments(bool show)
-// Desc: sets if we are to display the comments column
-'''
-void QHexView.setShowComments(bool show) :
-  show_comments_ = show;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: setShowAsciiDump(bool show)
-// Desc: sets if we are to display the ascii-dump column
-'''
-void QHexView.setShowAsciiDump(bool show) :
-  show_ascii_ = show;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: setRowWidth(int rowWidth)
-// Desc: sets the row width (units is words)
-'''
-void QHexView.setRowWidth(int rowWidth) :
-  row_width_ = rowWidth;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: setWordWidth(int wordWidth)
-// Desc: sets how many bytes represent a word
-'''
-void QHexView.setWordWidth(int wordWidth) :
-  word_width_ = wordWidth;
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: bytesPerRow() const
-'''
- QHexView.bytesPerRow() const :
-  return row_width_ * word_width_;
-}
-
+  '''
+  // Name: bytesPerRow() const
+  '''
+  def bytesPerRow(self) :
+    return self.row_width * self.word_width
+  
+"""
 '''
 // Name: pixelToWord(int x, int y) const
 '''
@@ -1139,6 +1138,7 @@ int QHexView.wordWidth() const :
 int QHexView.rowWidth() const :
   return row_width_;
 }
+
 
 '''
 // Name: firstVisibleAddress() const
