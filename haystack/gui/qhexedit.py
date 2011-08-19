@@ -43,7 +43,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.address_offset = 0
     self.selection_start = -1
     self.selection_end = -1
-    self.highlighting = 0 #Qt.Highlighting_None
+    self.highlighting = 0 #Qt.self.highlightingNone
     self.even_word = Qt.blue
     self.non_printable_text = Qt.red
     self.unprintable_char = '.'
@@ -109,10 +109,10 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
     wordWidthMapper = QSignalMapper(menu)
     wordMenu = QMenu(tr("Set Word Width"), menu)
-    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), word_width_ == 1, wordWidthMapper, SLOT('map()'))
-    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), word_width_ == 2, wordWidthMapper, SLOT('map()'))
-    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), word_width_ == 4, wordWidthMapper, SLOT('map()'))
-    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), word_width_ == 8, wordWidthMapper, SLOT('map()'))
+    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), self.word_width == 1, wordWidthMapper, SLOT('map()'))
+    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), self.word_width == 2, wordWidthMapper, SLOT('map()'))
+    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), self.word_width == 4, wordWidthMapper, SLOT('map()'))
+    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), self.word_width == 8, wordWidthMapper, SLOT('map()'))
     wordWidthMapper.setMapping(a1, 1)
     wordWidthMapper.setMapping(a2, 2)
     wordWidthMapper.setMapping(a3, 4)
@@ -121,11 +121,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
     rowWidthMapper = QSignalMapper(menu)
     rowMenu = QMenu(tr("Set Row Width"), menu)
-    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), row_width_ == 1, rowWidthMapper, SLOT('map()'))
-    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), row_width_ == 2, rowWidthMapper, SLOT('map()'))
-    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), row_width_ == 4, rowWidthMapper, SLOT('map()'))
-    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), row_width_ == 8, rowWidthMapper, SLOT('map()'))
-    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), row_width_ == 16, rowWidthMapper, SLOT('map()'))
+    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), self.row_width == 1, rowWidthMapper, SLOT('map()'))
+    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), self.row_width == 2, rowWidthMapper, SLOT('map()'))
+    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), self.row_width == 4, rowWidthMapper, SLOT('map()'))
+    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), self.row_width == 8, rowWidthMapper, SLOT('map()'))
+    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), self.row_width == 16, rowWidthMapper, SLOT('map()'))
     rowWidthMapper.setMapping(a5, 1)
     rowWidthMapper.setMapping(a6, 2)
     rowWidthMapper.setMapping(a7, 4)
@@ -260,21 +260,20 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
               offset += self.origin
               offset -= self.bytesPerRow()
           if(offset + 1 < self.dataSize()) :
-            self.scrollTo(offset + 1);
-
-        #return so we don't pass on the key event
-        return;
+            self.scrollTo(offset + 1)
+          #return so we don't pass on the key event
+          return
       elif key == Qt.Key_Up:
         while True:
-          offset = self.verticalScrollBar().value() * self.bytesPerRow();
-          if(origin_ != 0):
+          offset = self.verticalScrollBar().value() * self.bytesPerRow()
+          if(self.origin != 0):
             if(offset > 0) :
               offset += self.origin
               offset -= self.bytesPerRow()
           if(offset > 0) :
             self.scrollTo(offset - 1)
-        #return so we don't pass on the key event
-        return
+          #return so we don't pass on the key event
+          return
     QAbstractScrollArea.keyPressEvent(self,event)
     return
 
@@ -284,7 +283,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   def line3(self):
     if(self.show_ascii) :
-      elements = self.bytesPerRow();
+      elements = self.bytesPerRow()
       return self.asciiDumpLeft() + (elements * self.font_width) + (self.font_width / 2)
     else :
       return self.line2()
@@ -339,7 +338,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Desc: returns how many characters each word takes up
   '''
   def charsPerWord(self ) :
-    return self.word_width_ * 2
+    return self.self.word_width * 2
   
   '''
   // Name: addressLen() const
@@ -427,13 +426,13 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.show_ascii = show
     self.updateScrollbars()
     self.repaint()
-  }
+    return
 
   '''
   // Name: setRowWidth(int rowWidth)
   // Desc: sets the row width (units is words)
   '''
-  de setRowWidth(self, rowWidth) :
+  def setRowWidth(self, rowWidth) :
     self.row_width = rowWidth
     self.updateScrollbars()
     self.repaint()
@@ -461,7 +460,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   def pixelToWord(self, x, y) :
     word = -1
-    if self.highlighting == Highlighting_Data:
+    if self.highlighting == self.highlightingData:
       #// the right edge of a box is kinda quirky, so we pretend there is one
       #// extra character there
       x = self.qBound(self.line1(), x, self.line2() + self.font_width)
@@ -475,7 +474,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   
       #// make x relative to rendering mode of the bytes
       x /= (self.charsPerWord() + 1)
-    elif self.highlighting == Highlighting_Ascii:
+    elif self.highlighting == self.highlightingAscii:
       x = self.qBound(self.asciiDumpLeft(), x, self.line3())
   
       #// the selection is in the ascii view portion
@@ -495,7 +494,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     start_offset = self.verticalScrollBar().value() * self.bytesPerRow()
   
     #// take into account the origin
-    if(origin_ != 0) :
+    if(self.origin != 0) :
       if(start_offset > 0) :
         start_offset += self.origin
         start_offset -= self.bytesPerRow()
@@ -513,643 +512,525 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   
     return word
 
-"""
-'''
-// Name: mouseDoubleClickEvent(QMouseEvent *event)
-'''
-void QHexView.mouseDoubleClickEvent(QMouseEvent *event) :
-  if(event.button() == Qt.LeftButton) :
-    x = event.x() + horizontalScrollBar().value() * font_width_;
-    y = event.y();
-    if(x >= line1() && x < line2()) :
 
-      highlighting_ = Highlighting_Data;
+  '''
+  // Name: mouseDoubleClickEvent(QMouseEvent *event)
+  '''
+  def mouseDoubleClickEvent(self, event) :
+    if(event.button() == Qt.LeftButton) :
+      x = event.x() + self.horizontalScrollBar().value() * self.font_width
+      y = event.y()
+      if(x >= self.line1() && x < self.line2()) :
+        self.highlighting = self.highlightingData
+        offset = self.pixelToWord(x, y)
+        byte_offset = offset * self.word_width
+        if(self.origin) :
+          if(self.origin % self.word_width) :
+            byte_offset -= self.word_width - (self.origin % self.word_width)
+        self.selection_start = byte_offset
+        self.selection_end = self.selection_start + self.word_width
+        self.repaint()
+    return
 
-      offset = pixelToWord(x, y);
-      int byte_offset = offset * word_width_;
-      if(origin_) :
-        if(origin_ % word_width_) :
-          byte_offset -= word_width_ - (origin_ % word_width_);
-        }
-      }
 
-      selection_start_ = byte_offset;
-      selection_end_ = selection_start_ + word_width_;
-      repaint();
-    }
-  }
-}
+  '''
+  // Name: mousePressEvent(QMouseEvent *event)
+  '''
+  def mousePressEvent(self, event) :
+    if(event.button() == Qt.LeftButton) :
+      x = event.x() + self.horizontalScrollBar().value() * self.font_width
+      y = event.y()
 
-'''
-// Name: mousePressEvent(QMouseEvent *event)
-'''
-void QHexView.mousePressEvent(QMouseEvent *event) :
-  if(event.button() == Qt.LeftButton) :
-    x = event.x() + horizontalScrollBar().value() * font_width_;
-    y = event.y();
+      if(x < self.line2()) :
+        self.highlighting = self.highlightingData
+      else if(x >= self.line2()) :
+        self.highlighting = self.highlightingAscii
+      
+      offset = self.pixelToWord(x, y)
+      int byte_offset = offset * self.word_width
+      if(self.origin) :
+        if(self.origin % self.word_width) :
+          byte_offset -= self.word_width - (self.origin % self.word_width)
+      if(offset < self.dataSize()):
+        self.selection_start = self.self.selection_end = byte_offset
+      else :
+        self.selection_start = self.selection_end = -1
+      self.repaint()
+    return
+    
+  '''
+  // Name: mouseMoveEvent(QMouseEvent *event)
+  '''
+  def mouseMoveEvent(self, event) :
+    if(self.highlighting != self.highlightingNone) :
+      x = event.x() + self.horizontalScrollBar().value() * self.font_width
+      y = event.y()
 
-    if(x < line2()) :
-      highlighting_ = Highlighting_Data;
-    } else if(x >= line2()) :
-      highlighting_ = Highlighting_Ascii;
-    }
+      offset = self.pixelToWord(x, y)
 
-    offset = pixelToWord(x, y);
-    int byte_offset = offset * word_width_;
-    if(origin_) :
-      if(origin_ % word_width_) :
-        byte_offset -= word_width_ - (origin_ % word_width_);
-      }
-    }
+      if(self.selection_start != -1) :
+        if(offset == -1) :
+          self.selection_end = (self.row_width - self.selection_start) + self.selection_start
+        else :
+          byte_offset = (offset * self.word_width)
+          if(self.origin) :
+            if(self.origin % self.word_width) :
+              byte_offset -= self.word_width - (self.origin % self.word_width)
+          self.selection_end = byte_offset
+        if(self.selection_end < 0) :
+          self.selection_end = 0
+        if(!self.isInViewableArea(self.selection_end)) :
+          #// TODO: scroll to an appropriate location
+          pass
+      self.repaint()
+    return
 
-    if(offset < dataSize()) :
-      selection_start_ = selection_end_ = byte_offset;
-    } else :
-      selection_start_ = selection_end_ = -1;
-    }
-    repaint();
-  }
-}
+  '''
+  // Name: mouseReleaseEvent(QMouseEvent *event)
+  '''
+  def mouseReleaseEvent(self, event) :
+    if(event.button() == Qt.LeftButton) :
+      self.highlighting = self.highlightingNone
+    return
 
-'''
-// Name: mouseMoveEvent(QMouseEvent *event)
-'''
-void QHexView.mouseMoveEvent(QMouseEvent *event) :
-  if(highlighting_ != Highlighting_None) :
-    x = event.x() + horizontalScrollBar().value() * font_width_;
-    y = event.y();
+  '''
+  // Name: setData(const QSharedPointer<QIODevice>& d)
+  '''
+  def setData(self, d) :
+    if (d.isSequential() || !d.size()) :
+      b = QBuffer()
+      b.setData(d.readAll())
+      b.open(QBuffer.ReadOnly)
+      self.data = QSharedPointer(b)
+    else :
+      self.data = d
+    self.deselect()
+    self.updateScrollbars()
+    self.repaint()
+    return
 
-    offset = pixelToWord(x, y);
+  '''
+  // Name: resizeEvent(QResizeEvent *)
+  '''
+  def resizeEvent(self, event) :
+    self.updateScrollbars()
+    return
 
-    if(selection_start_ != -1) :
-      if(offset == -1) :
-        selection_end_ = (row_width_ - selection_start_) + selection_start_;
-      } else :
+  '''
+  // Name: setAddressOffset(address_t offset)
+  '''
+  def setAddressOffset(self, offset) :
+    self.address_offset = offset
+    return
 
-        int byte_offset = (offset * word_width_);
+  '''
+  // Name: isSelected(int index) const
+  '''
+  def isSelected(self, index) :
+    ret = false
+    if(index < self.dataSize() ) :
+      if(self.selection_start != self.selection_end) :
+        if(self.selection_start < self.selection_end) :
+          ret = (index >= self.selection_start && index < self.selection_end)
+        else :
+          ret = (index >= self.selection_end && index < self.selection_start)
+    return ret
 
-        if(origin_) :
-          if(origin_ % word_width_) :
-            byte_offset -= word_width_ - (origin_ % word_width_);
-          }
+  '''
+  // Name: drawComments(QPainter &painter,  offset,  row, int size) const
+  '''
+  def drawComments(self, painter,  offset,  row, size) :
+    #Q_UNUSED(size)
+    painter.setPen(QPen(self.palette().text().color()))
+    address = self.address_offset + offset
+    comment   = QString(self.comment_server.comment(address, self.word_width))
+    painter.drawText(
+      self.commentLeft(),
+      row,
+      comment.length() * self.font_width,
+      self.font_height,
+      Qt.AlignTop,
+      comment
+      )
+    return
 
-        }
-        selection_end_ = byte_offset;
-      }
+  '''
+  // Name: drawAsciiDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const
+  '''
+  def drawAsciiDumpToBuffer(self, stream,  offset, size, row_data):
+    #// i is the byte index
+    chars_per_row = self.bytesPerRow()
+    for i in range(0,chars_per_row) :
+      index = offset + i
+      if(index < size)
+        if(self.isSelected(index)) :
+          ch = row_data[i]
+          printable = ch in string.printable
+          if printable:
+            byteBuffer(ch)
+          else:
+            byteBuffer(self.unprintable_char)
+          stream << byteBuffer
+        else :
+          stream << ' '
+        
+      else :
+        break
+    return
 
-      if(selection_end_ < 0) :
-        selection_end_ = 0;
-      }
+  '''
+  // Name: drawCommentsToBuffer(QTextStream &stream,  offset, int size) const
+  '''
+  def drawCommentsToBuffer(self, stream,  offset, size):
+    #Q_UNUSED(size)
+    address = self.address_offset + offset
+    comment   = QString(self.comment_server.comment(address, self.word_width))
+    stream << comment
+    return
 
-      if(!isInViewableArea(selection_end_)) :
-        // TODO: scroll to an appropriate location
-      }
+  '''
+  // Name: format_bytes(const C &data_ref, int index) const
+  // Desc: formats bytes in a way that's suitable for rendering in a hexdump
+  //       having self as a separate function serves two purposes.
+  //       #1 no code duplication between the buffer and QPainter versions
+  //       #2 self encourages NRVO of the return value more than an integrated
+  '''
+  def format_bytes(self, row_data, index):
+    #union :
+    #  quint64 q
+    #  quint32 d
+    #  quint16 w
+    #  quint8  b
+    value = 0 
+    byte_buffer = [0]*32
+    if self.word_width == 1 :
+      value |= (row_data[index + 0] & 0xff)
+      byte_buffer = "%02x"% value
+    elif self.word_width == 2 :
+      value |= (row_data[index + 0] & 0xff)
+      value |= (row_data[index + 1] & 0xff) << 8
+      byte_buffer="%04x"%w
+    elif self.word_width == 4 :
+      value |= (row_data[index + 0] & 0xff)
+      value |= (row_data[index + 1] & 0xff) << 8
+      value |= (row_data[index + 2] & 0xff) << 16
+      value |= (row_data[index + 3] & 0xff) << 24
+      byte_buffer = "%08x"% value
+    elif self.word_width == 8 :
+      #// we need the cast to ensure that it won't assume 32-bit
+      #// and drop bits shifted more that 31
+      value |= (row_data[index + 0] & 0xff)
+      value |= (row_data[index + 1] & 0xff) << 8
+      value |= (row_data[index + 2] & 0xff) << 16
+      value |= (row_data[index + 3] & 0xff) << 24
+      value |= (row_data[index + 4] & 0xff) << 32
+      value |= (row_data[index + 5] & 0xff) << 40
+      value |= (row_data[index + 6] & 0xff) << 48
+      value |= (row_data[index + 7] & 0xff) << 56
+      byte_buffer = "%016llx"% value
+    return byte_buffer
 
-    }
-    repaint();
-  }
-}
+  '''
+  // Name: drawHexDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const
+  '''
+  def drawHexDumpToBuffer(self, stream,  offset, size, row_data) :
+    #Q_UNUSED(size)
+    #// i is the word we are currently rendering
+    for i in range(0, self.row_width) :
+      #// index of first byte of current 'word'
+      index = offset + (i * self.word_width)
+      #// equal <=, not < because we want to test the END of the word we
+      #// about to render, not the start, it's allowed to end at the very last
+      #// byte
+      if(index + self.word_width <= size) :
+        byteBuffer = QString(self.format_bytes(row_data, i * self.word_width))
+        if(self.isSelected(index)) :
+          stream << byteBuffer
+        else :
+          stream << QString(byteBuffer.length(), ' ')
+        if(i != (self.row_width - 1)) :
+          stream << ' '
+      else :
+        break
+    return
+    
+  '''
+  // Name: drawHexDump(QPainter &painter,  offset,  row, int size, int &word_count, const QByteArray &row_data) const
+  '''
+  def drawHexDump(self, painter,  offset,  row, size, word_count, row_data):
+    hex_dump_left = self.hexDumpLeft()
+    #// i is the word we are currently rendering
+    for i in range(0,self.row_width) :
+      #// index of first byte of current 'word'
+      index = offset + (i * self.word_width)
+      #// equal <=, not < because we want to test the END of the word we
+      #// about to render, not the start, it's allowed to end at the very last
+      #// byte
+      if(index + self.word_width <= size) :
+        byteBuffer = QString(self.format_bytes(row_data, i * self.word_width))
+        drawLeft = hex_dump_left + (i * (self.charsPerWord() + 1) * self.font_width)
+        if(self.isSelected(index)) :
+          painter.fillRect(
+            drawLeft,
+            row,
+            self.charsPerWord() * self.font_width,
+            self.font_height,
+            self.palette().highlight()
+          )
 
-'''
-// Name: mouseReleaseEvent(QMouseEvent *event)
-'''
-void QHexView.mouseReleaseEvent(QMouseEvent *event) :
-  if(event.button() == Qt.LeftButton) :
-    highlighting_ = Highlighting_None;
-  }
-}
-
-'''
-// Name: setData(const QSharedPointer<QIODevice>& d)
-'''
-void QHexView.setData(const QSharedPointer<QIODevice>& d) :
-  if (d.isSequential() || !d.size()) :
-    QBuffer *b = new QBuffer;
-    b.setData(d.readAll());
-    b.open(QBuffer.ReadOnly);
-    data_ = QSharedPointer<QIODevice>(b);
-  } else :
-    data_ = d;
-  }
-
-  deselect();
-  updateScrollbars();
-  repaint();
-}
-
-'''
-// Name: resizeEvent(QResizeEvent *)
-'''
-void QHexView.resizeEvent(QResizeEvent *) :
-  updateScrollbars();
-}
-
-'''
-// Name: setAddressOffset(address_t offset)
-'''
-void QHexView.setAddressOffset(address_t offset) :
-  address_offset_ = offset;
-}
-
-'''
-// Name: isSelected(int index) const
-'''
-bool QHexView.isSelected(int index) const :
-
-  bool ret = false;
-  if(index < static_cast<int>(dataSize())) :
-    if(selection_start_ != selection_end_) :
-      if(selection_start_ < selection_end_) :
-        ret = (index >= selection_start_ && index < selection_end_);
-      } else :
-        ret = (index >= selection_end_ && index < selection_start_);
-      }
-    }
-  }
-  return ret;
-}
-
-'''
-// Name: drawComments(QPainter &painter,  offset,  row, int size) const
-'''
-void QHexView.drawComments(QPainter &painter,  offset,  row, int size) const :
-
-  Q_UNUSED(size);
-
-  painter.setPen(QPen(palette().text().color()));
-
-  const address_t address = address_offset_ + offset;
-  const QString comment   = comment_server_.comment(address, word_width_);
-
-  painter.drawText(
-    commentLeft(),
-    row,
-    comment.length() * font_width_,
-    font_height_,
-    Qt.AlignTop,
-    comment
-    );
-}
-
-'''
-// Name: drawAsciiDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const
-'''
-void QHexView.drawAsciiDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const :
-  // i is the byte index
-  chars_per_row = bytesPerRow();
-  for(int i = 0; i < chars_per_row; ++i) :
-
-    index = offset + i;
-
-    if(index < size) :
-
-      if(isSelected(index)) :
-        const unsigned char ch = row_data[i];
-        const bool printable = is_printable(ch) && ch != '\f' && ch != '\t' && ch != '\r' && ch != '\n' && ch < 0x80;
-        const char byteBuffer(printable ? ch : unprintable_char_);
-        stream << byteBuffer;
-      } else :
-        stream << ' ';
-      }
-    } else :
-      break;
-    }
-  }
-}
-
-'''
-// Name: drawCommentsToBuffer(QTextStream &stream,  offset, int size) const
-'''
-void QHexView.drawCommentsToBuffer(QTextStream &stream,  offset, int size) const :
-  Q_UNUSED(size);
-  const address_t address = address_offset_ + offset;
-  const QString comment   = comment_server_.comment(address, word_width_);
-  stream << comment;
-}
-
-'''
-// Name: format_bytes(const C &data_ref, int index) const
-// Desc: formats bytes in a way that's suitable for rendering in a hexdump
-//       having self as a separate function serves two purposes.
-//       #1 no code duplication between the buffer and QPainter versions
-//       #2 self encourages NRVO of the return value more than an integrated
-'''
-QString QHexView.format_bytes(const QByteArray &row_data, int index) const :
-  union :
-    quint64 q;
-    quint32 d;
-    quint16 w;
-    quint8  b;
-  } value = : 0 };
-
-  char byte_buffer[32];
-
-  switch(word_width_) :
-  case 1:
-    value.b |= (row_data[index + 0] & 0xff);
-    qsnprintf(byte_buffer, sizeof(byte_buffer), "%02x", value.b);
-    break;
-  case 2:
-    value.w |= (row_data[index + 0] & 0xff);
-    value.w |= (row_data[index + 1] & 0xff) << 8;
-    qsnprintf(byte_buffer, sizeof(byte_buffer), "%04x", value.w);
-    break;
-  case 4:
-    value.d |= (row_data[index + 0] & 0xff);
-    value.d |= (row_data[index + 1] & 0xff) << 8;
-    value.d |= (row_data[index + 2] & 0xff) << 16;
-    value.d |= (row_data[index + 3] & 0xff) << 24;
-    qsnprintf(byte_buffer, sizeof(byte_buffer), "%08x", value.d);
-    break;
-  case 8:
-    // we need the cast to ensure that it won't assume 32-bit
-    // and drop bits shifted more that 31
-    value.q |= static_cast<quint64>(row_data[index + 0] & 0xff);
-    value.q |= static_cast<quint64>(row_data[index + 1] & 0xff) << 8;
-    value.q |= static_cast<quint64>(row_data[index + 2] & 0xff) << 16;
-    value.q |= static_cast<quint64>(row_data[index + 3] & 0xff) << 24;
-    value.q |= static_cast<quint64>(row_data[index + 4] & 0xff) << 32;
-    value.q |= static_cast<quint64>(row_data[index + 5] & 0xff) << 40;
-    value.q |= static_cast<quint64>(row_data[index + 6] & 0xff) << 48;
-    value.q |= static_cast<quint64>(row_data[index + 7] & 0xff) << 56;
-    qsnprintf(byte_buffer, sizeof(byte_buffer), "%016llx", value.q);
-    break;
-  }
-
-  return byte_buffer;
-}
-
-'''
-// Name: drawHexDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const
-'''
-void QHexView.drawHexDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const :
-
-  Q_UNUSED(size);
-
-  // i is the word we are currently rendering
-  for(int i = 0; i < row_width_; ++i) :
-
-    // index of first byte of current 'word'
-    index = offset + (i * word_width_);
-
-    // equal <=, not < because we want to test the END of the word we
-    // about to render, not the start, it's allowed to end at the very last
-    // byte
-    if(index + word_width_ <= size) :
-      const QString byteBuffer = format_bytes(row_data, i * word_width_);
-
-      if(isSelected(index)) :
-        stream << byteBuffer;
-      } else :
-        stream << QString(byteBuffer.length(), ' ');
-      }
-
-      if(i != (row_width_ - 1)) :
-        stream << ' ';
-      }
-    } else :
-      break;
-    }
-  }
-}
-
-'''
-// Name: drawHexDump(QPainter &painter,  offset,  row, int size, int &word_count, const QByteArray &row_data) const
-'''
-void QHexView.drawHexDump(QPainter &painter,  offset,  row, int size, int &word_count, const QByteArray &row_data) const :
-  hex_dump_left = hexDumpLeft();
-
-  // i is the word we are currently rendering
-  for(int i = 0; i < row_width_; ++i) :
-
-    // index of first byte of current 'word'
-    index = offset + (i * word_width_);
-
-    // equal <=, not < because we want to test the END of the word we
-    // about to render, not the start, it's allowed to end at the very last
-    // byte
-    if(index + word_width_ <= size) :
-
-      const QString byteBuffer = format_bytes(row_data, i * word_width_);
-
-      drawLeft = hex_dump_left + (i * (charsPerWord() + 1) * font_width_);
-
-      if(isSelected(index)) :
-        painter.fillRect(
+          #// should be highlight the space between us and the next word?
+          if(i != (self.row_width - 1)) :
+            if(self.isSelected(index + 1)) :
+              painter.fillRect(
+                drawLeft + self.font_width,
+                row,
+                self.charsPerWord() * self.font_width,
+                self.font_height,
+                self.palette().highlight()
+                )
+          painter.setPen(QPen(self.palette().highlightedText().color()))
+        else :
+          if (word_count & 1):
+            painter.setPen(QPen(self.even_word ))
+            painter.setPen(QPen(palette().text().color()))
+        
+        painter.drawText(
           drawLeft,
           row,
-          charsPerWord() * font_width_,
-          font_height_,
-          palette().highlight()
-        );
+          byteBuffer.length() * self.font_width,
+          self.font_height,
+          Qt.AlignTop,
+          byteBuffer
+          )
 
-        // should be highlight the space between us and the next word?
-        if(i != (row_width_ - 1)) :
-          if(isSelected(index + 1)) :
-            painter.fillRect(
-              drawLeft + font_width_,
-              row,
-              charsPerWord() * font_width_,
-              font_height_,
-              palette().highlight()
-              );
-          }
-        }
+        word_count+=1
+      else :
+        break
+    return
 
-        painter.setPen(QPen(palette().highlightedText().color()));
-      } else :
-        painter.setPen(QPen((word_count & 1) ? even_word_ : palette().text().color()));
-      }
+  '''
+  // Name: drawAsciiDump(QPainter &painter,  offset,  row, int size, const QByteArray &row_data) const
+  '''
+  def drawAsciiDump(self, painter,  offset,  row, int size, row_data) :
+    ascii_dump_left = self.asciiDumpLeft()
 
-      painter.drawText(
-        drawLeft,
-        row,
-        byteBuffer.length() * font_width_,
-        font_height_,
-        Qt.AlignTop,
-        byteBuffer
-        );
-
-      ++word_count;
-    } else :
-      break;
-    }
-  }
-}
-
-'''
-// Name: drawAsciiDump(QPainter &painter,  offset,  row, int size, const QByteArray &row_data) const
-'''
-void QHexView.drawAsciiDump(QPainter &painter,  offset,  row, int size, const QByteArray &row_data) const :
-  ascii_dump_left = asciiDumpLeft();
-
-  // i is the byte index
-  chars_per_row = bytesPerRow();
-  for(int i = 0; i < chars_per_row; ++i) :
-
-    index = offset + i;
-
-    if(index < size) :
-      const char ch        = row_data[i];
-      drawLeft   = ascii_dump_left + i * font_width_;
-      const bool printable = is_printable(ch);
-
-      // drawing a selected character
-      if(isSelected(index)) :
-
-        painter.fillRect(
+    #// i is the byte index
+    chars_per_row = self.bytesPerRow()
+    for i in range(0,chars_per_row) :
+      index = offset + i
+      if(index < size) :
+        ch        = row_data[i]
+        drawLeft   = ascii_dump_left + i * self.font_width
+        printable = self.is_printable(ch)
+        #// drawing a selected character
+        if(self.isSelected(index)) :
+          painter.fillRect(
+            drawLeft,
+            row,
+            self.font_width,
+            self.font_height,
+            self.palette().highlight()
+            )
+          painter.setPen(QPen(self.palette().highlightedText().color()))
+        else :
+          if printable:
+            painter.setPen(QPen(self.palette().text().color())
+            byteBuffer = QString(ch)
+          else:
+            painter.setPen(QPen(self.non_printable_text))
+            byteBuffer = QString(self.unprintable_char)
+        painter.drawText(
           drawLeft,
           row,
-          font_width_,
-          font_height_,
-          palette().highlight()
-          );
+          self.font_width,
+          self.font_height,
+          Qt.AlignTop,
+          byteBuffer
+          )
+      else :
+        break
+    return
 
-        painter.setPen(QPen(palette().highlightedText().color()));
+  '''
+  // Name: paintEvent(QPaintEvent *)
+  '''
+  def paintEvent(self, event) :
 
-      } else :
-        painter.setPen(QPen(printable ? palette().text().color() : non_printable_text_));
-      }
+    painter = QPainter(self.viewport())
+    painter.translate(-self.horizontalScrollBar().value() * self.font_width, 0)
+    word_count = 0
 
-      const QString byteBuffer(printable ? ch : unprintable_char_);
+    #// pixel offset of self row
+    row = 0
+    chars_per_row = self.bytesPerRow()
+    #// current actual offset (in bytes)
+    offset = self.verticalScrollBar().value() * chars_per_row
 
-      painter.drawText(
-        drawLeft,
-        row,
-        font_width_,
-        font_height_,
-        Qt.AlignTop,
-        byteBuffer
-        );
-    } else :
-      break;
-    }
-  }
-}
+    if(self.origin != 0) :
+      if(offset > 0) :
+        offset += self.origin
+        offset -= chars_per_row
+      else :
+        self.origin = 0
+        self.updateScrollbars()
+     data_size     = self.dataSize()
+     widget_height = self.height()
 
-'''
-// Name: paintEvent(QPaintEvent *)
-'''
-void QHexView.paintEvent(QPaintEvent *) :
+    while(row + self.font_height < widget_height ) and (offset < data_size) :
+      self.data.seek(offset)
+      row_data = self.data.read(chars_per_row)
+      if(!row_data.isEmpty()) :
+        if(self.show_address) :
+          address_rva = self.address_offset + offset
+          addressBuffer = self.formatAddress(address_rva)
+          painter.setPen(QPen(self.address_color))
+          painter.drawText(0, row, addressBuffer.length() * self.font_width, self.font_height, Qt.AlignTop, addressBuffer)
 
-  QPainter painter(viewport());
-  painter.translate(-horizontalScrollBar().value() * font_width_, 0);
+        if(self.show_hex) :
+          self.drawHexDump(painter, offset, row, data_size, word_count, row_data)
+        if(self.show_ascii) :
+          self.drawAsciiDump(painter, offset, row, data_size, row_data)
+        if(self.show_comments and self.comment_server) :
+          self.drawComments(painter, offset, row, data_size)
+      offset += chars_per_row
+      row += self.font_height
 
-  int word_count = 0;
+    painter.setPen(QPen(self.palette().shadow().color()))
 
-  // pixel offset of self row
-   row = 0;
+    if(self.show_address and self.show_line1) :
+      line1_x = self.line1()
+      painter.drawLine(line1_x, 0, line1_x, widget_height)
 
-  chars_per_row = bytesPerRow();
+    if(self.show_hex && self.show_line2) :
+      line2_x = self.line2()
+      painter.drawLine(line2_x, 0, line2_x, widget_height)
 
-  // current actual offset (in bytes)
-   offset = verticalScrollBar().value() * chars_per_row;
+    if(self.show_ascii && self.show_line3) :
+      line3_x = self.line3()
+      painter.drawLine(line3_x, 0, line3_x, widget_height)
 
-  if(origin_ != 0) :
-    if(offset > 0) :
-      offset += origin_;
-      offset -= chars_per_row;
-    } else :
-      origin_ = 0;
-      updateScrollbars();
-    }
-  }
+    return
 
-   data_size     = static_cast<>(dataSize());
-   widget_height = static_cast<>(height());
+  '''
+  // Name: selectAll()
+  '''
+  def selectAll(self) :
+    self.selection_start = 0
+    self.selection_end   = self.dataSize()
+    return
 
-  while(row + font_height_ < widget_height && offset < data_size) :
+  '''
+  // Name: deselect()
+  '''
+  def deselect(self) :
+    self.selection_start = -1
+    self.selection_end   = -1
+    return
 
-    data_.seek(offset);
-    const QByteArray row_data = data_.read(chars_per_row);
+  '''
+  // Name: allBytes() const
+  '''
+  def allBytes(self) :
+    self.data.seek(0)
+    return self.data.readAll()
 
-    if(!row_data.isEmpty()) :
-      if(show_address_) :
-        const address_t address_rva = address_offset_ + offset;
-        const QString addressBuffer = formatAddress(address_rva);
-        painter.setPen(QPen(address_color_));
-        painter.drawText(0, row, addressBuffer.length() * font_width_, font_height_, Qt.AlignTop, addressBuffer);
-      }
+  '''
+  // Name: selectedBytes() const
+  '''
+  def selectedBytes(self ):
+    if(self.hasSelectedText()) :
+      s = min(self.selection_start, self.selection_end)
+      e = max(self.selection_start, self.selection_end)
+      self.data.seek(s)
+      return self.data.read(e - s)
+    return QByteArray()
 
-      if(show_hex_) :
-        drawHexDump(painter, offset, row, data_size, word_count, row_data);
-      }
+  '''
+  // Name: selectedBytesAddress() const
+  '''
+  def selectedBytesAddress(self) :
+    select_base = min(self.selection_start, self.selection_end)
+    return select_base + self.address_offset
 
-      if(show_ascii_) :
-        drawAsciiDump(painter, offset, row, data_size, row_data);
-      }
+  '''
+  // Name: selectedBytesSize() const
+  '''
+  def selectedBytesSize(self):
+    if(self.selection_end > self.selection_start) :
+      ret = self.selection_end - self.selection_start
+    else :
+      ret = self.selection_start - self.selection_end
+    return ret
 
-      if(show_comments_ && comment_server_) :
-        drawComments(painter, offset, row, data_size);
-      }
-    }
+  '''
+  // Name: addressOffset() const
+  '''
+  def addressOffset(self):
+    return self.address_offset
 
-    offset += chars_per_row;
-    row += font_height_;
-  }
+  '''
+  // Name: setCommentServer(const QSharedPointer<CommentServerInterface> &p)
+  '''
+  def setCommentServer(self, p) :
+    self.comment_server = p
+    return
 
-  painter.setPen(QPen(palette().shadow().color()));
+  '''
+  // Name: commentServer() const
+  '''
+  def commentServer(self):
+    return self.comment_server
 
-  if(show_address_ && show_line1_) :
-    line1_x = line1();
-    painter.drawLine(line1_x, 0, line1_x, widget_height);
-  }
+  '''
+  // Name: showHexDump() const
+  '''
+  def showHexDump(self) :
+    return self.show_hex
 
-  if(show_hex_ && show_line2_) :
-    line2_x = line2();
-    painter.drawLine(line2_x, 0, line2_x, widget_height);
-  }
+  '''
+  // Name: showAddress() const
+  '''
+  def showAddress(self):
+    return self.show_address
 
-  if(show_ascii_ && show_line3_) :
-    line3_x = line3();
-    painter.drawLine(line3_x, 0, line3_x, widget_height);
-  }
-}
+  '''
+  // Name: showAsciiDump() const
+  '''
+  def showAsciiDump(self):
+    return self.show_ascii
 
-'''
-// Name: selectAll()
-'''
-void QHexView.selectAll() :
-  selection_start_ = 0;
-  selection_end_   = dataSize();
-}
+  '''
+  // Name: showComments() const
+  '''
+  def mshowComments(self):
+    return self.show_comments
 
-'''
-// Name: deselect()
-'''
-void QHexView.deselect() :
-  selection_start_ = -1;
-  selection_end_   = -1;
-}
+  '''
+  // Name: wordWidth() const
+  '''
+  def wordWidth(self) :
+    return self.word_width
 
-'''
-// Name: allBytes() const
-'''
-QByteArray QHexView.allBytes() const :
-  data_.seek(0);
-  return data_.readAll();
-}
+  '''
+  // Name: rowWidth() const
+  '''
+  def rowWidth(self) :
+    return self.row_width
 
-'''
-// Name: selectedBytes() const
-'''
-QByteArray QHexView.selectedBytes() const :
-  if(hasSelectedText()) :
-    s = qMin(selection_start_, selection_end_);
-    e = qMax(selection_start_, selection_end_);
+  '''
+  // Name: firstVisibleAddress() const
+  '''
+  def firstVisibleAddress(self.):
+    #// current actual offset (in bytes)
+    chars_per_row = self.bytesPerRow()
+    offset = self.verticalScrollBar().value() * chars_per_row
+    if(self.origin != 0) :
+      if(offset > 0) :
+        offset += self.origin
+        offset -= chars_per_row
+    return offset + self.addressOffset()
 
-    data_.seek(s);
-    return data_.read(e - s);
-  }
-
-  return QByteArray();
-}
-
-'''
-// Name: selectedBytesAddress() const
-'''
-QHexView.address_t QHexView.selectedBytesAddress() const :
-  const address_t select_base = qMin(selection_start_, selection_end_);
-  return select_base + address_offset_;
-}
-
-'''
-// Name: selectedBytesSize() const
-'''
- QHexView.selectedBytesSize() const :
-
-   ret;
-  if(selection_end_ > selection_start_) :
-    ret = selection_end_ - selection_start_;
-  } else :
-    ret = selection_start_ - selection_end_;
-  }
-
-  return ret;
-}
-
-'''
-// Name: addressOffset() const
-'''
-QHexView.address_t QHexView.addressOffset() const :
-  return address_offset_;
-}
-
-'''
-// Name: setCommentServer(const QSharedPointer<CommentServerInterface> &p)
-'''
-void QHexView.setCommentServer(const QSharedPointer<CommentServerInterface> &p) :
-  comment_server_ = p;
-}
-
-'''
-// Name: commentServer() const
-'''
-QSharedPointer<QHexView.CommentServerInterface> QHexView.commentServer() const :
-  return comment_server_;
-}
-
-'''
-// Name: showHexDump() const
-'''
-bool QHexView.showHexDump() const :
-  return show_hex_;
-}
-
-'''
-// Name: showAddress() const
-'''
-bool QHexView.showAddress() const :
-  return show_address_;
-}
-
-'''
-// Name: showAsciiDump() const
-'''
-bool QHexView.showAsciiDump() const :
-  return show_ascii_;
-}
-
-'''
-// Name: showComments() const
-'''
-bool QHexView.showComments() const :
-  return show_comments_;
-}
-
-'''
-// Name: wordWidth() const
-'''
-int QHexView.wordWidth() const :
-  return word_width_;
-}
-
-'''
-// Name: rowWidth() const
-'''
-int QHexView.rowWidth() const :
-  return row_width_;
-}
-
-
-'''
-// Name: firstVisibleAddress() const
-'''
-QHexView.address_t QHexView.firstVisibleAddress() const :
-  // current actual offset (in bytes)
-  chars_per_row = bytesPerRow();
-   offset = verticalScrollBar().value() * chars_per_row;
-
-  if(origin_ != 0) :
-    if(offset > 0) :
-      offset += origin_;
-      offset -= chars_per_row;
-    }
-  }
-
-  return offset + addressOffset();
-}
-"""
+####--------------
 
 def gui(opts):
   app = QtGui.QApplication(sys.argv)
