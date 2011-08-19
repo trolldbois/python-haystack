@@ -341,6 +341,8 @@ def argparser():
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), dest='memfile', action='store', default=None, 
                                     help='Use a memory dump instead of a live process ID')
+  target.add_argument('--dumpfile', type=argparse.FileType('r'), dest='dumpfile', action='store', default=None, 
+                                    help='Use a haystack memory dump instead of a live process ID')
     
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')

@@ -11,6 +11,7 @@ import os, time
 from ptrace.debugger.debugger import PtraceDebugger
 # local
 from memory_mapping import MemoryDumpMemoryMapping , FileBackedMemoryMapping, readProcessMappings
+import memory_dumper
 
 log = logging.getLogger('mapper')
 
@@ -23,12 +24,19 @@ class MemoryMapper:
       mappings = self.initPid(args)
     elif not (args.memfile is None):
       mappings = self.initMemfile(args)
+    elif not (args.dumpfile is None):
+      mappings = self.initProcessDumpfile(args)
     self.mappings = mappings
     return
   
   def getMappings(self):
     return self.mappings
     
+  def initProcessDumpfile(self,args):
+    loader = memory_dumper.ProcessMemoryDumpLoader(args.dumpfile)
+    mappings = loader.getMappings()
+    return mappings
+
   def initMemfile(self,args):
     size = os.fstat(args.memfile.fileno()).st_size
     if size > MAX_DUMP_SIZE:
