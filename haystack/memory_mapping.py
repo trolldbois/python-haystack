@@ -1,8 +1,15 @@
-from ptrace.os_tools import HAS_PROC
-if HAS_PROC:
-     from ptrace.linux_proc import openProc, ProcError
-from ptrace.debugger.process_error import ProcessError
-from ptrace.ctypes_tools import formatAddress
+
+from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
+
+#import platform
+#if platform.system() != 'Windows':
+#  from ptrace.os_tools import HAS_PROC
+#  if HAS_PROC:
+#       from ptrace.linux_proc import openProc, ProcError
+#  from ptrace.debugger.process_error import ProcessError
+#  from ptrace.ctypes_tools import formatAddress
+#else:
+#  HAS_PROC=False
 import re
 from weakref import ref
 import ctypes, struct, mmap
@@ -127,7 +134,10 @@ class MemoryMapping:
     def mmap(self):
       ''' mmap-ed access gives a 20% perf increase on by tests '''
       if not self.isMmaped():
-        self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
+        if hasattr(self._process(), 'readArray'):
+          self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
+        else:
+          self._local_mmap = self._process().read(self.start, self.end-self.start)
       return self._local_mmap
     def unmmap(self):
       if self.isMmaped():
@@ -394,11 +404,12 @@ def readProcessMappings(process):
     if not HAS_PROC:
         return maps
     try:
-        mapsfile = openProc("%s/maps" % process.pid)
+        mapsfile = openProc(process.pid)
     except ProcError, err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
     
     try:
+        #print ''.join(mapsfile)
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
@@ -416,6 +427,7 @@ def readProcessMappings(process):
                 match.group(8))
             maps.append(map)
     finally:
+      if type(mapsfile) is file:
         mapsfile.close()
     return maps
 
