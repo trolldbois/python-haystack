@@ -245,7 +245,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   Desc: slot used to set the font of the widget based on dialog selector
   '''
   def mnuSetFont(self) :
-    self.setFont(QFontDialog.getFont(0, self.font(), self))
+    font, boolean = QFontDialog.getFont(self.font(), self)
+    self.setFont(font)
     return
 
   '''
