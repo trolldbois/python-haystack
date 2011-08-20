@@ -12,6 +12,8 @@ http://www.codef00.com/projects#qhexview
 import sys
 import logging
 import argparse
+import ctypes
+
 log = logging.getLogger('qhexedit')
 
 from PyQt4 import QtGui, QtCore
@@ -23,6 +25,14 @@ from PyQt4.QtCore import * #SIGNAL, SLOT, QSignalMapper, QTextStream, QString
 import string
 
 #==================== tools
+
+#we are not a DSP
+CHAR_BIT = 8
+
+#where is QtGlobal ?
+def qBound(mini, value, maxi):
+  return max(mini, min(value, maxi))
+
 def isPrintable(ch):
   return chr(ch) in string.printable
 
@@ -30,8 +40,13 @@ def isPrintable(ch):
 tr=str
 
 class QHexeditWidget(QtGui.QAbstractScrollArea):
-  def __init__(self, file, parent = None):
+  highlightingNone=0
+  highlightingData=1
+  highlightingAscii=2
+  
+  def __init__(self, file_, parent = None):
     QtGui.QAbstractScrollArea.__init__(self, parent)
+    self.data = None
     self.row_width = 16    
     self.word_width = 1
     self.address_color = Qt.red
@@ -43,7 +58,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.address_offset = 0
     self.selection_start = -1
     self.selection_end = -1
-    self.highlighting = 0 #Qt.self.highlightingNone
+    self.highlighting = self.highlightingNone
     self.even_word = Qt.blue
     self.non_printable_text = Qt.red
     self.unprintable_char = '.'
@@ -55,7 +70,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.setFont(QFont("Monospace", 8))
     self.setShowAddressSeparator(True)
     # me
-    self.file = file
+    self.file = file_
     return 
   
   def setShowAddressSeparator(self, value):
@@ -64,7 +79,30 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     return
     
   def formatAddress(self, address):
-    return format_address(address, self.show_address_separator)
+    return self.format_address(address, self.show_address_separator)
+
+  def format_address(self, address, showSep=False) :
+    if showSep:
+      sep = ':'
+    s = ctypes.sizeof(ctypes.c_void_p)
+    if s == 4:
+      return QString("%04x%s%04x"% ((address >> 16) & 0xffff, sep, address & 0xffff)   )	
+    elif s == 8:
+      return QString("%08x%s%08x"% ((address >> 32) & 0xffffffff, sep, address & 0xffffffff)  )
+    return
+    	
+  '''
+  // Name: add_toggle_action_to_menu(QMenu *menu, const QString &caption, bool checked, QObject *receiver, const char *slot)
+  // Desc: convenience function used to add a checkable menu item to the context menu
+  '''
+  def add_toggle_action_to_menu(self, menu, caption, checked, receiver, slot):
+    action = QAction(caption, menu)
+    action.setCheckable(True)
+    action.setChecked(checked)
+    menu.addAction(action)
+    self.connect(action, SIGNAL('toggled(bool)'), receiver, slot)
+    return action
+
 
   def repaint(self):
     self.viewport().repaint()
@@ -100,45 +138,45 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   def createStandardContextMenu(self):
     menu = QMenu(self)
-    menu.addAction(tr("Set &Font"), self, SLOT(mnuSetFont()))
+    menu.addAction(tr("Set &Font"), self, self.mnuSetFont )
     menu.addSeparator()
-    self.add_toggle_action_to_menu(menu, tr("Show A&ddress"), self.show_address, self, SLOT('setShowAddress(bool)'))
-    self.add_toggle_action_to_menu(menu, tr("Show &Hex"), self.show_hex, self, SLOT('setShowHexDump(bool)'))
-    self.add_toggle_action_to_menu(menu, tr("Show &Ascii"), self.show_ascii, self, SLOT('setShowAsciiDump(bool)'))
-    self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self, SLOT('setShowComments(bool)'))
+    self.add_toggle_action_to_menu(menu, tr("Show A&ddress"), self.show_address, self, self.setShowAddress )
+    self.add_toggle_action_to_menu(menu, tr("Show &Hex"), self.show_hex, self, self.setShowHexDump )
+    self.add_toggle_action_to_menu(menu, tr("Show &Ascii"), self.show_ascii, self, self.setShowAsciiDump )
+    self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self, self.setShowComments )
 
     wordWidthMapper = QSignalMapper(menu)
     wordMenu = QMenu(tr("Set Word Width"), menu)
-    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), self.word_width == 1, wordWidthMapper, SLOT('map()'))
-    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), self.word_width == 2, wordWidthMapper, SLOT('map()'))
-    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), self.word_width == 4, wordWidthMapper, SLOT('map()'))
-    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), self.word_width == 8, wordWidthMapper, SLOT('map()'))
+    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), self.word_width == 1, wordWidthMapper, self.map  )
+    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), self.word_width == 2, wordWidthMapper, self.map )
+    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), self.word_width == 4, wordWidthMapper, self.map )
+    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), self.word_width == 8, wordWidthMapper, self.map )
     wordWidthMapper.setMapping(a1, 1)
     wordWidthMapper.setMapping(a2, 2)
     wordWidthMapper.setMapping(a3, 4)
     wordWidthMapper.setMapping(a4, 8)
-    self.connect(wordWidthMapper, SIGNAL('mapped(int)'), SLOT('setWordWidth(int)'))
+    self.connect(wordWidthMapper, SIGNAL('mapped(int)'), self.setWordWidth)
 
     rowWidthMapper = QSignalMapper(menu)
     rowMenu = QMenu(tr("Set Row Width"), menu)
-    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), self.row_width == 1, rowWidthMapper, SLOT('map()'))
-    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), self.row_width == 2, rowWidthMapper, SLOT('map()'))
-    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), self.row_width == 4, rowWidthMapper, SLOT('map()'))
-    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), self.row_width == 8, rowWidthMapper, SLOT('map()'))
-    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), self.row_width == 16, rowWidthMapper, SLOT('map()'))
+    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), self.row_width == 1, rowWidthMapper, self.map)
+    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), self.row_width == 2, rowWidthMapper, self.map)
+    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), self.row_width == 4, rowWidthMapper, self.map)
+    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), self.row_width == 8, rowWidthMapper, self.map)
+    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), self.row_width == 16, rowWidthMapper, self.map)
     rowWidthMapper.setMapping(a5, 1)
     rowWidthMapper.setMapping(a6, 2)
     rowWidthMapper.setMapping(a7, 4)
     rowWidthMapper.setMapping(a8, 8)
     rowWidthMapper.setMapping(a9, 16)
-    self.connect(rowWidthMapper, SIGNAL('mapped(int)'), SLOT('setRowWidth(int)'))
+    self.connect(rowWidthMapper, SIGNAL('mapped(int)'), self.setRowWidth)
 
     menu.addSeparator()
     menu.addMenu(wordMenu)
     menu.addMenu(rowMenu)
 
     menu.addSeparator()
-    menu.addAction(tr("&Copy Selection To Clipboard"), self, SLOT(mnuCopy()))
+    menu.addAction(tr("&Copy Selection To Clipboard"), self, self.mnuCopy)
     return menu
 
   '''
@@ -184,7 +222,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         if not (row_data.isEmpty()) :
           if (self.show_address) :
             address_rva = self.address_offset + offset
-            addressBuffer = formatAddress(address_rva)
+            addressBuffer = self.formatAddress(address_rva)
             ss += addressBuffer
             ss += '|'
           if (show_hex_) :
@@ -338,14 +376,14 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Desc: returns how many characters each word takes up
   '''
   def charsPerWord(self ) :
-    return self.self.word_width * 2
+    return self.word_width * 2
   
   '''
   // Name: addressLen() const
   // Desc: returns the lenth in characters the address will take up
   '''
   def addressLen(self) :
-    addressLength = (ctypes.sizeof(address_t) * CHAR_BIT) / 4
+    addressLength = (ctypes.sizeof(ctypes.c_void_p) * CHAR_BIT) / 4
     if self.show_address_separator:
       return addressLength + 1
     return addressLength + 0
@@ -463,19 +501,22 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     if self.highlighting == self.highlightingData:
       #// the right edge of a box is kinda quirky, so we pretend there is one
       #// extra character there
-      x = self.qBound(self.line1(), x, self.line2() + self.font_width)
+      x = qBound(self.line1(), x, self.line2() + self.font_width)
   
       #// the selection is in the data view portion
       x -= self.line1()
   
       #// scale x/y down to character from pixels
-      x = x / self.font_width + (x % self.font_width >= self.font_width / 2 ? 1 : 0)
+      if (x % self.font_width >= self.font_width / 2 ):
+        x = x / self.font_width + 1
+      else:
+        x = x / self.font_width
       y /= self.font_height
   
       #// make x relative to rendering mode of the bytes
       x /= (self.charsPerWord() + 1)
     elif self.highlighting == self.highlightingAscii:
-      x = self.qBound(self.asciiDumpLeft(), x, self.line3())
+      x = qBound(self.asciiDumpLeft(), x, self.line3())
   
       #// the selection is in the ascii view portion
       x -= self.asciiDumpLeft()
@@ -520,7 +561,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     if(event.button() == Qt.LeftButton) :
       x = event.x() + self.horizontalScrollBar().value() * self.font_width
       y = event.y()
-      if(x >= self.line1() && x < self.line2()) :
+      if(x >= self.line1() and x < self.line2()) :
         self.highlighting = self.highlightingData
         offset = self.pixelToWord(x, y)
         byte_offset = offset * self.word_width
@@ -543,16 +584,16 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
       if(x < self.line2()) :
         self.highlighting = self.highlightingData
-      else if(x >= self.line2()) :
+      elif(x >= self.line2()) :
         self.highlighting = self.highlightingAscii
       
       offset = self.pixelToWord(x, y)
-      int byte_offset = offset * self.word_width
+      byte_offset = offset * self.word_width
       if(self.origin) :
         if(self.origin % self.word_width) :
           byte_offset -= self.word_width - (self.origin % self.word_width)
       if(offset < self.dataSize()):
-        self.selection_start = self.self.selection_end = byte_offset
+        self.selection_start = self.selection_end = byte_offset
       else :
         self.selection_start = self.selection_end = -1
       self.repaint()
@@ -579,7 +620,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
           self.selection_end = byte_offset
         if(self.selection_end < 0) :
           self.selection_end = 0
-        if(!self.isInViewableArea(self.selection_end)) :
+        if(not self.isInViewableArea(self.selection_end)) :
           #// TODO: scroll to an appropriate location
           pass
       self.repaint()
@@ -597,7 +638,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Name: setData(const QSharedPointer<QIODevice>& d)
   '''
   def setData(self, d) :
-    if (d.isSequential() || !d.size()) :
+    if (d.isSequential()  or  not d.size()) :
       b = QBuffer()
       b.setData(d.readAll())
       b.open(QBuffer.ReadOnly)
@@ -631,9 +672,9 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     if(index < self.dataSize() ) :
       if(self.selection_start != self.selection_end) :
         if(self.selection_start < self.selection_end) :
-          ret = (index >= self.selection_start && index < self.selection_end)
+          ret = (index >= self.selection_start and index < self.selection_end)
         else :
-          ret = (index >= self.selection_end && index < self.selection_start)
+          ret = (index >= self.selection_end and index < self.selection_start)
     return ret
 
   '''
@@ -662,7 +703,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     chars_per_row = self.bytesPerRow()
     for i in range(0,chars_per_row) :
       index = offset + i
-      if(index < size)
+      if(index < size) :
         if(self.isSelected(index)) :
           ch = row_data[i]
           printable = ch in string.printable
@@ -811,7 +852,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: drawAsciiDump(QPainter &painter,  offset,  row, int size, const QByteArray &row_data) const
   '''
-  def drawAsciiDump(self, painter,  offset,  row, int size, row_data) :
+  def drawAsciiDump(self, painter,  offset,  row, size, row_data) :
     ascii_dump_left = self.asciiDumpLeft()
 
     #// i is the byte index
@@ -834,7 +875,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
           painter.setPen(QPen(self.palette().highlightedText().color()))
         else :
           if printable:
-            painter.setPen(QPen(self.palette().text().color())
+            painter.setPen(QPen(self.palette().text().color()))
             byteBuffer = QString(ch)
           else:
             painter.setPen(QPen(self.non_printable_text))
@@ -873,13 +914,14 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
       else :
         self.origin = 0
         self.updateScrollbars()
-     data_size     = self.dataSize()
-     widget_height = self.height()
+
+    data_size     = self.dataSize()
+    widget_height = self.height()
 
     while(row + self.font_height < widget_height ) and (offset < data_size) :
       self.data.seek(offset)
       row_data = self.data.read(chars_per_row)
-      if(!row_data.isEmpty()) :
+      if(not row_data.isEmpty()) :
         if(self.show_address) :
           address_rva = self.address_offset + offset
           addressBuffer = self.formatAddress(address_rva)
@@ -901,11 +943,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
       line1_x = self.line1()
       painter.drawLine(line1_x, 0, line1_x, widget_height)
 
-    if(self.show_hex && self.show_line2) :
+    if(self.show_hex  and  self.show_line2) :
       line2_x = self.line2()
       painter.drawLine(line2_x, 0, line2_x, widget_height)
 
-    if(self.show_ascii && self.show_line3) :
+    if(self.show_ascii  and  self.show_line3) :
       line3_x = self.line3()
       painter.drawLine(line3_x, 0, line3_x, widget_height)
 
@@ -1020,7 +1062,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: firstVisibleAddress() const
   '''
-  def firstVisibleAddress(self.):
+  def firstVisibleAddress(self):
     #// current actual offset (in bytes)
     chars_per_row = self.bytesPerRow()
     offset = self.verticalScrollBar().value() * chars_per_row
