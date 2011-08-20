@@ -33,8 +33,6 @@ CHAR_BIT = 8
 def qBound(mini, value, maxi):
   return max(mini, min(value, maxi))
 
-def isPrintable(ch):
-  return chr(ch) in string.printable
 
 #def tr comme un string
 tr=QString
@@ -53,7 +51,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.show_hex = True
     self.show_ascii = True
     self.show_address = True
-    self.show_comments = True
+    #self.show_comments = True
     self.origin =0
     self.address_offset = 0
     self.selection_start = -1
@@ -88,6 +86,9 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     elif s == 8:
       return QString("%08x%s%08x"% ((address >> 32) & 0xffffffff, sep, address & 0xffffffff)  )
     return
+
+  def is_printable(self, ch):
+    return ch in string.printable
     	
   '''
   // Name: add_toggle_action_to_menu(QMenu *menu, const QString &caption, bool checked, QObject *receiver, const char *slot)
@@ -141,7 +142,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.add_toggle_action_to_menu(menu, tr("Show A&ddress"), self.show_address, self.setShowAddress )
     self.add_toggle_action_to_menu(menu, tr("Show &Hex"), self.show_hex, self.setShowHexDump )
     self.add_toggle_action_to_menu(menu, tr("Show &Ascii"), self.show_ascii, self.setShowAsciiDump )
-    self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self.setShowComments )
+    #self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self.setShowComments )
 
     wordWidthMapper = QSignalMapper(menu)
     wordMenu = QMenu(tr("Set Word Width"), menu)
@@ -217,7 +218,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         self.data.seek(offset)
         row_data = self.data.read(chars_per_row)
 
-        if not (row_data.isEmpty()) :
+        if not (row_data is None) :
           if (self.show_address) :
             address_rva = self.address_offset + offset
             addressBuffer = self.formatAddress(address_rva)
@@ -229,8 +230,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
           if (show_ascii_) :
             self.drawAsciiDumpToBuffer(ss, offset, data_size, row_data)
             ss += "|"
-          if (self.show_comments and self.comment_server) :
-            self.drawCommentsToBuffer(ss, offset, data_size)
+          #if (self.show_comments and self.comment_server) :
+          #  self.drawCommentsToBuffer(ss, offset, data_size)
         #
         ss+="\n"
       offset += chars_per_row
@@ -271,8 +272,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   def isInViewableArea(self, index) : 
     firstViewableWord = self.verticalScrollBar().value() * self.row_width
     viewableLines     = self.viewport().height() / self.font_height
-    viewableWords     = self.viewableLines * self.row_width
-    lastViewableWord  = self.firstViewableWord + self.viewableWords
+    viewableWords     = viewableLines * self.row_width
+    lastViewableWord  = firstViewableWord + viewableWords
     return index >= firstViewableWord and index < lastViewableWord
 
   '''
@@ -367,8 +368,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Name: commentLeft() const
   // Desc: returns the x coordinate of the comment field left edge
   '''
-  def commentLeft(self) :
-    return self.line3() + (self.font_width / 2)
+  #def commentLeft(self) :
+  #  return self.line3() + (self.font_width / 2)
   
   '''
   // Name: charsPerWord() const
@@ -449,11 +450,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Name: setShowComments(bool show)
   // Desc: sets if we are to display the comments column
   '''
-  def setShowComments(self, show) :
-    self.show_comments = show
-    self.updateScrollbars()
-    self.repaint()
-    return
+  #def setShowComments(self, show) :
+  #  self.show_comments = show
+  #  self.updateScrollbars()
+  #  self.repaint()
+  #  return
   
   '''
   // Name: setShowAsciiDump(bool show)
@@ -667,7 +668,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Name: isSelected(int index) const
   '''
   def isSelected(self, index) :
-    ret = false
+    ret = False
     if(index < self.dataSize() ) :
       if(self.selection_start != self.selection_end) :
         if(self.selection_start < self.selection_end) :
@@ -679,20 +680,20 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: drawComments(QPainter &painter,  offset,  row, int size) const
   '''
-  def drawComments(self, painter,  offset,  row, size) :
-    #Q_UNUSED(size)
-    painter.setPen(QPen(self.palette().text().color()))
-    address = self.address_offset + offset
-    comment   = QString(self.comment_server.comment(address, self.word_width))
-    painter.drawText(
-      self.commentLeft(),
-      row,
-      comment.length() * self.font_width,
-      self.font_height,
-      Qt.AlignTop,
-      comment
-      )
-    return
+  #def drawComments(self, painter,  offset,  row, size) :
+  #  #Q_UNUSED(size)
+  #  painter.setPen(QPen(self.palette().text().color()))
+  #  address = self.address_offset + offset
+  #  comment   = QString(self.comment_server.comment(address, self.word_width))
+  #  painter.drawText(
+  #    self.commentLeft(),
+  #    row,
+  #    comment.length() * self.font_width,
+  #    self.font_height,
+  #    Qt.AlignTop,
+  #    comment
+  #    )
+  #  return
 
   '''
   // Name: drawAsciiDumpToBuffer(QTextStream &stream,  offset, int size, const QByteArray &row_data) const
@@ -721,12 +722,12 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: drawCommentsToBuffer(QTextStream &stream,  offset, int size) const
   '''
-  def drawCommentsToBuffer(self, stream,  offset, size):
-    #Q_UNUSED(size)
-    address = self.address_offset + offset
-    comment   = QString(self.comment_server.comment(address, self.word_width))
-    stream << comment
-    return
+  #def drawCommentsToBuffer(self, stream,  offset, size):
+  #  #Q_UNUSED(size)
+  #  address = self.address_offset + offset
+  #  comment   = QString(self.comment_server.comment(address, self.word_width))
+  #  stream << comment
+  #  return
 
   '''
   // Name: format_bytes(const C &data_ref, int index) const
@@ -744,29 +745,29 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     value = 0 
     byte_buffer = [0]*32
     if self.word_width == 1 :
-      value |= (row_data[index + 0] & 0xff)
+      value |= (ord(row_data[index + 0]) & 0xff)
       byte_buffer = "%02x"% value
     elif self.word_width == 2 :
-      value |= (row_data[index + 0] & 0xff)
-      value |= (row_data[index + 1] & 0xff) << 8
+      value |= (ord(row_data[index + 0]) & 0xff)
+      value |= (ord(row_data[index + 1]) & 0xff) << 8
       byte_buffer="%04x"%w
     elif self.word_width == 4 :
-      value |= (row_data[index + 0] & 0xff)
-      value |= (row_data[index + 1] & 0xff) << 8
-      value |= (row_data[index + 2] & 0xff) << 16
-      value |= (row_data[index + 3] & 0xff) << 24
+      value |= (ord(row_data[index + 0]) & 0xff)
+      value |= (ord(row_data[index + 1]) & 0xff) << 8
+      value |= (ord(row_data[index + 2]) & 0xff) << 16
+      value |= (ord(row_data[index + 3]) & 0xff) << 24
       byte_buffer = "%08x"% value
     elif self.word_width == 8 :
       #// we need the cast to ensure that it won't assume 32-bit
       #// and drop bits shifted more that 31
-      value |= (row_data[index + 0] & 0xff)
-      value |= (row_data[index + 1] & 0xff) << 8
-      value |= (row_data[index + 2] & 0xff) << 16
-      value |= (row_data[index + 3] & 0xff) << 24
-      value |= (row_data[index + 4] & 0xff) << 32
-      value |= (row_data[index + 5] & 0xff) << 40
-      value |= (row_data[index + 6] & 0xff) << 48
-      value |= (row_data[index + 7] & 0xff) << 56
+      value |= (ord(row_data[index + 0]) & 0xff)
+      value |= (ord(row_data[index + 1]) & 0xff) << 8
+      value |= (ord(row_data[index + 2]) & 0xff) << 16
+      value |= (ord(row_data[index + 3]) & 0xff) << 24
+      value |= (ord(row_data[index + 4]) & 0xff) << 32
+      value |= (ord(row_data[index + 5]) & 0xff) << 40
+      value |= (ord(row_data[index + 6]) & 0xff) << 48
+      value |= (ord(row_data[index + 7]) & 0xff) << 56
       byte_buffer = "%016llx"% value
     return byte_buffer
 
@@ -832,7 +833,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         else :
           if (word_count & 1):
             painter.setPen(QPen(self.even_word ))
-            painter.setPen(QPen(palette().text().color()))
+            painter.setPen(QPen(self.palette().text().color()))
         
         painter.drawText(
           drawLeft,
@@ -920,7 +921,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     while(row + self.font_height < widget_height ) and (offset < data_size) :
       self.data.seek(offset)
       row_data = self.data.read(chars_per_row)
-      if(not row_data.isEmpty()) :
+      if( row_data is not None ) : # != '' ?
         if(self.show_address) :
           address_rva = self.address_offset + offset
           addressBuffer = self.formatAddress(address_rva)
@@ -931,8 +932,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
           self.drawHexDump(painter, offset, row, data_size, word_count, row_data)
         if(self.show_ascii) :
           self.drawAsciiDump(painter, offset, row, data_size, row_data)
-        if(self.show_comments and self.comment_server) :
-          self.drawComments(painter, offset, row, data_size)
+        #if(self.show_comments and self.comment_server) :
+        #  self.drawComments(painter, offset, row, data_size)
       offset += chars_per_row
       row += self.font_height
 
@@ -1012,15 +1013,15 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: setCommentServer(const QSharedPointer<CommentServerInterface> &p)
   '''
-  def setCommentServer(self, p) :
-    self.comment_server = p
-    return
+  #def setCommentServer(self, p) :
+  #  self.comment_server = p
+  #  return
 
   '''
   // Name: commentServer() const
   '''
-  def commentServer(self):
-    return self.comment_server
+  #def commentServer(self):
+  #  return self.comment_server
 
   '''
   // Name: showHexDump() const
@@ -1077,7 +1078,7 @@ def gui(opts):
   app = QtGui.QApplication(sys.argv)
   hexedit = QHexeditWidget()
   qf = QFile(opts.file.name)
-  print qf.open(QIODevice.ReadOnly)
+  qf.open(QIODevice.ReadOnly)
   hexedit.setData(qf)
   hexedit.show()
   sys.exit(app.exec_())
