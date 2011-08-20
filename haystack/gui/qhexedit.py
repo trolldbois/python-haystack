@@ -44,7 +44,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   highlightingData=1
   highlightingAscii=2
   
-  def __init__(self, file_, parent = None):
+  def __init__(self, parent = None):
     QtGui.QAbstractScrollArea.__init__(self, parent)
     self.data = None
     self.row_width = 16    
@@ -69,8 +69,6 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     # default to a simple monospace font
     self.setFont(QFont("Monospace", 8))
     self.setShowAddressSeparator(True)
-    # me
-    self.file = file_
     return 
   
   def setShowAddressSeparator(self, value):
@@ -1077,7 +1075,10 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
 def gui(opts):
   app = QtGui.QApplication(sys.argv)
-  hexedit = QHexeditWidget(opts.file)
+  hexedit = QHexeditWidget()
+  qf = QFile(opts.file.name)
+  print qf.open(QIODevice.ReadOnly)
+  hexedit.setData(qf)
   hexedit.show()
   sys.exit(app.exec_())
 
