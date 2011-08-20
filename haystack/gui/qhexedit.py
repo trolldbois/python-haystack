@@ -1074,14 +1074,32 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         offset -= chars_per_row
     return offset + self.addressOffset()
 
+  @classmethod
+  def fromBuffer(cls, data):
+    ba = QByteArray.fromRawData(data)
+    buf = QBuffer(ba)
+    buf.open(QIODevice.ReadOnly)
+    me = cls()
+    me.setData(buf)
+    # save the ref otherwise gc collects it
+    me.myPointerToTheData = ba
+    return me
+
+  @classmethod
+  def fromFile(cls, filename):
+    qf = QFile(filename)
+    qf.open(QIODevice.ReadOnly)
+    me = cls()
+    me.setData(qf)
+    return me
+
 ####--------------
 
 def gui(opts):
   app = QtGui.QApplication(sys.argv)
-  hexedit = QHexeditWidget()
-  qf = QFile(opts.file.name)
-  qf.open(QIODevice.ReadOnly)
-  hexedit.setData(qf)
+  data = opts.file.read()
+  hexedit = QHexeditWidget.fromBuffer(data)
+  #hexedit = QHexeditWidget.fromFile(opts.file.name)
   hexedit.show()
   sys.exit(app.exec_())
 
