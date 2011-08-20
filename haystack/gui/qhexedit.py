@@ -37,7 +37,7 @@ def isPrintable(ch):
   return chr(ch) in string.printable
 
 #def tr comme un string
-tr=str
+tr=QString
 
 class QHexeditWidget(QtGui.QAbstractScrollArea):
   highlightingNone=0
@@ -95,12 +95,12 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   // Name: add_toggle_action_to_menu(QMenu *menu, const QString &caption, bool checked, QObject *receiver, const char *slot)
   // Desc: convenience function used to add a checkable menu item to the context menu
   '''
-  def add_toggle_action_to_menu(self, menu, caption, checked, receiver, slot):
+  def add_toggle_action_to_menu(self, menu, caption, checked, call ):
     action = QAction(caption, menu)
     action.setCheckable(True)
     action.setChecked(checked)
     menu.addAction(action)
-    self.connect(action, SIGNAL('toggled(bool)'), receiver, slot)
+    self.connect(action, SIGNAL('toggled(bool)'), call)
     return action
 
 
@@ -138,19 +138,19 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   def createStandardContextMenu(self):
     menu = QMenu(self)
-    menu.addAction(tr("Set &Font"), self, self.mnuSetFont )
+    menu.addAction(tr("Set &Font"), self.mnuSetFont )
     menu.addSeparator()
-    self.add_toggle_action_to_menu(menu, tr("Show A&ddress"), self.show_address, self, self.setShowAddress )
-    self.add_toggle_action_to_menu(menu, tr("Show &Hex"), self.show_hex, self, self.setShowHexDump )
-    self.add_toggle_action_to_menu(menu, tr("Show &Ascii"), self.show_ascii, self, self.setShowAsciiDump )
-    self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self, self.setShowComments )
+    self.add_toggle_action_to_menu(menu, tr("Show A&ddress"), self.show_address, self.setShowAddress )
+    self.add_toggle_action_to_menu(menu, tr("Show &Hex"), self.show_hex, self.setShowHexDump )
+    self.add_toggle_action_to_menu(menu, tr("Show &Ascii"), self.show_ascii, self.setShowAsciiDump )
+    self.add_toggle_action_to_menu(menu, tr("Show &Comments"), self.show_comments, self.setShowComments )
 
     wordWidthMapper = QSignalMapper(menu)
     wordMenu = QMenu(tr("Set Word Width"), menu)
-    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), self.word_width == 1, wordWidthMapper, self.map  )
-    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), self.word_width == 2, wordWidthMapper, self.map )
-    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), self.word_width == 4, wordWidthMapper, self.map )
-    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), self.word_width == 8, wordWidthMapper, self.map )
+    a1 = self.add_toggle_action_to_menu(wordMenu, tr("1 Byte"), self.word_width == 1, wordWidthMapper.map  )
+    a2 = self.add_toggle_action_to_menu(wordMenu, tr("2 Bytes"), self.word_width == 2, wordWidthMapper.map )
+    a3 = self.add_toggle_action_to_menu(wordMenu, tr("4 Bytes"), self.word_width == 4, wordWidthMapper.map )
+    a4 = self.add_toggle_action_to_menu(wordMenu, tr("8 Bytes"), self.word_width == 8, wordWidthMapper.map )
     wordWidthMapper.setMapping(a1, 1)
     wordWidthMapper.setMapping(a2, 2)
     wordWidthMapper.setMapping(a3, 4)
@@ -159,11 +159,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
     rowWidthMapper = QSignalMapper(menu)
     rowMenu = QMenu(tr("Set Row Width"), menu)
-    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), self.row_width == 1, rowWidthMapper, self.map)
-    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), self.row_width == 2, rowWidthMapper, self.map)
-    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), self.row_width == 4, rowWidthMapper, self.map)
-    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), self.row_width == 8, rowWidthMapper, self.map)
-    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), self.row_width == 16, rowWidthMapper, self.map)
+    a5 = self.add_toggle_action_to_menu(rowMenu, tr("1 Word"), self.row_width == 1, rowWidthMapper.map)
+    a6 = self.add_toggle_action_to_menu(rowMenu, tr("2 Words"), self.row_width == 2, rowWidthMapper.map)
+    a7 = self.add_toggle_action_to_menu(rowMenu, tr("4 Words"), self.row_width == 4, rowWidthMapper.map)
+    a8 = self.add_toggle_action_to_menu(rowMenu, tr("8 Words"), self.row_width == 8, rowWidthMapper.map)
+    a9 = self.add_toggle_action_to_menu(rowMenu, tr("16 Words"), self.row_width == 16, rowWidthMapper.map)
     rowWidthMapper.setMapping(a5, 1)
     rowWidthMapper.setMapping(a6, 2)
     rowWidthMapper.setMapping(a7, 4)
@@ -176,7 +176,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     menu.addMenu(rowMenu)
 
     menu.addSeparator()
-    menu.addAction(tr("&Copy Selection To Clipboard"), self, self.mnuCopy)
+    menu.addAction(tr("&Copy Selection To Clipboard"), self.mnuCopy)
     return menu
 
   '''
