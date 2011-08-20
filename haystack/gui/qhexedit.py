@@ -876,10 +876,12 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         else :
           if printable:
             painter.setPen(QPen(self.palette().text().color()))
-            byteBuffer = QString(ch)
           else:
             painter.setPen(QPen(self.non_printable_text))
-            byteBuffer = QString(self.unprintable_char)
+        if printable:
+          byteBuffer = QString(ch)
+        else:
+          byteBuffer = QString(self.unprintable_char)
         painter.drawText(
           drawLeft,
           row,
