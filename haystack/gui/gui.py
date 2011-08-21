@@ -10,6 +10,7 @@ import itertools
 import operator
 
 import statushandler
+from .. import model
 from .. import memory_dumper
 from .. import memory_mapping
 from .. import signature
@@ -21,6 +22,7 @@ from PyQt4 import QtGui, QtCore
 import view
 import widgets
 import infomodel
+import qhexedit
 from memmaptab import Ui_MemoryMappingWidget
 from mainwindow import Ui_MainWindow
 import searchinfoview
@@ -90,10 +92,17 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     sizePolicy.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
     self.graphicsView.setSizePolicy(sizePolicy)
     self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
-    self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
+    #self.gridLayout.addWidget(self.graphicsView, 0, 0, 1, 1)
+    # add a hexeditor
+    self.qhexedit = qhexedit.QHexeditWidget()
+    self.qhexedit.setObjectName(_fromUtf8("hexeditor"))
+    self.qhexedit.setSizePolicy(sizePolicy)
+    # the tab_search_info 
+    self.tab_search_structures.setSizePolicy(sizePolicy)
     # add QSplitter
     self.splitter = QtGui.QSplitter(self)
     self.splitter.addWidget(self.graphicsView)
+    self.splitter.addWidget(self.qhexedit)
     self.splitter.addWidget(self.tab_search_structures)
     self.gridLayout.addWidget(self.splitter, 0, 0, 1, 2)    
     self.splitter.setSizePolicy(sizePolicy) # resize
@@ -142,6 +151,10 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.graphicsView.loadMapping(mapping)
     self.scene = self.graphicsView.GetScene()
     self._dirty = True # reload will clean it
+    # init the hexeditor
+    print type(self.mapping)
+    #a=self.mapping.mmap()
+    #self.qhexedit.setData(model.array2bytes(self.mapping.mmap())) # beuaaah
     return
 
   def searchValue(self, value):
@@ -164,7 +177,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     start = self.mapping.start
     searcher = signature.PointerSearcher(self.mapping)
     for vaddr in searcher:
-      word = self.mapping.readWord(vaddr)
+      word = self.mapping.readWord(vaddr) #searcher should return [(offset, value)]
       offset = vaddr - start
       self.pointers.addToGroup(widgets.Word(offset, word, scene = self.scene, color = QtCore.Qt.red) )
     # fill the scene
@@ -225,48 +238,13 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
       resultsViewer.addResult( offset, value, color=QtCore.Qt.green)
     # fill the scene
     log.debug('Found %d instances'%(len(instances)) )
-    #gitemgroup = QtGui.QGraphicsItemGroup(scene=self.scene)
-    #for s in instanceList:
-    #  gitemgroup.addToGroup(s)
-    #gitemgroup.setZValue(20) # zValue has to be  > 0
-    # add self.instanceList to
-    #if len(instanceList) >0 :
-    #  self.showInfo(instanceList[0])
     ## make the toolbox title and add the widget
     searchName = 'Results for %s'%(structType)
     self.tab_search_structures.addItem(resultsViewer, searchName)
     nb = self.tab_search_structures.count()
     ##self.tab_search_structures.setItemEnabled(nb-1, True)
     return instances
-  '''
-  def showInfo(self, structure):
-    log.info('show info on %s'%(structure))
-    pyObj = structure.value
-    rows = [ (k,str(v)) for k,v,typ in pyObj]
-    log.debug('self.info_tableview populated with %d rows'%(len(rows)))    
-    # set the table model
-    header = ['field', 'value']
-    tm = infomodel.StructureInfoTableModel(rows, header, self) 
-    self.info_tableview.setModel(tm)
-    # set the font
-    font = QtGui.QFont("Courier New", 8)
-    self.info_tableview.setFont(font)
-    # hide vertical header
-    vh = self.info_tableview.verticalHeader()
-    vh.setVisible(False)
-    # set horizontal header properties
-    hh = self.info_tableview.horizontalHeader()
-    hh.setStretchLastSection(True)
-    # set column width to fit contents
-    self.info_tableview.resizeColumnsToContents()
-    # set row height
-    nrows = len(rows)
-    for row in xrange(nrows):
-        self.info_tableview.setRowHeight(row, 18)
-    # enable sorting
-    self.info_tableview.setSortingEnabled(True)
-    return
-  '''
+
   def search_regexp(self, regexp, searchName, color=QtCore.Qt.black):
     reSearcher = signature.RegexpSearcher(self.mapping, regexp)
     # add a entry into the tabView on the right so we can play with it more easily
@@ -434,8 +412,8 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
-  logging.getLogger('haystack').setLevel(logging.INFO)
+  logging.basicConfig(level=logging.INFO)
+  #logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   #logging.getLogger('widget').setLevel(logging.INFO)

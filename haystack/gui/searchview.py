@@ -82,10 +82,11 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
     return 
   
   def search_regexp(self):
+    # -> search_regexp(self, regexp, searchName, color=QtCore.Qt.black):
     log.debug('Looking for a regexp r"%s" '%(self.lineEdit_regexp.text()) )
     tab = self.parent().currentTab()
     if tab is not None:
-      items = tab.search_regexp(str(self.lineEdit_regexp.text()))
+      items = tab.search_regexp(str(self.lineEdit_regexp.text()), str(self.lineEdit_regexp.text())[-20:])
       log.debug('The tab has found %d instances'%(len(items)))
     pass
     

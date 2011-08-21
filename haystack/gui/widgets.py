@@ -26,9 +26,9 @@ class Structure(QtGui.QGraphicsItemGroup):
     self.color = color
     log.debug('size: %d'%len(self.value))
     self._makeStruct(self.offset, len(self.value))
-    log.debug('hover: %s handleChildEvents: %s'%( self.acceptsHoverEvents(), self.handlesChildEvents()) )
     self.setAcceptsHoverEvents(True)
     self.setHandlesChildEvents(True)
+    log.debug('hover: %s handleChildEvents: %s'%( self.acceptsHoverEvents(), self.handlesChildEvents()) )
     self.setFlags(QtGui.QGraphicsItem.ItemIsSelectable)
     if type(value) == str:
       self.setToolTip(value) # baaaad

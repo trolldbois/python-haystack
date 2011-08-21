@@ -637,7 +637,17 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
   // Name: setData(const QSharedPointer<QIODevice>& d)
   '''
-  def setData(self, d) :
+  def setData(self, data) :
+    if not isinstance(data,QIODevice) and not isinstance(data,QByteArray):
+      # transform it
+      ba = QByteArray.fromRawData(data)
+      buf = QBuffer(ba)
+      buf.open(QIODevice.ReadOnly)
+      # save the ref otherwise gc collects it
+      self.myPointerToTheData = ba
+      d = buf
+    else:
+      d = data
     if (d.isSequential()  or  not d.size()) :
       b = QBuffer()
       b.setData(d.readAll())
@@ -1076,13 +1086,14 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
   @classmethod
   def fromBuffer(cls, data):
-    ba = QByteArray.fromRawData(data)
-    buf = QBuffer(ba)
-    buf.open(QIODevice.ReadOnly)
+    #ba = QByteArray.fromRawData(data)
+    #buf = QBuffer(ba)
+    #buf.open(QIODevice.ReadOnly)
     me = cls()
-    me.setData(buf)
+    me.setData(data)
     # save the ref otherwise gc collects it
-    me.myPointerToTheData = ba
+    #me.myPointerToTheData = ba\
+    #me.fromBuffer(data)
     return me
 
   @classmethod
