@@ -10,6 +10,8 @@ if platform.system() != 'Windows':
   import ptrace.debugger.debugger #import PtraceDebugger
   PtraceDebugger = ptrace.debugger.debugger.PtraceDebugger
   # proc mapping
+  from ptrace.debugger import process_error
+  ProcessError = process_error.ProcessError
   import ptrace.os_tools #import HAS_PROC
   if ptrace.os_tools.HAS_PROC:
     import ptrace.linux_proc #import openProc, ProcError
@@ -18,7 +20,6 @@ if platform.system() != 'Windows':
     ProcError = ptrace.linux_proc.ProcError
     HAS_PROC=ptrace.os_tools.HAS_PROC
   else:
-    from ptrace.debugger.process_error import ProcessError
     ProcError = ProcessError
     HAS_PROC=True
 

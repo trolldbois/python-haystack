@@ -1,15 +1,6 @@
 
 from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
 
-#import platform
-#if platform.system() != 'Windows':
-#  from ptrace.os_tools import HAS_PROC
-#  if HAS_PROC:
-#       from ptrace.linux_proc import openProc, ProcError
-#  from ptrace.debugger.process_error import ProcessError
-#  from ptrace.ctypes_tools import formatAddress
-#else:
-#  HAS_PROC=False
 import re
 from weakref import ref
 import ctypes, struct, mmap
@@ -41,6 +32,24 @@ PROC_MAP_REGEX = re.compile(
     r'([0-9]+)'
     # Filename: '  /usr/bin/synergyc'
     r'(?: +(.*))?')
+
+'''
+MemoryMapping should be abstract ctypes read on base memoryMapper object.
+
+base memorymapper should provide a ctypes friedly API with readStruct
+
+processmemmape should be ptrace only.
+create a instance method BufferMemoryMappin to get the process memap into local space
+
+BufferMemoryMapping should readfrom a b'123' - slowish, will convert bytes2array often
+
+ArraymemoryMapping should read from a ['','','',''] - quickiest on ctypes search
+
+process
+
+'''
+
+
 
 class MemoryMapping:
     """
@@ -133,6 +142,7 @@ class MemoryMapping:
       
     def mmap(self):
       ''' mmap-ed access gives a 20% perf increase on by tests '''
+      print 'mmap'
       if not self.isMmaped():
         if hasattr(self._process(), 'readArray'):
           self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
@@ -220,17 +230,31 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     @param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
     @param preload mmap the memory dump at init ( default)
     """
-    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=True):
+    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
         MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._process = None
         self.memdump = memdump
         if preload:
           self.mmap()
-        s = os.fstat(memdump.fileno()).st_size
+        s = len(LazyMmap(self.memdump))
         if offset > s:
           raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     
     def mmap(self):
+      print 'mdmm mmap()'
+      if not self.isMmaped():
+        if hasattr(self.memdump,'fileno'): # normal file
+          self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+          log.warning('Memory Mapping content mmap-ed() : %s'%(self))
+        else: # dumpfile, file inside targz ...
+          import model
+          # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+          # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
+          # sad we can't have a bytebuffer from that same raw memspace
+          self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
+          log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
+      return self._local_mmap
+      '''
         if not self.isMmaped():
           try:
             self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ, offset=self.offset)
@@ -238,7 +262,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           except ValueError,e:
             log.warning('error while loading mmap size 0x%x for offset 0x%x'%(self.end-self.start, self.offset))
             raise e
-        return self._local_mmap
+       '''
     
     def _err(self):
         raise 
@@ -262,7 +286,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         laddr = self.vtop(address)
         #print 'vaddr:0x%x paddr:0x%x lenmmap:0x%x'%(address,laddr,len(self.mmap()))
         structLen = ctypes.sizeof(structType)
+        print type(self.mmap())
         st = self.mmap()[laddr:laddr+structLen]
+        # eh si st est deja un array ?
         structtmp = bytes2array(st, ctypes.c_ubyte)
         struct = structType.from_buffer(structtmp)
         return struct
@@ -281,18 +307,28 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         text += " (%s)" % self.permissions
         return text
 
+
+''' ----------------- should be in Memdumpmemmapping .... '''
 def fileMemoryMapping_process(self):
   ''' fake it like a process and mmap it now'''
-  import model
-  if self._local_mmap is None:
-    if hasattr(self.memdump,'fileno'):
-      self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-      log.debug('Lazy Memory Mapping content mmap-ed() : %s'%(self))
-    else:
-      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
-      log.debug('Lazy Memory Mapping content loaded : %s'%(self))
+  #fileMemoryMapping_mmap(self)
+  self.mmap()
   return self
+  
+def fileMemoryMapping_mmap(self):
+  import model
+  print 'mmap() from fileMemoryMapping_mmap'
+  if self._local_mmap is None:
+    if hasattr(self.memdump,'fileno'): # normal file
+      self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+      log.warning('Lazy Memory Mapping content mmap-ed() : %s'%(self))
+    else: # dumpfile, file inside targz ...
+      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
+      # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
+      # sad we can't have a bytebuffer from that same raw memspace
+      self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
+      log.warning('Lazy Memory Mapping content DEEP COPIED : %s'%(self))
+  return self._local_mmap
 
 def FileMemoryMapping(memoryMapping, memdump):
   """ 
@@ -314,10 +350,11 @@ def FileMemoryMapping(memoryMapping, memdump):
     memoryMapping._local_mmap = None
   memoryMapping._process = None
   ret = copy.deepcopy(memoryMapping)
-  if hasattr(memoryMapping,'_process'):
-    memoryMapping._process = p
+  #if hasattr(memoryMapping,'_process'):
+  #  memoryMapping._process = p
   ret.memdump = memdump
   ret._process = types.MethodType(fileMemoryMapping_process, ret, MemoryMapping)
+  #ret.mmap = types.MethodType(fileMemoryMapping_mmap, ret, MemoryMapping)
   #if memoryMapping._local_mmap is not None:
   if not hasattr(ret,'_local_mmap'):
     ret._local_mmap = None
@@ -340,12 +377,14 @@ class LazyMmap:
    useless.
   '''
   def __init__(self,memdump):
+    i = memdump.tell()
     try:
       memdump.seek(2**64)
     except OverflowError:
       memdump.seek(os.fstat(memdump.fileno()).st_size)
     self.size = memdump.tell()
     self.memdump = memdump
+    memdump.seek(i)
   
   def __len__(self):
     return self.size

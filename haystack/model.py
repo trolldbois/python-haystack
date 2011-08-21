@@ -197,8 +197,13 @@ def bytes2array(bytes, typ):
     return None
   fmt=bytestr_fmt[typ.__name__]
   sb=b''
-  for i in range(0,arrayLen):
-    array[i]=unpack(fmt, bytes[typLen*i:typLen*(i+1)])[0]
+  import struct
+  try:
+    for i in range(0,arrayLen):
+      array[i]=unpack(fmt, bytes[typLen*i:typLen*(i+1)])[0]
+  except struct.error,e:
+    log.error('format:%s typLen*i:typLen*(i+1) = %d:%d'%(fmt, typLen*i,typLen*(i+1)))
+    raise e
   return array
 
 

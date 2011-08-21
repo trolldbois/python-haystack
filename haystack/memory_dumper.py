@@ -132,12 +132,24 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       start,end = int(start,16),int(end,16 )
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
       mmap_content_file = self.archive.extractfile('./'+mmap_fname)
+      if end-start > 10000000: # use file mmap when file is too big
+        log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
+        mmap = FileBackedMemoryMapping(mmap_content_file,start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+      else:      
+        log.debug('Using a MemoryDumpMemoryMapping. small size')
+        mmap = MemoryDumpMemoryMapping(mmap_content_file,start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+
+      '''
       mmap = MemoryMapping(Dummy(),start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
       if end-start > 10000000: # use file mmap when file is too big
-        mmap = memory_mapping.getFileBackedMemoryMapping(mmap, mmap_content_file)
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
+        mmap = memory_mapping.getFileBackedMemoryMapping(mmap, mmap_content_file)
       else:  
+        log.debug('Using a FileMemoryMapping over a %s. small size'%(mmap.__class__))
         mmap = FileMemoryMapping(mmap, mmap_content_file)
+      '''
       #mmap_content = pickle.load(self.archive.extractfile(mmap_fname))
       # use that or mmap, anyway, we need to convert to ctypes :/ that costly
       #mmap._local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
