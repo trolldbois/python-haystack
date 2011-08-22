@@ -4,15 +4,16 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
 '''
-This moduels holds some basic constraint class for the Haystack model.
+This module holds some basic constraint class for the Haystack model.
 Several useful function validation are also here, like pointer validation.
 
 '''
 
-import ctypes
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
+
+import ctypes, os
 from struct import pack,unpack
 from memory_mapping import readProcessMappings
 
