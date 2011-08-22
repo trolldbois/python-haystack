@@ -10,7 +10,6 @@ import tarfile
 import tempfile, shutil
 
 
-import model 
 import dbg
 import memory_mapping
 

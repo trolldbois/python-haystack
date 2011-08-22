@@ -8,10 +8,8 @@ import struct
 import mmap
 from weakref import ref
 
-from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
-
 # local
-#from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
+from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
 import utils
 
 log = logging.getLogger('memory_mapping')
