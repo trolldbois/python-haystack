@@ -185,13 +185,11 @@ class KCoreDumpLoader(MemoryDumpLoader):
 def dump(opt):
   dumper = MemoryDumper(opt)
   dumper.initPid()
-  #print '\n'.join(str(dumper.mappings).split(','))
   out = dumper.dumpMemfile()
   log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
   return opt.dumpfile.name
 
 def _load(opt):
-  print opt
   return load(opt.dumpfile,opt.lazy)
 
 loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]

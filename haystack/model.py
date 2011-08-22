@@ -90,7 +90,6 @@ def registeredModules():
 def is_valid_address(obj,mappings, structType=None):
   '''static int is_valid_address(unsigned long addr, mappings_t *mappings) {'''
   # check for null pointers
-  #print 'is_valid_address'
   addr=getaddress(obj)
   if addr == 0:
     return False
@@ -121,14 +120,11 @@ def is_address_local(obj, structType=None):
 '''
 def getaddress(obj):
   # check for null pointers
-  #print 'getaddress'
   if bool(obj):
     if not hasattr(obj,'contents'):
       return 0
-    #print 'get adressses is '
     return ctypes.addressof(obj.contents)
   else:
-    #print 'object pointer is null'
     return 0  
 
 def container_of(memberaddr, typ, membername):
@@ -290,13 +286,6 @@ class CString(ctypes.Union):
 
 
 
-#debug
-def printWhois(attr):
-  print ' : isBasicType(attr): %s bool(attr): %s'%(isBasicType(attr) ,bool(attr)) 
-  print ' : isCStringPointer(attr): %s isStructType(attr): %s'%(isCStringPointer(attr) ,isStructType(attr)) 
-  print ' : isArrayType(attr): %s isBasicTypeArrayType(attr): %s'%(isArrayType(attr) ,isBasicTypeArrayType(attr)) 
-  print ' : isPointerType(attr): %s type(attr) %s '%(isPointerType(attr),type(attr) ) 
-  print ' : ',attr.__class__.__name__, type(attr)
 
 
 class LoadableMembers(ctypes.Structure):
@@ -360,10 +349,6 @@ class LoadableMembers(ctypes.Structure):
     return True
     
   def _isValidAttr(self,attr,attrname,attrtype,mappings):
-    # check this attr
-    if attrname in [] :
-      print 'Ivalid ',repr(self)
-      printWhois(attr)
     # a) 
     if isBasicType(attr):
       if attrname in self.expectedValues:
@@ -442,7 +427,6 @@ class LoadableMembers(ctypes.Structure):
       #log.warning('Union are not validated , yet ')
       return True
     log.error('What type are You ?: %s/%s'%(attrname,attrtype))
-    printWhois(attr)
     return True
 
   def _isLoadableMember(self, attr):
@@ -495,15 +479,6 @@ class LoadableMembers(ctypes.Structure):
     return True
     
   def _loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
-    ### debug
-    if attrname in []:
-      #if True:
-      print repr(self)
-      printWhois(attr)
-      print ' : _isLoadableMember() %s'%(self._isLoadableMember(attr) )
-      print ' ********** 0x%lx ' % ctypes.addressof(attr)
-      if bool(attr):
-        print ' ********** 0x%lx ' % ctypes.addressof(attr.contents)
     # skip static basic data members
     if not self._isLoadableMember(attr):
       log.debug("%s %s not loadable  bool(attr) = %s"%(attrname,attrtype, bool(attr)) )
@@ -570,8 +545,6 @@ class LoadableMembers(ctypes.Structure):
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### VALID INSTR.
-      if attrname == 'real_parent':
-        print 'real_parent',__book.refs
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
       # save that ref and original addr so we dont need to recopy it later
       keepRef( attr.contents, _attrType,attr_obj_address)
@@ -666,7 +639,6 @@ class LoadableMembers(ctypes.Structure):
       elif type(attr) is long or type(attr) is int:
         s+='%s : %s\n'%(field, hex(attr) )  
       else:
-        #print '*** attr cannot be __str__ ***',field, type(attr)
         s+='%s : %s\n'%(field, repr(attr) )  
     return s
     
@@ -759,7 +731,6 @@ class pyObj(object):
       s = '%s,'%( attr.toString(prefix,maxDepth) )
     else:
       s = '%s,'%(repr(attr) )
-      #print 'ELSE type: %s %s'%(type(attr), type(type(attr)) )
     return s
 
   def __len__(self):

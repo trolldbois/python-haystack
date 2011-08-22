@@ -64,7 +64,6 @@ def mergeDump(dumpFile):
   for p in xrange(1,len(allpointers)-1):
     val = allpointers[p] - allpointers[p-1]
     intervals.append(val)
-  print intervals
   return
 
 def merge(opt):

@@ -442,42 +442,41 @@ class LazyMmap:
 
 
 def readProcessMappings(process):
-    """
-    Read all memory mappings of the specified process.
+  """
+  Read all memory mappings of the specified process.
 
-    Return a list of MemoryMapping objects, or empty list if it's not possible
-    to read the mappings.
+  Return a list of MemoryMapping objects, or empty list if it's not possible
+  to read the mappings.
 
-    May raise a ProcessError.
-    """
-    maps = []
-    if not HAS_PROC:
-        return maps
-    try:
-        mapsfile = openProc(process.pid)
-    except ProcError, err:
-        raise ProcessError(process, "Unable to read process maps: %s" % err)
-    
-    try:
-        #print ''.join(mapsfile)
-        for line in mapsfile:
-            line = line.rstrip()
-            match = PROC_MAP_REGEX.match(line)
-            if not match:
-                raise ProcessError(process, "Unable to parse memoy mapping: %r" % line)
-            map = ProcessMemoryMapping(
-                process,
-                int(match.group(1), 16),
-                int(match.group(2), 16),
-                match.group(3),
-                int(match.group(4), 16),
-                int(match.group(5), 16),
-                int(match.group(6), 16),
-                int(match.group(7)),
-                match.group(8))
-            maps.append(map)
-    finally:
-      if type(mapsfile) is file:
-        mapsfile.close()
+  May raise a ProcessError.
+  """
+  maps = []
+  if not HAS_PROC:
     return maps
+  try:
+    mapsfile = openProc(process.pid)
+  except ProcError, err:
+    raise ProcessError(process, "Unable to read process maps: %s" % err)
+  
+  try:
+    for line in mapsfile:
+      line = line.rstrip()
+      match = PROC_MAP_REGEX.match(line)
+      if not match:
+        raise ProcessError(process, "Unable to parse memoy mapping: %r" % line)
+      map = ProcessMemoryMapping(
+        process,
+        int(match.group(1), 16),
+        int(match.group(2), 16),
+        match.group(3),
+        int(match.group(4), 16),
+        int(match.group(5), 16),
+        int(match.group(6), 16),
+        int(match.group(7)),
+        match.group(8))
+      maps.append(map)
+  finally:
+    if type(mapsfile) is file:
+      mapsfile.close()
+  return maps
 
