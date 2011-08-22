@@ -1,13 +1,19 @@
 
-from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
 
-import re
-from weakref import ref
-import ctypes, struct, mmap
-# local
-#from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
 import os
 import logging
+import re
+import ctypes
+import struct
+import mmap
+from weakref import ref
+
+from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
+
+# local
+#from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
+import utils
+
 log = logging.getLogger('memory_mapping')
 
 '''
@@ -314,10 +320,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
       if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
         local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-        self._local_mmap_content = model.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
+        self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
       else: # dumpfile, file inside targz ... any read() API really
-        import model
-        self._local_mmap_content = model.bytes2array(self._memdump.read(), ctypes.c_ubyte)
+        self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
       # make that _base
       self._base = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
@@ -433,10 +438,9 @@ class LazyMmap:
     return self._get(start, size)
   
   def _get(self, offset,size):
-    import model 
     self.memdump.seek(offset)
     #me = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ)
-    me = model.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
+    me = utils.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
     return me
 
 
