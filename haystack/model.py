@@ -12,18 +12,16 @@ from memory_mapping import readProcessMappings
 import logging
 log=logging.getLogger('model')
 
-#import copy
-''' replace c_char_p '''
+# replace c_char_p so we can have our own CString 
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.original_c_char_p = ctypes.c_char_p
 
-''' keep orig class '''
+# keep orig class and Use our model instead as base Structure class
 if ctypes.Structure.__name__ == 'Structure':
   ctypes.original_Structure = ctypes.Structure
 
-#__refs = list()
-#__register = dict()
-
+# The book registers all haystack modules, and classes, and can keep 
+# some pointer refs on memory allocated within special cases...
 class _book(object):
   modules = set()
   classes = dict()
