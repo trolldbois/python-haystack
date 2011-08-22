@@ -12,10 +12,11 @@ log = logging.getLogger('memory_mapping')
 
 '''
 Memory mappings.
-- MemoryMapping : memory space from a live process with the possibility to mmap the memspace at any moment.
-- MemoryDumpMemoryMapping : memory space dumped to a raw file. 
-- FileMemoryMapping : tool to initialize an existing memory mapping from the content of a file/tarfilecontent backup memory dump.
-- FileBackedMemoryMapping/getFileBackedMemoryMapping : memory space based on a file, with direct read no cache from file.
+- MemoryMapping : memory mapping metadata
+- ProcessMemoryMapping: memory space from a live process with the possibility to mmap the memspace at any moment.
+- LocalMemoryMapping .fromAddress: memorymapping that lives in local space in a ctypes buffer. 
+- MemoryDumpMemoryMapping .fromFile : memory space from a raw file, with lazy loading capabilities.
+- FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
 '''
 
 
@@ -33,28 +34,6 @@ PROC_MAP_REGEX = re.compile(
     # Filename: '  /usr/bin/synergyc'
     r'(?: +(.*))?')
 
-'''
-MemoryMapping should be abstract ctypes read on base memoryMapper object.
-
-base memorymapper should provide a ctypes friedly API with readStruct
-
-processmemmape should be ptrace only.
-create a instance method BufferMemoryMappin to get the process memap into local space
-
-BufferMemoryMapping should readfrom a b'123' - slowish, will convert bytes2array often
-
-ArraymemoryMapping should read from a ['','','',''] - quickiest on ctypes search
-
-process
-I need to func., 
-a) In structure search mode ctypes mapping ( from_address ) -> mm must be a ctypes array
-b) In text search mode a string mapping                    -> mm must be a str/bytebuffer
-
-and two style :
-a) in-process memory
-b) local memory
-
-'''
 
 class MemoryMapping:
   """ 
@@ -472,7 +451,7 @@ def readProcessMappings(process):
             match = PROC_MAP_REGEX.match(line)
             if not match:
                 raise ProcessError(process, "Unable to parse memoy mapping: %r" % line)
-            map = MemoryMapping(
+            map = ProcessMemoryMapping(
                 process,
                 int(match.group(1), 16),
                 int(match.group(2), 16),
