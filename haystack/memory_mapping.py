@@ -253,7 +253,7 @@ class LocalMemoryMapping(MemoryMapping):
     return array
 
   def getByteBuffer(self):
-    if self._buffer is None;
+    if self._buffer is None:
       self._buffer = self.readBytes( self.start , len(self))
     return self._buffer
 
@@ -297,7 +297,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
     # sad we can't have a bytebuffer from that same raw memspace
     # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
-    if self._local_mmap is None
+    if self._local_mmap is None:
       if hasattr(self.memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
         local_mmap_bytebuffer = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
@@ -378,7 +378,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     return array
 
   @classmethod
-  def fromFile(self, memoryMapping, memdump)
+  def fromFile(self, memoryMapping, memdump):
     """
       Transform a MemoryMapping to a file-backed MemoryMapping using FileBackedMemoryMapping.
       
