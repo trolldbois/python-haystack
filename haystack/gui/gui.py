@@ -10,7 +10,6 @@ import itertools
 import operator
 
 import statushandler
-from .. import model
 from .. import memory_dumper
 from .. import memory_mapping
 from .. import signature

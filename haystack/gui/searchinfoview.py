@@ -15,9 +15,6 @@ from searchinfoStruct import Ui_SearchInfoStructWidget
 import infomodel
 import widgets
 
-# IMPORTANT: we need to keep the module hierarchy, otherwise the book register/singleton is dead
-from haystack import model 
-
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:

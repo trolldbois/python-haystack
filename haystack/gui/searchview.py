@@ -14,10 +14,9 @@ import inspect
 
 from searchStruct import Ui_Search_Structure
 
-# IMPORTANT: we need to keep the module hierarchy, otherwise the book register/singleton is dead
-from haystack import model 
-
+from .. import model
 from .. import signature
+from .. import utils
 
 class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
 
@@ -137,7 +136,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       it = None
       for cls,typ in inspect.getmembers(mod, inspect.isclass):
         fullname = '.'.join([mod.__name__,cls])      
-        if typ.__module__.startswith(mod.__name__) and model.isStructType(typ()):
+        if typ.__module__.startswith(mod.__name__) and utils.isStructType(typ()):
           it = QtGui.QTreeWidgetItem(root, [cls] )
           it.setFont(0,font)
           self.classes.add(fullname)

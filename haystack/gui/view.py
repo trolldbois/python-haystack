@@ -11,7 +11,7 @@ log = logging.getLogger('view')
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.Qt import Qt
 
-from haystack import model
+from .. import model
 
 LINE_SIZE=512
 PAGE_SIZE=4096 
