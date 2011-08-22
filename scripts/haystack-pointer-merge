@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
+__doc__ = '''
+  Merge pointers from heap and stack to find structures.
+'''
+
+import os, sys
+
+if __name__ == "__main__":
+  sys.path.append(os.getcwd())
+  from haystack import pointerfinder 
+  pointerfinder.main(sys.argv[1:])
+
+
