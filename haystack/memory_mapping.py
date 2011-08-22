@@ -254,9 +254,9 @@ class LocalMemoryMapping(MemoryMapping):
     return array
 
   def getByteBuffer(self):
-    if self._buffer is None:
-      self._buffer = self.readBytes( self.start , len(self))
-    return self._buffer
+    if self._bytebuffer is None:
+      self._bytebuffer = self.readBytes( self.start , len(self))
+    return self._bytebuffer
 
   def initByteBuffer(self, data=None):
     self._bytebuffer = data
@@ -285,20 +285,32 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._memdump = memdump
-    self._local_mmap = None
+    self._base = None
     s = len(LazyMmap(self._memdump))
     if offset > s:
       raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     if preload:
       self._mmap()
   
+  def isMmaped(self):
+    return not (self._base is None)
+    
+  def mmap(self):
+    ''' mmap-ed access gives a 20% perf increase on by tests '''
+    if not self.isMmaped():
+      self._mmap()
+    return self._base
+
+  def unmmap(self):
+    raise NotImplementedError
+
   def _mmap(self):
     ''' protected api '''
     # mmap.mmap has a full bytebuffer API, so we can use it as is for bytebuffer.
     # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
     # sad we can't have a bytebuffer from that same raw memspace
     # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
-    if self._local_mmap is None:
+    if self._base is None:
       if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
         local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)

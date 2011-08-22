@@ -195,7 +195,7 @@ class RegexpSearcher(AbstractSearcher):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
     log.debug('search %s mapping for matching values %s'%(self.getSearchMapping(), self.regexp))
-    for match in self.getSearchMapping().finditer(self.getSearchMapping().mmap()):
+    for match in self.getSearchMapping().finditer(self.getSearchMapping().mmap().getByteBuffer()):
       offset = match.start()
       if type(value) == list :
         value = ''.join([chr(x) for x in match.group()])
@@ -207,7 +207,7 @@ class RegexpSearcher(AbstractSearcher):
   def __iter__(self):
     ''' Iterate over the mapping to find all valid matches '''
     log.debug('iterate %s mapping for matching values'%(self.getSearchMapping()))
-    for match in self.pattern.finditer(self.getSearchMapping().mmap()):
+    for match in self.pattern.finditer(self.getSearchMapping().mmap().getByteBuffer()):
       offset = match.start()
       value = match.group(0) # [] of int ?
       if type(value) == list :

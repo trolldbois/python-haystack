@@ -125,7 +125,7 @@ else:
       else:
           Type    = "Unknown"
       
-      #print BaseAddress
+      log.debug( BaseAddress)
       addr = '%08x-%08x'%(int(BaseAddress,16), int(BaseAddress,16)+int(RegionSize,16) )
       perm = perm.lower()
       offset = '00000000'
@@ -135,7 +135,7 @@ else:
 
       # 08048000-080b0000 r-xp 0804d000 fe:01 3334030  /usr/myfile  
       lines.append('%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename) )
-      #print   '%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename)
+      log.debug(   '%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename) )
 
     return lines
     
@@ -144,14 +144,12 @@ else:
     memoryMap       = process.get_memory_map()
     mappedFilenames = process.get_mapped_filenames()
     if fileName:
-        print "Memory map for %d (%s):" % (pid, fileName)
+        log.debug( "Memory map for %d (%s):" % (pid, fileName) )
     else:
-        print "Memory map for %d:" % pid
-    print '%d filenames'% len(mappedFilenames)
-    print
-    print '%d memorymap'%len(memoryMap)
-##        print CrashDump.dump_memory_map(memoryMap),
-    #print CrashDump.dump_memory_map(memoryMap, mappedFilenames)
+        log.debug( "Memory map for %d:" % pid )
+    log.debug( '%d filenames'% len(mappedFilenames) )
+    log.debug('')
+    log.debug( '%d memorymap'%len(memoryMap) )
 
     readable    = 0
     writeable   = 0
@@ -177,14 +175,14 @@ else:
       if mbi.is_image():
         image += size
     width = len(str(total))
-    print ("  %%%ds bytes of readable memory" % width) % int(readable)
-    print ("  %%%ds bytes of writeable memory" % width) % int(writeable)
-    print ("  %%%ds bytes of executable memory" % width) % int(executable)
-    print ("  %%%ds bytes of private memory" % width) % int(private)
-    print ("  %%%ds bytes of mapped memory" % width) % int(mapped)
-    print ("  %%%ds bytes of image memory" % width) % int(image)
-    print ("  %%%ds bytes of total memory" % width) % int(total)
-    print
+    log.debug ("  %%%ds bytes of readable memory" % width) % int(readable)
+    log.debug ("  %%%ds bytes of writeable memory" % width) % int(writeable)
+    log.debug ("  %%%ds bytes of executable memory" % width) % int(executable)
+    log.debug ("  %%%ds bytes of private memory" % width) % int(private)
+    log.debug ("  %%%ds bytes of mapped memory" % width) % int(mapped)
+    log.debug ("  %%%ds bytes of image memory" % width) % int(image)
+    log.debug ("  %%%ds bytes of total memory" % width) % int(total)
+    log.debug('')
     return
   
   class ProcessError(Exception):
