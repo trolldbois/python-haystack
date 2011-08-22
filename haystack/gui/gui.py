@@ -151,9 +151,9 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self.scene = self.graphicsView.GetScene()
     self._dirty = True # reload will clean it
     # init the hexeditor
-    print type(self.mapping)
+    #print type(self.mapping)
     #a=self.mapping.mmap()
-    #self.qhexedit.setData(model.array2bytes(self.mapping.mmap())) # beuaaah
+    self.qhexedit.setData(self.mapping.mmap().getByteBuffer()) # beuaaah
     return
 
   def searchValue(self, value):

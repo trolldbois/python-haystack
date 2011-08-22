@@ -92,6 +92,8 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
     #QtCore.QObject.connect(self.info_listview, QtCore.SIGNAL("doubleClicked(QModelIndex)"), self.listview_dclicked)    
     QtCore.QObject.connect(self.info_listview, QtCore.SIGNAL("activated(QModelIndex)"), self.listview_activated)    
     #QtCore.QObject.connect(self.info_listview, QtCore.SIGNAL("selectionChanged(QModelSelection)"), self.listview_activated)    
+
+    QtCore.QObject.connect(self.info_tableview, QtCore.SIGNAL("clicked(QModelIndex)"), self.tableview_clicked)    
     pass
   
   def addResult(self, offset, value, color=None):
@@ -135,6 +137,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
         self.info_tableview.setRowHeight(row, 18)
     # enable sorting
     self.info_tableview.setSortingEnabled(True)
+    
     return
    
   def listview_activated (self, qindex):
@@ -146,10 +149,24 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
     log.info('clicked %s'%(item))
     if self.showDetailledView:
       self._showInfo(self.results[qindex.row()])
+    ### change the hexview
+    # c'est le fun
+    self.parent().parent().parent().parent().parent().qhexedit.scrollTo(self.results[qindex.row()].offset)
     return
 
   def selectionChanged(self, new, old ):
     log.debug('selection changed')
+
+  def tableview_clicked (self, qindex):
+    log.info('clicked %d'%qindex.row())
+    item = self.list_model.data(qindex, Qt.DisplayRole)
+    log.info('clicked %s'%(item))
+    if self.showDetailledView:
+      self._showInfo(self.results[qindex.row()])
+    ### change the hexview
+    # c'est le fun
+    self.parent().parent().parent().parent().parent().qhexedit.scrollTo(self.results[qindex.row()].offset)
+    return
 
 
 
