@@ -11,11 +11,8 @@ import tempfile, shutil
 
 
 import model 
-from dbg import PtraceDebugger
-
-# local
-from memory_mapping import MemoryMapping,MemoryDumpMemoryMapping, FileMemoryMapping , readProcessMappings
-from haystack import memory_mapping
+import dbg
+import memory_mapping
 
 log = logging.getLogger('dumper')
 
@@ -31,13 +28,13 @@ class MemoryDumper:
     return self.mappings
 
   def initPid(self):
-    self.dbg = PtraceDebugger()
+    self.dbg = dbg.PtraceDebugger()
     self.process = self.dbg.addProcess(self.args.pid, is_attached=False)
     if self.process is None:
       log.error("Error initializing Process debugging for %d"% self.args.pid)
       raise IOError
       # ptrace exception is raised before that
-    self.mappings = readProcessMappings(self.process)
+    self.mappings = memory_mapping.readProcessMappings(self.process)
     log.debug('mappings read. Dropping ptrace on pid.')
     return
     
@@ -48,7 +45,6 @@ class MemoryDumper:
     err=0
     for m in self.mappings:
       try:
-        m.mmap()
         self.dump(m, tmpdir)
       except Exception,e:
         err+=1
@@ -70,17 +66,14 @@ class MemoryDumper:
   def dump(self, m, tmpdir):
     log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
-    mname = "0x%lx-%s" % (m.start, memory_mapping.formatAddress(m.end))
+    mname = "%s-%s" % (dbg.formatAddress(m.start), dbg.formatAddress(m.end))
     mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
-    #m.mmap()
     log.debug('Dumping the memorymap content')
     with open(mmap_fname,'wb') as mmap_fout:
-      mmap_fout.write(m.mmap())
+      mmap_fout.write(m.mmap().getByteBuffer())
     log.debug('Dumping the memorymap metadata')
     self.index.write('%s,%s\n'%(mname, m.pathname))
-    #with open(mmap_fname+'.pickled','w') as mmap_fout:
-    #  pickle.dump(m, mmap_fout)
     return 
 
   def archive(self, srcdir, name):
@@ -134,25 +127,12 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       mmap_content_file = self.archive.extractfile('./'+mmap_fname)
       if end-start > 10000000: # use file mmap when file is too big
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
-        mmap = FileBackedMemoryMapping(mmap_content_file,start, end, permissions='rwx-', offset=0x0, 
+        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
       else:      
         log.debug('Using a MemoryDumpMemoryMapping. small size')
-        mmap = MemoryDumpMemoryMapping(mmap_content_file,start, end, permissions='rwx-', offset=0x0, 
+        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-
-      '''
-      mmap = MemoryMapping(Dummy(),start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-      if end-start > 10000000: # use file mmap when file is too big
-        log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
-        mmap = memory_mapping.getFileBackedMemoryMapping(mmap, mmap_content_file)
-      else:  
-        log.debug('Using a FileMemoryMapping over a %s. small size'%(mmap.__class__))
-        mmap = FileMemoryMapping(mmap, mmap_content_file)
-      '''
-      #mmap_content = pickle.load(self.archive.extractfile(mmap_fname))
-      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      #mmap._local_mmap = model.bytes2array(mmap_content, ctypes.c_ubyte)
       self.mappings.append(mmap)
     return    
 
@@ -195,7 +175,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
     #start = 0xc0100000
     start = 0xc0000000
     end = 0xc090d000
-    kmap = MemoryDumpMemoryMapping(self.dumpfile, start, end, permissions='rwx-', offset=0x0, 
+    kmap = memory_mapping.MemoryDumpMemoryMapping(self.dumpfile, start, end, permissions='rwx-', offset=0x0, 
             major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpfile.name)
     self.mappings = [kmap]
 
