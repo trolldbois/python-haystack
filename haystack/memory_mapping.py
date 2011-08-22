@@ -220,7 +220,7 @@ class ProcessMemoryMapping(MemoryMapping):
     if not self.isMmaped():
       self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
       #self._local_mmap = self._process().read(self.start, self.end-self.start)
-      self._local_mmap = LocalMemoryMapping.fromMemoryMapping( self, ctypes.addressof(self._local_mmap_content) )
+      self._local_mmap = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
       self._base = self._local_mmap
     return self._local_mmap
 
@@ -288,7 +288,7 @@ class LocalMemoryMapping(MemoryMapping):
     return d
   
   @classmethod
-  def fromMemoryMapping(cls, memoryMapping, content_address):
+  def fromAddress(cls, memoryMapping, content_address):
     return cls( content_address, memoryMapping.start, memoryMapping.end, 
             memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
             memoryMapping.inode, memoryMapping.pathname)
@@ -313,7 +313,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
       self._mmap()
   
   def _mmap(self):
-    ''' private api '''
+    ''' protected api '''
     # mmap.mmap has a full bytebuffer API, so we can use it as is for bytebuffer.
     # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
     # sad we can't have a bytebuffer from that same raw memspace
@@ -328,7 +328,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
         self._local_mmap_content = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
       # make that _base
-      self._base = LocalMemoryMapping.fromMemoryMapping( mapping, ctypes.addressof(self._local_mmap_content) )
+      self._base = LocalMemoryMapping.fromAddress( mapping, ctypes.addressof(self._local_mmap_content) )
     #redirect stuff
     self.readWord = self._base.readWord
     self.readArray = self._base.readArray
@@ -348,75 +348,72 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   def readArray(self, vaddr, basetype, count):
     return self._mmap().readArray(vaddr, basetype, count)
 
+  @classmethod
+  def fromFile(cls, memoryMapping, aFile):
+    '''
+      aFile must be able to read().
+    '''
+    return cls( aFile, memoryMapping.start, memoryMapping.end, 
+            memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
+            memoryMapping.inode, memoryMapping.pathname)
 
 
-''' ----------------- should be in Memdumpmemmapping .... '''
-def fileMemoryMapping_process(self):
-  ''' fake it like a process and mmap it now'''
-  #fileMemoryMapping_mmap(self)
-  self.mmap()
-  return self
-  
-def fileMemoryMapping_mmap(self):
-  import model
-  print 'mmap() from fileMemoryMapping_mmap'
-  if self._local_mmap is None:
-    if hasattr(self.memdump,'fileno'): # normal file
-      self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-      log.warning('Lazy Memory Mapping content mmap-ed() : %s'%(self))
-    else: # dumpfile, file inside targz ...
-      # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-      # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
-      # sad we can't have a bytebuffer from that same raw memspace
-      self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
-      log.warning('Lazy Memory Mapping content DEEP COPIED : %s'%(self))
-  return self._local_mmap
+class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
+  '''
+    Don't mmap the memoryMap. use the file on disk to read data.
+  '''
+  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+    MemoryDumpMemoryMapping.__init__(self, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
+    self._local_mmap = LazyMmap(self._memdump)
+    return
 
-def FileMemoryMapping(memoryMapping, memdump):
-  """ 
-  A memoryMapping wrapper backed by a around a memory file dump for mmap() 
-  Use it when you have a pickled MemoryMapping without data content and you want to attach it
-  to data content in a file.
-  
-  @param memoryMapping: a MemoryMapping
-  @param memdump: memorydump File
-  """
-  import copy, types
-  p = None
-  m = None
-  # we del _process
-  if hasattr(memoryMapping,'_process'):
-    p = memoryMapping._process
-  # we keep local__map
-  if not hasattr(memoryMapping,'_local_mmap'):
-    memoryMapping._local_mmap = None
-  memoryMapping._process = None
-  ret = copy.deepcopy(memoryMapping)
-  #if hasattr(memoryMapping,'_process'):
-  #  memoryMapping._process = p
-  ret.memdump = memdump
-  ret._process = types.MethodType(fileMemoryMapping_process, ret, MemoryMapping)
-  #ret.mmap = types.MethodType(fileMemoryMapping_mmap, ret, MemoryMapping)
-  #if memoryMapping._local_mmap is not None:
-  if not hasattr(ret,'_local_mmap'):
-    ret._local_mmap = None
-  return ret
+  def _mmap(self):
+    ''' returns self to force super() to read through us  '''
+    return self
 
-def getFileBackedMemoryMapping(memoryMapping, memdump):
-  """
-    Transform a MemoryMapping to a file-backed MemoryMapping using FileBackedMemoryMapping.
-    
-    memoryMapping is the MemoryMapping instance.
-    memdump is used as memory_mapping content.
-    
-  """
-  return FileBackedMemoryMapping(memdump, memoryMapping.start, memoryMapping.end, 
-              memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
-              memoryMapping.inode, memoryMapping.pathname)
+  def vtop(self, vaddr):
+    return vaddr - self.start
+
+  def readBytes(self, vaddr, size):
+    laddr = self.vtop(vaddr)
+    size = ctypes.sizeof((ctypes.c_ubyte *count))
+    data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
+    return data
+
+  def readStruct(self, vaddr, structType):
+    laddr = self.vtop(vaddr)
+    size = ctypes.sizeof(structType)
+    stspace = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
+    return self._mmap().readStruct(vaddr, structType)
+
+  def readWord(self, vaddr):
+    """Address have to be aligned!"""
+    laddr = self.vtop(vaddr)
+    word = MemoryMapping.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+MemoryMapping.WORDSIZE], 0).value # is non-aligned a pb ?
+    return word
+
+  def readArray(self, address, basetype, count):
+    laddr = self.vtop(address)
+    size = ctypes.sizeof((basetype *count))
+    array = (basetype *count).from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
+    return array
+
+  @classmethod
+  def fromFile(self, memoryMapping, memdump)
+    """
+      Transform a MemoryMapping to a file-backed MemoryMapping using FileBackedMemoryMapping.
+      
+      memoryMapping is the MemoryMapping instance.
+      memdump is used as memory_mapping content.
+      
+    """
+    return cls(memdump, memoryMapping.start, memoryMapping.end, 
+                memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
+                memoryMapping.inode, memoryMapping.pathname)
 
 class LazyMmap:
-  ''' lazy mmap no memory.
-   useless.
+  ''' 
+  lazy mmap no memory.
   '''
   def __init__(self,memdump):
     i = memdump.tell()
@@ -448,27 +445,6 @@ class LazyMmap:
     #me = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ)
     me = model.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
     return me
-
-class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
-  '''
-    don't mmap the memoryMap. use the file to read offsets.
-  '''
-  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
-    MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-    self.memdump = memdump
-    self._local_mmap = LazyMmap(self.memdump)
-    return
-  def readWord(self, address):
-    """Address have to be aligned!"""
-    laddr = self.vtop(address)
-    size = ctypes.sizeof((ctypes.c_int))
-    word = ctypes.c_ulong.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
-    return word
-  def readArray(self, address, basetype, count):
-    laddr = self.vtop(address)
-    size = ctypes.sizeof((basetype *count))
-    array = (basetype *count).from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
-    return array
 
 
 
