@@ -46,14 +46,19 @@ BufferMemoryMapping should readfrom a b'123' - slowish, will convert bytes2array
 ArraymemoryMapping should read from a ['','','',''] - quickiest on ctypes search
 
 process
+I need to func., 
+a) In structure search mode ctypes mapping ( from_address ) -> mm must be a ctypes array
+b) In text search mode a string mapping                    -> mm must be a str/bytebuffer
+
+and two style :
+a) in-process memory
+b) local memory
 
 '''
 
-
-
 class MemoryMapping:
-    """
-    Process memory mapping (metadata about the mapping).
+  """ 
+  Just the metadata.
 
     Attributes:
      - start (int): first byte address
@@ -77,235 +82,272 @@ class MemoryMapping:
      - "str(mapping)" create one string describing the mapping
      - "repr(mapping)" create a string representation of the mapping,
        useful in list contexts
-    """
-    def __init__(self, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-        self._process = ref(process)
-        self.start = start
-        self.end = end
-        self.permissions = permissions
-        self.offset = offset
-        self.major_device = major_device
-        self.minor_device = minor_device
-        self.inode = inode
-        self.pathname = pathname
-        self._local_mmap = None
+  """
+  WORDSIZE = ctypes.sizeof(ctypes.c_ulong)
+  WORDTYPE = ctypes.c_ulong
+  def __init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    self.start = start
+    self.end = end
+    self.permissions = permissions
+    self.offset = offset
+    self.major_device = major_device
+    self.minor_device = minor_device
+    self.inode = inode
+    self.pathname = pathname
 
-    def __contains__(self, address):
-        return self.start <= address < self.end
+  def __contains__(self, address):
+      return self.start <= address < self.end
 
-    def __str__(self):
-        text = "%s-%s" % (formatAddress(self.start), formatAddress(self.end))
-        if self.pathname:
-            text += " => %s" % self.pathname
-        text += " (%s)" % self.permissions
-        return text
-    __repr__ = __str__
+  def __str__(self):
+    text = "%s-%s" % (formatAddress(self.start), formatAddress(self.end))
+    if self.pathname:
+      text += " => %s" % self.pathname
+    text += " (%s)" % self.permissions
+    return text
 
-    def __len__(self):
-      return int(self.end - self.start)
+  __repr__ = __str__
 
-    def search(self, bytestr):
-        bytestr_len = len(bytestr)
-        buf_len = 64 * 1024 
+  def __len__(self):
+    return int(self.end - self.start)
+  
+  def search(self, bytestr):
+    bytestr_len = len(bytestr)
+    buf_len = 64 * 1024 
+    if buf_len < bytestr_len:
+      buf_len = bytestr_len
+    remaining = self.end - self.start
+    covered = self.start
+    while remaining >= bytestr_len:
+      if remaining > buf_len:
+        requested = buf_len
+      else:
+        requested = remaining
+      data = self.readBytes(covered, requested)
+      if data == "":
+        break
+      offset = data.find(bytestr)
+      if (offset == -1):
+        skip = requested - bytestr_len + 1
+      else:
+        yield (covered + offset)
+        skip = offset + bytestr_len
+      covered += skip
+      remaining -= skip
+    return 
+  def readCString(self, address, max_size, chunk_length=256):
+    ''' identic to process.readCString '''
+    string = []
+    size = 0
+    truncated = False
+    while True:
+      done = False
+      data = self.readBytes(address, chunk_length)
+      if '\0' in data:
+        done = True
+        data = data[:data.index('\0')]
+      if max_size <= size+chunk_length:
+        data = data[:(max_size-size)]
+        string.append(data)
+        truncated = True
+        break
+      string.append(data)
+      if done:
+        break
+      size += chunk_length
+      address += chunk_length
+    return ''.join(string), truncated
 
-        if buf_len < bytestr_len:
-            buf_len = bytestr_len
+  def vtop(self, vaddr):
+    return vaddr - self.start
+    
+  # ---- to implement if needed
+  def readWord(self, address):
+    raise NotImplementedError
+  def readBytes(self, address, size):
+    raise NotImplementedError
+  def readStruct(self, address, struct):
+    raise NotImplementedError
+  def readArray(self, address, basetype, count):
+    raise NotImplementedError
 
-        remaining = self.end - self.start
-        covered = self.start
 
-        while remaining >= bytestr_len:
-            if remaining > buf_len:
-                requested = buf_len
-            else:
-                requested = remaining
+class ProcessMemoryMapping(MemoryMapping):
+  """
+  Process memory mapping (metadata about the mapping).
 
-            data = self.readBytes(covered, requested)
+  Attributes:
+   - _process: weak reference to the process
+   - _local_mmap: the LocalMemoryMapping is mmap() has been called
+   _ _base: the current MemoryMapping reader ( process or local_mmap )
 
-            if data == "":
-                break
+  Operations:
+   - "mmap" mmap the MemoryMap to local address space
+   - "readWord()": read a memory word, from local mmap-ed memory if mmap-ed
+   - "readBytes()": read some bytes, from local mmap-ed memory if mmap-ed
+   - "readStruct()": read a structure, from local mmap-ed memory if mmap-ed
+   - "readArray()": read an array, from local mmap-ed memory if mmap-ed
+     useful in list contexts
+  """
+  def __init__(self, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    self._process = ref(process)
+    self._local_mmap = None
+    self._local_mmap_content = None
+    # read from process by default
+    self._base = self._process()
+  
+  def readWord(self, address):
+    word = self._base.readWord(address)
+    return word
 
-            offset = data.find(bytestr)
-            if (offset == -1):
-                skip = requested - bytestr_len + 1
-            else:
-                yield (covered + offset)
-                skip = offset + bytestr_len
+  def readBytes(self, address, size):
+    data = self._base.readBytes(address, size)
+    return data
 
-            covered += skip
-            remaining -= skip
+  def readStruct(self, address, struct):
+    struct = self._base.readStruct(address, struct)
+    return struct
 
-    def isMmaped(self):
-      if self._local_mmap is None:
-        return False
-      return True
+  def readArray(self, address, basetype, count):
+    array = self._base.readArray(address, basetype, count)
+    return array
+
+  def isMmaped(self):
+    return not (self._local_mmap is None)
+    
+  def mmap(self):
+    ''' mmap-ed access gives a 20% perf increase on by tests '''
+    if not self.isMmaped():
+      self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+      #self._local_mmap = self._process().read(self.start, self.end-self.start)
+      self._local_mmap = LocalMemoryMapping.fromMemoryMapping( self, ctypes.addressof(self._local_mmap_content) )
+      self._base = self._local_mmap
+    return self._local_mmap
+
+  def unmmap(self):
+    self._base = self._process()
+    self._local_mmap = None
+    self._local_mmap_content = None
+
+  def __getstate__(self):
+    d = dict(self.__dict__)
+    d['_local_mmap'] = None
+    d['_local_mmap_content'] = None
+    d['_base'] = None
+    d['_process'] = None
+    return d
+    
+class LocalMemoryMapping(MemoryMapping):
+  """
+  Local memory mapping.
+  The memory space is present in local ctypes space.
+  """
+  def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    self._address = address
+    self._vbase = self.start + self._address
+    self._local_mmap = (ctypes.c_byte * len(self)).from_address(self._address)
+    self._bytebuffer = None
+
+  def vtop(self, vaddr):
+      return vaddr - self._vbase
+
+  def readWord(self, vaddr ):
+    """Address have to be aligned!"""
+    laddr = self.vtop( vaddr )
+    word = MemoryMapping.WORDTYPE.from_address(laddr).value # is non-aligned a pb ?, indianess is at risk
+    return word
+
+  def readBytes(self, vaddr, size):
+    laddr = vaddr - self.start
+    data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
+    return data
+  
+  def readStruct(self, vaddr, struct):
+    laddr = self.vtop( vaddr )
+    struct = struct.from_address(laddr)
+    return struct
+
+  def readArray(self, vaddr, basetype, count):
+    laddr = self.vtop( vaddr )
+    array = (basetype *count).from_address(laddr)
+    return array
+
+  def getByteBuffer(self):
+    if self._buffer is None;
+      self._buffer = self.readBytes( self.start , len(self))
+    return self._buffer
+
+  def initByteBuffer(self, data=None):
+    self._bytebuffer = data
+
+  def __getstate__(self):
+    d = dict(self.__dict__)
+    del d['_local_mmap']
+    del d['_bytebuffer']
+    return d
+  
+  @classmethod
+  def fromMemoryMapping(cls, memoryMapping, content_address):
+    return cls( content_address, memoryMapping.start, memoryMapping.end, 
+            memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
+            memoryMapping.inode, memoryMapping.pathname)
       
-    def mmap(self):
-      ''' mmap-ed access gives a 20% perf increase on by tests '''
-      print 'mmap'
-      if not self.isMmaped():
-        if hasattr(self._process(), 'readArray'):
-          self._local_mmap = self._process().readArray(self.start, ctypes.c_ubyte, self.end-self.start)
-        else:
-          self._local_mmap = self._process().read(self.start, self.end-self.start)
-      return self._local_mmap
-    def unmmap(self):
-      if self.isMmaped():
-        del self._local_mmap
-        self._local_mmap = None
-      return
-
-    def readWord(self, address):
-        """Address have to be aligned!"""
-        if self.isMmaped() : # WORD is type long
-            laddr = ctypes.addressof(self._local_mmap) + address-self.start
-            word = ctypes.c_ulong.from_address(laddr).value # is non-aligned a pb ?
-        else:
-            word = self._process().readWord(address)
-        return word
-
-    def readBytes(self, address, size):
-        if self.isMmaped() :
-            laddr = address-self.start
-            data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
-        else:
-            data = self._process().readBytes(address, size)
-        return data
-
-    def readStruct(self, address, struct):
-        if self.isMmaped() :
-            laddr = ctypes.addressof(self._local_mmap) + address-self.start
-            struct = struct.from_address(laddr)
-        else:
-            struct = self._process().readStruct(address, struct)
-        return struct
-
-    def readArray(self, address, basetype, count):
-        if self.isMmaped() :
-            laddr = ctypes.addressof(self._local_mmap) + address-self.start
-            array = (basetype *count).from_address(laddr)
-        else:
-            array = self._process().readArray(address, basetype, count)
-        return array
-
-    def readCString(self, address, max_size, chunk_length=256):
-        ''' identic to process.readCString '''
-        string = []
-        size = 0
-        truncated = False
-        while True:
-            done = False
-            data = self.readBytes(address, chunk_length)
-            if '\0' in data:
-                done = True
-                data = data[:data.index('\0')]
-            if max_size <= size+chunk_length:
-                data = data[:(max_size-size)]
-                string.append(data)
-                truncated = True
-                break
-            string.append(data)
-            if done:
-                break
-            size += chunk_length
-            address += chunk_length
-        return ''.join(string), truncated
-
-    def __getstate__(self):
-      d = dict(self.__dict__)
-      del d['_process'] #= d['_process'].pid
-      #d['_local_mmap'] = model.array2bytes(d['_local_mmap'])
-      del d['_local_mmap']
-      return d
-
-    #def __setstate__(self, state):
-    #  for k,v in state.items():
-    #    self.__dict__[k] = v
-    #  #d['_process'] = 
-    #  #d['_local_mmap'] = model.bytes2array(d['_local_mmap'],ctypes.c_ubyte)
-     
 
 class MemoryDumpMemoryMapping(MemoryMapping):
-    """ A memoryMapping wrapper around a memory file dump
-    @param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
-    @param preload mmap the memory dump at init ( default)
-    """
-    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
-        MemoryMapping.__init__(self, self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-        self._process = None
-        self.memdump = memdump
-        if preload:
-          self.mmap()
-        s = len(LazyMmap(self.memdump))
-        if offset > s:
-          raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
-    
-    def mmap(self):
-      print 'mdmm mmap()'
-      if not self.isMmaped():
-        if hasattr(self.memdump,'fileno'): # normal file
-          self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-          log.warning('Memory Mapping content mmap-ed() : %s'%(self))
-        else: # dumpfile, file inside targz ...
-          import model
-          # use that or mmap, anyway, we need to convert to ctypes :/ that costly
-          # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
-          # sad we can't have a bytebuffer from that same raw memspace
-          self._local_mmap = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
-          log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
-      return self._local_mmap
-      '''
-        if not self.isMmaped():
-          try:
-            self._local_mmap = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ, offset=self.offset)
-            #if len != real len, raise error
-          except ValueError,e:
-            log.warning('error while loading mmap size 0x%x for offset 0x%x'%(self.end-self.start, self.offset))
-            raise e
-       '''
-    
-    def _err(self):
-        raise 
-        
-    def search(self, bytestr):
-        self._local_mmap.find(bytestr)
+  """ 
+  A memoryMapping wrapper around a memory file dump.
+  A lazy loading is done for that file, to quick load MM, withouth copying content
+  
+  @param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
+  @param preload mmap the memory dump at init ( default)
+  """
+  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
+    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    self._memdump = memdump
+    self._local_mmap = None
+    s = len(LazyMmap(self._memdump))
+    if offset > s:
+      raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
+    if preload:
+      self._mmap()
+  
+  def _mmap(self):
+    ''' private api '''
+    # mmap.mmap has a full bytebuffer API, so we can use it as is for bytebuffer.
+    # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
+    # sad we can't have a bytebuffer from that same raw memspace
+    # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
+    if self._local_mmap is None
+      if hasattr(self.memdump,'fileno'): # normal file. mmap kinda useless i suppose.
+        log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
+        local_mmap_bytebuffer = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+        self._local_mmap_content = model.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
+      else: # dumpfile, file inside targz ... any read() API really
+        import model
+        log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
+        self._local_mmap_content = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
+      # make that _base
+      self._base = LocalMemoryMapping.fromMemoryMapping( mapping, ctypes.addressof(self._local_mmap_content) )
+    #redirect stuff
+    self.readWord = self._base.readWord
+    self.readArray = self._base.readArray
+    self.readBytes = self._base.readBytes
+    self.readStruct = self._base.readStruct
+    return self._base
+  
+  def readWord(self, vaddr):
+    return self._mmap().readWord( vaddr )
 
-    def readWord(self, address):
-        """Address have to be aligned!"""
-        laddr = self.vtop(address)
-        word = ctypes.c_ulong.from_buffer_copy(self.mmap(), laddr).value # is non-aligned a pb ?
-        return word
+  def readBytes(self, vaddr, size):
+    return self._mmap().readBytes(vaddr, size)
 
-    def readBytes(self, address, size):
-        laddr = self.vtop(address)
-        data = self.mmap()[laddr:laddr+size]
-        return data
+  def readStruct(self, vaddr, structType):
+    return self._mmap().readStruct(vaddr, structType)
 
-    def readStruct(self, address, structType):
-        from model import bytes2array # TODO check ctypes_tools.bytes2array in ptrace
-        laddr = self.vtop(address)
-        #print 'vaddr:0x%x paddr:0x%x lenmmap:0x%x'%(address,laddr,len(self.mmap()))
-        structLen = ctypes.sizeof(structType)
-        print type(self.mmap())
-        st = self.mmap()[laddr:laddr+structLen]
-        # eh si st est deja un array ?
-        structtmp = bytes2array(st, ctypes.c_ubyte)
-        struct = structType.from_buffer(structtmp)
-        return struct
+  def readArray(self, vaddr, basetype, count):
+    return self._mmap().readArray(vaddr, basetype, count)
 
-    def readArray(self, address, basetype, count):
-        laddr = self.vtop(address)
-        array = (basetype *count).from_buffer_copy(self.mmap(), laddr)
-        return array
-
-    def vtop(self, vaddr):
-        return vaddr - self.start
-
-    def __str__(self):
-        text = "0x%lx-%s" % (self.start, formatAddress(self.end))
-        text += " => %s" % self.pathname
-        text += " (%s)" % self.permissions
-        return text
 
 
 ''' ----------------- should be in Memdumpmemmapping .... '''
