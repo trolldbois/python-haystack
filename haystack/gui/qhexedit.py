@@ -425,6 +425,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
     self.repaint()
     return
 
+  def setSelected(self, start, length):
+    self.selection_start = start
+    self.selection_end = self.selection_start + length
+    self.repaint()
+
 
   '''
   // Name: setShowAddress(bool show)

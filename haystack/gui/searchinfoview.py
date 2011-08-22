@@ -14,6 +14,7 @@ from PyQt4.Qt import Qt
 from searchinfoStruct import Ui_SearchInfoStructWidget
 import infomodel
 import widgets
+from .. import utils
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -151,7 +152,10 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
       self._showInfo(self.results[qindex.row()])
     ### change the hexview
     # c'est le fun
-    self.parent().parent().parent().parent().parent().qhexedit.scrollTo(self.results[qindex.row()].offset)
+    hexedit = self.parent().parent().parent().parent().parent().qhexedit
+    structure = self.results[qindex.row()]
+    hexedit.scrollTo(structure.offset)
+    hexedit.setSelected(structure.offset, len(structure.value) )
     return
 
   def selectionChanged(self, new, old ):
@@ -159,13 +163,11 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
 
   def tableview_clicked (self, qindex):
     log.info('clicked %d'%qindex.row())
-    item = self.list_model.data(qindex, Qt.DisplayRole)
-    log.info('clicked %s'%(item))
-    if self.showDetailledView:
-      self._showInfo(self.results[qindex.row()])
+    #item = self.info_tableview.model().data(qindex , Qt.DisplayRole)
+    name,value = self.info_tableview.model().arraydata[qindex.row()]
     ### change the hexview
-    # c'est le fun
-    self.parent().parent().parent().parent().parent().qhexedit.scrollTo(self.results[qindex.row()].offset)
+    #utils.offsetof(name,)
+    #self.parent().parent().parent().parent().parent().qhexedit.setSelectedscrollTo(val.offset)
     return
 
 
