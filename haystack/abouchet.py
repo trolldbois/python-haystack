@@ -339,10 +339,8 @@ def argparser():
   
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
-  target.add_argument('--memfile', type=argparse.FileType('r'), dest='memfile', action='store', default=None, 
-                                    help='Use a memory dump instead of a live process ID')
-  target.add_argument('--dumpfile', type=argparse.FileType('r'), dest='dumpfile', action='store', default=None, 
-                                    help='Use a haystack memory dump instead of a live process ID')
+  target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
+  target.add_argument('--dumpfile', type=argparse.FileType('r'), help='Use a haystack memory dump instead of a live process ID')
     
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')
@@ -516,8 +514,10 @@ def main(argv):
 
   if opts.pid:  
     log.debug("done for pid %d"%opts.pid)
-  else:
-    log.debug("done for file %s"%opts.memdump.name)
+  elif opts.memfile:
+    log.debug("done for file %s"%opts.memfile.name)
+  elif opts.dumpfile:
+    log.debug("done for file %s"%opts.dumpfile.name)
   return 0
 
 

@@ -223,13 +223,13 @@ class LocalMemoryMapping(MemoryMapping):
   """
   def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-    self._address = address
-    self._vbase = self.start + self._address
-    self._local_mmap = (ctypes.c_byte * len(self)).from_address(self._address)
+    self._local_mmap = (ctypes.c_byte * len(self)).from_address(address)
+    self._address = ctypes.addressof(self._local_mmap)
+    #self._vbase = self.start + self._address # shit, thats wraps up...
     self._bytebuffer = None
 
   def vtop(self, vaddr):
-      return vaddr - self._vbase
+    return vaddr - self.start + self._address 
 
   def readWord(self, vaddr ):
     """Address have to be aligned!"""
@@ -239,7 +239,8 @@ class LocalMemoryMapping(MemoryMapping):
 
   def readBytes(self, vaddr, size):
     laddr = vaddr - self.start
-    data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
+    #data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
+    data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
     return data
   
   def readStruct(self, vaddr, struct):
@@ -298,16 +299,17 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # sad we can't have a bytebuffer from that same raw memspace
     # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
     if self._local_mmap is None:
-      if hasattr(self.memdump,'fileno'): # normal file. mmap kinda useless i suppose.
+      if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
-        local_mmap_bytebuffer = mmap.mmap(self.memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+        local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
         self._local_mmap_content = model.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
       else: # dumpfile, file inside targz ... any read() API really
         import model
+        self._local_mmap_content = model.bytes2array(self._memdump.read(), ctypes.c_ubyte)
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
-        self._local_mmap_content = model.bytes2array(self.memdump.read(), ctypes.c_ubyte)
       # make that _base
-      self._base = LocalMemoryMapping.fromAddress( mapping, ctypes.addressof(self._local_mmap_content) )
+      self._base = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
+      log.info('LocalMemoryMapping done.')
     #redirect stuff
     self.readWord = self._base.readWord
     self.readArray = self._base.readArray
