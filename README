@@ -4,6 +4,7 @@ HOWTO:
 
 Run as command line :
 
+$ sudo haystack --pid 26725 sslsnoop.ctypes_openssh.session_state search > instance.pickled
 $ sudo haystack --pid 26725 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
 $ sudo haystack --pid 26725 <your ctypes Structure > search > instance.pickled
 
@@ -27,7 +28,7 @@ d) call model.registerModule(sys.modules[__name__])
 Easy 'creation' : use h2xml and xml2py from ctypeslib
 Advanced use : You can override methods to fine tune some validation or loading
 
-The global algoritm :
+The global algorithm :
 a)  The ctypes structure is mapped at the first offset of the memory mapping.
 b)  The method loadMembers is called.
 c)  The method isValid is called on self.
