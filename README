@@ -28,15 +28,15 @@ Easy 'creation' : use h2xml and xml2py from ctypeslib
 Advanced use : You can override methods to fine tune some validation or loading
 
 The global algoritm :
-a)  A ctypes structure is mapped at a memory address.
-b)  The method loadMembers id called.
+a)  The ctypes structure is mapped at the first offset of the memory mapping.
+b)  The method loadMembers is called.
 c)  The method isValid is called on self.
 d) A validation test is done for each members, it's expected values and memory space validity (pointers) are tested.
     The validation does not recurse.
 e)  Each members is then 'loaded' to local space. 
     If the value is a pointer or a model.LoadableMembers type, it's recursively Loaded. ( and validated).
     If the recursive loading fails, the calls fails. bye-bye.
-f) see next offset, goto a)
+f) Move to see next offset, goto a)
 
 GUI usage:
 ----------
@@ -45,6 +45,8 @@ You need to have a process memory dump :
 
 $ sudo haystack-dump dump 26725 dumps/myssh.dump
 
+(I'm lazy really, you could just open the process in the gui.. but... )
+
 Then you can open it in the GUI :
 
 $ haystack-gui # ( and Ctrl-O , click click)
@@ -52,16 +54,17 @@ $ hasytack-gui --dumpfile dumps/myssh.dump
 
 The dump file format is a simple tar containing each memory map :
 * content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
-* python haystack.model.MemoryMapping object pickled ( 0x000700000-0x000800000.pickled )
+* 'mappings' file containing memory mappings metadata.  ( mappings )
 
-You can the search a structure into that memory mapping ( [heap] for now ).
+You can the search a structure into that memory mapping ( in [heap] for now ).
 You have to import your extensions before that ( try sslsnoop.ctypes_openssh ) to have them listed in the search dialog.
 
+Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should have it installed.
 
 Extension examples :
 ---------------------
 @ see sslsnoop in the Pypi repo. openssl and nss structures are generated.
-@ see ctypes-kernel on my github. Linux kernel structure are generated. (VMM is abitch)
+@ see ctypes-kernel on my github. Linux kernel structure are generated from a build kernel tree. (VMM is abitch)
 
 
 Pseudo Example :
