@@ -215,16 +215,11 @@ def isBasicType(obj):
 
 def isStructType(obj):
   ''' Checks if an object is a ctypes Structure.'''
-  #return isinstance(obj,LoadableMembers)
   return isinstance(obj, ctypes.Structure)
-  # or use obj.classRef
 
 __ptrt = type(ctypes.POINTER(ctypes.c_int))
 def isPointerType(obj):
   ''' Checks if an object is a ctypes pointer.'''
-  ##if isBasicType(obj) or isStructType(obj):
-  ##  return False
-  ##return 'PointerType' in type(obj).__class__.__name__ 
   return __ptrt == type(type(obj))
 
 def isBasicTypeArrayType(obj):
@@ -242,13 +237,11 @@ def isBasicTypeArrayType(obj):
 __arrayt = type(ctypes.c_int*1)
 def isArrayType(obj):
   ''' Checks if an object is a ctype array.'''
-  #return 'ArrayType' in type(obj).__class__.__name__
   return __arrayt == type(type(obj))
 
 __cfuncptrt = type(ctypes.memmove)
 def isFunctionType(obj):
   ''' Checks if an object is a function pointer.'''
-  #return 'CFuncPtrType' in type(obj).__class__.__name__
   return __cfuncptrt == type(obj)
 
 def isCStringPointer(obj):
