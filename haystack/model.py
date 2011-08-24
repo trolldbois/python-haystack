@@ -160,6 +160,8 @@ class _book(object):
     return dict(self.classes)
   def getRef(self,typ,addr):
     return self.refs[(typ,addr)]
+  def delRef(self,typ,addr):
+    del self.refs[(typ,addr)]
   def isRegisteredType(self, typ):
     return typ in self.classes.values()
 
@@ -193,6 +195,12 @@ def keepRef(obj,typ=None,origAddr=None):
       log.warning('references already in cache %s/%s'%(typ,origAddr))
     return
   __book.addRef(obj,typ,origAddr)
+  return
+
+def delRef(typ,origAddr):
+  ''' Forget about a Ref..'''
+  if (typ,origAddr) in __book.refs:
+    __book.delRef(typ,origAddr)
   return
 
 def register(klass):
@@ -491,10 +499,10 @@ class LoadableMembers(ctypes.Structure):
         attr.contents = ref
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
-      ##### VALID INSTR.
+      ##### Read the struct in memory and make a copy to play with.
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-      refToKeep = attr.contents
-      #####
+      # save that validated and loaded ref and original addr so we dont need to recopy it later
+      keepRef( attr.contents, _attrType, attr_obj_address)
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
       if not bool(attr):
@@ -503,9 +511,9 @@ class LoadableMembers(ctypes.Structure):
       # go and load the pointed struct members recursively
       if not attr.contents.loadMembers(mappings, maxDepth):
         log.debug('member %s was not loaded'%(attrname))
+        #invalidate the cache ref.
+        delRef( _attrType, attr_obj_address)
         return False
-      # save that validated and loaded ref and original addr so we dont need to recopy it later
-      keepRef( refToKeep, _attrType, attr_obj_address)
       return True
     #TATAFN
     return True
