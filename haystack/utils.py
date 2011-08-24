@@ -147,6 +147,7 @@ def array2bytes_(array, typ):
     return b''
   if typ not in bytestr_fmt:
     log.warning('Unknown ctypes to pack: %s'%(typ))
+    raise NotImplementedError('fu array2bytes')
     return None
   fmt=bytestr_fmt[typ]
   sb=b''
@@ -177,6 +178,7 @@ def bytes2array(bytes, typ):
     return array
   if typ.__name__ not in bytestr_fmt:
     log.warning('Unknown ctypes to pack: %s'%(typ))
+    raise NotImplementedError('fu bytes2array')
     return None
   fmt=bytestr_fmt[typ.__name__]
   sb=b''
@@ -229,7 +231,7 @@ def isBasicTypeArrayType(obj):
   '''
   if isArrayType(obj):
     if len(obj) == 0:
-      return True
+      return False # no len is no BasicType
     if isBasicType(obj[0]):
       return True
   return False
@@ -239,10 +241,10 @@ def isArrayType(obj):
   ''' Checks if an object is a ctype array.'''
   return __arrayt == type(type(obj))
 
-__cfuncptrt = type(ctypes.memmove)
+__cfuncptrt = type(type(ctypes.memmove))
 def isFunctionType(obj):
   ''' Checks if an object is a function pointer.'''
-  return __cfuncptrt == type(obj)
+  return __cfuncptrt == type(type(obj))
 
 def isCStringPointer(obj):
   ''' Checks if an object is our CString.'''
