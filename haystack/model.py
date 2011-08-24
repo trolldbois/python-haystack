@@ -184,12 +184,14 @@ def keepRef(obj,typ=None,origAddr=None):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
     they might be transient (if obj == somepointer.contents).'''
   if (typ,origAddr) in __book.refs:
-    if origAddr is not None:
-      origAddr=hex(origAddr)
-    else:
+    # ADDRESS already in refs
+    if origAddr is None:
       origAddr='None'
+    else:
+      origAddr=hex(origAddr)
     if typ is not None:
       log.warning('references already in cache %s/%s'%(typ,origAddr))
+    return
   __book.addRef(obj,typ,origAddr)
   return
 
@@ -491,8 +493,7 @@ class LoadableMembers(ctypes.Structure):
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### VALID INSTR.
       attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-      # save that ref and original addr so we dont need to recopy it later
-      keepRef( attr.contents, _attrType,attr_obj_address)
+      refToKeep = attr.contents
       #####
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
@@ -503,6 +504,9 @@ class LoadableMembers(ctypes.Structure):
       if not attr.contents.loadMembers(mappings, maxDepth):
         log.debug('member %s was not loaded'%(attrname))
         return False
+      # save that validated and loaded ref and original addr so we dont need to recopy it later
+      keepRef( refToKeep, _attrType, attr_obj_address)
+      return True
     #TATAFN
     return True
   
