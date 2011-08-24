@@ -379,7 +379,7 @@ class LoadableMembers(ctypes.Structure):
       A c_void_p cannot be load generically, You have to take care of that.
     '''
     attrtype=type(attr)
-    return ( (isPointerType(attr) and ( attrtype in self.classRef) and bool(attr) ) or
+    return ( (isPointerType(attr) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attr) ) or
               isStructType(attr)  or isCStringPointer(attr) or
               (isArrayType(attr) and not isBasicTypeArrayType(attr) ) ) # should we iterate on Basictypes ? no
 
@@ -470,7 +470,7 @@ class LoadableMembers(ctypes.Structure):
         log.warning('buffer size was too small for this CString')
       attr.string = txt
       return True
-    else:
+    elif isPointerType(attr): # not functionType, it's not loadable
       _attrname='_'+attrname
       _attrType=self.classRef[attrtype]
       attr_obj_address=getaddress(attr)
@@ -521,7 +521,9 @@ class LoadableMembers(ctypes.Structure):
     s=''
     if isStructType(attr):
       s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t'),prefix )  
-    elif isBasicTypeArrayType(attr): ## array of something else than int
+    elif isFunctionType(attr):
+      s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
+    elif isBasicTypeArrayType(attr): ## array of something else than int      
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
     elif isArrayType(attr): ## array of something else than int/byte
@@ -563,6 +565,8 @@ class LoadableMembers(ctypes.Structure):
       attr=getattr(self,field)
       if isStructType(attr):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
+      elif isFunctionType(attr):
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
       elif isBasicTypeArrayType(attr):
         try:
           s+='%s (@0x%lx) : %s\n'%(field,ctypes.addressof(attr), repr(array2bytes(attr)) )  

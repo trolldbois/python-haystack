@@ -222,7 +222,7 @@ def isStructType(obj):
 __ptrt = type(ctypes.POINTER(ctypes.c_int))
 def isPointerType(obj):
   ''' Checks if an object is a ctypes pointer.'''
-  return __ptrt == type(type(obj))
+  return __ptrt == type(type(obj)) or isFunctionType(obj)
 
 def isBasicTypeArrayType(obj):
   ''' Checks if an object is a array of basic types.
