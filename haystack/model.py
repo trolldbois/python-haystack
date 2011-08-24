@@ -354,7 +354,7 @@ class LoadableMembers(ctypes.Structure):
       # all case, 
       _attrType=None
       if attrtype not in self.classRef:
-        log.debug("I can't know the size of the basic type behind the %s pointer, it's a pointer to basic type"%(attrname))
+        log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
         _attrType=None
       else:
         # test valid address mapping
@@ -562,6 +562,7 @@ class LoadableMembers(ctypes.Structure):
     s=repr(self)+'\n'
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     for field,typ in _fieldsTuple:
+      log.debug('__str__ on  %s,%s'%(field,typ))
       attr=getattr(self,field)
       if isStructType(attr):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
@@ -586,7 +587,12 @@ class LoadableMembers(ctypes.Structure):
         else:
           s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
       elif isCStringPointer(attr):
-        s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
+        if not bool(attr) :
+          s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
+        elif not is_address_local(attr) :
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+        else:
+          s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
       elif type(attr) is long or type(attr) is int:
         s+='%s : %s\n'%(field, hex(attr) )  
       else:
