@@ -562,7 +562,6 @@ class LoadableMembers(ctypes.Structure):
     s=repr(self)+'\n'
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     for field,typ in _fieldsTuple:
-      log.debug('__str__ on  %s,%s'%(field,typ))
       attr=getattr(self,field)
       if isStructType(attr):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
