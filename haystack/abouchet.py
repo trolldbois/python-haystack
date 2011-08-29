@@ -18,6 +18,8 @@ import subprocess
 import model
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 
+from utils import xrange
+
 log=logging.getLogger('haystack')
 
 if not sys.platform.startswith('win'):
@@ -103,13 +105,13 @@ class StructFinder:
     t0=time.time()
     p=0
     # xrange sucks. long int not ok
-    for offset in range(start, end-structlen, plen):
+    for offset in xrange(start, end-structlen, plen):
       if offset % (1024<<6) == 0:
         p2=offset-start
         log.debug('processed %d bytes  - %02.02f test/sec'%(p2, (p2-p)/(plen*(time.time()-t0)) ))
         t0=time.time()
         p=p2
-      instance,validated= self.loadAt( memoryMap, offset, structType, maxDepth) 
+      instance,validated = self.loadAt( memoryMap, offset, structType, maxDepth) 
       if validated:
         log.debug( "found instance @ 0x%lx"%(offset) )
         # do stuff with it.
