@@ -675,6 +675,9 @@ class LoadableMembers(ctypes.Structure):
 def json_encode_pyobj(obj):
   if hasattr(obj, '_ctype_'):
     return obj.__dict__
+  elif type(obj).__name__ == 'int':
+    log.warning('found an int')
+    return str(obj)
   else:
     return obj
     

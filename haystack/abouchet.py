@@ -14,6 +14,7 @@ import sys
 import time
 import ctypes
 import subprocess
+import json
 
 import model
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
@@ -331,7 +332,6 @@ def argparser():
     See the command line --help .
   """
   rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
-  rootparser.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
   rootparser.add_argument('--quiet', dest='quiet', action='store_const', const=True, help='setLevel to ERROR only')
   rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
@@ -343,6 +343,11 @@ def argparser():
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
   target.add_argument('--dumpfile', type=argparse.FileType('r'), help='Use a haystack memory dump instead of a live process ID')
+
+  output = rootparser.add_mutually_exclusive_group(required=True)
+  output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
+  output.add_argument('--json', dest='json', action='store_const', const=True, help='Print results as json readable string')
+  output.add_argument('--pickled', dest='pickled', action='store_const', const=True, help='Print results as pickled string')
     
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')
@@ -449,7 +454,10 @@ def search(args):
       log.debug("%s %s"%(ret[0], type(ret[0]) )   )
     if model.findCtypesInPyObj(ret):
       log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
-    print pickle.dumps(ret)
+    if args.json: #jsoned
+      print json.dumps(ret, default=model.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+    else: #pickled
+      print pickle.dumps(ret)
   return outs
 
 
@@ -486,14 +494,20 @@ def refresh(args):
       d=(instance.toPyObject(),validated)
       if model.findCtypesInPyObj(d[0]):
         log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
-      print pickle.dumps(d)
+      if args.json: #jsoned
+        print json.dumps(ret)
+      else: #pickled
+        print pickle.dumps(d)
   else:
     if args.human:
       #Unloaded datastruct, printing safe __str__
       print '( %s, %s )'%(instance,validated)
     else:
       d=None
-      print pickle.dumps(d)
+      if args.json: #jsoned
+        print json.dumps(ret)
+      else: #pickled
+        print pickle.dumps(d)
   return instance,validated
 
 
@@ -507,6 +521,9 @@ def main(argv):
     logging.basicConfig(level=logging.ERROR)    
   else:
     logging.basicConfig(level=logging.INFO)
+
+  if opts.json:
+    log.warning('the JSON feature is experimental and probably wont work.')
   try:
     opts.func(opts)
   except ImportError,e:
