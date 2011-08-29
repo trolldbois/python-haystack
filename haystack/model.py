@@ -536,7 +536,7 @@ class LoadableMembers(ctypes.Structure):
     elif isFunctionType(attr):
       s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
     elif isBasicTypeArrayType(attr): ## array of something else than int      
-      log.warning(field)
+      #log.warning(field)
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
     elif isArrayType(attr): ## array of something else than int/byte
@@ -670,7 +670,12 @@ class LoadableMembers(ctypes.Structure):
       obj = attr
     return obj
 
-
+def json_encode_pyobj(obj):
+  if hasattr(obj, '_ctype_'):
+    return obj.__dict__
+  else:
+    return obj
+    
 class pyObj(object):
   ''' 
   Base class for a plain old python object.
@@ -711,10 +716,11 @@ class pyObj(object):
     
   def findCtypes(self):
     ret = False
-    for attrname,typ in self.__dict__.items():
+    for attrname,attr in self.__dict__.items():
       # ignore _ctype_, it's a ctype class type, we know that.
       if attrname == '_ctype_' :
         continue
+      typ = type(attr)
       attr = getattr(self, attrname)
       if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
@@ -722,7 +728,9 @@ class pyObj(object):
 
   def _attrFindCtypes(self, attr, attrname, typ):
     ret = False
-    if type(attr) is tuple or type(attr) is list:
+    if hasattr(attr, '_ctype_'): # a pyobj
+      return attr.findCtypes()
+    elif type(attr) is tuple or type(attr) is list:
       for el in attr:
         if self._attrFindCtypes(el, 'element', None):
           log.warning('Found a ctypes in array/tuple')
@@ -730,10 +738,7 @@ class pyObj(object):
     elif isCTypes(attr):
       log.warning('Found a ctypes in self  %s'%(attr))
       return True
-    elif not hasattr(attr,'__dict__'):
-      return False
-    else:
-      #log.warning("else %s"%type(attr))
+    else: # int, long, str ...
       ret = False
     return ret
 
