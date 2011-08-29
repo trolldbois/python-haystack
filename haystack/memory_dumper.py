@@ -121,7 +121,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     try :
       self.archive = tarfile.open(None,'r', self.dumpfile)
       members = self.archive.getnames() # get the ./away
-      print members
       if self.filePrefix+self.indexFilename not in members:
         log.error('no mappings index file in the tar archive.')
         return False
