@@ -666,6 +666,8 @@ class LoadableMembers(ctypes.Structure):
       obj=attr.string
     elif isFunctionType(attr):
       obj = repr(attr)
+    elif isBasicType(attr) and isCTypes(attr):
+      obj = attr.value
     else:
       obj = attr
     return obj

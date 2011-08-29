@@ -170,7 +170,7 @@ def array2bytes(array):
   if not isBasicTypeArrayType(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
-  log.info(type(array).__name__.split('_'))
+  #log.info(type(array).__name__.split('_'))
   typ='_'.join(type(array).__name__.split('_')[:2])
   return array2bytes_(array,typ)
 
