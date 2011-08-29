@@ -235,6 +235,9 @@ class LocalMemoryMapping(MemoryMapping):
   def vtop(self, vaddr):
     return vaddr - self.start + self._address 
 
+  def mmap(self):
+    return self
+    
   def readWord(self, vaddr ):
     """Address have to be aligned!"""
     laddr = self.vtop( vaddr )
@@ -276,7 +279,16 @@ class LocalMemoryMapping(MemoryMapping):
     return cls( content_address, memoryMapping.start, memoryMapping.end, 
             memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
             memoryMapping.inode, memoryMapping.pathname)
-      
+
+  @classmethod
+  def fromBytebuffer(cls, memoryMapping, content):
+    content_array = utils.bytes2array(content, ctypes.c_ubyte)
+    content_address = ctypes.addressof(content_array)
+    el = cls( content_address, memoryMapping.start, memoryMapping.end, 
+            memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
+            memoryMapping.inode, memoryMapping.pathname)
+    el.content_array_save_me_from_gc = content_array
+    return el
 
 class MemoryDumpMemoryMapping(MemoryMapping):
   """ 

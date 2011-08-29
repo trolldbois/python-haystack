@@ -6,7 +6,7 @@
 
 import logging
 import argparse, ctypes, os, pickle, time, sys
-import tarfile
+import tarfile, zipfile
 import tempfile, shutil
 
 
@@ -101,21 +101,57 @@ class MemoryDumpLoader:
 
 class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
+  tarfn={ 'open': tarfile.open , 'openFile': 'extractfile' }
+  zipfn={ 'open': zipfile.ZipFile , 'openFile': 'open' }
+  indexFilename = 'mappings'
+  filePrefix = './'
+  
   def isValid(self):
+    if self._test_tarfile() : 
+      self.openArchive = self.tarfn['open']
+      self.openFile_attrname = self.tarfn['openFile']
+    elif self._test_zipfile() :
+      self.openArchive = self.zipfn['open']
+      self.openFile_attrname = self.zipfn['openFile']
+    else:
+      return False
+    return True
+    
+  def _test_tarfile(self):
     try :
       self.archive = tarfile.open(None,'r', self.dumpfile)
       members = self.archive.getnames() # get the ./away
-      if './mappings' not in members:
-        log.error('no mappings index file in the archive.')
+      print members
+      if self.filePrefix+self.indexFilename not in members:
+        log.error('no mappings index file in the tar archive.')
         return False
-      self.mmaps = [ m for m in members if m.startswith('./0x')]
+      #change prefix
+      self.indexFilename=self.filePrefix+self.indexFilename
+      self.mmaps = [ m for m in members if '-0x' in m ]
       if len(self.mmaps)>0:
         return True
     except tarfile.ReadError,e:
-      return False
+      log.info('Not a tar file')
+    return False
+    
+  def _test_zipfile(self):
+    try :
+      self.archive = zipfile.ZipFile(self.dumpfile,'r' )
+      members = self.archive.namelist() # get the ./away
+      if self.indexFilename not in members:
+        log.error('no mappings index file in the zip archive.')
+        return False
+      self.filePrefix=''
+      self.mmaps = [ m for m in members if '-0x' in m ]
+      if len(self.mmaps)>0:
+        return True
+    except zipfile.BadZipfile,e:
+      log.info('Not a zip file')
+    return False
+      
         
   def loadMappings(self):
-    mappingsFile = self.archive.extractfile('./mappings')
+    mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
     self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
     self.mappings = []
     #for mmap_fname in self.mmaps:
@@ -123,12 +159,17 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       start,end = mmap_fname.split('-') # get the './' away
       start,end = int(start,16),int(end,16 )
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
-      mmap_content_file = self.archive.extractfile('./'+mmap_fname)
-      if end-start > 10000000: # use file mmap when file is too big
+      mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
+      if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
+        log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
+        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
+      elif end-start > 10000000: # use file mmap when file is too big
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
         mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-      else:      
+      else:
         log.debug('Using a MemoryDumpMemoryMapping. small size')
         mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
@@ -200,7 +241,7 @@ def load(dumpfile,lazy=True):
     #if log.isEnabledFor(logging.DEBUG):
       #for m in memdump.getMappings(): # will mmap() all
       #  log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
-  except ValueError,e:
+  except IndexError,e: ### ValueError,e:
     log.warning(e)
     #log.warning('trying a KCore')
     #last chance
