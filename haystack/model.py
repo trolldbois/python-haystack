@@ -536,6 +536,7 @@ class LoadableMembers(ctypes.Structure):
     elif isFunctionType(attr):
       s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
     elif isBasicTypeArrayType(attr): ## array of something else than int      
+      log.warning(field)
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
     elif isArrayType(attr): ## array of something else than int/byte

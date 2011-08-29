@@ -11,6 +11,7 @@ import struct
 import ctypes
 
 import memory_dumper
+from utils import xrange
 
 log = logging.getLogger('signature')
 
@@ -24,14 +25,6 @@ see bsdiff python-bsdiff
 see cmp --list
 '''
 
-py_xrange=xrange
-
-def xrange(start, end, step):
-  ''' stoupid int xrange... '''
-  end=end-start
-  for val in py_xrange(0, end, step):
-    yield start+val
-  return
   
 class FeedbackGiver:
   def _initSteps(self, _len, steps=10):

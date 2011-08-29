@@ -137,7 +137,8 @@ bytestr_fmt={
   'c_ulonglong': 'Q',
   'c_float': 'f', ## and double float ?
   'c_char_p': 's',
-  'c_void_p': 'P'
+  'c_void_p': 'P',
+  'c_void': 'P', ## void in array is void_p ##DEBUG
   }
 
 def array2bytes_(array, typ):
@@ -146,13 +147,18 @@ def array2bytes_(array, typ):
   if arrayLen == 0:
     return b''
   if typ not in bytestr_fmt:
-    log.warning('Unknown ctypes to pack: %s'%(typ))
-    raise NotImplementedError('fu array2bytes')
+    log.warning('Unknown ctypes to pack: %s %s'%(typ,array))
     return None
+  if typ  == 'c_void':
+    return b'' # void array cant be extracted
   fmt=bytestr_fmt[typ]
   sb=b''
-  for el in array:
-    sb+=pack(fmt, el)
+  try:
+    for el in array:
+      sb+=pack(fmt, el)
+  except Exception ,e:
+    log.warning('%s %s'%(fmt,el))
+    #raise e
   return sb
 
 def array2bytes(array):
@@ -164,6 +170,7 @@ def array2bytes(array):
   if not isBasicTypeArrayType(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
+  log.info(type(array).__name__.split('_'))
   typ='_'.join(type(array).__name__.split('_')[:2])
   return array2bytes_(array,typ)
 
@@ -178,7 +185,6 @@ def bytes2array(bytes, typ):
     return array
   if typ.__name__ not in bytestr_fmt:
     log.warning('Unknown ctypes to pack: %s'%(typ))
-    raise NotImplementedError('fu bytes2array')
     return None
   fmt=bytestr_fmt[typ.__name__]
   sb=b''
@@ -232,6 +238,8 @@ def isBasicTypeArrayType(obj):
   if isArrayType(obj):
     if len(obj) == 0:
       return False # no len is no BasicType
+    if isPointerType(obj[0]):
+      return False
     if isBasicType(obj[0]):
       return True
   return False
@@ -297,4 +305,13 @@ the member should not be null to be considered valid by the validation engine.
 '''
 NotNull=NotNullComparable()
 
+
+
+py_xrange=xrange
+def xrange(start, end, step):
+  ''' stoupid xrange can't handle long ints... '''
+  end=end-start
+  for val in py_xrange(0, end, step):
+    yield start+val
+  return
 
