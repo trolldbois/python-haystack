@@ -308,7 +308,7 @@ NotNull=NotNullComparable()
 
 
 py_xrange=xrange
-def xrange(start, end, step):
+def xrange(start, end, step=1):
   ''' stoupid xrange can't handle long ints... '''
   end=end-start
   for val in py_xrange(0, end, step):

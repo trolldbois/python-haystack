@@ -174,6 +174,14 @@ class SignatureMaker(AbstractSearcher):
     return 
 
 
+class PointerSignatureMaker(SignatureMaker):
+  def testMatch(self, vaddr):
+    ''' return either POINTER or OTHER '''
+    if self.pSearch.testMatch(vaddr):
+      return self.POINTER
+    return self.OTHER
+
+
 
 class RegexpSearcher(AbstractSearcher):
   ''' 

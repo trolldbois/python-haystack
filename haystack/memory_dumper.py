@@ -68,9 +68,13 @@ class MemoryDumper:
     mname = "%s-%s" % (dbg.formatAddress(m.start), dbg.formatAddress(m.end))
     mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
-    log.debug('Dumping the memorymap content')
-    with open(mmap_fname,'wb') as mmap_fout:
-      mmap_fout.write(m.mmap().getByteBuffer())
+    if ((self.args.heap or self.args.stack) and
+      m.pathname not in ['[heap]','[stack]'] ): # restrict dump
+      pass
+    else:
+      log.debug('Dumping the memorymap content')
+      with open(mmap_fname,'wb') as mmap_fout:
+        mmap_fout.write(m.mmap().getByteBuffer())
     log.debug('Dumping the memorymap metadata')
     self.index.write('%s,%s\n'%(mname, m.pathname))
     return 
@@ -176,6 +180,44 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     return    
 
 
+class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
+  def loadMappings(self):
+    mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
+    self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
+    self.mappings = []
+    #for mmap_fname in self.mmaps:
+    for mmap_fname, mmap_pathname in self.metalines:
+      metaOnly = False
+      start,end = mmap_fname.split('-') # get the './' away
+      start,end = int(start,16),int(end,16 )
+      log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
+      try:
+        mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
+      except KeyError, e:
+        log.debug('Ignore absent file')
+        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        self.mappings.append(mmap)
+        continue
+      
+      #else
+      if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
+        log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
+        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
+      elif end-start > 10000000: # use file mmap when file is too big
+        log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
+        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+      else:
+        log.debug('Using a MemoryDumpMemoryMapping. small size')
+        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
+                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+      self.mappings.append(mmap)
+    return    
+
+
 class KCoreDumpLoader(MemoryDumpLoader):
   def isValid(self):
     # debug we need a system map to validate...... probably
@@ -234,17 +276,14 @@ def _load(opt):
 loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]
 
 def load(dumpfile,lazy=True):
+  loaderClass = ProcessMemoryDumpLoader
+  if lazy:
+    loaderClass = LazyProcessMemoryDumpLoader
   try:
-    memdump = ProcessMemoryDumpLoader(dumpfile)
+    memdump = loaderClass(dumpfile)
     log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-    #if log.isEnabledFor(logging.DEBUG):
-      #for m in memdump.getMappings(): # will mmap() all
-      #  log.debug('%s - len(%d) rlen(%d)' %(m, (m.end-m.start), len(m.mmap())) )
   except IndexError,e: ### ValueError,e:
     log.warning(e)
-    #log.warning('trying a KCore')
-    #last chance
-    #memdump = KCoreDumpLoader(dumpfile)
     raise e
   return memdump.getMappings()
 
@@ -255,6 +294,8 @@ def argparser():
   dump_parser = subparsers.add_parser('dump', help="dump a pid's memory to file")
   dump_parser.add_argument('pid', type=int, action='store', help='Target PID')
   dump_parser.add_argument('dumpfile', type=argparse.FileType('wb'), action='store', help='The dump file')
+  dump_parser.add_argument('--heap', action='store_const', const=True , help='Restrict dump to the heap')
+  dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack')
   dump_parser.set_defaults(func=dump)  
 
   load_parser = subparsers.add_parser('load', help='search help')
