@@ -50,8 +50,8 @@ class Signature:
       log.info("Signature has to be calculated. It's gonna take a while.")
       pointerSearcher = signature.PointerSearcher(self.dump)
       sig = array.array('L')
-      #p_addr = pointerSearcher.search()
-      last=0
+      # save first offset
+      last = 0
       for i in pointerSearcher:
         sig.append(i-last) # save intervals between pointers
         last=i
@@ -59,7 +59,14 @@ class Signature:
       sig.tofile(file(myname,'w'))
     self.sig = sig
     return
-    
+
+  def getAddressForOffset(self, offset):
+    ''' 
+    sum all intervals upto the offset. that give us the relative offset.
+    add to dump.start , and we have the vaddr
+    '''
+    return self.dump.start + reduce(lambda x,y: x+y, self.sig[:offset+1]
+  
   @classmethod
   def fromDumpfile(cls, dumpfile):
     inst = Signature(dumpFilename = dumpfile.name)
