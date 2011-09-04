@@ -189,25 +189,13 @@ class PinnedPointers:
 
 def make(opts):
   log.info('Make the signature.')
-  
-  sig1 = Signature.fromDumpfile(opts.dumpfile1)
-  log.info('pinning offset list created for heap %s.'%(sig1))
-    
-  sig2 = Signature.fromDumpfile(opts.dumpfile2)
-  log.info('pinning offset list created for heap %s.'%(sig2))
-
-  sig3 = Signature.fromDumpfile(opts.dumpfile3)
-  log.info('pinning offset list created for heap %s.'%(sig3))
-
-  #cacheValues1 = idea1(sig1,sig2, printStatus)
-  #reportCacheValues(cacheValues1)
-  #saveIdea(opts, 'idea1', cacheValues1)
-
-  #cacheValues2 = idea2(sig1,sig2, sig3, printStatus)
   ppMapper = PinnedPointersMapper()
-  ppMapper.addSignature(sig1)
-  ppMapper.addSignature(sig2)
-  ppMapper.addSignature(sig3)
+  
+  for dumpfile in opts.dumpfiles:
+    sig = Signature.fromDumpfile(dumpfile)
+    log.info('pinning offset list created for heap %s.'%(sig))
+    ppMapper.addSignature(sig)
+    
   ppMapper.run()
   #reportCacheValues(ppMapper.cacheValues2)
   #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
@@ -536,9 +524,9 @@ def search(opts):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-pattern', description='Do a discovery structure pattern search.')
   #rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
-  rootparser.add_argument('dumpfile1', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
-  rootparser.add_argument('dumpfile2', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
-  rootparser.add_argument('dumpfile3', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
+  rootparser.add_argument('dumpfiles', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.', nargs='*')
+  #rootparser.add_argument('dumpfile2', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
+  #rootparser.add_argument('dumpfile3', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
   rootparser.set_defaults(func=search)  
   return rootparser
 
