@@ -177,7 +177,7 @@ class PinnedPointers:
       self.relations[sig] = list()
     self.relations[sig].append( other )
     return
-  def vaddr(self):
+  def getAddress(self):
     if self.vaddr is None:
       self.vaddr = self.sig.getAddressForOffset(self.offset)
     return self.vaddr
@@ -319,8 +319,8 @@ class PinnedPointersMapper:
   def _findMultipleInstances(self):
     import itertools
     allpp = sorted([v for l in self.cacheValues2.values() for v in l], reverse=True)
-    global unresolved
     unresolved = []
+    linkedPP  = []
     linked = 0
     multiple = 0
     
@@ -343,11 +343,15 @@ class PinnedPointersMapper:
         # if ok, link them all
         if allSigs:
           PinnedPointers.link(l)
+          linkedPP.extend(l)
           multiple+=1
           linked+=len(l)
           
-    unresolved.reverse()
-
+    unresolved = sorted(unresolved,reverse=True)
+    linkedPP = sorted(linkedPP,reverse=True)
+    
+    self.unresolved = unresolved
+    self.resolved = linkedPP
     log.info('Linked %d PinnedPointers, %d unique in all Signatures '%(linked, multiple))
     log.info('left with %d/%d partially unresolved pp'%(len(unresolved), len(allpp) ) )
     return
