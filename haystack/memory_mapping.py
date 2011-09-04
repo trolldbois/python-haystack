@@ -356,6 +356,15 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   def readArray(self, vaddr, basetype, count):
     return self._mmap().readArray(vaddr, basetype, count)
 
+  def __getstate__(self):
+    d = dict(self.__dict__)
+    d['_memdump'] = None
+    d['_local_mmap'] = None
+    d['_local_mmap_content'] = None
+    d['_base'] = None
+    d['_process'] = None
+    return d
+
   @classmethod
   def fromFile(cls, memoryMapping, aFile):
     '''
