@@ -19,25 +19,75 @@ import signature
 log = logging.getLogger('pattern')
 
 
+class Signature:
+  ''' a dump pointer signature '''
+  def __init__(self, dump=None, dumpFilename=None):
+    self.dump = dump  
+    self.dumpFilename = dumpFilename
+
+  def _getDump(self):
+    #log.info('Loading the mappings in the memory dump file.')
+    mappings = memory_dumper.load( file(self.dumpFilename,'r'), lazy=True)
+    heap = None
+    if len(mappings) > 1:
+      heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    if heap is None:
+      raise ValueError('No [heap]')
+    self.dump = heap
+    return
+
+  def _load(self):
+    ## DO NOT SORT LIST. c'est des sequences. pas des sets.
+    myname = self.dumpFilename+'.pinned'
+    if os.access(myname,os.F_OK):
+      # load
+      f = file(myname,'r')
+      nb = os.path.getsize(f.name)/4 # simple
+      #sig = pickle.load(file(fname+'.pinned','r'))
+      sig = array.array('L')
+      sig.fromfile(f,nb)
+    else:
+      pointerSearcher = signature.PointerSearcher(self.dump)
+      sig = array.array('L')
+      #p_addr = pointerSearcher.search()
+      last=0
+      for i in pointerSearcher:
+        sig.append(i-last) # save intervals between pointers
+        last=i
+      sig.pop(0)
+      sig.tofile(file(myname,'w'))
+    self.sig = sig
+    return
+    
+  @classmethod
+  def fromDumpfile(cls, dumpfile):
+    inst = Signature(dumpFilename = dumpfile.name)
+    inst._getDump()
+    inst._load()
+    return inst
+  @classmethod
+  def fromDump(cls, dump):
+    inst = Signature(dump = dump)
+    inst._load()
+    return inst
+
 class Sequences:
   def __init__(self, sig, size, cacheAll=True):
     self.size = size
-    self.sig = sig
+    self.signature = sig
+    self.sig = sig.sig
     self.sets={} # key is sequence len
     self.cacheAll=cacheAll
-    self.findUniqueSequences(sig)
+    self.findUniqueSequences(self.sig)
           
   def findUniqueSequences(self, sig):
     log.debug('number of intervals: %d'%(len(sig)))
-    
     sig_set = set(sig)
     log.debug('number of unique intervals value: %d'%(len(sig_set)) )
-    self.makeOne(sig)
-    
-  def makeOne(self, sig ):
     # create the tuple      
     self.sets[self.size] = set(self.getSeqs())
     log.debug('number of unique sequence len %d : %d'%(self.size, len(self.sets[self.size])))
+    return
   
   def getSeqs(self):
     if not hasattr(self, 'seqs'):
@@ -107,51 +157,25 @@ class PinnedPointers:
     return
   def __str__(self):
     return '<PinnedPointers sig[%d:%d] +%d bytes/%d pointers>' %( self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
-
-def getHeap(dumpfile):
-  #log.info('Loading the mappings in the memory dump file.')
-  mappings = memory_dumper.load(dumpfile, lazy=True)
-  heap = None
-  if len(mappings) > 1:
-    heap = [m for m in mappings if m.pathname == '[heap]'][0]
-  if heap is None:
-    raise ValueError('No [heap]')
-  return heap
-
-def getSig(heap, fname):
-  ## DO NOT SORT LIST. c'est des sequences. pas des sets.
-  if os.access(fname+'.pinned',os.F_OK):
-    # load
-    f = file(fname+'.pinned','r')
-    nb = os.path.getsize(f.name)/4 # simple
-    #sig = pickle.load(file(fname+'.pinned','r'))
-    sig = array.array('L')
-    sig.fromfile(f,nb)
-  else:
-    pointerSearcher = signature.PointerSearcher(heap)
-    sig = array.array('L')
-    #p_addr = pointerSearcher.search()
-    last=0
-    for i in pointerSearcher:
-      sig.append(i-last) # save intervals between pointers
-      last=i
-    sig.pop(0)
-    #pickle.dump(sig, file(fname+'.pinned','w'))
-    sig.tofile(file(fname+'.pinned','w'))
-  return sig
+  @classmethod
+  def link(cls, lstOfPinned):
+    for i,p1 in enumerate(lstOfPinned):
+      for p2 in lstOfPinned[i+1:]:
+        p1.addRelated(p2,p2.sig)
+        p2.addRelated(p1,p1.sig)
 
 
 
-def make(opts, heap1, heap2, heap3):
+def make(opts):
   log.info('Make the signature.')
   
-  sig1 = getSig(heap1, opts.dumpfile1.name)
+  sig1 = Signature.fromDumpfile(opts.dumpfile1)
   log.info('pinning offset list created for heap 1.')
     
-  sig2 = getSig(heap2, opts.dumpfile2.name)
+  sig2 = Signature.fromDumpfile(opts.dumpfile2)
   log.info('pinning offset list created for heap 2.')
 
-  sig3 = getSig(heap3, opts.dumpfile3.name)
+  sig3 = Signature.fromDumpfile(opts.dumpfile3)
   log.info('pinning offset list created for heap 3.')
 
   #cacheValues1 = idea1(sig1,sig2, printStatus)
@@ -222,7 +246,7 @@ def idea2(sig1, sig2, sig3, stepCb):
   i=0
   enum_seqs_sig1 = enumerate(seqs_sig1) # all subsequences, offset by offset
   try:
-    while i < len(sig1) - length:
+    while i < len(sig1.sig) - length:
       for i, subseq in enum_seqs_sig1:
         if subseq in common:
           start = i
@@ -258,7 +282,7 @@ def idea2(sig1, sig2, sig3, stepCb):
   log.debug('There is %d uncommon slice zones'%( len (sig1_uncommon_slice_offset)) )
   log.debug('There is %d common aggregated sequences'%( len(sig1_aggregated_seqs)))
   
-  # check for multiple instances of one structure.
+  log.debug('check for multiple instances of one structure.')
   keys= sorted(cacheValues2.keys(),reverse=True)
   for k in keys:
     pinnedList = sorted(cacheValues2[k])
@@ -266,7 +290,9 @@ def idea2(sig1, sig2, sig3, stepCb):
       l = list(g)
       if len(l) > 1:
         offsets = [pp.offset for pp in l ]
-        log.info('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
+        print ('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
+        # link them to one another
+        PinnedPointers.link(l)
   #for seq in common:
   #  saveSequence(seq[0], cacheValues2, sig1, offset1, sig2, offset2, match_len)
   
@@ -362,7 +388,7 @@ def saveSequence(value, cacheValues, sig1, offset1, sig2, offset2, match_len ):
   return
 
 def savePinned(cacheValues, sig, offset, match_len ):
-  pinned = sig[offset:offset+match_len]
+  pinned = sig.sig[offset:offset+match_len]
   pp = PinnedPointers( pinned, sig, offset)
   s = pp.structLen() 
   if s not in cacheValues:
@@ -374,10 +400,7 @@ def savePinned(cacheValues, sig, offset, match_len ):
 
 def search(opts):
   #
-  heap1 = getHeap(opts.dumpfile1)
-  heap2 = getHeap(opts.dumpfile2)
-  heap3 = getHeap(opts.dumpfile3)
-  make(opts, heap1,heap2, heap3)
+  make(opts)
   pass
   
 def argparser():
