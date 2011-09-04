@@ -10,6 +10,7 @@ import re
 import struct
 import ctypes
 import array
+import itertools
 
 from utils import xrange
 import memory_dumper
@@ -35,27 +36,31 @@ class Sequences:
     
   def makeOne(self, sig ):
     # create the tuple      
-    seqlen = self.size
-    #seqs =  [ tuple([sig[i+y] for y in range(0, seqlen)]) for i in xrange(0, len(sig)-seqlen+1) ] 
-    self.seqs =  [ tuple(sig[i:i+seqlen]) for i in xrange(0, len(sig)-seqlen+1) ] 
-    #save them
-    self.sets[seqlen] = set(self.seqs)
-    log.debug('number of unique sequence len %d : %d'%(seqlen, len(self.sets[seqlen])))
+    self.sets[self.size] = set(self.getSeqs())
+    log.debug('number of unique sequence len %d : %d'%(self.size, len(self.sets[self.size])))
   
   def getSeqs(self):
     if not hasattr(self, 'seqs'):
-      self.seqs =  [ tuple(sig[i:i+seqlen]) for i in xrange(0, len(sig)-seqlen+1) ] 
-    
+      seqlen = self.size
+      self.seqs =  [ tuple(self.sig[i:i+seqlen]) for i in xrange(0, len(self.sig)-seqlen+1) ]
+      seqs =  self.seqs
+      return seqs
+
+  def __iter__(self):
+    seqlen = self.size
+    for i in xrange(0, len(self.sig)-seqlen+1):
+      yield tuple(self.sig[i:i+seqlen])
+    return
 
 class PinnedOffsets:
-  def __init__(self, value, sequence, sig1, offset_sig1, sig2, offset_sig2):
-    self.value = value
+  def __init__(self, sequence, sig1, offset_sig1, sig2, offset_sig2):
     self.sequence = sequence
     self.nb_bytes = reduce(lambda x,y: x+y, sequence)
     self.offset_sig1 = offset_sig1
     self.offset_sig2 = offset_sig2
     self.sig1 = sig1
     self.sig2 = sig2
+  
   def pinned(self, nb=None):
     if nb is None:
       nb == len(self.sequence)
@@ -65,6 +70,43 @@ class PinnedOffsets:
     return len(self.sequence)
   def __str__(self):
     return '<PinnedOffsets 0x%x,0x%x +%d bytes/%d pointers>' %( self.offset_sig1,self.offset_sig2, self.nb_bytes, len(self.sequence)+1 )
+
+class PinnedPointers:
+  def __init__(self, sequence, sig, offset):
+    self.sequence = sequence
+    self.nb_bytes = reduce(lambda x,y: x+y, sequence)
+    self.offset = offset
+    self.sig = sig 
+    self.relations = {}
+  def pinned(self, nb=None):
+    if nb is None:
+      nb == len(self.sequence)
+    return self.sequence[:nb]
+  def __len__(self):
+    return len(self.sequence)
+  def structLen(self):
+    return self.nb_bytes
+  def __cmp__(self,o):
+    if len(self) != len(o):
+      return cmp(len(self),len(o) )
+    if self.structLen() != o.structLen(): # that means the sequence is different too
+      return cmp(self.structLen(), o.structLen())
+    if self.sequence != o.sequence: # the structLen can be the same..
+      return cmp(self.sequence, o.sequence)
+    #else offset is totally useless, we have a match
+    return 0
+  def addRelated(self,other, sig=None):
+    ''' add a similar PinnedPointer from another offset or another sig '''
+    if self != other:
+      raise ValueError('We are not related PinnedPointers.')
+    if sig is None:
+      sig = self.sig
+    if sig not in self.relations:
+      self.relations[sig] = list()
+    self.relations[sig].append( other )
+    return
+  def __str__(self):
+    return '<PinnedPointers sig[%d:%d] +%d bytes/%d pointers>' %( self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
 
 def getHeap(dumpfile):
   #log.info('Loading the mappings in the memory dump file.')
@@ -170,7 +212,61 @@ def idea2(sig1, sig2, sig3, stepCb):
     log.debug('Common sequence of length %d: %d'%(length, len(common)))
   
   # maintenant il faut mapper le common set sur l'array original, 
-  # on peut iter(sig)
+  # a) on peut iter(sig) jusqu'a trouver une sequence non common.
+  # b) reduce previous slice to 1 bigger sequence. 
+  # comme tout les sequences sont communes, on peut les aggreger sans regarder l'offset.
+  sig1_aggregated_seqs = []
+  sig1_uncommon_slice_offset = []
+  start = 0
+  stop = 0
+  i=0
+  enum_seqs_sig1 = enumerate(seqs_sig1) # all subsequences, offset by offset
+  try:
+    while i < len(sig1) - length:
+      for i, subseq in enum_seqs_sig1:
+        if subseq in common:
+          start = i
+          #log.debug('Saving a Uncommon slice %d-%d'%(stop,start))
+          sig1_uncommon_slice_offset.append( (stop,start) )
+          break
+        del subseq
+      # enum is on first valid sequence of <length> intervals
+      #log.debug('Found next valid sequence at interval offset %d'%(i))
+      for i, subseq in enum_seqs_sig1:
+        if subseq in common:
+          del subseq
+          continue
+        else: # the last interval in the tuple of <length> intervals is not common
+          # so we need to aggregate from [start:stop+length]
+          # there CAN be another common slice starting between stop and stop+length.
+          # (1,2,3,4) is common , (1,2,3,4,6) is NOT common because of the 1, (2,3,4,6) is common.
+          # next valid slice is at start+1 
+          # so Yes, we can have recovering Sequences
+          stop = i # end aggregation slice
+          seqStop = stop+length
+          pp = savePinned(cacheValues2, sig1, start, seqStop-start) # we should also pin it in sig2, sig3, and relate to that...
+          sig1_aggregated_seqs.append( pp ) # save a big sequence
+          #log.debug('Saving an aggregated sequence %d-%d'%(start, stop))
+          del subseq
+          break # goto search next common
+      # find next valid interval
+    # wait for end of enum
+  except StopIteration,e:
+    pass
+  #done
+  #log.debug('%s'%sig1_uncommon_slice_offset)
+  log.debug('There is %d uncommon slice zones'%( len (sig1_uncommon_slice_offset)) )
+  log.debug('There is %d common aggregated sequences'%( len(sig1_aggregated_seqs)))
+  
+  # check for multiple instances of one structure.
+  keys= sorted(cacheValues2.keys(),reverse=True)
+  for k in keys:
+    pinnedList = sorted(cacheValues2[k])
+    for k, g in itertools.groupby( pinnedList ):
+      l = list(g)
+      if len(l) > 1:
+        offsets = [pp.offset for pp in l ]
+        log.info('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
   #for seq in common:
   #  saveSequence(seq[0], cacheValues2, sig1, offset1, sig2, offset2, match_len)
   
@@ -235,8 +331,12 @@ def saveIdea(opts, name, results):
   
 
 def reportCacheValues( cache ):
-  for k,v in cache.items():
+  # sort by key
+  keys = sorted(cache.keys(), reverse=True)
+  for k in keys:
+    v = cache[k]
     print 'For %d bytes between possible pointers, there is %d PinnedOffsets '%(k, len(v))
+    # print nicely top 5
     poffs = sorted(v, reverse=True)
     n = min(5, len(v))
     print '  - the %d longuest sequences are '%(n)
@@ -258,8 +358,17 @@ def saveSequence(value, cacheValues, sig1, offset1, sig2, offset2, match_len ):
   if value not in cacheValues:
     cacheValues[value] = list()
   #cache it
-  cacheValues[value].append( PinnedOffsets(value, pinned, sig1, offset1, sig2, offset2) )
+  cacheValues[value].append( PinnedOffsets( pinned, sig1, offset1, sig2, offset2) )
   return
+
+def savePinned(cacheValues, sig, offset, match_len ):
+  pinned = sig[offset:offset+match_len]
+  pp = PinnedPointers( pinned, sig, offset)
+  s = pp.structLen() 
+  if s not in cacheValues:
+    cacheValues[s] = list()
+  cacheValues[s].append( pp )
+  return pp 
 
 
 
