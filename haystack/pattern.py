@@ -50,13 +50,14 @@ class Signature:
     else:
       log.info("Signature has to be calculated. It's gonna take a while.")
       pointerSearcher = signature.PointerSearcher(self.dump)
+      self.WORDSIZE = pointerSearcher.WORDSIZE
       sig = array.array('L')
       # save first offset
       last = 0
-      for i in pointerSearcher:
+      for i in pointerSearcher: #returns the vaddr
         sig.append(i-last) # save intervals between pointers
         last=i
-      sig.pop(0)
+      #sig.pop(0) dont delete the first !!!
       sig.tofile(file(myname,'w'))
     self.sig = sig
     return
