@@ -65,7 +65,7 @@ class Signature:
     sum all intervals upto the offset. that give us the relative offset.
     add to dump.start , and we have the vaddr
     '''
-    return self.dump.start + reduce(lambda x,y: x+y, self.sig[:offset+1]
+    return self.dump.start + reduce(lambda x,y: x+y, self.sig[:offset+1] )
   
   @classmethod
   def fromDumpfile(cls, dumpfile):
@@ -136,6 +136,7 @@ class PinnedPointers:
     self.offset = offset
     self.sig = sig 
     self.relations = {}
+    self.vaddr = None
   def pinned(self, nb=None):
     if nb is None:
       nb == len(self.sequence)
@@ -153,6 +154,12 @@ class PinnedPointers:
       return cmp(self.sequence, o.sequence)
     #else offset is totally useless, we have a match
     return 0
+  def __contains__(self,other):
+    if not isinstance(other, PinnedPointers):
+      raise ValueError
+    if other.offset in xrange(self.offset,self.offset+len(self) ) :
+      return True
+    return False
   def addRelated(self,other, sig=None):
     ''' add a similar PinnedPointer from another offset or another sig '''
     if self != other:
@@ -163,15 +170,20 @@ class PinnedPointers:
       self.relations[sig] = list()
     self.relations[sig].append( other )
     return
+  def vaddr(self):
+    if self.vaddr is None:
+      self.vaddr = self.sig.getAddressForOffset(self.offset)
+    return self.vaddr
   def __str__(self):
     return '<PinnedPointers sig[%d:%d] +%d bytes/%d pointers>' %( self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
+
   @classmethod
   def link(cls, lstOfPinned):
     for i,p1 in enumerate(lstOfPinned):
       for p2 in lstOfPinned[i+1:]:
         p1.addRelated(p2,p2.sig)
         p2.addRelated(p1,p1.sig)
-
+    return
 
 
 def make(opts):
