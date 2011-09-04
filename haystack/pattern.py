@@ -47,6 +47,7 @@ class Signature:
       sig = array.array('L')
       sig.fromfile(f,nb)
     else:
+      log.info("Signature has to be calculated. It's gonna take a while.")
       pointerSearcher = signature.PointerSearcher(self.dump)
       sig = array.array('L')
       #p_addr = pointerSearcher.search()
@@ -222,18 +223,12 @@ def idea2(sig1, sig2, sig3, stepCb):
   '''
   cacheValues2 = {}
   length = 20
-  checkIncremental=False
   seqs_sig1 = Sequences(sig1, length, False)
   seqs_sig2 = Sequences(sig2, length, False)
   seqs_sig3 = Sequences(sig3, length, False)
   
-  if checkIncremental:
-    for l in range(2,length+1) :
-      common = seqs_sig1.sets[l] &   seqs_sig2.sets[l] &   seqs_sig3.sets[l]
-      log.debug('Common sequence of length %d: %d'%(l, len(common)))
-  else:  
-    common = seqs_sig1.sets[length] &   seqs_sig2.sets[length] &   seqs_sig3.sets[length]
-    log.debug('Common sequence of length %d: %d'%(length, len(common)))
+  common = seqs_sig1.sets[length] &   seqs_sig2.sets[length] &   seqs_sig3.sets[length]
+  log.info('Common sequence of length %d: %d'%(length, len(common)))
   
   # maintenant il faut mapper le common set sur l'array original, 
   # a) on peut iter(sig) jusqu'a trouver une sequence non common.
@@ -279,25 +274,21 @@ def idea2(sig1, sig2, sig3, stepCb):
     pass
   #done
   #log.debug('%s'%sig1_uncommon_slice_offset)
-  log.debug('There is %d uncommon slice zones'%( len (sig1_uncommon_slice_offset)) )
-  log.debug('There is %d common aggregated sequences'%( len(sig1_aggregated_seqs)))
+  log.info('There is %d uncommon slice zones'%( len (sig1_uncommon_slice_offset)) )
+  log.info('There is %d common aggregated sequences == struct types'%( len(sig1_aggregated_seqs)))
   
-  log.debug('check for multiple instances of one structure.')
-  keys= sorted(cacheValues2.keys(),reverse=True)
-  for k in keys:
-    pinnedList = sorted(cacheValues2[k])
-    for k, g in itertools.groupby( pinnedList ):
-      l = list(g)
-      if len(l) > 1:
-        offsets = [pp.offset for pp in l ]
-        print ('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
-        # link them to one another
-        PinnedPointers.link(l)
-  #for seq in common:
-  #  saveSequence(seq[0], cacheValues2, sig1, offset1, sig2, offset2, match_len)
-  
-  
-  #saveSequence(value1, cacheValues2, sig1, offset1, sig2, offset2, match_len)
+  #log.debug('check for multiple instances of one structure.')
+  multiple=0
+  pinnedList = sorted(sig1_aggregated_seqs)
+  for k, g in itertools.groupby( pinnedList ):
+    l = list(g)
+    if len(l) > 1:
+      offsets = [pp.offset for pp in l ]
+      log.debug ('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
+      multiple+=1
+      # link them to one another
+      PinnedPointers.link(l)
+  log.info('  and %d of thoses structs have multiple instances.'%(multiple))
 
   return cacheValues2
   
@@ -413,7 +404,7 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
