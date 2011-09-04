@@ -393,7 +393,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
 
   def readBytes(self, vaddr, size):
     laddr = self.vtop(vaddr)
-    size = ctypes.sizeof((ctypes.c_ubyte *count))
+    size = ctypes.sizeof((ctypes.c_ubyte *size))
     data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
     return data
 
