@@ -44,7 +44,6 @@ class Signature:
       # load
       f = file(myname,'r')
       nb = os.path.getsize(f.name)/4 # simple
-      #sig = pickle.load(file(fname+'.pinned','r'))
       sig = array.array('L')
       sig.fromfile(f,nb)
     else:
@@ -57,7 +56,6 @@ class Signature:
       for i in pointerSearcher: #returns the vaddr
         sig.append(i-last) # save intervals between pointers
         last=i
-      #sig.pop(0) dont delete the first !!!
       sig.tofile(file(myname,'w'))
     self.sig = sig
     return
@@ -77,11 +75,6 @@ class Signature:
   def fromDumpfile(cls, dumpfile):
     inst = Signature(dumpFilename = dumpfile.name)
     inst._getDump()
-    inst._load()
-    return inst
-  @classmethod
-  def fromDump(cls, dump):
-    inst = Signature(dump = dump)
     inst._load()
     return inst
 
@@ -216,8 +209,8 @@ def make(opts):
   ppMapper.addSignature(sig2)
   ppMapper.addSignature(sig3)
   ppMapper.run()
-  reportCacheValues(ppMapper.cacheValues2)
-  saveIdea(opts, 'idea2', ppMapper.cacheValues2)
+  #reportCacheValues(ppMapper.cacheValues2)
+  #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
 
 
 
