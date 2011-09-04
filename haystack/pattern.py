@@ -52,7 +52,7 @@ class Signature:
       self.WORDSIZE = pointerSearcher.WORDSIZE
       sig = array.array('L')
       # save first offset
-      last = 0
+      last = self.dump.start
       for i in pointerSearcher: #returns the vaddr
         sig.append(i-last) # save intervals between pointers
         last=i
@@ -245,6 +245,7 @@ class PinnedPointersMapper:
     return
     
   def _findCommonSequences(self, length):
+    log.info('Looking for common sequence of length %d'%(length))
     common = None
     for sig in self.signatures:
       # make len(sig) sub sequences of size <length> ( in .sets )
