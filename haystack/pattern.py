@@ -66,6 +66,9 @@ class Signature:
     add to dump.start , and we have the vaddr
     '''
     return self.dump.start + reduce(lambda x,y: x+y, self.sig[:offset+1] )
+
+  def __len__(self):
+    return len(self.sig)
   
   @classmethod
   def fromDumpfile(cls, dumpfile):
@@ -103,7 +106,9 @@ class Sequences:
       self.seqs =  [ tuple(self.sig[i:i+seqlen]) for i in xrange(0, len(self.sig)-seqlen+1) ]
       seqs =  self.seqs
       return seqs
-
+  def __len__(self):
+    return len(self.signature)-self.size
+    
   def __iter__(self):
     seqlen = self.size
     for i in xrange(0, len(self.sig)-seqlen+1):
@@ -202,114 +207,152 @@ def make(opts):
   #reportCacheValues(cacheValues1)
   #saveIdea(opts, 'idea1', cacheValues1)
 
-  cacheValues2 = idea2(sig1,sig2, sig3, printStatus)
-  reportCacheValues(cacheValues2)
-  saveIdea(opts, 'idea2', cacheValues2)
+  #cacheValues2 = idea2(sig1,sig2, sig3, printStatus)
+  ppMapper = PinnedPointersMapper()
+  ppMapper.addSignature(sig1)
+  ppMapper.addSignature(sig2)
+  ppMapper.addSignature(sig3)
+  ppMapper.run()
+  reportCacheValues(ppMapper.cacheValues2)
+  saveIdea(opts, 'idea2', ppMapper.cacheValues2)
 
 
-def prioritizeOffsets(sig):
-  indexes = []
-  log.debug('Prioritize large intervals.')
-  for val in sorted(set(sig), reverse=True): # take big intervals first
-    tmp = []
-    i = 0
-    while True:
-      try:
-        i = sig.index(val, i+1)
-      except ValueError,e:
-        break
-      except IndexError,e:
-        break
-      tmp.append(i)
-    indexes.extend(tmp)
-  return indexes
 
-
-def idea2(sig1, sig2, sig3, stepCb): 
+class PinnedPointersMapper:
   '''
-  On identifie les sequences d'intervalles longues, et on essaye de pinner
-  celle-ci entre les multiples dump.
-  modulo les false positives, qui pollue ou diminue le common set, 
-  on se retrouve avec des PinnedOffsets tres interessants.
-  les sequences se chevauchent beacuoup, [n:n+10] versus [n+1:n+11], 
-  il doit donc etre possible de :
-  a) reduire le nombre de common sequences en concatenant les sequences
-  b) detecter un offset/les offsets de fin des structures. 
-  on en revient a l'idea 1, comparaison de subsequences,
-  sauf que l'on peut utiliser des comparaisons de tuples/de listes pour optim.
-  Mais on en revient au fait qu'il faut refixer chaque common sequences en rapport
-  avec un offset dans la signature pour evaluer la sequence 'in place'.
+  a) On identifie les sequences d'intervalles longues ( taille fixe a 20 ).
+  b) on trouve les sequences communes a toutes les signatures.
+  c) pour chaque offset de chaque signature, on determine un PinnedPointer
+      qui couvre la plus grande sequence composee de sequence communes.
+   *** Erreur possible: la sequence creee en sig1 n'existe pas en sig2.
+          cas possible si sig2 contient A4 et A5 en deux zones distinces ( A5 == A4[1:]+...
+          et si sig 1 contient A4A5 en une zone distincte 
+          on se retrouve avec sig A4A5 mais sig2.A4 et sig2.A5
+          on peut dans ce cas, redecouper sig1 selon le plus petit denominateur commun de sig2
+     -> check routine
+  d) on linke ces PP entres elles ( central repo serait mieux )
+  e) Meta info: on trouve les multiple instances ( same struct, multiple alloc)
   '''
-  cacheValues2 = {}
-  length = 20
-  seqs_sig1 = Sequences(sig1, length, False)
-  seqs_sig2 = Sequences(sig2, length, False)
-  seqs_sig3 = Sequences(sig3, length, False)
+  def __init__(self, sequenceLength=20):
+    self.cacheValues2 = {}
+    self.signatures = []
+    self.signatures_sequences = {}
+    self.started = False
+    self.common = []
+    self.length = sequenceLength
+    return
   
-  common = seqs_sig1.sets[length] &   seqs_sig2.sets[length] &   seqs_sig3.sets[length]
-  log.info('Common sequence of length %d: %d'%(length, len(common)))
-  
-  # maintenant il faut mapper le common set sur l'array original, 
-  # a) on peut iter(sig) jusqu'a trouver une sequence non common.
-  # b) reduce previous slice to 1 bigger sequence. 
-  # comme tout les sequences sont communes, on peut les aggreger sans regarder l'offset.
-  sig1_aggregated_seqs = []
-  sig1_uncommon_slice_offset = []
-  start = 0
-  stop = 0
-  i=0
-  enum_seqs_sig1 = enumerate(seqs_sig1) # all subsequences, offset by offset
-  try:
-    while i < len(sig1.sig) - length:
-      for i, subseq in enum_seqs_sig1:
-        if subseq in common:
-          start = i
-          #log.debug('Saving a Uncommon slice %d-%d'%(stop,start))
-          sig1_uncommon_slice_offset.append( (stop,start) )
-          break
-        del subseq
-      # enum is on first valid sequence of <length> intervals
-      #log.debug('Found next valid sequence at interval offset %d'%(i))
-      for i, subseq in enum_seqs_sig1:
-        if subseq in common:
+  def addSignature(self, sig):
+    if self.started:
+      raise ValueError("Mapping has stated you can't add new signatures")
+    self.signatures.append(sig)
+    return
+    
+  def _findCommonSequences(self, length):
+    common = None
+    for sig in self.signatures:
+      # make len(sig) sub sequences of size <length> ( in .sets )
+      self.signatures_sequences[sig] = Sequences(sig, length, False)
+      if common is None:
+        common = set(self.signatures_sequences[sig].sets[length])
+      else:
+        common &= self.signatures_sequences[sig].sets[length]
+    log.info('Common sequence of length %d: %d seqs'%(length, len(common)))
+    self.common = common
+    return
+      
+  def _mapToSignature(self, sig ):    
+    # maintenant il faut mapper le common set sur l'array original, 
+    # a) on peut iter(sig) jusqu'a trouver une sequence non common.
+    # b) reduce previous slices to 1 bigger sequence. 
+    # On peut aggreger les offsets, tant que la sequence start:start+<length> est dans common.
+    # on recupere un 'petit' nombre de sequence assez larges, censees etre communes.
+    sig_aggregated_seqs = []
+    sig_uncommon_slice_offset = []
+    start = 0
+    stop = 0
+    i=0
+    length = self.length
+    seqs_sig1 = self.signatures_sequences[sig]
+    common = self.common
+    enum_seqs_sig = enumerate(seqs_sig1) # all subsequences, offset by offset
+    try:
+      while i< len(seqs_sig1): #-1 : #i < len(sig.sig) - length:
+        for i, subseq in enum_seqs_sig:
+          if subseq in common:
+            start = i
+            #log.debug('Saving a Uncommon slice %d-%d'%(stop,start))
+            sig_uncommon_slice_offset.append( (stop,start) )
+            break
           del subseq
-          continue
-        else: # the last interval in the tuple of <length> intervals is not common
-          # so we need to aggregate from [start:stop+length]
-          # there CAN be another common slice starting between stop and stop+length.
-          # (1,2,3,4) is common , (1,2,3,4,6) is NOT common because of the 1, (2,3,4,6) is common.
-          # next valid slice is at start+1 
-          # so Yes, we can have recovering Sequences
-          stop = i # end aggregation slice
-          seqStop = stop+length
-          pp = savePinned(cacheValues2, sig1, start, seqStop-start) # we should also pin it in sig2, sig3, and relate to that...
-          sig1_aggregated_seqs.append( pp ) # save a big sequence
-          #log.debug('Saving an aggregated sequence %d-%d'%(start, stop))
-          del subseq
-          break # goto search next common
-      # find next valid interval
-    # wait for end of enum
-  except StopIteration,e:
-    pass
-  #done
-  #log.debug('%s'%sig1_uncommon_slice_offset)
-  log.info('There is %d uncommon slice zones'%( len (sig1_uncommon_slice_offset)) )
-  log.info('There is %d common aggregated sequences == struct types'%( len(sig1_aggregated_seqs)))
-  
-  #log.debug('check for multiple instances of one structure.')
-  multiple=0
-  pinnedList = sorted(sig1_aggregated_seqs)
-  for k, g in itertools.groupby( pinnedList ):
-    l = list(g)
-    if len(l) > 1:
-      offsets = [pp.offset for pp in l ]
-      log.debug ('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
-      multiple+=1
-      # link them to one another
-      PinnedPointers.link(l)
-  log.info('  and %d of thoses structs have multiple instances.'%(multiple))
+        # enum is on first valid sequence of <length> intervals
+        #log.debug('Found next valid sequence at interval offset %d/%d/%d'%(i,len(sig.sig), len(seqs_sig1) ))
+        for i, subseq in enum_seqs_sig:
+          if subseq in common:
+            del subseq
+            continue
+          else: # the last interval in the tuple of <length> intervals is not common
+            # so we need to aggregate from [start:stop+length]
+            # there CAN be another common slice starting between stop and stop+length.
+            # (1,2,3,4) is common , (1,2,3,4,6) is NOT common because of the 1, (2,3,4,6) is common.
+            # next valid slice is at start+1 
+            # so Yes, we can have recovering Sequences
+            stop = i # end aggregation slice
+            seqStop = stop+length
+            pp = savePinned(self.cacheValues2, sig, start, seqStop-start) # we should also pin it in sig2, sig3, and relate to that...
+            sig_aggregated_seqs.append( pp ) # save a big sequence
+            #log.debug('Saving an aggregated sequence %d-%d'%(start, stop))
+            del subseq
+            break # goto search next common
+        # find next valid interval
+      # wait for end of enum
+    except StopIteration,e:
+      pass
+    #done
+    #log.debug('%s'%sig1_uncommon_slice_offset)
+    log.info('There is %d uncommon slice zones'%( len (sig_uncommon_slice_offset)) )
+    log.info('There is %d common aggregated sequences == struct types'%( len(sig_aggregated_seqs)))
 
-  return cacheValues2
+    return sig_uncommon_slice_offset, sig_aggregated_seqs
+    
+  def _findMultipleInstances(self, sig_aggregated_seqs):
+    log.debug('check for multiple instances of one structure.')
+    multiple=0
+    pinnedList = sorted(sig_aggregated_seqs)
+    for k, g in itertools.groupby( pinnedList ):
+      l = list(g)
+      if len(l) > 1:
+        offsets = [pp.offset for pp in l ]
+        log.debug ('Multiple(%d) instances of %s at intervals offsets %s'%(len(l), k, offsets))
+        multiple+=1
+        # link them to one another
+        PinnedPointers.link(l)
+    log.info('  and %d of thoses structs have multiple instances.'%(multiple))
+    return
+
+  def run(self): 
+    self.started = True
+    all_common_pp = []
+    
+    ### drop 1 : find common sequences
+    common = self._findCommonSequences(self.length)
+    
+    ### drop 2: Map sequence to signature, and aggregate overlapping sequences.
+    ## TODO: map all signature, not just sig1
+    #for sig in self.signatures:
+    sig = self.signatures[0]
+    log.debug('going to mapToSignature with %d seqs, from %d seq in sig'%(len(self.signatures_sequences[sig].sets[self.length]), len(sig.sig) ))
+    unknown_slices, common_pp = self._mapToSignature(sig ) #, self.signatures_sequences[sig] )
+    #all_common_pp.extend(common_pp)
+
+    ### drop 3: Analyze and find multiple instances of the same Sequence
+    self._findMultipleInstances(common_pp)
+
+    ### drop 4: Sequence should have been linked, cross-signature. Try to extend them
+    ### On peut pas agrandir les sequences. il n"y a plus de common pattern,
+    ### Par contre, on peut essayer de trouver des sequences plus courtes dans les
+    ### intervalles uncommon_slices
+    return      
   
   
 def idea1(sig1, sig2, stepCb):
@@ -361,6 +404,22 @@ def idea1(sig1, sig2, stepCb):
   #
   return cacheValues1
 
+def prioritizeOffsets(sig):
+  indexes = []
+  log.debug('Prioritize large intervals.')
+  for val in sorted(set(sig), reverse=True): # take big intervals first
+    tmp = []
+    i = 0
+    while True:
+      try:
+        i = sig.index(val, i+1)
+      except ValueError,e:
+        break
+      except IndexError,e:
+        break
+      tmp.append(i)
+    indexes.extend(tmp)
+  return indexes
 
 def saveIdea(opts, name, results):
   pickle.dump(results, file(name,'w'))
@@ -423,7 +482,7 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
