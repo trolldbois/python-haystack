@@ -24,6 +24,7 @@ class Signature:
   def __init__(self, dump=None, dumpFilename=None):
     self.dump = dump  
     self.dumpFilename = dumpFilename
+    self.name = os.path.basename(dumpFilename)
 
   def _getDump(self):
     #log.info('Loading the mappings in the memory dump file.')
@@ -69,7 +70,8 @@ class Signature:
 
   def __len__(self):
     return len(self.sig)
-  
+  def __str__(self):
+    return "<Signature '%s'>"%(self.name)
   @classmethod
   def fromDumpfile(cls, dumpfile):
     inst = Signature(dumpFilename = dumpfile.name)
@@ -180,7 +182,7 @@ class PinnedPointers:
       self.vaddr = self.sig.getAddressForOffset(self.offset)
     return self.vaddr
   def __str__(self):
-    return '<PinnedPointers sig[%d:%d] +%d bytes/%d pointers>' %( self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
+    return '<PinnedPointers %s[%d:%d] +%d bytes/%d pointers>' %( self.sig, self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
 
   @classmethod
   def link(cls, lstOfPinned):
@@ -195,13 +197,13 @@ def make(opts):
   log.info('Make the signature.')
   
   sig1 = Signature.fromDumpfile(opts.dumpfile1)
-  log.info('pinning offset list created for heap 1.')
+  log.info('pinning offset list created for heap %s.'%(sig1))
     
   sig2 = Signature.fromDumpfile(opts.dumpfile2)
-  log.info('pinning offset list created for heap 2.')
+  log.info('pinning offset list created for heap %s.'%(sig2))
 
   sig3 = Signature.fromDumpfile(opts.dumpfile3)
-  log.info('pinning offset list created for heap 3.')
+  log.info('pinning offset list created for heap %s.'%(sig3))
 
   #cacheValues1 = idea1(sig1,sig2, printStatus)
   #reportCacheValues(cacheValues1)
@@ -258,8 +260,7 @@ class PinnedPointersMapper:
       else:
         common &= self.signatures_sequences[sig].sets[length]
     log.info('Common sequence of length %d: %d seqs'%(length, len(common)))
-    self.common = common
-    return
+    return common
       
   def _mapToSignature(self, sig ):    
     # maintenant il faut mapper le common set sur l'array original, 
@@ -277,7 +278,7 @@ class PinnedPointersMapper:
     common = self.common
     enum_seqs_sig = enumerate(seqs_sig1) # all subsequences, offset by offset
     try:
-      while i< len(seqs_sig1): #-1 : #i < len(sig.sig) - length:
+      while i < len(seqs_sig1): # we wont have a StopIteration...
         for i, subseq in enum_seqs_sig:
           if subseq in common:
             start = i
@@ -298,7 +299,7 @@ class PinnedPointersMapper:
             # next valid slice is at start+1 
             # so Yes, we can have recovering Sequences
             stop = i # end aggregation slice
-            seqStop = stop+length
+            seqStop = stop+length-1
             pp = savePinned(self.cacheValues2, sig, start, seqStop-start) # we should also pin it in sig2, sig3, and relate to that...
             sig_aggregated_seqs.append( pp ) # save a big sequence
             #log.debug('Saving an aggregated sequence %d-%d'%(start, stop))
@@ -310,12 +311,48 @@ class PinnedPointersMapper:
       pass
     #done
     #log.debug('%s'%sig1_uncommon_slice_offset)
-    log.info('There is %d uncommon slice zones'%( len (sig_uncommon_slice_offset)) )
-    log.info('There is %d common aggregated sequences == struct types'%( len(sig_aggregated_seqs)))
+    log.info('There is %d uncommon slice zones in %s'%( len (sig_uncommon_slice_offset), sig) )
+    log.info('There is %d common aggregated sequences == struct types in %s'%( len(sig_aggregated_seqs), sig))
 
     return sig_uncommon_slice_offset, sig_aggregated_seqs
+  
+  def _findMultipleInstances(self):
+    import itertools
+    allpp = sorted([v for l in self.cacheValues2.values() for v in l], reverse=True)
+    global unresolved
+    unresolved = []
+    linked = 0
+    multiple = 0
     
-  def _findMultipleInstances(self, sig_aggregated_seqs):
+    for k, g in itertools.groupby( allpp ):
+      l = list(g)
+      if len(l) < len(mapper.signatures): # we can have multiple instances btu not less.
+        unresolved.extend(l)
+        #print 'not same numbers'
+        continue
+      else:
+        allSigs = True
+        # we should have all 3 signatures
+        found = [pp.sig for pp in l ]
+        for s in mapper.signatures:
+          if s not in found:
+            unresolved.extend(l)
+            #print 'not same sigs', s
+            allSigs = False
+            break
+        # if ok, link them all
+        if allSigs:
+          PinnedPointers.link(l)
+          multiple+=1
+          linked+=len(l)
+          
+    unresolved.reverse()
+
+    log.info('Linked %d PinnedPointers, %d unique in all Signatures '%(linked, multiple))
+    log.info('left with %d/%d partially unresolved pp'%(len(unresolved), len(allpp) ) )
+    return
+  
+  def _findMultipleInstances_old(self, sig_aggregated_seqs):
     log.debug('check for multiple instances of one structure.')
     multiple=0
     pinnedList = sorted(sig_aggregated_seqs)
@@ -335,25 +372,49 @@ class PinnedPointersMapper:
     all_common_pp = []
     
     ### drop 1 : find common sequences
-    common = self._findCommonSequences(self.length)
+    self.common = self._findCommonSequences(self.length)
     
     ### drop 2: Map sequence to signature, and aggregate overlapping sequences.
-    ## TODO: map all signature, not just sig1
-    #for sig in self.signatures:
-    sig = self.signatures[0]
-    log.debug('going to mapToSignature with %d seqs, from %d seq in sig'%(len(self.signatures_sequences[sig].sets[self.length]), len(sig.sig) ))
-    unknown_slices, common_pp = self._mapToSignature(sig ) #, self.signatures_sequences[sig] )
-    #all_common_pp.extend(common_pp)
+    for sig in self.signatures:
+      unknown_slices, common_pp = self._mapToSignature(sig ) 
+      all_common_pp.extend(common_pp)
 
+    ### drop 3: error case, we have been too optimistic about unicity of common sequence.
+    ###   lets try and reduce the errors.
+    global cache
+    global common
+    global mapper
+    mapper = self
+    common = self.common
+    cache = self.cacheValues2
+    ### for each structLen, find at least one pp for each sig
+    
+    ### chance are that only the last interval is botched, so we only have to compare between
+    ### pp1.sequence[:-1] and pp2.sequence[:-1] to find a perfect match
+    # we nee to find sole pointer. pop all equals in the 3 sigs.
     ### drop 3: Analyze and find multiple instances of the same Sequence
-    self._findMultipleInstances(common_pp)
-
+    self._findMultipleInstances()
+    
     ### drop 4: Sequence should have been linked, cross-signature. Try to extend them
     ### On peut pas agrandir les sequences. il n"y a plus de common pattern,
     ### Par contre, on peut essayer de trouver des sequences plus courtes dans les
     ### intervalles uncommon_slices
-    return      
-  
+
+    return 
+
+
+def t(mapper):
+
+  for k,v in mapper.cacheValues2.items():
+    # we have a list of x pp
+    if len(v) == len(mapper.signatures):
+      # we should have all 3 signatures
+      found = [pp.sig for pp in v ]
+      for s in mapper.signatures:
+        if s not in [found]:
+          print '%s not in found'%(s) 
+      
+
   
 def idea1(sig1, sig2, stepCb):
   '''
@@ -426,6 +487,7 @@ def saveIdea(opts, name, results):
   
 
 def reportCacheValues( cache ):
+  log.info('Reporting info on values on stdout')
   # sort by key
   keys = sorted(cache.keys(), reverse=True)
   for k in keys:
@@ -482,14 +544,25 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)
-  
+
+
+def tests():
+  '''
+import pattern 
+pattern.main('../outputs/skype.1.a ../outputs/skype.2.a ../outputs/skype.3.a'.split())
+cacheValues=pattern.cache
+common = pattern.common
+mapper = pattern.mapper
+
+'''
+  pass
 
 if __name__ == '__main__':
   main(sys.argv[1:])
