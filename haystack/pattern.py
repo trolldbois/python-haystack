@@ -490,7 +490,7 @@ class PinnedPointersMapper:
           startsWithPointer+=1
           startsWithPointerList.append((ap,j))
           # check if the same struct in sig2, sig3... points to the same target struct
-          self._checkRelations(caches, ptr, ap.pinnedPointer, j) 
+          self._checkRelations(caches, ptr, ap.pinnedPointer, j)
           # probably else:
         elif ptr in pinned_lightly_start:
           sub = pinned_lightly_start#[i+1:]
@@ -547,13 +547,15 @@ class PinnedPointersMapper:
     '''
       go through all related pinned pointers of the other signatures.
       check if the targeted pinnedpointer for the pointer number <pointerIndex> is the same pinnedPointer
-      than in the sig1
+      than in the sig1.
+      if its not, find in the other signatures, what is the target struct.
+      
     '''
     ok = False
     mypinned = cache[pp.sig].pinned
     anontargetPP = mypinned[mypinned.index(ptr)]
     targetPP = anontargetPP.pinnedPointer
-
+    perfect = []
     for sig in self.signatures:
       ok = False
       if sig == pp.sig:
@@ -572,11 +574,20 @@ class PinnedPointersMapper:
         if addr in tgtPtrs:
           log.debug('** found a perfect match between %s and %s'%(pp.sig, relatedTargetPP.sig))
           ok = True
+          ## TODO : tie all pointers in perfect states together. 
+          ##        source with pointer to target 'type'. cross signature.
+          perfect.append(relatedTargetPP)
           break
 
-      ## not ok, we did not find a related match.
-      ## that means the pinnedPointer 
+      ## not ok, we did not find a related match on first offset of pinneddpointer.
+      ## that means the targeted struct is either:
+      ##   a) not starting with a pointer ( source pointer points before the target pinnedpointer)
+      ##        which is weird because, if sig1 if ok, sigX should be ok too.
+      ##   b) a bad aggregation has taken place in the target signature. target PP is too big
+      ##        maybe we can cut it in halves ?
+      ##   c) the pointer stills points to nowhere. we can't be sure of anything
       if not ok:
+        ok2 = False
         for tgtPtr in tgtPtrs:
           #log.debug('NOT found a match between %s and %s'%(pp.sig, relatedTargetPP.sig))
           sub = cache[sig].pinned
@@ -591,19 +602,39 @@ class PinnedPointersMapper:
             for mytargetPPrelated in relatedTargetPPs:
               log.info("   source's target's related pp was  %s"%(mytargetPPrelated)) 
             log.info('   got %s'%( found))
-            ok = True
+            ## we now know that type(found) should be == type(targetPP)
+            ## can we recalculate found and targetPP so they will be related ?
+            ## what to do with related pps of targetPP ? they can be multiple instance....
+            ## even then, there status of related to targetPP must be severed. we have proof
+            ## they are not the precise instance we are looking for.
+            ok2 = True
             break
           elif tgtPtr in cache[sig].pinned_lightly:
             sub = cache[sig].pinned_lightly
-            found = sub[sub.index(tgtPtr)].pinnedPointer
-            log.info('Found a pointed struct in LIGHLY %s. was looking for %s , got %s'%(sig, relatedTargetPPs[0], found))
-            ok = True
+            afound = sub[sub.index(tgtPtr)]
+            found = afound.pinnedPointer
+            log.info('Found %d pointed struct in LIGHTLY %s'%(sub.count(tgtPtr), sig))
+            log.info('   source pp was  %s'%(pp))
+            log.info('   source target pp was  %s'%(targetPP))
+            for myrelatedPP in relatedPPs:
+              log.info('   source related pp was  %s'%(myrelatedPP))
+            for mytargetPPrelated in relatedTargetPPs:
+              log.info("   source's target's related pp was  %s"%(mytargetPPrelated)) 
+            log.info('   got %s'%( found))
+
+            ok2 = True
             break
-        if not ok:
+        if not ok2:
             log.info('This one does not points anywhere to a common pinnedPointer struct  %s'%(sig))
-            ok = False
             break
-        
+    # all sig have been parsed
+    if ok:
+      ## save that as a perfect match
+      ## pp and relatedPP and be Id equals.
+      ## targetPP and all perfect[] can be id equals.
+      pass
+    log.debug('--------------------------------------------------------------------------')
+    return
   
 
 class Dummy(object):
