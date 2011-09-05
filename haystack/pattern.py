@@ -490,7 +490,7 @@ class PinnedPointersMapper:
           startsWithPointer+=1
           startsWithPointerList.append((ap,j))
           # check if the same struct in sig2, sig3... points to the same target struct
-          self._checkRelations(caches, ap.pinnedPointer, j) 
+          self._checkRelations(caches, ptr, ap.pinnedPointer, j) 
           # probably else:
         elif ptr in pinned_lightly_start:
           sub = pinned_lightly_start#[i+1:]
@@ -543,7 +543,7 @@ class PinnedPointersMapper:
     log.debug('We have found %d pointers to pinned maybe-structs'%(startsMaybeWithPointer))
     return
 
-  def _checkRelations(self, cache, pp, pointerIndex, targetAnonymPP ) :
+  def _checkRelations(self, cache, ptr, pp, pointerIndex ) :
     '''
       go through all related pinned pointers of the other signatures.
       check if the targeted pinnedpointer for the pointer number <pointerIndex> is the same pinnedPointer
@@ -551,42 +551,58 @@ class PinnedPointersMapper:
     '''
     ok = False
     mypinned = cache[pp.sig].pinned
-    targetPP = mypinned[mypinned.index(pp.getAddress(pointerIndex)) ].pinnedPointer
+    anontargetPP = mypinned[mypinned.index(ptr)]
+    targetPP = anontargetPP.pinnedPointer
 
     for sig in self.signatures:
+      ok = False
       if sig == pp.sig:
         continue
       #log.debug('checking relations %d %s'%(len(pp.relations),pp.relations.keys()) )
       relatedPPs = pp.relations[sig]
       relatedTargetPPs = targetPP.relations[sig]
       # TODO: if there a multiple instance, what should we check ?
-      relatedPP = relatedPPs[0] # has to have one
-      tgtPtrs = AnonymousStructRange(relatedPP).getPointersValues()
-      tgtPtr =  tgtPtrs[pointerIndex]
+      if len(relatedPPs) >1:
+        log.debug('We have more than one relatedPP to target')
+      tgtPtrs = [AnonymousStructRange(relatedPP).getPointersValues()[pointerIndex] for relatedPP in relatedPPs]
 
       ## check all startAddress for relatedTargetPPs, to find relatedPP.pointerValue[index]
       for relatedTargetPP in relatedTargetPPs:
         addr = AnonymousStructRange(relatedTargetPP).start
-        if addr == tgtPtr:
+        if addr in tgtPtrs:
           log.debug('** found a perfect match between %s and %s'%(pp.sig, relatedTargetPP.sig))
           ok = True
           break
+
       ## not ok, we did not find a related match.
       ## that means the pinnedPointer 
       if not ok:
-        #log.debug('NOT found a match between %s and %s'%(pp.sig, relatedTargetPP.sig))
-        sub = cache[sig].pinned
-        if tgtPtr in sub:
-          found = sub[sub.index(tgtPtr)].pinnedPointer
-          log.info('Found a pointed struct in %s. was looking for %s , got %s'%(sig, relatedTargetPPs[0], found))
-        elif tgtPtr in cache[sig].pinned_lightly:
-          sub = cache[sig].pinned_lightly
-          found = sub[sub.index(tgtPtr)].pinnedPointer
-          log.info('Found a pointed struct in LIGHLY %s. was looking for %s , got %s'%(sig, relatedTargetPPs[0], found))
-        else:
-          log.info('This one does not points anywhere to a common pinnedPointer struct  %s'%(sig))
-          ok = False
-          break
+        for tgtPtr in tgtPtrs:
+          #log.debug('NOT found a match between %s and %s'%(pp.sig, relatedTargetPP.sig))
+          sub = cache[sig].pinned
+          if tgtPtr in sub:
+            afound = sub[sub.index(tgtPtr)]
+            found = afound.pinnedPointer
+            log.info('Found %d pointed struct in %s'%(sub.count(tgtPtr), sig))
+            log.info('   source pp was  %s'%(pp))
+            log.info('   source target pp was  %s'%(targetPP))
+            for myrelatedPP in relatedPPs:
+              log.info('   source related pp was  %s'%(myrelatedPP))
+            for mytargetPPrelated in relatedTargetPPs:
+              log.info("   source's target's related pp was  %s"%(mytargetPPrelated)) 
+            log.info('   got %s'%( found))
+            ok = True
+            break
+          elif tgtPtr in cache[sig].pinned_lightly:
+            sub = cache[sig].pinned_lightly
+            found = sub[sub.index(tgtPtr)].pinnedPointer
+            log.info('Found a pointed struct in LIGHLY %s. was looking for %s , got %s'%(sig, relatedTargetPPs[0], found))
+            ok = True
+            break
+        if not ok:
+            log.info('This one does not points anywhere to a common pinnedPointer struct  %s'%(sig))
+            ok = False
+            break
         
   
 
