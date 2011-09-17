@@ -45,7 +45,14 @@ def make(opts):
 
 class Signature:
   ''' 
-  Wraps the list of intervals between pointers identified in the dumpfile.
+  Wrapper object the list of intervals between pointers identified in the dumpfile.
+  When the memory is :
+  P....P..P.PPP.PP.PPPP.PPP.P..P..................P
+  with P being a Word of 4 bytes which value could be a pointer value.
+  The signature is 
+  [20,12,8,4,4,8,4,8,4,4,4,8,4,4,8,12,80]
+  
+  It abstracts the memory contents to its signature.
   '''
   def __init__(self, dump=None, dumpFilename=None):
     self.dump = dump  
@@ -147,7 +154,10 @@ class Signature:
 
 class Sequences:
   ''' 
-  Make a list of sequences of interval for each interval in the signature.
+  Builds a list of sequences of interval for each interval in the signature.
+  [2,3,3,4,5,1,2,3,4,5] gives
+  [(2,3,3), (3,3,4), (3,4,5), (4,5,1), (5,1,2), (1,2,3), (2,3,4), (3,4,5)] 
+  
   '''
   def __init__(self, sig, size, cacheAll=True):
     self.size = size
@@ -186,8 +196,8 @@ class PinnedPointers:
   '''
     A variable length sequence of intervals between pointers.
     It already pinned at a specific offset of a signature, 
-    so you migth find several instance(p1,p2) at different offset, but with the same sequence
-    and therefore equal values. p1 == p2.
+    so you migth find several instance p1 and p2 at different offset, but with the same sequence
+    and therefore equal signature. p1 == p2.
     It is easily pin onto the initial dump/heap by getAddress()
   '''
   def __init__(self, sequence, sig, offset):
@@ -253,6 +263,78 @@ class PinnedPointers:
         p1.addRelated(p2,p2.sig)
         p2.addRelated(p1,p1.sig)
     return
+
+
+
+class Dummy(object):
+  pass
+
+class AnonymousStructRange:
+  '''
+  Map a pinnedPointer sequence/signature onto a specific memory at a specific offset.
+  We are now able to query the structure contents.
+  
+  Operators:
+    __contains__ : if applied by a Number, it will be understoof as a memory address.
+                  if the memory addres is in range of this structure, return True.
+                  in all other cases, return False
+    __cmp__ : if applied by a Number, it will be understoof as a memory address.
+                  if the memory address is in range of this structure, return 0.
+                  in all other cases, return the __cmp__ of the address compared to the start of the struct
+  '''
+  def __init__(self, pinnedPointer):
+    self.pinnedPointer = pinnedPointer
+    self.start = pinnedPointer.getAddress()
+    self.stop = pinnedPointer.getAddress(len(pinnedPointer))
+    self.pointers = None 
+    self.pointersTypes = {}
+    self.pointersValues = None 
+    self.typename = self.makeTypeName()
+    
+  def getPointersAddr(self):
+    if self.pointers is None:
+      self.pointers = [self.pinnedPointer.getAddress(i) for i in range(0,len(self.pinnedPointer) ) ]
+    return self.pointers
+
+  def getPointersValues(self):
+    if self.pointersValues is None:
+      self.pointersValues = [self.pinnedPointer.sig.dump.readWord(self.pinnedPointer.getAddress(i)) for i in range(0,len(self.pinnedPointer) ) ]
+    return self.pointersValues
+  
+  def setPointerType(self, number, anonStruct):
+    ''' set a specific pointer to a specific anonStruct type '''
+    if number in self.pointersTypes:
+      raise IndexError('Pointer number %d has already been identified as a type %s - new type : %s'%( 
+                        number, self.getPointerType(number).type(), anonStruct.type() ))
+    self.pointersTypes[number] = anonStruct
+    log.debug('Set %s pointer number %d to type %s'%(self.type(), number, self.getPointerType(number).type() ))
+    return
+  
+  def getPointerType(self, number):
+    return self.pointersTypes[number]
+  
+  def type(self):
+    return self.typename
+  
+  def __contains__(self,other):
+    if isinstance(other, numbers.Number):
+      rel = other - self.start
+      if rel > len(self) or ( rel < 0 ):
+        return False
+      return True
+    else:
+      return False
+  def __cmp__(self, other):
+    if other in self:
+      return 0
+    else:
+      return cmp(self.start, other)
+  def __len__(self):
+    return int(self.stop-self.start)
+
+  def makeTypeName(self):
+    return 'AnonStruct_%s_%s_%s_%s'%(len(self), len(self.pinnedPointers), self.pinnedPointers.sig.name, self.pinnedPointers.offset )
+  
 
 
 
@@ -389,7 +471,7 @@ class PinnedPointersMapper:
     
     self.unresolved = unresolved
     self.resolved = linkedPP
-    log.info('Linked %d PinnedPointers, %d unique in all Signatures '%(linked, multiple))
+    log.info('Linked %d PinnedPointers across all Signatures, %d unique in all Signatures '%(linked, multiple))
     log.info('left with %d/%d partially unresolved pp'%(len(unresolved), len(allpp) ) )
     #cache to disk
     #cacheToDisk(self.resolved,'pinned-resolved')
@@ -440,13 +522,13 @@ class PinnedPointersMapper:
       a = Dummy()
       resolved_for_sig = [ pp for pp in self.resolved if pp.sig == sig ]
       unresolved_for_sig = [ pp for pp in self.unresolved if pp.sig == sig ]
-      log.debug('making pinned')
+      log.debug('Pin anonymous structures on %s'%(sig))
       pinned = [AnonymousStructRange(pp) for pp in resolved_for_sig]
-      log.debug('making pinned_start')
+      log.debug('Create list of structures addresses for %s'%(sig)
       pinned_start = sorted([pp.getAddress() for pp in resolved_for_sig])
-      log.debug('making pinned_lightly')
+      log.debug('Pin probable anonymous structures on %s'%(sig))
       pinned_lightly = [AnonymousStructRange(pp) for pp in unresolved_for_sig]
-      log.debug('making pinned_lightly_start')
+      log.debug('Create list of probable structures addresses for %s'%(sig)
       pinned_lightly_start = sorted([pp.getAddress() for pp in unresolved_for_sig])
       # save it
       a.pinned = pinned
@@ -459,6 +541,14 @@ class PinnedPointersMapper:
     #  if pp.start in pinned[i+1:]:
     #    pass
     
+    ## TODO stack pointers value and compare them to pinned_start, pinned_lightly_start
+    
+    # In each anon structure Pa, get each pointers value.
+    # If the value is in the list of structures head addresses, we have a start of struct (mostly true)
+    #   we check Related Struct in the other signatures to see if everybody agrees.
+    #  the parent in sig A (Pa) should point to children type in sig A (Ca)
+    #  the parent in sig B (Pb) should point to children type in sig B (Cb)
+    # Pa and Pb are related, Ca and Cb should be related too.
     sig = self.signatures[0]
     pinned = caches[sig].pinned
     pinned_start = caches[sig].pinned_start
@@ -483,7 +573,7 @@ class PinnedPointersMapper:
       me = ap.pinnedPointer.getAddress()
       if pts[0] == me:
         log.debug('first pointer of pp %i is an autopointer on myself/C++ ?'%(i))
-      for j,ptr in enumerate(pts):
+      for j,ptr in enumerate(pts): ## ptr is the value of pointer number j in the anonymoustruct ap
         sub = pinned_start#[i+1:]
         if ptr in sub:
           log.debug('Lucky guess s:%d, p:%d, we find a pointer to the start of %d PinnedPointer struct.'%(i, j, sub.count(ptr))) 
@@ -498,7 +588,7 @@ class PinnedPointersMapper:
           startsMaybeWithPointer+=1
           startsMaybeWithPointerList.append((ap,j))
           # probably else:
-        elif ptr in pinned:
+        elif ptr in pinned:  #### ptr is not the start of a anonymous struct
           sub = pinned
           #log.debug('normal guess s:%d, p:%d, we find a pointer to the start or CONTENT of %d PinnedPointer struct. %x'%(i, j, sub.count(ptr), ptr))
           pointsToStruct+=1
@@ -533,7 +623,7 @@ class PinnedPointersMapper:
             nearest = nearest_lightly
           #log.debug('Nearest struct is at %d bytes in %s'%( min(first_addr_l, first_addr_l)-ptr , s))
           offset = nearest.start-ptr
-          if  offset < 64:
+          if  offset < 64: # TODO: test if addr not int another struct
             log.info('Found a probable start of struct at %d bytes earlier'%(offset))
           
     # pointer to self means c++ object ?
@@ -594,19 +684,22 @@ class PinnedPointersMapper:
           if tgtPtr in sub:
             afound = sub[sub.index(tgtPtr)]
             found = afound.pinnedPointer
-            log.info('Found %d pointed struct in %s'%(sub.count(tgtPtr), sig))
+            log.info('Found %d content-pointed struct (not start) in %s'%(sub.count(tgtPtr), sig))
             log.info('   source pp was  %s'%(pp))
-            log.info('   source target pp was  %s'%(targetPP))
             for myrelatedPP in relatedPPs:
               log.info('   source related pp was  %s'%(myrelatedPP))
+            log.info('   -- got %s (0x%x)'%( found, tgtPtr-found.getAddress()))
+            sameseq = False
+            # get start == tgtpp.getAddress(n) , and comp tgtpp.sequence[n:n+len]
+            log.info('   source target pp was  %s (same seq == %s)'%(targetPP, sameseq))
             for mytargetPPrelated in relatedTargetPPs:
-              log.info("   source's target's related pp was  %s"%(mytargetPPrelated)) 
-            log.info('   got %s'%( found))
+              log.info("   source's target's related pp was  %s (0x%x)"%(mytargetPPrelated, tgtPtr-mytargetPPrelated.getAddress())) 
             ## we now know that type(found) should be == type(targetPP)
             ## can we recalculate found and targetPP so they will be related ?
             ## what to do with related pps of targetPP ? they can be multiple instance....
             ## even then, there status of related to targetPP must be severed. we have proof
             ## they are not the precise instance we are looking for.
+            seq1 = targetPP
             ok2 = True
             break
           elif tgtPtr in cache[sig].pinned_lightly:
@@ -615,9 +708,9 @@ class PinnedPointersMapper:
             found = afound.pinnedPointer
             log.info('Found %d pointed struct in LIGHTLY %s'%(sub.count(tgtPtr), sig))
             log.info('   source pp was  %s'%(pp))
-            log.info('   source target pp was  %s'%(targetPP))
             for myrelatedPP in relatedPPs:
               log.info('   source related pp was  %s'%(myrelatedPP))
+            log.info('   source target pp was  %s'%(targetPP))
             for mytargetPPrelated in relatedTargetPPs:
               log.info("   source's target's related pp was  %s"%(mytargetPPrelated)) 
             log.info('   got %s'%( found))
@@ -636,43 +729,6 @@ class PinnedPointersMapper:
     log.debug('--------------------------------------------------------------------------')
     return
   
-
-class Dummy(object):
-  pass
-
-class AnonymousStructRange:
-  def __init__(self,pinnedPointer):
-    self.pinnedPointer = pinnedPointer
-    self.start = pinnedPointer.getAddress()
-    self.stop = pinnedPointer.getAddress(len(pinnedPointer))
-    self.pointers = None 
-    self.pointersValues = None 
-    
-  def getPointersAddr(self):
-    if self.pointers is None:
-      self.pointers = [self.pinnedPointer.getAddress(i) for i in range(0,len(self.pinnedPointer) ) ]
-    return self.pointers
-
-  def getPointersValues(self):
-    if self.pointers is None:
-      self.pointersValues = [self.pinnedPointer.sig.dump.readWord(self.pinnedPointer.getAddress(i)) for i in range(0,len(self.pinnedPointer) ) ]
-    return self.pointersValues
-  
-  def __contains__(self,other):
-    if isinstance(other, numbers.Number):
-      rel = other - self.start
-      if rel > len(self) or ( rel < 0 ):
-        return False
-      return True
-    else:
-      return False
-  def __cmp__(self, other):
-    if other in self:
-      return 0
-    else:
-      return cmp(self.start, other)
-  def __len__(self):
-    return int(self.stop-self.start)
 
 
 def t(mapper):
@@ -819,6 +875,7 @@ def search(opts):
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-pattern', description='Do a discovery structure pattern search.')
+  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
   #rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
   rootparser.add_argument('dumpfiles', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.', nargs='*')
   #rootparser.add_argument('dumpfile2', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
@@ -827,12 +884,17 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  parser = argparser()
+  opts = parser.parse_args(argv)
+
+  level=logging.INFO
+  if opts.debug :
+    level=logging.DEBUG
+  logging.basicConfig(level=level)  
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
-  parser = argparser()
-  opts = parser.parse_args(argv)
+
   opts.func(opts)
 
 
