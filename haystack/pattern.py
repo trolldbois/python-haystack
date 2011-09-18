@@ -54,8 +54,8 @@ class Signature:
   
   It abstracts the memory contents to its signature.
   '''
-  def __init__(self, dump=None, dumpFilename=None):
-    self.dump = dump  
+  def __init__(self, mmap=None, dumpFilename=None):
+    self.mmap = mmap  
     self.dumpFilename = dumpFilename
     self.name = os.path.basename(dumpFilename)
     self.addressCache = {}
@@ -68,7 +68,7 @@ class Signature:
       heap = [m for m in mappings if m.pathname == '[heap]'][0]
     if heap is None:
       raise ValueError('No [heap]')
-    self.dump = heap
+    self.mmap = heap
     return
 
   def _load(self):
@@ -83,18 +83,19 @@ class Signature:
       log.debug("%d Signature intervals loaded from cache."%( len(sig) ))
     else:
       log.info("Signature has to be calculated for %s. It's gonna take a while."%(self.name))
-      pointerSearcher = signature.PointerSearcher(self.dump)
+      pointerSearcher = signature.PointerSearcher(self.mmap)
       self.WORDSIZE = pointerSearcher.WORDSIZE
       sig = array.array('L')
       # save first offset
-      last = self.dump.start
+      last = self.mmap.start
       for i in pointerSearcher: #returns the vaddr
         sig.append(i-last) # save intervals between pointers
+        #print hex(i), 'value:', hex(self.mmap.readWord(i) )
         last=i
       sig.tofile(file(myname,'w'))
     self.sig = sig
-    #self.addressCache[-1] = self.dump.start
-    self.addressCache[0] = self.dump.start # previous pointer of interval 0 is start of mmap
+    #
+    self.addressCache[0] = self.mmap.start # previous pointer of interval 0 is start of mmap
     self._loadAddressCache()
     return
 
@@ -199,22 +200,30 @@ class PinnedPointers:
     so you migth find several instance p1 and p2 at different offset, but with the same sequence
     and therefore equal signature. p1 == p2.
     It is easily pin onto the initial dump/heap by getAddress()
+    
+    @param sequence: the sequence of intervals between pointers
+    @param sig: the whole signature object linked back to the memoryMap
+    @param offset: the offset of this interval within the signature 
   '''
   def __init__(self, sequence, sig, offset):
     self.sequence = sequence
-    self.nb_bytes = reduce(lambda x,y: x+y, sequence)
+    self.nb_bytes = sum(sequence) +  signature.PointerSearcher.WORDSIZE # add wordSIZE
     self.offset = offset
     self.sig = sig 
     self.relations = {}
     self.vaddr = None
+
   def pinned(self, nb=None):
     if nb is None:
       nb == len(self.sequence)
     return self.sequence[:nb]
+
   def __len__(self):
-    return len(self.sequence)
+    return len(self.sequence) 
+
   def structLen(self):
     return self.nb_bytes
+
   def __cmp__(self,o):
     if len(self) != len(o):
       return cmp(len(self),len(o) )
@@ -224,12 +233,17 @@ class PinnedPointers:
       return cmp(self.sequence, o.sequence)
     #else offset is totally useless, we have a match
     return 0
+
   def __contains__(self,other):
+    raise NotImplementedError
     if not isinstance(other, PinnedPointers):
       raise ValueError
-    if other.offset in xrange(self.offset,self.offset+len(self) ) :
-      return True
+    if other.sig == self.sig: ## well, not really
+      if other.offset >= self.offset and other.offset <= self.offset+len(self) :
+        #if other.sequence in self.sequence: ## need subsearch
+        return True
     return False
+
   def addRelated(self,other, sig=None):
     ''' add a similar PinnedPointer from another offset or another sig '''
     if self != other:
@@ -240,6 +254,7 @@ class PinnedPointers:
       self.relations[sig] = list()
     self.relations[sig].append( other )
     return
+
   def getAddress(self, numOffset=0):
     ''' 
     return the vaddr of pointer <numOffset>. 
@@ -253,6 +268,7 @@ class PinnedPointers:
     if numOffset != 0:
       return self.sig.getAddressForPreviousPointer(self.offset+numOffset)
     return self.vaddr
+
   def __str__(self):
     return '<PinnedPointers %s[%d:%d] +%d bytes/%d pointers>' %( self.sig, self.offset,self.offset+len(self), self.nb_bytes, len(self.sequence)+1 )
 
@@ -284,8 +300,9 @@ class AnonymousStructRange:
   '''
   def __init__(self, pinnedPointer):
     self.pinnedPointer = pinnedPointer
-    self.start = pinnedPointer.getAddress()
-    self.stop = pinnedPointer.getAddress(len(pinnedPointer))
+    self.start = pinnedPointer.getAddress() # by default we start at the first pointer
+    self.stop = pinnedPointer.getAddress(len(pinnedPointer)) # by default we stop at the last pointer
+    self.stop += signature.PointerSearcher.WORDSIZE # add the length of the last pointer
     self.pointers = None 
     self.pointersTypes = {}
     self.pointersValues = None 
@@ -293,26 +310,34 @@ class AnonymousStructRange:
     
   def getPointersAddr(self):
     if self.pointers is None:
-      self.pointers = [self.pinnedPointer.getAddress(i) for i in range(0,len(self.pinnedPointer) ) ]
+      self.pointers = [self.pinnedPointer.getAddress(i) for i in range(len(self.pinnedPointer)+1 ) ]
     return self.pointers
 
   def getPointersValues(self):
     if self.pointersValues is None:
-      self.pointersValues = [self.pinnedPointer.sig.dump.readWord(self.pinnedPointer.getAddress(i)) for i in range(0,len(self.pinnedPointer) ) ]
+      self.pointersValues = [self.pinnedPointer.sig.mmap.readWord( addr) for addr in self.getPointersAddr()]
     return self.pointersValues
   
   def setPointerType(self, number, anonStruct):
     ''' set a specific pointer to a specific anonStruct type '''
+    if anonStruct.sig() != self.sig():
+      raise TypeError('You cant type with a AnonStruct from another Signature. %s vs %s'%(self,anonStruct))
     if number in self.pointersTypes:
       raise IndexError('Pointer number %d has already been identified as a type %s - new type : %s'%( 
-                        number, self.getPointerType(number).type(), anonStruct.type() ))
+                        number, self.getPointerType(number).type(), anonStruct.type() ) )
     self.pointersTypes[number] = anonStruct
-    log.debug('Set %s pointer number %d to type %s'%(self.type(), number, self.getPointerType(number).type() ))
+    myself=''
+    if self == anonStruct:
+      myself=' (MYSELF) '
+    log.debug('Set %s pointer number %d to type %s %s'%(self.type(), number, self.getPointerType(number).type(), myself ))
     return
   
   def getPointerType(self, number):
     return self.pointersTypes[number]
   
+  def sig(self):
+    return self.pinnedPointer.sig
+    
   def type(self):
     return self.typename
   
@@ -324,19 +349,25 @@ class AnonymousStructRange:
       return True
     else:
       return False
+      
   def __cmp__(self, other):
     if other in self:
       return 0
     else:
       return cmp(self.start, other)
+
   def __len__(self):
-    return int(self.stop-self.start)
+    return int(self.stop-self.start) 
 
   def makeTypeName(self):
-    return 'AnonStruct_%s_%s_%s_%s'%(len(self), len(self.pinnedPointers), self.pinnedPointers.sig.name, self.pinnedPointers.offset )
-  
+    return 'AnonStruct_%s_%s_%s_%s'%(len(self), len(self.pinnedPointer), self.pinnedPointer.sig.name, self.pinnedPointer.offset )
 
+  def toCtypesString(self):
+    s=''
+    return      
 
+  def __str__(self):
+    return '<%s>'%(self.type())
 
 class PinnedPointersMapper:
   '''
@@ -524,11 +555,11 @@ class PinnedPointersMapper:
       unresolved_for_sig = [ pp for pp in self.unresolved if pp.sig == sig ]
       log.debug('Pin anonymous structures on %s'%(sig))
       pinned = [AnonymousStructRange(pp) for pp in resolved_for_sig]
-      log.debug('Create list of structures addresses for %s'%(sig)
+      log.debug('Create list of structures addresses for %s'%(sig) )
       pinned_start = sorted([pp.getAddress() for pp in resolved_for_sig])
-      log.debug('Pin probable anonymous structures on %s'%(sig))
+      log.debug('Pin probable anonymous structures on %s'%(sig) )
       pinned_lightly = [AnonymousStructRange(pp) for pp in unresolved_for_sig]
-      log.debug('Create list of probable structures addresses for %s'%(sig)
+      log.debug('Create list of probable structures addresses for %s'%(sig) )
       pinned_lightly_start = sorted([pp.getAddress() for pp in unresolved_for_sig])
       # save it
       a.pinned = pinned
@@ -536,6 +567,7 @@ class PinnedPointersMapper:
       a.pinned_lightly = pinned_lightly
       a.pinned_lightly_start = pinned_lightly_start
       caches[sig] = a
+      
     #log.debug('Overlapping sequences can happen. we will filter them later using a tree of structures.')
     #for i, pp in enumerate(pinned):
     #  if pp.start in pinned[i+1:]:
@@ -571,16 +603,17 @@ class PinnedPointersMapper:
     for i,ap in enumerate(pinned):
       pts = ap.getPointersValues()
       me = ap.pinnedPointer.getAddress()
-      if pts[0] == me:
-        log.debug('first pointer of pp %i is an autopointer on myself/C++ ?'%(i))
       for j,ptr in enumerate(pts): ## ptr is the value of pointer number j in the anonymoustruct ap
         sub = pinned_start#[i+1:]
+        log.debug('--------------------------------------------------------------------------')        
         if ptr in sub:
           log.debug('Lucky guess s:%d, p:%d, we find a pointer to the start of %d PinnedPointer struct.'%(i, j, sub.count(ptr))) 
           startsWithPointer+=1
           startsWithPointerList.append((ap,j))
           # check if the same struct in sig2, sig3... points to the same target struct
-          self._checkRelations(caches, ptr, ap.pinnedPointer, j)
+          if self._checkRelations(caches, ap, j, ptr):
+            log.info('ID-ed %s.pointers[%d] to type %s'%(ap, j, ap.getPointerType(j)) )
+          
           # probably else:
         elif ptr in pinned_lightly_start:
           sub = pinned_lightly_start#[i+1:]
@@ -601,30 +634,19 @@ class PinnedPointersMapper:
         else:
           #log.debug('That pointer s:%d, p:%d is lost in the void..'%(i, j))
           # check nearest in pinned
-          try:
-            first_addr = itertools.dropwhile(lambda x: x < ptr, pinned_start).next()
-            nearest = pinned[pinned.index(first_addr)]
-          except StopIteration,e:
-            first_addr = -1
-            pass
-          #log.debug(nearest.start-ptr)
+          first_addr,anonStruct = _findFirstStruct(ptr, pinned_start, pinned)
           # check in lightly
-          try:
-            first_addr_l = itertools.dropwhile(lambda x: x < ptr, pinned_lightly_start).next()
-            nearest_lightly = pinned_lightly[pinned_lightly.index(first_addr_l)]
-          except StopIteration,e:
-            first_addr_l = -1
-            pass
-          #log.debug(nearest_lightly.start-ptr)
-          if first_addr_l > first_addr_l:
+          first_addr_l,anonStruct_l = _findFirstStruct(ptr, pinned_lightly_start, pinned_lightly)
+          if first_addr > first_addr_l:
             s = 'pinned'
           else:
             s = 'pinned_lightly'
-            nearest = nearest_lightly
+            anonStruct = anonStruct_l
           #log.debug('Nearest struct is at %d bytes in %s'%( min(first_addr_l, first_addr_l)-ptr , s))
-          offset = nearest.start-ptr
+          offset = anonStruct.start-ptr
           if  offset < 64: # TODO: test if addr not int another struct
             log.info('Found a probable start of struct at %d bytes earlier'%(offset))
+        log.debug('--------------------------------------------------------------------------')          
           
     # pointer to self means c++ object ?
     sig._saveAddressCache()
@@ -633,40 +655,69 @@ class PinnedPointersMapper:
     log.debug('We have found %d pointers to pinned maybe-structs'%(startsMaybeWithPointer))
     return
 
-  def _checkRelations(self, cache, ptr, pp, pointerIndex ) :
+  def _findFirstStruct(self, ptr, addresses, anons):
+    try:
+      first_addr = itertools.dropwhile(lambda x: x < ptr, addresses).next()
+      anon = anons[addresses.index(first_addr)] # same index
+    except StopIteration,e:
+      return -1,None
+    return first_addr,anon
+
+  def _checkRelations(self, cache, ap, pointerIndex, ptr ) :
     '''
       go through all related pinned pointers of the other signatures.
       check if the targeted pinnedpointer for the pointer number <pointerIndex> is the same pinnedPointer
       than in the sig1.
       if its not, find in the other signatures, what is the target struct.
       
+      @param cache: cache for all calculated lists
+      @param ap: the PinnedPointer sequence 
+      @param pointerIndex: the index number for the ptr
+      @param ptr: ptr is the value of pointer number pointerIndex 
     '''
+    pp = ap.pinnedPointer
     ok = False
     mypinned = cache[pp.sig].pinned
-    anontargetPP = mypinned[mypinned.index(ptr)]
+    mypinned_start = cache[pp.sig].pinned_start
+    # reverse found a anonstruct covering this ptr value ( start or middle )
+    anontargetPP = mypinned[mypinned.index(ptr)] 
+    # reverse found a anonstruct covering this ptr value ( start ONLY )
+    #anontargetPP = mypinned[mypinned_start.index(ptr)] 
+    log.debug('anontargetPP is %s'%anontargetPP)
     targetPP = anontargetPP.pinnedPointer
-    perfect = []
+    perfect = [(ap, anontargetPP)] # get ourselves
+    
+    
+    # look in other signatures
     for sig in self.signatures:
-      ok = False
       if sig == pp.sig:
         continue
-      #log.debug('checking relations %d %s'%(len(pp.relations),pp.relations.keys()) )
-      relatedPPs = pp.relations[sig]
-      relatedTargetPPs = targetPP.relations[sig]
-      # TODO: if there a multiple instance, what should we check ?
-      if len(relatedPPs) >1:
+      ok = False
+      
+      ## 1 - take the related PinnedPointer from the next signature to the parent PP of our first signature
+      ##     and calculate the value of the n-th pointer in that pp for that signature.
+      relatedPPs = pp.relations[sig]              #parent struct
+      if len(relatedPPs) > 1: 
         log.debug('We have more than one relatedPP to target')
-      tgtPtrs = [AnonymousStructRange(relatedPP).getPointersValues()[pointerIndex] for relatedPP in relatedPPs]
+      tgtAnons = [AnonymousStructRange(relatedPP) for relatedPP in relatedPPs]
+      tgtPtrs = [tgtAnon.getPointersValues()[pointerIndex] for tgtAnon in tgtAnons]
 
-      ## check all startAddress for relatedTargetPPs, to find relatedPP.pointerValue[index]
+      ## 2 - take the related PinnedPointer from the next signature to [the n-th pointer/children PP of our first signature]
+      ##     if we find one start address that is equal to the previously calculated pointer value 
+      ##     that means we find a parent-children match in both parent types and children types. 
+      relatedTargetPPs = targetPP.relations[sig]  #children struct
       for relatedTargetPP in relatedTargetPPs:
         addr = AnonymousStructRange(relatedTargetPP).start
+        log.debug('compare %d and %s'%(addr,tgtPtrs))
         if addr in tgtPtrs:
           log.debug('** found a perfect match between %s and %s'%(pp.sig, relatedTargetPP.sig))
           ok = True
-          ## TODO : tie all pointers in perfect states together. 
-          ##        source with pointer to target 'type'. cross signature.
-          perfect.append(relatedTargetPP)
+          ## on type tous les pointers possible, puis on fera des stats sur le ap
+          _anon_parent = tgtAnons[tgtPtrs.index(addr)]  # TODO border case, multiple struct pointing to the same child
+          _parentStart = _anon_parent.start
+          parent = cache[sig].pinned[cache[sig].pinned_start.index(_parentStart)]          
+          child = cache[sig].pinned[cache[sig].pinned_start.index(addr)]
+          perfect.append((parent, child ))
           break
 
       ## not ok, we did not find a related match on first offset of pinneddpointer.
@@ -720,14 +771,17 @@ class PinnedPointersMapper:
         if not ok2:
             log.info('This one does not points anywhere to a common pinnedPointer struct  %s'%(sig))
             break
-    # all sig have been parsed
-    if ok:
+
+    # all sig have been parsed and we found a type(parent->children_in_pos_x) identical for all parent
+    if ok and len(perfect) == len(self.signatures):
       ## save that as a perfect match
       ## pp and relatedPP and be Id equals.
       ## targetPP and all perfect[] can be id equals.
-      pass
-    log.debug('--------------------------------------------------------------------------')
-    return
+      for parent, child in perfect:
+        _mysig = parent.pinnedPointer.sig
+        parent.setPointerType( pointerIndex, child)
+      return True
+    return False
   
 
 
@@ -898,16 +952,16 @@ def main(argv):
   opts.func(opts)
 
 
-def tests():
-  '''
-import pattern 
-pattern.main('../outputs/skype.1.a ../outputs/skype.2.a ../outputs/skype.3.a'.split())
-cacheValues=pattern.cache
-common = pattern.common
-mapper = pattern.mapper
-
-'''
-  pass
+#def tests():
+#  '''
+#import pattern 
+#pattern.main('../outputs/skype.1.a ../outputs/skype.2.a ../outputs/skype.3.a'.split())
+#cacheValues=pattern.cache
+#common = pattern.common
+#mapper = pattern.mapper
+#
+#'''
+#  pass
 
 if __name__ == '__main__':
   main(sys.argv[1:])
