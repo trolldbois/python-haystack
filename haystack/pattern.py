@@ -545,6 +545,7 @@ class PinnedPointersMapper:
     ### Par contre, on peut essayer de trouver des sequences plus courtes dans les
     ### intervalles uncommon_slices
     caches = self._makeCaches()
+    pickle.dump(caches, file('/home/jal/Compil/python-haystack/outputs/caches','w'))
     self._pinResolved(caches)
     return 
 
@@ -560,11 +561,14 @@ class PinnedPointersMapper:
       log.debug('Pin anonymous structures on %s'%(sig))
       pinned = [AnonymousStructRange(pp) for pp in resolved_for_sig]
       log.debug('Create list of structures addresses for %s'%(sig) )
-      pinned_start = sorted([pp.getAddress() for pp in resolved_for_sig])
+      pinned_start = [pp.getAddress() for pp in resolved_for_sig]
+      #if sorted(pinned_start) != pinned_start:
+      #  log.error('Damn !')
+      #  raise ValueError('iscrewedupbadlyhere')
       log.debug('Pin probable anonymous structures on %s'%(sig) )
       pinned_lightly = [AnonymousStructRange(pp) for pp in unresolved_for_sig]
       log.debug('Create list of probable structures addresses for %s'%(sig) )
-      pinned_lightly_start = sorted([pp.getAddress() for pp in unresolved_for_sig])
+      pinned_lightly_start = [pp.getAddress() for pp in unresolved_for_sig]
       # save it
       a.pinned = pinned
       a.pinned_start = pinned_start
@@ -633,6 +637,7 @@ class PinnedPointersMapper:
           if offset:
             if ap == ap.getPointerType(j):
               p_off = ap.getPointerOffset(j)
+              # offset - p_off dans la meme structure donne une idee de la sequentialite des malloc
               log.info('ID-ed %s.pointers[%d](0x%x) to type %s (0x%x) %d'%(ap, j, p_off, ap.getPointerType(j), offset, offset-p_off) )
             else:
               log.info('ID-ed %s.pointers[%d](0x%x) to type %s (0x%x) '%(ap, j, p_off, ap.getPointerType(j), offset ) )
@@ -739,6 +744,8 @@ class PinnedPointersMapper:
       @param ap: the AnonymousStructRange sequence 
       @param pointerIndex: the index number for the ptr
       @param ptr: ptr is the value of pointer number pointerIndex 
+      
+      return the offset of the pointed bytes from the start of the identified struct
     '''
     perfect=[]
     parent_pp = astruct.pinnedPointer
