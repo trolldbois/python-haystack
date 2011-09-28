@@ -93,7 +93,7 @@ class TestPointerEnumerator(unittest.TestCase):
     self.assertEqual( self.values, values)
     self.assertEqual( self.values, values_2)
 
-    nsig = [Config.STRUCT_OFFSET]
+    nsig = [Config.MMAP_START+Config.STRUCT_OFFSET]
     nsig.extend(self.seq)
     indices = [ i for i in accumulate(nsig)]
     self.assertEqual( indices, offsets)
