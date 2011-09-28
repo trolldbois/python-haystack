@@ -14,6 +14,8 @@ import itertools
 import numbers
 
 from utils import xrange, Dummy
+from cache_utils import int_array_cache,int_array_save
+
 import memory_dumper
 import signature 
 
@@ -26,54 +28,15 @@ Config.cacheDir = os.path.normpath(OUTPUTDIR)
 
 def make(opts):
   log.info('Make the signature.')
-  if False:
-    ppMapper = PinnedPointersMapper()  
-    for dumpfile in opts.dumpfiles:
-      mappings = memory_dumper.load( dumpfile, lazy=True)  
-      heap_sig = PointerIntervalSignature(mappings, '[heap]') 
-      log.info('pinning offset list created for heap %s.'%(heap_sig))
-      ppMapper.addSignature(heap_sig)
-      
-    log.info('Find similar vectors between pointers on all signatures.')
-    ppMapper.run()
-  
-  ## step 2
-  ## need cache
-  mappings = memory_dumper.load( dumpfile, lazy=True)  
-  dumpfile = opts.dumpfiles[0]
-  values = int_array_cache(dumpfile.name+'.heap+stack.pointers.values')
-  if values is None:
-    log.info('Making new cache')
-    log.info('getting pointers values from stack ')
-    stack_enumerator = signature.PointerEnumerator(mappings.getStack())
-    stack_enumerator.setTargetMapping(mappings.getHeap())
-    stack_enum = stack_enumerator.search()
-    stack_offsets, stack_values = zip(*stack_enum)
-    log.info('  got %d pointers '%(len(stack_enum)) )
-    log.info('Merging pointers from heap')
-    heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
-    heap_offsets, heap_values = zip(*heap_enum)
-    log.info('  got %d pointers '%(len(heap_enum)) )
-    # merge
-    values = sorted(set(heap_values+stack_values))
-    int_array_save(dumpfile.name+'.heap+stack.pointers.values', values)
-    int_array_save(dumpfile.name+'.heap.pointers.offset', heap_offsets)
-    log.info('we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
-  else:
-    log.info('Loading from cache')
-    log.info('we have %d unique pointers values.'%(len(values)) )
-
+  ppMapper = PinnedPointersMapper()  
+  for dumpfile in opts.dumpfiles:
+    mappings = memory_dumper.load( dumpfile, lazy=True)  
+    heap_sig = PointerIntervalSignature(mappings, '[heap]') 
+    log.info('pinning offset list created for heap %s.'%(heap_sig))
+    ppMapper.addSignature(heap_sig)
     
-  #reportCacheValues(ppMapper.cacheValues2)
-  #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
-  heap = mappings.getHeap()
-  lengths=[]
-  for i in range(len(values)-1):
-    lengths.append(values[i+1]-values[i])
-  lengths.append(heap.end-values[-1])
-  structs = [ heap.readBytes(values[i],lengths[i]) for i in range(len(values))]
-  # TODO regexp search on structs/bytearray.
-  # regexp could be better if crossed against another dump.
+  log.info('Find similar vectors between pointers on all signatures.')
+  ppMapper.run()
   
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
@@ -81,23 +44,6 @@ def make(opts):
   
   ## next step
   log.info('Pin resolved PinnedPointers to their respective heap.')
-
-
-def int_array_cache(filename):
-  if os.access(filename,os.F_OK):
-    # load
-    f = file(filename,'r')
-    nb = os.path.getsize(f.name)/4 # simple TODO 
-    my_array = array.array('L')
-    my_array.fromfile(f,nb)
-    return my_array
-  return None
-
-def int_array_save(filename, lst):
-  my_array = array.array('L')
-  my_array.extend(lst)
-  my_array.tofile(file(filename,'w'))
-  return my_array
 
 class PointerIntervalSignature:
   ''' 
