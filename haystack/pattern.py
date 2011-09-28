@@ -13,7 +13,7 @@ import array
 import itertools
 import numbers
 
-from utils import xrange
+from utils import xrange, Dummy
 import memory_dumper
 import signature 
 
@@ -21,16 +21,24 @@ log = logging.getLogger('pattern')
 
 OUTPUTDIR='../outputs/'
 
+Config = Dummy()
+Config.cacheDir = os.path.normpath(OUTPUTDIR)
+
 def make(opts):
   log.info('Make the signature.')
   ppMapper = PinnedPointersMapper()  
   for dumpfile in opts.dumpfiles:
-    sig = Signature.fromDumpfile(dumpfile)
-    log.info('pinning offset list created for heap %s.'%(sig))
-    ppMapper.addSignature(sig)
+    mappings = memory_dumper.load( dumpfile, lazy=True)  
+    heap_sig = PointerIntervalSignature(mappings, '[heap]') 
+    log.info('pinning offset list created for heap %s.'%(heap_sig))
+    ppMapper.addSignature(heap_sig)
     
   log.info('Find similar vectors between pointers on all signatures.')
   ppMapper.run()
+  
+  ## step 2
+  ##
+  
   #reportCacheValues(ppMapper.cacheValues2)
   #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
 
@@ -41,9 +49,7 @@ def make(opts):
   ## next step
   log.info('Pin resolved PinnedPointers to their respective heap.')
 
-
-
-class Signature:
+class PointerIntervalSignature:
   ''' 
   Wrapper object the list of intervals between pointers identified in the dumpfile.
   When the memory is :
@@ -54,26 +60,26 @@ class Signature:
   
   It abstracts the memory contents to its signature.
   '''
-  def __init__(self, mmap=None, dumpFilename=None):
-    self.mmap = mmap  
-    self.dumpFilename = dumpFilename
-    self.name = os.path.basename(dumpFilename)
+  
+  def __init__(self, mappings, pathname='[heap]', config=Config):
+    self.mmap = None
+    self.mmap_pathname = pathname  
+    self.mappings = mappings
+    self.config = config
+    self.name = mappings.name
+    self.cacheFilenamePrefix = os.path.sep.join([self.config.cacheDir,self.name])
     self.addressCache = {}
+    self.sig = None
+    self._getMmap()
+    self._load()
 
-  def _getDump(self):
-    #log.info('Loading the mappings in the memory dump file.')
-    mappings = memory_dumper.load( file(self.dumpFilename,'r'), lazy=True)
-    heap = None
-    if len(mappings) > 1:
-      heap = [m for m in mappings if m.pathname == '[heap]'][0]
-    if heap is None:
-      raise ValueError('No [heap]')
-    self.mmap = heap
+  def _getMmap(self):
+    self.mmap = self.mappings.getMmap(self.mmap_pathname)
     return
 
   def _load(self):
     ## DO NOT SORT LIST. c'est des sequences. pas des sets.
-    myname = self.dumpFilename+'.pinned'
+    myname = self.cacheFilenamePrefix+'.pinned'
     if os.access(myname,os.F_OK):
       # load
       f = file(myname,'r')
@@ -101,7 +107,7 @@ class Signature:
 
   def _loadAddressCache(self):
     ## DO NOT SORT LIST. c'est des sequences. pas des sets.
-    myname = self.dumpFilename+'.pinned.vaddr'
+    myname = self.cacheFilenamePrefix+'.pinned.vaddr'
     if os.access(myname,os.F_OK):
       addressCache = pickle.load(file(myname,'r'))
       log.debug("%d Signature addresses loaded from cache."%( len(addressCache) ))
@@ -113,7 +119,7 @@ class Signature:
     return
 
   def _saveAddressCache(self):
-    myname = self.dumpFilename+'.pinned.vaddr'
+    myname = self.cacheFilenamePrefix+'.pinned.vaddr'
     pickle.dump(self.addressCache, file(myname,'w'))
 
   def getAddressForPreviousPointer(self, offset):
@@ -145,32 +151,25 @@ class Signature:
   def __len__(self):
     return len(self.sig)
   def __str__(self):
-    return "<Signature '%s'>"%(self.name)
-  @classmethod
-  def fromDumpfile(cls, dumpfile):
-    inst = Signature(dumpFilename = dumpfile.name)
-    inst._getDump()
-    inst._load()
-    return inst
+    return "<PointerIntervalSignature '%s'>"%(self.name)
 
-class Sequences:
+class SequencesMaker:
   ''' 
   Builds a list of sequences of interval for each interval in the signature.
   [2,3,3,4,5,1,2,3,4,5] gives
   [(2,3,3), (3,3,4), (3,4,5), (4,5,1), (5,1,2), (1,2,3), (2,3,4), (3,4,5)] 
   
   '''
-  def __init__(self, sig, size, cacheAll=True):
+  def __init__(self, sequence, size, cacheAll=True):
     self.size = size
-    self.signature = sig
-    self.sig = sig.sig
+    self.seq = sequence
     self.sets={} # key is sequence len
     self.cacheAll=cacheAll
-    self.findUniqueSequences(self.sig)
+    self.findUniqueSequences(self.seq)
           
-  def findUniqueSequences(self, sig):
-    log.debug('number of intervals: %d'%(len(sig)))
-    sig_set = set(sig)
+  def findUniqueSequences(self, seq):
+    log.debug('number of intervals: %d'%(len(seq)))
+    sig_set = set(seq)
     log.debug('number of unique intervals value: %d'%(len(sig_set)) )
     # create the tuple      
     self.sets[self.size] = set(self.getSeqs())
@@ -180,16 +179,17 @@ class Sequences:
   def getSeqs(self):
     if not hasattr(self, 'seqs'):
       seqlen = self.size
-      self.seqs =  [ tuple(self.sig[i:i+seqlen]) for i in xrange(0, len(self.sig)-seqlen+1) ]
+      self.seqs =  [ tuple(self.seq[i:i+seqlen]) for i in xrange(0, len(self.seq)-seqlen+1) ]
       seqs =  self.seqs
       return seqs
+
   def __len__(self):
-    return len(self.signature)-self.size
+    return len(self.seq)-self.size
     
   def __iter__(self):
     seqlen = self.size
-    for i in xrange(0, len(self.sig)-seqlen+1):
-      yield tuple(self.sig[i:i+seqlen])
+    for i in xrange(0, len(self.seq)-seqlen+1):
+      yield tuple(self.seq[i:i+seqlen])
     return
 
 
@@ -282,8 +282,6 @@ class PinnedPointers:
 
 
 
-class Dummy(object):
-  pass
 
 class AnonymousStructRange:
   '''
@@ -315,13 +313,14 @@ class AnonymousStructRange:
 
   def getPointersValues(self):
     if self.pointersValues is None:
-      self.pointersValues = [self.pinnedPointer.sig.mmap.readWord( addr) for addr in self.getPointersAddr()]
+      mmap = self.pinnedPointer.sig.mmap
+      self.pointersValues = [mmap.readWord( addr) for addr in self.getPointersAddr()]
     return self.pointersValues
   
   def setPointerType(self, number, anonStruct):
     ''' set a specific pointer to a specific anonStruct type '''
     if anonStruct.sig() != self.sig():
-      raise TypeError('You cant type with a AnonStruct from another Signature. %s vs %s'%(self,anonStruct))
+      raise TypeError('You cant type with a AnonStruct from another PointerIntervalSignature. %s vs %s'%(self,anonStruct))
     if number in self.pointersTypes:
       raise IndexError('%s Pointer number %d has already been identified as a type %s - new type : %s'%( 
                         self, number, self.getPointerType(number).type(), anonStruct.type() ) )
@@ -340,6 +339,9 @@ class AnonymousStructRange:
   
   def sig(self):
     return self.pinnedPointer.sig
+
+  def sequence(self):
+    return self.pinnedPointer.sequence
     
   def type(self):
     return self.typename
@@ -407,7 +409,7 @@ class PinnedPointersMapper:
     common = None
     # make len(sig) sub sequences of size <length> ( in .sets )
     for sig in self.signatures:
-      self.signatures_sequences[sig] = Sequences(sig, self.length, False)
+      self.signatures_sequences[sig] = SequencesMaker(sig.sig, self.length, False)
       if common is None:
         common = set(self.signatures_sequences[sig].sets[self.length])
       else:
@@ -415,7 +417,9 @@ class PinnedPointersMapper:
     log.info('Common sequence of length %d: %d seqs'%(self.length, len(common)))
     return common  
   
-  def _mapToSignature(self, sig ):    
+  def _mapToSignature(self, sig ):
+    ##### LOL. difflib.SequenceMatcher.
+  
     # maintenant il faut mapper le common set sur l'array original, 
     # a) on peut iter(sig) jusqu'a trouver une sequence non common.
     # b) reduce previous slices to 1 bigger sequence. 
@@ -505,7 +509,7 @@ class PinnedPointersMapper:
     
     self.unresolved = unresolved
     self.resolved = linkedPP
-    log.info('Linked %d PinnedPointers across all Signatures, %d unique in all Signatures '%(linked, multiple))
+    log.info('Linked %d PinnedPointers across all PointerIntervalSignatures, %d unique in all Signatures '%(linked, multiple))
     log.info('left with %d/%d partially unresolved pp'%(len(unresolved), len(allpp) ) )
     #cache to disk
     #cacheToDisk(self.resolved,'pinned-resolved')
@@ -544,6 +548,7 @@ class PinnedPointersMapper:
     ### On peut pas agrandir les sequences. il n"y a plus de common pattern,
     ### Par contre, on peut essayer de trouver des sequences plus courtes dans les
     ### intervalles uncommon_slices
+    ### on peut se servir des pointeur en stack pour trouver les vrai start-of-structure.
     caches = self._makeCaches()
     pickle.dump(caches, file('/home/jal/Compil/python-haystack/outputs/caches','w'))
     self._pinResolved(caches)
@@ -614,6 +619,7 @@ class PinnedPointersMapper:
       ptrs = ap.getPointersValues()
       crosscheck = False
       for j,ptr in enumerate(ptrs): ## ptr is the value of pointer number j in the anonymoustruct ap
+        p_off = ap.getPointerOffset(j)
         if ptr in pinned_start:
           log.debug('--------------------------------------------------------------------------')        
           log.debug('Lucky guess s:%d, p:%d, we find a pointer to the start of %d PinnedPointer struct.'%(i, j, pinned_start.count(ptr))) 
@@ -636,9 +642,10 @@ class PinnedPointersMapper:
           offset = self._crosscheckChildInMiddle(caches, ap, j, ptr)
           if offset:
             if ap == ap.getPointerType(j):
-              p_off = ap.getPointerOffset(j)
+              #p_off = ap.getPointerOffset(j)
               # offset - p_off dans la meme structure donne une idee de la sequentialite des malloc
               log.info('ID-ed %s.pointers[%d](0x%x) to type %s (0x%x) %d'%(ap, j, p_off, ap.getPointerType(j), offset, offset-p_off) )
+              prev_p_off = p_off
             else:
               log.info('ID-ed %s.pointers[%d](0x%x) to type %s (0x%x) '%(ap, j, p_off, ap.getPointerType(j), offset ) )
         elif ptr in pinned_lightly:
