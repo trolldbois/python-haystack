@@ -55,12 +55,19 @@ class AbstractSearcher(FeedbackGiver):
       search in searchMapping for something.
     '''
     self.searchMapping = searchMapping
+    self.targetMapping = searchMapping
     self._initSteps(self.searchMapping.start, self.searchMapping.end, steps)
 
   def _initSteps(self, start, end, steps):
     ''' calculate the vaddr at which feedback would be given '''
     self.steps = [o for o in range(start,end, (end-start)/steps)] # py 3 compatible
     return
+
+  def setTargetMapping(self, m):
+    self.targetMapping = m
+    return
+  def getTargetMapping(self):
+    return self.targetMapping
   
   def _checkSteps(self, step):
     if len(self.steps) == 0:
@@ -101,13 +108,13 @@ class PointerSearcher(AbstractSearcher):
   '''
   def testMatch(self, vaddr):
     word = self.getSearchMapping().readWord(vaddr)
-    if word in self.getSearchMapping():
+    if word in self.getTargetMapping():
       return True
     return False
 
 
 class AbstractEnumerator(AbstractSearcher):
-  ''' return offset,value 
+  ''' return vaddr,value 
   expect a boolean, value tuple from testMatch'''
     
   def __iter__(self):
@@ -117,7 +124,7 @@ class AbstractEnumerator(AbstractSearcher):
       self._checkSteps(vaddr) # be verbose
       b,val = self.testMatch(vaddr) # expect a boolean, value tuple from testMatch
       if b:
-        yield (vaddr-start, val )
+        yield (vaddr, val )
     return
   
   def testMatch(self, vaddr):
@@ -129,31 +136,9 @@ class AbstractEnumerator(AbstractSearcher):
 class PointerEnumerator(AbstractEnumerator):
   def testMatch(self, vaddr):
     word = self.getSearchMapping().readWord(vaddr)
-    if word in self.getSearchMapping():
+    if word in self.getTargetMapping():
       return True, word
     return False, None
-
-
-class TargetMappingPointerSearcher(AbstractSearcher):
-  ''' 
-  Search for pointers by checking if the word value is a valid addresses in memspace of another mapping.
-  '''
-  def __init__(self, targetMapping, searchMapping, steps=10, feedback=None):
-    AbstractSearcher.__init__(self, searchMapping, steps, feedback)
-    self.setTargetMapping(targetMapping)
-  
-  def setTargetMapping(self, m):
-    self.targetMapping = m
-    return
-  def getTargetMapping(self):
-    return self.targetMapping
-  
-  def testMatch(self, vaddr):
-    word = self.getSearchMapping().readWord(vaddr)
-    if word in self.getTargetMapping():
-      return True
-    return False
-
 
 
 class NullSearcher(AbstractSearcher):
