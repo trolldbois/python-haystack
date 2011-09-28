@@ -21,6 +21,8 @@ class Config:
   MMAP_STOP =  0x0c01000
   MMAP_LENGTH = 4096
   STRUCT_OFFSET = 44
+  cacheDir = os.path.normpath('./outputs/')
+
 
 def accumulate(iterable, func=operator.add):
   it = iter(iterable)
@@ -54,8 +56,8 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
 
 def makeSignature(seq):
   mmap = makeMMap(seq)
-  sig = pattern.Signature(mmap=mmap, dumpFilename='test_signature_1')
-  sig._load()
+  mappings = memory_mapping.Mappings([mmap], 'test')
+  sig = pattern.PointerIntervalSignature(mappings, 'test_mmap', Config)
   return sig  
 
 class TestSignature(unittest.TestCase):
@@ -64,8 +66,7 @@ class TestSignature(unittest.TestCase):
     self.seq = [4,4,8,128,4,8,4,4,12]
     self.mmap = makeMMap(self.seq)
     self.name = 'test_dump_1'
-    self.sig = pattern.Signature(mmap=self.mmap, dumpFilename=self.name)
-    self.sig._load()
+    self.sig = makeSignature(self.seq)
 
   def test_init(self):
     # forget about the start of the mmap  ( 0 to first pointer value) , its irrelevant

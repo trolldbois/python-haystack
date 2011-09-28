@@ -925,56 +925,6 @@ class PinnedPointersMapper:
   
 
 
-def t(mapper):
-
-  for k,v in mapper.cacheValues2.items():
-    # we have a list of x pp
-    if len(v) == len(mapper.signatures):
-      # we should have all 3 signatures
-      found = [pp.sig for pp in v ]
-      for s in mapper.signatures:
-        if s not in [found]:
-          print '%s not in found'%(s) 
-      
-
-def cacheExists(name):
-  return os.access(os.path.sep.join([OUTPUTDIR,name]),os.F_OK)
-  
-def cacheLoad(name):
-  log.debug('use cache for %s'%(name))
-  return pickle.load(file(os.path.sep.join([OUTPUTDIR,name]),'r'))
-
-def cacheToDisk(obj, name):
-  log.debug('save to cache for %s'%(name))
-  pickle.dump(obj, file(os.path.sep.join([OUTPUTDIR,name]),'w'))
-
-def saveIdea(opts, name, results):
-  pickle.dump(results, file(name,'w'))
-  
-
-def reportCacheValues( cache ):
-  log.info('Reporting info on values on stdout')
-  # sort by key
-  keys = sorted(cache.keys(), reverse=True)
-  for k in keys:
-    v = cache[k]
-    print 'For %d bytes between possible pointers, there is %d PinnedOffsets '%(k, len(v))
-    # print nicely top 5
-    poffs = sorted(v, reverse=True)
-    n = min(5, len(v))
-    print '  - the %d longuest sequences are '%(n)
-    for poff in poffs[:n]:
-      print '\t', poff,
-      if len(poff) > 100 :
-        print poff.pinned(5)
-      else:
-        print ''
-    print ''
-
-def printStatus(offset1, cache):
-  print 'Reading offset %d'%(offset1)
-  reportCacheValues(cache)
-
 def savePinned(cacheValues, sig, offset, match_len ):
   pinned = sig.sig[offset:offset+match_len]
   pp = PinnedPointers( pinned, sig, offset)

@@ -473,7 +473,7 @@ class Mappings:
 
   def getMmap(self, pathname):
     mmap = None
-    if len(self.mappings) > 1:
+    if len(self.mappings) >= 1:
       mmap = [m for m in self.mappings if m.pathname == pathname][0]
     if mmap is None:
       raise IndexError('No mmap of pathname %s'%(pathname))
