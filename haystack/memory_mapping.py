@@ -478,7 +478,10 @@ class Mappings:
     if mmap is None:
       raise IndexError('No mmap of pathname %s'%(pathname))
     return mmap
-  
+  def getHeap(self):
+    return self.getMmap('[heap]')  
+  def getStack(self):
+    return self.getMmap('[stack]')  
   def __len__(self):
     return len(self.mappings)
   def __getitem__(self, i):
