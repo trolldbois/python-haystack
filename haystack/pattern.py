@@ -26,19 +26,44 @@ Config.cacheDir = os.path.normpath(OUTPUTDIR)
 
 def make(opts):
   log.info('Make the signature.')
-  ppMapper = PinnedPointersMapper()  
-  for dumpfile in opts.dumpfiles:
-    mappings = memory_dumper.load( dumpfile, lazy=True)  
-    heap_sig = PointerIntervalSignature(mappings, '[heap]') 
-    log.info('pinning offset list created for heap %s.'%(heap_sig))
-    ppMapper.addSignature(heap_sig)
-    
-  log.info('Find similar vectors between pointers on all signatures.')
-  ppMapper.run()
+  if False:
+    ppMapper = PinnedPointersMapper()  
+    for dumpfile in opts.dumpfiles:
+      mappings = memory_dumper.load( dumpfile, lazy=True)  
+      heap_sig = PointerIntervalSignature(mappings, '[heap]') 
+      log.info('pinning offset list created for heap %s.'%(heap_sig))
+      ppMapper.addSignature(heap_sig)
+      
+    log.info('Find similar vectors between pointers on all signatures.')
+    ppMapper.run()
   
   ## step 2
-  ##
-  
+  ## need cache
+  dumpfile = opts.dumpfiles[0]
+  values = int_array_cache(dumpfile.name+'.heap+stack.pointers.values')
+  if values is None:
+    log.info('Making new cache')
+    mappings = memory_dumper.load( dumpfile, lazy=True)  
+    log.info('getting pointers values from stack ')
+    stack_enumerator = signature.PointerEnumerator(mappings.getStack())
+    stack_enumerator.setTargetMapping(mappings.getHeap())
+    stack_enum = stack_enumerator.search()
+    stack_offsets, stack_values = zip(*stack_enum)
+    log.info('  got %d pointers '%(len(stack_enum)) )
+    log.info('Merging pointers from heap')
+    heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
+    heap_offsets, heap_values = zip(*heap_enum)
+    log.info('  got %d pointers '%(len(heap_enum)) )
+    # merge
+    values = sorted(set(heap_values+stack_values))
+    int_array_save(dumpfile.name+'.heap+stack.pointers.values', values)
+    int_array_save(dumpfile.name+'.heap.pointers.offset', heap_offsets)
+    log.info('we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
+  else:
+    log.info('Loading from cache')
+    log.info('we have %d unique pointers values.'%(len(values)) )
+
+    
   #reportCacheValues(ppMapper.cacheValues2)
   #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
 
@@ -48,6 +73,23 @@ def make(opts):
   
   ## next step
   log.info('Pin resolved PinnedPointers to their respective heap.')
+
+
+def int_array_cache(filename):
+  if os.access(filename,os.F_OK):
+    # load
+    f = file(filename,'r')
+    nb = os.path.getsize(f.name)/4 # simple TODO 
+    my_array = array.array('L')
+    my_array.fromfile(f,nb)
+    return my_array
+  return None
+
+def int_array_save(filename, lst):
+  my_array = array.array('L')
+  my_array.extend(lst)
+  my_array.tofile(file(filename,'w'))
+  return my_array
 
 class PointerIntervalSignature:
   ''' 
@@ -80,25 +122,22 @@ class PointerIntervalSignature:
   def _load(self):
     ## DO NOT SORT LIST. c'est des sequences. pas des sets.
     myname = self.cacheFilenamePrefix+'.pinned'
-    if os.access(myname,os.F_OK):
-      # load
-      f = file(myname,'r')
-      nb = os.path.getsize(f.name)/4 # simple
-      sig = array.array('L')
-      sig.fromfile(f,nb)
-      log.debug("%d Signature intervals loaded from cache."%( len(sig) ))
-    else:
+    sig = int_array_cache(myname)
+    if sig is None:
       log.info("Signature has to be calculated for %s. It's gonna take a while."%(self.name))
       pointerSearcher = signature.PointerSearcher(self.mmap)
       self.WORDSIZE = pointerSearcher.WORDSIZE
-      sig = array.array('L')
+      sig = []
       # save first offset
       last = self.mmap.start
       for i in pointerSearcher: #returns the vaddr
         sig.append(i-last) # save intervals between pointers
         #print hex(i), 'value:', hex(self.mmap.readWord(i) )
         last=i
-      sig.tofile(file(myname,'w'))
+      # save it
+      sig = int_array_save(myname, sig)
+    else:
+      log.debug("%d Signature intervals loaded from cache."%( len(sig) ))
     self.sig = sig
     #
     self.addressCache[0] = self.mmap.start # previous pointer of interval 0 is start of mmap
