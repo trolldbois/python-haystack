@@ -15,7 +15,13 @@ from utils import xrange
 
 log = logging.getLogger('signature')
 
+'''
+AbstractSearcher, abstract impl, return vaddr of match on iter(), search()
+AbstractEnumerator, abstr impl, return offset,value of match on iter(), search()
+                          expect a boolean, value tuple from testMatch
 
+
+'''
 
 
 
@@ -71,10 +77,7 @@ class AbstractSearcher(FeedbackGiver):
     ''' find all valid matches offsets in the memory space '''
     self.values = set()
     log.debug('search %s mapping for matching values'%(self.getSearchMapping()))
-    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
-      self._checkSteps(vaddr) # be verbose
-      if self.testMatch(vaddr):
-        self.values.add(vaddr)
+    self.values = [t for t in self]
     return self.values    
     
   def __iter__(self):
@@ -90,6 +93,8 @@ class AbstractSearcher(FeedbackGiver):
     ''' implement this methods to test for a match at that offset '''
     raise NotImplementedError
 
+
+
 class PointerSearcher(AbstractSearcher):
   ''' 
   Search for pointers by checking if the word value is a valid addresses in memspace.
@@ -99,6 +104,35 @@ class PointerSearcher(AbstractSearcher):
     if word in self.getSearchMapping():
       return True
     return False
+
+
+class AbstractEnumerator(AbstractSearcher):
+  ''' return offset,value 
+  expect a boolean, value tuple from testMatch'''
+    
+  def __iter__(self):
+    ''' Iterate over the mapping to find all valid matches '''
+    start = self.getSearchMapping().start
+    for vaddr in xrange(start, self.getSearchMapping().end, self.WORDSIZE):
+      self._checkSteps(vaddr) # be verbose
+      b,val = self.testMatch(vaddr) # expect a boolean, value tuple from testMatch
+      if b:
+        yield (vaddr-start, val )
+    return
+  
+  def testMatch(self, vaddr):
+    ''' implement this methods to test for a match at that offset 
+    should return boolean, value
+    '''
+    raise NotImplementedError
+
+class PointerEnumerator(AbstractEnumerator):
+  def testMatch(self, vaddr):
+    word = self.getSearchMapping().readWord(vaddr)
+    if word in self.getSearchMapping():
+      return True, word
+    return False, None
+
 
 class TargetMappingPointerSearcher(AbstractSearcher):
   ''' 
@@ -180,6 +214,7 @@ class PointerSignatureMaker(SignatureMaker):
     if self.pSearch.testMatch(vaddr):
       return self.POINTER
     return self.OTHER
+
 
 
 
