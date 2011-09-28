@@ -39,11 +39,11 @@ def make(opts):
   
   ## step 2
   ## need cache
+  mappings = memory_dumper.load( dumpfile, lazy=True)  
   dumpfile = opts.dumpfiles[0]
   values = int_array_cache(dumpfile.name+'.heap+stack.pointers.values')
   if values is None:
     log.info('Making new cache')
-    mappings = memory_dumper.load( dumpfile, lazy=True)  
     log.info('getting pointers values from stack ')
     stack_enumerator = signature.PointerEnumerator(mappings.getStack())
     stack_enumerator.setTargetMapping(mappings.getHeap())
@@ -66,7 +66,15 @@ def make(opts):
     
   #reportCacheValues(ppMapper.cacheValues2)
   #saveIdea(opts, 'idea2', ppMapper.cacheValues2)
-
+  heap = mappings.getHeap()
+  lengths=[]
+  for i in range(len(values)-1):
+    lengths.append(values[i+1]-values[i])
+  lengths.append(heap.end-values[-1])
+  structs = [ heap.readBytes(values[i],lengths[i]) for i in range(len(values))]
+  # TODO regexp search on structs/bytearray.
+  # regexp could be better if crossed against another dump.
+  
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
   ##  unresolved PP in ppMapper.unresolved
