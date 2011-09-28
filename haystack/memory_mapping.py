@@ -358,6 +358,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
 
   def __getstate__(self):
     d = dict(self.__dict__)
+    d['_memdump_filename'] = self._memdump.name
     d['_memdump'] = None
     d['_local_mmap'] = None
     d['_local_mmap_content'] = None
@@ -463,6 +464,30 @@ class LazyMmap:
     return me
 
 
+class Mappings:
+  def __init__(self, lst, name=None):
+    if type(lst) != list:
+      raise TypeError('Please feed me a list')
+    self.mappings = lst
+    self.name = name
+
+  def getMmap(self, pathname):
+    mmap = None
+    if len(self.mappings) > 1:
+      mmap = [m for m in self.mappings if m.pathname == pathname][0]
+    if mmap is None:
+      raise IndexError('No mmap of pathname %s'%(pathname))
+    return mmap
+  
+  def __len__(self):
+    return len(self.mappings)
+  def __getitem__(self, i):
+    return self.mappings[i]
+  def __setitem__(self,i,val):
+    raise NotImplementedError()
+  def __iter__(self):
+    return iter(self.mappings)
+  
 
 def readProcessMappings(process):
   """

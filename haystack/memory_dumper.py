@@ -91,7 +91,9 @@ class MemoryDumper:
 
 class MemoryDumpLoader:
   ''' Loads a memory dump done by MemoryDumper.
-  It's basically a tgz of all memorymaps '''
+  It's basically a tgz of all memorymaps 
+  self.mapping should be a memory_mapping.Mappings isntance
+  '''
   def __init__(self, dumpfile):
     self.dumpfile = dumpfile
     if not self.isValid():
@@ -99,6 +101,8 @@ class MemoryDumpLoader:
     self.loadMappings()
   def getMappings(self):
     return self.mappings
+  def isValid(self):
+    raise NotImplementedError()
   def loadMappings(self):
     raise NotImplementedError()
     
@@ -156,7 +160,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
   def loadMappings(self):
     mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
     self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
-    self.mappings = []
+    self_mappings = []
     #for mmap_fname in self.mmaps:
     for mmap_fname, mmap_pathname in self.metalines:
       start,end = mmap_fname.split('-') # get the './' away
@@ -176,7 +180,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         log.debug('Using a MemoryDumpMemoryMapping. small size')
         mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-      self.mappings.append(mmap)
+      self_mappings.append(mmap)
+    self.mappings = memory_mapping.Mappings(self_mappings, self.dumpfile.name)
     return    
 
 
@@ -184,7 +189,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
   def loadMappings(self):
     mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
     self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
-    self.mappings = []
+    self_mappings = []
     #for mmap_fname in self.mmaps:
     for mmap_fname, mmap_pathname in self.metalines:
       metaOnly = False
@@ -197,7 +202,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
         log.debug('Ignore absent file')
         mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-        self.mappings.append(mmap)
+        self_mappings.append(mmap)
         continue
       
       #else
@@ -214,7 +219,8 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
         log.debug('Using a MemoryDumpMemoryMapping. small size')
         mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
-      self.mappings.append(mmap)
+      self_mappings.append(mmap)
+    self.mappings = memory_mapping.Mappings(self_mappings, self.dumpfile.name)
     return    
 
 
@@ -258,7 +264,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
     end = 0xc090d000
     kmap = memory_mapping.MemoryDumpMemoryMapping(self.dumpfile, start, end, permissions='rwx-', offset=0x0, 
             major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpfile.name)
-    self.mappings = [kmap]
+    self.mappings = memory_mapping.Mappings([kmap], self.dumpfile.name)
 
 
 
