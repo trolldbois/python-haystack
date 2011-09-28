@@ -43,7 +43,8 @@ def mergeDump(dumpFile):
   #sig = sigMaker.search()
 
   # get pointers in stack
-  stackSearcher = signature.TargetMappingPointerSearcher(heap, stack)
+  stackSearcher = signature.TargetMappingPointerSearcher(stack)
+  stackSearcher.setTargetMapping(heap)
   heapSearcher = signature.PointerSearcher(heap)
   pointersFromHeap  = heapSearcher.search()
   pointersFromStack = stackSearcher.search()
