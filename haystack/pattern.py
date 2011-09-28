@@ -25,6 +25,8 @@ OUTPUTDIR='../outputs/'
 
 Config = Dummy()
 Config.cacheDir = os.path.normpath(OUTPUTDIR)
+Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
+Config.WORDSIZE = 4
 
 def make(opts):
   log.info('Make the signature.')
