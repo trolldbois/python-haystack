@@ -15,12 +15,13 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import ctypes, os
 from struct import pack,unpack
-from memory_mapping import readProcessMappings
 
 import logging
 
 log = logging.getLogger('utils')
 
+class Dummy(object):
+  pass
 
 def is_valid_address(obj, mappings, structType=None):
   ''' 
@@ -74,6 +75,7 @@ def is_address_local(obj, structType=None):
     return False
   class P:
     pid=os.getpid()
+  from memory_mapping import readProcessMappings  # loading dependencies
   mappings = readProcessMappings(P()) # memory_mapping
   return is_valid_address(obj,mappings, structType)
 
