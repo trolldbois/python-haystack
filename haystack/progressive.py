@@ -27,13 +27,13 @@ def make(opts):
   ## get the list of pointers values pointing to heap
   ## need cache
   mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
-  values,heap_addrs, aligned = getHeapPointers(opts.dumpfile.name, mappings)
+  values,heap_addrs, aligned, not_aligned = getHeapPointers(opts.dumpfile.name, mappings)
   # we
   if not os.access(Config.structsCacheDir, os.F_OK):
     os.mkdir(Config.structsCacheDir )
   heap = mappings.getHeap()
   # creates
-  for anon_struct in buildAnonymousStructs(heap, aligned, heap_addrs):
+  for anon_struct in buildAnonymousStructs(heap, aligned, not_aligned, heap_addrs):
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
@@ -79,28 +79,37 @@ def getHeapPointers(dumpfilename, mappings):
     log.info('Loading from cache')
     log.info('we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
   aligned = filter(lambda x: (x%4) == 0, values)
+  not_aligned = sorted( set(values)^set(aligned))
   log.info('  only %d are aligned values.'%(len(aligned) ) )
-  return values,heap_addrs, aligned
+  return values,heap_addrs, aligned, not_aligned
 
-def buildAnonymousStructs(heap, values, p_addrs):
-  ''' values: pointer values
+def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
+  ''' values: ALIGNED pointer values
   '''
   lengths=[]
-  for i in range(len(values)-1):
-    lengths.append(values[i+1]-values[i])
-  lengths.append(heap.end-values[-1]) # add tail
+  for i in range(len(aligned)-1):
+    lengths.append(aligned[i+1]-aligned[i])
+  lengths.append(heap.end-aligned[-1]) # add tail
   
   addrs = list(p_addrs)
+  unaligned = list(not_aligned)
   # make AnonymousStruct
-  for i in range(len(values)):
-    start = values[i]
+  for i in range(len(aligned)):
+    start = aligned[i]
     size = lengths[i]
+    # the pointers field address/offset
     addrs, my_pointers_addrs = dequeue(addrs, start, start+size)
-    anon = AnonymousStructInstance(values[i], heap.readBytes(start, size) )
+    # the pointers values, that are not aligned
+    unaligned, my_unaligned_addrs = dequeue(unaligned, start, start+size)
+    ### read the struct
+    anon = AnonymousStructInstance(aligned[i], heap.readBytes(start, size) )
     log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
       anon.setField(p_addr, Config.WORDSIZE, 'ctypes.c_void_p')
+    ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
+    for p_addr in my_unaligned_addrs:
+      anon.setField(p_addr, None, 'ctypes.c_char_p')
     yield anon
   return
 
