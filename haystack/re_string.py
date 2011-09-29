@@ -80,5 +80,4 @@ def testEncoding(bytesarray, encoding):
   else:
     return i, ustr[:i]
     
-  even = [ c for i,c in enumerate(bytesarray]
 
