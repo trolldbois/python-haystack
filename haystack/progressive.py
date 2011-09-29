@@ -19,6 +19,7 @@ from cache_utils import int_array_cache,int_array_save
 import memory_dumper
 import signature 
 from pattern import Config
+import re_string
 
 log = logging.getLogger('progressive')
 
@@ -94,6 +95,7 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
   
   addrs = list(p_addrs)
   unaligned = list(not_aligned)
+  stringfields= 0
   # make AnonymousStruct
   for i in range(len(aligned)):
     start = aligned[i]
@@ -104,14 +106,19 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
     unaligned, my_unaligned_addrs = dequeue(unaligned, start, start+size)
     ### read the struct
     anon = AnonymousStructInstance(aligned[i], heap.readBytes(start, size) )
-    log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
+    ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
       anon.setField(p_addr, Field.POINTER, Config.WORDSIZE)
     ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
     for p_addr in my_unaligned_addrs:
-      anon.setField(p_addr, Field.STRING)
+      if anon.setField(p_addr, Field.STRING):
+        stringfields+=1
+    # debug
+    if len(anon.fields) >1:
+      log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
     yield anon
+  log.info('Typed %d stringfields'%(stringfields))
   return
 
 def filterPointersBetween(addrs, start, end):
@@ -148,23 +155,24 @@ class AnonymousStructInstance:
     if offset < 0 or offset > len(self):
       return IndexError()
     field = Field(self, offset, typename, size)
-    self._check(field)
+    if not self._check(field):
+      return False
     self.fields.append(field)
     self.fields.sort()
-    return 
+    return True
 
   def save(self):
-    self.fname = os.path.sep.join([Config.structsCacheDir, self.name()])
+    self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
     pickle.dump(self, file(self.fname,'w'))
     return
   
-  def name(self):
+  def __str__(self):
     return 'AnonymousStruct_%s_%s_%s'%(len(self), self.prefixname, len(self.fields) )
   
   def _check(self,field):
     # TODO check against other fields
-    field.check()
-    return
+    return field.check()
+
   def __getitem__(self, i):
     return self.fields[i]
   def __len__(self):
@@ -179,38 +187,30 @@ class Field:
     self.size = size
     self.typename = typename
     self.typesTested = []
+    self.value = None
 
   def isString(self): # null terminated
     return self.typename == Field.STRING
 
   def checkString(self):
+    ''' if there is no \x00 termination, its not a string
+    that means that if we have a bad pointer in the middle of a string, 
+    the first part will not be understood as a string'''
     bytes = self.struct.bytes[self.offset:]
-    i = bytes.find('\x00')
-    if i == -1:
+    ret = re_string.startsWithNulTerminatedString(bytes)
+    if not ret:
       self.typename = None
       self.typesTested.append(Field.STRING)
       return False
     else:
-      log.debug('Probably Found a string type')
-      self.size = i
-      chars = bytes[:i]
-      notPrintable = []
-      for i,c in enumerate(chars):
-        if c not in string.printable:
-          notPrintable.append( (i,c) )
-      if len(notPrintable)>0:
-        log.debug('Not a string, %d/%d non printable characters'%( len(notPrintable), i ))
-        self.typename = None
-        self.typesTested.append(Field.STRING)
-        self.size = None
-        return False
-      else:
-        log.debug('Found a string "%s"'%(chars))
-        return True
+      self.size, self.encoding, self.value = ret 
+      log.debug('Found a string "%s" for encoding %s'%(self.value, self.encoding))
+      return True
 
   def check(self):
     if self.isString() and self.size is None:
       return self.checkString()
+    return True
           
   def tuple(self):
     return (self.offset, self.size, self.typename)

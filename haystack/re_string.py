@@ -14,45 +14,56 @@ import os
 import array
 import encodings
 import logging
+import string
 
 log = logging.getLogger('re_string')
 
 _py_encodings = set(encodings.aliases.aliases.values())
+#  except IOError: # TODO delete bz2 and gzip
+#  except TypeError: # TODO delete hex_codec
+#  except ValueError: # TODO delete uu_encode
+_py_encodings.remove('mbcs')
+_py_encodings.remove('hex_codec')
+_py_encodings.remove('uu_codec')
+_py_encodings.remove('bz2_codec')
+_py_encodings.remove('zlib_codec')
+_py_encodings.remove('base64_codec')
+_py_encodings.remove('tactis')
+_py_encodings.remove('rot_13')
+_py_encodings.remove('quopri_codec')
 
-
-def startsWithString(bytesarray):
+def startsWithNulTerminatedString(bytesarray, longerThan=1):
   ''' if there is no \x00 termination, its not a string
   that means that if we have a bad pointer in the middle of a string, 
   the first part will not be understood as a string'''
-  bytes = self.struct.bytes[self.offset:]
-  i = bytes.find('\x00')
+  i = bytesarray.find('\x00')
   if i == -1:
-    self.typename = None
-    self.typesTested.append(Field.STRING)
     return False
   else:
-    log.debug('Probably Found a string type')
-    self.size = i
-    chars = bytes[:i]
-    notPrintable = []
-    for i,c in enumerate(chars):
-      if c not in string.printable:
-        notPrintable.append( (i,c) )
-    if len(notPrintable)>0:
-      log.debug('Not a string, %d/%d non printable characters'%( len(notPrintable), i ))
-      self.typename = None
-      self.typesTested.append(Field.STRING)
-      self.size = None
+    ustrings = testAllEncodings(bytesarray)
+    ustrings = [ (l,enc,ustr) for l,enc,ustr in ustrings if l > longerThan]
+    if len(ustrings) == 0 : # 
       return False
-    else:
-      log.debug('Found a string "%s"'%(chars))
-      if len(chars) == 1: # try unicode
-        log.debug('Unicode test on %s: %s'%(self.struct.name(), repr(bytes)) )
-        
-      return True
+    else: # len(ustrings) > 5 : # probably an ascii string 
+      asciis = [(l,enc,s) for l,enc,s in ustrings if enc == 'ascii' ]
+      # test ascii repr
+      if len(asciis) != 1:
+        asciis = ustrings # only printable chars even in utf
+      size = asciis[0][0]
+      chars = asciis[0][2]
+      notPrintable = []
+      for i,c in enumerate(chars):
+        if c not in string.printable:
+          notPrintable.append( (i,c) )
+      if len(notPrintable)>0:
+        log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+        return False
+      else:
+        return asciis[0]
 
 
-def testAllEncodings(bytearray):
+#AnonymousStruct_48_182351808_1:
+def testAllEncodings(bytesarray):
   res = []
   for codec in _py_encodings:
     length, my_str = testEncoding(bytesarray, codec)
@@ -74,6 +85,9 @@ def testEncoding(bytesarray, encoding):
     ustr = bytesarray.decode(encoding)
   except UnicodeDecodeError:
     return -1, None
+  except Exception, e:
+    log.error('Error using encoding %s'%(encoding))
+    raise e
   i = ustr.find('\x00')
   if i == -1:
     return -1, None
