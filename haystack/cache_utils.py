@@ -16,9 +16,6 @@ import logging
 
 log = logging.getLogger('cache_utils')
 
-class Dummy(object):
-  pass
-
 def int_array_cache(filename):
   if os.access(filename,os.F_OK):
     # load
