@@ -12,6 +12,7 @@ import ctypes
 import array
 import itertools
 import numbers
+import string
 
 from utils import xrange
 from cache_utils import int_array_cache,int_array_save
@@ -106,10 +107,10 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
     log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
-      anon.setField(p_addr, Config.WORDSIZE, 'ctypes.c_void_p')
+      anon.setField(p_addr, Field.POINTER, Config.WORDSIZE)
     ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
     for p_addr in my_unaligned_addrs:
-      anon.setField(p_addr, None, 'ctypes.c_char_p')
+      anon.setField(p_addr, Field.STRING)
     yield anon
   return
 
@@ -142,11 +143,11 @@ class AnonymousStructInstance:
       self.prefixname = '%s_%s'%(self.vaddr, self.prefix)
     return
   
-  def setField(self, vaddr, size, typename):
+  def setField(self, vaddr, typename, size=None ):
     offset = vaddr - self.vaddr
     if offset < 0 or offset > len(self):
       return IndexError()
-    field = (offset, size, typename)
+    field = Field(self, offset, typename, size)
     self._check(field)
     self.fields.append(field)
     self.fields.sort()
@@ -162,11 +163,62 @@ class AnonymousStructInstance:
   
   def _check(self,field):
     # TODO check against other fields
+    field.check()
     return
   def __getitem__(self, i):
     return self.fields[i]
   def __len__(self):
     return len(self.bytes)
+
+class Field:
+  STRING = 'ctypes.c_char_p'
+  POINTER = 'ctypes.c_void_p'
+  def __init__(self, astruct, offset, typename, size=None):
+    self.struct = astruct
+    self.offset = offset
+    self.size = size
+    self.typename = typename
+    self.typesTested = []
+
+  def isString(self): # null terminated
+    return self.typename == Field.STRING
+
+  def checkString(self):
+    bytes = self.struct.bytes[self.offset:]
+    i = bytes.find('\x00')
+    if i == -1:
+      self.typename = None
+      self.typesTested.append(Field.STRING)
+      return False
+    else:
+      log.debug('Probably Found a string type')
+      self.size = i
+      chars = bytes[:i]
+      notPrintable = []
+      for i,c in enumerate(chars):
+        if c not in string.printable:
+          notPrintable.append( (i,c) )
+      if len(notPrintable)>0:
+        log.debug('Not a string, %d/%d non printable characters'%( len(notPrintable), i ))
+        self.typename = None
+        self.typesTested.append(Field.STRING)
+        self.size = None
+        return False
+      else:
+        log.debug('Found a string "%s"'%(chars))
+        return True
+
+  def check(self):
+    if self.isString() and self.size is None:
+      return self.checkString()
+          
+  def tuple(self):
+    return (self.offset, self.size, self.typename)
+
+  def __cmp__(self, other):
+    if not isinstance(other, Field):
+      raise TypeError
+    return cmp(self.tuple(), other.tuple())
 
 def search(opts):
   #
