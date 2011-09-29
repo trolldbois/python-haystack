@@ -257,6 +257,20 @@ GUIDRegexp = r'''([A-Fa-f0-9]{32}| [A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-
 #UNCRegexp = r'(([a-zA-Z]:|\\)\\)?(((\.)|(\.\.)|([^\\/:\*\?"\|<>\. ](([^\\/:\*\?"\|<>\. ])|([^\\/:\*\?"\|<>]*[^\\/:\*\?"\|<>\. ]))?))\\)*[^\\/:\*\?"\|<>\. ](([^\\/:\*\?"\|<>\. ])|([^\\/:\*\?"\|<>]*[^\\/:\*\?"\|<>\. ]))?'
 
 
+def looksLikeUTF8(bytearray):
+  p = re.compile("\\A(\n" +
+    r"  [\\x09\\x0A\\x0D\\x20-\\x7E]             # ASCII\\n" +
+    r"| [\\xC2-\\xDF][\\x80-\\xBF]               # non-overlong 2-byte\n" +
+    r"|  \\xE0[\\xA0-\\xBF][\\x80-\\xBF]         # excluding overlongs\n" +
+    r"| [\\xE1-\\xEC\\xEE\\xEF][\\x80-\\xBF]{2}  # straight 3-byte\n" +
+    r"|  \\xED[\\x80-\\x9F][\\x80-\\xBF]         # excluding surrogates\n" +
+    r"|  \\xF0[\\x90-\\xBF][\\x80-\\xBF]{2}      # planes 1-3\n" +
+    r"| [\\xF1-\\xF3][\\x80-\\xBF]{3}            # planes 4-15\n" +
+    r"|  \\xF4[\\x80-\\x8F][\\x80-\\xBF]{2}      # plane 16\n" +
+    r")*\\z", re.VERBOSE)
+
+  phonyString = bytearray.encode("ISO-8859-1")
+  return p.matcher(phonyString).matches()
 
 '''
 lib["email"] = re.compile(r"(?:^|\s)[-a-z0-9_.]+@(?:[-a-z0-9]+\.)+[a-z]{2,6}(?:\s|$)",re.IGNORECASE)
