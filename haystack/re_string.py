@@ -41,9 +41,7 @@ def startsWithNulTerminatedString(bytesarray, longerThan=1):
     return False
   else:
     ustrings = testAllEncodings(bytesarray)
-    print ustrings
     ustrings = [ (l,enc,ustr) for l,enc,ustr in ustrings if l > longerThan]
-    print ustrings
     if len(ustrings) == 0 : # 
       return False
     else: # len(ustrings) > 5 : # probably an ascii string 
