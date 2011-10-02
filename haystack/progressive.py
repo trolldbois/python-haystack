@@ -118,6 +118,7 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
         inlineString=True
     # debug
     if inlineString:
+      anon.decodeFields()
       log.debug('Created a struct %s with %d fields: %s'%( anon, len(anon.fields), anon.toString() ))
     yield anon
   log.info('Typed %d stringfields'%(stringfields))
@@ -174,10 +175,41 @@ class AnonymousStructInstance:
   def _check(self,field):
     # TODO check against other fields
     return field.check()
-
-  def _fix(self):
+  
+  def decodeFields(self):
+    self._fixPadding()
+    paddings = [ f for f in self.fields if f.padding ] # clean paddings to check new fields
+    newfields=[]
+    for p in paddings:
+      log.debug('decoding padding %s'%(p))
+      paddingSize = len(p)
+      # detect if nul-terminated string
+      field = Field(self, p.offset, Field.STRING, len(p), False)
+      if field.check(): # Found a new string...
+        newfields.append(field)
+      else:
+        pass # check other types
+      # add gaps to decode target        
+      if len(field) == paddingSize: # padding == field, goto next padding
+        continue
+      elif len(field) > paddingSize:
+        log.debug('Overlapping string to next Field. Aggregation needed.')
+        continue
+      else: # there a gap
+        nextoffset = field.offset+len(field)
+        paddingSize -= len(field)
+        newpadding = Field(self, nextoffset, Field.STRING, paddingSize, True) # next field
+        log.debug('build next field in padding %s '%(newpadding))
+        paddings.append(newpadding)
+      # save fields
+    self.fields.extend(newfields)
+    self.fields.sort()
+    return
+  
+  def _fixPadding(self):
     ''' Fix this structure and populate empty offsets with default fields '''
     nextoffset = 0
+    self.fields = [ f for f in self.fields if f.padding != True ] # clean paddings to check new fields
     myfields = sorted(self.fields)
     for f in myfields:
       if f.offset > nextoffset :
@@ -206,13 +238,15 @@ class AnonymousStructInstance:
     return len(self.bytes)
 
   def getFieldName(self, field):
+    if field.isString:
+      return 'text_%s'%(field.offset) # TODO
     return '%s_%s'%(field.typename, field.offset) # TODO
     
   def getFieldType(self, field):
     return field.typename # TODO
 
   def toString(self):
-    self._fix()
+    self._fixPadding()
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     ctypes_def = '''
 class %s(LoadableMembers):
@@ -257,8 +291,9 @@ class Field:
       return False
     else:
       self.size, self.encoding, self.value = ret 
-      self.value+='\x00'
-      log.debug('Found a string "%s"/%d for encoding %s, field size %d'%(self.value, self.size, self.encoding, len(self)))
+      self.value+='\x00' # null terminated
+      self.size+=1 # null terminated
+      log.debug('Found a string "%s" for encoding %s, field %s'%( repr(self.value), self.encoding, self))
       return True
 
   def checkPointer(self):
@@ -294,22 +329,27 @@ class Field:
     return cmp(self.tuple(), other.tuple())
 
   def __len__(self):
-    return self.size
+    return int(self.size) ## some long come and goes
 
   def __str__(self):
-    return 'size:%d'%(len(self))
+    return 'offset:%d size:%d'%(self.offset, len(self))
     
-  def getBytes(self):
+  def _getValue(self, maxLen):
     if len(self) == 0:
       return '<-haystack no pattern found->'
-    return self.struct.bytes[self.offset:len(self)]
+    if self.isString():
+      bytes = repr(self.value)
+    elif self.padding:
+      bytes = repr(self.struct.bytes[self.offset:len(self)])
+    bl = len(bytes)
+    if bl == maxLen:
+      bytes = bytes[:maxLen]+'...'
+    return bytes
     
   def toString(self, prefix):
     comment = self.comment
-    if self.isString():
-      comment = '# %s str:%s...'%( self.comment, self.value[:20] ) 
-    elif self.padding :
-      comment = '# %s pad:%s...'%( self.comment, repr(self.getBytes()[:20]) )
+    if self.isString() or self.padding:
+      comment = '# %s bytes:%s'%( self.comment, self._getValue(20) ) 
           
     fstr = "%s( %s , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
     return fstr
