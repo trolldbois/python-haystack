@@ -98,6 +98,7 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
   stringfields= 0
   # make AnonymousStruct
   for i in range(len(aligned)):
+    inlineString=False
     start = aligned[i]
     size = lengths[i]
     # the pointers field address/offset
@@ -114,9 +115,10 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
     for p_addr in my_unaligned_addrs:
       if anon.setField(p_addr, Field.STRING):
         stringfields+=1
+        inlineString=True
     # debug
-    if len(anon.fields) >1:
-      log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
+    if inlineString:
+      log.debug('Created a struct %s with %d fields: %s'%( anon, len(anon.fields), anon.toString() ))
     yield anon
   log.info('Typed %d stringfields'%(stringfields))
   return
@@ -150,16 +152,16 @@ class AnonymousStructInstance:
       self.prefixname = '%s_%s'%(self.vaddr, self.prefix)
     return
   
-  def setField(self, vaddr, typename, size=None ):
+  def setField(self, vaddr, typename, size=0, padding=False ):
     offset = vaddr - self.vaddr
     if offset < 0 or offset > len(self):
       return IndexError()
-    field = Field(self, offset, typename, size)
+    field = Field(self, offset, typename, size, padding)
     if not self._check(field):
       return False
     self.fields.append(field)
     self.fields.sort()
-    return True
+    return field
 
   def save(self):
     self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
@@ -173,24 +175,75 @@ class AnonymousStructInstance:
     # TODO check against other fields
     return field.check()
 
+  def _fix(self):
+    ''' Fix this structure and populate empty offsets with default fields '''
+    nextoffset = 0
+    myfields = sorted(self.fields)
+    for f in myfields:
+      if f.offset > nextoffset :
+        # add padding field
+        padding = self.makePadding(nextoffset, f.offset-nextoffset)
+        nextoffset = f.offset + len(f)
+      elif f.offset < nextoffset :
+        log.debug('overlapping fields at offset %d'%(f.offset))
+        #TODO compare if padding or not, and resolve ?
+      else: # == 
+        nextoffset = f.offset+len(f)
+        pass
+    if nextoffset < len(self):
+      padding = self.makePadding(nextoffset, len(self)-nextoffset)
+    return
+  
+  def makePadding(self, offset, size):
+    typename = 'ctypes.c_ubyte * %d' % (size)
+    padding = self.setField( self.vaddr+offset, typename, size, True)
+    padding.setName('padding_%d'%(padding.offset) )
+    return padding
+      
   def __getitem__(self, i):
     return self.fields[i]
   def __len__(self):
     return len(self.bytes)
 
+  def getFieldName(self, field):
+    return '%s_%s'%(field.typename, field.offset) # TODO
+    
+  def getFieldType(self, field):
+    return field.typename # TODO
+
+  def toString(self):
+    self._fix()
+    fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
+    ctypes_def = '''
+class %s(LoadableMembers):
+  _fields_ = %s
+
+''' % (self, fieldsString)
+    return ctypes_def
+
+
 class Field:
   STRING = 'ctypes.c_char_p'
   POINTER = 'ctypes.c_void_p'
-  def __init__(self, astruct, offset, typename, size=None):
+  def __init__(self, astruct, offset, typename, size, isPadding):
     self.struct = astruct
     self.offset = offset
     self.size = size
     self.typename = typename
+    self.padding = isPadding
     self.typesTested = []
     self.value = None
-
+    self.comment = '%s'%(self)
+  
+  def setComment(self, txt):
+    self.comment = '# %s'%txt
+  def getComment(self):
+    return self.comment
+    
   def isString(self): # null terminated
     return self.typename == Field.STRING
+  def isPointer(self): # null terminated
+    return self.typename == Field.POINTER
 
   def checkString(self):
     ''' if there is no \x00 termination, its not a string
@@ -204,14 +257,34 @@ class Field:
       return False
     else:
       self.size, self.encoding, self.value = ret 
-      log.debug('Found a string "%s" for encoding %s'%(self.value, self.encoding))
+      self.value+='\x00'
+      log.debug('Found a string "%s"/%d for encoding %s, field size %d'%(self.value, self.size, self.encoding, len(self)))
       return True
 
-  def check(self):
-    if self.isString() and self.size is None:
-      return self.checkString()
+  def checkPointer(self):
+    self.value = struct.unpack('L',self.struct.bytes[self.offset:self.offset+self.size])
     return True
-          
+    
+  def check(self):
+    if self.isString() and self.value is None:
+      return self.checkString()
+    elif self.isPointer() and self.value is None:
+      return self.checkPointer()
+    return True
+  
+  def getCTypes(self):
+    if hasattr(self, 'ctypes'):
+      return self.ctypes
+    return self.struct.getFieldType(self)
+  
+  def setName(self, name):
+    self.name = name
+  
+  def getName(self):
+    if hasattr(self, 'name'):
+      return self.name
+    return self.struct.getFieldName(self)
+      
   def tuple(self):
     return (self.offset, self.size, self.typename)
 
@@ -219,6 +292,29 @@ class Field:
     if not isinstance(other, Field):
       raise TypeError
     return cmp(self.tuple(), other.tuple())
+
+  def __len__(self):
+    return self.size
+
+  def __str__(self):
+    return 'size:%d'%(len(self))
+    
+  def getBytes(self):
+    if len(self) == 0:
+      return '<-haystack no pattern found->'
+    return self.struct.bytes[self.offset:len(self)]
+    
+  def toString(self, prefix):
+    comment = self.comment
+    if self.isString():
+      comment = '# %s str:%s...'%( self.comment, self.value[:20] ) 
+    elif self.padding :
+      comment = '# %s pad:%s...'%( self.comment, repr(self.getBytes()[:20]) )
+          
+    fstr = "%s( %s , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
+    return fstr
+    
+
 
 def search(opts):
   #
