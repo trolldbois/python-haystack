@@ -61,11 +61,11 @@ def startsWithNulTerminatedString(bytesarray, longerThan=1):
           if c not in string.printable:
             notPrintable.append( (i,c) )
         if len(notPrintable)>0:
-          log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+          #log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
           continue
         else:
           return ustring
-      return ustring
+      return False
 
 #AnonymousStruct_48_182351808_1:
 def testAllEncodings(bytesarray):
