@@ -41,26 +41,33 @@ def startsWithNulTerminatedString(bytesarray, longerThan=1):
     return False
   else:
     ustrings = testAllEncodings(bytesarray)
+    print ustrings
     ustrings = [ (l,enc,ustr) for l,enc,ustr in ustrings if l > longerThan]
+    print ustrings
     if len(ustrings) == 0 : # 
       return False
     else: # len(ustrings) > 5 : # probably an ascii string 
-      asciis = [(l,enc,s) for l,enc,s in ustrings if enc == 'ascii' ]
-      # test ascii repr
-      if len(asciis) != 1:
-        asciis = ustrings # only printable chars even in utf
-      size = asciis[0][0]
-      chars = asciis[0][2]
-      notPrintable = []
-      for i,c in enumerate(chars):
-        if c not in string.printable:
-          notPrintable.append( (i,c) )
-      if len(notPrintable)>0:
-        log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
-        return False
-      else:
-        return asciis[0]
-
+      notPrintableBool = True
+      ustring = [[]]
+      i=0
+      for ustring in ustrings :
+        #ustring = [(l,enc,s) for l,enc,s in ustrings if enc == 'ascii' ]
+        # test ascii repr
+        #if len(ustring) != 1:
+        #  asciis = ustrings # only printable chars even in utf
+        size = ustring[0]
+        chars = ustring[2]
+        # check not printable
+        notPrintable = []
+        for i,c in enumerate(chars):
+          if c not in string.printable:
+            notPrintable.append( (i,c) )
+        if len(notPrintable)>0:
+          log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+          continue
+        else:
+          return ustring
+      return ustring
 
 #AnonymousStruct_48_182351808_1:
 def testAllEncodings(bytesarray):
