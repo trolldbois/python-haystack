@@ -239,19 +239,36 @@ class AnonymousStructInstance:
     self._fixGaps()
     return
 
-  def _fixStringOverlaps(self):
+  def _fixOverlaps(self):
     ''' fix overlapping string fields '''
     fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
+    for f1, f2 in self._getOverlapping():
+      log.debug('overlappings %s %s'%(f1,f2))
+      f1_end = f1.offset+len(f1)
+      f2_end = f2.offset+len(f2)
+      if (f1.typename == f2.typename and
+          f2_end == f1_end ): # same end, same type
+        self.fields.remove(f2) # use the last one
+        log.debug('Cleaned a  field overlaps %s %s'%(f1, f2))
+      elif f1.isZeroes() and f2.isZeroes(): # aggregate
+        log.debug('aggregate Zeroes')
+        start = min(f1.offset,f2.offset)
+        size = max(f1_end, f2_end)-start
+        self.fields.remove(f1)
+        self.fields.remove(f2)
+        self.fields.append( Field(self, start, Field.ZEROES, size, False) )
+    return
+  
+  def _getOverlapping(self):
+    fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
     lastend = 0
-    lastf = None
+    oldf = None
     for f in fields:
-      newend = f.offset+len(f)
+      newend = f.offset + len(f)
       if f.offset < lastend:  ## overlaps
-        if newend == lastend: # same end, should be same type
-          self.field.remove(f) # use the last one
-          log.debug('Cleaned a string field overlaps %s'%(f))
-          if f.typename != Field.STRING:
-            log.warning('This Was NOT a string field !!!!')
+        yield ( oldf, f )
+      oldf = f
+      lastend = newend
     return
   
   def _fixGaps(self):
@@ -278,7 +295,7 @@ class AnonymousStructInstance:
     if self._gaps == 0:
       self.resolved = True
     if overlaps:
-      self._fixStringOverlaps()
+      self._fixOverlaps()
     return
   
   def makeUntyped(self, offset, size):
