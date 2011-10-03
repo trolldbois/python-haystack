@@ -40,6 +40,7 @@ def make(opts):
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
     #
+    log.info(anon_struct.toString())
     pass
 
   
@@ -95,10 +96,10 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
   
   addrs = list(p_addrs)
   unaligned = list(not_aligned)
-  stringfields= 0
+  nbMembers = 0
   # make AnonymousStruct
   for i in range(len(aligned)):
-    inlineString=False
+    hasMembers=False
     start = aligned[i]
     size = lengths[i]
     # the pointers field address/offset
@@ -110,18 +111,24 @@ def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
     ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
-      anon.setField(p_addr, Field.POINTER, Config.WORDSIZE)
+      f = anon.setField(p_addr, Field.POINTER, Config.WORDSIZE)
+      if f is not None:
+        f.setComment('') # target struct ?
     ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
     for p_addr in my_unaligned_addrs:
-      if anon.setField(p_addr, Field.STRING):
-        stringfields+=1
-        inlineString=True
+      if anon.setField(p_addr) is not None: #, Field.UKNOWN):
+        nbMembers+=1
+        hasMembers=True
+      # not added
     # debug
-    if inlineString:
+    if hasMembers:
+      for _f in anon.fields:
+        if _f.size == -1:
+          log.debug('ERROR, %s '%(_f))
       anon.decodeFields()
-      log.debug('Created a struct %s with %d fields: %s'%( anon, len(anon.fields), anon.toString() ))
+      log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
     yield anon
-  log.info('Typed %d stringfields'%(stringfields))
+  log.info('Typed %d stringfields'%(nbMembers))
   return
 
 def filterPointersBetween(addrs, start, end):
@@ -153,13 +160,22 @@ class AnonymousStructInstance:
       self.prefixname = '%s_%s'%(self.vaddr, self.prefix)
     return
   
-  def setField(self, vaddr, typename, size=0, padding=False ):
+  def setField(self, vaddr, typename=None, size=-1, padding=False ):
     offset = vaddr - self.vaddr
     if offset < 0 or offset > len(self):
-      return IndexError()
+      raise IndexError()
+    if typename is None:
+      typename = Field.UNKNOWN
+    #
     field = Field(self, offset, typename, size, padding)
-    if not self._check(field):
-      return False
+    if typename == Field.UNKNOWN:
+      if not field.decodeType():
+        return None
+    elif not field.check():
+      return None
+    if field.size == -1:
+      raise ValueError('error here %s %s'%(field, field.typename))
+    # field has been typed
     self.fields.append(field)
     self.fields.sort()
     return field
@@ -177,19 +193,21 @@ class AnonymousStructInstance:
     return field.check()
   
   def decodeFields(self):
-    self._fixPadding()
+    self._fixGaps()
     paddings = [ f for f in self.fields if f.padding ] # clean paddings to check new fields
     newfields=[]
     for p in paddings:
-      log.debug('decoding padding %s'%(p))
+      log.debug('decoding unkown field %s'%(p))
       paddingSize = len(p)
       # detect if nul-terminated string
-      field = Field(self, p.offset, Field.STRING, len(p), False)
-      if field.check(): # Found a new string...
-        newfields.append(field)
+      field = Field(self, p.offset, Field.UNKNOWN, len(p), False)
+      fieldType = field.decodeType()
+      if fieldType is None: # Found a new field with a probable type...
+        pass
       else:
-        pass # check other types
-      # add gaps to decode target        
+        newfields.append(field) # save it
+
+      # add gap fields to decode target        
       if len(field) == paddingSize: # padding == field, goto next padding
         continue
       elif len(field) > paddingSize:
@@ -198,15 +216,16 @@ class AnonymousStructInstance:
       else: # there a gap
         nextoffset = field.offset+len(field)
         paddingSize -= len(field)
-        newpadding = Field(self, nextoffset, Field.STRING, paddingSize, True) # next field
+        newpadding = Field(self, nextoffset, Field.UNKNOWN, paddingSize, False) # next field
         log.debug('build next field in padding %s '%(newpadding))
         paddings.append(newpadding)
-      # save fields
+    # save fields
     self.fields.extend(newfields)
     self.fields.sort()
+    self._fixGaps()
     return
   
-  def _fixPadding(self):
+  def _fixGaps(self):
     ''' Fix this structure and populate empty offsets with default fields '''
     nextoffset = 0
     self.fields = [ f for f in self.fields if f.padding != True ] # clean paddings to check new fields
@@ -214,7 +233,7 @@ class AnonymousStructInstance:
     for f in myfields:
       if f.offset > nextoffset :
         # add padding field
-        padding = self.makePadding(nextoffset, f.offset-nextoffset)
+        padding = self.makeUntyped(nextoffset, f.offset-nextoffset)
         nextoffset = f.offset + len(f)
       elif f.offset < nextoffset :
         log.debug('overlapping fields at offset %d'%(f.offset))
@@ -223,13 +242,13 @@ class AnonymousStructInstance:
         nextoffset = f.offset+len(f)
         pass
     if nextoffset < len(self):
-      padding = self.makePadding(nextoffset, len(self)-nextoffset)
+      padding = self.makeUntyped(nextoffset, len(self)-nextoffset)
     return
   
-  def makePadding(self, offset, size):
+  def makeUntyped(self, offset, size):
     typename = 'ctypes.c_ubyte * %d' % (size)
     padding = self.setField( self.vaddr+offset, typename, size, True)
-    padding.setName('padding_%d'%(padding.offset) )
+    padding.setName('untyped_%d'%(padding.offset) )
     return padding
       
   def __getitem__(self, i):
@@ -238,15 +257,17 @@ class AnonymousStructInstance:
     return len(self.bytes)
 
   def getFieldName(self, field):
-    if field.isString:
-      return 'text_%s'%(field.offset) # TODO
+    if field.isString():
+      return 'text_%s'%(field.offset) 
+    if field.isZeroes():
+      return 'zeroes_%s'%(field.offset) 
     return '%s_%s'%(field.typename, field.offset) # TODO
     
   def getFieldType(self, field):
     return field.typename # TODO
 
   def toString(self):
-    self._fixPadding()
+    self._fixGaps()
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     ctypes_def = '''
 class %s(LoadableMembers):
@@ -259,6 +280,9 @@ class %s(LoadableMembers):
 class Field:
   STRING = 'ctypes.c_char_p'
   POINTER = 'ctypes.c_void_p'
+  PADDING = 'ctypes.c_ubyte'
+  ZEROES = 'zeroes'
+  UNKNOWN = 'unknown'
   def __init__(self, astruct, offset, typename, size, isPadding):
     self.struct = astruct
     self.offset = offset
@@ -276,8 +300,10 @@ class Field:
     
   def isString(self): # null terminated
     return self.typename == Field.STRING
-  def isPointer(self): # null terminated
+  def isPointer(self): # 
     return self.typename == Field.POINTER
+  def isZeroes(self): # 
+    return self.typename == Field.ZEROES
 
   def checkString(self):
     ''' if there is no \x00 termination, its not a string
@@ -286,26 +312,80 @@ class Field:
     bytes = self.struct.bytes[self.offset:]
     ret = re_string.startsWithNulTerminatedString(bytes)
     if not ret:
-      self.typename = None
       self.typesTested.append(Field.STRING)
+      #log.warning('STRING: This is not a string %s'%(self))
       return False
     else:
       self.size, self.encoding, self.value = ret 
-      self.value+='\x00' # null terminated
-      self.size+=1 # null terminated
-      log.debug('Found a string "%s" for encoding %s, field %s'%( repr(self.value), self.encoding, self))
+      self.value += '\x00' # null terminated
+      self.size += 1 # null terminated
+      log.debug('STRING: Found a string "%s"/%d for encoding %s, field %s'%( repr(self.value), self.size, self.encoding, self))
       return True
 
   def checkPointer(self):
-    self.value = struct.unpack('L',self.struct.bytes[self.offset:self.offset+self.size])
+    self.value = struct.unpack('L',self.struct.bytes[self.offset:self.offset+self.size])[0] #TODO biteorder
+    # TODO check if pointer value is in range of mappings
     return True
-    
+  
+  def checkZeroes(self):
+    ''' iterate over the bytes until a byte if not \x00 '''
+    #bytes = self.struct.bytes[self.offset:self.offset+self.size]
+    bytes = self.struct.bytes[self.offset:]
+    #log.debug('ZERO: checking for zeroes padding %s'%(self))
+    previous = -1
+    for i, val in enumerate(bytes):
+      if (self.offset+i) % Config.WORDSIZE == 0: # aligned word
+        previous = i
+      if val != 0:  # ah ! its not null !
+        if previous == i: # aligned word
+          if i > 0: # we have at least a byte of padding
+            self.size = i
+            self.value = self.struct.bytes[self.offset:self.offset+self.size]
+            log.debug('ZERO: we have at least a byte of padding %s'%(self))
+            return True
+          else: # first byte is not null
+            #log.debug('ZERO: first byte is not null %s'%(self))
+            return False
+        else: # unaligned word, we can say the padding stopped at the previous alignement
+          if previous <= 0: # never was a padding
+            #log.debug('ZERO: never was a padding %s'%(self))
+            return False
+          else: # the padding stopped after 'previous' bytes 
+            self.size = previous 
+            self.value = self.struct.bytes[self.offset:self.offset+self.size]
+            log.debug("ZERO: the padding stopped after 'previous' bytes %s"%(self))
+            return True
+    if previous != -1:
+      self.size = i
+      self.value = self.struct.bytes[self.offset:self.offset+self.size]
+      log.debug('ZERO: ALL zeroes %s'%(self))
+      return True
+    else:
+      return False
+    #    
+  
   def check(self):
     if self.isString() and self.value is None:
       return self.checkString()
     elif self.isPointer() and self.value is None:
       return self.checkPointer()
     return True
+  
+  def decodeType(self):
+    if self.typename != Field.UNKNOWN:
+      raise TypeError('I wont coherce this Field if you think its another type')
+    # try all possible things
+    if self.checkString(): # Found a new string...
+      log.debug ('STRING: decoded a string field')
+      self.typename = Field.STRING
+      return Field.STRING
+    elif self.checkZeroes():
+      log.debug ('ZERO: decoded a zeroes padding')
+      self.typename = Field.ZEROES
+      return Field.ZEROES
+    pass # check other types
+    return None
+
   
   def getCTypes(self):
     if hasattr(self, 'ctypes'):
@@ -332,7 +412,7 @@ class Field:
     return int(self.size) ## some long come and goes
 
   def __str__(self):
-    return 'offset:%d size:%d'%(self.offset, len(self))
+    return 'offset:%d size:%s'%(self.offset, self.size)
     
   def _getValue(self, maxLen):
     if len(self) == 0:
@@ -340,9 +420,11 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.padding:
-      bytes = repr(self.struct.bytes[self.offset:len(self)])
+      bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
+    elif self.isZeroes():
+      bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
     bl = len(bytes)
-    if bl == maxLen:
+    if bl >= maxLen:
       bytes = bytes[:maxLen]+'...'
     return bytes
     
@@ -350,6 +432,8 @@ class Field:
     comment = self.comment
     if self.isString() or self.padding:
       comment = '# %s bytes:%s'%( self.comment, self._getValue(20) ) 
+    elif self.isPointer():
+      comment = '# @0x%lx %s'%( self.value, self.comment ) 
           
     fstr = "%s( %s , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
     return fstr
