@@ -348,7 +348,7 @@ class AnonymousStructInstance:
   def getFieldName(self, field):
     if field.isString():
       return 'text_%s'%(field.offset) 
-    if field.isZeroes():
+    elif field.isZeroes():
       return 'zeroes_%s'%(field.offset) 
     return '%s_%s'%(field.typename, field.offset) # TODO
     
@@ -369,9 +369,9 @@ class AnonymousStructInstance:
         resolved+=1
       self._setFieldAsPointerField(field, tgt)
     #
-    self.pointersType = treated
     if len(self.pointersType) == resolved:
-      log.debug('%s pointers are fully resolved'%(self))
+      if resolved != 0 :
+        log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
     else:
       self.pointerResolved = False
@@ -382,16 +382,21 @@ class AnonymousStructInstance:
   
   def _setFieldAsPointerField(self, field, target=None):
     self.pointersType[field] = target
+    if target is not None:
+      field.setName('ptr_%s'%(target))
   
   
   def toString(self):
     self._fixGaps()
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
+    info = 'resolved:%s'%(self.resolved)
+    if len(self.getPointerFields()) != 0:
+      info += ' pointerResolved:%s'%(self.pointerResolved)
     ctypes_def = '''
-class %s(LoadableMembers):  # resolved:%s pointerResolved:%s
+class %s(LoadableMembers):  # %s
   _fields_ = %s
 
-''' % (self, self.resolved, self.pointerResolved, fieldsString)
+''' % (self, info, fieldsString)
     return ctypes_def
 
   def __str__(self):
