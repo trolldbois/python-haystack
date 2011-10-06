@@ -30,7 +30,7 @@ log = logging.getLogger('progressive')
 
 
 def make(opts):
-  log.info('Extracting structures from pointer values and offsets.')
+  log.info('[+] Extracting structures from pointer values and offsets.')
   ## get the list of pointers values pointing to heap
   ## need cache
   mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
@@ -87,24 +87,32 @@ def getHeapPointers(dumpfilename, mappings):
     int_array_save(F_ADDRS, heap_addrs)
     log.info('we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
-    log.info('Loading from cache')
-    log.info('we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
+    log.info('[+] Loading from cache')
+    log.info('    [-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
   aligned = filter(lambda x: (x%4) == 0, values)
   not_aligned = sorted( set(values)^set(aligned))
-  log.info('  only %d are aligned values.'%(len(aligned) ) )
+  log.info('         only %d are aligned values.'%(len(aligned) ) )
   return values,heap_addrs, aligned, not_aligned
 
-def buildAnonymousStructs(heap, aligned, not_aligned, p_addrs):
+def buildAnonymousStructs(heap, _aligned, not_aligned, p_addrs):
   ''' values: ALIGNED pointer values
   '''
   structCache = {}
   lengths=[]
+  
+  aligned = list(_aligned)
   for i in range(len(aligned)-1):
     lengths.append(aligned[i+1]-aligned[i])
   lengths.append(heap.end-aligned[-1]) # add tail
   
   addrs = list(p_addrs)
   unaligned = list(not_aligned)
+  
+  aligned.reverse()
+  lengths.reverse()
+  addrs.reverse()
+  unaligned.reverse()
+    
   nbMembers = 0
   # make AnonymousStruct
   for i in range(len(aligned)):
@@ -169,7 +177,7 @@ class AnonymousStructInstance:
     self.vaddr = vaddr
     self.bytes = bytes
     self.fields = []
-    self.pointers = []
+    self.pointersType = {}
     if prefix is None:
       self.prefixname = '%lx'%(self.vaddr)
     else:
@@ -346,24 +354,23 @@ class AnonymousStructInstance:
     
   def getFieldType(self, field):
     if field.isString():
-      return field.typename
+      return '%s * %d' %(field.typename, len(field) )
     if field.isZeroes():
       return 'ctypes.c_ubyte *%d'%(len(field))
     return field.typename
 
   def resolvePointers(self, structCache):
-    treated = set()
     resolved = 0
-    for field,pointed in self.getPointerFields():
+    for field,pointed in self.getPointerFields().items():
       # if pointed is not None:  # erase previous info
       tgt = None
       if field.value in structCache:
         tgt = structCache[field.value]
         resolved+=1
-      treated.add((field, tgt))
+      self._setFieldAsPointerField(field, tgt)
     #
-    self.pointers = treated
-    if len(treated) == resolved:
+    self.pointersType = treated
+    if len(self.pointersType) == resolved:
       log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
     else:
@@ -371,20 +378,20 @@ class AnonymousStructInstance:
     return
     
   def getPointerFields(self):
-    return sorted(self.pointers)
+    return self.pointersType
   
   def _setFieldAsPointerField(self, field, target=None):
-    self.pointers.add( (field,target) )
+    self.pointersType[field] = target
   
   
   def toString(self):
     self._fixGaps()
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     ctypes_def = '''
-class %s(LoadableMembers):
+class %s(LoadableMembers):  # resolved:%s pointerResolved:%s
   _fields_ = %s
 
-''' % (self, fieldsString)
+''' % (self, self.resolved, self.pointerResolved, fieldsString)
     return ctypes_def
 
   def __str__(self):
@@ -393,7 +400,7 @@ class %s(LoadableMembers):
 
 
 class Field:
-  STRING = 'ctypes.c_char_p'
+  STRING = 'ctypes.c_char'
   POINTER = 'ctypes.c_void_p'
   PADDING = 'ctypes.c_ubyte'
   INTEGER = 'ctypes.c_uint'
