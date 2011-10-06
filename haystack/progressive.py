@@ -6,6 +6,7 @@
 
 import logging
 import argparse, os, pickle, time, sys
+import collections
 import re
 import struct
 import ctypes
@@ -301,10 +302,10 @@ class AnonymousStructInstance:
     if size == Config.WORDSIZE:
       typename = FieldType.INTEGER
     else:
-      typename = 'ctypes.c_ubyte * %d' % (size)
+      typename = FieldType.UNKNOWN
     padding = self.setField( self.vaddr+offset, typename, size, True)
-    padding.setName('untyped_%d'%(padding.offset) )
-
+    if padding is not None:
+      padding.setName('%s_%d'%(padding.typename.basename, padding.offset) )
     return padding
 
   def _fixOverlaps(self):
@@ -374,7 +375,7 @@ class AnonymousStructInstance:
   def _setFieldAsPointerField(self, field, target=None):
     self.pointersType[field] = target
     if target is not None:
-      field.setName('ptr_%s'%(target))
+      field.setName('%s_%s'%(field.typename.basename, target))
   
   def getSignature(self):
     return ''.join([f.getSignature() for f in self.fields])
@@ -570,8 +571,7 @@ class Field:
     # few values. it migth be an array
     self.size = size
     self.values = bytes
-    self.offset = offset
-    self.setName('array_%d'%(self.offset))
+    self.setName('%s_%d'%(self.typename.basename, self.offset))
     return True
         
 
@@ -585,7 +585,7 @@ class Field:
     if val < 0xff:
       self.value = val
       self.size = 4
-      self.setName('small_int_%s'%(self.offset))
+      self.setName('%s_%d'%(self.typename.basename, self.offset))
       return True
     else:
       return False
@@ -636,7 +636,7 @@ class Field:
       return self.ctypes
     if self.isString() or self.isZeroes() or self.isByteArray():
       return '%s * %d' %(self.typename.ctypes, len(self) )
-    return field.typename.ctypes
+    return self.typename.ctypes
   
   def setName(self, name):
     self.name = name
@@ -669,10 +669,10 @@ class Field:
       bytes = repr(self.value)
     elif self.typename == FieldType.INTEGER:
       return struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
-    elif self.isZeroes():
+    elif self.isZeroes() or self.padding:
       bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
-    elif self.padding:
-      bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
+    else:
+      return self.value
     bl = len(bytes)
     if bl >= maxLen:
       bytes = bytes[:maxLen]+'...'
