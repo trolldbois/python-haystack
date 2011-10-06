@@ -26,12 +26,18 @@ log = logging.getLogger('progressive')
 
 # a 12 Mo heap takes 30 minutes on my slow notebook
 # what is \xb2 padding for ?
+# huge bug with zerroes fields aggregation
 
 # TODO look for VFT and malloc metadata ?
 # se stdc++ to unmangle c++
 # vivisect ?
-
+# TODO 1: make an interactive thread on that anon_struct and a struct Comparator to find similar struct.
+#         that is a first step towards structure identification && naming. + caching of info
+#      2: dump ctypes structure into python file + cache (vaddr, Structurectypes ) to pickle file ( reloading/continue possible with less recalculation )
 # create a typename for \xff * 8/16. buffer color ? array of char?
+
+# Compare sruct type from parent with multiple pointer (
+
 
 def make(opts):
   log.info('[+] Extracting structures from pointer values and offsets.')
@@ -208,6 +214,8 @@ class AnonymousStructInstance:
       size = maxFieldSize
     ##
     field = Field(self, offset, typename, size, padding)
+    if field.typename == FieldType.POINTER:
+      self._setFieldAsPointerField(field)
     if typename == FieldType.UNKNOWN:
       if not field.decodeType():
         return None
@@ -647,6 +655,8 @@ class Field:
     else:
       return '%s_%s'%(self.typename.basename, self.offset)
     
+  def __hash__(self):
+    return hash(self.tuple())
       
   def tuple(self):
     return (self.offset, self.size, self.typename)
