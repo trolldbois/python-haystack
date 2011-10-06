@@ -27,6 +27,7 @@ log = logging.getLogger('progressive')
 # a 12 Mo heap takes 30 minutes on my slow notebook
 # what is \xb2 padding for ?
 # huge bug with zerroes fields aggregation
+# the empty space at the end of the heap is making the reverse quite slow.... logs outputs line rate 10/sec againt 2k/sec
 
 # TODO look for VFT and malloc metadata ?
 # se stdc++ to unmangle c++
@@ -52,7 +53,7 @@ def make(opts):
   log.info('[+] Reversing %s'%(heap))
   # creates
   #structCache = {}
-  for anon_struct in buildAnonymousStructs(heap, aligned, not_aligned, heap_addrs):
+  for anon_struct in buildAnonymousStructs(heap, aligned, not_aligned, heap_addrs, reverse=False): # reverse is way too slow...
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
