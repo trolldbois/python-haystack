@@ -433,7 +433,7 @@ class FieldType:
     self.basename = basename
     self.ctypes = ctypes
 
-FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'unknown')
+FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte')
 FieldType.POINTER  = FieldType(0x1,  'ptr',       'ctypes.c_void_p')
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte')
 FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char')
@@ -694,6 +694,8 @@ class Field:
     if hasattr(self, 'ctypes'):
       return self.ctypes
     if self.isString() or self.isZeroes() or self.isByteArray():
+      return '%s * %d' %(self.typename.ctypes, len(self) )
+    if self.typename == FieldType.UNKNOWN:
       return '%s * %d' %(self.typename.ctypes, len(self) )
     return self.typename.ctypes
   
