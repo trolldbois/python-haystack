@@ -52,17 +52,19 @@ def make(opts):
   heap = mappings.getHeap()
   log.info('[+] Reversing %s'%(heap))
   # creates
-  #structCache = {}
-  for anon_struct in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, reverse=False): # reverse is way too slow...
+  structCache = {}
+  for anon_struct in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
     #
     log.info(anon_struct.toString())
-    #structCache[ anon_struct.vaddr ] = anon_struct
+    #
+    if len(structCache) % 100 == 0:
+      rewrite(structCache)
     pass
-
-  
+  # final pass
+  rewrite(structCache)  
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
   ##  unresolved PP in ppMapper.unresolved
@@ -105,10 +107,9 @@ def getHeapPointers(dumpfilename, mappings):
   log.info('         only %d are aligned values.'%(len(aligned) ) )
   return values,heap_addrs, aligned, not_aligned
 
-def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, reverse=False):
+def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, structCache, reverse=False):
   ''' values: ALIGNED pointer values
   '''
-  structCache = {}
   lengths=[]
   
   aligned = list(_aligned)
@@ -138,6 +139,8 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, revers
     unaligned, my_unaligned_addrs = dequeue(unaligned, start, start+size)
     ### read the struct
     anon = AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
+    #save the ref/struct type
+    structCache[ anon.vaddr ] = anon
     ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
@@ -162,7 +165,6 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, revers
       log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
       #log.debug(anon.toString())
     #
-    structCache[ anon.vaddr ] = anon
     yield anon
   log.info('Typed %d stringfields'%(nbMembers))
   return
@@ -179,8 +181,17 @@ def dequeue(addrs, start, end):
   while len(addrs)> 0  and addrs[0] >= start and addrs[0] <= end - Config.WORDSIZE:
     ret.append(addrs.pop(0))
   return addrs, ret
-  
 
+def rewrite(structCache):
+  fout = file(Config.GENERATED_PY_HEADERS,'w')
+  structs = sorted(structCache.values())
+  for anon in structs:
+    anon.resolvePointers(structCache)
+    fout.write(anon.toString())
+    fout.write("\n")
+  fout.close()
+  return
+  
 class AnonymousStructInstance:
   '''
   AnonymousStruct in absolute address space.
@@ -356,14 +367,6 @@ class AnonymousStructInstance:
       lastend = newend
     return
   
-      
-  def __getitem__(self, i):
-    return self.fields[i]
-    
-  def __len__(self):
-    return len(self.bytes)
-
-
   def resolvePointers(self, structCache):
     resolved = 0
     for field in self.getPointerFields():
@@ -407,8 +410,20 @@ class %s(LoadableMembers):  # %s
 ''' % (self, info, fieldsString)
     return ctypes_def
 
+      
+  def __getitem__(self, i):
+    return self.fields[i]
+    
+  def __len__(self):
+    return len(self.bytes)
+
+  def __cmp__(self, other):
+    if not isinstance(other, AnonymousStructInstance):
+      raise TypeError
+    return cmp(self.vaddr, other.vaddr)
+  
   def __str__(self):
-    return 'AnonymousStruct_%s_%s_%s'%(len(self), self.prefixname, len(self.fields) )
+    return 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )
   
 
 
@@ -478,7 +493,12 @@ class Field:
       return True
 
   def checkPointer(self):
-    value = struct.unpack('L',self.struct.bytes[self.offset:self.offset+Config.WORDSIZE])[0] #TODO biteorder
+    if (self.offset%Config.WORDSIZE != 0):
+      return False
+    bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
+    if len(bytes) != Config.WORDSIZE:
+      return False      
+    value = struct.unpack('L',bytes)[0] #TODO biteorder
     log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
     # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
     if value in self.struct.mappings:
@@ -602,7 +622,6 @@ class Field:
     # few values. it migth be an array
     self.size = size
     self.values = bytes
-    self.setName('%s_%d'%(self.typename.basename, self.offset))
     return True
         
 
@@ -616,7 +635,6 @@ class Field:
     if val < 0xff:
       self.value = val
       self.size = 4
-      self.setName('%s_%d'%(self.typename.basename, self.offset))
       return True
     else:
       return False
@@ -666,6 +684,7 @@ class Field:
     # typename is good
     self.decoded = True
     self.padding = False
+    self.setName('%s_%d'%(self.typename.basename, self.offset))
     return self.typename
   
   def setCTypes(self, name):
