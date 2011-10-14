@@ -169,12 +169,26 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
   log.info('Typed %d stringfields'%(nbMembers))
   return
 
-def filterPointersBetween(addrs, start, end):
-  ''' start <=  x <  end-4'''
-  return itertools.takewhile( lambda x: x>end-Config.WORDSIZE, itertools.dropwhile( lambda x: x<start, addrs) )
+def closestFloorValue(val, lst):
+  ''' return the closest previous value to val in lst '''
+  if val in lst:
+    return val, lst.index(val)
+  prev = lst[0]
+  for i in xrange(1, len(lst)-1):
+    if lst[i] > val:
+      return prev, i-1
+    prev = lst[i]
+  return lst[-1], len(lst)-1
+  
+#it = itertools.takewhile( lambda x: x>end-Config.WORDSIZE, itertools.dropwhile( lambda x: x<val, addrs) )
 
 def dequeue(addrs, start, end):
-  ''' start <=  x <  end-4'''
+  ''' 
+  dequeue address and return vaddr in interval ( Config.WORDSIZE ) from a list of vaddr
+  dequeue addrs from 0 to start.
+    dequeue all value between start and end in retval2
+  return remaining after end, retval2
+  '''
   ret = []
   while len(addrs)> 0  and addrs[0] < start:
     addrs.pop(0)
@@ -202,7 +216,6 @@ class AnonymousStructInstance:
     self.vaddr = vaddr
     self.bytes = bytes
     self.fields = []
-    self.pointersType = {}
     if prefix is None:
       self.prefixname = '%lx'%(self.vaddr)
     else:
@@ -228,8 +241,6 @@ class AnonymousStructInstance:
       size = maxFieldSize
     ##
     field = Field(self, offset, typename, size, padding)
-    if field.isPointer():
-      self._setFieldAsPointerField(field)
     if typename == FieldType.UNKNOWN:
       if not field.decodeType():
         return None
@@ -368,32 +379,51 @@ class AnonymousStructInstance:
     return
   
   def resolvePointers(self, structCache):
+    if self.pointerResolved:
+      return
     resolved = 0
-    for field in self.getPointerFields():
+    pointerFields = self.getPointerFields()
+    for field in pointerFields:
       # if pointed is not None:  # erase previous info
       tgt = None
       if field.value in structCache:
         tgt = structCache[field.value]
+      elif field.value in self.mappings.getHeap():
+        log.info('resolvePointer to String: we have a heap value %lx'%(field.value))
+        # elif target is a STRING in the HEAP
+        # set pointer type to char_p
+        tgt_field = self._resolvePointerToStringField(field, structCache)
+        if tgt_field is not None:
+          field.typename == FieldType.STRING_POINTER
+          tgt = '%s_field_%s'%(tgt_field.struct, tgt_field)
+        pass
+      if tgt is not None:
         resolved+=1
-      self._setFieldAsPointerField(field, tgt)
+        field.setName('%s_%s'%(field.typename.basename, tgt))
     #
-    if len(self.pointersType) == resolved:
+    if len(pointerFields) == resolved:
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
     else:
       self.pointerResolved = False
     return
-    
+  
+  def _resolvePointerToStringField(self, field, structCache):
+    structs_addrs = sorted(structCache.keys())
+    nearest_addr, ind = closestFloorValue(field.value, structs_addrs)
+    tgt_st = structCache[nearest_addr]
+    if field.value in tgt_st:
+      offset = field.value - nearest_addr
+      for f in tgt_st.fields:
+        if f.offset == offset:
+          tgt_field = f
+          return tgt_field
+    return None
+  
   def getPointerFields(self):
-    #return self.pointersType
     return [f for f in self.fields if f.isPointer()]
-  
-  def _setFieldAsPointerField(self, field, target=None):
-    self.pointersType[field] = target
-    if target is not None:
-      field.setName('%s_%s'%(field.typename.basename, target))
-  
+    
   def getSignature(self):
     return ''.join([f.getSignature() for f in self.fields])
   
@@ -410,6 +440,14 @@ class %s(LoadableMembers):  # %s
 ''' % (self, info, fieldsString)
     return ctypes_def
 
+  def __contains__(self, other):
+    if isinstance(other, numbers.Number):
+      # test vaddr in struct instance len
+      if self.vaddr <= other <= self.vaddr+len(self):
+        return True
+      return False
+    else:
+      raise NotImplementedError()
       
   def __getitem__(self, i):
     return self.fields[i]
@@ -437,6 +475,7 @@ FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte')
 FieldType.POINTER  = FieldType(0x1,  'ptr',       'ctypes.c_void_p')
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte')
 FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char')
+FieldType.STRING_POINTER   = FieldType(0x11, 'text_p',      'ctypes.c_char_p')
 FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint')
 FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint')
 FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte')
@@ -467,7 +506,7 @@ class Field:
   def isString(self): # null terminated
     return self.typename == FieldType.STRING
   def isPointer(self): # 
-    return self.typename == FieldType.POINTER
+    return self.typename == FieldType.POINTER or self.typename == FieldType.STRING_POINTER 
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
   def isByteArray(self): # 
@@ -732,9 +771,9 @@ class Field:
       bytes = repr(self.value)
     elif self.isInteger():
       return struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
-    elif self.isZeroes() or self.padding:
+    elif self.isZeroes() or self.padding or self.typename == FieldType.UNKNOWN:
       bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
-    else:
+    else: # bytearray, pointer...
       return self.value
     bl = len(bytes)
     if bl >= maxLen:
