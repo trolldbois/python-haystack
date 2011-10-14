@@ -59,7 +59,7 @@ def make(opts):
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
     #
-    log.info(anon_struct.toString())
+    #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
     if time.time() - t0 > 30 :
       rewrite(structCache)
@@ -654,7 +654,7 @@ class Field:
     if size < 4:
       return False
     ctr = collections.Counter(bytes)
-    floor = max(1,int(size*.1))
+    floor = max(1,int(size*.1)) # 10 % variation in values
     #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
     commons = ctr.most_common()
     if len(commons) > floor:
@@ -662,6 +662,7 @@ class Field:
     # few values. it migth be an array
     self.size = size
     self.values = bytes
+    self.comment = '10% var in values: %s'%(''.join(commons))
     return True
         
 
