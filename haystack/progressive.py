@@ -395,7 +395,7 @@ class AnonymousStructInstance:
         tgt_field = self._resolvePointerToStringField(field, structCache)
         if tgt_field is not None:
           field.typename == FieldType.STRING_POINTER
-          tgt = '%s_field_%s'%(tgt_field.struct, tgt_field)
+          tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
         pass
       if tgt is not None:
         resolved+=1
