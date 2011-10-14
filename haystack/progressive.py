@@ -124,7 +124,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, revers
     lengths.reverse()
     addrs.reverse()
     unaligned.reverse()
-    dequeue=dequeue_reverse
+    #dequeue=dequeue_reverse
     
   nbMembers = 0
   # make AnonymousStruct
@@ -268,7 +268,9 @@ class AnonymousStructInstance:
     #  self._addField(0, FieldType.UNKNOWN, size, True)
     self._fixGaps() # add padding zones
     gaps = [ f for f in self.fields if f.padding == True ] 
-    while len(gaps) > 0 :
+    sg = len(gaps)
+    while  sg > 0 :
+      log.debug('decode: %d gaps left'%(sg))
       # try to decode padding zone
       for field in self.fields:
         if field.decoded: # do not redecode, save
@@ -277,14 +279,16 @@ class AnonymousStructInstance:
         fieldType = field.decodeType()
         if fieldType is None: # we could not decode. mark it as unknown
           field.padding = False
+          field.decoded = True
           continue
         # Found a new field in a padding, with a probable type...
         pass
       # reroll until completion
       self._fixGaps() 
       gaps = [ f for f in self.fields if f.padding == True ] 
+      sg = len(gaps)
     #endwhile
-  return
+    return
 
   def _fixGaps(self):
     ''' Fix this structure and populate empty offsets with default unknown padding fields '''
@@ -295,9 +299,9 @@ class AnonymousStructInstance:
     myfields = sorted(self.fields)
     for f in myfields:
       if f.offset > nextoffset : # add temp padding field
-        log.debug('fixGaps: adding field at offset %d'%(f.offset))
         self._gaps += 1
-        padding = self._addField( nextoffset, FieldType.UNKOWN, f.offset-nextoffset, True)
+        padding = self._addField( nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, True)
+        log.debug('fixGaps: adding field at offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
       elif f.offset < nextoffset :
         log.warning('fixGaps: overlapping fields at offset %d'%(f.offset))
         overlaps = True
@@ -307,7 +311,8 @@ class AnonymousStructInstance:
     # conclude on QUEUE insertion
     if nextoffset < len(self):
       self._gaps += 1
-      padding = self._addField( nextoffset, FieldType.UNKOWN, len(self)-nextoffset, True)
+      padding = self._addField( nextoffset, FieldType.UNKNOWN, len(self)-nextoffset, True)
+      log.debug('fixGaps: adding field at queue offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
     if self._gaps == 0:
       self.resolved = True
     if overlaps:
@@ -361,7 +366,7 @@ class AnonymousStructInstance:
 
   def resolvePointers(self, structCache):
     resolved = 0
-    for field,pointed in self.getPointerFields().items():
+    for field in self.getPointerFields():
       # if pointed is not None:  # erase previous info
       tgt = None
       if field.value in structCache:
@@ -378,7 +383,8 @@ class AnonymousStructInstance:
     return
     
   def getPointerFields(self):
-    return self.pointersType
+    #return self.pointersType
+    return [f for f in self.fields if f.isPointer()]
   
   def _setFieldAsPointerField(self, field, target=None):
     self.pointersType[field] = target
@@ -436,6 +442,7 @@ class Field:
     self.decoded = False
     if typename != FieldType.UNKNOWN:
       self.decoded = True
+      self._check()
     
   def setComment(self, txt):
     self.usercomment = '# %s'%txt
@@ -613,7 +620,20 @@ class Field:
       return True
     else:
       return False
-    
+
+  def _check(self):
+    if self.typename == FieldType.UNKNOWN:
+      raise TypeError('Please call decodeType on unknown tyep fields')
+    # try all possible things
+    ret = True
+    if self.isString():
+      ret = self.checkString()
+    elif self.isPointer():
+      ret = self.checkPointer()
+    elif self.isInteger():
+      ret = self.checkSmallInt()
+    return ret
+        
   def decodeType(self):
     if self.decoded:
       return self.typename
@@ -645,6 +665,7 @@ class Field:
       return None
     # typename is good
     self.decoded = True
+    self.padding = False
     return self.typename
   
   def setCTypes(self, name):
