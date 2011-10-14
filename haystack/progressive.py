@@ -52,6 +52,7 @@ def make(opts):
   heap = mappings.getHeap()
   log.info('[+] Reversing %s'%(heap))
   # creates
+  t0 = time.time()
   structCache = {}
   for anon_struct in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
@@ -60,8 +61,9 @@ def make(opts):
     #
     log.info(anon_struct.toString())
     #
-    if len(structCache) % 100 == 0:
+    if time.time() - t0 > 30 :
       rewrite(structCache)
+      t0 = time.time()
     pass
   # final pass
   rewrite(structCache)  
