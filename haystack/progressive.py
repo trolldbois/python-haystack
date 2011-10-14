@@ -389,12 +389,11 @@ class AnonymousStructInstance:
       if field.value in structCache:
         tgt = structCache[field.value]
       elif field.value in self.mappings.getHeap():
-        log.info('resolvePointer to String: we have a heap value %lx'%(field.value))
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
         tgt_field = self._resolvePointerToStringField(field, structCache)
         if tgt_field is not None:
-          field.typename == FieldType.STRING_POINTER
+          field.typename = FieldType.STRING_POINTER
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
         pass
       if tgt is not None:
