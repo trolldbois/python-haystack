@@ -61,7 +61,7 @@ def make(opts):
     #
     #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
-    if time.time() - t0 > 300 :
+    if time.time() - t0 > 600 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
       rewrite(structCache)
@@ -675,7 +675,7 @@ class Field:
     # few values. it migth be an array
     self.size = size
     self.values = bytes
-    self.comment = '10%% var in values: %s'%(''.join([ hex(v) for v,nb in commons]))
+    self.comment = '10%% var in values: %s'%(','.join([ repr(v) for v,nb in commons]))
     return True
         
 
