@@ -267,79 +267,27 @@ class AnonymousStructInstance:
     #if len(self.fields) == 0: ## add a fake all-struct field
     #  self._addField(0, FieldType.UNKNOWN, size, True)
     self._fixGaps() # add padding zones
-    
     gaps = [ f for f in self.fields if f.padding == True ] 
     while len(gaps) > 0 :
-      # next self.fields
-      newfields = []
+      # try to decode padding zone
       for field in self.fields:
         if field.decoded: # do not redecode, save
-          newfields.append(field)
           continue
         #
         fieldType = field.decodeType()
         if fieldType is None: # we could not decode. mark it as unknown
           field.padding = False
-          newfields.append(field) # save it, even if the field has not changed
           continue
-        
         # Found a new field in a padding, with a probable type...
-        newfields.append(field) # save it, its a new field, maybe smaller
-
-      newfields.sort()
-      self.fields = newfields # replace
-      # reroll
+        pass
+      # reroll until completion
       self._fixGaps() 
       gaps = [ f for f in self.fields if f.padding == True ] 
     #endwhile
   return
 
-  
-  def decodeFields2(self):
-    ''' list all gaps between known fields 
-        try to decode their type
-            if no  pass, do not populate
-            if yes add a new field
-        compare the size of the gap and the size of the fiel
-    '''
-    self._fixGaps() # make all padding
-    gaps = [ f for f in self.fields if f.padding ] # clean paddings to check new fields
-    newfields=[]
-    for p in gaps:
-      log.debug('decodeF: decoding unkown field %s'%(p))
-      gapSize = len(p)
-      # detect if nul-terminated string
-      field = Field(self, p.offset, FieldType.UNKNOWN, len(p), False)
-      fieldType = field.decodeType()
-      if fieldType is None: 
-        continue
-
-      # Found a new field with a probable type...
-      newfields.append(field) # save it
-      if field.isPointer():
-        self._setFieldAsPointerField(field)
-
-      # add gap fields to decode target        
-      if len(field) == gapSize: # padding == field, goto next padding
-        log.debug('decodeF: perfect match in Field offset:%d'%(field.offset))
-        continue
-      elif len(field) > gapSize:
-        log.debug('decodeF: Overlapping string to next Field. Aggregation needed.')
-        continue
-      else: # there a gap
-        nextoffset = field.offset+len(field)
-        gapSize -= len(field)
-        newgap = Field(self, nextoffset, FieldType.UNKNOWN, gapSize, False) # next field
-        log.debug('decodeF: next field in gap %s nextoffset:%d'%(newgap,nextoffset))
-        gaps.append(newgap)
-    # save fields
-    self.fields.extend(newfields)
-    self.fields.sort()
-    self._fixGaps()
-    return
-
   def _fixGaps(self):
-    ''' Fix this structure and populate empty offsets with default fields '''
+    ''' Fix this structure and populate empty offsets with default unknown padding fields '''
     nextoffset = 0
     self._gaps = 0
     overlaps = False
@@ -364,6 +312,7 @@ class AnonymousStructInstance:
       self.resolved = True
     if overlaps:
       self._fixOverlaps()
+    self.fields.sort()
     return
   
 
