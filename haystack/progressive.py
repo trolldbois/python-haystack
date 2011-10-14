@@ -394,6 +394,7 @@ class AnonymousStructInstance:
       # shorcut
       if hasattr(field, '_ptr_resolved'):
         if field._ptr_resolved:
+          resolved+=1
           continue
       # if pointed is not None:  # erase previous info
       tgt = None
