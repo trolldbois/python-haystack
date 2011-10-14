@@ -61,8 +61,11 @@ def make(opts):
     #
     #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
-    if time.time() - t0 > 30 :
+    if time.time() - t0 > 300 :
+      td = time.time()
+      log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
       rewrite(structCache)
+      log.info('%2.2f secs to rewrite'%(time.time()-td))
       t0 = time.time()
     pass
   # final pass
@@ -366,6 +369,8 @@ class AnonymousStructInstance:
           self.fields.append( Field(self, start, FieldType.ZEROES, size, False) )
         except ValueError,e:
           log.error('please bugfix')
+      else: # TODO
+        pass
     return
   
   def _getOverlapping(self):
@@ -386,6 +391,10 @@ class AnonymousStructInstance:
     resolved = 0
     pointerFields = self.getPointerFields()
     for field in pointerFields:
+      # shorcut
+      if hasattr(field, '_ptr_resolved'):
+        if field._ptr_resolved:
+          continue
       # if pointed is not None:  # erase previous info
       tgt = None
       if field.value in structCache:
@@ -398,9 +407,13 @@ class AnonymousStructInstance:
           field.typename = FieldType.STRING_POINTER
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
         pass
+      elif field.value in self.mappings: # other mappings
+        tgt = 'ext_lib'
+        pass
       if tgt is not None:
         resolved+=1
         field.setName('%s_%s'%(field.typename.basename, tgt))
+        field._ptr_resolved = True
     #
     if len(pointerFields) == resolved:
       if resolved != 0 :
@@ -429,7 +442,7 @@ class AnonymousStructInstance:
     return ''.join([f.getSignature() for f in self.fields])
   
   def toString(self):
-    self._fixGaps()
+    #FIXME : self._fixGaps() ## need to TODO overlaps
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     info = 'resolved:%s'%(self.resolved)
     if len(self.getPointerFields()) != 0:
@@ -662,7 +675,7 @@ class Field:
     # few values. it migth be an array
     self.size = size
     self.values = bytes
-    self.comment = '10% var in values: %s'%(''.join(commons))
+    self.comment = '10%% var in values: %s'%(''.join([ hex(v) for v,nb in commons]))
     return True
         
 
