@@ -238,6 +238,11 @@ def rewrite(structs_addrs, structCache):
   structs_addrs.sort()
   fout = file(Config.GENERATED_PY_HEADERS,'w')
   for vaddr in structs_addrs:
+    ## debug
+    if vaddr in DEBUG_ADDRS:
+      logging.getLogger('progressive').setLevel(logging.DEBUG)
+    else:
+      logging.getLogger('progressive').setLevel(logging.INFO)
     anon = structCache[vaddr]
     anon.resolvePointers(structs_addrs, structCache)
     fout.write('%s\n'%(anon.toString()))
@@ -384,7 +389,7 @@ class AnonymousStructInstance:
         padding = self._addField( nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, True)
         log.debug('fixGaps: adding field at offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
       elif f.offset < nextoffset :
-        log.warning('fixGaps: overlapping fields at offset %d'%(f.offset))
+        log.debug('fixGaps: overlapping fields at offset %d'%(f.offset))
         overlaps = True
       else: # == 
         pass
@@ -397,6 +402,7 @@ class AnonymousStructInstance:
     if self._gaps == 0:
       self.resolved = True
     if overlaps:
+      log.debug('fixGaps: overlapping fields to fix')
       self._fixOverlaps()
     self.fields.sort()
     return
@@ -454,6 +460,7 @@ class AnonymousStructInstance:
       tgt = None
       if field.value in structs_addrs: 
         tgt = structCache[field.value]
+        field._target_field = tgt[0]
       elif field.value in self.mappings.getHeap():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
@@ -505,8 +512,8 @@ class AnonymousStructInstance:
     array=[]
     #get the first pointer fields
     while len(myfields) > 1:
-      myfields = itertools.dropwhile(lambda x: self._isPointerToString(x) == False, myfields )
-      array = itertools.takewhile(lambda x: self._isPointerToString(x) == True, myfields )
+      myfields = [f for f in itertools.dropwhile(lambda x: self._isPointerToString(x) == False, myfields )]
+      array = [f for f in itertools.takewhile(lambda x: self._isPointerToString(x) == True, myfields )]
       if len(array) > 1:
         log.debug('aggregateStringPtr: We just found %d pointers to String'%( len (array)))
         if len(myfields) > 0:
@@ -530,6 +537,8 @@ class AnonymousStructInstance:
     # pointer is Resolved
     if not field.isPointer():
       return False
+    #if not hasattr(field,'_target_field'):
+    #  return False
     return field._target_field.isString()
     
   
@@ -626,7 +635,7 @@ class Field:
   def isString(self): # null terminated
     return self.typename == FieldType.STRING
   def isPointer(self): # 
-    return self.typename.isPtr()
+    return self.typename.isPtr
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
   def isArray(self): # 
