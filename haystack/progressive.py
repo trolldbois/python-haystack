@@ -55,7 +55,7 @@ def make(opts):
   # creates
   t0 = time.time()
   structCache = {}
-  nb=0
+  lastNb=0
   for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
@@ -63,17 +63,14 @@ def make(opts):
     #
     #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
-    if time.time() - t0 > 30 :
+    nb = len(structs_addrs)
+    if nb > lastNb+10000: #time.time() - t0 > 30 :
       td = time.time()
-      log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
+      log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
       rewrite(structs_addrs, structCache)
       log.info('%2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
       t0 = time.time()
-    # XXX: cut for profiling
-    nb+=1
-    if nb > 5000:
-      log.info('Stopped for profiling after %d structs.'%(len(structs_addrs)))
-      return
+      lastNb = nb
     pass
   # final pass
   rewrite(structs_addrs, structCache)  
@@ -172,9 +169,10 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     log.debug('build: decoding fields')
     anon.decodeFields()
     # try to resolve pointers
-    log.debug('build: resolve pointers')
-    structs_addrs.sort()
-    anon.resolvePointers(structs_addrs, structCache)
+    ##log.debug('build: resolve pointers')
+    ##structs_addrs.sort()
+    #what is the point ? most of them are not resolvable yet...
+    ##anon.resolvePointers(structs_addrs, structCache)
     # debug
     if hasMembers:
       for _f in anon.fields:
@@ -226,6 +224,7 @@ def dequeue(addrs, start, end):
 
 def rewrite(structs_addrs, structCache):
   ''' structs_addrs is sorted '''
+  structs_addrs.sort()
   towrite = ''
   for vaddr in structs_addrs:
     anon = structCache[vaddr]
@@ -839,6 +838,16 @@ class Field:
     return fstr
     
 
+def statsMe():
+  lines=[l for l in file('log','r').readlines() if 'extracted' in l]
+  stats = [ (int(l.split(' ')[3],16), int(l.split(' ')[6]), int(l.split(' ')[9][1:-2]) ) for l in lines ]
+  last = stats[0]
+  for s in stats[1:]:
+    bytes = last[0] - s[0]
+    nb = s[1] - last[1]
+    ts = s[2] - last[2]
+    print 'done %2.2f struct/secs %2.2f bytes/sec %d structs'%(nb/ts, bytes/ts, s[1] )
+    last = s
 
 def search(opts):
   #
