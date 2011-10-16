@@ -11,6 +11,7 @@ import struct
 import ctypes
 import array
 import itertools
+import collections
 import numbers
 
 from utils import xrange, Dummy
@@ -27,6 +28,33 @@ Config = Dummy()
 Config.cacheDir = os.path.normpath(OUTPUTDIR)
 Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
 Config.WORDSIZE = 4
+Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
+
+
+def findPattern():
+  sig = '''P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 '''
+  patterns=[]
+  for seqlen in range(len(sig)/2,2,-1):
+    seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
+    ctr = collections.Counter(seqs)
+    commons = ctr.most_common()
+    for value,nb in commons:
+      if nb < 2:
+        continue
+      while value*nb in sig:
+        patterns.append((nb*len(value),value,nb))
+        nb-=1
+        if nb < 2:
+          break
+  #
+  patterns=list(set(patterns))
+  patterns.sort()
+  print 'found patterns :'
+  for p in patterns:
+    sig2 = sig.replace( p[1]*p[2], '(%s)*%d'%(p[1],p[2]) )
+    print p, sig2
+  return
+  
 
 def make(opts):
   log.info('Make the signature.')
