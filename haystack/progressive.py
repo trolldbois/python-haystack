@@ -56,7 +56,7 @@ def make(opts):
   t0 = time.time()
   structCache = {}
   nb=0
-  for anon_struct in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
+  for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
     # regexp could be better if crossed against another dump.
@@ -66,16 +66,17 @@ def make(opts):
     if time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
-      rewrite(structCache)
+      rewrite(structs_addrs, structCache)
       log.info('%2.2f secs to rewrite'%(time.time()-td))
       t0 = time.time()
     # XXX: cut for profiling
     nb+=1
     if nb > 5000:
+      log.info('Stopped for profiling after %d structs.'%(len(structs_addrs)))
       return
     pass
   # final pass
-  rewrite(structCache)  
+  rewrite(structs_addrs, structCache)  
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
   ##  unresolved PP in ppMapper.unresolved
@@ -182,7 +183,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
       log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
       #log.debug(anon.toString())
     #
-    yield anon
+    yield anon, structs_addrs
   log.info('Typed %d stringfields'%(nbMembers))
   return
 
@@ -223,11 +224,11 @@ def dequeue(addrs, start, end):
     ret.append(addrs.pop(0))
   return addrs, ret
 
-def rewrite(structCache):
-  structs_addrs = numpy.array(structCache.keys())
-  structs_addrs.sort()
+def rewrite(structs_addrs, structCache):
+  ''' structs_addrs is sorted '''
   towrite = ''
-  for anon in [ structCache[addr] for addr in structs_addrs]:
+  for vaddr in structs_addrs:
+    anon = structCache[vaddr]
     anon.resolvePointers(structs_addrs, structCache)
     towrite+=anon.toString()+'\n'
   fout = file(Config.GENERATED_PY_HEADERS,'w')
@@ -789,15 +790,16 @@ class Field:
       return '%s_%s'%(self.typename.basename, self.offset)
     
   def __hash__(self):
-    return hash(self.tuple())
+    return hash(self.offset, self.size, self.typename)
       
-  def tuple(self):
-    return (self.offset, self.size, self.typename)
+  #def tuple(self):
+  #  return (self.offset, self.size, self.typename)
 
   def __cmp__(self, other):
-    if not isinstance(other, Field):
-      raise TypeError
-    return cmp(self.tuple(), other.tuple())
+    # XXX : Perf... cmp with other type should raise a type error the dev head...
+    #if not isinstance(other, Field):
+    #  raise TypeError
+    return cmp((self.offset, self.size, self.typename), (other.offset, other.size, other.typename))
 
   def __len__(self):
     return int(self.size) ## some long come and goes
