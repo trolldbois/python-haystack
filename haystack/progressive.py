@@ -67,7 +67,7 @@ def make(opts):
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
       rewrite(structs_addrs, structCache)
-      log.info('%2.2f secs to rewrite'%(time.time()-td))
+      log.info('%2.2f secs to rewrite %d structs'%(time.time()-td, len(struct_addrs)))
       t0 = time.time()
     # XXX: cut for profiling
     nb+=1
@@ -157,7 +157,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     anon = AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
     #save the ref/struct type
     structCache[ anon.vaddr ] = anon
-    numpy.append(structs_addrs, anon.vaddr)
+    structs_addrs = numpy.append(structs_addrs, anon.vaddr)
     ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
