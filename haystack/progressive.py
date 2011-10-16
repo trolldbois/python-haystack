@@ -13,9 +13,10 @@ import ctypes
 import array
 import itertools
 import numbers
+import numpy
 import string
 
-from utils import xrange
+#from utils import xrange # perf hit
 from cache_utils import int_array_cache,int_array_save
 import memory_dumper
 import signature 
@@ -136,6 +137,10 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     addrs.reverse()
     unaligned.reverse()
     #dequeue=dequeue_reverse
+
+  # this is the list of build anon struct. it will grow towards p_addrs...
+  # tis is the optimised key list of structCache
+  structs_addrs = numpy.array([])
     
   nbMembers = 0
   # make AnonymousStruct
@@ -151,6 +156,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     anon = AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
     #save the ref/struct type
     structCache[ anon.vaddr ] = anon
+    numpy.append(structs_addrs, anon.vaddr)
     ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
@@ -166,7 +172,8 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     anon.decodeFields()
     # try to resolve pointers
     log.debug('build: resolve pointers')
-    anon.resolvePointers(structCache)
+    structs_addrs.sort()
+    anon.resolvePointers(structs_addrs, structCache)
     # debug
     if hasMembers:
       for _f in anon.fields:
@@ -179,7 +186,15 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
   log.info('Typed %d stringfields'%(nbMembers))
   return
 
-def closestFloorValue(val, lst):
+
+def closestFloorValueNumpy(val, lst):
+  ' please use numpy.array for lst' 
+  indicetab = numpy.searchsorted(lst, [val])
+  ind = indicetab[0]
+  i = max(0,ind-1)
+  return lst[i], i
+
+def closestFloorValueOld(val, lst):
   ''' return the closest previous value to val in lst '''
   if val in lst:
     return val, lst.index(val)
@@ -189,6 +204,8 @@ def closestFloorValue(val, lst):
       return prev, i-1
     prev = lst[i]
   return lst[-1], len(lst)-1
+
+closestFloorValue = closestFloorValueNumpy
   
 #it = itertools.takewhile( lambda x: x>end-Config.WORDSIZE, itertools.dropwhile( lambda x: x<val, addrs) )
 
@@ -207,10 +224,11 @@ def dequeue(addrs, start, end):
   return addrs, ret
 
 def rewrite(structCache):
-  structs = sorted(structCache.values())
+  structs_addrs = numpy.array(structCache.keys())
+  structs_addrs.sort()
   towrite = ''
-  for anon in structs:
-    anon.resolvePointers(structCache)
+  for anon in [ structCache[addr] for addr in structs_addrs]:
+    anon.resolvePointers(structs_addrs, structCache)
     towrite+=anon.toString()+'\n'
   fout = file(Config.GENERATED_PY_HEADERS,'w')
   fout.write(towrite)
@@ -391,7 +409,7 @@ class AnonymousStructInstance:
       lastend = newend
     return
   
-  def resolvePointers(self, structCache):
+  def resolvePointers(self, structs_addrs, structCache):
     if self.pointerResolved:
       return
     resolved = 0
@@ -404,12 +422,12 @@ class AnonymousStructInstance:
           continue
       # if pointed is not None:  # erase previous info
       tgt = None
-      if field.value in structCache:
+      if field.value in structs_addrs: 
         tgt = structCache[field.value]
       elif field.value in self.mappings.getHeap():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
-        tgt_field = self._resolvePointerToStringField(field, structCache)
+        tgt_field = self._resolvePointerToStringField(field, structs_addrs, structCache)
         if tgt_field is not None:
           field.typename = FieldType.STRING_POINTER
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
@@ -430,8 +448,9 @@ class AnonymousStructInstance:
       self.pointerResolved = False
     return
   
-  def _resolvePointerToStringField(self, field, structCache):
-    structs_addrs = sorted(structCache.keys())
+  def _resolvePointerToStringField(self, field, structs_addrs, structCache):
+    if len(structs_addrs) == 0:
+      return None
     nearest_addr, ind = closestFloorValue(field.value, structs_addrs)
     tgt_st = structCache[nearest_addr]
     if field.value in tgt_st:
