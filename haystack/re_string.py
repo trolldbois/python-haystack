@@ -32,6 +32,10 @@ _py_encodings.remove('tactis')
 _py_encodings.remove('rot_13')
 _py_encodings.remove('quopri_codec')
 
+# XXX : perf test, string.printable is limited to ascii anyway
+_py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16','utf_32',])
+
+
 def startsWithNulTerminatedString(bytesarray, longerThan=1):
   ''' if there is no \x00 termination, its not a string
   that means that if we have a bad pointer in the middle of a string, 
