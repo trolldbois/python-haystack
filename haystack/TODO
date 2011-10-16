@@ -1,0 +1,123 @@
+ada29ff
+
+class AnonymousStruct_544_ad90d00(LoadableMembers):  # resolved:True pointerResolved:False
+
+
+class AnonymousStruct_264_ad6cef0(LoadableMembers):  # resolved:True pointerResolved:True
+tableaux de pointers termine par NULL
+
+
+
+Unicode :
+class AnonymousStruct_8080_ad68898(LoadableMembers):  # resolved:True pointerResolved:False
+  _fields_ = [ 
+	( 'int_0' , ctypes.c_uint ), #  24  
+	( 'untyped_4' , ctypes.c_ubyte * 16 ), #   bytes:'\x89\x1f\x00\x00ERCP\x80\x1f\x00\x00\x01\x08\x00\x00'
+	( 'zerroes_20' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
+	( 'int_24' , ctypes.c_uint ), #  4  
+	( 'zerroes_28' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
+	( 'int_32' , ctypes.c_uint ), #  40  
+	( 'zerroes_36' , ctypes.c_ubyte * 12 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+	( 'array_48' , ctypes.c_ubyte * 644 ), #   bytes:None
+	( 'ptr_692' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'array_696' , ctypes.c_ubyte * 5836 ), #   bytes:None
+	( 'ptr_6532' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'untyped_6536' , ctypes.c_ubyte * 84 ), #   bytes:'\x1c(\x1cm\x1cm\x1c)S\x00\r\x1c(\x1cm\x1cm\x1cm\x1c)S\x00\x0f\x...
+	( 'ptr_6620' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'array_6624' , ctypes.c_ubyte * 920 ), #   bytes:None
+	( 'ptr_7544' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'untyped_7548' , ctypes.c_ubyte * 256 ), #   bytes:'\x1c\\\x1c:\x1cd\x1c/S\x00\x0b\x1c\\\x1c:\x1cd\x1c/S\x00\t\x1c\...
+	( 'ptr_7804' , ctypes.c_void_p ), # @ b005e03 [heap] 
+	( 'array_7808' , ctypes.c_ubyte * 264 ), #   bytes:None
+	( 'zerroes_8072' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
+	( 'int_8076' , ctypes.c_uint ), #  17  
+ ]
+
+--------------------------
+#probably glib iconv BUILTIN_ALIAS
+class AnonymousStruct_40_ad87be8(LoadableMembers):  # resolved:True
+  _fields_ = [ 
+	( 'text_0' , ctypes.c_char * 14 ), #   bytes:u'OSF00010020//\x00'
+	( 'text_14' , ctypes.c_char * 17 ), #   bytes:u'ANSI_X3.4-1968//\x00'
+	( 'zerroes_31' , ctypes.c_ubyte * 5 ), #   bytes:'\x00\x00\x00\x00\x00'
+	( 'int_36' , ctypes.c_uint ), #  25  
+ ]
+
+#iconv/iconvconfig.c
+
+#define BUILTIN_ALIAS(alias, real) \
+    { .from = alias, .to = real },
+
+static struct
+{
+  const char *from;
+  const char *to;
+  const char *module;
+  int cost;
+} builtin_trans[] =
+  {
+  
+  
+-------------
+Perfs
+
+Mappings __contains__:493
+24.678/212  
+8/127  with any()
+>>> 24.678/212
+0.1164056603773585
+>>> 8.7/127.6
+0.06818181818181818
+-> any() GOOOOD
+    15771   49.295    0.003   92.090    0.006 memory_mapping.py:493(__contains__)
+     8452   27.150    0.003   51.019    0.006 memory_mapping.py:493(__contains__)
+-> with any(iter())  BAAAD
+     2730    0.040    0.000   35.438    0.013 memory_mapping.py:493(__contains__)
+-> retest avec for x in m  GOOOD
+     9063   16.661    0.002   31.130    0.003 memory_mapping.py:493(__contains__)
+
+checkString
+38.062/127.6
+limited encoding list to 6 codec
+     8978    1.472    0.000    6.952    0.001 re_string.py:39(startsWithNulTerminatedString)
+     2497    0.204    0.000    6.972    0.003 progressive.py:471(toString)
+     8978    0.324    0.000    7.288    0.001 progressive.py:558(checkString)
+7.2/142
+its a win
+
+
+-----------------
+
+def statsMe():
+# avec resolvePointer at each struct :
+
+>>> progressive.statsMe()
+done 50.00 struct/secs 3459.00 bytes/sec 20002 structs
+done 31.00 struct/secs 2793.00 bytes/sec 30003 structs
+done 50.00 struct/secs 9885.00 bytes/sec 40004 structs
+
+
+-----
+
+regroup char[][] in one struct
+see class AnonymousStruct_544_ad90d00(LoadableMembers)
+members[3:] are all char[][]
+
+bug :
+class AnonymousStruct_8208_ad16c58(LoadableMembers):  # resolved:True SIG:P4z1542z6650u4z4u4 pointerResolved:True
+  _fields_ = [ 
+	( 'ptr_AnonymousStruct_8208_ad14c48' , ctypes.c_void_p ), # @ ad14c48 [heap] 
+	( 'zerroes_4' , ctypes.c_ubyte * 1542 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0...
+	( 'zerroes_1546' , ctypes.c_ubyte * 6650 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0...
+	( 'untyped_8196' , ctypes.c_ubyte * 4 ), #   bytes:'\x11 \x00\x00'
+	( 'zerroes_8200' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
+	( 'untyped_8204' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x08'
+ ]
+
+wtf ?
+
+
+
+
+
+
