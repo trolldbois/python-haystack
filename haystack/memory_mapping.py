@@ -491,10 +491,11 @@ class Mappings:
     return self.getMmap('[stack]')  
 
   def __contains__(self, vaddr):
-    for m in self.mappings:
-      if vaddr in m:
-        return True
-    return False
+    return any( [ vaddr in m for m in self.mappings])
+    #for m in self.mappings:
+    #  if vaddr in m:
+    #    return True
+    #return False
 
   def __len__(self):
     return len(self.mappings)
