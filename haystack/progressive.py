@@ -173,7 +173,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     anon.decodeFields()
     # try to resolve pointers
     log.debug('build: resolve pointers')
-    structs_addrs = structs_addrs.sort()
+    structs_addrs.sort()
     anon.resolvePointers(structs_addrs, structCache)
     # debug
     if hasMembers:
@@ -183,7 +183,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
       log.debug('Created a struct %s with %d fields'%( anon, len(anon.fields) ))
       #log.debug(anon.toString())
     #
-    yield anon, structs_addrs
+    yield (anon, structs_addrs)
   log.info('Typed %d stringfields'%(nbMembers))
   return
 
