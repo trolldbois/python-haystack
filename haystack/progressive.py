@@ -173,7 +173,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     anon.decodeFields()
     # try to resolve pointers
     log.debug('build: resolve pointers')
-    structs_addrs.sort()
+    structs_addrs = structs_addrs.sort()
     anon.resolvePointers(structs_addrs, structCache)
     # debug
     if hasMembers:
