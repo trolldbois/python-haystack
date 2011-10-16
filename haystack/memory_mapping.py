@@ -491,7 +491,8 @@ class Mappings:
     return self.getMmap('[stack]')  
 
   def __contains__(self, vaddr):
-    return any( [ vaddr in m for m in self.mappings])
+    return any(iter( (lambda x: vaddr in x)(m) for m in self.mappings) )
+    #return any( [ vaddr in m for m in self.mappings])
     #for m in self.mappings:
     #  if vaddr in m:
     #    return True
