@@ -54,6 +54,7 @@ def make(opts):
   # creates
   t0 = time.time()
   structCache = {}
+  nb=0
   for anon_struct in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
     # TODO regexp search on structs/bytearray.
@@ -61,12 +62,16 @@ def make(opts):
     #
     #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
-    if time.time() - t0 > 600 :
+    if time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache)))
       rewrite(structCache)
       log.info('%2.2f secs to rewrite'%(time.time()-td))
       t0 = time.time()
+    # XXX: cut for profiling
+    nb+=1
+    if nb > 5000:
+      return
     pass
   # final pass
   rewrite(structCache)  
@@ -202,12 +207,13 @@ def dequeue(addrs, start, end):
   return addrs, ret
 
 def rewrite(structCache):
-  fout = file(Config.GENERATED_PY_HEADERS,'w')
   structs = sorted(structCache.values())
+  towrite = ''
   for anon in structs:
     anon.resolvePointers(structCache)
-    fout.write(anon.toString())
-    fout.write("\n")
+    towrite+=anon.toString()+'\n'
+  fout = file(Config.GENERATED_PY_HEADERS,'w')
+  fout.write(towrite)
   fout.close()
   return
   
@@ -815,7 +821,10 @@ class Field:
 
 def search(opts):
   #
-  make(opts)
+  try:
+    make(opts)
+  except KeyboardInterrupt,e:
+    pass
   pass
   
 def argparser():
