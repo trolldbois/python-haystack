@@ -25,6 +25,9 @@ import re_string
 
 log = logging.getLogger('progressive')
 
+DEBUG_ADDRS=[]
+
+
 # a 12 Mo heap takes 30 minutes on my slow notebook
 # what is \xb2 padding for ?
 # huge bug with zerroes fields aggregation
@@ -146,6 +149,12 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     hasMembers=False
     start = aligned[i]
     size = lengths[i]
+    ## debug
+    if start in DEBUG_ADDRS:
+      logging.getLogger('progressive').setLevel(logging.DEBUG)
+    else:
+      logging.getLogger('progressive').setLevel(logging.INFO)
+
     # the pointers field address/offset
     addrs, my_pointers_addrs = dequeue(addrs, start, start+size)  ### this is not reverse-compatible
     # the pointers values, that are not aligned
@@ -155,12 +164,14 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     #save the ref/struct type
     structCache[ anon.vaddr ] = anon
     structs_addrs = numpy.append(structs_addrs, anon.vaddr)
-    ##log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
+    log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
     # get pointers addrs in start -> start+size
     for p_addr in my_pointers_addrs:
       f = anon.addField(p_addr, FieldType.POINTER, Config.WORDSIZE, False)
+      log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-start))
     ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
     for p_addr in my_unaligned_addrs:
+      log.debug('Guess field at %lx offset:%d'%( p_addr,p_addr-start))
       if anon.guessField(p_addr) is not None: #, FieldType.UKNOWN):
         nbMembers+=1
         hasMembers=True
@@ -340,8 +351,29 @@ class AnonymousStructInstance:
       gaps = [ f for f in self.fields if f.padding == True ] 
       sg = len(gaps)
     #endwhile
+    #aggregate zeroes fields
+    self._aggregateZeroes()
     return
 
+  def _aggregateZeroes(self):
+    log.debug('aggregateZeroes: start')
+    myfields = sorted([ f for f in self.fields if f.padding != True ])
+    if len(myfields) < 2:
+      log.debug('aggregateZeroes: not so much fields')
+      return
+    newFields = []
+    newFields.append(myfields[0])
+    for f in myfields[1:]:
+      last = newFields[-1]
+      if last.isZeroes() and f.isZeroes():
+        log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
+        newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
+      else:
+        newFields.append(f)
+    self.fields = newFields
+    self._fixGaps()
+    return
+    
   def _fixGaps(self):
     ''' Fix this structure and populate empty offsets with default unknown padding fields '''
     nextoffset = 0
@@ -876,10 +908,11 @@ def main(argv):
   level=logging.INFO
   if opts.debug :
     level=logging.DEBUG
+  #ad16c58
   logging.basicConfig(level=level)  
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
-  logging.getLogger('dumper').setLevel(logging.INFO)
+  logging.getLogger('progressive').setLevel(logging.INFO)
 
   opts.func(opts)
 
