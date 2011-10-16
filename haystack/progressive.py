@@ -25,7 +25,7 @@ import re_string
 
 log = logging.getLogger('progressive')
 
-DEBUG_ADDRS=[]
+DEBUG_ADDRS=[0xad90d00]
 
 
 # a 12 Mo heap takes 30 minutes on my slow notebook
@@ -236,14 +236,11 @@ def dequeue(addrs, start, end):
 def rewrite(structs_addrs, structCache):
   ''' structs_addrs is sorted '''
   structs_addrs.sort()
-  towrite = []
-  tosig = []
+  fout = file(Config.GENERATED_PY_HEADERS,'w')
   for vaddr in structs_addrs:
     anon = structCache[vaddr]
     anon.resolvePointers(structs_addrs, structCache)
-    towrite.append(anon.toString())
-  fout = file(Config.GENERATED_PY_HEADERS,'w')
-  fout.write('\n'.join(towrite))
+    fout.write('%s\n'%(anon.toString()))
   fout.close()
   return
   
@@ -460,9 +457,10 @@ class AnonymousStructInstance:
       elif field.value in self.mappings.getHeap():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
-        tgt_field = self._resolvePointerToStringField(field, structs_addrs, structCache)
+        tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
         if tgt_field is not None:
-          field.typename = FieldType.STRING_POINTER
+          field.typename = FieldType.POINTER(tgt_field.field)
+          field._target_field = tgt_field
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
         pass
       elif field.value in self.mappings: # other mappings
@@ -477,11 +475,12 @@ class AnonymousStructInstance:
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
+      self._aggregateStringPointersToArray()
     else:
       self.pointerResolved = False
     return
   
-  def _resolvePointerToStringField(self, field, structs_addrs, structCache):
+  def _resolvePointerToStructField(self, field, structs_addrs, structCache):
     if len(structs_addrs) == 0:
       return None
     nearest_addr, ind = closestFloorValue(field.value, structs_addrs)
@@ -493,6 +492,46 @@ class AnonymousStructInstance:
           tgt_field = f
           return tgt_field
     return None
+  
+  def _aggregateStringPointersToArray(self):
+    if not self.pointerResolved:
+      raise ValueError('I should be resolved')
+    pointerFields = self.getPointerFields()
+    log.debug('aggregateStringPtr: start')
+    myfields = sorted(self.fields)
+    if len(myfields) < 2:
+      log.debug('aggregateStringPtr: not so much fields')
+      return
+    array=[]
+    #get the first pointer fields
+    while len(myfields) > 1:
+      myfields = itertools.dropwhile(lambda x: self._isPointerToString(x) == False, myfields )
+      array = itertools.takewhile(lambda x: self._isPointerToString(x) == True, myfields )
+      if len(array) > 1:
+        log.debug('aggregateStringPtr: We just found %d pointers to String'%( len (array)))
+        if len(myfields) > 0:
+          f = myfields.pop(0) # if its not zero, its not ptr to string, we can skip it
+          if f.isZeroes() and f.size == 4: # Null terminated array
+            array.append(f)
+            log.debug('aggregateStringPtr: We just found a null termination making a c_char_p[%d]'%( len(array) ))
+        # create a array field
+        field = Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
+        field.element_size = Config.WORDSIZE
+        field.elements = array
+        # TODO border case f >=4, we need to cut f in f1[:4]+f2[4:]
+        # clean self.fields
+        for f in field.elements:
+          self.fields.remove(f)
+        self.fields.append(field)
+        self.fields.sort()
+    return
+      
+  def _isPointerToString(self, field):
+    # pointer is Resolved
+    if not field.isPointer():
+      return False
+    return field._target_field.isString()
+    
   
   def getPointerFields(self):
     return [f for f in self.fields if f.isPointer()]
@@ -539,20 +578,27 @@ class %s(LoadableMembers):  # %s
 
 
 class FieldType:
-  def __init__(self, _id, basename, ctypes, sig):
+  types = set()
+  def __init__(self, _id, basename, ctypes, sig, isPtr=False):
     self._id = _id
     self.basename = basename
     self.ctypes = ctypes
     self.sig = sig
-
+    self.isPtr = isPtr
+  @classmethod
+  def POINTER(cls, typ):
+    if typ == FieldType.STRING:
+      return FieldType.STRING_POINTER
+    return cls( typ._id+0x100, typ.basename+'_ptr', 'ctypes.POINTER(%s)'%(typ.ctypes), 'P', True)
 FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte',   'u')
-FieldType.POINTER  = FieldType(0x1,  'ptr',       'ctypes.c_void_p',  'P')
+FieldType.POINTER  = FieldType(0x100,  'ptr',       'ctypes.c_void_p',  'P', True)
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte',   'z')
 FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char',    'T')
-FieldType.STRING_POINTER   = FieldType(0x11, 'text_p',      'ctypes.c_char_p', 's')
+FieldType.STRING_POINTER   = FieldType(0x110, 'text_ptr',      'ctypes.c_char_p', 's', True)
 FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint',    'I')
 FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint',    'i')
 FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte',   'a')
+FieldType.ARRAY_CHAR_P = FieldType(0x51, 'array_char_p',     'ctypes.c_char_p',   'Sp')
 FieldType.PADDING  = FieldType(0x90, 'pad',       'ctypes.c_ubyte',   'X')
 
   
@@ -580,11 +626,11 @@ class Field:
   def isString(self): # null terminated
     return self.typename == FieldType.STRING
   def isPointer(self): # 
-    return self.typename == FieldType.POINTER or self.typename == FieldType.STRING_POINTER 
+    return self.typename.isPtr()
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
-  def isByteArray(self): # 
-    return self.typename == FieldType.ARRAY
+  def isArray(self): # 
+    return self.typename == FieldType.ARRAY or self.typename == FieldType.ARRAY_CHAR_P
   def isInteger(self): # 
     return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT
 
@@ -736,9 +782,12 @@ class Field:
     self.size = size
     self.values = bytes
     self.comment = '10%% var in values: %s'%(','.join([ repr(v) for v,nb in commons]))
+    self.element_size = 1
     return True
         
-
+  def checkArrayCharP(self):
+    pass
+    
   def checkSmallInt(self):
     # TODO
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
@@ -807,8 +856,10 @@ class Field:
   def getCTypes(self):
     if hasattr(self, 'ctypes'):
       return self.ctypes
-    if self.isString() or self.isZeroes() or self.isByteArray():
+    if self.isString() or self.isZeroes():
       return '%s * %d' %(self.typename.ctypes, len(self) )
+    if self.isArray():
+      return '%s * %d' %(self.typename.ctypes, len(self)/self.element_size )
     if self.typename == FieldType.UNKNOWN:
       return '%s * %d' %(self.typename.ctypes, len(self) )
     return self.typename.ctypes
