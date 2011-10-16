@@ -225,13 +225,14 @@ def dequeue(addrs, start, end):
 def rewrite(structs_addrs, structCache):
   ''' structs_addrs is sorted '''
   structs_addrs.sort()
-  towrite = ''
+  towrite = []
+  tosig = []
   for vaddr in structs_addrs:
     anon = structCache[vaddr]
     anon.resolvePointers(structs_addrs, structCache)
-    towrite+=anon.toString()+'\n'
+    towrite.append(anon.toString())
   fout = file(Config.GENERATED_PY_HEADERS,'w')
-  fout.write(towrite)
+  fout.write('\n'.join(towrite))
   fout.close()
   return
   
@@ -470,7 +471,7 @@ class AnonymousStructInstance:
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
-    info = 'resolved:%s'%(self.resolved)
+    info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature())
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
     ctypes_def = '''
@@ -506,20 +507,21 @@ class %s(LoadableMembers):  # %s
 
 
 class FieldType:
-  def __init__(self, sig, basename, ctypes):
-    self.sig = sig
+  def __init__(self, _id, basename, ctypes, sig):
+    self._id = _id
     self.basename = basename
     self.ctypes = ctypes
+    self.sig = sig
 
-FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte')
-FieldType.POINTER  = FieldType(0x1,  'ptr',       'ctypes.c_void_p')
-FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte')
-FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char')
-FieldType.STRING_POINTER   = FieldType(0x11, 'text_p',      'ctypes.c_char_p')
-FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint')
-FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint')
-FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte')
-FieldType.PADDING  = FieldType(0x90, 'pad',       'ctypes.c_ubyte')
+FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte',   'u')
+FieldType.POINTER  = FieldType(0x1,  'ptr',       'ctypes.c_void_p',  'P')
+FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte',   'z')
+FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char',    'T')
+FieldType.STRING_POINTER   = FieldType(0x11, 'text_p',      'ctypes.c_char_p', 's')
+FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint',    'I')
+FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint',    'i')
+FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte',   'a')
+FieldType.PADDING  = FieldType(0x90, 'pad',       'ctypes.c_ubyte',   'X')
 
   
 class Field:
@@ -823,7 +825,7 @@ class Field:
     return bytes
   
   def getSignature(self):
-    return self.typename.sig
+    return '%s%d'%(self.typename.sig, self.size)
   
   def toString(self, prefix):
     if self.isPointer():
@@ -845,7 +847,7 @@ def statsMe():
   for s in stats[1:]:
     bytes = last[0] - s[0]
     nb = s[1] - last[1]
-    ts = s[2] - last[2]
+    ts = s[2]
     print 'done %2.2f struct/secs %2.2f bytes/sec %d structs'%(nb/ts, bytes/ts, s[1] )
     last = s
 
