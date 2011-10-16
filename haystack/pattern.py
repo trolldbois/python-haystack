@@ -31,29 +31,37 @@ Config.WORDSIZE = 4
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern():
-  sig = '''P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 '''
+def findPattern(sig=None):
+  if sig is None:
+    sig = '''P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 '''
   patterns=[]
   for seqlen in range(len(sig)/2,2,-1):
     seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
     ctr = collections.Counter(seqs)
     commons = ctr.most_common()
     for value,nb in commons:
-      if nb < 2:
-        continue
-      while value*nb in sig:
-        patterns.append((nb*len(value),value,nb))
+      while True:
+        if nb < 2:
+          break
+        ind = sig.rfind(value*nb)
+        if ind == -1: # not found
+          break
+        patterns.append((nb*len(value), ind ,value,nb)) # biggest is best, ind++ is better
         nb-=1
         if nb < 2:
           break
   #
   patterns=list(set(patterns))
   patterns.sort()
-  print 'found patterns :'
+  if len(patterns) == 0:
+    return sig
+  print 'found new patterns :'
   for p in patterns:
-    sig2 = sig.replace( p[1]*p[2], '(%s)*%d'%(p[1],p[2]) )
+    sig2 = sig.replace( p[2]*p[3], ' (%s){%d} '%(p[2],p[3]) )
     print p, sig2
-  return
+  best = patterns[-1]
+  ret = findPattern( sig2 )
+  return ret
   
 
 def make(opts):
