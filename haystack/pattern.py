@@ -32,29 +32,40 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig, elSize=2, minNbGroup=2):
+def findPattern(sequence, elSize=1, minNbGroup=2):
   '''
   returns a regexp grouping repetitive patterns.
   
-  @param sig: a sequence (str/bstr) with rfind() method
-  @param elsize: 
-  TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
+  @param sequence: a sequence (str/bstr) with rfind() method.
+  @param elsize: the size of each element ( 1 to xxx ) in the sequence.
+  @param minNbGroup: the minimum number of repetition before trying to group the pattern.
+
+  Examples:
+    >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
+    >>> pattern.findPattern(s,1)
+    ' (a){5}  (1){4}  (b){3}  (c){2} d (a2){5}  (b1c){4}  (abcd){4} p (o){2}  (i){3}  (u){4}  (y){5} '
+    
+    >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
+    >>> pattern.findPattern(s,1,5)
+    ' (a){5} 1111bbbccd (a2){5} b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu (y){5} '
+    
   '''
-  if (len(sig) % elSize ) != 0:
-    raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sig),elSize))
+  if (len(sequence) % elSize ) != 0:
+    raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sequence),elSize))
+  
   patterns=[]
-  for seqlen in range(elSize, 1+(len(sig)/2)): 
-    seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1, elSize) ] # i %elSize, aligned on the elSize
+  for seqlen in range(elSize, 1+(len(sequence)/2)): 
+    seqs =  [ sequence[i:i+seqlen] for i in xrange(0, len(sequence)-seqlen+1, elSize) ] # i %elSize, aligned on the elSize
     for value,nb in collections.Counter(seqs).most_common():
       while nb >= minNbGroup:  # try repetition as long as it is > to minNbGroup
-        ind = sig.rfind( value*nb )  # find the fulltext pattern
+        ind = sequence.rfind( value*nb )  # find the fulltext pattern
         while ind != -1: # not found
           patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
-          ind = sig.rfind(value*nb, 0, ind) # find it at another offset
+          ind = sequence.rfind(value*nb, 0, ind) # find it at another offset
         nb-=1  # try with a smaller number of repetition
   #
   if len(patterns) == 0:
-    return sig
+    return sequence
 
   patterns=list(set(patterns))
   patterns.sort()  # the fitness attribute is (length of pattern, indice, nb of repetition, pattern repeted)
@@ -63,12 +74,12 @@ def findPattern(sig, elSize=2, minNbGroup=2):
   #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
   #print 'found new patterns :'
   #for p in patterns:
-  #  sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
-  #  print p, sig2
+  #  sequence2 = sequence.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
+  #  print p, sequence2
     
-  i = sig.find(best[3]*best[2])
-  left = sig[:i]
-  right = sig[i+best[0]:]
+  i = sequence.find(best[3]*best[2])
+  left = sequence[:i]
+  right = sequence[i+best[0]:]
   ret = findPattern( left , elSize, minNbGroup)
   ret2 = findPattern( right , elSize, minNbGroup)
   return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)  
