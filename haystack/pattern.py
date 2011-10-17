@@ -49,7 +49,7 @@ def findPattern(sig=None, elSize=2, recursive=False):
         ind = sig.rfind(value*nb )
         while ind != -1: # not found
           #print value, nb
-          if True: #ind%elSize == 0:
+          if ind%elSize == 0: # only aligned patterns
             patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
           ind = sig.rfind(value*nb, 0, ind)
         nb-=1
@@ -65,12 +65,12 @@ def findPattern(sig=None, elSize=2, recursive=False):
     print p, sig2
   #
   best = patterns[-1]
-  print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
-  if best[0] == 2 and best[3] == ' ': # bailout time
-    return sig
+  #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
+  #if best[0] == 2 and best[3] == ' ': # bailout time
+  #  return sig
   # check for single odd elements
   if best[0] == 2*elSize:
-    print 'LOOKING for odd'
+    #print 'LOOKING for odd'
     single = best[3][:elSize]
     nb = 3
     ind = sig.rfind(single*nb )
@@ -81,9 +81,14 @@ def findPattern(sig=None, elSize=2, recursive=False):
     
     
   if recursive:
-    sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-    ret = findPattern( sig2 , elSize, recursive=True)
-    return ret
+    #sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+    txt = best[3]*best[2]
+    i = sig.find(txt)
+    left = sig[:i]
+    right = sig[i+best[0]:]
+    ret = findPattern( left , elSize, recursive=True)
+    ret2 = findPattern( right , elSize, recursive=True)
+    return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)
   
   sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
   while len(patterns) > 0:
