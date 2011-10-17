@@ -229,6 +229,11 @@ class TestFunctions(unittest.TestCase):
   def test_findPattern_recursive_3(self):
     sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
     sig_res = 'I4 (i4){31} z12'
+    self.assertRaises ( ValueError, pattern.findPattern , sig,2)
+
+  def test_findPattern_recursive_3b(self):
+    sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z2'''
+    sig_res = 'I4 (i4){31} z2'
     self.assertEquals ( pattern.findPattern(sig,2), sig_res)
 
   def test_findPattern_recursive_4(self):
@@ -254,6 +259,11 @@ class TestFunctions(unittest.TestCase):
   def test_findPattern_recursive_8(self):
     sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
     sig_res = 'I4 (i4){31} z12'
+    self.assertRaises ( ValueError, pattern.findPattern , sig,2,4)
+
+  def test_findPattern_recursive_8b(self):
+    sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z1'''
+    sig_res = 'I4 (i4){31} z1'
     self.assertEquals ( pattern.findPattern(sig,2,4), sig_res)
 
   def test_findPattern_recursive_9(self):
