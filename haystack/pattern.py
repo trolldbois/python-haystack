@@ -31,6 +31,15 @@ Config.WORDSIZE = 4
 Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_values.py'])
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
+def findPatternText(sequence, elSize=1, minNbGroup=2):
+  ret = findPattern(sequence, elSize, minNbGroup)
+  s=''
+  for nb, txt in ret:
+    if nb == 1:
+      s+=txt
+    else:
+      s+=' (%s){%d} '%(txt,nb)
+  return s
 
 def findPattern(sequence, elSize=1, minNbGroup=2):
   '''
@@ -52,7 +61,9 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   '''
   if (len(sequence) % elSize ) != 0:
     raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sequence),elSize))
-  
+  elif sequence == '':
+    return []
+
   patterns=[]
   for seqlen in range(elSize, 1+(len(sequence)/2)): 
     seqs =  [ sequence[i:i+seqlen] for i in xrange(0, len(sequence)-seqlen+1, elSize) ] # i %elSize, aligned on the elSize
@@ -65,7 +76,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
         nb-=1  # try with a smaller number of repetition
   #
   if len(patterns) == 0:
-    return sequence
+    return [(1,sequence)]
 
   patterns=list(set(patterns))
   patterns.sort()  # the fitness attribute is (length of pattern, indice, nb of repetition, pattern repeted)
@@ -82,7 +93,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   right = sequence[i+best[0]:]
   ret = findPattern( left , elSize, minNbGroup)
   ret2 = findPattern( right , elSize, minNbGroup)
-  return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)  
+  return ret + [(best[2],best[3])] + ret2
 
 def make(opts):
   log.info('Make the signature.')
