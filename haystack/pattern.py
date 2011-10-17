@@ -32,6 +32,22 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 def findPatternText(sequence, elSize=1, minNbGroup=2):
+  '''
+  returns a regexp grouping repetitive patterns.
+  
+  @param sequence: a sequence (str/bstr) with rfind() method.
+  @param elsize: the size of each element ( 1 to xxx ) in the sequence.
+  @param minNbGroup: the minimum number of repetition before trying to group the pattern.
+
+  Examples:
+    >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
+    >>> pattern.findPattern(s,1)
+    ' (a){5} (1){4} (b){3} (c){2} d (a2){5} (b1c){4} (abcd){4} p (o){2} (i){3} (u){4} (y){5} '
+
+    >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
+    >>> pattern.findPattern(s,1,5)
+    ' (a){5} 1111bbbccd (a2){5} b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu (y){5} '
+  '''
   ret = findPattern(sequence, elSize, minNbGroup)
   s=''
   for nb, txt in ret:
