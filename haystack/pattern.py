@@ -52,11 +52,11 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   Examples:
     >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
     >>> pattern.findPattern(s,1)
-    ' (a){5}  (1){4}  (b){3}  (c){2} d (a2){5}  (b1c){4}  (abcd){4} p (o){2}  (i){3}  (u){4}  (y){5} '
+    [(5, 'a'), (4, '1'), (3, 'b'), (2, 'c'), (1, 'd'), (5, 'a2'), (4, 'b1c'), (4, 'abcd'), (1, 'p'), (2, 'o'), (3, 'i'), (4, 'u'), (5, 'y')]
     
     >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
     >>> pattern.findPattern(s,1,5)
-    ' (a){5} 1111bbbccd (a2){5} b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu (y){5} '
+    [(5, 'a'), (1, '1111bbbccd'), (5, 'a2'), (1, 'b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu'), (5, 'y')]
     
   '''
   if (len(sequence) % elSize ) != 0:
