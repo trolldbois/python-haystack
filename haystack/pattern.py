@@ -69,8 +69,8 @@ def findPattern(sig=None, elSize=2, recursive=False):
   #if best[0] == 2 and best[3] == ' ': # bailout time
   #  return sig
   # check for single odd elements
-  if best[0] == 2*elSize:
-    #print 'LOOKING for odd'
+  if False and (best[0] == 2*elSize):
+    print 'LOOKING for odd'
     single = best[3][:elSize]
     nb = 3
     ind = sig.rfind(single*nb )
@@ -78,36 +78,16 @@ def findPattern(sig=None, elSize=2, recursive=False):
       patterns.append((nb*len(single), ind ,nb, single)) # biggest is best, ind++ is better, large nb best
       nb+=1
       ind = sig.rfind(value*nb, 0, ind)
+    print patterns
     
-    
-  if recursive:
-    #sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-    txt = best[3]*best[2]
-    i = sig.find(txt)
-    left = sig[:i]
-    right = sig[i+best[0]:]
-    ret = findPattern( left , elSize, recursive=True)
-    ret2 = findPattern( right , elSize, recursive=True)
-    return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)
-  
-  sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-  while len(patterns) > 0:
-    # iterative
-    start = best[1]
-    stop  = start+best[0]
-    ## delete all pattern in that range
-    #print patterns
-    patterns = filter( lambda p: not ((start<=p[1]<stop) or (start<(p[1]+p[0])<=stop)), patterns )
-    if len(patterns) == 0:
-      break
-    patterns.sort()
-    best = patterns[-1]
-    sig2 = sig2.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-    print 'BEST' , best
-    print best, sig2
-
-  return sig2
-  
+  #sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+  txt = best[3]*best[2]
+  i = sig.find(txt)
+  left = sig[:i]
+  right = sig[i+best[0]:]
+  ret = findPattern( left , elSize, recursive=True)
+  ret2 = findPattern( right , elSize, recursive=True)
+  return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)  
 
 def make(opts):
   log.info('Make the signature.')
