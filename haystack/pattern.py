@@ -52,22 +52,20 @@ def findPattern(sig, elSize=2, minNbGroup=2):
           ind = sig.rfind(value*nb, 0, ind)
         nb-=1
   #
-  patterns=list(set(patterns))
-  patterns.sort()
   if len(patterns) == 0:
     return sig
-  #
+
+  patterns=list(set(patterns))
+  patterns.sort()
+  best = patterns[-1]
+
+  #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
   #print 'found new patterns :'
   #for p in patterns:
   #  sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
   #  print p, sig2
-  #
-  best = patterns[-1]
-  #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
     
-  #sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-  txt = best[3]*best[2]
-  i = sig.find(txt)
+  i = sig.find(best[3]*best[2])
   left = sig[:i]
   right = sig[i+best[0]:]
   ret = findPattern( left , elSize, minNbGroup)
