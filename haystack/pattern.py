@@ -32,7 +32,7 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig, elSize=2):
+def findPattern(sig, elSize=2, minNbGroup=2):
   '''
   TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
   '''
@@ -43,7 +43,7 @@ def findPattern(sig, elSize=2):
     ctr = collections.Counter(seqs)
     commons = ctr.most_common()
     for value,nb in commons:
-      while nb >= 2:
+      while nb >= minNbGroup:
         ind = sig.rfind(value*nb )
         while ind != -1: # not found
           #print value, nb
