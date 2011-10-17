@@ -28,40 +28,62 @@ Config = Dummy()
 Config.cacheDir = os.path.normpath(OUTPUTDIR)
 Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
 Config.WORDSIZE = 4
+Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_values.py'])
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig=None):
-  if sig is None:
-    sig = '''P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 '''
+def findPattern(sig=None, PATTERN_ELEMENT_SIZE=2):
+  '''
+  TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
+  '''
   patterns=[]
-  for seqlen in range(len(sig)/2,2,-1):
+  for seqlen in range(len(sig)/2,PATTERN_ELEMENT_SIZE,-1):
     seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
     ctr = collections.Counter(seqs)
     commons = ctr.most_common()
     for value,nb in commons:
-      while True:
-        if nb < 2:
-          break
-        ind = sig.rfind(value*nb)
-        if ind == -1: # not found
-          break
-        patterns.append((nb*len(value), ind ,value,nb)) # biggest is best, ind++ is better
+      while nb >= 2:
+        ind = sig.rfind(value*nb )
+        while ind != -1: # not found
+          #print value, nb
+          patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
+          ind = sig.rfind(value*nb, 0, ind)
         nb-=1
-        if nb < 2:
-          break
   #
   patterns=list(set(patterns))
   patterns.sort()
   if len(patterns) == 0:
     return sig
-  print 'found new patterns :'
-  for p in patterns:
-    sig2 = sig.replace( p[2]*p[3], ' (%s){%d} '%(p[2],p[3]) )
-    print p, sig2
+  #
+  ##print 'found new patterns :'
+  ##for p in patterns:
+  ##  sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
+  ##  print p, sig2
+  #
   best = patterns[-1]
-  ret = findPattern( sig2 )
-  return ret
+  #print 'BEST:', best#, len(best[3]), best[3][:PATTERN_ELEMENT_SIZE], best[3][PATTERN_ELEMENT_SIZE:]
+  
+  if False: # recursive
+    sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+    ret = findPattern( sig2 )
+    return ret
+  
+  sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+  while len(patterns) > 0:
+    # iterative
+    start = best[1]
+    stop  = start+best[0]
+    ## delete all pattern in that range
+    #print patterns
+    patterns = filter( lambda p: not ((start<=p[1]<stop) or (start<=(p[1]+p[0])<stop)), patterns )
+    if len(patterns) == 0:
+      break
+    patterns.sort()
+    best = patterns[-1]
+    #print 'BEST' , best
+    sig2 = sig2.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+
+  return sig2
   
 
 def make(opts):
