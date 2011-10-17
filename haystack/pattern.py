@@ -70,8 +70,8 @@ def findPattern(sig, elSize=2, minNbGroup=2):
   i = sig.find(txt)
   left = sig[:i]
   right = sig[i+best[0]:]
-  ret = findPattern( left , elSize)
-  ret2 = findPattern( right , elSize)
+  ret = findPattern( left , elSize, minNbGroup)
+  ret2 = findPattern( right , elSize, minNbGroup)
   return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)  
 
 def make(opts):
