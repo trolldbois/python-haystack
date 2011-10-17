@@ -209,10 +209,27 @@ class TestAnonymousStructRange(unittest.TestCase):
     self.assertNotIn( START-1, self.astruct)
   
 
+class TestFunctions(unittest.TestCase):
+  def test_findPattern_1(self):
+    sig1 = '''P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z'''\
+    '''4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T'''\
+    '''8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336'''
+    sig1_res = 'P4I4I4u (4z4P4I4u){21} 172z4 (I4T8z4I4z12){4} u4z26336'
 
+    self.assertEquals ( pattern.findPattern(sig1), sig1_res)
+    
+  def test_findPattern_2(self):
+    sig2 = '''P4i4i4u36z8i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4T5I4P4i4T5I4P4i4I4I4P4i4T5'''\
+    '''I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4'''\
+    '''I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4T5I4P4I4i4'''
+    sig2_res = 'P4i4i4u36z8i4 (I4I4P4i4){7}  (T5I4P4i4){2} I4I4P4i4T5I4P4i4 (I4I4P4i4){17} T5I4P4I4i4'
 
+    self.assertEquals ( pattern.findPattern(sig2), sig2_res)
 
-
+  def test_findPattern_3(self):
+    sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
+    sig_res = 'I4 (i4){30} z12'
+    self.assertEquals ( pattern.findPattern(sig), sig_res)
 
 
 
@@ -226,5 +243,6 @@ class TestAnonymousStructRange(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
-
+  #unittest.main()
+  suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
+  unittest.TextTestRunner(verbosity=2).run(suite)
