@@ -228,7 +228,7 @@ class TestFunctions(unittest.TestCase):
 
   def test_findPattern_3(self):
     sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
-    sig_res = 'I4 (i4){30} z12'
+    sig_res = 'I4 (i4i4){15} i4z12'
     self.assertEquals ( pattern.findPattern(sig), sig_res)
 
 
