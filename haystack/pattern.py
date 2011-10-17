@@ -34,23 +34,24 @@ Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 def findPattern(sig, elSize=2, minNbGroup=2):
   '''
+  returns a regexp grouping repetitive patterns.
+  
+  @param sig: a sequence (str/bstr) with rfind() method
+  @param elsize: 
   TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
   '''
+  if (len(sig) % elSize ) != 0:
+    raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sig),elSize))
   patterns=[]
-  for seqlen in range(len(sig)/2,elSize-1,-1):
-    seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
-    #print seqs
-    ctr = collections.Counter(seqs)
-    commons = ctr.most_common()
-    for value,nb in commons:
-      while nb >= minNbGroup:
-        ind = sig.rfind(value*nb )
+  for seqlen in range(elSize, 1+(len(sig)/2)): 
+    seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1, elSize) ] # i %elSize, aligned on the elSize
+    for value,nb in collections.Counter(seqs).most_common():
+      while nb >= minNbGroup:  # try repetition as long as it is > to minNbGroup
+        ind = sig.rfind( value*nb )  # find the fulltext pattern
         while ind != -1: # not found
-          #print value, nb
-          if ind%elSize == 0: # only aligned patterns
-            patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
-          ind = sig.rfind(value*nb, 0, ind)
-        nb-=1
+          patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
+          ind = sig.rfind(value*nb, 0, ind) # find it at another offset
+        nb-=1  # try with a smaller number of repetition
   #
   if len(patterns) == 0:
     return sig
