@@ -32,12 +32,10 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig=None, elSize=2, recursive=False):
+def findPattern(sig, elSize=2):
   '''
   TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
   '''
-  if sig is None:
-    sig = '''aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy .>'''
   patterns=[]
   for seqlen in range(len(sig)/2,elSize-1,-1):
     seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
@@ -59,24 +57,21 @@ def findPattern(sig=None, elSize=2, recursive=False):
   if len(patterns) == 0:
     return sig
   #
-  print 'found new patterns :'
-  for p in patterns:
-    sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
-    print p, sig2
+  #print 'found new patterns :'
+  #for p in patterns:
+  #  sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
+  #  print p, sig2
   #
   best = patterns[-1]
   #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
-  #if best[0] == 2 and best[3] == ' ': # bailout time
-  #  return sig
-  # check for single odd elements
     
   #sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
   txt = best[3]*best[2]
   i = sig.find(txt)
   left = sig[:i]
   right = sig[i+best[0]:]
-  ret = findPattern( left , elSize, recursive=True)
-  ret2 = findPattern( right , elSize, recursive=True)
+  ret = findPattern( left , elSize)
+  ret2 = findPattern( right , elSize)
   return '%s (%s){%d} %s'%(ret,best[3],best[2],ret2)  
 
 def make(opts):
