@@ -32,13 +32,16 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig=None, elSize=2):
+def findPattern(sig=None, elSize=2, recursive=False):
   '''
   TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
   '''
+  if sig is None:
+    sig = '''aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy .>'''
   patterns=[]
-  for seqlen in range(len(sig)/2,elSize,-1):
+  for seqlen in range(len(sig)/2,elSize-1,-1):
     seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
+    #print seqs
     ctr = collections.Counter(seqs)
     commons = ctr.most_common()
     for value,nb in commons:
@@ -46,7 +49,7 @@ def findPattern(sig=None, elSize=2):
         ind = sig.rfind(value*nb )
         while ind != -1: # not found
           #print value, nb
-          if ind%elSize == 0:
+          if True: #ind%elSize == 0:
             patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
           ind = sig.rfind(value*nb, 0, ind)
         nb-=1
@@ -56,17 +59,30 @@ def findPattern(sig=None, elSize=2):
   if len(patterns) == 0:
     return sig
   #
-  ##print 'found new patterns :'
-  ##for p in patterns:
-  ##  sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
-  ##  print p, sig2
+  print 'found new patterns :'
+  for p in patterns:
+    sig2 = sig.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
+    print p, sig2
   #
   best = patterns[-1]
-  #print 'BEST:', best#, len(best[3]), best[3][:PATTERN_ELEMENT_SIZE], best[3][PATTERN_ELEMENT_SIZE:]
-  
-  if False: # recursive
+  print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
+  if best[0] == 2 and best[3] == ' ': # bailout time
+    return sig
+  # check for single odd elements
+  if best[0] == 2*elSize:
+    print 'LOOKING for odd'
+    single = best[3][:elSize]
+    nb = 3
+    ind = sig.rfind(single*nb )
+    while ind != -1:
+      patterns.append((nb*len(single), ind ,nb, single)) # biggest is best, ind++ is better, large nb best
+      nb+=1
+      ind = sig.rfind(value*nb, 0, ind)
+    
+    
+  if recursive:
     sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-    ret = findPattern( sig2 , elSize)
+    ret = findPattern( sig2 , elSize, recursive=True)
     return ret
   
   sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
@@ -76,13 +92,14 @@ def findPattern(sig=None, elSize=2):
     stop  = start+best[0]
     ## delete all pattern in that range
     #print patterns
-    patterns = filter( lambda p: not ((start<=p[1]<stop) or (start<=(p[1]+p[0])<stop)), patterns )
+    patterns = filter( lambda p: not ((start<=p[1]<stop) or (start<(p[1]+p[0])<=stop)), patterns )
     if len(patterns) == 0:
       break
     patterns.sort()
     best = patterns[-1]
-    #print 'BEST' , best
     sig2 = sig2.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
+    print 'BEST' , best
+    print best, sig2
 
   return sig2
   
