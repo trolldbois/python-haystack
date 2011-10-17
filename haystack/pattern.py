@@ -32,12 +32,12 @@ Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 
-def findPattern(sig=None, PATTERN_ELEMENT_SIZE=2):
+def findPattern(sig=None, elSize=2):
   '''
   TODO : code each pattern with 0x00 to 0xff. a field sig is one pattern.
   '''
   patterns=[]
-  for seqlen in range(len(sig)/2,PATTERN_ELEMENT_SIZE,-1):
+  for seqlen in range(len(sig)/2,elSize,-1):
     seqs =  [ sig[i:i+seqlen] for i in xrange(0, len(sig)-seqlen+1) ]
     ctr = collections.Counter(seqs)
     commons = ctr.most_common()
@@ -46,7 +46,8 @@ def findPattern(sig=None, PATTERN_ELEMENT_SIZE=2):
         ind = sig.rfind(value*nb )
         while ind != -1: # not found
           #print value, nb
-          patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
+          if ind%elSize == 0:
+            patterns.append((nb*len(value), ind ,nb, value)) # biggest is best, ind++ is better, large nb best
           ind = sig.rfind(value*nb, 0, ind)
         nb-=1
   #
@@ -65,7 +66,7 @@ def findPattern(sig=None, PATTERN_ELEMENT_SIZE=2):
   
   if False: # recursive
     sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
-    ret = findPattern( sig2 )
+    ret = findPattern( sig2 , elSize)
     return ret
   
   sig2 = sig.replace( best[3]*best[2], ' (%s){%d} '%(best[3],best[2]) )
