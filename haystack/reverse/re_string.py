@@ -104,3 +104,25 @@ def testEncoding(bytesarray, encoding):
     return i, ustr[:i]
     
 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

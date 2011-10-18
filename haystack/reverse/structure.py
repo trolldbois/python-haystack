@@ -25,7 +25,7 @@ import re_string
 
 log = logging.getLogger('progressive')
 
-DEBUG_ADDRS=[0xad90d00]
+DEBUG_ADDRS=[]
 
 
 # a 12 Mo heap takes 30 minutes on my slow notebook
@@ -58,6 +58,7 @@ def make(opts):
   # creates
   t0 = time.time()
   structCache = {}
+  signatures = {}
   lastNb=0
   for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #anon_struct.save()
@@ -66,17 +67,22 @@ def make(opts):
     #
     #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
     #
+    # save signature
+    cacheSignature(signatures, anon_struct)
+    #
     nb = len(structs_addrs)
     if nb > lastNb+10000: #time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
       rewrite(structs_addrs, structCache)
+      saveSignatures(signatures, structCache)
       log.info('%2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
       t0 = time.time()
       lastNb = nb
     pass
   # final pass
   rewrite(structs_addrs, structCache)  
+  saveSignatures(signatures, structCache)
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
   ##  unresolved PP in ppMapper.unresolved
@@ -84,6 +90,12 @@ def make(opts):
   ## next step
   log.info('Pin resolved PinnedPointers to their respective heap.')
 
+def cacheSignature(cache, struct):
+  sig = struct.getSignature()
+  if sig not in cache:
+    cache[sig]=[]
+  cache[sig].append(struct)
+  return
 
 def getHeapPointers(dumpfilename, mappings):
   ''' Search Heap pointers values in stack and heap.
@@ -236,7 +248,8 @@ def dequeue(addrs, start, end):
 def rewrite(structs_addrs, structCache):
   ''' structs_addrs is sorted '''
   structs_addrs.sort()
-  fout = file(Config.GENERATED_PY_HEADERS,'w')
+  fout = file(Config.GENERATED_PY_HEADERS_VALUES,'w')
+  towrite = []
   for vaddr in structs_addrs:
     ## debug
     if vaddr in DEBUG_ADDRS:
@@ -245,10 +258,30 @@ def rewrite(structs_addrs, structCache):
       logging.getLogger('progressive').setLevel(logging.INFO)
     anon = structCache[vaddr]
     anon.resolvePointers(structs_addrs, structCache)
-    fout.write('%s\n'%(anon.toString()))
+    towrite.append(anon.toString())
+    if len(towrite) >= 10000:
+      fout.write('\n'.join(towrite) )
+      towrite = []
+  fout.write('\n'.join(towrite) )
   fout.close()
   return
-  
+
+def saveSignatures(cache, structCache):
+  ''' cache is {} of sig: [structs] '''
+  fout = file(Config.GENERATED_PY_HEADERS,'w')
+  towrite = []
+  tuples = [(len(structs), sig, structs) for sig,structs in cache.items() ]
+  tuples.sort(reverse=True)
+  for l, sig,structs in tuples:
+    values=''
+    s='''
+# %d structs
+#class %s
+%s
+'''%(len(structs), sig, structs[0].toString())
+    fout.write(s)
+  fout.close()
+
 class AnonymousStructInstance:
   '''
   AnonymousStruct in absolute address space.
@@ -358,6 +391,7 @@ class AnonymousStructInstance:
     return
 
   def _aggregateZeroes(self):
+    ''' sometimes we have a pointer in the middle of a zeroes buffer. we need to aggregate '''
     log.debug('aggregateZeroes: start')
     myfields = sorted([ f for f in self.fields if f.padding != True ])
     if len(myfields) < 2:
@@ -389,7 +423,7 @@ class AnonymousStructInstance:
         padding = self._addField( nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, True)
         log.debug('fixGaps: adding field at offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
       elif f.offset < nextoffset :
-        log.debug('fixGaps: overlapping fields at offset %d'%(f.offset))
+        log.warning('fixGaps: overlapping fields at offset %d'%(f.offset))
         overlaps = True
       else: # == 
         pass
@@ -466,12 +500,13 @@ class AnonymousStructInstance:
         # set pointer type to char_p
         tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
         if tgt_field is not None:
-          field.typename = FieldType.POINTER(tgt_field.field)
+          field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
         pass
       elif field.value in self.mappings: # other mappings
         tgt = 'ext_lib'
+        field._ptr_to_ext_lib = True
         pass
       if tgt is not None:
         resolved+=1
@@ -482,7 +517,9 @@ class AnonymousStructInstance:
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
-      self._aggregateStringPointersToArray()
+      #logging.getLogger('progressive').setLevel(logging.DEBUG)
+      #self._aggregateStringPointersToArray()
+      #logging.getLogger('progressive').setLevel(logging.INFO)
     else:
       self.pointerResolved = False
     return
@@ -504,7 +541,7 @@ class AnonymousStructInstance:
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
     pointerFields = self.getPointerFields()
-    log.debug('aggregateStringPtr: start')
+    log.debug('aggregateStringPtr: start %lx'%(self.vaddr))
     myfields = sorted(self.fields)
     if len(myfields) < 2:
       log.debug('aggregateStringPtr: not so much fields')
@@ -537,6 +574,8 @@ class AnonymousStructInstance:
     # pointer is Resolved
     if not field.isPointer():
       return False
+    if hasattr(field,'_ptr_to_ext_lib'):
+      return False      
     #if not hasattr(field,'_target_field'):
     #  return False
     return field._target_field.isString()
@@ -595,7 +634,7 @@ class FieldType:
     self.sig = sig
     self.isPtr = isPtr
   @classmethod
-  def POINTER(cls, typ):
+  def makePOINTER(cls, typ):
     if typ == FieldType.STRING:
       return FieldType.STRING_POINTER
     return cls( typ._id+0x100, typ.basename+'_ptr', 'ctypes.POINTER(%s)'%(typ.ctypes), 'P', True)
@@ -606,6 +645,7 @@ FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char',    'T')
 FieldType.STRING_POINTER   = FieldType(0x110, 'text_ptr',      'ctypes.c_char_p', 's', True)
 FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint',    'I')
 FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint',    'i')
+FieldType.SIGNED_SMALLINT = FieldType(0x42, 'signed_small_int', 'ctypes.c_int',    'l')
 FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte',   'a')
 FieldType.ARRAY_CHAR_P = FieldType(0x51, 'array_char_p',     'ctypes.c_char_p',   'Sp')
 FieldType.PADDING  = FieldType(0x90, 'pad',       'ctypes.c_ubyte',   'X')
@@ -641,7 +681,7 @@ class Field:
   def isArray(self): # 
     return self.typename == FieldType.ARRAY or self.typename == FieldType.ARRAY_CHAR_P
   def isInteger(self): # 
-    return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT
+    return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
 
   def checkString(self):
     ''' if there is no \x00 termination, its not a string
@@ -673,9 +713,25 @@ class Field:
       self.value = value
       self.size = Config.WORDSIZE
       self.comment = self.struct.mappings.getMmapForAddr(self.value).pathname
+      self.typename = FieldType.POINTER
       return True
     else:
       return False
+
+  def checkZeroes(self):
+    if self.checkLeadingZeroes():
+      log.debug ('ZERO: decoded a zeroes START padding from offset %d:%d'%(self.offset,self.offset+self.size))
+    elif self.checkEndingZeroes():
+      log.debug ('ZERO: decoded a zeroes ENDING padding from offset %d:%d'%(self.offset,self.offset+self.size))
+    elif self.checkContainsZeroes():
+      log.debug ('ZERO: decoded a zeroes CONTAINS padding from offset %d:%d'%(self.offset,self.offset+self.size))
+    else :
+      return False
+    self.typename = FieldType.ZEROES
+    if self.size == Config.WORDSIZE:
+      self.typename = FieldType.INTEGER
+      self.value = 0
+    return True  
   
   def checkLeadingZeroes(self):
     ''' iterate over the bytes until a byte if not \x00 
@@ -730,25 +786,6 @@ class Field:
       return True
     return False    
 
-  def checkEndingZeroes2(self):
-    ''' iterate over the bytes until a byte if not \x00 
-    '''
-    bytes = self.struct.bytes[self.offset:self.offset+self.size]
-    for i in range(len(bytes)-1,-1,-1):
-      if bytes[i] != '\x00' :
-        break
-    if i == 0:
-      self.value = bytes
-      return True
-    elif i < len(bytes) - 4 : # at least 4 byte, or it would be an int
-      log.debug('ENDING2: backwards stopping with i:%d and len bytes:%d for size:%d'%(i, len(bytes), len(bytes) - 1 - i))
-      self.size = len(bytes) - 1 - i
-      self.value = bytes[-self.size:]
-      self.offset = self.offset+( len(bytes)-i)
-      log.debug('ENDING2: zerroes from offset %d:%d'%(self.offset,self.offset+self.size))
-      return True
-    return False
-
   def checkContainsZeroes(self):
     bytes = self.struct.bytes[self.offset:self.offset+self.size]    
     size = len(bytes)
@@ -775,13 +812,13 @@ class Field:
     log.debug('CONTAINS: zerroes from offset %d:%d'%(self.offset,self.offset+self.size))
     return True
 
-  def checkByteArray(self):
+  def checkIntegerArray(self):
     # this should be last resort
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
     if size < 4:
       return False
-    ctr = collections.Counter(bytes)
+    ctr = collections.Counter([ bytes[i:i+Config.WORDSIZE] for i in range(len(bytes)) ] )
     floor = max(1,int(size*.1)) # 10 % variation in values
     #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
     commons = ctr.most_common()
@@ -797,6 +834,16 @@ class Field:
   def checkArrayCharP(self):
     pass
     
+  def checkInteger(self):
+    if self.checkSmallInt():
+      return True
+    elif self.size == Config.WORDSIZE:
+      bytes = self.struct.bytes[self.offset:self.offset+self.size]
+      self.value = struct.unpack('L',bytes[:Config.WORDSIZE])[0] 
+      self.typename = FieldType.INTEGER
+      return True
+    return False
+
   def checkSmallInt(self):
     # TODO
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
@@ -804,13 +851,21 @@ class Field:
     if size < 4:
       return False
     val = struct.unpack('L',bytes[:Config.WORDSIZE])[0] 
-    if val < 0xff:
+    if val < 0xffff:
       self.value = val
       self.size = 4
+      self.typename = FieldType.SMALLINT
       return True
-    else:
+    else: # check signed int
+      val = struct.unpack('l',bytes[:Config.WORDSIZE])[0] 
+      if -0xffff <= val <= 0xffff:
+        self.value = val
+        self.size = 4
+        self.typename = FieldType.SIGNED_SMALLINT
+        return True
       return False
-
+    return False
+    
   def _check(self):
     if self.typename == FieldType.UNKNOWN:
       raise TypeError('Please call decodeType on unknown tyep fields')
@@ -821,7 +876,7 @@ class Field:
     elif self.isPointer():
       ret = self.checkPointer()
     elif self.isInteger():
-      ret = self.checkSmallInt()
+      ret = self.checkInteger()
     return ret
         
   def decodeType(self):
@@ -832,23 +887,15 @@ class Field:
     # try all possible things
     if self.checkString(): # Found a new string...
       self.typename = FieldType.STRING
-    elif self.checkLeadingZeroes():
-      log.debug ('ZERO: decoded a zeroes START padding from offset %d:%d'%(self.offset,self.offset+self.size))
-      self.typename = FieldType.ZEROES
-    elif self.checkEndingZeroes():
-      log.debug ('ZERO: decoded a zeroes ENDING padding from offset %d:%d'%(self.offset,self.offset+self.size))
-      self.typename = FieldType.ZEROES
-    elif self.checkContainsZeroes():
-      log.debug ('ZERO: decoded a zeroes CONTAINS padding from offset %d:%d'%(self.offset,self.offset+self.size))
-      self.typename = FieldType.ZEROES
+    elif self.checkZeroes():
+      # ok, inlined
+      pass
     elif self.checkPointer():
       log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
-      self.typename = FieldType.POINTER
-    elif self.checkSmallInt():
+    elif self.checkInteger():
       log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
-      self.typename = FieldType.INTEGER
-    elif self.checkByteArray():
-      self.typename = FieldType.ARRAY
+    #elif self.checkIntegerArray():
+    #  self.typename = FieldType.ARRAY
     else:
       # check other types
       self.decoded = False
@@ -906,7 +953,7 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
+      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
     elif self.isZeroes() or self.padding or self.typename == FieldType.UNKNOWN:
       bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
     else: # bytearray, pointer...
@@ -947,7 +994,10 @@ def search(opts):
   #
   try:
     make(opts)
-  except KeyboardInterrupt,e:
+  #except KeyboardInterrupt,e:
+  except IOError,e:
+    log.warning(e)
+    raise e
     pass
   pass
   
