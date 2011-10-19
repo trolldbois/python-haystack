@@ -15,8 +15,8 @@ import collections
 import numbers
 
 from haystack.config import Config
-from utils import xrange, Dummy
-from cache_utils import int_array_cache,int_array_save
+from haystack.utils import Dummy
+from utils import int_array_cache,int_array_save
 
 import memory_dumper
 import signature 
