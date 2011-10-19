@@ -4,6 +4,8 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
 import logging
 import argparse
 import time
@@ -11,7 +13,8 @@ import sys
 import numpy
 
 from haystack.config import Config
-import memory_dumper
+from haystack import memory_dumper
+
 import signature 
 import utils
 
