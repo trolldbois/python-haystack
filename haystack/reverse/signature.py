@@ -11,8 +11,8 @@ import re
 import struct
 import ctypes
 
-from .. import memory_dumper
-from ..utils import xrange
+from haystack import memory_dumper
+from haystack.utils import xrange
 
 log = logging.getLogger('signature')
 

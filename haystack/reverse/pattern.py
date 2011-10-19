@@ -14,6 +14,7 @@ import itertools
 import collections
 import numbers
 
+from haystack.config import Config
 from utils import xrange, Dummy
 from cache_utils import int_array_cache,int_array_save
 
@@ -22,14 +23,6 @@ import signature
 
 log = logging.getLogger('pattern')
 
-OUTPUTDIR='../outputs/'
-
-Config = Dummy()
-Config.cacheDir = os.path.normpath(OUTPUTDIR)
-Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
-Config.WORDSIZE = 4
-Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_values.py'])
-Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
 
 def findPatternText(sequence, elSize=1, minNbGroup=2):
   '''

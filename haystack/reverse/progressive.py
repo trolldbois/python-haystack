@@ -11,13 +11,12 @@ import sys
 import numpy
 
 from haystack.config import Config
-from cache_utils import int_array_cache,int_array_save
 import memory_dumper
 import signature 
 import utils
 
 
-log = logging.getLogger('main')
+log = logging.getLogger('progressive')
 
 DEBUG_ADDRS=[]
 
@@ -98,8 +97,8 @@ def getHeapPointers(dumpfilename, mappings):
   F_VALUES = dumpfilename+'.heap+stack.pointers.values'
   F_ADDRS = dumpfilename+'.heap.pointers.addrs'
   
-  values = int_array_cache(F_VALUES)
-  heap_addrs = int_array_cache(F_ADDRS)
+  values = utils.int_array_cache(F_VALUES)
+  heap_addrs = utils.int_array_cache(F_ADDRS)
   if values is None or heap_addrs is None:
     log.info('Making new cache')
     log.info('getting pointers values from stack ')
@@ -114,8 +113,8 @@ def getHeapPointers(dumpfilename, mappings):
     log.info('  got %d pointers '%(len(heap_enum)) )
     # merge
     values = sorted(set(heap_values+stack_values))
-    int_array_save(F_VALUES , values)
-    int_array_save(F_ADDRS, heap_addrs)
+    utils.int_array_save(F_VALUES , values)
+    utils.int_array_save(F_ADDRS, heap_addrs)
     log.info('we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
     log.info('[+] Loading from cache')
