@@ -5,25 +5,19 @@
 #
 
 import logging
-import argparse, os, pickle, time, sys
-import collections
-import re
-import struct
-import ctypes
-import array
-import itertools
-import numbers
+import argparse
+import time
+import sys
 import numpy
-import string
 
-#from utils import xrange # perf hit
+from haystack.config import Config
 from cache_utils import int_array_cache,int_array_save
 import memory_dumper
 import signature 
-from pattern import Config
-import re_string
+import utils
 
-log = logging.getLogger('progressive')
+
+log = logging.getLogger('main')
 
 DEBUG_ADDRS=[]
 
@@ -168,9 +162,9 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
       logging.getLogger('progressive').setLevel(logging.INFO)
 
     # the pointers field address/offset
-    addrs, my_pointers_addrs = dequeue(addrs, start, start+size)  ### this is not reverse-compatible
+    addrs, my_pointers_addrs = utils.dequeue(addrs, start, start+size)  ### this is not reverse-compatible
     # the pointers values, that are not aligned
-    unaligned, my_unaligned_addrs = dequeue(unaligned, start, start+size)
+    unaligned, my_unaligned_addrs = utils.dequeue(unaligned, start, start+size)
     ### read the struct
     anon = AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
     #save the ref/struct type
@@ -209,41 +203,6 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
   return
 
 
-def closestFloorValueNumpy(val, lst):
-  ' please use numpy.array for lst' 
-  indicetab = numpy.searchsorted(lst, [val])
-  ind = indicetab[0]
-  i = max(0,ind-1)
-  return lst[i], i
-
-def closestFloorValueOld(val, lst):
-  ''' return the closest previous value to val in lst '''
-  if val in lst:
-    return val, lst.index(val)
-  prev = lst[0]
-  for i in xrange(1, len(lst)-1):
-    if lst[i] > val:
-      return prev, i-1
-    prev = lst[i]
-  return lst[-1], len(lst)-1
-
-closestFloorValue = closestFloorValueNumpy
-  
-#it = itertools.takewhile( lambda x: x>end-Config.WORDSIZE, itertools.dropwhile( lambda x: x<val, addrs) )
-
-def dequeue(addrs, start, end):
-  ''' 
-  dequeue address and return vaddr in interval ( Config.WORDSIZE ) from a list of vaddr
-  dequeue addrs from 0 to start.
-    dequeue all value between start and end in retval2
-  return remaining after end, retval2
-  '''
-  ret = []
-  while len(addrs)> 0  and addrs[0] < start:
-    addrs.pop(0)
-  while len(addrs)> 0  and addrs[0] >= start and addrs[0] <= end - Config.WORDSIZE:
-    ret.append(addrs.pop(0))
-  return addrs, ret
 
 def rewrite(structs_addrs, structCache):
   ''' structs_addrs is sorted '''

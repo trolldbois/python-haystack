@@ -5,13 +5,14 @@
 #
 
 import logging
-import argparse, os, pickle, time, sys
+import argparse
+import sys
 import re
 import struct
 import ctypes
 
-import memory_dumper
-from utils import xrange
+from .. import memory_dumper
+from ..utils import xrange
 
 log = logging.getLogger('signature')
 

@@ -5,25 +5,16 @@
 #
 
 import logging
-import argparse, os, pickle, time, sys
-import collections
-import re
-import struct
-import ctypes
-import array
+import os
+import pickle
 import itertools
 import numbers
-import numpy
-import string
 
-#from utils import xrange # perf hit
-from cache_utils import int_array_cache,int_array_save
-import memory_dumper
-import signature 
-from pattern import Config
-import re_string
+from haystack.config import Config
+import field
+import utils
 
-log = logging.getLogger('progressive')
+log = logging.getLogger('structure')
 
 DEBUG_ADDRS=[]
 
@@ -77,7 +68,7 @@ class AnonymousStructInstance:
       maxFieldSize = nextStructOffset - offset
       size = maxFieldSize
     ##
-    field = Field(self, offset, typename, size, padding)
+    field = field.Field(self, offset, typename, size, padding)
     if typename == FieldType.UNKNOWN:
       if not field.decodeType():
         return None
@@ -100,7 +91,7 @@ class AnonymousStructInstance:
     if typename is None:
       raise ValueError()
     # make a field with no autodecode
-    field = Field(self, offset, typename, size, padding)
+    field = field.Field(self, offset, typename, size, padding)
     # field has been typed
     self.fields.append(field)
     self.fields.sort()
@@ -164,7 +155,7 @@ class AnonymousStructInstance:
       last = newFields[-1]
       if last.isZeroes() and f.isZeroes():
         log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
-        newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
+        newFields[-1] = field.Field(self, last.offset, last.typename, len(last)+len(f), False)
       else:
         newFields.append(f)
     self.fields = newFields
@@ -221,7 +212,7 @@ class AnonymousStructInstance:
         try:
           self.fields.remove(f1)
           self.fields.remove(f2)
-          self.fields.append( Field(self, start, FieldType.ZEROES, size, False) )
+          self.fields.append( field.Field(self, start, FieldType.ZEROES, size, False) )
         except ValueError,e:
           log.error('please bugfix')
       else: # TODO
@@ -288,7 +279,7 @@ class AnonymousStructInstance:
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
     if len(structs_addrs) == 0:
       return None
-    nearest_addr, ind = closestFloorValue(field.value, structs_addrs)
+    nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
     tgt_st = structCache[nearest_addr]
     if field.value in tgt_st:
       offset = field.value - nearest_addr
@@ -320,7 +311,7 @@ class AnonymousStructInstance:
             array.append(f)
             log.debug('aggregateStringPtr: We just found a null termination making a c_char_p[%d]'%( len(array) ))
         # create a array field
-        field = Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
+        field = field.Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
         field.element_size = Config.WORDSIZE
         field.elements = array
         # TODO border case f >=4, we need to cut f in f1[:4]+f2[4:]

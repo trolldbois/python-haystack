@@ -5,22 +5,11 @@
 #
 
 import logging
-import argparse, os, pickle, time, sys
 import collections
-import re
 import struct
-import ctypes
-import array
 import itertools
-import numbers
-import numpy
-import string
 
-#from utils import xrange # perf hit
-from cache_utils import int_array_cache,int_array_save
-import memory_dumper
-import signature 
-from pattern import Config
+from haystack.config import Config
 import re_string
 
 log = logging.getLogger('field')

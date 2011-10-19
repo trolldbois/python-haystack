@@ -11,7 +11,6 @@ This module holds some basic utils function.
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import os
-import array
 import encodings
 import logging
 import string
