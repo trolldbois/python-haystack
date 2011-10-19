@@ -16,7 +16,7 @@ OUTPUTDIR='../outputs/'
 Config = Dummy()
 Config.cacheDir = os.path.normpath(OUTPUTDIR)
 Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
-Config.WORDSIZE = 4
 Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_values.py'])
 Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
+Config.WORDSIZE = 4
 
