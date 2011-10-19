@@ -19,7 +19,7 @@ Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000
 Config.MMAP_LENGTH = 4096
 Config.STRUCT_OFFSET = 44
-Config.cacheDir = os.path.normpath('./outputs/')
+#Config.cacheDir = os.path.normpath('./outputs/')
 
 
 def accumulate(iterable, func=operator.add):
@@ -275,6 +275,6 @@ class TestFunctions(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main()
+  unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
