@@ -16,7 +16,9 @@ import numpy
 from haystack.config import Config
 from haystack import memory_dumper
 
+from field import FieldType
 import signature 
+import structure
 import utils
 
 
@@ -290,6 +292,8 @@ def main(argv):
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
   logging.getLogger('progressive').setLevel(logging.INFO)
+  logging.getLogger('structure').setLevel(logging.INFO)
+  logging.getLogger('field').setLevel(logging.INFO)
 
   opts.func(opts)
 

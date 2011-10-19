@@ -11,7 +11,7 @@ import itertools
 import numbers
 
 from haystack.config import Config
-import field
+from field import Field, FieldType
 import utils
 
 log = logging.getLogger('structure')
@@ -68,7 +68,7 @@ class AnonymousStructInstance:
       maxFieldSize = nextStructOffset - offset
       size = maxFieldSize
     ##
-    field = field.Field(self, offset, typename, size, padding)
+    field = Field(self, offset, typename, size, padding)
     if typename == FieldType.UNKNOWN:
       if not field.decodeType():
         return None
@@ -91,7 +91,7 @@ class AnonymousStructInstance:
     if typename is None:
       raise ValueError()
     # make a field with no autodecode
-    field = field.Field(self, offset, typename, size, padding)
+    field = Field(self, offset, typename, size, padding)
     # field has been typed
     self.fields.append(field)
     self.fields.sort()
@@ -155,7 +155,7 @@ class AnonymousStructInstance:
       last = newFields[-1]
       if last.isZeroes() and f.isZeroes():
         log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
-        newFields[-1] = field.Field(self, last.offset, last.typename, len(last)+len(f), False)
+        newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
       else:
         newFields.append(f)
     self.fields = newFields
@@ -212,7 +212,7 @@ class AnonymousStructInstance:
         try:
           self.fields.remove(f1)
           self.fields.remove(f2)
-          self.fields.append( field.Field(self, start, FieldType.ZEROES, size, False) )
+          self.fields.append( Field(self, start, FieldType.ZEROES, size, False) )
         except ValueError,e:
           log.error('please bugfix')
       else: # TODO
@@ -311,7 +311,7 @@ class AnonymousStructInstance:
             array.append(f)
             log.debug('aggregateStringPtr: We just found a null termination making a c_char_p[%d]'%( len(array) ))
         # create a array field
-        field = field.Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
+        field = Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
         field.element_size = Config.WORDSIZE
         field.elements = array
         # TODO border case f >=4, we need to cut f in f1[:4]+f2[4:]
