@@ -16,9 +16,9 @@ import numbers
 
 from haystack.config import Config
 from haystack.utils import Dummy
-from utils import int_array_cache,int_array_save
+from haystack import memory_dumper
 
-import memory_dumper
+import utils
 import signature 
 
 log = logging.getLogger('pattern')
@@ -154,7 +154,7 @@ class PointerIntervalSignature:
   def _load(self):
     ## DO NOT SORT LIST. c'est des sequences. pas des sets.
     myname = self.cacheFilenamePrefix+'.pinned'
-    sig = int_array_cache(myname)
+    sig = utils.int_array_cache(myname)
     if sig is None:
       log.info("Signature has to be calculated for %s. It's gonna take a while."%(self.name))
       pointerSearcher = signature.PointerSearcher(self.mmap)
@@ -167,7 +167,7 @@ class PointerIntervalSignature:
         #print hex(i), 'value:', hex(self.mmap.readWord(i) )
         last=i
       # save it
-      sig = int_array_save(myname, sig)
+      sig = utils.int_array_save(myname, sig)
     else:
       log.debug("%d Signature intervals loaded from cache."%( len(sig) ))
     self.sig = sig
