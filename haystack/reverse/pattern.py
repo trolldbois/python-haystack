@@ -4,6 +4,8 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
 import logging
 import argparse, os, pickle, time, sys
 import re

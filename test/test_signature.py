@@ -11,10 +11,9 @@ import operator
 import os
 import unittest
 
-from haystack.reverse import signature
 from haystack import memory_mapping
 from haystack.config import Config
-
+from haystack.reverse import signature
 
 Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000

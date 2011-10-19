@@ -11,16 +11,15 @@ import operator
 import os
 import unittest
 
-
 from haystack import memory_mapping
+from haystack.config import Config
 from haystack.reverse import pattern
 
-class Config:
-  MMAP_START = 0x0c00000
-  MMAP_STOP =  0x0c01000
-  MMAP_LENGTH = 4096
-  STRUCT_OFFSET = 44
-  cacheDir = os.path.normpath('./outputs/')
+Config.MMAP_START = 0x0c00000
+Config.MMAP_STOP =  0x0c01000
+Config.MMAP_LENGTH = 4096
+Config.STRUCT_OFFSET = 44
+Config.cacheDir = os.path.normpath('./outputs/')
 
 
 def accumulate(iterable, func=operator.add):
@@ -276,6 +275,6 @@ class TestFunctions(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  #unittest.main()
-  suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-  unittest.TextTestRunner(verbosity=2).run(suite)
+  unittest.main()
+  #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
+  #unittest.TextTestRunner(verbosity=2).run(suite)
