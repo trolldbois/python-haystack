@@ -15,6 +15,8 @@ import numpy
 import os
 import array
 
+from haystack.config import Config
+
 log = logging.getLogger('utils')
 
 def int_array_cache(filename):

@@ -13,7 +13,7 @@ from utils import Dummy
 
 log = logging.getLogger('config')
 
-OUTPUTDIR='../outputs/'
+OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/')
 
 Config = Dummy()
 Config.cacheDir = os.path.normpath(OUTPUTDIR)

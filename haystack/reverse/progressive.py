@@ -8,6 +8,7 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import argparse
+import os
 import time
 import sys
 import numpy
@@ -168,7 +169,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     # the pointers values, that are not aligned
     unaligned, my_unaligned_addrs = utils.dequeue(unaligned, start, start+size)
     ### read the struct
-    anon = AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
+    anon = structure.AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
     #save the ref/struct type
     structCache[ anon.vaddr ] = anon
     structs_addrs = numpy.append(structs_addrs, anon.vaddr)
