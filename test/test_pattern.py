@@ -6,17 +6,16 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-from haystack import pattern
-from haystack import memory_mapping
-
 import struct
 import operator
 import os
 import unittest
 
 
+from haystack import memory_mapping
+from haystack.reverse import pattern
+
 class Config:
-  WORD_LENGTH = 4
   MMAP_START = 0x0c00000
   MMAP_STOP =  0x0c01000
   MMAP_LENGTH = 4096
@@ -37,16 +36,16 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   nsig.extend(seq)
   indices = [ i for i in accumulate(nsig)]
   dump = [] #b''
-  for i in range(0,Config.MMAP_LENGTH, Config.WORD_LENGTH): 
+  for i in range(0,Config.MMAP_LENGTH, Config.WORDSIZE): 
     if i in indices:
       dump.append( struct.pack('L',start+i) )
     else:
       dump.append( struct.pack('L',0x2e2e2e2e) )
   
-  if len(dump) != Config.MMAP_LENGTH/Config.WORD_LENGTH :
+  if len(dump) != Config.MMAP_LENGTH/Config.WORDSIZE :
     raise ValueError('error on length dump %d '%( len(dump) ) )  
   dump2 = ''.join(dump)
-  if len(dump)*Config.WORD_LENGTH != len(dump2):
+  if len(dump)*Config.WORDSIZE != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
   mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
