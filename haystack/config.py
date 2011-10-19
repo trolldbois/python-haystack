@@ -7,7 +7,7 @@
 import logging
 import os
 
-from ..utils import Dummy
+from utils import Dummy
 
 log = logging.getLogger('config')
 

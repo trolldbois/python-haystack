@@ -10,13 +10,12 @@ import tarfile, zipfile
 import tempfile, shutil
 
 
+from utils import Dummy
 import dbg
 import memory_mapping
 
 log = logging.getLogger('dumper')
 
-class Dummy:
-  pass
 
 class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
