@@ -12,6 +12,7 @@ import numbers
 
 from haystack.config import Config
 from field import Field, FieldType
+import pattern
 import utils
 
 log = logging.getLogger('structure')
@@ -270,8 +271,12 @@ class AnonymousStructInstance:
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
       logging.getLogger('progressive').setLevel(logging.DEBUG)
+      logging.getLogger('structure').setLevel(logging.DEBUG)
+      logging.getLogger('field').setLevel(logging.DEBUG)
       self._aggregateFields()
       logging.getLogger('progressive').setLevel(logging.INFO)
+      logging.getLogger('structure').setLevel(logging.INFO)
+      logging.getLogger('field').setLevel(logging.INFO)
     else:
       self.pointerResolved = False
     return
@@ -297,25 +302,37 @@ class AnonymousStructInstance:
     myfields = []
     
     signature = self.getSignature()
-    pencoder = PatternEncoder(signature, minGroupSize=3)
+    pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
     patterns = pencoder.makePattern()
+    log.debug('aggregateFields came up with pattern %s'%(patterns))
     
-    for nb, fields in patterns:
+    # pattern is made on FieldType, 
+    #so we need to dequeue self.fields at the same time to enqueue in myfields
+    for nb, fieldTypesAndSizes in patterns:
+      print 'fieldTypesAndSizes:',fieldTypesAndSizes
       if nb == 1:
-        myfields.append(fields) # single el
-      elif len(fields) > 1: #  array of subtructure
+        fieldType = fieldTypesAndSizes[0] # its a tuple
+        field = self.fields.pop(0)
+        myfields.append(field) # single el
+        print field
+      elif len(fieldTypesAndSizes) > 1: #  array of subtructure
+        fields = [ self.fields.pop(0) for typ,size in fieldTypesAndSizes ] # its a list of tuples
         # need global ref to compare substructure signature to other anonstructure
         firstField = FieldType.makeStructField(self, fields[0].offset, fields)
-        array = FieldType.makeArrayFields(self, firstField, nb )
+        array = FieldType.makeArrayField(self, firstField, nb )
+        print 'arra',array
         myfields.append(array) 
-      elif len(fields) == 1: #make array of elements or
-        array = FieldType.makeArrayFields(self, fields )
+      elif len(fieldTypesAndSizes) == 1: #make array of elements or
+        fields = [ self.fields.pop(0) for typ,size in fieldTypesAndSizes ]
+        array = FieldType.makeArrayField(self, fields )
+        print 'arr',array
         myfields.append(array) 
       else:
         raise ValueError('fields len is incorrect %d'%(len(fields)))
     
     log.debug('done with aggregateFields')    
     self.fields = myfields
+    print 'final', self.fields
     return
       
   def _isPointerToString(self, field):
@@ -339,6 +356,7 @@ class AnonymousStructInstance:
   
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
+    print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:

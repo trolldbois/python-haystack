@@ -70,7 +70,7 @@ def make(opts):
     cacheSignature(signatures, anon_struct)
     #
     nb = len(structs_addrs)
-    if nb >= lastNb+10000: #time.time() - t0 > 30 :
+    if nb >= lastNb+1000: #time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
       rewrite(structs_addrs, structCache)
