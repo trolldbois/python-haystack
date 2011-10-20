@@ -315,20 +315,24 @@ class AnonymousStructInstance:
         field = self.fields.pop(0)
         myfields.append(field) # single el
         print field
-      elif len(fieldTypesAndSizes) > 1: #  array of subtructure
-        fields = [ self.fields.pop(0) for typ,size in fieldTypesAndSizes ] # its a list of tuples
-        # need global ref to compare substructure signature to other anonstructure
-        firstField = FieldType.makeStructField(self, fields[0].offset, fields)
-        array = FieldType.makeArrayField(self, firstField, nb )
+      elif len(fieldTypesAndSizes) > 1: #  array of subtructure DEBUG XXX TODO
+        myelements=[]
+        for i in range(nb):
+          fields = [ self.fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
+          #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ] 
+          # need global ref to compare substructure signature to other anonstructure
+          firstField = FieldType.makeStructField(self, fields[0].offset, fields)
+          myelements.append(firstField)
+        array = FieldType.makeArrayField(self, myelements )
         print 'arra',array
         myfields.append(array) 
       elif len(fieldTypesAndSizes) == 1: #make array of elements or
-        fields = [ self.fields.pop(0) for typ,size in fieldTypesAndSizes ]
+        fields = [ self.fields.pop(0) for i in range(nb) ]
         array = FieldType.makeArrayField(self, fields )
         print 'arr',array
         myfields.append(array) 
-      else:
-        raise ValueError('fields len is incorrect %d'%(len(fields)))
+      #else: # TODO DEBUG internal struct
+      #  raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
     
     log.debug('done with aggregateFields')    
     self.fields = myfields

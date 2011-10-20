@@ -36,21 +36,22 @@ class FieldType:
   def makeStructField(cls, parent, offset, fields): # struct name should be the vaddr... otherwise itgonna be confusing
     import structure
     vaddr = parent.vaddr+offset
-    newfieldType = FieldTypeStruct('%lx'%(vaddr))
-    newfieldType.setStruct(structure.AnonymousStructInstance(parent.mappings, vaddr, parent.bytes[offset:offset+l] ) )
+    newfieldType = FieldTypeStruct('%lx'%(vaddr), fields)
+    newfieldType.setStruct(structure.AnonymousStructInstance(parent.mappings, vaddr, parent.bytes[offset:offset+len(newfieldType)] ) )
     newField = Field(parent, offset, newfieldType, len(newfieldType), False)
     return newField
 
   @classmethod
-  def makeArrayField(cls, fields): 
+  def makeArrayField(cls, parent, fields): 
     firstField = fields[0]
+    vaddr = parent.vaddr+firstField.offset
     nb = len(fields)
     l = len(firstField)
-    newfieldType = FieldTypeArray('%lx'%(vaddr), nb, l)
+    newfieldType = FieldTypeArray('array_%lx'%(vaddr), nb, l)
     for offset in range(firstField.offset, firstField.offset+l*nb, l):
-      element = Field(parent, offset, firsField.typename, l, False)
+      element = Field(parent, offset, firstField.typename, l, False)
       newfieldType.append(element)
-    newField = Field(parent, firstField.offset, newfieldType, len(newfieldType), False)
+    newField = Field(parent, firstField.offset, newfieldType, len(newfieldType), False, l)
     return newField
 
 class FieldTypeStruct(FieldType):
@@ -68,7 +69,7 @@ class FieldTypeStruct(FieldType):
     return self.size
   
   def __cmp__(self, other):
-    if not isinstance(FieldType, other):
+    if not isinstance(other, FieldType):
       raise TypeError()
     return cmp(self._id, other._id)
 
@@ -77,16 +78,20 @@ class FieldTypeArray(FieldType):
     FieldType.__init__(self, 0x8, 'array', name, 'a', isPtr=False)
     self.size = l*nb
     self.nb = nb
+    self.elSize = l
     self.elements = []
 
   def append(self, element):
     self.elements.append(element)
+  
+  def elementSize(self):
+    return self.elSize
     
   def __len__(self):
     return self.size
   
   def __cmp__(self, other):
-    if not isinstance(FieldType, other):
+    if not isinstance(other, FieldType):
       raise TypeError()
     return cmp(self._id, other._id)
 
@@ -106,7 +111,7 @@ FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte',   'X')
 
   
 class Field:
-  def __init__(self, astruct, offset, typename, size, isPadding):
+  def __init__(self, astruct, offset, typename, size, isPadding, arrayElementSize=None):
     self.struct = astruct
     self.offset = offset
     self.size = size
@@ -117,6 +122,8 @@ class Field:
     self.comment = ''
     self.usercomment = ''  
     self.decoded = False
+    if typename == FieldType.ARRAY:
+      self.element_size = arrayElementSize # self.typename.elementSize() # TODO
     if typename != FieldType.UNKNOWN:
       self.decoded = True
       self._check()
@@ -369,7 +376,7 @@ class Field:
     if self.isString() or self.isZeroes():
       return '%s * %d' %(self.typename.ctypes, len(self) )
     if self.isArray():
-      return '%s * %d' %(self.typename.ctypes, len(self)/self.element_size )
+      return '%s * %d' %(self.typename.ctypes, len(self)/self.element_size ) #TODO should be in type
     if self.typename == FieldType.UNKNOWN:
       return '%s * %d' %(self.typename.ctypes, len(self) )
     return self.typename.ctypes
