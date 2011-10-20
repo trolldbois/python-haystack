@@ -275,7 +275,7 @@ class TestPatternEncoder(unittest.TestCase):
     sig = ['P4','I4','I4']+(['u4','z12','P4','I4']*21) +[ 'u172','z12']+ (['I4','T8','z12','I4','z12']*4) +['u4','z26336']
     encoder = pattern.PatternEncoder(sig,3)
     #sig_res = 'P4 (I4){2}  (u4z12P4I4){21} u172z12 (I4T8z12I4z12){4} u4z26336'
-    sig_res = [(1,['P4','I4','I4']),(21,['u4','z12','P4','I4']), (1,['u172','z12']), (4,['I4','T8','z12','I4','z12']), (1,['u4','z26336'])]
+    sig_res = [(1,'P4'),(1,'I4'),(1,'I4'),(21,['u4','z12','P4','I4']), (1,'u172'), (1,'z12'), (4,['I4','T8','z12','I4','z12']), (1,'u4'), (1,'z26336')]
 
     self.assertEquals ( encoder.makePattern(), sig_res)
 

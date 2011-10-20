@@ -70,14 +70,15 @@ def make(opts):
     cacheSignature(signatures, anon_struct)
     #
     nb = len(structs_addrs)
-    if nb > lastNb+10000: #time.time() - t0 > 30 :
+    if nb >= lastNb+10000: #time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
       rewrite(structs_addrs, structCache)
       saveSignatures(signatures, structCache)
-      log.info('%2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
+      log.info('\t\t[.] %2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
       t0 = time.time()
       lastNb = nb
+    Config.nbAnonymousStruct = nb
     pass
   # final pass
   rewrite(structs_addrs, structCache)  
@@ -90,7 +91,7 @@ def make(opts):
   log.info('Pin resolved PinnedPointers to their respective heap.')
 
 def cacheSignature(cache, struct):
-  sig = struct.getSignature()
+  sig = struct.getSignature(text=True)
   if sig not in cache:
     cache[sig]=[]
   cache[sig].append(struct)
@@ -121,13 +122,13 @@ def getHeapPointers(dumpfilename, mappings):
     values = sorted(set(heap_values+stack_values))
     utils.int_array_save(F_VALUES , values)
     utils.int_array_save(F_ADDRS, heap_addrs)
-    log.info('we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
+    log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
     log.info('[+] Loading from cache')
-    log.info('    [-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
+    log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
   aligned = filter(lambda x: (x%4) == 0, values)
   not_aligned = sorted( set(values)^set(aligned))
-  log.info('         only %d are aligned values.'%(len(aligned) ) )
+  log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
   return values,heap_addrs, aligned, not_aligned
 
 def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, structCache, reverse=False):
@@ -262,10 +263,12 @@ def statsMe():
 def search(opts):
   #
   try:
+    Config.nbAnonymousStruct = 0
     make(opts)
-  #except KeyboardInterrupt,e:
-  except IOError,e:
+  except KeyboardInterrupt,e:
+    #except IOError,e:
     log.warning(e)
+    log.info('[+] %d structs extracted'%(  Config.nbAnonymousStruct) )
     raise e
     pass
   pass
@@ -288,12 +291,17 @@ def main(argv):
   if opts.debug :
     level=logging.DEBUG
   #ad16c58
-  logging.basicConfig(level=level)  
+  flog = os.path.sep.join([Config.cacheDir,'log'])
+  logging.basicConfig(level=level, filename=flog, filemode='w')
+  
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('dumper').setLevel(logging.INFO)
-  logging.getLogger('progressive').setLevel(logging.INFO)
   logging.getLogger('structure').setLevel(logging.INFO)
   logging.getLogger('field').setLevel(logging.INFO)
+  logging.getLogger('progressive').setLevel(logging.INFO)
+  logging.getLogger('progressive').addHandler(logging.StreamHandler(stream=sys.stdout))
+
+  log.info('[+] output log to %s'% flog)
 
   opts.func(opts)
 

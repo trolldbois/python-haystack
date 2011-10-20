@@ -149,6 +149,9 @@ class PatternEncoder:
       plen = len(p)
       if plen % self.elSize != 0:
         raise ValueError('serious bug in findpattern')
+      elif nb == 1:
+        for i in range(0,plen,self.elSize):
+          ret.append((nb, self.dict_reverse[p[i:i+self.elSize]] ))      
       else:
         seq = [self.dict_reverse[p[i:i+self.elSize]] for i in range(0,plen,self.elSize)]
         ret.append((nb, seq))
