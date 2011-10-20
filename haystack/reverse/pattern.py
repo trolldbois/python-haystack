@@ -106,6 +106,58 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   ret2 = findPattern( right , elSize, minNbGroup)
   return ret + [(best[2],best[3])] + ret2
 
+class PatternEncoder:
+  def __init__(self, sequence, minGroupSize):
+    self.basicElements = set(sequence)
+    self.sequence = sequence
+    self.nb = len(self.basicElements)
+    self.minGroupSize = minGroupSize
+    if self.nb == 0:
+      raise ValueError('empty sequence')
+    elif self.nb < 0xff:
+      self.elSize = 1
+    elif self.nb < 0xffff:
+      self.elSize = 2
+    elif self.nb < 0xffffff:
+      self.elSize = 3
+    elif self.nb < 0xffffffff:
+      self.elSize = 4
+    else:
+      raise ValueError('I deny you the right to find patterns for more than 2^32 differents basic elements.')
+    self._makeDictionnary()
+    return
+    
+  def _makeDictionnary(self):
+    self.dict = {}
+    self.dict_reverse = {}
+    for i,el in enumerate(self.basicElements):
+      cod = struct.pack('>L', i )[-self.elSize:] # code 0 to 0xff
+      self.dict[el] = cod
+      self.dict_reverse[cod] = el
+    #dict done
+    self.sequence_norm = [ self.dict[el] for el in self.sequence]
+    self.sequence_text = ''.join(self.sequence_norm)
+    return
+    
+  def makePattern(self):
+    '''[(5, 'a'), (4, '1'), (3, 'b'), (2, 'c'), (1, 'd'), (5, 'a2'), (4, 'b1c'), .. '''
+    # as of today, i do not have any other sequence class support rfind than string, so i have to decapsulate
+    # a string of findPattern to basic elements
+    ret = []
+    patterns = findPattern(self.sequence_text, self.elSize, self.minGroupSize)
+    for nb, p in patterns:
+      plen = len(p)
+      if plen % self.elSize != 0:
+        raise ValueError('serious bug in findpattern')
+      else:
+        seq = [self.dict_reverse[p[i:i+self.elSize]] for i in range(0,plen,self.elSize)]
+        ret.append((nb, seq))
+        
+    return ret
+
+
+
+
 def make(opts):
   log.info('Make the signature.')
   ppMapper = PinnedPointersMapper()  
