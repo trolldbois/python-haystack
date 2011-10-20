@@ -30,18 +30,79 @@ class FieldType:
   def makePOINTER(cls, typ):
     if typ == FieldType.STRING:
       return FieldType.STRING_POINTER
-    return cls( typ._id+0x100, typ.basename+'_ptr', 'ctypes.POINTER(%s)'%(typ.ctypes), 'P', True)
+    return cls( typ._id+0xa, typ.basename+'_ptr', 'ctypes.POINTER(%s)'%(typ.ctypes), 'P', True)
+
+  @classmethod
+  def makeStructField(cls, parent, offset, fields): # struct name should be the vaddr... otherwise itgonna be confusing
+    import structure
+    vaddr = parent.vaddr+offset
+    newfieldType = FieldTypeStruct('%lx'%(vaddr))
+    newfieldType.setStruct(structure.AnonymousStructInstance(parent.mappings, vaddr, parent.bytes[offset:offset+l] ) )
+    newField = Field(parent, offset, newfieldType, len(newfieldType), False)
+    return newField
+
+  @classmethod
+  def makeArrayField(cls, fields): 
+    firstField = fields[0]
+    nb = len(fields)
+    l = len(firstField)
+    newfieldType = FieldTypeArray('%lx'%(vaddr), nb, l)
+    for offset in range(firstField.offset, firstField.offset+l*nb, l):
+      element = Field(parent, offset, firsField.typename, l, False)
+      newfieldType.append(element)
+    newField = Field(parent, firstField.offset, newfieldType, len(newfieldType), False)
+    return newField
+
+class FieldTypeStruct(FieldType):
+  def __init__(self, name, fields):
+    FieldType.__init__(self, 0x3, 'struct', name, 'K', isPtr=False)
+    self.size = sum([len(f) for f in fields])
+
+  def setStruct(self, struct):
+    self._struct = struct
+    
+  def getStruct(self):
+    return self._struct
+
+  def __len__(self):
+    return self.size
+  
+  def __cmp__(self, other):
+    if not isinstance(FieldType, other):
+      raise TypeError()
+    return cmp(self._id, other._id)
+
+class FieldTypeArray(FieldType):
+  def __init__(self, name, nb, l):
+    FieldType.__init__(self, 0x8, 'array', name, 'a', isPtr=False)
+    self.size = l*nb
+    self.nb = nb
+    self.elements = []
+
+  def append(self, element):
+    self.elements.append(element)
+    
+  def __len__(self):
+    return self.size
+  
+  def __cmp__(self, other):
+    if not isinstance(FieldType, other):
+      raise TypeError()
+    return cmp(self._id, other._id)
+
 FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte',   'u')
-FieldType.POINTER  = FieldType(0x100,  'ptr',       'ctypes.c_void_p',  'P', True)
+FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p',  'P', True)
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte',   'z')
-FieldType.STRING   = FieldType(0x10, 'text',      'ctypes.c_char',    'T')
-FieldType.STRING_POINTER   = FieldType(0x110, 'text_ptr',      'ctypes.c_char_p', 's', True)
-FieldType.INTEGER  = FieldType(0x40, 'int',       'ctypes.c_uint',    'I')
-FieldType.SMALLINT = FieldType(0x41, 'small_int', 'ctypes.c_uint',    'i')
-FieldType.SIGNED_SMALLINT = FieldType(0x42, 'signed_small_int', 'ctypes.c_int',    'l')
-FieldType.ARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte',   'a')
-FieldType.ARRAY_CHAR_P = FieldType(0x51, 'array_char_p',     'ctypes.c_char_p',   'Sp')
-FieldType.PADDING  = FieldType(0x90, 'pad',       'ctypes.c_ubyte',   'X')
+FieldType.STRUCT   = FieldType(0x3, 'struct',      'Structure',    'K')
+FieldType.STRING   = FieldType(0x4, 'text',      'ctypes.c_char',    'T')
+FieldType.STRING_POINTER   = FieldType(0xb, 'text_ptr',      'ctypes.c_char_p', 's', True)
+FieldType.INTEGER  = FieldType(0x5, 'int',       'ctypes.c_uint',    'I')
+FieldType.SMALLINT = FieldType(0x6, 'small_int', 'ctypes.c_uint',    'i')
+FieldType.SIGNED_SMALLINT = FieldType(0x7, 'signed_small_int', 'ctypes.c_int',    'l')
+FieldType.ARRAY    = FieldType(0x8, 'array',     'Array',   'a')
+FieldType.BYTEARRAY    = FieldType(0x9, 'array',     'ctypes.c_ubyte',   'a')
+#FieldType.ARRAY_CHAR_P = FieldType(0x9, 'array_char_p',     'ctypes.c_char_p',   'Sp')
+FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte',   'X')
 
   
 class Field:
@@ -72,7 +133,7 @@ class Field:
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
   def isArray(self): # 
-    return self.typename == FieldType.ARRAY or self.typename == FieldType.ARRAY_CHAR_P
+    return self.typename == FieldType.ARRAY or self.typename == FieldType.BYTEARRAY 
   def isInteger(self): # 
     return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
 
@@ -357,7 +418,7 @@ class Field:
     return bytes
   
   def getSignature(self):
-    return '%s%d'%(self.typename.sig, self.size)
+    return (self.typename, self.size)
   
   def toString(self, prefix):
     if self.isPointer():

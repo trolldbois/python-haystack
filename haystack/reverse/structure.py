@@ -269,9 +269,9 @@ class AnonymousStructInstance:
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
-      #logging.getLogger('progressive').setLevel(logging.DEBUG)
-      #self._aggregateStringPointersToArray()
-      #logging.getLogger('progressive').setLevel(logging.INFO)
+      logging.getLogger('progressive').setLevel(logging.DEBUG)
+      self._aggregateFields()
+      logging.getLogger('progressive').setLevel(logging.INFO)
     else:
       self.pointerResolved = False
     return
@@ -289,37 +289,33 @@ class AnonymousStructInstance:
           return tgt_field
     return None
   
-  def _aggregateStringPointersToArray(self):
+  def _aggregateFields(self):
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
-    pointerFields = self.getPointerFields()
-    log.debug('aggregateStringPtr: start %lx'%(self.vaddr))
-    myfields = sorted(self.fields)
-    if len(myfields) < 2:
-      log.debug('aggregateStringPtr: not so much fields')
-      return
-    array=[]
-    #get the first pointer fields
-    while len(myfields) > 1:
-      myfields = [f for f in itertools.dropwhile(lambda x: self._isPointerToString(x) == False, myfields )]
-      array = [f for f in itertools.takewhile(lambda x: self._isPointerToString(x) == True, myfields )]
-      if len(array) > 1:
-        log.debug('aggregateStringPtr: We just found %d pointers to String'%( len (array)))
-        if len(myfields) > 0:
-          f = myfields.pop(0) # if its not zero, its not ptr to string, we can skip it
-          if f.isZeroes() and f.size == 4: # Null terminated array
-            array.append(f)
-            log.debug('aggregateStringPtr: We just found a null termination making a c_char_p[%d]'%( len(array) ))
-        # create a array field
-        field = Field(self, array[0].offset, FieldType.ARRAY_CHAR_P, len(array)*Config.WORDSIZE , False)
-        field.element_size = Config.WORDSIZE
-        field.elements = array
-        # TODO border case f >=4, we need to cut f in f1[:4]+f2[4:]
-        # clean self.fields
-        for f in field.elements:
-          self.fields.remove(f)
-        self.fields.append(field)
-        self.fields.sort()
+    
+    self.fields.sort()
+    myfields = []
+    
+    signature = self.getSignature()
+    pencoder = PatternEncoder(signature, minGroupSize=3)
+    patterns = pencoder.makePattern()
+    
+    for nb, fields in patterns:
+      if nb == 1:
+        myfields.append(fields) # single el
+      elif len(fields) > 1: #  array of subtructure
+        # need global ref to compare substructure signature to other anonstructure
+        firstField = FieldType.makeStructField(self, fields[0].offset, fields)
+        array = FieldType.makeArrayFields(self, firstField, nb )
+        myfields.append(array) 
+      elif len(fields) == 1: #make array of elements or
+        array = FieldType.makeArrayFields(self, fields )
+        myfields.append(array) 
+      else:
+        raise ValueError('fields len is incorrect %d'%(len(fields)))
+    
+    log.debug('done with aggregateFields')    
+    self.fields = myfields
     return
       
   def _isPointerToString(self, field):
@@ -336,13 +332,15 @@ class AnonymousStructInstance:
   def getPointerFields(self):
     return [f for f in self.fields if f.isPointer()]
     
-  def getSignature(self):
-    return ''.join([f.getSignature() for f in self.fields])
+  def getSignature(self, text=False):
+    if text:
+      return ''.join(['%s%d'%(f.getSignature()[0].sig,f.getSignature()[1]) for f in self.fields])
+    return [f.getSignature() for f in self.fields]
   
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
-    info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature())
+    info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
     ctypes_def = '''
