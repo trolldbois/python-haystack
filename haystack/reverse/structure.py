@@ -304,17 +304,17 @@ class AnonymousStructInstance:
     signature = self.getSignature()
     pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
     patterns = pencoder.makePattern()
-    log.debug('aggregateFields came up with pattern %s'%(patterns))
+    #log.debug('aggregateFields came up with pattern %s'%(patterns))
     
     # pattern is made on FieldType, 
     #so we need to dequeue self.fields at the same time to enqueue in myfields
     for nb, fieldTypesAndSizes in patterns:
-      print 'fieldTypesAndSizes:',fieldTypesAndSizes
+      #print 'fieldTypesAndSizes:',fieldTypesAndSizes
       if nb == 1:
         fieldType = fieldTypesAndSizes[0] # its a tuple
         field = self.fields.pop(0)
         myfields.append(field) # single el
-        print field
+        #print field
       elif len(fieldTypesAndSizes) > 1: #  array of subtructure DEBUG XXX TODO
         myelements=[]
         for i in range(nb):
@@ -324,17 +324,17 @@ class AnonymousStructInstance:
           firstField = FieldType.makeStructField(self, fields[0].offset, fields)
           myelements.append(firstField)
         array = FieldType.makeArrayField(self, myelements )
-        print 'arra',array
+        #print 'arra',array
         myfields.append(array) 
       elif len(fieldTypesAndSizes) == 1: #make array of elements or
         fields = [ self.fields.pop(0) for i in range(nb) ]
         array = FieldType.makeArrayField(self, fields )
-        print 'arr',array
+        #print 'arr',array
         myfields.append(array) 
-      #else: # TODO DEBUG internal struct
-      #  raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
+      else: # TODO DEBUG internal struct
+        raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
     
-    log.debug('done with aggregateFields')    
+    #log.debug('done with aggregateFields')    
     self.fields = myfields
     print 'final', self.fields
     return
