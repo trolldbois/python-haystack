@@ -60,12 +60,9 @@ def make(opts):
   signatures = {}
   lastNb=0
   for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
-    #anon_struct.save()
-    # TODO regexp search on structs/bytearray.
+    #
     # regexp could be better if crossed against another dump.
-    #
-    #log.info(anon_struct.toString()) # output is now in Config.GENERATED_PY_HEADERS
-    #
+    anon_struct.save()
     # save signature
     cacheSignature(signatures, anon_struct)
     #
