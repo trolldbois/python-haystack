@@ -11,7 +11,7 @@ import itertools
 import numbers
 
 from haystack.config import Config
-from field import Field, FieldType
+from field import Field, FieldType, makeArrayField
 import pattern
 import utils
 
@@ -273,7 +273,7 @@ class AnonymousStructInstance:
       logging.getLogger('progressive').setLevel(logging.DEBUG)
       logging.getLogger('structure').setLevel(logging.DEBUG)
       logging.getLogger('field').setLevel(logging.DEBUG)
-      self._aggregateFields()
+      #self._aggregateFields()
       logging.getLogger('progressive').setLevel(logging.INFO)
       logging.getLogger('structure').setLevel(logging.INFO)
       logging.getLogger('field').setLevel(logging.INFO)
@@ -304,6 +304,11 @@ class AnonymousStructInstance:
     signature = self.getSignature()
     pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
     patterns = pencoder.makePattern()
+
+    txt = self.getSignature(text=True)
+    p = pattern.findPatternText(txt, 2, 3)
+
+    log.debug(p)
     #log.debug('aggregateFields came up with pattern %s'%(patterns))
     
     # pattern is made on FieldType, 
@@ -314,8 +319,9 @@ class AnonymousStructInstance:
         fieldType = fieldTypesAndSizes[0] # its a tuple
         field = self.fields.pop(0)
         myfields.append(field) # single el
-        #print field
+        #log.debug('simple field:%s '%(field) )
       elif len(fieldTypesAndSizes) > 1: #  array of subtructure DEBUG XXX TODO
+        log.debug('substructure with sig %s'%(fieldTypesAndSizes))
         myelements=[]
         for i in range(nb):
           fields = [ self.fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
@@ -323,22 +329,43 @@ class AnonymousStructInstance:
           # need global ref to compare substructure signature to other anonstructure
           firstField = FieldType.makeStructField(self, fields[0].offset, fields)
           myelements.append(firstField)
-        array = FieldType.makeArrayField(self, myelements )
-        #print 'arra',array
+        array = makeArrayField(self, myelements )
         myfields.append(array) 
+        #log.debug('array of structure %s'%(array))
       elif len(fieldTypesAndSizes) == 1: #make array of elements or
+        log.debug('found array of %s'%(self.fields[0].typename.basename))
         fields = [ self.fields.pop(0) for i in range(nb) ]
-        array = FieldType.makeArrayField(self, fields )
-        #print 'arr',array
+        array = makeArrayField(self, fields )
         myfields.append(array) 
+        #log.debug('array of elements %s'%(array))
       else: # TODO DEBUG internal struct
         raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
     
-    #log.debug('done with aggregateFields')    
+    log.debug('done with aggregateFields')    
     self.fields = myfields
-    print 'final', self.fields
+    #print 'final', self.fields
     return
-      
+  
+  def todo(self):
+    ## if a zeroes field (%WORDSIZE == 0) is stuck between 2 Integer arrays
+    ## make a big array of the 3 fields
+
+    ## on each integer array of significant ( > 8 ) size, Count the number of values.
+    ## if rare value ( stats distibution ?) are present at the end or beginning, move array boundaries to exclude thoses value in integer fields
+    
+    ## on each integer array, look indices for \x00
+    ## if there is a regular interval between \x00 in the sequence ( 5 char then 0 ) then make some sub arrays, nul terminated
+
+    ## aggregate pattern base on pure basic type without length ( string, pointer, array, integer, zeroes )
+    ## that gives us other probable substructure
+
+    ## in a structure starting with an integer
+    ## check for his value against the structure size
+
+    
+    return
+  
+  
   def _isPointerToString(self, field):
     # pointer is Resolved
     if not field.isPointer():
@@ -360,7 +387,7 @@ class AnonymousStructInstance:
   
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
-    print self.fields
+    #print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
     info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:

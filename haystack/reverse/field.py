@@ -16,6 +16,10 @@ log = logging.getLogger('field')
 
 ## Field related functions and classes
 
+def makeArrayField(parent, fields): 
+  #vaddr = parent.vaddr+firstField.offset
+  newField = ArrayField(parent, fields)
+  return newField
 
 
 class FieldType:
@@ -41,18 +45,6 @@ class FieldType:
     newField = Field(parent, offset, newfieldType, len(newfieldType), False)
     return newField
 
-  @classmethod
-  def makeArrayField(cls, parent, fields): 
-    firstField = fields[0]
-    vaddr = parent.vaddr+firstField.offset
-    nb = len(fields)
-    l = len(firstField)
-    newfieldType = FieldTypeArray('array_%lx'%(vaddr), nb, l)
-    for offset in range(firstField.offset, firstField.offset+l*nb, l):
-      element = Field(parent, offset, firstField.typename, l, False)
-      newfieldType.append(element)
-    newField = Field(parent, firstField.offset, newfieldType, len(newfieldType), False, l)
-    return newField
 
 class FieldTypeStruct(FieldType):
   def __init__(self, name, fields):
@@ -74,26 +66,9 @@ class FieldTypeStruct(FieldType):
     return cmp(self._id, other._id)
 
 class FieldTypeArray(FieldType):
-  def __init__(self, name, nb, l):
-    FieldType.__init__(self, 0x8, 'array', name, 'a', isPtr=False)
-    self.size = l*nb
-    self.nb = nb
-    self.elSize = l
-    self.elements = []
+  def __init__(self, basicTypeName):
+    FieldType.__init__(self, 0x8, 'array_%s'%basicTypeName, None, 'a', isPtr=False)
 
-  def append(self, element):
-    self.elements.append(element)
-  
-  def elementSize(self):
-    return self.elSize
-    
-  def __len__(self):
-    return self.size
-  
-  def __cmp__(self, other):
-    if not isinstance(other, FieldType):
-      raise TypeError()
-    return cmp(self._id, other._id)
 
 FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte',   'u')
 FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p',  'P', True)
@@ -111,7 +86,7 @@ FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte',   'X')
 
   
 class Field:
-  def __init__(self, astruct, offset, typename, size, isPadding, arrayElementSize=None):
+  def __init__(self, astruct, offset, typename, size, isPadding):
     self.struct = astruct
     self.offset = offset
     self.size = size
@@ -122,8 +97,6 @@ class Field:
     self.comment = ''
     self.usercomment = ''  
     self.decoded = False
-    if typename == FieldType.ARRAY:
-      self.element_size = arrayElementSize # self.typename.elementSize() # TODO
     if typename != FieldType.UNKNOWN:
       self.decoded = True
       self._check()
@@ -139,7 +112,7 @@ class Field:
     return self.typename.isPtr
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
-  def isArray(self): # 
+  def isArray(self): # will be overloaded
     return self.typename == FieldType.ARRAY or self.typename == FieldType.BYTEARRAY 
   def isInteger(self): # 
     return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
@@ -190,7 +163,7 @@ class Field:
       return False
     self.typename = FieldType.ZEROES
     if self.size == Config.WORDSIZE:
-      self.typename = FieldType.INTEGER
+      self.typename = FieldType.SMALLINT
       self.value = 0
     return True  
   
@@ -289,7 +262,6 @@ class Field:
     self.size = size
     self.values = bytes
     self.comment = '10%% var in values: %s'%(','.join([ repr(v) for v,nb in commons]))
-    self.element_size = 1
     return True
         
   def checkArrayCharP(self):
@@ -408,36 +380,87 @@ class Field:
   def __str__(self):
     return 'offset:%d size:%s'%(self.offset, self.size)
     
+  def getValue(self, maxLen):
+    bytes = self._getValue(maxLen)
+    bl = len(bytes)
+    if bl >= maxLen:
+      bytes = bytes[:maxLen/2]+'...'+bytes[-(maxLen/2):] # idlike to see the end
+    return bytes
+        
   def _getValue(self, maxLen):
     if len(self) == 0:
       return '<-haystack no pattern found->'
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
-    elif self.isZeroes() or self.padding or self.typename == FieldType.UNKNOWN:
+      return str(self.value) #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
+    elif self.isZeroes():
+      bytes=repr(self.value)#'\\x00'*len(self)
+    elif self.isArray():
+      log.warning('ARRAY in Field type, %s'%self.typename)
+      bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])
+    elif self.padding or self.typename == FieldType.UNKNOWN:
       bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
     else: # bytearray, pointer...
       return self.value
-    bl = len(bytes)
-    if bl >= maxLen:
-      bytes = bytes[:maxLen]+'...'
     return bytes
   
   def getSignature(self):
     return (self.typename, self.size)
   
   def toString(self, prefix):
+    #log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
+    #    %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
+  
     if self.isPointer():
       comment = '# @ %lx %s %s'%( self.value, self.comment, self.usercomment ) 
     elif self.isInteger():
-      comment = '#  %s %s %s'%( self._getValue(Config.WORDSIZE), self.comment, self.usercomment ) 
+      comment = '#  %s %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
+    elif self.isZeroes():
+      comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
     else:
       #if self.isString() or self.padding:
-      comment = '# %s %s bytes:%s'%( self.comment, self.usercomment, self._getValue(64) ) 
+      comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) ) 
           
     fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
     return fstr
     
 
+class ArrayField(Field):
+  def __init__(self, astruct, elements): #, basicTypename, basicTypeSize ): # use first element to get that info
+    self.struct = astruct
+    self.offset = elements[0].offset
+    self.typename = FieldTypeArray(elements[0].typename.basename)
+
+    self.elements = elements
+    self.nbElements = len(elements)
+    self.basicTypeSize = len(elements[0])
+    self.basicTypename = elements[0].typename
+
+    self.size = self.basicTypeSize * len(self.elements)
+    self.padding = False
+    self.value = None
+    self.comment = ''
+    self.usercomment = ''  
+    self.decoded = True
+  
+  def isArray(self):
+    return True
+
+  def getCTypes(self):
+    if hasattr(self, 'ctypes'):
+      return self.ctypes
+    return '%s * %d' %(self.basicTypename.ctypes, self.nbElements )
+
+  def _getValue(self, maxLen):
+    bytes= ''.join(['[',','.join([str(el._getValue(10)) for el in self.elements]),']'])
+    return bytes
+
+  def toString(self, prefix):
+    log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
+        %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
+    #
+    comment = '# %s %s array:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) )
+    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
+    return fstr
 
