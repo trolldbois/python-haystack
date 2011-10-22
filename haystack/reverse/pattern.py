@@ -71,7 +71,8 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
     
   '''
   if (len(sequence) % elSize ) != 0:
-    raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sequence),elSize))
+    pass # DEBUG TODO DELETE bypass needed for textprintout
+    #raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sequence),elSize))
   elif sequence == '':
     return []
 
@@ -102,7 +103,9 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   i = sequence.find(best[3]*best[2])
   left = sequence[:i]
   right = sequence[i+best[0]:]
+  #log.debug('left %d:%s'%(len(left),left))
   ret = findPattern( left , elSize, minNbGroup)
+  #log.debug('right %d:%s'%(len(right),right))
   ret2 = findPattern( right , elSize, minNbGroup)
   return ret + [(best[2],best[3])] + ret2
 
@@ -157,8 +160,6 @@ class PatternEncoder:
         ret.append((nb, seq))
         
     return ret
-
-
 
 
 def make(opts):
