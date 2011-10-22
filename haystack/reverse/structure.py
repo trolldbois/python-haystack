@@ -306,6 +306,7 @@ class AnonymousStructInstance:
     patterns = pencoder.makePattern()
 
     txt = self.getSignature(text=True)
+    log.warning('signature of len():%d, %s'%(len(txt),txt))
     p = pattern.findPatternText(txt, 2, 3)
 
     log.debug(p)
@@ -358,25 +359,25 @@ class AnonymousStructInstance:
     patterns = pencoder.makePattern()
 
     txt = self.getTypeSignature(text=True)
-    p = pattern.findPatternText(txt, 2, 3)
+    p = pattern.findPatternText(txt, 1, 2)
 
     log.debug('substruct typeSig: %s'%txt)
     log.debug('substruct findPatterntext: %s'%p)
-    #log.debug('substruct came up with pattern %s'%(patterns))
+    log.debug('substruct came up with pattern %s'%(patterns))
     
     # pattern is made on FieldType, 
     #so we need to dequeue self.fields at the same time to enqueue in myfields
-    for nb, fieldType in patterns:
-      log.debug('fieldType:%s'%fieldType)
+    for nb, fieldTypes in patterns:
       if nb == 1:
         field = self.fields.pop(0)
         myfields.append(field) # single el
         #log.debug('simple field:%s '%(field) )
-      elif len(fieldType) > 1: #  array of subtructure DEBUG XXX TODO
-        log.debug('substructure with sig %s'%(fieldTypesAndSizes))
+      elif len(fieldTypes) > 1: #  array of subtructure DEBUG XXX TODO
+        log.debug('fieldTypes:%s'%fieldTypes)
+        log.debug('substructure with sig %s'%(''.join([ft.sig[0] for ft in fieldTypes])  ))
         myelements=[]
         for i in range(nb):
-          fields = [ self.fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
+          fields = [ self.fields.pop(0) for i in range(len(fieldTypes)) ] # nb-1 left
           #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ] 
           # need global ref to compare substructure signature to other anonstructure
           firstField = FieldType.makeStructField(self, fields[0].offset, fields)
@@ -384,14 +385,14 @@ class AnonymousStructInstance:
         array = makeArrayField(self, myelements )
         myfields.append(array) 
         #log.debug('array of structure %s'%(array))
-      elif len(fieldTypesAndSizes) == 1: #make array of elements or
+      elif len(fieldTypes) == 1: #make array of elements obase on same base type
         log.debug('found array of %s'%(self.fields[0].typename.basename))
         fields = [ self.fields.pop(0) for i in range(nb) ]
         array = makeArrayField(self, fields )
         myfields.append(array) 
         #log.debug('array of elements %s'%(array))
       else: # TODO DEBUG internal struct
-        raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
+        raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypes)))
     
     log.debug('done with findSubstructure')    
     self.fields = myfields
@@ -419,6 +420,9 @@ class AnonymousStructInstance:
     ## if len(fields[i:i+n]) == 4096 // ou un exposant de 2 > 63 # m = math.modf(math.log( l, 2)) %% m[0] == 0.0 && m[1]>5.0
     ## alors on a un buffer de taille l
     ## fields[i:i+n] ne devrait contenir que du zeroes, untyped et int
+    
+    ## for each untyped field > 64 check if first integer is not a small int by the way
+    ## on intel/amd check for endianness to find network struct.
     
     return
   
