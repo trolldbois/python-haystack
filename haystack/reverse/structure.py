@@ -345,6 +345,59 @@ class AnonymousStructInstance:
     self.fields = myfields
     #print 'final', self.fields
     return
+
+  def _findSubStructures(self):
+    if not self.pointerResolved:
+      raise ValueError('I should be resolved')
+    
+    self.fields.sort()
+    myfields = []
+    
+    signature = self.getTypeSignature()
+    pencoder = pattern.PatternEncoder(signature, minGroupSize=2)
+    patterns = pencoder.makePattern()
+
+    txt = self.getTypeSignature(text=True)
+    p = pattern.findPatternText(txt, 2, 3)
+
+    log.debug('substruct typeSig: %s'%txt)
+    log.debug('substruct findPatterntext: %s'%p)
+    #log.debug('substruct came up with pattern %s'%(patterns))
+    
+    # pattern is made on FieldType, 
+    #so we need to dequeue self.fields at the same time to enqueue in myfields
+    for nb, fieldType in patterns:
+      log.debug('fieldType:%s'%fieldType)
+      if nb == 1:
+        field = self.fields.pop(0)
+        myfields.append(field) # single el
+        #log.debug('simple field:%s '%(field) )
+      elif len(fieldType) > 1: #  array of subtructure DEBUG XXX TODO
+        log.debug('substructure with sig %s'%(fieldTypesAndSizes))
+        myelements=[]
+        for i in range(nb):
+          fields = [ self.fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
+          #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ] 
+          # need global ref to compare substructure signature to other anonstructure
+          firstField = FieldType.makeStructField(self, fields[0].offset, fields)
+          myelements.append(firstField)
+        array = makeArrayField(self, myelements )
+        myfields.append(array) 
+        #log.debug('array of structure %s'%(array))
+      elif len(fieldTypesAndSizes) == 1: #make array of elements or
+        log.debug('found array of %s'%(self.fields[0].typename.basename))
+        fields = [ self.fields.pop(0) for i in range(nb) ]
+        array = makeArrayField(self, fields )
+        myfields.append(array) 
+        #log.debug('array of elements %s'%(array))
+      else: # TODO DEBUG internal struct
+        raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
+    
+    log.debug('done with findSubstructure')    
+    self.fields = myfields
+    #print 'final', self.fields
+    return
+
   
   def todo(self):
     ## if a zeroes field (%WORDSIZE == 0) is stuck between 2 Integer arrays
@@ -362,6 +415,10 @@ class AnonymousStructInstance:
     ## in a structure starting with an integer
     ## check for his value against the structure size
 
+    ## magic len approach on untyped bytearrays
+    ## if len(fields[i:i+n]) == 4096 // ou un exposant de 2 > 63 # m = math.modf(math.log( l, 2)) %% m[0] == 0.0 && m[1]>5.0
+    ## alors on a un buffer de taille l
+    ## fields[i:i+n] ne devrait contenir que du zeroes, untyped et int
     
     return
   
@@ -384,6 +441,11 @@ class AnonymousStructInstance:
     if text:
       return ''.join(['%s%d'%(f.getSignature()[0].sig,f.getSignature()[1]) for f in self.fields])
     return [f.getSignature() for f in self.fields]
+
+  def getTypeSignature(self, text=False):
+    if text:
+      return ''.join([f.getSignature()[0].sig.upper() for f in self.fields])
+    return [f.getSignature()[0] for f in self.fields]
   
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
