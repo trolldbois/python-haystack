@@ -45,6 +45,11 @@ class FieldType:
     newField = Field(parent, offset, newfieldType, len(newfieldType), False)
     return newField
 
+  def __str__(self):
+    return '<FieldType %s>'%(self.basename)
+
+  def __repr__(self):
+    return '<t:%s>'%(self.basename)
 
 class FieldTypeStruct(FieldType):
   def __init__(self, name, fields):
@@ -270,34 +275,40 @@ class Field:
   def checkInteger(self):
     if self.checkSmallInt():
       return True
+    elif self.checkSmallInt(endianess='>'):
+      return True
     elif self.size == Config.WORDSIZE:
       bytes = self.struct.bytes[self.offset:self.offset+self.size]
-      self.value = struct.unpack('L',bytes[:Config.WORDSIZE])[0] 
+      self.value = struct.unpack('@L',bytes[:Config.WORDSIZE])[0] 
       self.typename = FieldType.INTEGER
+      self.endianess = '@' # unknown
       return True
     return False
 
-  def checkSmallInt(self):
+  def checkSmallInt(self, endianess='<'):
     # TODO
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
     if size < 4:
       return False
-    val = struct.unpack('L',bytes[:Config.WORDSIZE])[0] 
+    val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
     if val < 0xffff:
       self.value = val
       self.size = 4
       self.typename = FieldType.SMALLINT
+      self.endianess = endianess
       return True
     else: # check signed int
-      val = struct.unpack('l',bytes[:Config.WORDSIZE])[0] 
+      val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
       if -0xffff <= val <= 0xffff:
         self.value = val
         self.size = 4
         self.typename = FieldType.SIGNED_SMALLINT
+        self.endianess = endianess
         return True
       return False
     return False
+
     
   def _check(self):
     if self.typename == FieldType.UNKNOWN:
