@@ -29,6 +29,8 @@ class TestStructure(unittest.TestCase):
     self.s2_bytes = file('AnonymousStruct_130256_ad39240.bytes','r').read()
     self.s2 = structure.AnonymousStructInstance(self.s2.mappings, 0, self.s2_bytes)
   
+  #
+  '''
   def test_guessField(self):
     self.assertEqual( None, None)
     return  
@@ -55,7 +57,7 @@ class TestStructure(unittest.TestCase):
   
   def test_resolvePointerToStructField(self):
     return  
-  
+  '''
   def test_aggregateFields(self):
     self.asetUp()
     logging.basicConfig(level=logging.INFO)
@@ -69,13 +71,23 @@ class TestStructure(unittest.TestCase):
     file('%s.before'%(self.s2),'w').write( self.s2.toString() )
     self.s2.pointerResolved=True
     self.s2._aggregateFields()
-    file('%s.after'%(self.s2),'w').write( self.s2.toString() )
+    file('%s.agg'%(self.s2),'w').write( self.s2.toString() )
+
+    self.s2._excludeSizeVariableFromIntArray()
+    file('%s.exclude'%(self.s2),'w').write( self.s2.toString() )
     
-    logging.getLogger('structure').setLevel(logging.DEBUG)
-    self.s2._findSubStructures()
-    file('%s.after.sub'%(self.s2),'w').write( self.s2.toString() )
+    #self.s2._aggZeroesBetweenIntArrays()
+    #file('%s.IZItoIntArray'%(self.s2),'w').write( self.s2.toString() )
+
+
+    #logging.getLogger('structure').setLevel(logging.DEBUG)
+    #self.s2._findSubStructures()
+    #file('%s.findsub'%(self.s2),'w').write( self.s2.toString() )
+    #self.s2.save()
+    
     return  
-      
+  
+  ''' 
   def test_isPointerToString(self):
     return  
     
@@ -103,7 +115,7 @@ class TestStructure(unittest.TestCase):
   
   def test_str(self):
     return 
-
+  '''
 
 
 

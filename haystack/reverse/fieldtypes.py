@@ -289,12 +289,12 @@ class Field:
     # TODO
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
-    if size < 4:
+    if size < Config.WORDSIZE:
       return False
     val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
     if val < 0xffff:
       self.value = val
-      self.size = 4
+      self.size = Config.WORDSIZE
       self.typename = FieldType.SMALLINT
       self.endianess = endianess
       return True
@@ -302,7 +302,7 @@ class Field:
       val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
       if -0xffff <= val <= 0xffff:
         self.value = val
-        self.size = 4
+        self.size = Config.WORDSIZE
         self.typename = FieldType.SIGNED_SMALLINT
         self.endianess = endianess
         return True
@@ -474,4 +474,8 @@ class ArrayField(Field):
     comment = '# %s %s array:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) )
     fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
     return fstr
+
+
+def isIntegerType(typ):
+  return typ == FieldType.INTEGER or typ == FieldType.SMALLINT or typ == FieldType.SIGNED_SMALLINT 
 

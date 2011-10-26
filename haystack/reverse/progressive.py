@@ -16,7 +16,7 @@ import numpy
 from haystack.config import Config
 from haystack import memory_dumper
 
-from field import FieldType
+from fieldtypes import FieldType
 import signature 
 import structure
 import utils
@@ -48,7 +48,8 @@ def make(opts):
   ## get the list of pointers values pointing to heap
   ## need cache
   mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
-  values,heap_addrs, aligned, not_aligned = getHeapPointers(opts.dumpfile.name, mappings)
+  values,heap_addrs, aligned, not_aligned = utils.getHeapPointers(opts.dumpfile.name, mappings)
+  dumpname = opts.dumpfile.name
   # we
   if not os.access(Config.structsCacheDir, os.F_OK):
     os.mkdir(Config.structsCacheDir )
@@ -70,15 +71,15 @@ def make(opts):
     if nb >= lastNb+1000: #time.time() - t0 > 30 :
       td = time.time()
       log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
-      rewrite(structs_addrs, structCache)
-      saveSignatures(signatures, structCache)
+      rewrite(structs_addrs, structCache, dumpname)
+      saveSignatures(signatures, structCache, dumpname)
       log.info('\t\t[.] %2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
       t0 = time.time()
       lastNb = nb
     Config.nbAnonymousStruct = nb
     pass
   # final pass
-  rewrite(structs_addrs, structCache)  
+  rewrite(structs_addrs, structCache, dumpname)  
   saveSignatures(signatures, structCache)
   ## we have :
   ##  resolved PinnedPointers on all sigs in ppMapper.resolved
@@ -93,40 +94,6 @@ def cacheSignature(cache, struct):
     cache[sig]=[]
   cache[sig].append(struct)
   return
-
-def getHeapPointers(dumpfilename, mappings):
-  ''' Search Heap pointers values in stack and heap.
-      records values and pointers address in heap.
-  '''
-  F_VALUES = dumpfilename+'.heap+stack.pointers.values'
-  F_ADDRS = dumpfilename+'.heap.pointers.addrs'
-  
-  values = utils.int_array_cache(F_VALUES)
-  heap_addrs = utils.int_array_cache(F_ADDRS)
-  if values is None or heap_addrs is None:
-    log.info('Making new cache')
-    log.info('getting pointers values from stack ')
-    stack_enumerator = signature.PointerEnumerator(mappings.getStack())
-    stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
-    stack_enum = stack_enumerator.search()
-    stack_addrs, stack_values = zip(*stack_enum)
-    log.info('  got %d pointers '%(len(stack_enum)) )
-    log.info('Merging pointers from heap')
-    heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
-    heap_addrs, heap_values = zip(*heap_enum)
-    log.info('  got %d pointers '%(len(heap_enum)) )
-    # merge
-    values = sorted(set(heap_values+stack_values))
-    utils.int_array_save(F_VALUES , values)
-    utils.int_array_save(F_ADDRS, heap_addrs)
-    log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
-  else:
-    log.info('[+] Loading from cache')
-    log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
-  aligned = filter(lambda x: (x%4) == 0, values)
-  not_aligned = sorted( set(values)^set(aligned))
-  log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
-  return values,heap_addrs, aligned, not_aligned
 
 def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, structCache, reverse=False):
   ''' values: ALIGNED pointer values
@@ -207,10 +174,10 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
 
 
 
-def rewrite(structs_addrs, structCache):
+def rewrite(structs_addrs, structCache, dumpname):
   ''' structs_addrs is sorted '''
   structs_addrs.sort()
-  fout = file(Config.GENERATED_PY_HEADERS_VALUES,'w')
+  fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, dumpname),'w')
   towrite = []
   for vaddr in structs_addrs:
     ## debug
@@ -228,9 +195,9 @@ def rewrite(structs_addrs, structCache):
   fout.close()
   return
 
-def saveSignatures(cache, structCache):
+def saveSignatures(cache, structCache, dumpname):
   ''' cache is {} of sig: [structs] '''
-  fout = file(Config.GENERATED_PY_HEADERS,'w')
+  fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS,dumpname),'w')
   towrite = []
   tuples = [(len(structs), sig, structs) for sig,structs in cache.items() ]
   tuples.sort(reverse=True)

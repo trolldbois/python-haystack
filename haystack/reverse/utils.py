@@ -73,4 +73,39 @@ def dequeue(addrs, start, end):
     ret.append(addrs.pop(0))
   return addrs, ret
 
+def getHeapPointers(dumpfilename, mappings):
+  ''' Search Heap pointers values in stack and heap.
+      records values and pointers address in heap.
+  '''
+  import signature
+  
+  F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
+  F_ADDRS = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
+  log.debug('reading from %s'%(F_VALUES))
+  values = int_array_cache(F_VALUES)
+  heap_addrs = int_array_cache(F_ADDRS)
+  if values is None or heap_addrs is None:
+    log.info('Making new cache')
+    log.info('getting pointers values from stack ')
+    stack_enumerator = signature.PointerEnumerator(mappings.getStack())
+    stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
+    stack_enum = stack_enumerator.search()
+    stack_addrs, stack_values = zip(*stack_enum)
+    log.info('  got %d pointers '%(len(stack_enum)) )
+    log.info('Merging pointers from heap')
+    heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
+    heap_addrs, heap_values = zip(*heap_enum)
+    log.info('  got %d pointers '%(len(heap_enum)) )
+    # merge
+    values = sorted(set(heap_values+stack_values))
+    int_array_save(F_VALUES , values)
+    int_array_save(F_ADDRS, heap_addrs)
+    log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
+  else:
+    log.info('[+] Loading from cache')
+    log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
+  aligned = filter(lambda x: (x%4) == 0, values)
+  not_aligned = sorted( set(values)^set(aligned))
+  log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
+  return values,heap_addrs, aligned, not_aligned
 

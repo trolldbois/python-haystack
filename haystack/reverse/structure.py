@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import collections
 import logging
 import os
 import pickle
@@ -11,7 +12,8 @@ import itertools
 import numbers
 
 from haystack.config import Config
-from field import Field, FieldType, makeArrayField
+import fieldtypes
+from fieldtypes import Field, FieldType, makeArrayField
 import pattern
 import utils
 
@@ -35,7 +37,10 @@ DEBUG_ADDRS=[]
 
 # Compare sruct type from parent with multiple pointer (
 
-class AnonymousStructInstance:
+def makeStructure(context, start, size):
+  return AnonymousStructInstance(context.mappings, start, context.heap.readBytes(start, size) )
+
+class AnonymousStructInstance():
   '''
   AnonymousStruct in absolute address space.
   Comparaison between struct is done is relative addresse space.
@@ -400,7 +405,129 @@ class AnonymousStructInstance:
     return
 
   
+  def _aggZeroesBetweenIntArrays(self):
+    if len(self.fields) < 3:
+      return
+    
+    myfields = sorted(self.fields)
+    i = 0
+    while ( i < len(myfields) - 3 ):
+      prev = myfields[i]
+      field = myfields[i+1]
+      next = myfields[i+2]
+      if prev.isArray() and next.isArray() and field.isZeroes() and (
+          fieldtypes.isIntegerType(prev.basicTypename) and
+          fieldtypes.isIntegerType(next.basicTypename) ):
+        # we have zeroes in the middle
+        fieldLen = len(field)
+        nbWord = fieldLen//Config.WORDSIZE 
+        if (fieldLen % Config.WORDSIZE == 0) and  nbWord < 4: # more than 3 word zerroes it is probably another buffer
+          # concat prev, field and next arrays to get on array
+          newFields = prev.elements+[field]
+          field.checkSmallInt() # force it in a small integer
+          if nbWord > 1:
+            for offsetadd in range(Config.WORDSIZE, Config.WORDSIZE*nbWord, Config.WORDSIZE):
+              newFields.append(self._addField(field.offset+offsetadd, FieldType.SMALLINT, Config.WORDSIZE, False))
+          newFields.extend(next.elements)
+          # make an array for newFields and insert it in place of prev+field+next
+          # pop prev, newfields and next, and put them in an array
+          print 'aggZeroes', i, len(newFields)#, ','.join([f.toString('') for f in newFields])
+          drop = [ myfields.pop(i) for x in range(3) ] #prev, 
+          array = makeArrayField(self, newFields )          
+          myfields.insert(i, array)
+      #
+      i+=1
+    self.fields = myfields
+    return
+
+  '''
+  Check if head or tail ( excluding zeroes) is different from the lot ( not common )
+  '''
+  def _excludeSizeVariableFromIntArray(self):
+    if len(self.fields) < 2:
+      return
+    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename)]
+    
+    ''' nested func will explode the array fields in 3 fields '''
+    def cutInThree():
+      log.info('cutting in three %d %d %d'%(ind, nbSeen, val))
+      # cut array in three
+      index = self.fields.index(_arrayField)
+      oldArray = self.fields.pop(index) # cut it from self.fields
+      # cut the field in 3 parts ( ?zerroes, val, list)
+      # add the rest
+      if len(_arrayField.elements[ind+1:]) > 1: # add zerroes in front
+        self.fields.insert(index, makeArrayField(self, _arrayField.elements[ind+1:]) )
+      elif len(_arrayField.elements[ind+1:]) == 1: # add zero field
+        self.fields.insert(index, _arrayField.elements[ind+1])
+      # add the value
+      self.fields.insert(index, _arrayField.elements[ind])
+      # add zerroes in front
+      if ind > 1: 
+        self.fields.insert(index, makeArrayField(self, _arrayField.elements[:ind]) )
+      elif ind == 1: # add zero field
+        self.fields.insert(index, _arrayField.elements[0])
+      #end
+    
+    print '%d intArrays'%(len(intArrays))     
+    for _arrayField in intArrays:
+      values = [ f.value for f in _arrayField.elements ]
+      if len(values) < 8: # small array, no interest.
+        continue
+      ## head
+      ret  = self._chopImprobableHead(values)
+      if ret is not None: 
+        ind, nbSeen, val = ret
+        cutInThree()
+      print ('going choping reverse')
+      ## tail
+      values = [ f.value for f in _arrayField.elements ]
+      values.reverse()
+      ret  = self._chopImprobableHead(values)
+      if ret is not None:
+        ind, nbSeen, val = ret
+        ind = len(values) - ind -1
+        # cut the field in 3 parts ( ?zerroes, val, list)
+        cutInThree()
+    return
+      
+  def _chopImprobableHead(self, values):
+    ctr = collections.Counter( values)
+    searchFor = itertools.dropwhile(lambda x: x==0, values) # val
+    try:
+      val = searchFor.next() # get first non zerroe value
+    except StopIteration,e:
+      return None # all zerroes ???
+    nbSeen = ctr[val]
+    print('choping around... Looking at val:%d, nb:%d'%(val, nbSeen))
+    if nbSeen > 2: # mostly one. two MIGHT be ok. three is totally out of question.
+      print 'too much', val, values[:10] 
+      return None
+    ind = values.index(val)
+    if ind > min(2,len(values)):
+      log.debug('we found a different value %d at index %d, but it is stuck deep in the array. Not leveraging it.'%(val, ind))
+      return None
+    # here we have a value in head, with little reoccurrence in the list.
+    # we can chop the head and limit the array to [ind+1:]
+    return (ind, nbSeen, val)
+  
   def todo(self):
+    ## apply librairies structures search against heap before running anything else.
+    ## that should cut our reverse time way down
+    ## prioritize search per reverse struct size. limit to big struct and their graph.
+    ## then make a Named/Anonymous Struct out of them
+    
+    ## Anonymous Struct should be a model.Structure.
+    ## it has to be dynamic generated, but that should be ok. we need a AnonymouStructMaker
+    ## in:anonymousStruct1  
+    ## out:anonymousStruct2 # with new fields types and so on...
+    ## each algo has to be an ASMaker, so we can chain them.
+    #
+    ## The controller/Reverser should keep structs coherency. and appli maker to each of them
+    ## the controller can have different heuristics to apply to struct :
+    ##     * aggregates: char[][], buffers
+    ##     * type definition: substructs, final reverse type step, c++ objects, 
+
     ## if a zeroes field (%WORDSIZE == 0) is stuck between 2 Integer arrays
     ## make a big array of the 3 fields
 
@@ -416,7 +543,7 @@ class AnonymousStructInstance:
     ## in a structure starting with an integer
     ## check for his value against the structure size
 
-    ## magic len approach on untyped bytearrays
+    ## magic len approach on untyped bytearrays or array of int. - TRY TO ALIGN ON 2**x
     ## if len(fields[i:i+n]) == 4096 // ou un exposant de 2 > 63 # m = math.modf(math.log( l, 2)) %% m[0] == 0.0 && m[1]>5.0
     ## alors on a un buffer de taille l
     ## fields[i:i+n] ne devrait contenir que du zeroes, untyped et int
