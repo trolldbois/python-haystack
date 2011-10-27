@@ -352,6 +352,9 @@ class AnonymousStructInstance():
     #print 'final', self.fields
     return
 
+  '''
+  # XX TODO DEBUG, this is not a substructure.
+  '''
   def _findSubStructures(self):
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
@@ -446,11 +449,10 @@ class AnonymousStructInstance():
   def _excludeSizeVariableFromIntArray(self):
     if len(self.fields) < 2:
       return
-    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename)]
     
     ''' nested func will explode the array fields in 3 fields '''
     def cutInThree():
-      log.info('cutting in three %d %d %d'%(ind, nbSeen, val))
+      log.debug('cutting in three %d %d %d'%(ind, nbSeen, val))
       # cut array in three
       index = self.fields.index(_arrayField)
       oldArray = self.fields.pop(index) # cut it from self.fields
@@ -468,18 +470,30 @@ class AnonymousStructInstance():
       elif ind == 1: # add zero field
         self.fields.insert(index, _arrayField.elements[0])
       #end
+
+    # test    
+    #intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    #log.debug( '%d intArrays'%(len(intArrays)) )
+    #for _arrayField in intArrays:
+    #  values = [ f.value for f in _arrayField.elements ]
+    #  self._chopAnywhere(values)
     
-    print '%d intArrays'%(len(intArrays))     
+    # small array, no interest.
+    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    log.debug( '%d intArrays'%(len(intArrays)) )
     for _arrayField in intArrays:
       values = [ f.value for f in _arrayField.elements ]
-      if len(values) < 8: # small array, no interest.
-        continue
       ## head
       ret  = self._chopImprobableHead(values)
       if ret is not None: 
         ind, nbSeen, val = ret
         cutInThree()
-      print ('going choping reverse')
+
+    log.debug('going choping reverse')
+    # small array, no interest.
+    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    log.debug( 'reverse %d intArrays'%(len(intArrays)) )
+    for _arrayField in intArrays:
       ## tail
       values = [ f.value for f in _arrayField.elements ]
       values.reverse()
@@ -499,9 +513,9 @@ class AnonymousStructInstance():
     except StopIteration,e:
       return None # all zerroes ???
     nbSeen = ctr[val]
-    print('choping around... Looking at val:%d, nb:%d'%(val, nbSeen))
+    log.debug('choping around... Looking at val:%d, nb:%d'%(val, nbSeen))
     if nbSeen > 2: # mostly one. two MIGHT be ok. three is totally out of question.
-      print 'too much', val, values[:10] 
+      log.debug('too much occurence for val:%d'%(val))
       return None
     ind = values.index(val)
     if ind > min(2,len(values)):
@@ -510,6 +524,37 @@ class AnonymousStructInstance():
     # here we have a value in head, with little reoccurrence in the list.
     # we can chop the head and limit the array to [ind+1:]
     return (ind, nbSeen, val)
+  
+  def _chopAnywhere(self, values): ## naah
+    import numpy
+    ctr = collections.Counter( values)
+    stddev = numpy.std([v for v,nb in ctr.most_common() if nb > 2])
+    print 'stddev', stddev
+    if stddev < 5.0: # pretty grouped values
+      cutTargets = [(v,nb) for v,nb in ctr.most_common() if nb <= 2]
+      if len(cutTargets) >0:
+        print 'we should cut ', cutTargets
+    
+    nbSeens = [nb for v,nb in ctr.most_common() if nb > 2]
+    stddev = numpy.std(nbSeens)
+    print 'stddev nbseens', stddev
+    if stddev < 10.0: # pretty identic number of values
+      cutTargets = [(v,nb) for v,nb in ctr.most_common() if nb <= 2]
+      if len(cutTargets) >0:
+        print 'nbseens we should cut ', cutTargets
+  
+  def _checkZeroesIndexes(self):
+    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    print( '_checkZeroesIndexes %d intArrays'%(len(intArrays)) )
+    for _arrayField in intArrays:
+      values = [ f.value for f in _arrayField.elements ]
+      ## get indices for 0
+      indices = [ ind for ind, val in enumerate(values) if val == 0]
+      if len(indices) > 2:
+        intervals = [ (indices[i+1] - indices[i]) for i in range(0,len(indices)-1)]
+        if len(set(intervals)) == 1:
+          log.debug('only one interval values. Looks like a array terminator')
+  
   
   def todo(self):
     ## apply librairies structures search against heap before running anything else.
@@ -528,16 +573,19 @@ class AnonymousStructInstance():
     ##     * aggregates: char[][], buffers
     ##     * type definition: substructs, final reverse type step, c++ objects, 
 
+    ## done
     ## if a zeroes field (%WORDSIZE == 0) is stuck between 2 Integer arrays
     ## make a big array of the 3 fields
 
+    ## done
     ## on each integer array of significant ( > 8 ) size, Count the number of values.
     ## if rare value ( stats distibution ?) are present at the end or beginning, move array boundaries to exclude thoses value in integer fields
     
     ## on each integer array, look indices for \x00
     ## if there is a regular interval between \x00 in the sequence ( 5 char then 0 ) then make some sub arrays, nul terminated
 
-    ## aggregate pattern base on pure basic type without length ( string, pointer, array, integer, zeroes )
+    ## BOF. different sizes means different substructures
+    ## aggregate pattern based on pure basic type without length ( string, pointer, array, integer, zeroes )
     ## that gives us other probable substructure
 
     ## in a structure starting with an integer
