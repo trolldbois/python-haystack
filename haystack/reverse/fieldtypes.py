@@ -236,20 +236,26 @@ class Field:
     log.debug('MIDZEROES: range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): %s'%(len(bytes)-Config.WORDSIZE))
     maxOffset = size - Config.WORDSIZE
     # align offset
-    indice = 0
-    # else find alignement
-    while indice != -1:
-      indice = bytes.find('\x00\x00\x00\x00')
-      log.debug('found at %d'%indice)
-      if indice == -1:
-        return False
-      if indice % Config.WORDSIZE == 0:
-        # found word
-        # end unknown field at indice and create zeroes field here
-        self.offset = self.offset+indice
-        self.size = self.size - indice
-        return self.checkLeadingZeroes()
-    return False        
+    it = itertools.dropwhile( lambda x: (x%Config.WORDSIZE != 0) , xrange(0, maxOffset) )
+    aligned = it.next() # not exceptionnable here
+    log.debug('aligned:%s'%aligned)
+    it = itertools.dropwhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
+    try: 
+      start = it.next()
+    except StopIteration,e:
+      log.debug('Did not find zeroes aligned')
+      return False
+    it = itertools.takewhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
+    end = max(it) + Config.WORDSIZE
+    size = end-start 
+    if size < 4:
+      return False
+    log.debug('CONTAINS: contains %s zeroes at start %d'%(size, start))
+    self.size = size
+    self.value = bytes[start:end]    
+    self.offset = self.offset+start
+    log.debug('CONTAINS: zerroes from offset %d:%d'%(self.offset,self.offset+self.size))
+    return True
 
   def checkIntegerArray(self):
     # this should be last resort
