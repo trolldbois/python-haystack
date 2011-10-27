@@ -167,9 +167,12 @@ class Field:
     else :
       return False
     self.typename = FieldType.ZEROES
-    if self.size == Config.WORDSIZE:
+    #Not so good
+    #if (self.size % Config.WORDSIZE) == 0 and (self.size//Config.WORDSIZE) < 8: # 8 zerroes is more a buffer than ints
+    if (self.size == Config.WORDSIZE):
       self.typename = FieldType.SMALLINT
       self.value = 0
+      self.checkInteger()
     return True  
   
   def checkLeadingZeroes(self):
@@ -230,26 +233,23 @@ class Field:
     size = len(bytes)
     if size <= 11:
       return False
+    log.debug('MIDZEROES: range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): %s'%(len(bytes)-Config.WORDSIZE))
     maxOffset = size - Config.WORDSIZE
     # align offset
-    it = itertools.dropwhile( lambda x: (x%Config.WORDSIZE != 0) , xrange(0, maxOffset) )
-    aligned = it.next() # not exceptionnable here
-    it = itertools.dropwhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
-    try: 
-      start = it.next()
-    except StopIteration,e:
-      return False
-    it = itertools.takewhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
-    end = max(it) + Config.WORDSIZE
-    size = end-start 
-    if size < 4:
-      return False
-    log.debug('CONTAINS: contains %s zeroes at start %d'%(size, start))
-    self.size = size
-    self.value = bytes[start:end]    
-    self.offset = self.offset+start
-    log.debug('CONTAINS: zerroes from offset %d:%d'%(self.offset,self.offset+self.size))
-    return True
+    indice = 0
+    # else find alignement
+    while indice != -1:
+      indice = bytes.find('\x00\x00\x00\x00')
+      log.debug('found at %d'%indice)
+      if indice == -1:
+        return False
+      if indice % Config.WORDSIZE == 0:
+        # found word
+        # end unknown field at indice and create zeroes field here
+        self.offset = self.offset+indice
+        self.size = self.size - indice
+        return self.checkLeadingZeroes()
+    return False        
 
   def checkIntegerArray(self):
     # this should be last resort
