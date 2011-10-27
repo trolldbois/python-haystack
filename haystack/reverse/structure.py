@@ -10,6 +10,7 @@ import os
 import pickle
 import itertools
 import numbers
+import math
 
 from haystack.config import Config
 import fieldtypes
@@ -555,7 +556,45 @@ class AnonymousStructInstance():
         if len(set(intervals)) == 1:
           log.debug('only one interval values. Looks like a array terminator')
   
-  
+  def _checkBufferLen(self):
+    
+    fieldsToRemove = []
+    # list all untyped arrays
+    for i,f in enumerate(self.fields):
+      if f in fieldsToRemove:
+        continue
+      if f.typename == FieldType.UNKNOWN:
+        log.debug( 'ok found one')
+        l = len(f)
+        m = math.modf(math.log( l, 2)) 
+        if m[0] == 0.0 and m[1]>5.0: # we have a perfect buffer match on 2**x
+          continue
+        elif m[1]>5.0  and m[0] < 1: # big buffer size, but not a big enough. look at next fields
+          target = 2**(m[1]+1)
+          log.debug('Untyped Buffer resize we are missing %d bytes'%(target-l))
+          cnt = l
+          newfields = []
+          for f2 in self.fields[i+1:]:
+            cnt+=len(f2)
+            newfields.append(f2)
+            if cnt < target:
+              continue
+            elif cnt > target:
+              # we need to cut f2 ???
+              log.debug('we need to cut f2:%s to meet size heuristics. dropping'%(f2))
+              newfields = []
+              break
+            else: # perfect
+              log.debug('Untyped buffer resize need to aggregate')
+          if len(newfields) == 0:
+            continue # need to cut
+          fieldsToRemove.extend(newfields)
+          f.size = target
+    #cleaning
+    for f in fieldsToRemove:
+      self.fields.remove(f)
+    return
+      
   def todo(self):
     ## apply librairies structures search against heap before running anything else.
     ## that should cut our reverse time way down
