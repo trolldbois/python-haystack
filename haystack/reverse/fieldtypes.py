@@ -395,7 +395,7 @@ class Field:
     return int(self.size) ## some long come and goes
 
   def __str__(self):
-    return 'offset:%d size:%s'%(self.offset, self.size)
+    return '<Field %d offset:%d size:%s t:%s'%(self.struct.fields.index(self), self.offset, self.size, self.typename)
     
   def getValue(self, maxLen):
     bytes = self._getValue(maxLen)
