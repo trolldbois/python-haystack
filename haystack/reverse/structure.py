@@ -41,6 +41,44 @@ DEBUG_ADDRS=[]
 def makeStructure(context, start, size):
   return AnonymousStructInstance(context.mappings, start, context.heap.readBytes(start, size) )
 
+def cacheLoad(dumpname, addr):
+  if not os.access(fname,os.F_OK):
+    return None
+  fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  return pickle.load(file(fname,'r'))
+
+def cacheLoadAll(dumpname, addresses):
+  for addr in addresses:      
+    fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
+    if os.access(fname,os.F_OK):
+      yield addr, pickle.load(file(fname,'r'))
+  return
+
+def cacheLoadAllLazy(dumpname, addresses):
+  from functools import partial
+  for addr in addresses:      
+    fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
+    if os.access(fname,os.F_OK):
+      print '.',
+      yield addr,CacheWrapper(addresses, fname )
+  return
+
+class UnworkingCacheWrapper:
+  def __init__(self, dic, fname):
+    self.fname = fname
+    self.dic = dic
+    self.obj = None
+  def __getattr__(self,*args):
+    #print 'get', args
+    if self.obj == None:
+      self.obj = pickle.load(file(self.fname,'r'))
+      self.dic[self.obj.vaddr] = self.obj
+    print "Metaclass getattribute invoked"
+    return self.obj.__getattr__(*args)
+  
+
+
+
 class AnonymousStructInstance():
   '''
   AnonymousStruct in absolute address space.
@@ -103,7 +141,7 @@ class AnonymousStructInstance():
     self.fields.append(field)
     self.fields.sort()
     return field
-
+  
   def save(self):
     self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
     pickle.dump(self, file(self.fname,'w'))
@@ -435,7 +473,7 @@ class AnonymousStructInstance():
           newFields.extend(next.elements)
           # make an array for newFields and insert it in place of prev+field+next
           # pop prev, newfields and next, and put them in an array
-          print 'aggZeroes', i, len(newFields)#, ','.join([f.toString('') for f in newFields])
+          #print 'aggZeroes', i, len(newFields)#, ','.join([f.toString('') for f in newFields])
           drop = [ myfields.pop(i) for x in range(3) ] #prev, 
           array = makeArrayField(self, newFields )          
           myfields.insert(i, array)
@@ -563,13 +601,13 @@ class AnonymousStructInstance():
     for i,f in enumerate(self.fields):
       if f in fieldsToRemove:
         continue
+      l = len(f)
+      m = math.modf(math.log( l, 2)) 
+      if m[0] == 0.0: # we have a perfect buffer size  on 2**x
+        continue
       if f.typename == FieldType.UNKNOWN:
         log.debug( 'ok found one')
-        l = len(f)
-        m = math.modf(math.log( l, 2)) 
-        if m[0] == 0.0 and m[1]>5.0: # we have a perfect buffer match on 2**x
-          continue
-        elif m[1]>5.0  and m[0] < 1: # big buffer size, but not a big enough. look at next fields
+        if m[1]>5.0  and m[0] > 0.9: # big buffer size, but not a big enough. look at next fields
           target = 2**(m[1]+1)
           log.debug('Untyped Buffer resize we are missing %d bytes'%(target-l))
           cnt = l
@@ -585,11 +623,40 @@ class AnonymousStructInstance():
               newfields = []
               break
             else: # perfect
-              log.debug('Untyped buffer resize need to aggregate')
+              log.debug('Untyped buffer resize need to aggregate %d next fields'%(len(newfields))) 
+              breaktarget = 2**(m[1]+1)
           if len(newfields) == 0:
             continue # need to cut
           fieldsToRemove.extend(newfields)
           f.size = target
+          log.debug('Aggregation done. fields sent to delete corner')
+      elif f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7:
+        # check number of elements.
+        m = math.modf(math.log( l, 2)) 
+        # if close to 2** > 7
+        if m[0] < 0.1: # close enough btu too big
+          target = 2**(m[1])
+          size = f.size
+          offset = f.offset
+          changing = True
+          while size > target and changing:
+            changing = False
+            if f.elements[0].value == 0:
+              # cut head
+              changing = True
+              offset += Config.WORDSIZE
+              size -= Config.WORDSIZE
+            elif f.elements[0].value == 0:
+              # cut head
+              changing = True
+              size -= Config.WORDSIZE
+          if size != target:
+            log.debug('I am not capable of shorting this array by expelling zeroes')
+            continue
+          f.offset = offset
+          f.size = size
+          f.checkIntegerArray()
+          self._fixGaps()
     #cleaning
     for f in fieldsToRemove:
       self.fields.remove(f)
@@ -700,7 +767,8 @@ class %s(LoadableMembers):  # %s
     return cmp(self.vaddr, other.vaddr)
   
   def __str__(self):
-    return 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )
+    return 'AnonStruct_%s_%x'%(os.path.basename(self.mappings.name), self.vaddr )
+    # 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )
   
 
 
