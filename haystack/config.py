@@ -15,10 +15,26 @@ log = logging.getLogger('config')
 
 OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/')
 
-Config = Dummy()
-Config.cacheDir = os.path.normpath(OUTPUTDIR)
-Config.structsCacheDir = os.path.sep.join([Config.cacheDir,'structs'])
-Config.GENERATED_PY_HEADERS_VALUES = os.path.sep.join([Config.cacheDir,'headers_values.py'])
-Config.GENERATED_PY_HEADERS = os.path.sep.join([Config.cacheDir,'headers.py'])
-Config.WORDSIZE = 4
+class ConfigClass():
+  def __init__(self, outputDir=OUTPUTDIR):
+    self.cacheDir = os.path.normpath(outputDir)
+    self.structsCacheDir = os.path.sep.join([self.cacheDir,'structs'])
+    self.WORDSIZE = 4
+    self.commentMaxSize = 64
+    # cache file names
+    self.CACHE_GENERATED_PY_HEADERS_VALUES = '.headers_values.py'
+    self.CACHE_GENERATED_PY_HEADERS = '.headers.py'
+    self.CACHE_HS_POINTERS_VALUES = '.heap+stack.pointers.values'
+    self.CACHE_HEAP_ADDRS = '.heap.pointers.addrs'
+    self.CACHE_STRUCTURES = '.structures'
+    self.CACHE_CONTEXT = '.ctx'
+  
+  ''' 
+  @param typ: one of Config.CACHE_XX types'''
+  def getCacheFilename(self, typ, dumpfilename):
+    root = os.path.basename(dumpfilename)
+    return os.path.sep.join([self.cacheDir, root+typ])
+
+
+Config = ConfigClass()
 
