@@ -13,6 +13,7 @@ import os
 import pickle
 import shelve
 import sys
+import time
 
 from haystack.config import Config
 from haystack.utils import Dummy
@@ -88,7 +89,8 @@ class ReverserContext():
     self.structures_addresses = d['structures_addresses']
     self.lastReversedStructureAddr = d['lastReversedStructureAddr']
     #load structures from cache
-    self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self.dumpname,self.structures_addresses)])
+    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self.dumpname,self.structures_addresses)])
+    self.structures = {}
     return self
   
 
@@ -166,7 +168,8 @@ class PointerReverser(StructureOrientedReverser):
     # tis is the optimised key list of structCache
     #context.structures_addresses = numpy.array([],int)
       
-    nbMembers = 0
+    t0 = time.time()
+    tl = t0
     # build structs from pointers boundaries. and creates pointer fields if possible.
     for i, ptr_value in enumerate(aligned_ptr):
       if ptr_value not in context.structures:
@@ -176,10 +179,10 @@ class PointerReverser(StructureOrientedReverser):
         context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
       else:
         log.info('loaded %x from cache'%(ptr_value))
-      if i%100 == 0:
-        log.info('\t[-] at structures %d'%(i))
-        self._putCache(context)
-    log.info('Extracted %d structures'%(len(context.structures_addresses)) )
+      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        tl = time.time()
+        log.info('%2.2f secondes to go '%( (len(aligned_ptr)-i)*((tl-t0)/i) ) )
+    log.info('Extracted %d structures in %2.2f'%(len(context.structures_addresses), time.time()-t0) )
     return
 
 
@@ -192,13 +195,21 @@ class PointerReverser(StructureOrientedReverser):
 
   def _putCache(self, ctx):
     ''' define cache write on your output data '''
+    t0 = time.time()
+    log.info('\t[-] please wait while I am saving our %d structs'%(len(ctx.structures)))
     # save context with cache
     ctx.save()
+    tl = time.time()
     # dump all structures
-    for s in ctx.structures.values():
+    for i,s in enumerate(ctx.structures.values()):
       s.save()
+      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        tl = time.time()
+        log.info('\t\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
     # save mem2py headers file
     save_headers(ctx)
+    tf = time.time()
+    log.info('\t\t[.] saved in %2.2f secs'%(tf-t0))
     return 
 
 

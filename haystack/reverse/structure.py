@@ -41,39 +41,50 @@ DEBUG_ADDRS=[]
 def makeStructure(context, start, size):
   return AnonymousStructInstance(context.mappings, start, context.heap.readBytes(start, size) )
 
-def cacheLoad(dumpname, addr):
-  if not os.access(fname,os.F_OK):
+def cacheLoad(context, addr):
+  dumpname = context.dumpname
+  if not os.access(dumpname,os.F_OK):
     return None
   fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
-  return pickle.load(file(fname,'r'))
+  p = pickle.load(file(fname,'r'))
+  if p is None:
+    return None
+  p.mappings = context.mappings
+  return p
 
-def cacheLoadAll(dumpname, addresses):
+def cacheLoadAll(context, addresses):
+  dumpname = context.dumpname
   for addr in addresses:      
     fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
     if os.access(fname,os.F_OK):
-      yield addr, pickle.load(file(fname,'r'))
+      p = pickle.load(file(fname,'r'))
+      p.mappings = context.mappings
+      yield addr, p
   return
 
-def cacheLoadAllLazy(dumpname, addresses):
-  from functools import partial
+def cacheLoadAllLazy(context, addresses):
+  dumpname = context.dumpname
   for addr in addresses:      
     fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
     if os.access(fname,os.F_OK):
       print '.',
-      yield addr,CacheWrapper(addresses, fname )
+      yield addr,CacheWrapper(context, fname )
   return
 
-class UnworkingCacheWrapper:
-  def __init__(self, dic, fname):
+class CacheWrapper:
+  def __init__(self, context, fname):
     self.fname = fname
-    self.dic = dic
+    self.context = context
     self.obj = None
   def __getattr__(self,*args):
     #print 'get', args
     if self.obj == None:
-      self.obj = pickle.load(file(self.fname,'r'))
+      p = pickle.load(file(self.fname,'r'))
+      if p is None:
+        return None
+      p.mappings = self.context.mappings
+      self.obj = p
       self.dic[self.obj.vaddr] = self.obj
-    print "Metaclass getattribute invoked"
     return self.obj.__getattr__(*args)
   
 
@@ -765,7 +776,11 @@ class %s(LoadableMembers):  # %s
     if not isinstance(other, AnonymousStructInstance):
       raise TypeError
     return cmp(self.vaddr, other.vaddr)
-  
+
+  def __getstate__(self):
+    d = dict(self.__dict__)
+    d['mappings'] = None
+    
   def __str__(self):
     return 'AnonStruct_%s_%x'%(os.path.basename(self.mappings.name), self.vaddr )
     # 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )
