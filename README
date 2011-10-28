@@ -51,7 +51,7 @@ $ sudo haystack-dump dump 26725 dumps/myssh.dump
 Then you can open it in the GUI :
 
 $ haystack-gui # ( and Ctrl-O , click click)
-$ hasytack-gui --dumpfile dumps/myssh.dump
+$ haystack-gui --dumpfile dumps/myssh.dump
 
 The dump file format is a simple tar containing each memory map :
 * content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
@@ -61,6 +61,29 @@ You can the search a structure into that memory mapping ( in [heap] for now ).
 You have to import your extensions before that ( try sslsnoop.ctypes_openssh ) to have them listed in the search dialog.
 
 Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should have it installed.
+
+Automatic Memory Reverser (IA forensics):
+------------------------------------------
+
+$ python reversers.py <yourdumpfile>
+
+s = pickle.load(file('./structs/AnonStruct_skype.1.a_b24a198'))
+>>> s.__dict__
+{'resolved': False, 'pointerResolved': False, 'mappings': <haystack.memory_mapping.Mappings instance at 0x92da38c>, 'fields': [], 'bytes': '\xa8\xf7l\xb7\xa8\xa1$\x0b\xcaL\xb9\xff\xc1\x00\x00\x00', 'fname': '/home/user/workspace/outputs/structs/AnonStruct_skype.1.a_b24a198', 'prefixname': 'b24a198', 'vaddr': 186950040L}
+
+>>> s.decodeFields()
+>>> print s.toString()
+
+class AnonStruct_skype.1.a_b24a198(LoadableMembers):  # resolved:True SIG:P4P4u8 pointerResolved:False
+  _fields_ = [ 
+        ( 'ptr_0' , ctypes.c_void_p ), # @ b76cf7a8 /usr/lib/libQtGui.so.4.7.2 
+        ( 'ptr_4' , ctypes.c_void_p ), # @ b24a1a8 [heap] 
+        ( 'untyped_8' , ctypes.c_ubyte * 8 ), #   else bytes:'\xcaL\xb9\xff\xc1\x00\x00\x00'
+ ]
+
+
+
+
 
 Extension examples :
 ---------------------
