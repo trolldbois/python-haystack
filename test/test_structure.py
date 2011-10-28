@@ -73,20 +73,74 @@ class TestStructure(unittest.TestCase):
     self.s2._aggregateFields()
     file('%s.agg'%(self.s2),'w').write( self.s2.toString() )
 
-    self.s2._excludeSizeVariableFromIntArray()
-    file('%s.exclude'%(self.s2),'w').write( self.s2.toString() )
-    
-    #self.s2._aggZeroesBetweenIntArrays()
-    #file('%s.IZItoIntArray'%(self.s2),'w').write( self.s2.toString() )
-
+    l1 = -1
+    l2 = -2
+    i = 0
+    ''' loop until there is not array xtraction to be made '''
+    while l1 != l2:
+      self.s2._excludeSizeVariableFromIntArray()
+      file('%s.exclude.run%d'%(self.s2,i),'w').write( self.s2.toString() )
+      l1 = len(self.s2.fields)
+      
+      self.s2._aggZeroesBetweenIntArrays()
+      file('%s.IZItoIntArray.run%d'%(self.s2,i),'w').write( self.s2.toString() )
+      l2 = len(self.s2.fields)
+      i+=1
 
     #logging.getLogger('structure').setLevel(logging.DEBUG)
     #self.s2._findSubStructures()
     #file('%s.findsub'%(self.s2),'w').write( self.s2.toString() )
     #self.s2.save()
+
+    self.s2._aggregateFields()
+    file('%s.agg.post'%(self.s2),'w').write( self.s2.toString() )
     
+    #self.s2._checkZeroesIndexes()
+    #file('%s.ZeroesIndexes'%(self.s2),'w').write( self.s2.toString() )
+    
+    logging.getLogger('structure').setLevel(logging.DEBUG)
+    self.s2._checkBufferLen()
+    file('%s.checkBufLen'%(self.s2),'w').write( self.s2.toString() )
+
+    self.s2.save()
+    # field 0 untyped 
     return  
-  
+
+  '''
+from haystack.reverse import structure
+from  structure import *
+import logging
+logging.basicConfig(level=logging.DEBUG)
+import pickle
+s2 = pickle.load(file('AnonymousStruct_130256_0'))
+
+f0=s2.fields[0]
+f0.decoded=False
+f0.typename = fieldtypes.FieldType.UNKNOWN
+f0.decodeType()
+
+s=512
+source = s2.bytes[:s*4] # first field size is probably a 2**12
+# not. 512 really
+ha = []
+hb = []
+ints = [i for i in struct.unpack('L'*(len(source)/4), source)]
+groups = [ (ints[i:i+4], ints[i+4:i+8]) for i in range(0,len(ints),8)]
+for a,b in groups:
+  ha.extend(a)
+  hb.extend(b)
+
+has=sorted(ha)
+iA = [has[i+1]-has[i] for i in range(len(has)-1)]
+iiA = [iA[i]-iA[i+1] for i in range(len(iA)-1)]
+iiiA = [iiA[i]-iiA[i+1] for i in range(len(iiA)-1)]
+
+mid = has[len(has)/2]
+var = [ v-mid for v in ha]
+
+
+
+'''  
   ''' 
   def test_isPointerToString(self):
     return  
