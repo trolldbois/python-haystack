@@ -358,14 +358,22 @@ class MemoryDumpMemoryMapping(MemoryMapping):
 
   def __getstate__(self):
     d = dict(self.__dict__)
-    d['_memdump_filename'] = self._memdump.name
+    if hasattr(self,'_memdump.name'):
+      d['_memdump_filename'] = self._memdump.name
     d['_memdump'] = None
     d['_local_mmap'] = None
     d['_local_mmap_content'] = None
     d['_base'] = None
     d['_process'] = None
     return d
+  
+  #def __setstate__(self, dic):
+  #  print 'set', dic
+  #  self._memdump = file(dic['_memdump_filename'],'r')
+  #  s = len(LazyMmap(self._memdump))
+  #  return
 
+  
   @classmethod
   def fromFile(cls, memoryMapping, aFile):
     '''
@@ -465,11 +473,11 @@ class LazyMmap:
 
 
 class Mappings:
-  def __init__(self, lst, name=None):
+  def __init__(self, lst, filename):
     if type(lst) != list:
       raise TypeError('Please feed me a list')
     self.mappings = lst
-    self.name = name
+    self.name = filename
 
   def getMmap(self, pathname):
     mmap = None
