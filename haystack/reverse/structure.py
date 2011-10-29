@@ -159,11 +159,11 @@ class AnonymousStructInstance():
     return self._addField(offset, typename, size, padding)
     
   def _addField(self, offset, typename, size, padding):
-    self.dirty=True
     if offset < 0 or offset > len(self):
       raise IndexError()
     if typename is None:
       raise ValueError()
+    self.dirty=True
     # make a field with no autodecode
     field = Field(self, offset, typename, size, padding)
     # field has been typed
@@ -189,6 +189,8 @@ class AnonymousStructInstance():
             if yes add a new field
         compare the size of the gap and the size of the fiel
     '''
+    if self.resolved:
+      return
     self.dirty=True
     # should be done by 
     #if len(self.fields) == 0: ## add a fake all-struct field
@@ -237,7 +239,8 @@ class AnonymousStructInstance():
     for f in myfields[1:]:
       last = newFields[-1]
       if last.isZeroes() and f.isZeroes():
-        log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
+        # XXX cant output last, its not part of struct yet, so cant be printed
+        #log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
         newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
       else:
         newFields.append(f)
@@ -369,9 +372,9 @@ class AnonymousStructInstance():
     return
   
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
-    self.dirty=True
     if len(structs_addrs) == 0:
       return None
+    self.dirty=True
     nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
     tgt_st = structCache[nearest_addr]
     if field.value in tgt_st:
@@ -383,9 +386,9 @@ class AnonymousStructInstance():
     return None
   
   def _aggregateFields(self):
-    self.dirty=True
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
+    self.dirty=True
     
     self.fields.sort()
     myfields = []
@@ -440,9 +443,9 @@ class AnonymousStructInstance():
   # XX TODO DEBUG, this is not a substructure.
   '''
   def _findSubStructures(self):
-    self.dirty=True
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
+    self.dirty=True
     
     self.fields.sort()
     myfields = []
@@ -494,9 +497,9 @@ class AnonymousStructInstance():
 
   
   def _aggZeroesBetweenIntArrays(self):
-    self.dirty=True
     if len(self.fields) < 3:
       return
+    self.dirty=True
     
     myfields = sorted(self.fields)
     i = 0
@@ -533,9 +536,9 @@ class AnonymousStructInstance():
   Check if head or tail ( excluding zeroes) is different from the lot ( not common )
   '''
   def _excludeSizeVariableFromIntArray(self):
-    self.dirty=True
     if len(self.fields) < 2:
       return
+    self.dirty=True
     
     ''' nested func will explode the array fields in 3 fields '''
     def cutInThree():
