@@ -58,8 +58,8 @@ class ReverserContext():
   def cacheLoad(cls, mappings):
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
-    log.info('\t [-] cacheLoad my context')
     ctx = pickle.load(file(context_cache,'r'))
+    log.info('\t [-] cacheLoad my context')
     ctx.mappings = mappings
     ctx.heap = ctx.mappings.getHeap()
     return ctx
@@ -156,11 +156,12 @@ class StructureOrientedReverser():
     ctx.save()
     tl = time.time()
     # dump all structures
-    for i,s in enumerate(ctx.structures.values()):
-      s.save()
-      if time.time()-tl > 30: #i>0 and i%10000 == 0:
-        tl = time.time()
-        log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
+    #for i,s in enumerate(ctx.structures.values()):
+    #  print s.dirty
+    #  s.save()
+    #  if time.time()-tl > 30: #i>0 and i%10000 == 0:
+    #    tl = time.time()
+    #    log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
     # save mem2py headers file
     save_headers(ctx)
     tf = time.time()
@@ -200,6 +201,9 @@ class PointerReverser(StructureOrientedReverser):
     log.info('[+] Fetching cached structures list')
     context.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(context) ])
     log.info('[+] Fetched %d cached structures from disk'%( len(context.structures) ))
+    
+    
+    
     ## we really should be lazyloading structs..
     t0 = time.time()
     tl = t0
@@ -209,22 +213,17 @@ class PointerReverser(StructureOrientedReverser):
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
     for i, ptr_value in enumerate(todo):
-      #if ptr_value not in caches:
       loaded+=1
       size = lengths[i]
       # save the ref/struct type
       context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
       context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
       context.structures[ ptr_value ].save()
-      #else:
-      #  #log.info('loaded %x from cache'%(ptr_value))
-      #  fromcache+=1
-      #  pass
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         save_headers(context)
         tl = time.time()
         log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*((tl-t0)/i), loaded, fromcache ) )
-    log.info('[+] Extracted %d structures in %2.2f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0),loaded, fromcache )
+    log.info('[+] Extracted %d structures in %2.2f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache ) )
     
     context.parsed.add(str(self))
     return

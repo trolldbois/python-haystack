@@ -91,6 +91,7 @@ class CacheWrapper:
         return None
       p.mappings = self.context.mappings
       p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+      p.dirty = False
       self.obj = p
       self.context.structures[self.obj.vaddr] = self.obj
     return getattr(self.obj,*args)
@@ -119,9 +120,11 @@ class AnonymousStructInstance():
       self.prefixname = '%lx_%s'%( self.vaddr, self.prefix)
     self.resolved = False
     self.pointerResolved = False
+    self.dirty=True
     return
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
+    self.dirty=True
     offset = vaddr - self.vaddr
     if offset < 0 or offset > len(self):
       raise IndexError()
@@ -151,10 +154,12 @@ class AnonymousStructInstance():
     return field
 
   def addField(self, vaddr, typename, size, padding ):
+    self.dirty=True
     offset = vaddr - self.vaddr
     return self._addField(offset, typename, size, padding)
     
   def _addField(self, offset, typename, size, padding):
+    self.dirty=True
     if offset < 0 or offset > len(self):
       raise IndexError()
     if typename is None:
@@ -167,6 +172,8 @@ class AnonymousStructInstance():
     return field
   
   def save(self):
+    if not self.dirty:
+      return
     self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
     pickle.dump(self, file(self.fname,'w'))
     return
@@ -182,6 +189,7 @@ class AnonymousStructInstance():
             if yes add a new field
         compare the size of the gap and the size of the fiel
     '''
+    self.dirty=True
     # should be done by 
     #if len(self.fields) == 0: ## add a fake all-struct field
     #  self._addField(0, FieldType.UNKNOWN, size, True)
@@ -213,6 +221,7 @@ class AnonymousStructInstance():
 
   def _aggregateZeroes(self):
     ''' sometimes we have a pointer in the middle of a zeroes buffer. we need to aggregate '''
+    self.dirty=True
     log.debug('aggregateZeroes: start')
     myfields = sorted([ f for f in self.fields if f.padding != True ])
     if len(myfields) < 2:
@@ -233,6 +242,7 @@ class AnonymousStructInstance():
     
   def _fixGaps(self):
     ''' Fix this structure and populate empty offsets with default unknown padding fields '''
+    self.dirty=True
     nextoffset = 0
     self._gaps = 0
     overlaps = False
@@ -265,6 +275,7 @@ class AnonymousStructInstance():
 
   def _fixOverlaps(self):
     ''' fix overlapping string fields '''
+    self.dirty=True
     fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
     for f1, f2 in self._getOverlapping():
       log.debug('overlappings %s %s'%(f1,f2))
@@ -303,6 +314,7 @@ class AnonymousStructInstance():
   def resolvePointers(self, structs_addrs, structCache):
     if self.pointerResolved:
       return
+    self.dirty=True
     resolved = 0
     pointerFields = self.getPointerFields()
     for field in pointerFields:
@@ -350,6 +362,7 @@ class AnonymousStructInstance():
     return
   
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
+    self.dirty=True
     if len(structs_addrs) == 0:
       return None
     nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
@@ -363,6 +376,7 @@ class AnonymousStructInstance():
     return None
   
   def _aggregateFields(self):
+    self.dirty=True
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
     
@@ -419,6 +433,7 @@ class AnonymousStructInstance():
   # XX TODO DEBUG, this is not a substructure.
   '''
   def _findSubStructures(self):
+    self.dirty=True
     if not self.pointerResolved:
       raise ValueError('I should be resolved')
     
@@ -472,6 +487,7 @@ class AnonymousStructInstance():
 
   
   def _aggZeroesBetweenIntArrays(self):
+    self.dirty=True
     if len(self.fields) < 3:
       return
     
@@ -510,6 +526,7 @@ class AnonymousStructInstance():
   Check if head or tail ( excluding zeroes) is different from the lot ( not common )
   '''
   def _excludeSizeVariableFromIntArray(self):
+    self.dirty=True
     if len(self.fields) < 2:
       return
     
