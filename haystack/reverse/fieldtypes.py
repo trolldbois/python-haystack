@@ -419,7 +419,7 @@ class Field:
     elif self.padding or self.typename == FieldType.UNKNOWN:
       bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
     else: # bytearray, pointer...
-      return self.value
+      return str(self.value)
     return bytes
   
   def getSignature(self):

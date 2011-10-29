@@ -244,11 +244,17 @@ class LocalMemoryMapping(MemoryMapping):
     word = MemoryMapping.WORDTYPE.from_address(laddr).value # is non-aligned a pb ?, indianess is at risk
     return word
 
-  def readBytes(self, vaddr, size):
+  def readBytes1(self, vaddr, size):
     laddr = vaddr - self.start
     #data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
     data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
     return data
+
+  def readBufferBytes(self, vaddr, size):
+    #log.warning('readBufferBytes %d'%(size))
+    laddr = vaddr - self.start
+    return self._bytebuffer[laddr:laddr+size]
+  readBytes = readBytes1
   
   def readStruct(self, vaddr, struct):
     laddr = self.vtop( vaddr )
@@ -262,7 +268,9 @@ class LocalMemoryMapping(MemoryMapping):
 
   def getByteBuffer(self):
     if self._bytebuffer is None:
+      log.debug('allocate bytebuffer %d'%(len(self)))
       self._bytebuffer = self.readBytes( self.start , len(self))
+      self.readBytes = self.readBufferBytes
     return self._bytebuffer
 
   def initByteBuffer(self, data=None):
@@ -307,6 +315,13 @@ class MemoryDumpMemoryMapping(MemoryMapping):
       raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     if preload:
       self._mmap()
+  
+  def useByteBuffer(self):
+    log.debug('use bytebuffer %d'%(len(self)))
+    # toddo use bitstring
+    self._mmap().getByteBuffer()
+    # force readBytes update
+    self.readBytes = self._base.readBytes
   
   def isMmaped(self):
     return not (self._base is None)
@@ -493,15 +508,21 @@ class Mappings:
     return False
 
   def getHeap(self):
-    heap = self.getMmap('[heap]')  
+    heap = self.getMmap('[heap]')
     # optimise code to load heap in ram
     if isinstance(heap, FileBackedMemoryMapping):
+      i = self.mappings.index(heap)
       heap = MemoryDumpMemoryMapping.fromFile(heap, heap._memdump)
+      heap.useByteBuffer() # load a bytebuffer form
+      self.mappings[i]=heap
     return heap
   def getStack(self):
     stack = self.getMmap('[stack]')  
     if isinstance(stack, FileBackedMemoryMapping):
+      i = self.mappings.index(stack)
       stack = MemoryDumpMemoryMapping.fromFile(stack, stack._memdump)
+      stack.useByteBuffer() # load a bytebuffer form
+      self.mappings[i]=stack
     return stack
 
   def __contains__(self, vaddr):

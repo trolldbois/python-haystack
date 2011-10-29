@@ -59,7 +59,10 @@ class ReverserContext():
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
     log.info('\t [-] cacheLoad my context')
-    return pickle.load(file(context_cache,'r'))
+    ctx = pickle.load(file(context_cache,'r'))
+    ctx.mappings = mappings
+    ctx.heap = ctx.mappings.getHeap()
+    return ctx
     #if not os.access(context_cache,os.F_OK):
     #  raise IOError('file not found') 
     #d = shelve.open(context_cache)
@@ -90,8 +93,8 @@ class ReverserContext():
 
   def __setstate__(self, d):
     self.__dict__ = d
-    self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
-    self.heap = self.mappings.getMmap(d['heapPathname'])
+    #self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
+    #self.heap = self.mappings.getMmap(d['heapPathname'])
     self.structures = { } 
     self.structures_addresses = numpy.array([],int)
     #self._init()
@@ -182,11 +185,11 @@ class PointerReverser(StructureOrientedReverser):
     log.info('[+] Reversing pointers in %s'%(context.heap))
     
     # TODO move that in context
-    if len(context.structures_addresses) == 0:
-      ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(context.dumpname, context.mappings)
-      context.structures_addresses = aligned_ptr
-    else:
-      aligned_ptr = context.structures_addresses
+    #if len(context.structures_addresses) == 0:
+    ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(context.dumpname, context.mappings)
+    context.structures_addresses = aligned_ptr
+    #else:
+    #  aligned_ptr = context.structures_addresses
 
     # make structure lengths from interval between pointers
     lengths = self.makeLengths(context.heap, aligned_ptr)
@@ -217,7 +220,7 @@ class PointerReverser(StructureOrientedReverser):
       #  #log.info('loaded %x from cache'%(ptr_value))
       #  fromcache+=1
       #  pass
-      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+      if time.time()-tl > 10: #i>0 and i%10000 == 0:
         save_headers(context)
         tl = time.time()
         log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*((tl-t0)/i), loaded, fromcache ) )
