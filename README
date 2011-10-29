@@ -67,14 +67,14 @@ Automatic Memory Reverser (IA forensics):
 
 $ python reversers.py <yourdumpfile>
 
-s = pickle.load(file('./structs/AnonStruct_skype.1.a_b24a198'))
+s = pickle.load(file('./structs/AnonStruct_software.1.a_b24a198'))
 >>> s.__dict__
-{'resolved': False, 'pointerResolved': False, 'mappings': <haystack.memory_mapping.Mappings instance at 0x92da38c>, 'fields': [], 'bytes': '\xa8\xf7l\xb7\xa8\xa1$\x0b\xcaL\xb9\xff\xc1\x00\x00\x00', 'fname': '/home/user/workspace/outputs/structs/AnonStruct_skype.1.a_b24a198', 'prefixname': 'b24a198', 'vaddr': 186950040L}
+{'resolved': False, 'pointerResolved': False, 'mappings': <haystack.memory_mapping.Mappings instance at 0x92da38c>, 'fields': [], 'bytes': '\xa8\xf7l\xb7\xa8\xa1$\x0b\xcaL\xb9\xff\xc1\x00\x00\x00', 'fname': '/home/user/workspace/outputs/structs/AnonStruct_software.1.a_b24a198', 'prefixname': 'b24a198', 'vaddr': 186950040L}
 
 >>> s.decodeFields()
 >>> print s.toString()
 
-class AnonStruct_skype.1.a_b24a198(LoadableMembers):  # resolved:True SIG:P4P4u8 pointerResolved:False
+class AnonStruct_software.1.a_b24a198(LoadableMembers):  # resolved:True SIG:P4P4u8 pointerResolved:False
   _fields_ = [ 
         ( 'ptr_0' , ctypes.c_void_p ), # @ b76cf7a8 /usr/lib/libQtGui.so.4.7.2 
         ( 'ptr_4' , ctypes.c_void_p ), # @ b24a1a8 [heap] 
