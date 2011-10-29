@@ -251,7 +251,6 @@ class LocalMemoryMapping(MemoryMapping):
     return data
 
   def readBufferBytes(self, vaddr, size):
-    #log.warning('readBufferBytes %d'%(size))
     laddr = vaddr - self.start
     return self._bytebuffer[laddr:laddr+size]
   readBytes = readBytes1
@@ -268,7 +267,6 @@ class LocalMemoryMapping(MemoryMapping):
 
   def getByteBuffer(self):
     if self._bytebuffer is None:
-      log.debug('allocate bytebuffer %d'%(len(self)))
       self._bytebuffer = self.readBytes( self.start , len(self))
       self.readBytes = self.readBufferBytes
     return self._bytebuffer
@@ -317,7 +315,6 @@ class MemoryDumpMemoryMapping(MemoryMapping):
       self._mmap()
   
   def useByteBuffer(self):
-    log.debug('use bytebuffer %d'%(len(self)))
     # toddo use bitstring
     self._mmap().getByteBuffer()
     # force readBytes update
@@ -351,7 +348,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
       # make that _base
       self._base = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
-      log.info('LocalMemoryMapping done.')
+      log.debug('LocalMemoryMapping done.')
     #redirect stuff
     self.readWord = self._base.readWord
     self.readArray = self._base.readArray
