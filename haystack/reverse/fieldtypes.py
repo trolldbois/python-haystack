@@ -399,7 +399,7 @@ class Field:
     
   def getValue(self, maxLen):
     bytes = self._getValue(maxLen)
-    bl = len(bytes)
+    bl = len(str(bytes))
     if bl >= maxLen:
       bytes = bytes[:maxLen/2]+'...'+bytes[-(maxLen/2):] # idlike to see the end
     return bytes
@@ -410,16 +410,16 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return str(self.value) #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
+      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
     elif self.isZeroes():
       bytes=repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
       log.warning('ARRAY in Field type, %s'%self.typename)
       bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])
     elif self.padding or self.typename == FieldType.UNKNOWN:
-      bytes = repr(self.struct.bytes[self.offset:self.offset+len(self)])
+      bytes = self.struct.bytes[self.offset:self.offset+len(self)]
     else: # bytearray, pointer...
-      return str(self.value)
+      return self.value
     return bytes
   
   def getSignature(self):

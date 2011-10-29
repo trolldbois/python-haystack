@@ -71,7 +71,7 @@ class ReverserContext():
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
     context = pickle.load(file(context_cache,'r'))
-    log.info('\t [-] cacheLoad my context')
+    log.info('\t[-] loaded my context fromcache, Mapping heap to mem')
     context.mappings = mappings
     context.heap = context.mappings.getHeap()
 
@@ -161,7 +161,7 @@ class StructureOrientedReverser():
   def _putCache(self, ctx):
     ''' define cache write on your output data '''
     t0 = time.time()
-    log.info('\t[-] please wait while I am saving our %d structs'%(len(ctx.structures)))
+    log.info('\t[-] please wait while I am saving the context')
     # save context with cache
     ctx.save()
     tl = time.time()
@@ -215,7 +215,6 @@ class PointerReverser(StructureOrientedReverser):
       context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
       context.structures[ ptr_value ].save()
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
-        save_headers(context)
         tl = time.time()
         log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*((tl-t0)/i), loaded, fromcache ) )
     log.info('[+] Extracted %d structures in %2.2f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache ) )
@@ -239,12 +238,18 @@ class FieldReverser(StructureOrientedReverser):
     t0 = time.time()
     tl = t0
     done = 0
-    for ptr_value,anon in context.structures.items():
+    #for ptr_value,anon in context.structures.items():
+    for ptr_value in sorted(context.structures.keys()):
+      anon = context.structures[ptr_value]
+      #anon.decoded=False
+      #anon.pointerDecoded=False
       anon.decodeFields()
+      # get the non cached version
+      context.structures[ptr_value].save()
       done+=1
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        log.info('%2.2f secondes to go '%( (len(context.structures)-done)*((tl-t0)/done) ) )
+        log.info('%2.2f secondes to go (d:%d)'%( (len(context.structures)-done)*((tl-t0)/done), done ) )
     
     log.info('[+] FieldReverser: finished %d structures in %2.2f'%(done, time.time()-t0) )
     log.info('[+] saving headers')

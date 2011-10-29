@@ -208,13 +208,18 @@ class AnonymousStructInstance():
           field.padding = False
           field.decoded = True
           continue
-        # Found a new field in a padding, with a probable type...
+        # Found a new field in a padding, with a probable type...          
         pass
+      #TODO FIXME
+      ## at field+len(field), there is ( most of the time) a field to be decoded.
+      ## no need to fix gaps for that
+      
       # reroll until completion
       self._fixGaps() 
       gaps = [ f for f in self.fields if f.padding == True ] 
       sg = len(gaps)
     #endwhile
+    self._fixOverlaps()
     #aggregate zeroes fields
     self._aggregateZeroes()
     return
@@ -245,7 +250,7 @@ class AnonymousStructInstance():
     self.dirty=True
     nextoffset = 0
     self._gaps = 0
-    overlaps = False
+    overlaps = set()
     self.fields = [ f for f in self.fields if f.padding != True ] # clean paddings to check new fields
     myfields = sorted(self.fields)
     for f in myfields:
@@ -254,8 +259,8 @@ class AnonymousStructInstance():
         padding = self._addField( nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, True)
         log.debug('fixGaps: adding field at offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
       elif f.offset < nextoffset :
-        log.warning('fixGaps: overlapping fields at offset %d'%(f.offset))
-        overlaps = True
+        #log.warning('fixGaps: overlapping fields at offset %d %s'%(f.offset, self))
+        overlaps.add(f.offset)
       else: # == 
         pass
       nextoffset = f.offset + len(f)
@@ -266,9 +271,10 @@ class AnonymousStructInstance():
       log.debug('fixGaps: adding field at queue offset %d:%d'%(padding.offset, padding.offset+len(padding) ))
     if self._gaps == 0:
       self.resolved = True
-    if overlaps:
-      log.debug('fixGaps: overlapping fields to fix')
-      self._fixOverlaps()
+    if len(overlaps)>0:
+      log.info('fixGaps: overlapping fields to fix %s %s'%(self, overlaps))
+      #self._fixOverlaps()
+      #print (self.toString())
     self.fields.sort()
     return
   
@@ -300,6 +306,7 @@ class AnonymousStructInstance():
     return
   
   def _getOverlapping(self):
+    #FIXME TODO useless double parsing. take it from fixGaps.
     fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
     lastend = 0
     oldf = None
