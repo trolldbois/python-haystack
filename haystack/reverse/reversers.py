@@ -237,21 +237,24 @@ class FieldReverser(StructureOrientedReverser):
     log.info('[+] FieldReverser: decoding fields')
     t0 = time.time()
     tl = t0
-    done = 0
+    decoded = 0
+    fromcache = 0
     #for ptr_value,anon in context.structures.items():
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
-      #anon.decoded=False
-      #anon.pointerDecoded=False
+      if anon.resolved:
+        fromcache+=1
+      else:
+        decoded+=1
       anon.decodeFields()
       # get the non cached version
       context.structures[ptr_value].save()
-      done+=1
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        log.info('%2.2f secondes to go (d:%d)'%( (len(context.structures)-done)*((tl-t0)/done), done ) )
+        log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
+            (len(context.structures)-(fromcache+decoded))*((tl-t0)/(fromcache+decoded)), decoded,fromcache ) )
     
-    log.info('[+] FieldReverser: finished %d structures in %2.2f'%(done, time.time()-t0) )
+    log.info('[+] FieldReverser: finished %d structures in %2.2f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     log.info('[+] saving headers')
     save_headers(context)
     context.parsed.add(str(self))
