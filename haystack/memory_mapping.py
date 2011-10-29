@@ -227,7 +227,7 @@ class LocalMemoryMapping(MemoryMapping):
   """
   def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-    self._local_mmap = (ctypes.c_byte * len(self)).from_address(address)
+    self._local_mmap = (ctypes.c_byte * len(self)).from_address(address) # DEBUG TODO byte or ubyte 
     self._address = ctypes.addressof(self._local_mmap)
     #self._vbase = self.start + self._address # shit, thats wraps up...
     self._bytebuffer = None
@@ -423,7 +423,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     size = ctypes.sizeof((basetype *count))
     array = (basetype *count).from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
     return array
-
+  
   @classmethod
   def fromFile(self, memoryMapping, memdump):
     """
@@ -493,9 +493,16 @@ class Mappings:
     return False
 
   def getHeap(self):
-    return self.getMmap('[heap]')  
+    heap = self.getMmap('[heap]')  
+    # optimise code to load heap in ram
+    if isinstance(heap, FileBackedMemoryMapping):
+      heap = MemoryDumpMemoryMapping.fromFile(heap, heap._memdump)
+    return heap
   def getStack(self):
-    return self.getMmap('[stack]')  
+    stack = self.getMmap('[stack]')  
+    if isinstance(stack, FileBackedMemoryMapping):
+      stack = MemoryDumpMemoryMapping.fromFile(stack, stack._memdump)
+    return stack
 
   def __contains__(self, vaddr):
     for m in self.mappings:

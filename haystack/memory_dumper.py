@@ -172,8 +172,9 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
         mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
-      elif end-start > 10000000: # use file mmap when file is too big
-        log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
+      elif end-start > 1000000: # use file mmap when file is too big
+        log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).'+
+                    ' Search will fail. Buffer is needed.'%(mmap_pathname))
         mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
       else:
