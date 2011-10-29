@@ -56,7 +56,6 @@ class ReverserContext():
   
   @classmethod
   def cacheLoad(cls, mappings):
-    print mappings.name
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
     log.info('\t [-] cacheLoad my context')
@@ -143,9 +142,7 @@ class StructureOrientedReverser():
     ''' define cache read on your input/output data '''
     # you should check timestamp against cache
     if str(self) in ctx.parsed :
-      print 'getcache',str(self),'True'
       return ctx, True
-    print 'getcache',str(self),'False'
     return ctx, False
 
   def _putCache(self, ctx):
