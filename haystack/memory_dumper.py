@@ -12,7 +12,6 @@ import tarfile, zipfile
 import tempfile, shutil
 
 
-from utils import Dummy
 import dbg
 import memory_mapping
 
@@ -182,7 +181,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
       self_mappings.append(mmap)
-    self.mappings = memory_mapping.Mappings(self_mappings, self.dumpfile.name)
+    self.mappings = memory_mapping.Mappings(self_mappings, os.path.normpath(self.dumpfile.name))
     return    
 
 
@@ -221,7 +220,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
         mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
                                 major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
       self_mappings.append(mmap)
-    self.mappings = memory_mapping.Mappings(self_mappings, self.dumpfile.name)
+    self.mappings = memory_mapping.Mappings(self_mappings, os.path.normpath(self.dumpfile.name) )
     return    
 
 
@@ -264,8 +263,8 @@ class KCoreDumpLoader(MemoryDumpLoader):
     start = 0xc0000000
     end = 0xc090d000
     kmap = memory_mapping.MemoryDumpMemoryMapping(self.dumpfile, start, end, permissions='rwx-', offset=0x0, 
-            major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpfile.name)
-    self.mappings = memory_mapping.Mappings([kmap], self.dumpfile.name)
+            major_device=0x0, minor_device=0x0, inode=0x0, pathname=os.path.normpath(self.dumpfile.name))
+    self.mappings = memory_mapping.Mappings([kmap], os.path.normpath(self.dumpfile.name))
 
 
 
@@ -274,8 +273,8 @@ def dump(opt):
   dumper = MemoryDumper(opt)
   dumper.initPid()
   out = dumper.dumpMemfile()
-  log.debug('process %d dumped to file %s'%(opt.pid, opt.dumpfile.name))
-  return opt.dumpfile.name
+  log.debug('process %d dumped to file %s'%(opt.pid, os.path.normpath(opt.dumpfile.name)))
+  return os.path.normpath(opt.dumpfile.name)
 
 def _load(opt):
   return load(opt.dumpfile,opt.lazy)
