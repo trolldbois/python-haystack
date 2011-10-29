@@ -95,7 +95,7 @@ class CacheWrapper:
       self.obj = p
       print self.obj
       self.context.structures[self.obj.vaddr] = self.obj
-    return getattr(self.obj, args[0])(*args[1:])
+    return getattr(self.obj,*args)
   def save(self):
     ''' ignore, I am a cached object anyway'''
     #log.debug(' ignore, I am a cached object anyway')
