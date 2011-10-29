@@ -216,8 +216,9 @@ class PointerReverser(StructureOrientedReverser):
       context.structures[ ptr_value ].save()
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
-        log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*((tl-t0)/i), loaded, fromcache ) )
-    log.info('[+] Extracted %d structures in %2.2f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache ) )
+        rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(fromcache))
+        log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*rate, loaded, fromcache ) )
+    log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache ) )
     
     context.parsed.add(str(self))
     return
@@ -251,10 +252,11 @@ class FieldReverser(StructureOrientedReverser):
       context.structures[ptr_value].save()
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
+        rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
-            (len(context.structures)-(fromcache+decoded))*((tl-t0)/(fromcache+decoded)), decoded,fromcache ) )
+            (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     
-    log.info('[+] FieldReverser: finished %d structures in %2.2f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
+    log.info('[+] FieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     log.info('[+] saving headers')
     save_headers(context)
     context.parsed.add(str(self))
