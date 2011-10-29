@@ -42,7 +42,7 @@ class ReverserContext():
     self.size = len(self.heap)
     # content
     self.structures = { } 
-    self.structures_addresses = numpy.array([],int)
+    #self.structures_addresses = numpy.array([],int)
     self.lastReversedStructureAddr = self.base # save our last state
 
     self.pointersMeta = Dummy()
@@ -52,23 +52,31 @@ class ReverserContext():
     self.pointerResolved = False # True if all pointer fields have been checked
 
     self.parsed = set()
+    
+    self._init2()
+    return
+
+  def _init2(self):
+    log.info('[+] Fetching cached structures addresses list')
+    ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
+    self.structures_addresses = aligned_ptr
+
+    log.info('[+] Fetching cached structures list')
+    self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
+    log.info('[+] Fetched %d cached structures from disk'%( len(self.structures) ))
     return
   
   @classmethod
   def cacheLoad(cls, mappings):
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
-    ctx = pickle.load(file(context_cache,'r'))
+    context = pickle.load(file(context_cache,'r'))
     log.info('\t [-] cacheLoad my context')
-    ctx.mappings = mappings
-    ctx.heap = ctx.mappings.getHeap()
-    return ctx
-    #if not os.access(context_cache,os.F_OK):
-    #  raise IOError('file not found') 
-    #d = shelve.open(context_cache)
-    #me = d['context']
-    #d.close()
-    #return me
+    context.mappings = mappings
+    context.heap = context.mappings.getHeap()
+
+    context._init2()
+    return context
     
   
   def save(self):
@@ -107,6 +115,8 @@ class ReverserContext():
 
     return
   
+
+
 
 ''' 
 Inherits this class when you are delivering a controller that target structure-based elements and :
@@ -163,7 +173,7 @@ class StructureOrientedReverser():
     #    tl = time.time()
     #    log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
     # save mem2py headers file
-    save_headers(ctx)
+    #save_headers(ctx)
     tf = time.time()
     log.info('\t[.] saved in %2.2f secs'%(tf-t0))
     return 
@@ -185,23 +195,8 @@ class PointerReverser(StructureOrientedReverser):
   def _reverse(self, context):
     log.info('[+] Reversing pointers in %s'%(context.heap))
     
-    # TODO move that in context
-    #if len(context.structures_addresses) == 0:
-    ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(context.dumpname, context.mappings)
-    context.structures_addresses = aligned_ptr
-    #else:
-    #  aligned_ptr = context.structures_addresses
-
     # make structure lengths from interval between pointers
-    lengths = self.makeLengths(context.heap, aligned_ptr)
-    
-    # this is the list of build anon struct. it will grow towards aligned_ptr...
-    # tis is the optimised key list of structCache
-    #context.structures_addresses = numpy.array([],int)
-    log.info('[+] Fetching cached structures list')
-    context.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(context) ])
-    log.info('[+] Fetched %d cached structures from disk'%( len(context.structures) ))
-    
+    lengths = self.makeLengths(context.heap, context.structures_addresses)    
     
     
     ## we really should be lazyloading structs..
@@ -209,7 +204,7 @@ class PointerReverser(StructureOrientedReverser):
     tl = t0
     loaded = 0
     fromcache = len(context.structures)
-    todo = set(aligned_ptr) - set(context.structures.keys())
+    todo = set(context.structures_addresses) - set(context.structures.keys())
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
     for i, ptr_value in enumerate(todo):
@@ -228,12 +223,11 @@ class PointerReverser(StructureOrientedReverser):
     context.parsed.add(str(self))
     return
 
-
-
   def makeLengths(self, heap, aligned):
     lengths=[(aligned[i+1]-aligned[i]) for i in range(len(aligned)-1)]    
     lengths.append(heap.end-aligned[-1]) # add tail
     return lengths
+
 
 
 
@@ -245,16 +239,16 @@ class FieldReverser(StructureOrientedReverser):
     t0 = time.time()
     tl = t0
     done = 0
-    print context.structures
     for ptr_value,anon in context.structures.items():
       anon.decodeFields()
-      print anon.toString()
       done+=1
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        log.info('%2.2f secondes to go '%( (len(aligned_ptr)-done)*((tl-t0)/done) ) )
+        log.info('%2.2f secondes to go '%( (len(context.structures)-done)*((tl-t0)/done) ) )
     
     log.info('[+] FieldReverser: finished %d structures in %2.2f'%(done, time.time()-t0) )
+    log.info('[+] saving headers')
+    save_headers(context)
     context.parsed.add(str(self))
     return
 
@@ -274,6 +268,7 @@ def save_headers(context):
 
 def search(opts):
   #
+  log.info('[+] Loading the memory dump ')
   mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
   try:
     try:
