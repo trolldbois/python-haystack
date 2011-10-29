@@ -199,6 +199,7 @@ class PointerReverser(StructureOrientedReverser):
     #context.structures_addresses = numpy.array([],int)
     log.info('[+] Fetching cached structures list')
     context.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(context) ])
+    log.info('[+] Fetched %d cached structures from disk'%( len(context.structures) ))
     ## we really should be lazyloading structs..
     t0 = time.time()
     tl = t0
