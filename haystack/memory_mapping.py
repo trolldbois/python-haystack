@@ -10,7 +10,7 @@ from weakref import ref
 
 # local
 from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
-import utils
+from haystack import utils
 
 log = logging.getLogger('memory_mapping')
 
@@ -467,7 +467,6 @@ class LazyMmap:
   
   def _get(self, offset,size):
     self.memdump.seek(offset)
-    #me = mmap.mmap(memdump.fileno(), end-start, access=mmap.ACCESS_READ)
     me = utils.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
     return me
 
