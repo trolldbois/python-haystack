@@ -82,7 +82,6 @@ class CacheWrapper:
     self.context = context
     self.obj = None
   def __getattr__(self,*args):
-    print 'get', args
     #if args[0] == 'save':
     #  print 'getattr'
     #  return self.save
@@ -93,7 +92,6 @@ class CacheWrapper:
       p.mappings = self.context.mappings
       p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
       self.obj = p
-      print self.obj
       self.context.structures[self.obj.vaddr] = self.obj
     return getattr(self.obj,*args)
   def save(self):
