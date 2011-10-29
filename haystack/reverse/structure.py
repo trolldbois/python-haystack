@@ -13,6 +13,8 @@ import numbers
 import math
 
 from haystack.config import Config
+from haystack import memory_dumper
+
 import fieldtypes
 from fieldtypes import Field, FieldType, makeArrayField
 import pattern
@@ -50,24 +52,27 @@ def cacheLoad(context, addr):
   if p is None:
     return None
   p.mappings = context.mappings
+  p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
   return p
 
-def cacheLoadAll(context, addresses):
+def cacheLoadAll(context):
   dumpname = context.dumpname
+  addresses = context.structures_addresses
   for addr in addresses:      
     fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
     if os.access(fname,os.F_OK):
       p = pickle.load(file(fname,'r'))
       p.mappings = context.mappings
+      p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
       yield addr, p
   return
 
-def cacheLoadAllLazy(context, addresses):
+def cacheLoadAllLazy(context):
   dumpname = context.dumpname
+  addresses = context.structures_addresses
   for addr in addresses:      
     fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
     if os.access(fname,os.F_OK):
-      print '.',
       yield addr,CacheWrapper(context, fname )
   return
 
@@ -77,15 +82,24 @@ class CacheWrapper:
     self.context = context
     self.obj = None
   def __getattr__(self,*args):
-    #print 'get', args
-    if self.obj == None:
+    print 'get', args
+    #if args[0] == 'save':
+    #  print 'getattr'
+    #  return self.save
+    if self.obj is None:
       p = pickle.load(file(self.fname,'r'))
       if p is None:
         return None
       p.mappings = self.context.mappings
+      p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
       self.obj = p
-      self.dic[self.obj.vaddr] = self.obj
-    return self.obj.__getattr__(*args)
+      print self.obj
+      self.context.structures[self.obj.vaddr] = self.obj
+    return getattr(self.obj, args[0])(*args[1:])
+  def save(self):
+    ''' ignore, I am a cached object anyway'''
+    #log.debug(' ignore, I am a cached object anyway')
+    return
   
 
 
@@ -99,6 +113,7 @@ class AnonymousStructInstance():
     self.mappings = mappings
     self.vaddr = vaddr
     self.bytes = bytes
+    self.size = len(bytes)
     self.fields = []
     if prefix is None:
       self.prefixname = '%lx'%(self.vaddr)
@@ -778,9 +793,18 @@ class %s(LoadableMembers):  # %s
     return cmp(self.vaddr, other.vaddr)
 
   def __getstate__(self):
-    d = dict(self.__dict__)
-    d['mappings'] = None
-    
+    d = self.__dict__.copy()
+    d['dumpname'] = os.path.normpath(self.mappings.name)
+    del d['mappings']
+    del d['bytes']
+    return d
+
+  def __setstate__(self, d):
+    self.__dict__ = d
+    #self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
+    #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
+    return
+        
   def __str__(self):
     return 'AnonStruct_%s_%x'%(os.path.basename(self.mappings.name), self.vaddr )
     # 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )

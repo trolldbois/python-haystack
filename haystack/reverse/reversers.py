@@ -37,11 +37,11 @@ class ReverserContext():
     return
     
   def _init(self):
+    self.heapPathname= self.heap.pathname
     self.base = self.heap.start
     self.size = len(self.heap)
     # content
-    ##self.bytes = self.heap.readBytes(self.base, self.size)
-    self.structures = { } #self.base: structure.makeStructure(self, self.base, self.size) } # one big fat structure
+    self.structures = { } 
     self.structures_addresses = numpy.array([],int)
     self.lastReversedStructureAddr = self.base # save our last state
 
@@ -50,12 +50,16 @@ class ReverserContext():
     
     self.resolved = False # True if all fields have been checked
     self.pointerResolved = False # True if all pointer fields have been checked
-    
+
+    self.parsed = set()
     return
   
   @classmethod
-  def cacheLoad(cls, dumpname):
+  def cacheLoad(cls, mappings):
+    print mappings.name
+    dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
+    log.info('\t [-] cacheLoad my context')
     return pickle.load(file(context_cache,'r'))
     #if not os.access(context_cache,os.F_OK):
     #  raise IOError('file not found') 
@@ -74,24 +78,32 @@ class ReverserContext():
     #d.close()
   
   def __getstate__(self):
-    d = {}
-    d['dumpname'] = self.dumpname 
-    d['heapPathname']= self.heap.pathname
-    d['structures_addresses'] = self.structures_addresses
-    d['lastReversedStructureAddr'] = self.lastReversedStructureAddr
+    d = self.__dict__.copy()
+    del d['mappings']
+    del d['heap']
+    del d['structures']
+    del d['structures_addresses']
+    #d['dumpname'] = os.path.normpath(self.dumpname )
+    #d['heapPathname']= self.heap.pathname
+    #d['structures_addresses'] = self.structures_addresses
+    #d['lastReversedStructureAddr'] = self.lastReversedStructureAddr
     return d
 
   def __setstate__(self, d):
-    self.dumpname = d['dumpname']
+    self.__dict__ = d
     self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
     self.heap = self.mappings.getMmap(d['heapPathname'])
-    self._init()
-    self.structures_addresses = d['structures_addresses']
-    self.lastReversedStructureAddr = d['lastReversedStructureAddr']
+    self.structures = { } 
+    self.structures_addresses = numpy.array([],int)
+    #self._init()
+    #self.structures_addresses = d['structures_addresses'] # load from int_array its quicker
+    #self.lastReversedStructureAddr = d['lastReversedStructureAddr']
     #load structures from cache
-    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self.dumpname,self.structures_addresses)])
-    self.structures = {}
-    return self
+    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self.dumpname,self.structures_addresses)])
+    #self.structures = {}
+    #self.parsed = d['parsed']
+
+    return
   
 
 ''' 
@@ -111,10 +123,13 @@ class StructureOrientedReverser():
   '''
   def reverse(self, ctx, cacheEnabled=True):
     if cacheEnabled:
-      ctx = self._getCache(ctx)
+      ctx,skip = self._getCache(ctx)
     try:
-      # call the heuristic
-      self._reverse(ctx)
+      if skip:
+        log.info('[+] skipping %s - cached results'%(str(self)))
+      else:
+        # call the heuristic
+        self._reverse(ctx)
     finally:
       if cacheEnabled:
         self._putCache(ctx)
@@ -124,27 +139,36 @@ class StructureOrientedReverser():
   def _reverse(self, ctx):
     raise NotImplementedError
 
-  def _checkCache(self, ctx):
-    for filename in cacheFilenames:
-      if not os.access(filename, os.F_OK):
-        return False
-    return True
-
-
   def _getCache(self, ctx):
     ''' define cache read on your input/output data '''
-    try:
-      ctx2 = ReverserContext.cacheLoad(ctx.dumpname)
-    except IOError,e:
-      return ctx
     # you should check timestamp against cache
-    ##raise NotImplementedError
-    return ctx2
+    if str(self) in ctx.parsed :
+      print 'getcache',str(self),'True'
+      return ctx, True
+    print 'getcache',str(self),'False'
+    return ctx, False
 
   def _putCache(self, ctx):
     ''' define cache write on your output data '''
-    #raise NotImplementedError
+    t0 = time.time()
+    log.info('\t[-] please wait while I am saving our %d structs'%(len(ctx.structures)))
+    # save context with cache
+    ctx.save()
+    tl = time.time()
+    # dump all structures
+    for i,s in enumerate(ctx.structures.values()):
+      s.save()
+      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        tl = time.time()
+        log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
+    # save mem2py headers file
+    save_headers(ctx)
+    tf = time.time()
+    log.info('\t[.] saved in %2.2f secs'%(tf-t0))
     return 
+  
+  def __str__(self):
+    return '<%s>'%(self.__class__.__name__)
   
 '''
   Looks at pointers values to build basic structures boundaries.
@@ -159,30 +183,49 @@ class PointerReverser(StructureOrientedReverser):
   '''
   def _reverse(self, context):
     log.info('[+] Reversing pointers in %s'%(context.heap))
-    ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(context.dumpname, context.mappings)
     
+    # TODO move that in context
+    if len(context.structures_addresses) == 0:
+      ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(context.dumpname, context.mappings)
+      context.structures_addresses = aligned_ptr
+    else:
+      aligned_ptr = context.structures_addresses
+
     # make structure lengths from interval between pointers
     lengths = self.makeLengths(context.heap, aligned_ptr)
     
     # this is the list of build anon struct. it will grow towards aligned_ptr...
     # tis is the optimised key list of structCache
     #context.structures_addresses = numpy.array([],int)
-      
+    log.info('[+] Fetching cached structures list')
+    context.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(context) ])
+    ## we really should be lazyloading structs..
     t0 = time.time()
     tl = t0
+    loaded = 0
+    fromcache = len(context.structures)
+    todo = set(aligned_ptr) - set(context.structures.keys())
     # build structs from pointers boundaries. and creates pointer fields if possible.
-    for i, ptr_value in enumerate(aligned_ptr):
-      if ptr_value not in context.structures:
-        size = lengths[i]
-        # save the ref/struct type
-        context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
-        context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
-      else:
-        log.info('loaded %x from cache'%(ptr_value))
+    log.info('[+] Adding new raw structures from pointers boundaries')
+    for i, ptr_value in enumerate(todo):
+      #if ptr_value not in caches:
+      loaded+=1
+      size = lengths[i]
+      # save the ref/struct type
+      context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
+      context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
+      context.structures[ ptr_value ].save()
+      #else:
+      #  #log.info('loaded %x from cache'%(ptr_value))
+      #  fromcache+=1
+      #  pass
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        save_headers(context)
         tl = time.time()
-        log.info('%2.2f secondes to go '%( (len(aligned_ptr)-i)*((tl-t0)/i) ) )
-    log.info('Extracted %d structures in %2.2f'%(len(context.structures_addresses), time.time()-t0) )
+        log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*((tl-t0)/i), loaded, fromcache ) )
+    log.info('[+] Extracted %d structures in %2.2f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0),loaded, fromcache )
+    
+    context.parsed.add(str(self))
     return
 
 
@@ -193,59 +236,27 @@ class PointerReverser(StructureOrientedReverser):
     return lengths
 
 
-  def _putCache(self, ctx):
-    ''' define cache write on your output data '''
+
+
+class FieldReverser(StructureOrientedReverser):
+  def _reverse(self, context):
+
+    log.info('[+] FieldReverser: decoding fields')
     t0 = time.time()
-    log.info('\t[-] please wait while I am saving our %d structs'%(len(ctx.structures)))
-    # save context with cache
-    ctx.save()
-    tl = time.time()
-    # dump all structures
-    for i,s in enumerate(ctx.structures.values()):
-      s.save()
+    tl = t0
+    done = 0
+    print context.structures
+    for ptr_value,anon in context.structures.items():
+      anon.decodeFields()
+      print anon.toString()
+      done+=1
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        log.info('\t\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
-    # save mem2py headers file
-    save_headers(ctx)
-    tf = time.time()
-    log.info('\t\t[.] saved in %2.2f secs'%(tf-t0))
-    return 
-
-
-
-class FieldReverser():
-  def reverse(self, context):
-    # make destroyable copies
-    aligned = list(aligned_ptr)
-    addrs = list(ptr_offsets) # list of pointers, some of them are not in heap
-    unaligned = list(not_aligned_ptr)
-
-    nbMembers = 0
-    # build structs from pointers boundaries. and creates pointer fields if possible.
-    for i, ptr_value in enumerate(aligned):
-      # identify pointer fields
-      addrs, my_pointers_addrs = utils.dequeue(addrs, ptr_value, ptr_value+size)  
-
-      log.debug('Created a struct with %d pointers fields'%( len(my_pointers_addrs) ))
-      # get pointers found at offset addrs in start -> start+size
-      for p_addr in my_pointers_addrs:
-        f = anon.addField(p_addr, FieldType.POINTER, Config.WORDSIZE, False)
-        log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-start))
-
-      # the other pointers values, that are not aligned
-      unaligned, my_unaligned_addrs = utils.dequeue(unaligned, ptr_value, ptr_value+size)
-      ## set field for unaligned pointers, that sometimes gives good results ( char[][] )
-      for p_addr in my_unaligned_addrs:
-        log.debug('Guess field at %lx offset:%d'%( p_addr,p_addr-start))
-        if anon.guessField(p_addr) is not None: #, FieldType.UKNOWN):
-          nbMembers+=1
-          hasMembers=True
-        # not added
-      # try to decode fields
-      log.debug('build: decoding fields')
-      anon.decodeFields()
-
+        log.info('%2.2f secondes to go '%( (len(aligned_ptr)-done)*((tl-t0)/done) ) )
+    
+    log.info('[+] FieldReverser: finished %d structures in %2.2f'%(done, time.time()-t0) )
+    context.parsed.add(str(self))
+    return
 
 
 def save_headers(context):
@@ -264,11 +275,16 @@ def save_headers(context):
 def search(opts):
   #
   mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
-  context = ReverserContext(mappings, mappings.getHeap())  
   try:
+    try:
+      context = ReverserContext.cacheLoad(mappings)
+    except IOError,e:
+      context = ReverserContext(mappings, mappings.getHeap())  
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
     # we have enriched context
+    fr = FieldReverser()
+    context = fr.reverse(context)
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context
