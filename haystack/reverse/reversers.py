@@ -204,16 +204,17 @@ class PointerReverser(StructureOrientedReverser):
     tl = t0
     loaded = 0
     fromcache = len(context.structures)
-    todo = set(context.structures_addresses) - set(context.structures.keys())
+    todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
-    for i, ptr_value in enumerate(todo):
-      loaded+=1
-      size = lengths[i]
-      # save the ref/struct type
-      context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
-      context.structures_addresses = numpy.append(context.structures_addresses, ptr_value)
-      context.structures[ ptr_value ].save()
+    for i, ptr_value in enumerate(context.structures_addresses):
+      # toh stoupif
+      if ptr_value in todo:
+        loaded+=1
+        size = lengths[i]
+        # save the ref/struct type
+        context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
+        context.structures[ ptr_value ].save()
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(fromcache))
@@ -270,8 +271,12 @@ def save_headers(context):
   for vaddr,anon in context.structures.items():
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
-      fout.write('\n'.join(towrite) )
+      try:
+        fout.write('\n'.join(towrite) )
+      except UnicodeDecodeError, e:
+        print 'ERROR on ',anon
       towrite = []
+      fout.flush()
   fout.write('\n'.join(towrite) )
   fout.close()
   return
