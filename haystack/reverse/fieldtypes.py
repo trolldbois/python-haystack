@@ -45,6 +45,14 @@ class FieldType:
     newField = Field(parent, offset, newfieldType, len(newfieldType), False)
     return newField
 
+  def __cmp__(self, other):
+    if not isinstance(other, FieldType):
+      raise TypeError('%s %s'%(self.__class__, other.__class__))
+    return cmp(self._id, other._id)
+
+  def __hash__(self):
+    return hash(self._id)
+
   def __str__(self):
     return '<FieldType %s>'%(self.basename)
 
@@ -65,11 +73,6 @@ class FieldTypeStruct(FieldType):
   def __len__(self):
     return self.size
   
-  def __cmp__(self, other):
-    if not isinstance(other, FieldType):
-      raise TypeError()
-    return cmp(self._id, other._id)
-
 class FieldTypeArray(FieldType):
   def __init__(self, basicTypeName):
     FieldType.__init__(self, 0x8, 'array_%s'%basicTypeName, None, 'a', isPtr=False)
@@ -435,9 +438,11 @@ class Field:
       comment = '#  %s %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
     elif self.isZeroes():
       comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
+    elif self.isString():
+      comment = '#  %s %s %s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) ) 
     else:
-      #if self.isString() or self.padding:
-      comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) ) 
+      #unknown
+      comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 
           
     fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
     return fstr
