@@ -85,7 +85,7 @@ class CacheWrapper:
     #if args[0] == 'save':
     #  print 'getattr'
     #  return self.save
-    if self.obj is None:
+    if self.obj is None:  # TODO use a weakref
       p = pickle.load(file(self.fname,'r'))
       if p is None:
         return None
@@ -327,62 +327,83 @@ class AnonymousStructInstance():
     self.dirty=True
     resolved = 0
     pointerFields = self.getPointerFields()
+    log.debug('got %d pointerfields'%(len(pointerFields)))
+    known = 0
+    inHeap = 0
+    inMappings = 0
+    undecoded = 0
+    fromcache = 0
     for field in pointerFields:
       # shorcut
       if hasattr(field, '_ptr_resolved'):
         if field._ptr_resolved:
-          resolved+=1
+          fromcache+=1
           continue
       # if pointed is not None:  # erase previous info
       tgt = None
       if field.value in structs_addrs: 
+        known+=1
         tgt = structCache[field.value]
-        field._target_field = tgt[0]
+        if not tgt.resolved: # fields have not been decoded yet
+          undecoded+=1
+          log.debug('target %s is undecoded'%(tgt))
+          continue
+        field._target_field = tgt[0] #first field of struct
       elif field.value in self.mappings.getHeap():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
+        inHeap+=1
         tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
         if tgt_field is not None:
           field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
+        else:
+          undecoded+=1
+          #log.debug('target %x is unresolvable in a field'%(field.value))        
         pass
       elif field.value in self.mappings: # other mappings
+        inMappings+=1
         tgt = 'ext_lib'
         field._ptr_to_ext_lib = True
         pass
+      #
       if tgt is not None:
         resolved+=1
         field.setName('%s_%s'%(field.typename.basename, tgt))
         field._ptr_resolved = True
+        #log.debug('resolved %s %s (%d)'%(field.getName(), field, resolved))
+    log.debug('resolvePointers on t:%d,c:%d,r:%d, k:%d,h:%d,m:%d,u:%d'%(len(pointerFields), 
+              fromcache, resolved, known, inHeap, inMappings, undecoded))
     #
-    if len(pointerFields) == resolved:
+    if len(pointerFields) == (resolved+fromcache):
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
       self.pointerResolved = True
-      logging.getLogger('progressive').setLevel(logging.DEBUG)
-      logging.getLogger('structure').setLevel(logging.DEBUG)
-      logging.getLogger('field').setLevel(logging.DEBUG)
-      #self._aggregateFields()
-      logging.getLogger('progressive').setLevel(logging.INFO)
-      logging.getLogger('structure').setLevel(logging.INFO)
-      logging.getLogger('field').setLevel(logging.INFO)
     else:
       self.pointerResolved = False
     return
   
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
+    ## TODO DEBUG, i got gaps in my memory mappings structures
+    #  AnonStruct_skype.1.a_add16e8 -> AnonStruct_skype.1.a_add173c
     if len(structs_addrs) == 0:
       return None
-    self.dirty=True
     nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
+    log.debug('nearest_addr:%x ind:%d'%(nearest_addr, ind))
+    if field.value%Config.WORDSIZE != 0:
+      # non aligned, nothing could match
+      return None
     tgt_st = structCache[nearest_addr]
+    log.debug('tgt_st %s'%tgt_st)
     if field.value in tgt_st:
       offset = field.value - nearest_addr
       for f in tgt_st.fields:
         if f.offset == offset:
           tgt_field = f
+          log.debug('Found %s'%f)
           return tgt_field
+    log.debug('nothing found')
     return None
   
   def _aggregateFields(self):
