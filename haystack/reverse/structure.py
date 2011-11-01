@@ -97,7 +97,11 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
       return getattr(self.obj,*args)
       
   def _load(self):
-    p = pickle.load(file(self.fname,'r'))
+    try:
+      p = pickle.load(file(self.fname,'r'))
+    except EOFError,e:
+      log.warning('%s does not haz a complete pickle'%(self.fname))
+      raise e
     if p is None:
       return None
     p.mappings = self.context.mappings
