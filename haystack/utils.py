@@ -356,6 +356,11 @@ class SharedBytes():
     return  self.src[self.start+i]
 
   def __getattribute__(self, *args):
-    self.src[self.start:self.end].__getattribute__(*args)
+    return self.src[self.start:self.end].__getattribute__(*args)
 
+  def __getattr__(self, *args):
+    return self.src[self.start:self.end].__getattribute__(*args)
+
+  #def find(self,*args):
+  # return self.src.find(*args)
 
