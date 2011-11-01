@@ -185,19 +185,14 @@ class StructureOrientedReverser():
   Looks at pointers values to build basic structures boundaries.
 '''
 class PointerReverser(StructureOrientedReverser):
-
-
-
   ''' 
   slice the mapping in several structures delimited per pointer-boundaries
-  
   '''
   def _reverse(self, context):
     log.info('[+] Reversing pointers in %s'%(context.heap))
     
     # make structure lengths from interval between pointers
     lengths = self.makeLengths(context.heap, context.structures_addresses)    
-    
     
     ## we really should be lazyloading structs..
     t0 = time.time()
@@ -229,11 +224,11 @@ class PointerReverser(StructureOrientedReverser):
     lengths.append(heap.end-aligned[-1]) # add tail
     return lengths
 
-
-
-
-
+'''
+  Decode each structure by asserting simple basic types from the byte content.
+'''
 class FieldReverser(StructureOrientedReverser):
+  
   def _reverse(self, context):
 
     log.info('[+] FieldReverser: decoding fields')
@@ -258,12 +253,14 @@ class FieldReverser(StructureOrientedReverser):
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     
     log.info('[+] FieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
-    log.info('[+] saving headers')
-    save_headers(context)
     context.parsed.add(str(self))
     return
 
+'''
+  Identify pointer fields and their target structure.
+'''
 class PointerFieldReverser(StructureOrientedReverser):
+  
   def _reverse(self, context):
     log.info('[+] PointerFieldReverser: resolving pointers')
     t0 = time.time()
@@ -288,8 +285,11 @@ class PointerFieldReverser(StructureOrientedReverser):
     context.parsed.add(str(self))
     return
 
-
+'''
+  use the pointer relation between structure to map a graph.
+'''
 class PointerGraphReverser(StructureOrientedReverser):
+  
   def _reverse(self, context):
     import networkx
     graph = networkx.Graph()
@@ -329,17 +329,22 @@ def search(opts):
       context = ReverserContext.cacheLoad(mappings)
     except IOError,e:
       context = ReverserContext(mappings, mappings.getHeap())  
+    # find basic boundaries
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
-    # we have enriched context
+    # decode bytes contents to find basic types.
     fr = FieldReverser()
     context = fr.reverse(context)
-
+    # identify pointer relation between structures
     pfr = PointerFieldReverser()
     context = pfr.reverse(context)
-
+    # graph pointer relations between structures
     ptrgraph = PointerGraphReverser()
     context = ptrgraph.reverse(context)
+
+    log.info('[+] saving headers')
+    save_headers(context)
+
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context
