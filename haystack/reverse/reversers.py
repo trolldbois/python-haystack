@@ -248,9 +248,9 @@ class FieldReverser(StructureOrientedReverser):
         fromcache+=1
       else:
         decoded+=1
-      anon.decodeFields()
-      # get the non cached version
-      context.structures[ptr_value].save()
+        anon.decodeFields()
+        # get the non cached version
+        context.structures[ptr_value].save()
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
@@ -262,6 +262,45 @@ class FieldReverser(StructureOrientedReverser):
     save_headers(context)
     context.parsed.add(str(self))
     return
+
+class PointerFieldReverser(StructureOrientedReverser):
+  def _reverse(self, context):
+    log.info('[+] PointerFieldReverser: resolving pointers')
+    t0 = time.time()
+    tl = t0
+    decoded = 0
+    fromcache = 0
+    for ptr_value in sorted(context.structures.keys()):
+      anon = context.structures[ptr_value]
+      if anon.pointerResolved:
+        fromcache+=1
+      else:
+        decoded+=1
+      anon.resolvePointers(context.structures_addresses, context.structures)
+      context.structures[ptr_value].save()
+      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        tl = time.time()
+        rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
+        log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
+            (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
+    
+    log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
+    context.parsed.add(str(self))
+    return
+
+
+class PointerGraphReverser(StructureOrientedReverser):
+  def _reverse(self, context):
+    import networkx
+    graph = networkx.Graph()
+    graph.add_nodes_from(context.structures.values())
+    log.info('[+] Graphing pointer relation - %d nodes'%(graph.number_of_nodes()))
+    for struct in context.structures.values():
+      graph.add_edges_from(struct, set((struct,child.struct) for child in struct.getPointerFields()) )
+    log.info('[+] Graphing pointer relation - %d edges'%(graph.number_of_edges()))
+        
+    return
+
 
 
 def save_headers(context):
@@ -295,6 +334,12 @@ def search(opts):
     # we have enriched context
     fr = FieldReverser()
     context = fr.reverse(context)
+
+    pfr = PointerFieldReverser()
+    context = pfr.reverse(context)
+
+    ptrgraph = PointerGraphReverser()
+    context = ptrgraph.reverse(context)
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context
