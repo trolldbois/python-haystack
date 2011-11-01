@@ -248,8 +248,6 @@ class FieldReverser(StructureOrientedReverser):
           # get the non cached version
           context.structures[ptr_value].save()
       except EOFError,e:
-        fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), ptr_value ) ])
-        os.remove(fname)
         continue
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
@@ -275,21 +273,18 @@ class PointerFieldReverser(StructureOrientedReverser):
     deleted = 0
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
-      if anon.pointerResolved:
-        fromcache+=1
-      else:
-        try:
+      try:
+        if anon.pointerResolved:
+          fromcache+=1
+        else:
           decoded+=1
           if not hasattr(anon, 'mappings'):
             log.error('damned, no mappings in %x'%(ptr_value))
             anon.obj.mappings = context.mappings
           anon.resolvePointers(context.structures_addresses, context.structures)
           context.structures[ptr_value].save()
-        except EOFError,e:
-          fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), ptr_value ) ])
-          os.remove(fname)
-          deleted+=1
-          continue
+      except EOFError,e:
+        continue
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))

@@ -77,6 +77,7 @@ def cacheLoadAllLazy(context):
     try:
       yield addr,CacheWrapper(context, addr )
     except ValueError,e:
+      # TODO rebuild the struct
       pass
   return
 
@@ -93,7 +94,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   def __getattr__(self,*args):
     if self.obj is None:  # 
       p = self._load()
-      CacheWrapper.refs[self] = p
+      CacheWrapper.refs[self] = p # this is mostly free of charge now
       #self.obj = weakref.proxy(p)
       self.obj = p
     try:
@@ -110,6 +111,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
       p = pickle.load(file(self.fname,'r'))
     except EOFError,e:
       log.warning(' %s does not haz a complete pickle'%(self.fname))
+      os.remove(self.fname)
       raise e
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
