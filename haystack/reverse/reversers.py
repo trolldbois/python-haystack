@@ -239,13 +239,18 @@ class FieldReverser(StructureOrientedReverser):
     #for ptr_value,anon in context.structures.items():
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
-      if anon.resolved:
-        fromcache+=1
-      else:
-        decoded+=1
-        anon.decodeFields()
-        # get the non cached version
-        context.structures[ptr_value].save()
+      try:
+        if anon.resolved: # TODO this is a performance hit, unproxying...
+          fromcache+=1
+        else:
+          decoded+=1
+          anon.decodeFields()
+          # get the non cached version
+          context.structures[ptr_value].save()
+      except EOFError,e:
+        fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), ptr_value ) ])
+        os.remove(fname)
+        continue
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
@@ -267,20 +272,30 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
+    deleted = 0
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
       if anon.pointerResolved:
         fromcache+=1
       else:
-        decoded+=1
-      anon.resolvePointers(context.structures_addresses, context.structures)
-      context.structures[ptr_value].save()
+        try:
+          decoded+=1
+          if not hasattr(anon, 'mappings'):
+            log.error('damned, no mappings in %x'%(ptr_value))
+            anon.obj.mappings = context.mappings
+          anon.resolvePointers(context.structures_addresses, context.structures)
+          context.structures[ptr_value].save()
+        except EOFError,e:
+          fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), ptr_value ) ])
+          os.remove(fname)
+          deleted+=1
+          continue
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
-    
+        log.info('deleted:%d'%(deleted))
     log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     context.parsed.add(str(self))
     return
@@ -333,6 +348,7 @@ def search(opts):
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
     # decode bytes contents to find basic types.
+    # DEBUG reactivate, 
     fr = FieldReverser()
     context = fr.reverse(context)
     # identify pointer relation between structures

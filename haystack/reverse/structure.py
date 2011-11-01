@@ -21,6 +21,8 @@ from fieldtypes import Field, FieldType, makeArrayField
 import pattern
 import utils
 
+import lrucache
+
 log = logging.getLogger('structure')
 
 DEBUG_ADDRS=[]
@@ -79,6 +81,7 @@ def cacheLoadAllLazy(context):
   return
 
 class CacheWrapper: # this is kind of a weakref proxy, but hashable
+  refs = lrucache.LRUCache(5000)
   def __init__(self, context, addr):
     self.addr = addr
     self.fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), addr ) ])
@@ -88,22 +91,26 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     self.obj = None
     
   def __getattr__(self,*args):
-    if self.obj is None:  # TODO use a weakref
-      self.obj = weakref.proxy(self._load())
+    if self.obj is None:  # 
+      p = self._load()
+      CacheWrapper.refs[self] = p
+      #self.obj = weakref.proxy(p)
+      self.obj = p
     try:
       return getattr(self.obj,*args)
     except ReferenceError,e:
-      self.obj = weakref.proxy(self._load())
+      p = self._load()
+      CacheWrapper.refs[self] = p
+      #self.obj = weakref.proxy(p)
+      self.obj = p
       return getattr(self.obj,*args)
       
   def _load(self):
     try:
       p = pickle.load(file(self.fname,'r'))
     except EOFError,e:
-      log.warning('%s does not haz a complete pickle'%(self.fname))
+      log.warning(' %s does not haz a complete pickle'%(self.fname))
       raise e
-    if p is None:
-      return None
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
     p.dirty = False
@@ -855,7 +862,8 @@ class %s(LoadableMembers):  # %s
     try:
       d['dumpname'] = os.path.normpath(self.mappings.name)
     except AttributeError,e:
-      log.error('no mappings %s \n %s %s'%(d, self, self.__class__))
+      log.error('no mappings %s \n %s %x'%(d, self.__class__, self.vaddr))
+      raise e
     del d['mappings']
     del d['bytes']
     return d
