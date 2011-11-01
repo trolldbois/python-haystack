@@ -245,9 +245,11 @@ class LocalMemoryMapping(MemoryMapping):
     return word
 
   def readBytes1(self, vaddr, size):
-    laddr = vaddr - self.start
-    #data = b''.join([ struct.pack('B',x) for x in self._local_mmap[laddr:laddr+size] ])
-    data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
+    laddr = self.vtop( vaddr )
+    #data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
+    print 'start read'
+    data = ctypes.string_at(laddr, size) # real 0.5 % perf
+    print 'end read'
     return data
 
   def readBufferBytes(self, vaddr, size):
@@ -267,7 +269,7 @@ class LocalMemoryMapping(MemoryMapping):
 
   def getByteBuffer(self):
     if self._bytebuffer is None:
-      self._bytebuffer = self.readBytes( self.start , len(self))
+      self._bytebuffer = utils.SharedBytes(self.readBytes( self.start , len(self)) )
       self.readBytes = self.readBufferBytes
     return self._bytebuffer
 
@@ -341,7 +343,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     if self._base is None:
       if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
+        # we have the bytes
         local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+        # we need an ctypes
         self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
       else: # dumpfile, file inside targz ... any read() API really
         self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)

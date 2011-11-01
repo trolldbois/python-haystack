@@ -109,3 +109,5 @@ def getHeapPointers(dumpfilename, mappings):
   log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
   return values,heap_addrs, aligned, not_aligned
 
+
+

@@ -317,3 +317,45 @@ def xrange(start, end, step=1):
     yield start+val
   return
 
+
+'''
+  a shareBytes array of bytes. no allocation buffer should be made, only indexes.
+'''
+class SharedBytes():
+  def __init__(self, src):
+    self.src = src
+    self.start = 0
+    self.end = len(src)
+    return
+  
+  def __makeMe(self, start, end):
+    if end < 0:
+      raise ValueError
+    if start < 0:
+      raise ValueError    
+    sb = SharedBytes(self.src)
+    sb.start = start
+    sb.end = end
+    return sb
+
+  def __getslice__(self, start, end):
+    if start < 0: # reverse
+      start = self.end+start
+    if end < 0: # reverse
+      end = self.end+end
+    return self.__makeMe(start, end)
+
+  def __len__(self):
+    return self.end-self.start
+
+  def __getitem__(self, i):
+    if isinstance(i, slice):
+      return self.__getslice__(i)
+    if i < 0: # reverse
+      i = self.end+i
+    return  self.src[self.start+i]
+
+  def __getattribute__(self, *args):
+    self.src[self.start:self.end].__getattribute__(*args)
+
+
