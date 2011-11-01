@@ -11,6 +11,7 @@ import pickle
 import itertools
 import numbers
 import math
+import weakref
 
 from haystack.config import Config
 from haystack import memory_dumper
@@ -71,35 +72,42 @@ def cacheLoadAllLazy(context):
   dumpname = context.dumpname
   addresses = context.structures_addresses
   for addr in addresses:      
-    fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
-    if os.access(fname,os.F_OK):
-      yield addr,CacheWrapper(context, fname )
+    try:
+      yield addr,CacheWrapper(context, addr )
+    except ValueError,e:
+      pass
   return
 
-class CacheWrapper:
-  def __init__(self, context, fname):
-    self.fname = fname
+class CacheWrapper: # this is kind of a weakref proxy, but hashable
+  def __init__(self, context, addr):
+    self.addr = addr
+    self.fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), addr ) ])
+    if not os.access(self.fname,os.F_OK):
+      raise ValueError()
     self.context = context
     self.obj = None
+    
   def __getattr__(self,*args):
-    #if args[0] == 'save':
-    #  print 'getattr'
-    #  return self.save
     if self.obj is None:  # TODO use a weakref
-      p = pickle.load(file(self.fname,'r'))
-      if p is None:
-        return None
-      p.mappings = self.context.mappings
-      p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
-      p.dirty = False
-      self.obj = p
-      self.context.structures[self.obj.vaddr] = self.obj
-    return getattr(self.obj,*args)
-  def save(self):
-    ''' ignore, I am a cached object anyway'''
-    #log.debug(' ignore, I am a cached object anyway')
-    return
-  
+      self.obj = weakref.proxy(self._load())
+    try:
+      return getattr(self.obj,*args)
+    except ReferenceError,e:
+      self.obj = weakref.proxy(self._load())
+      return getattr(self.obj,*args)
+      
+  def _load(self):
+    p = pickle.load(file(self.fname,'r'))
+    if p is None:
+      return None
+    p.mappings = self.context.mappings
+    p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+    p.dirty = False
+    return p
+  def __hash__(self):
+    return hash(self.addr)
+  def __cmp__(self, other):
+    return cmp(self.addr,other.addr)
 
 
 
@@ -840,7 +848,10 @@ class %s(LoadableMembers):  # %s
 
   def __getstate__(self):
     d = self.__dict__.copy()
-    d['dumpname'] = os.path.normpath(self.mappings.name)
+    try:
+      d['dumpname'] = os.path.normpath(self.mappings.name)
+    except AttributeError,e:
+      log.error('no mappings %s \n %s %s'%(d, self, self.__class__))
     del d['mappings']
     del d['bytes']
     return d
