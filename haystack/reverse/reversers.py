@@ -63,7 +63,7 @@ class ReverserContext():
 
     log.info('[+] Fetching cached structures list')
     self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
-    log.info('[+] Fetched %d cached structures from disk'%( len(self.structures) ))
+    log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
     return
   
   @classmethod
@@ -203,8 +203,8 @@ class PointerReverser(StructureOrientedReverser):
     t0 = time.time()
     tl = t0
     loaded = 0
-    fromcache = len(context.structures)
     todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
+    fromcache = len(context.structures) - len(todo)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
     for i, ptr_value in enumerate(context.structures_addresses):
