@@ -252,6 +252,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
   elif memfile: 
     ### proc mappings dump file
     cmd_line.extend([ "--memfile", memfile] )
+  cmd_line.append('--pickled')
   # always add search
   cmd_line.extend(['search',  '--maxnum', str(int(maxNum))] )
   if fullScan:
@@ -318,6 +319,7 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   elif memfile: 
     ### proc mappings dump file
     cmd_line.extend([ "--memfile", memfile] )
+  cmd_line.append('--pickled')
   # always add search
   cmd_line.extend(['refresh',  "0x%lx"%offset] )
   instance,validated=_callFinder(cmd_line)
