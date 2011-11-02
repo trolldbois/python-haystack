@@ -267,7 +267,7 @@ class LocalMemoryMapping(MemoryMapping):
 
   def getByteBuffer(self):
     if self._bytebuffer is None:
-      self._bytebuffer = utils.SharedBytes(self.readBytes( self.start , len(self)) )
+      self._bytebuffer = self.readBytes( self.start , len(self))
       self.readBytes = self.readBufferBytes
     return self._bytebuffer
 

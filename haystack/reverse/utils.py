@@ -14,6 +14,9 @@ import logging
 import numpy
 import os
 import array
+import struct
+import sys
+
 
 from haystack.config import Config
 
@@ -110,4 +113,74 @@ def getHeapPointers(dumpfilename, mappings):
   return values,heap_addrs, aligned, not_aligned
 
 
+
+'''
+  a shareBytes array of bytes. no allocation buffer should be made, only indexes.
+'''
+class SharedBytes():
+  def __init__(self, src):
+    self.src = src
+    self.start = 0
+    self.end = len(src)
+    return
+  
+  def __makeMe(self, start, end):
+    if end < 0:
+      raise ValueError
+    if start < 0:
+      raise ValueError    
+    sb = SharedBytes(self.src)
+    sb.start = start
+    sb.end = end
+    return sb
+  
+  def unpack(self, typ, bytes):
+    return struct.unpack(typ, str(bytes))
+
+  def pack(self, typ, *val):
+    return struct.pack(typ, *val)
+
+  def __getslice__(self, start, end):
+    if start < 0: # reverse
+      start = self.end+start
+    elif start == sys.maxint:
+      start = self.start
+    if end < 0: # reverse
+      end = self.end+end
+    elif end == sys.maxint:
+      end = self.end
+    return self.__makeMe(start, end)
+
+  def __len__(self):
+    return self.end-self.start
+
+  def __getitem__(self, i):
+    if isinstance(i, slice):
+      return self.__getslice__(i)
+    if i < 0: # reverse
+      i = self.end+i
+    return  self.src[self.start+i]
+
+  def __getattribute__(self, *args):
+    log.debug( '__getattribute__ %s'%args0)
+    return self.src[self.start:self.end].__getattribute__(*args)
+
+  def __getattr__(self, *args):
+    log.debug('__getattr__ %s'%args)
+    return getattr(self.src[self.start:self.end], *args)
+  
+  def __setstate__(self, d):
+    self.__dict__ = d.copy()
+
+  def __getstate__(self):
+    return self.__dict__.copy()
+    
+  def __str__(self):
+    return self.src[self.start:self.end]
+
+  def __repr__(self):
+    return repr(self.src[self.start:self.end])
+
+  def __iter__(self):
+    return iter(self.src[self.start:self.end])
 
