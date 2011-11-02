@@ -94,14 +94,14 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   def __getattr__(self,*args):
     if self.obj is None:  # 
       p = self._load()
-      CacheWrapper.refs[self] = p # this is mostly free of charge now
+      #CacheWrapper.refs[self] = p # this is mostly free of charge now
       #self.obj = weakref.proxy(p)
       self.obj = p
     try:
       return getattr(self.obj,*args)
     except ReferenceError,e:
       p = self._load()
-      CacheWrapper.refs[self] = p
+      #CacheWrapper.refs[self] = p
       #self.obj = weakref.proxy(p)
       self.obj = p
       return getattr(self.obj,*args)
