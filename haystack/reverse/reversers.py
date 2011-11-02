@@ -249,6 +249,9 @@ class FieldReverser(StructureOrientedReverser):
           context.structures[ptr_value].save()
       except EOFError,e:
         continue
+      except TypeError,e:
+        print anon
+        continue
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))

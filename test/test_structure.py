@@ -19,14 +19,15 @@ from haystack.config import Config
 #import haystack.reverse.structure as structure
 sys.path.append('../haystack/reverse/')
 import structure
+from haystack.utils import SharedBytes
 
 class TestStructure(unittest.TestCase):
 
   def asetUp(self):
     self.s1 = pickle.load(file('AnonymousStruct_84_ad35de0','r') )
-    self.s1_bytes = file('AnonymousStruct_84_ad35de0.bytes','r').read()
+    self.s1_bytes = SharedBytes(file('AnonymousStruct_84_ad35de0.bytes','r').read())
     self.s2 = pickle.load(file('AnonymousStruct_130256_ad39240','r') )
-    self.s2_bytes = file('AnonymousStruct_130256_ad39240.bytes','r').read()
+    self.s2_bytes = SharedBytes(file('AnonymousStruct_130256_ad39240.bytes','r').read())
     self.s2 = structure.AnonymousStructInstance(self.s2.mappings, 0, self.s2_bytes)
   
   #

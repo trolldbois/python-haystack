@@ -17,6 +17,8 @@ import ctypes, os
 from struct import pack,unpack
 
 import logging
+import struct
+import sys
 
 log = logging.getLogger('utils')
 
@@ -337,12 +339,22 @@ class SharedBytes():
     sb.start = start
     sb.end = end
     return sb
+  
+  def unpack(self, typ, bytes):
+    return struct.unpack(typ, str(bytes))
+
+  def pack(self, typ, *val):
+    return struct.pack(typ, *val)
 
   def __getslice__(self, start, end):
     if start < 0: # reverse
       start = self.end+start
+    elif start == sys.maxint:
+      start = self.start
     if end < 0: # reverse
       end = self.end+end
+    elif end == sys.maxint:
+      end = self.end
     return self.__makeMe(start, end)
 
   def __len__(self):
@@ -356,11 +368,25 @@ class SharedBytes():
     return  self.src[self.start+i]
 
   def __getattribute__(self, *args):
+    log.debug( '__getattribute__ %s'%args0)
     return self.src[self.start:self.end].__getattribute__(*args)
 
   def __getattr__(self, *args):
-    return self.src[self.start:self.end].__getattribute__(*args)
+    log.debug('__getattr__ %s'%args)
+    return getattr(self.src[self.start:self.end], *args)
+  
+  def __setstate__(self, d):
+    self.__dict__ = d.copy()
 
-  #def find(self,*args):
-  # return self.src.find(*args)
+  def __getstate__(self):
+    return self.__dict__.copy()
+    
+  def __str__(self):
+    return self.src[self.start:self.end]
+
+  def __repr__(self):
+    return repr(self.src[self.start:self.end])
+
+  def __iter__(self):
+    return iter(self.src[self.start:self.end])
 

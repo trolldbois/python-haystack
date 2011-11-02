@@ -262,7 +262,10 @@ class AnonymousStructInstance():
       if last.isZeroes() and f.isZeroes():
         # XXX cant output last, its not part of struct yet, so cant be printed
         #log.debug('aggregateZeroes: field %s and %s -> %d:%d'%(last,f, last.offset,f.offset+len(f)))
-        newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
+        try:
+          newFields[-1] = Field(self, last.offset, last.typename, len(last)+len(f), False)
+        except TypeError,e:
+          raise e
       else:
         newFields.append(f)
     self.fields = newFields
@@ -868,12 +871,16 @@ class %s(LoadableMembers):  # %s
       raise e
     del d['mappings']
     del d['bytes']
+    d['mappings'] = None
+    d['bytes'] = None
     return d
 
   def __setstate__(self, d):
     self.__dict__ = d
     #self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
     #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
+    self.mappings = None
+    self.bytes = None
     return
         
   def __str__(self):

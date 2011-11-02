@@ -247,9 +247,7 @@ class LocalMemoryMapping(MemoryMapping):
   def readBytes1(self, vaddr, size):
     laddr = self.vtop( vaddr )
     #data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
-    print 'start read'
     data = ctypes.string_at(laddr, size) # real 0.5 % perf
-    print 'end read'
     return data
 
   def readBufferBytes(self, vaddr, size):
