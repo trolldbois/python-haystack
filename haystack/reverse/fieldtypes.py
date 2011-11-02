@@ -148,7 +148,7 @@ class Field:
     bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
     if len(bytes) != Config.WORDSIZE:
       return False      
-    value = bytes.unpack('L',bytes)[0] #TODO biteorder
+    value = struct.unpack('L',bytes)[0] #TODO biteorder
     log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
     # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
     if value in self.struct.mappings:
@@ -219,7 +219,7 @@ class Field:
       return False
     log.debug('ENDING: range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): %s'%(len(bytes)-Config.WORDSIZE))
     for i in range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): #len(bytes)-Config.WORDSIZE
-      if bytes.unpack('L',bytes[i:i+Config.WORDSIZE])[0] == 0: 
+      if struct.unpack('L',bytes[i:i+Config.WORDSIZE])[0] == 0: 
         start = i
       else:
         break
@@ -242,13 +242,13 @@ class Field:
     it = itertools.dropwhile( lambda x: (x%Config.WORDSIZE != 0) , xrange(0, maxOffset) )
     aligned = it.next() # not exceptionnable here
     log.debug('aligned:%s'%aligned)
-    it = itertools.dropwhile( lambda x: (bytes.unpack('L',bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
+    it = itertools.dropwhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
     try: 
       start = it.next()
     except StopIteration,e:
       log.debug('Did not find zeroes aligned')
       return False
-    it = itertools.takewhile( lambda x: (bytes.unpack('L',bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
+    it = itertools.takewhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
     end = max(it) + Config.WORDSIZE
     size = end-start 
     if size < 4:
@@ -289,7 +289,7 @@ class Field:
       return True
     elif self.size == Config.WORDSIZE:
       bytes = self.struct.bytes[self.offset:self.offset+self.size]
-      self.value = bytes.unpack('@L',bytes[:Config.WORDSIZE])[0] 
+      self.value = struct.unpack('@L',bytes[:Config.WORDSIZE])[0] 
       self.typename = FieldType.INTEGER
       self.endianess = '@' # unknown
       return True
@@ -301,7 +301,7 @@ class Field:
     size = len(bytes)
     if size < Config.WORDSIZE:
       return False
-    val = bytes.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
+    val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
     if val < 0xffff:
       self.value = val
       self.size = Config.WORDSIZE
@@ -309,7 +309,7 @@ class Field:
       self.endianess = endianess
       return True
     else: # check signed int
-      val = bytes.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
+      val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
       if -0xffff <= val <= 0xffff:
         self.value = val
         self.size = Config.WORDSIZE
@@ -417,7 +417,7 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return self.value #bytes.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
+      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
     elif self.isZeroes():
       bytes=repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
