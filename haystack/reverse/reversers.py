@@ -199,7 +199,7 @@ class PointerReverser(StructureOrientedReverser):
     tl = t0
     loaded = 0
     todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
-    fromcache = len(context.structures) - len(todo)
+    fromcache = len(context.structures_addresses) - len(todo)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
     for i, ptr_value in enumerate(context.structures_addresses):
@@ -248,10 +248,8 @@ class FieldReverser(StructureOrientedReverser):
           # get the non cached version
           context.structures[ptr_value].save()
       except EOFError,e:
-        continue
-      except TypeError,e:
-        print anon
-        continue
+        log.error('incomplete unpickling')
+        raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
@@ -287,7 +285,8 @@ class PointerFieldReverser(StructureOrientedReverser):
           anon.resolvePointers(context.structures_addresses, context.structures)
           context.structures[ptr_value].save()
       except EOFError,e:
-        continue
+        log.error('incomplete unpickling')
+        raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
