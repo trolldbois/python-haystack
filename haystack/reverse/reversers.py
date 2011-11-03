@@ -60,7 +60,8 @@ class ReverserContext():
     log.info('[+] Fetching cached structures addresses list')
     ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
     self.structures_addresses = aligned_ptr
-
+    self.pointers_offsets = ptr_offsets
+    
     log.info('[+] Fetching cached structures list')
     self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
@@ -202,14 +203,23 @@ class PointerReverser(StructureOrientedReverser):
     fromcache = len(context.structures_addresses) - len(todo)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
+    offsets = list(context.pointers_offsets)
     for i, ptr_value in enumerate(context.structures_addresses):
-      # toh stoupif
+      # toh stoupid
       if ptr_value in todo:
         loaded+=1
         size = lengths[i]
+        # get offset of pointer fields
+        offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
         # save the ref/struct type
-        context.structures[ ptr_value ] = structure.makeStructure(context, ptr_value, size)
-        context.structures[ ptr_value ].save()
+        mystruct = structure.makeStructure(context, ptr_value, size)
+        context.structures[ ptr_value ] = mystruct
+        mystruct.save()
+        # get pointers addrs in start -> start+size
+        for p_addr in my_pointers_addrs:
+          f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+          log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
+
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(fromcache))
@@ -310,7 +320,7 @@ class PointerGraphReverser(StructureOrientedReverser):
     for struct in context.structures.values():
       graph.add_edges_from(struct, set((struct,child.struct) for child in struct.getPointerFields()) )
     log.info('[+] Graphing pointer relation - %d edges'%(graph.number_of_edges()))
-        
+    networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
     return
 
 
@@ -344,6 +354,10 @@ def search(opts):
     # find basic boundaries
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
+    # graph pointer relations between structures
+    ptrgraph = PointerGraphReverser()
+    context = ptrgraph.reverse(context)
+
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()
@@ -351,9 +365,6 @@ def search(opts):
     # identify pointer relation between structures
     pfr = PointerFieldReverser()
     context = pfr.reverse(context)
-    # graph pointer relations between structures
-    ptrgraph = PointerGraphReverser()
-    context = ptrgraph.reverse(context)
 
     log.info('[+] saving headers')
     save_headers(context)
