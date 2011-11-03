@@ -316,11 +316,12 @@ class PointerGraphReverser(StructureOrientedReverser):
     import networkx
     graph = networkx.Graph()
     graph.add_nodes_from(context.structures.values())
-    log.info('[+] Graphing pointer relation - %d nodes'%(graph.number_of_nodes()))
+    log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
     for struct in context.structures.values():
-      graph.add_edges_from(struct, set((struct,child.struct) for child in struct.getPointerFields()) )
-    log.info('[+] Graphing pointer relation - %d edges'%(graph.number_of_edges()))
+      graph.add_edges_from(struct, set((struct,child.target_struct) for child in struct.getPointerFields()) )
+    log.info('[+] Graph - added %d edges'%(graph.number_of_edges()))
     networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
+    context.parsed.add(str(self))
     return
 
 
@@ -354,6 +355,9 @@ def search(opts):
     # find basic boundaries
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
+    # identify pointer relation between structures
+    pfr = PointerFieldReverser()
+    context = pfr.reverse(context)
     # graph pointer relations between structures
     ptrgraph = PointerGraphReverser()
     context = ptrgraph.reverse(context)
@@ -362,9 +366,6 @@ def search(opts):
     # DEBUG reactivate, 
     fr = FieldReverser()
     context = fr.reverse(context)
-    # identify pointer relation between structures
-    pfr = PointerFieldReverser()
-    context = pfr.reverse(context)
 
     log.info('[+] saving headers')
     save_headers(context)
