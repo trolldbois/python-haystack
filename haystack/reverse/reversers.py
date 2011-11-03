@@ -165,20 +165,21 @@ class StructureOrientedReverser():
     log.info('\t[-] please wait while I am saving the context')
     # save context with cache
     ctx.save()
+    return 
+
+  def _saveStructures(self,ctx):
     tl = time.time()
     # dump all structures
-    #for i,s in enumerate(ctx.structures.values()):
-    #  print s.dirty
-    #  s.save()
-    #  if time.time()-tl > 30: #i>0 and i%10000 == 0:
-    #    tl = time.time()
-    #    log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
-    # save mem2py headers file
-    #save_headers(ctx)
+    for i,s in enumerate(ctx.structures.values()):
+      #  print s.dirty
+      s.save()
+      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+        tl = time.time()
+        log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
     tf = time.time()
     log.info('\t[.] saved in %2.2f secs'%(tf-t0))
-    return 
-  
+    return
+      
   def __str__(self):
     return '<%s>'%(self.__class__.__name__)
   
@@ -214,7 +215,7 @@ class PointerReverser(StructureOrientedReverser):
         # save the ref/struct type
         mystruct = structure.makeStructure(context, ptr_value, size)
         context.structures[ ptr_value ] = mystruct
-        mystruct.save()
+        #mystruct.save()
         # get pointers addrs in start -> start+size
         for p_addr in my_pointers_addrs:
           f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
@@ -255,14 +256,13 @@ class FieldReverser(StructureOrientedReverser):
         else:
           decoded+=1
           anon.decodeFields()
-          # get the non cached version
-          context.structures[ptr_value].save()
+          #context.structures[ptr_value].save()
       except EOFError,e:
         log.error('incomplete unpickling')
         raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
+        rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     
@@ -292,13 +292,13 @@ class PointerFieldReverser(StructureOrientedReverser):
             log.error('damned, no mappings in %x'%(ptr_value))
             anon.obj.mappings = context.mappings
           anon.resolvePointers(context.structures_addresses, context.structures)
-          context.structures[ptr_value].save()
+          #context.structures[ptr_value].save()
       except EOFError,e:
-        log.error('incomplete unpickling')
-        raise e
+        #raise e
+        pass
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
-        rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
+        rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
@@ -316,7 +316,13 @@ class PointerGraphReverser(StructureOrientedReverser):
     graph.add_nodes_from(context.structures.values())
     log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
     for struct in context.structures.values():
-      graph.add_edges_from(struct, set((struct,child.target_struct) for child in struct.getPointerFields()) )
+      targets = set((struct,child.target_struct) for child in struct.getPointerFields())
+      ## DEBUG
+      if len(struct.getPointerFields()) >0:
+        if len(targets) == 0:
+          raise ValueError
+      ## DEBUG
+      graph.add_edges_from(struct, targets )
     log.info('[+] Graph - added %d edges'%(graph.number_of_edges()))
     networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
     context.parsed.add(str(self))
@@ -359,7 +365,10 @@ def search(opts):
     # graph pointer relations between structures
     ptrgraph = PointerGraphReverser()
     context = ptrgraph.reverse(context)
-
+    
+    ptrgraph._saveStructures()
+    return
+    
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()

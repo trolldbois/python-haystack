@@ -92,31 +92,41 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     self.obj = None
     
   def __getattr__(self,*args):
+    #print '__getattr__', args
     if self.obj is None:  # 
       p = self._load()
       #CacheWrapper.refs[self] = p # this is mostly free of charge now
       #self.obj = weakref.proxy(p)
       self.obj = p
-    try:
-      return getattr(self.obj,*args)
-    except ReferenceError,e:
-      p = self._load()
-      #CacheWrapper.refs[self] = p
-      #self.obj = weakref.proxy(p)
-      self.obj = p
-      return getattr(self.obj,*args)
+    return getattr(self.obj,*args)
+    #try:
+    #  return getattr(self.obj,*args)
+    #except ReferenceError,e:
+    #  p = self._load()
+    #  #CacheWrapper.refs[self] = p
+    #  #self.obj = weakref.proxy(p)
+    #  self.obj = p
+    #  return getattr(self.obj,*args)
       
   def _load(self):
     try:
       p = pickle.load(file(self.fname,'r'))
+      if not isinstance(p, AnonymousStructInstance):
+        raise EOFError('not a AnonymousStructInstance in cache.')
     except EOFError,e:
-      log.warning(' %s does not haz a complete pickle'%(self.fname))
+      log.error(' %s does not haz a complete pickle - DELETE - please clean cache'%(self.fname))
       os.remove(self.fname)
       raise e
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
     p.dirty = False
     return p
+
+  def save(self):
+    if self.obj is None:
+      return 
+    self.obj.save()
+    
   def __hash__(self):
     return hash(self.addr)
   def __cmp__(self, other):
