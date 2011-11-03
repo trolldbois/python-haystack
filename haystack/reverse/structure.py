@@ -368,6 +368,7 @@ class AnonymousStructInstance():
       if field.value in structs_addrs: 
         known+=1
         tgt = structCache[field.value]
+        field.target_struct = tgt
         if not tgt.resolved: # fields have not been decoded yet
           undecoded+=1
           log.debug('target %s is undecoded'%(tgt))
@@ -377,7 +378,8 @@ class AnonymousStructInstance():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
         inHeap+=1
-        tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
+        tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
+        field.target_struct = tgt_struct
         if tgt_field is not None:
           field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
@@ -390,6 +392,7 @@ class AnonymousStructInstance():
         inMappings+=1
         tgt = 'ext_lib'
         field._ptr_to_ext_lib = True
+        field.target_struct = self.mappings.getMmapForAddr(field.value)
         pass
       #
       if tgt is not None:
@@ -412,13 +415,14 @@ class AnonymousStructInstance():
     ## TODO DEBUG, i got gaps in my memory mappings structures
     #  AnonStruct_skype.1.a_add16e8 -> AnonStruct_skype.1.a_add173c
     if len(structs_addrs) == 0:
-      return None
+      raise TypeError
+      #return None
     nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
     log.debug('nearest_addr:%x ind:%d'%(nearest_addr, ind))
+    tgt_st = structCache[nearest_addr]
     if field.value%Config.WORDSIZE != 0:
       # non aligned, nothing could match
-      return None
-    tgt_st = structCache[nearest_addr]
+      return tgt_st, None
     log.debug('tgt_st %s'%tgt_st)
     if field.value in tgt_st:
       offset = field.value - nearest_addr
@@ -426,9 +430,9 @@ class AnonymousStructInstance():
         if f.offset == offset:
           tgt_field = f
           log.debug('Found %s'%f)
-          return tgt_field
-    log.debug('nothing found')
-    return None
+          return tgt_st, tgt_field
+    log.debug('no field found')
+    return tgt_st, None
   
   def _aggregateFields(self):
     if not self.pointerResolved:

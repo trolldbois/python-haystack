@@ -281,7 +281,6 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
-    deleted = 0
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
       try:
@@ -302,7 +301,6 @@ class PointerFieldReverser(StructureOrientedReverser):
         rate = ((tl-t0)/(decoded)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
-        log.info('deleted:%d'%(deleted))
     log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     context.parsed.add(str(self))
     return
