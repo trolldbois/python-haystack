@@ -28,6 +28,7 @@ class ConfigClass():
     self.CACHE_HEAP_ADDRS = '.heap.pointers.addrs'
     self.CACHE_STRUCTURES = '.structures'
     self.CACHE_CONTEXT = '.ctx'
+    self.CACHE_GRAPH = '.gexf'
   
   ''' 
   @param typ: one of Config.CACHE_XX types'''
