@@ -109,14 +109,15 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     #  return getattr(self.obj,*args)
       
   def _load(self):
-    try:
-      p = pickle.load(file(self.fname,'r'))
-      if not isinstance(p, AnonymousStructInstance):
-        raise EOFError('not a AnonymousStructInstance in cache.')
-    except EOFError,e:
-      log.error(' %s does not haz a complete pickle - DELETE - please clean cache'%(self.fname))
-      os.remove(self.fname)
-      raise e
+    if self.obj is not None:  # 
+      return self.obj
+    p = pickle.load(file(self.fname,'r'))
+    if not isinstance(p, AnonymousStructInstance):
+      raise EOFError('not a AnonymousStructInstance in cache.')
+    #except EOFError,e:
+    #  log.error(' %s does not haz a complete pickle - DELETE - please clean cache'%(self.fname))
+    #  os.remove(self.fname)
+    #  raise e
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
     p.dirty = False
@@ -126,6 +127,13 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     if self.obj is None:
       return 
     self.obj.save()
+
+  def __setstate__(self,d):
+    log.error('setstate %s'%d)
+    raise TypeError
+  def __getstate__(self):
+    log.error('getstate %s'%self.__dict__)
+    raise TypeError
     
   def __hash__(self):
     return hash(self.addr)
@@ -202,7 +210,7 @@ class AnonymousStructInstance():
     self.fields.sort()
     return field
   
-  def save(self):
+  def saveme(self):
     if not self.dirty:
       return
     self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
@@ -378,7 +386,8 @@ class AnonymousStructInstance():
       if field.value in structs_addrs: 
         known+=1
         tgt = structCache[field.value]
-        field.target_struct = tgt
+        field.target_struct = field.value
+        #field.target_struct = tgt
         if not tgt.resolved: # fields have not been decoded yet
           undecoded+=1
           log.debug('target %s is undecoded'%(tgt))
@@ -389,7 +398,7 @@ class AnonymousStructInstance():
         # set pointer type to char_p
         inHeap+=1
         tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
-        field.target_struct = tgt_struct
+        field.target_struct = tgt_struct.vaddr
         if tgt_field is not None:
           field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
@@ -402,7 +411,7 @@ class AnonymousStructInstance():
         inMappings+=1
         tgt = 'ext_lib'
         field._ptr_to_ext_lib = True
-        field.target_struct = self.mappings.getMmapForAddr(field.value)
+        field.target_struct = self.mappings.getMmapForAddr(field.value).start
         pass
       #
       if tgt is not None:
@@ -873,7 +882,7 @@ class %s(LoadableMembers):  # %s
 
   def __cmp__(self, other):
     if not isinstance(other, AnonymousStructInstance):
-      raise TypeError
+      return -1
     return cmp(self.vaddr, other.vaddr)
 
   def __getstate__(self):
@@ -881,8 +890,8 @@ class %s(LoadableMembers):  # %s
     try:
       d['dumpname'] = os.path.normpath(self.mappings.name)
     except AttributeError,e:
-      log.error('no mappings %s \n %s %x'%(d, self.__class__, self.vaddr))
-      raise e
+      log.error('no mappings name in %s \n %s %x'%(d, self.__class__, self.vaddr))
+      d['dumpname'] = None
     del d['mappings']
     del d['bytes']
     d['mappings'] = None

@@ -391,8 +391,8 @@ class Field:
 
   def __cmp__(self, other):
     # XXX : Perf... cmp with other type should raise a type error the dev head...
-    #if not isinstance(other, Field):
-    #  raise TypeError
+    if not isinstance(other, Field):
+      return -1
     return cmp((self.offset, self.size, self.typename), (other.offset, other.size, other.typename))
 
   def __len__(self):

@@ -63,6 +63,7 @@ class ReverserContext():
     self.pointers_offsets = ptr_offsets
     
     log.info('[+] Fetching cached structures list')
+    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self) ])
     self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
     return
@@ -172,7 +173,11 @@ class StructureOrientedReverser():
     # dump all structures
     for i,s in enumerate(ctx.structures.values()):
       #  print s.dirty
-      s.save()
+      try:
+        s.saveme()
+      except KeyboardInterrupt,e:
+        os.remove(s.fname)
+        raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
@@ -283,6 +288,7 @@ class PointerFieldReverser(StructureOrientedReverser):
     fromcache = 0
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
+      #anon = anon._load()
       try:
         if anon.pointerResolved:
           fromcache+=1
@@ -292,11 +298,15 @@ class PointerFieldReverser(StructureOrientedReverser):
             log.error('damned, no mappings in %x'%(ptr_value))
             anon.obj.mappings = context.mappings
           anon.resolvePointers(context.structures_addresses, context.structures)
-          #context.structures[ptr_value].save()
+          anon.saveme()
       except EOFError,e:
         #raise e
         pass
-      if time.time()-tl > 30: #i>0 and i%10000 == 0:
+      except TypeError,e:
+        print 'choked on ',anon.__class__
+        raise e
+        pass
+      if time.time()-tl > 30: 
         tl = time.time()
         rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
@@ -315,21 +325,47 @@ class PointerGraphReverser(StructureOrientedReverser):
     graph = networkx.Graph()
     graph.add_nodes_from(context.structures.values())
     log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
-    for struct in context.structures.values():
-      targets = set((struct,child.target_struct) for child in struct.getPointerFields())
+    t0 = time.time()
+    tl = t0
+    for i, ptr_value in enumerate(sorted(context.structures.keys())):
+      struct = context.structures[ptr_value]
+      targets = set((struct, child.target_struct) for child in struct.getPointerFields())
       ## DEBUG
       if len(struct.getPointerFields()) >0:
         if len(targets) == 0:
           raise ValueError
       ## DEBUG
-      graph.add_edges_from(struct, targets )
+      graph.add_edges_from( (struct, target ) for target in targets )
+      if time.time()-tl > 30: 
+        tl = time.time()
+        rate = ((tl-t0)/(i)) #if decoded else ((tl-t0)/(fromcache))
+        log.info('%2.2f secondes to go (g:%d)'%( 
+            (len(context.structures)-(i))*rate, i ) )
     log.info('[+] Graph - added %d edges'%(graph.number_of_edges()))
     networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
     context.parsed.add(str(self))
     return
 
 
+def refreshOne(context, ptr_value):
+  aligned=context.structures_addresses
+  
+  lengths=[(aligned[i+1]-aligned[i]) for i in range(len(aligned)-1)]    
+  lengths.append(context.heap.end-aligned[-1]) # add tail
+  size = lengths[aligned.index(ptr_value)]
 
+  offsets = list(context.pointers_offsets)
+  offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
+  # save the ref/struct type
+  mystruct = structure.makeStructure(context, ptr_value, size)
+  context.structures[ ptr_value ] = mystruct
+  for p_addr in my_pointers_addrs:
+    f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+  #resolvePointers
+  mystruct.resolvePointers(context.structures_addresses, context.structures)
+  #resolvePointers
+  return mystruct
+  
 def save_headers(context):
   ''' structs_addrs is sorted '''
   fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
@@ -366,7 +402,7 @@ def search(opts):
     ptrgraph = PointerGraphReverser()
     context = ptrgraph.reverse(context)
     
-    ptrgraph._saveStructures()
+    #ptrgraph._saveStructures(context)
     return
     
     # decode bytes contents to find basic types.
