@@ -322,20 +322,22 @@ class PointerGraphReverser(StructureOrientedReverser):
   
   def _reverse(self, context):
     import networkx
+    import code
+    code.interact(local=locals())
     graph = networkx.Graph()
-    graph.add_nodes_from(context.structures.values())
+    graph.add_nodes_from(context.structures.keys()) # we only need the addresses...
     log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
     t0 = time.time()
     tl = t0
-    for i, ptr_value in enumerate(sorted(context.structures.keys())):
-      struct = context.structures[ptr_value]
-      targets = set((struct, child.target_struct) for child in struct.getPointerFields())
+    for i, item in enumerate(sorted(context.structures.items())):
+      ptr_value, struct = item
+      targets = set((ptr_value, child.target_struct_addr) for child in struct.getPointerFields()) #target_struct_addr
       ## DEBUG
       if len(struct.getPointerFields()) >0:
         if len(targets) == 0:
           raise ValueError
       ## DEBUG
-      graph.add_edges_from( (struct, target ) for target in targets )
+      graph.add_edges_from( targets )
       if time.time()-tl > 30: 
         tl = time.time()
         rate = ((tl-t0)/(i)) #if decoded else ((tl-t0)/(fromcache))
@@ -383,15 +385,20 @@ def save_headers(context):
   fout.close()
   return
 
+
+def getContext(fname):
+  mappings = memory_dumper.load( file(fname), lazy=True)  
+  try:
+    context = ReverserContext.cacheLoad(mappings)
+  except IOError,e:
+    context = ReverserContext(mappings, mappings.getHeap())  
+  return context
+
 def search(opts):
   #
   log.info('[+] Loading the memory dump ')
-  mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
   try:
-    try:
-      context = ReverserContext.cacheLoad(mappings)
-    except IOError,e:
-      context = ReverserContext(mappings, mappings.getHeap())  
+    context = getContext(opts.dumpfile.name)
     # find basic boundaries
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)

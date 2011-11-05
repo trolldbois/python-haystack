@@ -386,8 +386,7 @@ class AnonymousStructInstance():
       if field.value in structs_addrs: 
         known+=1
         tgt = structCache[field.value]
-        field.target_struct = field.value
-        #field.target_struct = tgt
+        field.target_struct_addr = field.value
         if not tgt.resolved: # fields have not been decoded yet
           undecoded+=1
           log.debug('target %s is undecoded'%(tgt))
@@ -398,7 +397,7 @@ class AnonymousStructInstance():
         # set pointer type to char_p
         inHeap+=1
         tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
-        field.target_struct = tgt_struct.vaddr
+        field.target_struct_addr = tgt_struct.vaddr
         if tgt_field is not None:
           field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
@@ -411,7 +410,7 @@ class AnonymousStructInstance():
         inMappings+=1
         tgt = 'ext_lib'
         field._ptr_to_ext_lib = True
-        field.target_struct = self.mappings.getMmapForAddr(field.value).start
+        field.target_struct_addr = self.mappings.getMmapForAddr(field.value).start
         pass
       #
       if tgt is not None:
