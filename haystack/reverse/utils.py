@@ -196,7 +196,7 @@ def nextStructure(context, struct):
   val = context.structures_addresses[ind+1]
   if val not in context.structures:
     return None
-  if struct.vadd+len(struct) != val:
+  if struct.vaddr+len(struct) != val:
     print '*** WARNING nextStruct is not concurrent to struct'
   return context.structures[val]
 
