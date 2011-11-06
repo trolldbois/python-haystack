@@ -28,7 +28,7 @@ def depthSubgraph(source, target, nodes, depth):
   return 
 
 def make(opts):
-fname = opts.gexf
+  fname = opts.gexf
 
 import reversers
 from reversers import *  # by the pickle of my thumb
@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
 
 # clean solos
-isolates = networkx.algorithms.isolate.isolates(graph)
+isolates = networkx.algorithms.isolate.isolates(digraph)
 digraph.remove_nodes_from(isolates)
 
 # clean solos clusters
@@ -109,31 +109,32 @@ orig = list(set(graph.nodes()) & stack_addrs_txt)
 print 'stacknodes orig',len(orig)
 
 # identify strongly referenced structures
-degreesDict = bigGraph.in_degree(bigGraph.nodes())
-degreesList = [ (in_degree,node)  for node, in_degree in degreesDict.items() ]
+degreesList = [ (bigGraph.in_degree(node),node)  for node in bigGraph.nodes() ]
 degreesList.sort(reverse=True)
 
 ##### important struct
-import structure
-nb, saddr = degreesList[0]
-s1 = structure.cacheLoad(context, int(saddr,16))
-s1.decodeFields()
-print s1.toString()
-
-impDiGraph = networkx.DiGraph()
-depthSubgraph(bigGraph, impDiGraph, [saddr], 1 )
-print 'important struct with %d in_degree'%nb
-fname = os.path.sep.join([config.Config.imgCacheDir, 'important_%s.png'%(saddr) ] )
-networkx.draw(impDiGraph)
-plt.savefig(fname)
-plt.clf()
-
-for node in impDiGraph.neighbors(saddr):
-  st = structure.cacheLoad(context, int(node[:-1],16)) ## XXX change to -L
-  st.decodeFields()
-  st.pointerResolved=True
-  st._aggregateFields()
-  print st.getSignature(text=True)
+def printImportant(ind):
+  import structure
+  nb, saddr = degreesList[ind]
+  addr = int(saddr,16)
+  s1 = context.structures[addr] #structure.cacheLoad(context, int(saddr,16))
+  s1.decodeFields()
+  print s1.toString()
+  #
+  impDiGraph = networkx.DiGraph()
+  depthSubgraph(bigGraph, impDiGraph, [saddr], 1 )
+  print 'important struct with %d structs pointing to it, %d pointerFields'%(digraph.in_degree(saddr), digraph.out_degree(saddr))
+  fname = os.path.sep.join([config.Config.imgCacheDir, 'important_%s.png'%(saddr) ] )
+  networkx.draw(impDiGraph)
+  plt.savefig(fname)
+  plt.clf()
+  #
+  for node in impDiGraph.neighbors(saddr):
+    st = context.structures[int(node,16)]
+    st.decodeFields()
+    st.pointerResolved=True
+    st._aggregateFields()
+    print st.getSignature(text=True)
 
 
 #s1._aggregateFields()
