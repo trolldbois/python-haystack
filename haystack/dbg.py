@@ -4,6 +4,13 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import ctypes
+if hasattr(ctypes, 'original_c_char_p'):
+  #model is already active, ptrace is not loaded, need to go back to original c_char_p before ptrace loads
+  ctypes.__haystack_c_char_p = ctypes.c_char_p
+  ctypes.c_char_p = ctypes.original_c_char_p
+  #print 'dbg before ptrace loading', ctypes.c_char_p
+
 import platform
 if platform.system() != 'Windows':
   # ptrace debugguer
@@ -194,3 +201,12 @@ else:
       return u"0x%08x" % addr
     else:
       return u"0x%016x" % addr
+
+
+if hasattr(ctypes, '__haystack_c_char_p'):
+  #model is already active, ptrace is not loaded, die biatch !
+  ctypes.c_char_p = ctypes.__haystack_c_char_p
+  del ctypes.__haystack_c_char_p #= ctypes.c_char_p
+  #print 'dbg after ptrace loading', ctypes.c_char_p
+
+

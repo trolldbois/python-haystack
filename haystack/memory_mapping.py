@@ -1,5 +1,6 @@
 
 
+
 import os
 import logging
 import re
@@ -201,8 +202,8 @@ class ProcessMemoryMapping(MemoryMapping):
   def mmap(self):
     ''' mmap-ed access gives a 20% perf increase on by tests '''
     if not self.isMmaped():
+      self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
       self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
-      #self._local_mmap = self._process().read(self.start, self.end-self.start)
       self._local_mmap = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
       self._base = self._local_mmap
     return self._local_mmap
