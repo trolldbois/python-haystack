@@ -19,7 +19,8 @@ from haystack.config import Config
 #import haystack.reverse.structure as structure
 sys.path.append('../haystack/reverse/')
 import structure
-from haystack.utils import SharedBytes
+#from haystack.reverse.utils import SharedBytes
+SharedBytes=str
 
 class TestStructure(unittest.TestCase):
 
