@@ -15,6 +15,18 @@ from collections import defaultdict
 from haystack import config
 from haystack.reverse import utils
 
+
+# extract graph 
+def depthSubgraph(source, target, nodes, depth):
+  if depth == 0:
+    return
+  depth-=1
+  for node in nodes:
+    neighbors = source.neighbors(node)
+    target.add_edges_from( source.edges(node) )
+    depthSubgraph(source, target, neighbors, depth)
+  return 
+
 def make(opts):
 fname = opts.gexf
 
@@ -26,22 +38,25 @@ import networkx
 import matplotlib.pyplot as plt
 
 digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
-#dg = graph.to_directed()
-graph = digraph.to_undirected()
 
+# clean solos
 isolates = networkx.algorithms.isolate.isolates(graph)
-graph.remove_nodes_from(isolates)
+digraph.remove_nodes_from(isolates)
+
+# clean solos clusters
+graph = digraph.to_undirected()
 subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
 isolates1 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 1) ) # self connected
 isolates2 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 2) ) 
 isolates3 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 3) ) 
+digraph.remove_nodes_from(isolates1)
+digraph.remove_nodes_from(isolates2)
+digraph.remove_nodes_from(isolates3)
 
-graph.remove_nodes_from(isolates1)
-graph.remove_nodes_from(isolates2)
-graph.remove_nodes_from(isolates3)
-
-subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
-
+#
+#graph = digraph.to_undirected()
+#subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
+subgraphs = [g for g in subgraphs if len(g)>3]
 isolatedGraphs = subgraphs[1:100]
 
 
@@ -61,7 +76,7 @@ for numNodes, graphs in isoDict.items():
   for i,g1 in enumerate(graphs):
     for g2 in graphs[i+1:]:
       if networkx.is_isomorphic(g1, g2):
-        print 'numNodes ', numNodes, 'graphs',g1,g2, ' isomorphic'
+        print 'numNodes:%d graphs %d, %d are isomorphic'%(numNodes, i, i+1)
         isoGraph.add_edge(g1,g2, {'isomorphic':True})
         if g2 in todo:  todo.remove(g2) 
         if g1 in todo:  todo.remove(g1) 
@@ -73,58 +88,58 @@ for numNodes, graphs in isoDict.items():
 # draw the isomorphisms
 for i,item in enumerate(isoGraphs.items()):
   num,g = item
-  networkx.draw(g)
-  #for rg in g.nodes():
-  #  networkx.draw(rg)
+  #networkx.draw(g)
+  for rg in g.nodes():
+    networkx.draw(rg)
   fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
   plt.savefig(fname)
   plt.clf()
 # need to use gephi-like for rendering nicely on the same pic
 
 
+bigGraph = networkx.DiGraph()
+bigGraph.add_edges_from( subgraphs[0].edges() )
+
 stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
-stack_addrs_txt = set([hex(addr) for addr in stack_addrs])
-bigGraph = subgraphs[0]
+stack_addrs_txt = set(['%x'%(addr) for addr in stack_addrs]) # new, no long
+
 stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
 print 'stacknodes left',len(stacknodes)
 orig = list(set(graph.nodes()) & stack_addrs_txt)
 print 'stacknodes orig',len(orig)
 
 # identify strongly referenced structures
-dbigGraph = bigGraph.to_directed()
-degreesDict = dbigGraph.in_degree(dbigGraph.nodes())
+degreesDict = bigGraph.in_degree(bigGraph.nodes())
 degreesList = [ (in_degree,node)  for node, in_degree in degreesDict.items() ]
 degreesList.sort(reverse=True)
 
-# extract graph 
-def depthSubgraph(source, target, nodes, depth):
-  if depth == 0:
-    return
-  depth-=1
-  for node in nodes:
-    neighbors = source.neighbors(node)
-    target.add_edges_from( source.edges(node) )
-    depthSubgraph(source, target, neighbors, depth)
-  return 
-
-newDiGraph = networkx.DiGraph()
-depthSubgraph(dbigGraph, newDiGraph, [stacknodes[0]], 3 )
-
-
+##### important struct
 import structure
-s1 = structure.cacheLoad(context, int(degreesList[0][1]) )
+nb, saddr = degreesList[0]
+s1 = structure.cacheLoad(context, int(saddr,16))
 s1.decodeFields()
 print s1.toString()
 
-s2 = structure.cacheLoad(context, 189651400 )
-s2.decodeFields()
-s2._aggregateFields()
+impDiGraph = networkx.DiGraph()
+depthSubgraph(bigGraph, impDiGraph, [saddr], 1 )
+print 'important struct with %d in_degree'%nb
+fname = os.path.sep.join([config.Config.imgCacheDir, 'important_%s.png'%(saddr) ] )
+networkx.draw(impDiGraph)
+plt.savefig(fname)
+plt.clf()
 
-s2b = utils.nextStructure(context, s2)
+for node in impDiGraph.neighbors(saddr):
+  st = structure.cacheLoad(context, int(node[:-1],16)) ## XXX change to -L
+  st.decodeFields()
+  st.pointerResolved=True
+  st._aggregateFields()
+  print st.getSignature(text=True)
+
+
+#s1._aggregateFields()
+
+s2 = utils.nextStructure(context, s1)
 #s2b should start with \x00's
-
-
-s4 = structure.cacheLoad(context, 0xb4e1404)
 
 
 
@@ -188,7 +203,7 @@ if False: # not that interesting
 
 
 # draw the figs
-for i,g in enumerate(subgraphs[1:100]):
+for i,g in enumerate(isolatedGraphs):
   networkx.draw(g.to_directed())
   fname = os.path.sep.join([config.Config.imgCacheDir, 'subgraph_%d.png'%(i) ] )
   plt.savefig(fname)
