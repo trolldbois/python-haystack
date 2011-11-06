@@ -94,7 +94,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
   patterns.sort()  # the fitness attribute is (length of pattern, indice, nb of repetition, pattern repeted)
   best = patterns[-1] # higher wins
 
-  print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
+  #print 'BEST:', best, best[0], best[3][:elSize], best[3][elSize:]
   #print 'found new patterns :'
   #for p in patterns:
   #  sequence2 = sequence.replace( p[3]*p[2], ' (%s){%d} '%(p[3],p[2]) )
