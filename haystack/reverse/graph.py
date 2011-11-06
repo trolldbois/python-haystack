@@ -134,7 +134,13 @@ def printImportant(ind):
     st.decodeFields()
     st.pointerResolved=True
     st._aggregateFields()
-    print st.getSignature(text=True)
+    print node, st.getSignature(text=True)
+
+
+printImportant(0) # la structure la plus utilisee.
+
+
+
 
 
 #s1._aggregateFields()
