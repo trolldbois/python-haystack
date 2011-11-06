@@ -63,6 +63,7 @@ class FieldTypeStruct(FieldType):
   def __init__(self, name, fields):
     FieldType.__init__(self, 0x3, 'struct', name, 'K', isPtr=False)
     self.size = sum([len(f) for f in fields])
+    self.elements = fields
 
   def setStruct(self, struct):
     self._struct = struct
