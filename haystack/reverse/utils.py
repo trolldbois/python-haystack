@@ -10,6 +10,7 @@ This module holds some basic utils function.
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import itertools
 import logging
 import numpy
 import os
@@ -83,26 +84,29 @@ def getHeapPointers(dumpfilename, mappings):
   import signature
   
   F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
-  F_ADDRS = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
+  F_HEAP = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
+  F_STACK = Config.getCacheFilename(Config.CACHE_STACK_VALUES, dumpfilename)
   log.debug('reading from %s'%(F_VALUES))
   values = int_array_cache(F_VALUES)
-  heap_addrs = int_array_cache(F_ADDRS)
+  heap_addrs = int_array_cache(F_HEAP)
+  stack_addrs = int_array_cache(F_STACK)
   if values is None or heap_addrs is None:
     log.info('Making new cache')
     log.info('getting pointers values from stack ')
     stack_enumerator = signature.PointerEnumerator(mappings.getStack())
     stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
     stack_enum = stack_enumerator.search()
-    stack_addrs, stack_values = zip(*stack_enum)
+    stack_offsets, stack_values = zip(*stack_enum)
     log.info('  got %d pointers '%(len(stack_enum)) )
     log.info('Merging pointers from heap')
     heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
-    heap_addrs, heap_values = zip(*heap_enum)
+    heap_addrs, heap_values = zip(*heap_enum) # TODO change to offsets
     log.info('  got %d pointers '%(len(heap_enum)) )
     # merge
     values = sorted(set(heap_values+stack_values))
     int_array_save(F_VALUES , values)
-    int_array_save(F_ADDRS, heap_addrs)
+    int_array_save(F_HEAP, heap_addrs)
+    int_array_save(F_STACK, stack_values)
     log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
     log.info('[+] Loading from cache')
@@ -162,11 +166,13 @@ class SharedBytes():
     return  self.src[self.start+i]
 
   def __getattribute__(self, *args):
-    log.debug( '__getattribute__ %s'%args0)
-    return self.src[self.start:self.end].__getattribute__(*args)
+    log.debug( '__getattribute__ %d %s'%(id(self), args))
+    if len(args) == 1 and args[0] == 'src':
+      return getattr(self, 'src')
+    return self.src[self.start:self.end]#.__getattribute__(*args)
 
   def __getattr__(self, *args):
-    log.debug('__getattr__ %s'%args)
+    log.debug('__getattr__ %d %s'%(id(self), args))
     return getattr(self.src[self.start:self.end], *args)
   
   def __setstate__(self, d):
@@ -183,4 +189,25 @@ class SharedBytes():
 
   def __iter__(self):
     return iter(self.src[self.start:self.end])
+
+
+def nextStructure(context, struct):
+  ind = context.structures_addresses.index(struct.vaddr)
+  val = context.structures_addresses[ind+1]
+  if val not in context.structures:
+    return None
+  if struct.vadd+len(struct) != val:
+    print '*** WARNING nextStruct is not concurrent to struct'
+  return context.structures[val]
+
+
+def printNext(ctx, s):
+  s2 = nextStructure(ctx, s)
+  s2.decodeFields()
+  print s2.toString()
+  return s2
+
+def flatten(listOfLists):
+  return itertools.chain.from_iterable(listOfLists)
+
 
