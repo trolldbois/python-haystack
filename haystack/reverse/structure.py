@@ -318,7 +318,7 @@ class AnonymousStructInstance():
       self.resolved = True
     if len(overlaps)>0:
       log.info('fixGaps: overlapping fields to fix %s %s'%(self, overlaps))
-      #self._fixOverlaps()
+      self._fixOverlaps()
       #print (self.toString())
     self.fields.sort()
     return
