@@ -44,7 +44,7 @@ isolates = networkx.algorithms.isolate.isolates(digraph)
 digraph.remove_nodes_from(isolates)
 
 # clean solos clusters
-graph = digraph.to_undirected()
+graph = networkx.Graph(digraph) #undirected
 subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
 isolates1 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 1) ) # self connected
 isolates2 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 2) ) 
@@ -98,7 +98,7 @@ for i,item in enumerate(isoGraphs.items()):
 
 
 bigGraph = networkx.DiGraph()
-bigGraph.add_edges_from( subgraphs[0].edges() )
+bigGraph.add_edges_from( digraph.edges( subgraphs[0].nodes() ) )
 
 stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
 stack_addrs_txt = set(['%x'%(addr) for addr in stack_addrs]) # new, no long
@@ -117,7 +117,7 @@ def printImportant(ind):
   import structure
   nb, saddr = degreesList[ind]
   addr = int(saddr,16)
-  s1 = context.structures[addr] #structure.cacheLoad(context, int(saddr,16))
+  s1 = context.structures[addr]._load() #structure.cacheLoad(context, int(saddr,16))
   s1.decodeFields()
   print s1.toString()
   #
@@ -130,7 +130,7 @@ def printImportant(ind):
   plt.clf()
   #
   for node in impDiGraph.neighbors(saddr):
-    st = context.structures[int(node,16)]
+    st = context.structures[int(node,16)]._load()
     st.decodeFields()
     st.pointerResolved=True
     st._aggregateFields()
