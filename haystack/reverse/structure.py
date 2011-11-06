@@ -297,7 +297,7 @@ class AnonymousStructInstance():
     self._gaps = 0
     overlaps = set()
     self.fields = [ f for f in self.fields if f.padding != True ] # clean paddings to check new fields
-    myfields = sorted(self.fields)
+    myfields = list(self.fields) # DEBUG XXX already sorted.
     for f in myfields:
       if f.offset > nextoffset : # add temp padding field
         self._gaps += 1
