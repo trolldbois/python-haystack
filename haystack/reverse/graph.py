@@ -8,6 +8,7 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import argparse
 import logging
+import os
 import sys
 from collections import defaultdict
 
@@ -15,7 +16,13 @@ from haystack.reverse import utils
 
 def make(opts):
 fname = opts.gexf
+
+import reversers
+context = reversers.getContext('../../outputs/skype.1.a')
+
 import networkx
+import matplotlib.pyplot as plt
+
 graph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
 #dg = graph.to_directed()
 
@@ -63,12 +70,81 @@ for numNodes, graphs in isoDict.items():
 # draw the isomorphisms
 for i,item in enumerate(isoGraphs.items()):
   num,g = item
-  for rg in g.nodes():
-    networkx.draw(rg)
+  networkx.draw(g)
+  #for rg in g.nodes():
+  #  networkx.draw(rg)
   fname = os.path.sep.join([Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
   plt.savefig(fname)
   plt.clf()
-# neef to use gephi-like for rendering nicely on the same pic
+# need to use gephi-like for rendering nicely on the same pic
+
+
+stack_addrs = utils.int_array_cache( Config.getCacheFilename(Config.CACHE_STACK_ADDRS, context.dumpname)) 
+stack_addrs_txt = set([str(addr) for addr in stack_addrs])
+bigGraph = subgraphs[0]
+stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
+print 'stacknodes left',len(stacknodes)
+orig = list(set(graph.nodes()) & stack_addrs_txt)
+print 'stacknodes orig',len(orig)
+
+newgraph = bigGraph.subgraph(stacknodes)
+newgraph.edges()
+
+fname = os.path.sep.join([Config.imgCacheDir, 'newgraph.png' ] )
+
+networkx.draw(newgraph.to_directed())
+
+pos=networkx.graphviz_layout(newgraph)
+networkx.draw_networkx_nodes(newgraph,pos)
+networkx.draw_networkx_edges(newgraph,pos)
+networkx.draw_networkx_labels(newgraph,pos, labels=labels)
+
+plt.savefig(fname)
+plt.clf()
+
+newgraph = networkx.algorithms.components.connected.connected_component_subgraphs(newgraph)[0]
+
+networkx.readwrite.gexf.write_gexf( newgraph, '../../outputs/skype.1.a.newgraph.gexf')
+
+networkx.draw(newgraph.to_directed())
+plt.savefig(fname)
+plt.clf()
+
+
+
+if False: # not that interesting
+  ### take isdoGraphs[5] , 5 structs chains, and print them
+  ind = 5
+  g5 = isoGraphs[ind]
+  g5subg = networkx.algorithms.components.connected.connected_component_subgraphs(g5)
+
+  for group in g5subg:
+    for structGraph in group.nodes():
+      for saddr in structGraph.nodes():
+        addr = int(saddr)
+        struct = context.structures[addr]
+        struct.decodeFields()
+        sig = struct.getSignature(text=True)
+        structGraph.node[saddr]['label'] = sig  # pretty tagging
+
+
+  # draw the isomorphisms
+  newgraph = networkx.Graph()
+  for rg in g5.nodes():
+    newgraph.add_nodes_from(rg.nodes(data=True))
+    newgraph.add_edges_from(rg.edges(data=True))
+
+  pos=networkx.graphviz_layout(newgraph)
+  #networkx.draw_networkx_nodes(newgraph,pos)
+  networkx.draw_networkx_edges(newgraph,pos)
+  labels = dict([ (l, d['label']) for l, d in newgraph.node.items() ])
+  networkx.draw_networkx_labels(newgraph,pos, labels=labels)
+  #networkx.draw(rg)
+
+  fname = os.path.sep.join([Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(ind) ] )
+  plt.savefig(fname)
+  plt.clf()
+
 
 # draw the figs
 for i,g in enumerate(subgraphs[1:100]):
