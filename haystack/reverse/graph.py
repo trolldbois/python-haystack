@@ -56,19 +56,6 @@ for numNodes, graphs in isoDict.items():
         if g2 in todo:  todo.remove(g2) 
         if g1 in todo:  todo.remove(g1) 
         break # we can stop here, chain comparaison will work between g2 and g3
-  # check non isomorphic between them
-  todo2 = set(todo)
-  for i,g1 in enumerate(todo):
-    for g2 in todo[i+1:]:
-      if networkx.is_isomorphic(g1, g2):
-        print 'todo numNodes ', numNodes, 'graphs',i,i+1, ' isomorphic'
-        isoGraph.add_edge(g1, g2, {'isomorphic':True})
-        todo2.remove(g2)
-        if g1 in todo:  todo2.remove(g1)
-        break # we can stop here, chain comparaison will work between g2 and g3
-  # check non isomorphic with already existing 
-  # last duplicate chance
-  todo2 = set(todo)
     
   if len(isoGraph) > 0:
     isoGraphs[numNodes] = isoGraph
