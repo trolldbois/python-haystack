@@ -12,6 +12,7 @@ import os
 import sys
 from collections import defaultdict
 
+from haystack import config
 from haystack.reverse import utils
 
 def make(opts):
@@ -24,8 +25,9 @@ context = reversers.getContext('../../outputs/skype.1.a')
 import networkx
 import matplotlib.pyplot as plt
 
-graph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
+digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
 #dg = graph.to_directed()
+graph = digraph.to_undirected()
 
 isolates = networkx.algorithms.isolate.isolates(graph)
 graph.remove_nodes_from(isolates)
@@ -74,14 +76,14 @@ for i,item in enumerate(isoGraphs.items()):
   networkx.draw(g)
   #for rg in g.nodes():
   #  networkx.draw(rg)
-  fname = os.path.sep.join([Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
+  fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
   plt.savefig(fname)
   plt.clf()
 # need to use gephi-like for rendering nicely on the same pic
 
 
-stack_addrs = utils.int_array_cache( Config.getCacheFilename(Config.CACHE_STACK_VALUES, context.dumpname)) 
-stack_addrs_txt = set([str(addr) for addr in stack_addrs])
+stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
+stack_addrs_txt = set([hex(addr) for addr in stack_addrs])
 bigGraph = subgraphs[0]
 stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
 print 'stacknodes left',len(stacknodes)
@@ -93,6 +95,20 @@ dbigGraph = bigGraph.to_directed()
 degreesDict = dbigGraph.in_degree(dbigGraph.nodes())
 degreesList = [ (in_degree,node)  for node, in_degree in degreesDict.items() ]
 degreesList.sort(reverse=True)
+
+# extract graph 
+def depthSubgraph(source, target, nodes, depth):
+  if depth == 0:
+    return
+  depth-=1
+  for node in nodes:
+    neighbors = source.neighbors(node)
+    target.add_edges_from( source.edges(node) )
+    depthSubgraph(source, target, neighbors, depth)
+  return 
+
+newDiGraph = networkx.DiGraph()
+depthSubgraph(dbigGraph, newDiGraph, [stacknodes[0]], 3 )
 
 
 import structure
@@ -108,10 +124,14 @@ s2b = utils.nextStructure(context, s2)
 #s2b should start with \x00's
 
 
+s4 = structure.cacheLoad(context, 0xb4e1404)
+
+
+
 newgraph = bigGraph.subgraph(stacknodes)
 newgraph.edges()
 
-fname = os.path.sep.join([Config.imgCacheDir, 'newgraph.png' ] )
+fname = os.path.sep.join([config.Config.imgCacheDir, 'newgraph.png' ] )
 
 networkx.draw(newgraph.to_directed())
 
@@ -162,7 +182,7 @@ if False: # not that interesting
   networkx.draw_networkx_labels(newgraph,pos, labels=labels)
   #networkx.draw(rg)
 
-  fname = os.path.sep.join([Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(ind) ] )
+  fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(ind) ] )
   plt.savefig(fname)
   plt.clf()
 
@@ -170,7 +190,7 @@ if False: # not that interesting
 # draw the figs
 for i,g in enumerate(subgraphs[1:100]):
   networkx.draw(g.to_directed())
-  fname = os.path.sep.join([Config.imgCacheDir, 'subgraph_%d.png'%(i) ] )
+  fname = os.path.sep.join([config.Config.imgCacheDir, 'subgraph_%d.png'%(i) ] )
   plt.savefig(fname)
   plt.clf()
 
@@ -196,7 +216,7 @@ def main(argv):
   if opts.debug :
     level=logging.DEBUG
   
-  flog = os.path.sep.join([Config.cacheDir,'log'])
+  flog = os.path.sep.join([config.Config.cacheDir,'log'])
   logging.basicConfig(level=level, filename=flog, filemode='w')
   
   #logging.getLogger('haystack').setLevel(logging.INFO)
