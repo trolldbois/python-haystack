@@ -18,6 +18,7 @@ def make(opts):
 fname = opts.gexf
 
 import reversers
+from reversers import *  # by the pickle of my thumb
 context = reversers.getContext('../../outputs/skype.1.a')
 
 import networkx
@@ -79,13 +80,33 @@ for i,item in enumerate(isoGraphs.items()):
 # need to use gephi-like for rendering nicely on the same pic
 
 
-stack_addrs = utils.int_array_cache( Config.getCacheFilename(Config.CACHE_STACK_ADDRS, context.dumpname)) 
+stack_addrs = utils.int_array_cache( Config.getCacheFilename(Config.CACHE_STACK_VALUES, context.dumpname)) 
 stack_addrs_txt = set([str(addr) for addr in stack_addrs])
 bigGraph = subgraphs[0]
 stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
 print 'stacknodes left',len(stacknodes)
 orig = list(set(graph.nodes()) & stack_addrs_txt)
 print 'stacknodes orig',len(orig)
+
+# identify strongly referenced structures
+dbigGraph = bigGraph.to_directed()
+degreesDict = dbigGraph.in_degree(dbigGraph.nodes())
+degreesList = [ (in_degree,node)  for node, in_degree in degreesDict.items() ]
+degreesList.sort(reverse=True)
+
+
+import structure
+s1 = structure.cacheLoad(context, int(degreesList[0][1]) )
+s1.decodeFields()
+print s1.toString()
+
+s2 = structure.cacheLoad(context, 189651400 )
+s2.decodeFields()
+s2._aggregateFields()
+
+s2b = utils.nextStructure(context, s2)
+#s2b should start with \x00's
+
 
 newgraph = bigGraph.subgraph(stacknodes)
 newgraph.edges()
