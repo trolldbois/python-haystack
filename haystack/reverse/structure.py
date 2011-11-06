@@ -464,11 +464,11 @@ class AnonymousStructInstance():
     pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
     patterns = pencoder.makePattern()
 
-    txt = self.getSignature(text=True)
-    log.warning('signature of len():%d, %s'%(len(txt),txt))
-    p = pattern.findPatternText(txt, 2, 3)
-
-    log.debug(p)
+    #txt = self.getSignature(text=True)
+    #log.warning('signature of len():%d, %s'%(len(txt),txt))
+    #p = pattern.findPatternText(txt, 2, 3)
+    #log.debug(p)
+    
     #log.debug('aggregateFields came up with pattern %s'%(patterns))
     
     # pattern is made on FieldType, 
