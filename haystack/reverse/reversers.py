@@ -325,13 +325,13 @@ class PointerGraphReverser(StructureOrientedReverser):
     #import code
     #code.interact(local=locals())
     graph = networkx.DiGraph()
-    graph.add_nodes_from([ hex(k) for k in context.structures.keys()]) # we only need the addresses...
+    graph.add_nodes_from([ '%x'%k for k in context.structures.keys()]) # we only need the addresses...
     log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
     t0 = time.time()
     tl = t0
     for i, item in enumerate(sorted(context.structures.items())):
       ptr_value, struct = item
-      targets = set(( hex(ptr_value), hex(child.target_struct_addr) ) for child in struct.getPointerFields()) #target_struct_addr
+      targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr ) for child in struct.getPointerFields()) #target_struct_addr
       ## DEBUG
       if len(struct.getPointerFields()) >0:
         if len(targets) == 0:
