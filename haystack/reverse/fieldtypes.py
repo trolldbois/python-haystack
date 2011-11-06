@@ -46,9 +46,10 @@ class FieldType:
     return newField
 
   def __cmp__(self, other):
-    if not isinstance(other, FieldType):
-      raise TypeError('%s %s'%(self.__class__, other.__class__))
-    return cmp(self._id, other._id)
+    try:
+      return cmp(self._id, other._id)
+    except AttributeError,e:
+      return -1
 
   def __hash__(self):
     return hash(self._id)
@@ -64,6 +65,7 @@ class FieldTypeStruct(FieldType):
     FieldType.__init__(self, 0x3, 'struct', name, 'K', isPtr=False)
     self.size = sum([len(f) for f in fields])
     self.elements = fields
+    #TODO s2[0].elements[0].typename.elements[0] is no good
 
   def setStruct(self, struct):
     self._struct = struct
@@ -340,15 +342,16 @@ class Field:
     if self.typename != FieldType.UNKNOWN:
       raise TypeError('I wont coherce this Field if you think its another type')
     # try all possible things
-    if self.checkString(): # Found a new string...
-      self.typename = FieldType.STRING
-    elif self.checkZeroes():
-      # ok, inlined
-      pass
-    elif self.checkPointer():
+    # in order, pointer, small integer (two nul bytes doesnt make a string ), zeroes, string
+    if self.checkPointer():
       log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
     elif self.checkInteger():
       log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
+    elif self.checkZeroes():
+      # ok, inlined
+      pass
+    elif self.checkString(): # Found a new string...
+      self.typename = FieldType.STRING
     #elif self.checkIntegerArray():
     #  self.typename = FieldType.ARRAY
     else:
@@ -385,24 +388,36 @@ class Field:
       return '%s_%s'%(self.typename.basename, self.offset)
     
   def __hash__(self):
-    return hash(self.offset, self.size, self.typename)
+    return hash( (self.offset, self.size, self.typename) )
       
   #def tuple(self):
   #  return (self.offset, self.size, self.typename)
 
   def __cmp__(self, other):
-    # XXX : Perf... cmp with other type should raise a type error the dev head...
-    if not isinstance(other, Field):
+    # XXX : Perf... cmp sux
+    try:
+      if self.offset < other.offset:
+        return -1
+      elif self.offset > other.offset:
+        return 1
+      elif (self.offset, self.size, self.typename) == (other.offset, other.size, other.typename):
+        return 0
+      # last chance, expensive cmp
+      return cmp((self.offset, self.size, self.typename), (other.offset, other.size, other.typename))
+    except AttributeError,e:
+      #if not isinstance(other, Field):
       return -1
-    return cmp((self.offset, self.size, self.typename), (other.offset, other.size, other.typename))
 
   def __len__(self):
     return int(self.size) ## some long come and goes
 
   def __str__(self):
     i = 'new'
-    if self in self.struct.fields:
-      i = self.struct.fields.index(self)
+    try:
+      if self in self.struct.fields:
+        i = self.struct.fields.index(self)
+    except ValueError, e:
+      log.warning('self in struct.fields but not found by index()')
     return '<Field %s offset:%d size:%s t:%s'%(i, self.offset, self.size, self.typename)
     
   def getValue(self, maxLen):
@@ -480,7 +495,10 @@ class ArrayField(Field):
     return '%s * %d' %(self.basicTypename.ctypes, self.nbElements )
 
   def _getValue(self, maxLen):
-    bytes= ''.join(['[',','.join([str(el._getValue(10)) for el in self.elements]),']'])
+    # show number of elements and elements types
+    #bytes= ''.join(['[',','.join([str(el._getValue(10)) for el in self.elements]),']'])
+    el0 = self.elements[0]
+    bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.typename for el in el0.typename.elements]),']'])
     return bytes
 
   def toString(self, prefix):
