@@ -111,6 +111,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
   tarfn={ 'open': tarfile.open , 'openFile': 'extractfile' }
   zipfn={ 'open': zipfile.ZipFile , 'openFile': 'open' }
+  dirfn={ 'open': __builtins__ , 'openFile': 'open' }
   indexFilename = 'mappings'
   filePrefix = './'
   
@@ -154,6 +155,22 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         return True
     except zipfile.BadZipfile,e:
       log.info('Not a zip file')
+    return False
+
+  def _test_flatdir(self):
+    # TODO does not work, archive path is not used in open()
+    try :
+      self.archive = self.dumpfile 
+      members = self.archive.listdir(self.archive)
+      if self.indexFilename not in members:
+        log.error('no mappings index file in the directory.')
+        return False
+      self.filePrefix=''
+      self.mmaps = [ m for m in members if '-0x' in m ]
+      if len(self.mmaps)>0:
+        return True
+    except OSError,e:
+      log.info('Not a valid directory')
     return False
       
         
