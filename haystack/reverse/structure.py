@@ -95,7 +95,10 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     if self.obj is None:  # 
       self._load()
     return getattr(self.obj,*args)
-      
+
+  def unload(self):
+    self.obj = None
+    
   def _load(self):
     if self.obj is not None:  # 
       return self.obj

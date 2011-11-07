@@ -27,6 +27,30 @@ def depthSubgraph(source, target, nodes, depth):
     depthSubgraph(source, target, neighbors, depth)
   return 
 
+def save_graph_headers(context, graph, fname):
+  fout = file( os.path.sep.join([Config.cacheDir, fname])  ,'w')
+  towrite = []
+  structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
+  for anon in structs:
+    anon.decodeFields()
+    anon.resolvePointers(context.structures_addresses, context.structures)
+    #anon.pointerResolved=True
+    anon._aggregateFields()
+    print anon
+    towrite.append(anon.toString())
+    if len(towrite) >= 10000:
+      try:
+        fout.write('\n'.join(towrite) )
+      except UnicodeDecodeError, e:
+        print 'ERROR on ',anon
+      towrite = []
+      fout.flush()
+  fout.write('\n'.join(towrite) )
+  fout.close()
+  return
+
+
+
 def make(opts):
   fname = opts.gexf
 
@@ -146,7 +170,7 @@ def printImportant(ind):
   save_graph_headers(context, impDiGraph, '%s.subdigraph.py'%(saddr) )
   return s1
 
-printImportant(0) # la structure la plus utilisee.
+#s1 = printImportant(0) # la structure la plus utilisee.
 
 
 
@@ -157,27 +181,6 @@ printImportant(0) # la structure la plus utilisee.
 #s2 = utils.nextStructure(context, s1)
 #s2b should start with \x00's
 
-
-def save_graph_headers(context, graph, fname):
-  fout = file( os.path.sep.join([Config.cacheDir, fname])  ,'w')
-  towrite = []
-  structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
-  for anon in structs:
-    anon.decodeFields()
-    anon.resolvePointers(context.structures_addresses, context.structures)
-    #anon.pointerResolved=True
-    anon._aggregateFields()
-    towrite.append(anon.toString())
-    if len(towrite) >= 10000:
-      try:
-        fout.write('\n'.join(towrite) )
-      except UnicodeDecodeError, e:
-        print 'ERROR on ',anon
-      towrite = []
-      fout.flush()
-  fout.write('\n'.join(towrite) )
-  fout.close()
-  return
 
 
 

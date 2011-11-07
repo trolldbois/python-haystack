@@ -497,8 +497,9 @@ class ArrayField(Field):
   def _getValue(self, maxLen):
     # show number of elements and elements types
     #bytes= ''.join(['[',','.join([str(el._getValue(10)) for el in self.elements]),']'])
-    el0 = self.elements[0]
-    bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.typename for el in el0.typename.elements]),']'])
+    bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.toString('') for el in self.elements]),']'])
+    # thats for structFields
+    #bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.typename for el in el0.typename.elements]),']'])
     return bytes
 
   def toString(self, prefix):
