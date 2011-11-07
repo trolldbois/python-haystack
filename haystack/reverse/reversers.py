@@ -256,7 +256,7 @@ class FieldReverser(StructureOrientedReverser):
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
       try:
-        if anon.resolved: # TODO this is a performance hit, unproxying...
+        if anon.isResolved(): # TODO this is a performance hit, unproxying...
           fromcache+=1
         else:
           decoded+=1
@@ -288,15 +288,14 @@ class PointerFieldReverser(StructureOrientedReverser):
     fromcache = 0
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
-      #anon = anon._load()
       try:
-        if anon.pointerResolved:
+        if anon.isPointerResolved():
           fromcache+=1
         else:
           decoded+=1
-          if not hasattr(anon, 'mappings'):
-            log.error('damned, no mappings in %x'%(ptr_value))
-            anon.obj.mappings = context.mappings
+          #if not hasattr(anon, 'mappings'):
+          #  log.error('damned, no mappings in %x'%(ptr_value))
+          #  anon.mappings = context.mappings
           anon.resolvePointers(context.structures_addresses, context.structures)
           anon.saveme()
       except EOFError,e:

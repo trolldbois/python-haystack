@@ -92,21 +92,9 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     self.obj = None
     
   def __getattr__(self,*args):
-    #print '__getattr__', args
     if self.obj is None:  # 
-      p = self._load()
-      #CacheWrapper.refs[self] = p # this is mostly free of charge now
-      #self.obj = weakref.proxy(p)
-      self.obj = p
+      self._load()
     return getattr(self.obj,*args)
-    #try:
-    #  return getattr(self.obj,*args)
-    #except ReferenceError,e:
-    #  p = self._load()
-    #  #CacheWrapper.refs[self] = p
-    #  #self.obj = weakref.proxy(p)
-    #  self.obj = p
-    #  return getattr(self.obj,*args)
       
   def _load(self):
     if self.obj is not None:  # 
@@ -114,13 +102,10 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     p = pickle.load(file(self.fname,'r'))
     if not isinstance(p, AnonymousStructInstance):
       raise EOFError('not a AnonymousStructInstance in cache.')
-    #except EOFError,e:
-    #  log.error(' %s does not haz a complete pickle - DELETE - please clean cache'%(self.fname))
-    #  os.remove(self.fname)
-    #  raise e
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
     p.dirty = False
+    self.obj = p
     return p
 
   def save(self):
@@ -140,6 +125,9 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   def __cmp__(self, other):
     return cmp(self.addr,other.addr)
 
+  def __str__(self):
+    return 'AnonStruct_%s_%x'%(os.path.basename(self.context.mappings.name), self.vaddr )
+    
 
 
 class AnonymousStructInstance():
@@ -455,8 +443,8 @@ class AnonymousStructInstance():
     return tgt_st, None
   
   def _aggregateFields(self):
-    if not self.pointerResolved:
-      raise ValueError('I should be resolved')
+    #if not self.pointerResolved:
+    #  raise ValueError('I should be resolved')
     self.dirty=True
     
     self.fields.sort()
@@ -851,7 +839,13 @@ class AnonymousStructInstance():
     if text:
       return ''.join([f.getSignature()[0].sig.upper() for f in self.fields])
     return [f.getSignature()[0] for f in self.fields]
-  
+
+  def isResolved(self):
+    return self.resolved
+
+  def isPointerResolved(self):
+    return self.pointerResolved
+
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
