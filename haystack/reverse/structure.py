@@ -387,6 +387,7 @@ class AnonymousStructInstance():
         known+=1
         tgt = structCache[field.value]
         field.target_struct_addr = field.value
+        field.ctypes = 'ctypes.POINTER(%s)'%(tgt) # change the basic ctypes
         if not tgt.resolved: # fields have not been decoded yet
           undecoded+=1
           log.debug('target %s is undecoded'%(tgt))
@@ -399,6 +400,7 @@ class AnonymousStructInstance():
         tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
         field.target_struct_addr = tgt_struct.vaddr
         if tgt_field is not None:
+          ### field.ctypes = str(tgt_struct) # no
           field.typename = FieldType.makePOINTER(tgt_field.typename)
           field._target_field = tgt_field
           tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
