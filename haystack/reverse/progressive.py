@@ -60,7 +60,8 @@ def make(opts):
   structCache = {}
   signatures = {}
   lastNb=0
-  for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
+  for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned, 
+                                not_aligned, heap_addrs, structCache, reverse=False): # reverse is way too slow...
     #
     # regexp could be better if crossed against another dump.
     anon_struct.save()
@@ -70,7 +71,8 @@ def make(opts):
     nb = len(structs_addrs)
     if nb >= lastNb+1000: #time.time() - t0 > 30 :
       td = time.time()
-      log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, heap.end-anon_struct.vaddr, len(structCache), td-t0))
+      log.info('\t[-] extracted @%lx, %lx left - %d structs extracted (%d)'%(anon_struct.vaddr, 
+                                              heap.end-anon_struct.vaddr, len(structCache), td-t0))
       rewrite(structs_addrs, structCache, dumpname)
       saveSignatures(signatures, structCache, dumpname)
       log.info('\t\t[.] %2.2f secs to rewrite %d structs'%(time.time()-td, len(structs_addrs)))
