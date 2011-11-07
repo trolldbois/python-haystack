@@ -369,11 +369,11 @@ class LoadableMembers(ctypes.Structure):
           return True
       # all case, 
       _attrType=None
-      if isSimplePointerType(attrtype):
+      if isVoidPointerType(attrtype):
         log.debug('Its a simple type. Checking mappings only.')
         #print 'is_valid_addres: ', is_valid_address( attr, mappings)
         #print 'getaddress(attr): ', getaddress(attr)
-        if not is_valid_address( attr, mappings):
+        if not is_valid_address_value( attr, mappings):
           log.debug('sp: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
       elif attrtype not in self.classRef:
@@ -563,6 +563,8 @@ class LoadableMembers(ctypes.Structure):
     elif isPointerType(attrtype):
       if not bool(attr) :
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
+      elif isVoidPointerType(attrtype) :
+        s=prefix+'"%s": 0x%lx, #Void pointer NOT LOADED\n'%(field, attr )   # only print address/null
       elif not is_address_local(attr) :
         s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
       else:

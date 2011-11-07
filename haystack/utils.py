@@ -233,12 +233,12 @@ def isStructType(objtype):
 __ptrt = type(ctypes.POINTER(ctypes.c_int))
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
-  return __ptrt == type(objtype) or type(objtype) == type(ctypes.c_void_p) or isFunctionType(objtype)
+  return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
   #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)
 
-def isSimplePointerType(objtype):
+def isVoidPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
-  return type(ctypes.c_void_p) == type(objtype)
+  return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
 
 def isBasicTypeArray(obj):
   ''' Checks if an object is a array of basic types.
@@ -329,13 +329,11 @@ class BytesComparable:
     self.seq = seq
 
   def __contains__(self,obj):
-    print(' CONTAINS !! ')
     if cmp(self,obj) == 0:
       return True
     return False
 
   def __cmp__(self,obj):
-    print(' CMP !! ')
     if isinstance(obj, type(ctypes.c_void_p)):
       if ctypes.sizeof(obj) != len(seq):
         return -1
