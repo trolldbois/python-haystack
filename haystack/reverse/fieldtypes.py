@@ -289,7 +289,7 @@ class Field:
     if (self.struct.vaddr+self.offset) % Config.WORDSIZE != 0:
       # TODO  txt[:11] + 0 + int for alignement
       # non aligned int is not an int
-      print 'OUT noon aligned'
+      #print 'OUT noon aligned'
       return False
     if self.checkSmallInt():
       return True
