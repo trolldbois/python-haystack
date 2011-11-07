@@ -22,7 +22,7 @@ def depthSubgraph(source, target, nodes, depth):
     return
   depth-=1
   for node in nodes:
-    neighbors = source.neighbors(node)
+    neighbors = source.successors(node)
     target.add_edges_from( source.edges(node) )
     depthSubgraph(source, target, neighbors, depth)
   return 
@@ -120,22 +120,28 @@ def printImportant(ind):
   s1 = context.structures[addr]._load() #structure.cacheLoad(context, int(saddr,16))
   s1.decodeFields()
   print s1.toString()
-  #
+  # strip the node from its predecessors, they are numerously too numerous
   impDiGraph = networkx.DiGraph()
+  root = '%d nodes'%(nb)
+  impDiGraph.add_edge(root, saddr)
   depthSubgraph(bigGraph, impDiGraph, [saddr], 1 )
   print 'important struct with %d structs pointing to it, %d pointerFields'%(digraph.in_degree(saddr), digraph.out_degree(saddr))
+  #print 'important struct with %d structs pointing to it, %d pointerFields'%(impDiGraph.in_degree(saddr), impDiGraph.out_degree(saddr))
   fname = os.path.sep.join([config.Config.imgCacheDir, 'important_%s.png'%(saddr) ] )
   networkx.draw(impDiGraph)
   plt.savefig(fname)
   plt.clf()
-  #
-  for node in impDiGraph.neighbors(saddr):
+  # check for children with identical sig
+  for node in impDiGraph.successors(saddr):
     st = context.structures[int(node,16)]._load()
     st.decodeFields()
-    st.pointerResolved=True
+    st.resolvePointers()=True
     st._aggregateFields()
     print node, st.getSignature(text=True)
-
+  # clean and print
+  impDiGraph.remove(root)
+  save_graph_headers(context, impDiGraph, '%s.subdigraph.py'%(saddr) )
+  return s1
 
 printImportant(0) # la structure la plus utilisee.
 
@@ -145,82 +151,27 @@ printImportant(0) # la structure la plus utilisee.
 
 #s1._aggregateFields()
 
-s2 = utils.nextStructure(context, s1)
+#s2 = utils.nextStructure(context, s1)
 #s2b should start with \x00's
 
 
+def save_graph_headers(context, graph, fname):
+  fout = file( os.path.sep.join([Config.cacheDir, fname])  ,'w')
+  towrite = []
+  structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
+  for anon in structs:
+    towrite.append(anon.toString())
+    if len(towrite) >= 10000:
+      try:
+        fout.write('\n'.join(towrite) )
+      except UnicodeDecodeError, e:
+        print 'ERROR on ',anon
+      towrite = []
+      fout.flush()
+  fout.write('\n'.join(towrite) )
+  fout.close()
+  return
 
-newgraph = bigGraph.subgraph(stacknodes)
-newgraph.edges()
-
-fname = os.path.sep.join([config.Config.imgCacheDir, 'newgraph.png' ] )
-
-networkx.draw(newgraph.to_directed())
-
-pos=networkx.graphviz_layout(newgraph)
-networkx.draw_networkx_nodes(newgraph,pos)
-networkx.draw_networkx_edges(newgraph,pos)
-networkx.draw_networkx_labels(newgraph,pos, labels=labels)
-
-plt.savefig(fname)
-plt.clf()
-
-newgraph = networkx.algorithms.components.connected.connected_component_subgraphs(newgraph)[0]
-
-networkx.readwrite.gexf.write_gexf( newgraph, '../../outputs/skype.1.a.newgraph.gexf')
-
-networkx.draw(newgraph.to_directed())
-plt.savefig(fname)
-plt.clf()
-
-
-
-if False: # not that interesting
-  ### take isdoGraphs[5] , 5 structs chains, and print them
-  ind = 5
-  g5 = isoGraphs[ind]
-  g5subg = networkx.algorithms.components.connected.connected_component_subgraphs(g5)
-
-  for group in g5subg:
-    for structGraph in group.nodes():
-      for saddr in structGraph.nodes():
-        addr = int(saddr)
-        struct = context.structures[addr]
-        struct.decodeFields()
-        sig = struct.getSignature(text=True)
-        structGraph.node[saddr]['label'] = sig  # pretty tagging
-
-
-  # draw the isomorphisms
-  newgraph = networkx.Graph()
-  for rg in g5.nodes():
-    newgraph.add_nodes_from(rg.nodes(data=True))
-    newgraph.add_edges_from(rg.edges(data=True))
-
-  pos=networkx.graphviz_layout(newgraph)
-  #networkx.draw_networkx_nodes(newgraph,pos)
-  networkx.draw_networkx_edges(newgraph,pos)
-  labels = dict([ (l, d['label']) for l, d in newgraph.node.items() ])
-  networkx.draw_networkx_labels(newgraph,pos, labels=labels)
-  #networkx.draw(rg)
-
-  fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(ind) ] )
-  plt.savefig(fname)
-  plt.clf()
-
-
-# draw the figs
-for i,g in enumerate(isolatedGraphs):
-  networkx.draw(g.to_directed())
-  fname = os.path.sep.join([config.Config.imgCacheDir, 'subgraph_%d.png'%(i) ] )
-  plt.savefig(fname)
-  plt.clf()
-
-
-networkx.draw()
-import matplotlib.pyplot as plt
-plt.show()
-#networkx.algorithms.components.weakly_connected.weakly_connected_component_subgraphs(subg)
 
 
 def argparser():

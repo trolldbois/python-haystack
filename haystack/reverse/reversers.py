@@ -368,23 +368,6 @@ def refreshOne(context, ptr_value):
   #resolvePointers
   return mystruct
   
-def save_graph_headers(context, graph, fname):
-  fout = file(fname,'w')
-  towrite = []
-  structs = [context.structures[int(addr)] for addr in graph.nodes()]
-  for anon in structs:
-    towrite.append(anon.toString())
-    if len(towrite) >= 10000:
-      try:
-        fout.write('\n'.join(towrite) )
-      except UnicodeDecodeError, e:
-        print 'ERROR on ',anon
-      towrite = []
-      fout.flush()
-  fout.write('\n'.join(towrite) )
-  fout.close()
-  return
-
 def save_headers(context):
   ''' structs_addrs is sorted '''
   fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
