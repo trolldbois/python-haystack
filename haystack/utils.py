@@ -219,18 +219,26 @@ def isCTypes(obj):
   ''' Checks if an object is a ctypes type object'''
   return  (type(obj).__module__ in ['ctypes','_ctypes']) 
     
-def isBasicType(obj):
+def isBasicType(objtype):
   ''' Checks if an object is a ctypes basic type, or a python basic type.'''
-  return not isPointerType(obj) and not isFunctionType(obj) and (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
+  return (isinstance(objtype, type) and not isPointerType(objtype) and not isFunctionType(objtype) 
+          and (objtype.__module__ in ['ctypes','_ctypes','__builtin__']) )
+  #return not isPointerType(obj) and not isFunctionType(obj) and (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
 
-def isStructType(obj):
+def isStructType(objtype):
   ''' Checks if an object is a ctypes Structure.'''
-  return isinstance(obj, ctypes.Structure)
+  return issubclass(objtype, ctypes.Structure)
+  #return isinstance(obj, ctypes.Structure)
 
 __ptrt = type(ctypes.POINTER(ctypes.c_int))
-def isPointerType(obj):
-  ''' Checks if an object is a ctypes pointer.'''
-  return __ptrt == type(type(obj)) or isFunctionType(obj)
+def isPointerType(objtype):
+  ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  return __ptrt == type(objtype) or type(objtype) == type(ctypes.c_void_p) or isFunctionType(objtype)
+  #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)
+
+def isSimplePointerType(objtype):
+  ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  return type(ctypes.c_void_p) == type(objtype)
 
 def isBasicTypeArrayType(obj):
   ''' Checks if an object is a array of basic types.
@@ -247,22 +255,25 @@ def isBasicTypeArrayType(obj):
   return False
 
 __arrayt = type(ctypes.c_int*1)
-def isArrayType(obj):
+def isArrayType(objtype):
   ''' Checks if an object is a ctype array.'''
-  return __arrayt == type(type(obj))
+  return __arrayt == type(objtype)
 
 __cfuncptrt = type(type(ctypes.memmove))
-def isFunctionType(obj):
+def isFunctionType(objtype):
   ''' Checks if an object is a function pointer.'''
-  return __cfuncptrt == type(type(obj))
+  return __cfuncptrt == type(objtype)
 
-def isCStringPointer(obj):
+def isCStringPointer(objtype):
   ''' Checks if an object is our CString.'''
-  return obj.__class__.__name__ == 'CString'
-
-def isUnionType(obj):
+  #return isinstance(obj, haystack.model.CString) 
+  #return obj.__class__.__name__ == 'CString'
+  import haystack
+  return issubclass(objtype, haystack.model.CString) 
+  
+def isUnionType(objtype):
   ''' Checks if an object is a Union type.'''
-  return isinstance(obj,ctypes.Union) and not isCStringPointer(obj)
+  return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
 
 
 class IgnoreMember:
@@ -307,6 +318,35 @@ the member should not be null to be considered valid by the validation engine.
 '''
 NotNull=NotNullComparable()
 
+
+class BytesComparable:
+  ''' 
+  Constraint class for the Haystack model.
+  If this constraints is applied on a Structure member, 
+  the member should have the same bytes value and length.
+  '''
+  def __init__(self, seq):
+    self.seq = seq
+
+  def __contains__(self,obj):
+    print(' CONTAINS !! ')
+    if cmp(self,obj) ==0:
+      return True
+    return False
+
+  def __cmp__(self,obj):
+    print(' CMP !! ')
+    if isinstance(obj, __arrayt):
+      if ctypes.sizeof(obj) != len(seq):
+        return -1
+      bytes = ctypes.string_at(ctypes.addressof(obj), ctypes.sizeof(obj) )
+      if bytes == self.seq:
+        return 0
+      else:
+        return -1
+    return cmp(self.seq, ctypes.string_at(ctypes.addressof(obj), ctypes.sizeof(obj) ) )
+
+PerfectMatch=BytesComparable
 
 
 py_xrange=xrange

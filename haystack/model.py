@@ -304,26 +304,27 @@ class LoadableMembers(ctypes.Structure):
   def _isValidAttr(self,attr,attrname,attrtype,mappings):
     ''' Validation of a single member '''
     # a) 
-    if isBasicType(attr):
+    log.debug('valid: %s'%(attrtype))
+    if isBasicType(attrtype):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
-          log.debug('%s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
+          log.debug('b: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
           return False
-      log.debug('%s %s %s ok'%(attrname,attrtype,repr(attr) ))
+      log.debug('b: %s %s %s ok'%(attrname,attrtype,repr(attr) ))
       return True
     # b)
-    if isStructType(attr):
+    if isStructType(attrtype):
       ### do i need to load it first ? becaus it should be memcopied with the super()..
       if not attr.isValid(mappings):
-        log.debug('%s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
+        log.debug('s: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
         return False
-      log.debug('%s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
+      log.debug('s: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
       return True
     # c)
     if isBasicTypeArrayType(attr):
       #log.info('%s is arraytype %s we decided it was valid',attrname,repr(attr))#
       return True
-    if isArrayType(attr):
+    if isArrayType(attrtype):
       log.debug('%s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
@@ -334,7 +335,7 @@ class LoadableMembers(ctypes.Structure):
           return False
       return True
     # d)
-    if isCStringPointer(attr):
+    if isCStringPointer(attrtype):
       myaddress=getaddress(attr.ptr)
       if attrname in self.expectedValues:
         # test if NULL is an option
@@ -351,9 +352,10 @@ class LoadableMembers(ctypes.Structure):
       log.debug('%s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
       return True
     # e) 
-    if isPointerType(attr):
+    if isPointerType(attrtype):
       if attrname in self.expectedValues:
         # test if NULL is an option
+        log.debug('XXXXX:%s %s'%(bool(attr), attr))
         if not bool(attr):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
@@ -363,7 +365,10 @@ class LoadableMembers(ctypes.Structure):
           return True
       # all case, 
       _attrType=None
-      if attrtype not in self.classRef:
+      if isSimplePointerType(attrtype):
+        log.debug('Its a simple type. Checking mappings only.')
+        _attrType=None
+      elif attrtype not in self.classRef:
         log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
         _attrType=None
       else:
@@ -377,7 +382,7 @@ class LoadableMembers(ctypes.Structure):
       log.debug('%s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
     # ?
-    if isUnionType(attr):
+    if isUnionType(attrtype):
       #log.warning('Union are not validated , yet ')
       return True
     log.error('What type are You ?: %s/%s'%(attrname,attrtype))
@@ -389,9 +394,9 @@ class LoadableMembers(ctypes.Structure):
       A c_void_p cannot be load generically, You have to take care of that.
     '''
     attrtype=type(attr)
-    return ( (isPointerType(attr) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attr) ) or
-              isStructType(attr)  or isCStringPointer(attr) or
-              (isArrayType(attr) and not isBasicTypeArrayType(attr) ) ) # should we iterate on Basictypes ? no
+    return ( (isPointerType(attrtype) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attrtype) ) or
+              isStructType(attrtype)  or isCStringPointer(attrtype) or
+              (isArrayType(attrtype) and not isBasicTypeArrayType(attr) ) ) # should we iterate on Basictypes ? no
 
   def loadMembers(self, mappings, maxDepth):
     ''' 
@@ -439,7 +444,7 @@ class LoadableMembers(ctypes.Structure):
       log.debug("%s %s not loadable  bool(attr) = %s"%(attrname,attrtype, bool(attr)) )
       return True
     # load it, fields are valid
-    if isStructType(attr):
+    if isStructType(attrtype):
       log.debug('%s %s is STRUCT'%(attrname,attrtype) )
       if not attr.loadMembers(mappings, maxDepth+1):
         log.debug("%s %s not valid, erreur while loading inner struct "%(attrname,attrtype) )
@@ -449,7 +454,7 @@ class LoadableMembers(ctypes.Structure):
     # maybe an array
     if isBasicTypeArrayType(attr):
       return True
-    if isArrayType(attr):
+    if isArrayType(attrtype):
       log.debug('%s is arraytype %s recurse load'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
@@ -461,7 +466,7 @@ class LoadableMembers(ctypes.Structure):
       return True
     # we have PointerType here . Basic or complex
     # exception cases
-    if isCStringPointer(attr) : 
+    if isCStringPointer(attrtype) : 
       # can't use basic c_char_p because we can't load in foreign memory
       attr_obj_address = getaddress(attr.ptr)
       setattr(self,'__'+attrname,attr_obj_address)
@@ -480,7 +485,7 @@ class LoadableMembers(ctypes.Structure):
         log.warning('buffer size was too small for this CString')
       attr.string = txt
       return True
-    elif isPointerType(attr): # not functionType, it's not loadable
+    elif isPointerType(attrtype): # not functionType, it's not loadable
       _attrname='_'+attrname
       _attrType=self.classRef[attrtype]
       attr_obj_address=getaddress(attr)
@@ -529,25 +534,25 @@ class LoadableMembers(ctypes.Structure):
       s+=self._attrToString(attr,field,typ,prefix)
     return s
     
-  def _attrToString(self,attr,field,typ,prefix):
+  def _attrToString(self,attr,field,attrtype,prefix):
     s=''
-    if isStructType(attr):
+    if isStructType(attrtype):
       s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t'),prefix )  
-    elif isFunctionType(attr):
+    elif isFunctionType(attrtype):
       s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
     elif isBasicTypeArrayType(attr): ## array of something else than int      
       #log.warning(field)
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
-    elif isArrayType(attr): ## array of something else than int/byte
+    elif isArrayType(attrtype): ## array of something else than int/byte
       # go through each elements, we hardly can make a array out of that...
       s=prefix+'"%s" :{'%(field)
-      typ=type(attr[0])
+      eltyp=type(attr[0])
       for i in range(0,len(attr)):
-        s+=self._attrToString( attr[i], i, typ, '')
+        s+=self._attrToString( attr[i], i, eltyp, '')
       s+='},\n'
       #s=prefix+'"%s" :['%(field)+','.join(["%s"%(val) for val in attr ])+'],\n'
-    elif isPointerType(attr):
+    elif isPointerType(attrtype):
       if not bool(attr) :
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif not is_address_local(attr) :
@@ -557,15 +562,15 @@ class LoadableMembers(ctypes.Structure):
         contents=attr.contents
         if type(self) == type(contents):
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), type(attr.contents), prefix) # use struct printer
-        elif isStructType(contents): # do not enter in lists
+        elif isStructType(type(contents)): # do not enter in lists
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), attr.contents.toString(prefix+'\t'),prefix) # use struct printer
-        elif isPointerType(contents):
+        elif isPointerType(type(contents)):
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), self._attrToString(attr.contents, None, None, prefix+'\t'), prefix ) # use struct printer
         else:
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), attr.contents, prefix) # use struct printer
-    elif isCStringPointer(attr):
+    elif isCStringPointer(attrtype):
       s=prefix+'"%s": "%s" , #(CString)\n'%(field, attr.string)  
-    elif isBasicType(attr): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
+    elif isBasicType(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
       s=prefix+'"%s": %s, \n'%(field, repr(attr) )  
     else: # wtf ?
       s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr\n'%(field, repr(attr) )  
@@ -576,9 +581,9 @@ class LoadableMembers(ctypes.Structure):
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     for field,typ in _fieldsTuple:
       attr=getattr(self,field)
-      if isStructType(attr):
+      if isStructType(attrtype):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
-      elif isFunctionType(attr):
+      elif isFunctionType(attrtype):
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
       elif isBasicTypeArrayType(attr):
         try:
@@ -586,10 +591,10 @@ class LoadableMembers(ctypes.Structure):
         except IndexError,e:
           log.error( 'error while reading %s %s'%(repr(attr),type(attr)) )
           
-      elif isArrayType(attr): ## array of something else than int
+      elif isArrayType(attrtype): ## array of something else than int
         s+='%s (@0x%lx)  :['%(field, ctypes.addressof(attr),)+','.join(["%s"%(val) for val in attr ])+'],\n'
         continue
-      elif isPointerType(attr):
+      elif isPointerType(attrtype):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
@@ -598,7 +603,7 @@ class LoadableMembers(ctypes.Structure):
           s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(attr.contents) ) # use struct printer
         else:
           s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
-      elif isCStringPointer(attr):
+      elif isCStringPointer(attrtype):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
@@ -634,17 +639,17 @@ class LoadableMembers(ctypes.Structure):
     setattr(my_self, '_ctype_', type(self))
     return my_self
     
-  def _attrToPyObject(self,attr,field,typ):
-    if isStructType(attr):
+  def _attrToPyObject(self,attr,field,attrtype):
+    if isStructType(attrtype):
       obj=attr.toPyObject()
     elif isBasicTypeArrayType(attr): ## array of basic types
       obj=array2bytes(attr)
-    elif isArrayType(attr): ## array of something else than int/byte
+    elif isArrayType(attrtype): ## array of something else than int/byte
       obj=[]
-      typ=type(attr[0])
+      eltyp=type(attr[0])
       for i in range(0,len(attr)):
-        obj.append(self._attrToPyObject( attr[i], i, typ) )
-    elif isPointerType(attr):
+        obj.append(self._attrToPyObject( attr[i], i, eltyp) )
+    elif isPointerType(attrtype):
       if not bool(attr) :
         obj=(None,None)
       elif not is_address_local(attr) :
@@ -657,16 +662,16 @@ class LoadableMembers(ctypes.Structure):
           if cache:
             return cache
           obj=contents.toPyObject()
-        elif isPointerType(contents):
+        elif isPointerType(type(contents)):
           obj=self._attrToPyObject(contents,None,None)
         else: # pointer vers autre chose, le repr() est le seul choix.
           #obj=repr(contents)
           obj=contents
-    elif isCStringPointer(attr):
+    elif isCStringPointer(attrtype):
       obj=attr.string
-    elif isFunctionType(attr):
+    elif isFunctionType(attrtype):
       obj = repr(attr)
-    elif isBasicType(attr) and isCTypes(attr):
+    elif isBasicType(attrtype) and isCTypes(attr):
       obj = attr.value
     else:
       obj = attr
