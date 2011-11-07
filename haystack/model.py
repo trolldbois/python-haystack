@@ -316,16 +316,20 @@ class LoadableMembers(ctypes.Structure):
     if isStructType(attrtype):
       ### do i need to load it first ? becaus it should be memcopied with the super()..
       if not attr.isValid(mappings):
-        log.debug('s: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
+        log.debug('st: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
         return False
-      log.debug('s: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
+      log.debug('st: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
       return True
     # c)
-    if isBasicTypeArrayType(attr):
-      #log.info('%s is arraytype %s we decided it was valid',attrname,repr(attr))#
+    if isBasicTypeArray(attr):
+      if attrname in self.expectedValues:
+        if attr not in self.expectedValues[attrname]:
+          log.debug('b: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
+          return False
+      log.debug('ba: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
       return True
     if isArrayType(attrtype):
-      log.debug('%s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
+      log.debug('a: %s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
         return True
@@ -342,14 +346,14 @@ class LoadableMembers(ctypes.Structure):
         if not bool(myaddress) :
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
-            log.debug('%s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
+            log.debug('s: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
             return False
-          log.debug('%s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+          log.debug('s: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       if (myaddress != 0) and ( not is_valid_address_value( myaddress, mappings) )   :
-        log.debug('%s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
+        log.debug('s: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
         return False
-      log.debug('%s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
+      log.debug('s: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
       return True
     # e) 
     if isPointerType(attrtype):
@@ -359,27 +363,31 @@ class LoadableMembers(ctypes.Structure):
         if not bool(attr):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
-            log.debug('%s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
+            log.debug('p: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
             return False
-          log.debug('%s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+          log.debug('p: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       # all case, 
       _attrType=None
       if isSimplePointerType(attrtype):
         log.debug('Its a simple type. Checking mappings only.')
-        _attrType=None
+        #print 'is_valid_addres: ', is_valid_address( attr, mappings)
+        #print 'getaddress(attr): ', getaddress(attr)
+        if not is_valid_address( attr, mappings):
+          log.debug('sp: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
+          return False
       elif attrtype not in self.classRef:
-        log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
+        log.debug("p: I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
         _attrType=None
       else:
         # test valid address mapping
         _attrType=self.classRef[attrtype]
       #log.debug(" ihave decided on pointed attrType to be %s"%(_attrType))
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
-        log.debug('%s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
+        log.debug('p: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
         return False
       # null is accepted by default 
-      log.debug('%s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
+      log.debug('p: %s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
     # ?
     if isUnionType(attrtype):
@@ -396,7 +404,7 @@ class LoadableMembers(ctypes.Structure):
     attrtype=type(attr)
     return ( (isPointerType(attrtype) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attrtype) ) or
               isStructType(attrtype)  or isCStringPointer(attrtype) or
-              (isArrayType(attrtype) and not isBasicTypeArrayType(attr) ) ) # should we iterate on Basictypes ? no
+              (isArrayType(attrtype) and not isBasicTypeArray(attr) ) ) # should we iterate on Basictypes ? no
 
   def loadMembers(self, mappings, maxDepth):
     ''' 
@@ -445,17 +453,17 @@ class LoadableMembers(ctypes.Structure):
       return True
     # load it, fields are valid
     if isStructType(attrtype):
-      log.debug('%s %s is STRUCT'%(attrname,attrtype) )
+      log.debug('st: %s %s is STRUCT'%(attrname,attrtype) )
       if not attr.loadMembers(mappings, maxDepth+1):
-        log.debug("%s %s not valid, erreur while loading inner struct "%(attrname,attrtype) )
+        log.debug("st: %s %s not valid, erreur while loading inner struct "%(attrname,attrtype) )
         return False
-      log.debug("%s %s inner struct LOADED "%(attrname,attrtype) )
+      log.debug("st: %s %s inner struct LOADED "%(attrname,attrtype) )
       return True
     # maybe an array
-    if isBasicTypeArrayType(attr):
+    if isBasicTypeArray(attr):
       return True
     if isArrayType(attrtype):
-      log.debug('%s is arraytype %s recurse load'%(attrname,repr(attr)) )#
+      log.debug('a: %s is arraytype %s recurse load'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
         return True
@@ -540,7 +548,7 @@ class LoadableMembers(ctypes.Structure):
       s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t'),prefix )  
     elif isFunctionType(attrtype):
       s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
-    elif isBasicTypeArrayType(attr): ## array of something else than int      
+    elif isBasicTypeArray(attr): ## array of something else than int      
       #log.warning(field)
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
       #s=prefix+'"%s" :['%(field)+','.join(["0x%lx"%(val) for val in attr ])+'],\n'
@@ -579,13 +587,13 @@ class LoadableMembers(ctypes.Structure):
   def __str__(self):
     s=repr(self)+'\n'
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
-    for field,typ in _fieldsTuple:
+    for field,attrtype in _fieldsTuple:
       attr=getattr(self,field)
       if isStructType(attrtype):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
       elif isFunctionType(attrtype):
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
-      elif isBasicTypeArrayType(attr):
+      elif isBasicTypeArray(attr):
         try:
           s+='%s (@0x%lx) : %s\n'%(field,ctypes.addressof(attr), repr(array2bytes(attr)) )  
         except IndexError,e:
@@ -642,7 +650,7 @@ class LoadableMembers(ctypes.Structure):
   def _attrToPyObject(self,attr,field,attrtype):
     if isStructType(attrtype):
       obj=attr.toPyObject()
-    elif isBasicTypeArrayType(attr): ## array of basic types
+    elif isBasicTypeArray(attr): ## array of basic types
       obj=array2bytes(attr)
     elif isArrayType(attrtype): ## array of something else than int/byte
       obj=[]

@@ -169,7 +169,7 @@ def array2bytes(array):
   
   This is a bad example of introspection.
   '''
-  if not isBasicTypeArrayType(array):
+  if not isBasicTypeArray(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
   #log.info(type(array).__name__.split('_'))
@@ -240,17 +240,17 @@ def isSimplePointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
   return type(ctypes.c_void_p) == type(objtype)
 
-def isBasicTypeArrayType(obj):
+def isBasicTypeArray(obj):
   ''' Checks if an object is a array of basic types.
   It checks the type of the first element.
   The array should not be null :).
   '''
-  if isArrayType(obj):
+  if isArrayType(type(obj)):
     if len(obj) == 0:
       return False # no len is no BasicType
-    if isPointerType(obj[0]):
+    if isPointerType(type(obj[0])):
       return False
-    if isBasicType(obj[0]):
+    if isBasicType(type(obj[0])):
       return True
   return False
 
@@ -330,13 +330,13 @@ class BytesComparable:
 
   def __contains__(self,obj):
     print(' CONTAINS !! ')
-    if cmp(self,obj) ==0:
+    if cmp(self,obj) == 0:
       return True
     return False
 
   def __cmp__(self,obj):
     print(' CMP !! ')
-    if isinstance(obj, __arrayt):
+    if isinstance(obj, type(ctypes.c_void_p)):
       if ctypes.sizeof(obj) != len(seq):
         return -1
       bytes = ctypes.string_at(ctypes.addressof(obj), ctypes.sizeof(obj) )
