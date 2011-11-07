@@ -117,14 +117,15 @@ def printImportant(ind):
   import structure
   nb, saddr = degreesList[ind]
   addr = int(saddr,16)
-  s1 = context.structures[addr]._load() #structure.cacheLoad(context, int(saddr,16))
+  s1 = context.structures[addr]
+  #s1 = s1._load() #structure.cacheLoad(context, int(saddr,16))
   s1.decodeFields()
   print s1.toString()
   # strip the node from its predecessors, they are numerously too numerous
   impDiGraph = networkx.DiGraph()
   root = '%d nodes'%(nb)
   impDiGraph.add_edge(root, saddr)
-  depthSubgraph(bigGraph, impDiGraph, [saddr], 1 )
+  depthSubgraph(bigGraph, impDiGraph, [saddr], 2 )
   print 'important struct with %d structs pointing to it, %d pointerFields'%(digraph.in_degree(saddr), digraph.out_degree(saddr))
   #print 'important struct with %d structs pointing to it, %d pointerFields'%(impDiGraph.in_degree(saddr), impDiGraph.out_degree(saddr))
   fname = os.path.sep.join([config.Config.imgCacheDir, 'important_%s.png'%(saddr) ] )
@@ -133,13 +134,15 @@ def printImportant(ind):
   plt.clf()
   # check for children with identical sig
   for node in impDiGraph.successors(saddr):
-    st = context.structures[int(node,16)]._load()
+    st = context.structures[int(node,16)]
     st.decodeFields()
-    st.resolvePointers()=True
+    st.resolvePointers(context.structures_addresses, context.structures)
+    #st.pointerResolved=True
     st._aggregateFields()
     print node, st.getSignature(text=True)
   # clean and print
-  impDiGraph.remove(root)
+  s1._aggregateFields()
+  impDiGraph.remove_node(root)
   save_graph_headers(context, impDiGraph, '%s.subdigraph.py'%(saddr) )
   return s1
 
@@ -160,6 +163,10 @@ def save_graph_headers(context, graph, fname):
   towrite = []
   structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
   for anon in structs:
+    anon.decodeFields()
+    anon.resolvePointers(context.structures_addresses, context.structures)
+    #anon.pointerResolved=True
+    anon._aggregateFields()
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
       try:
