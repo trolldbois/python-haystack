@@ -16,6 +16,16 @@ from haystack import config
 from haystack.reverse import utils
 
 
+def printGraph(G, gname):
+  h = networkx.DiGraph()
+  h.add_edges_from( G.edges() )
+  networkx.draw_spectral(h)
+  fname = os.path.sep.join([config.Config.imgCacheDir, 'graph_%s.png'%(gname) ] )
+  plt.savefig(fname)
+  plt.clf()
+  fname = os.path.sep.join([config.Config.cacheDir, 'graph_%s.gexf'%(gname) ] )
+  networkx.readwrite.gexf.write_gexf( h, fname)
+
 # extract graph 
 def depthSubgraph(source, target, nodes, depth):
   if depth == 0:
@@ -162,18 +172,30 @@ def printImportant(ind):
     st.decodeFields()
     st.resolvePointers(context.structures_addresses, context.structures)
     #st.pointerResolved=True
-    st._aggregateFields()
+    #st._aggregateFields()
     print node, st.getSignature(text=True)
   # clean and print
-  s1._aggregateFields()
+  #s1._aggregateFields()
   impDiGraph.remove_node(root)
   save_graph_headers(context, impDiGraph, '%s.subdigraph.py'%(saddr) )
   return s1
 
+def deref(f):
+  context.structures[f.target_struct_addr].decodeFields()
+  return context.structures[f.target_struct_addr]
+
 #s1 = printImportant(0) # la structure la plus utilisee.
 
+## TODO
+#
+# get nodes with high out_degree, 
+# compare their successors signature, and try to find a common sig sig1
+# if sig1 , lone, sig1 , .... , try to fit lone in sig1 ( zeroes/pointers)
+# aggregate group of successors given the common sig
 
+# identify chained list ( see isolatedGraphs[0] )
 
+# b800dcc is a big kernel
 
 
 #s1._aggregateFields()
