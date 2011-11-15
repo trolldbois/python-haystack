@@ -111,8 +111,8 @@ def getHeapPointers(dumpfilename, mappings):
   else:
     log.info('[+] Loading from cache')
     log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
-  aligned = filter(lambda x: (x%4) == 0, values)
-  not_aligned = sorted( set(values)^set(aligned))
+  aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
+  not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
   log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
   return values,heap_addrs, aligned, not_aligned
 

@@ -32,7 +32,7 @@ def make(opts):
   # now compare with structures addresses
   structures = set()
   for offset in offsets:
-    vaddr = utils.closestFloorValueNumpy(offset, context.structures_addresses)
+    vaddr, pos = utils.closestFloorValueNumpy(offset, context.structures_addresses)
     st = context.structures[vaddr]
     structures.add(st)
   log.info('[+] On %d diffs, found %d structs'%( len(offsets), len(structures) ))
