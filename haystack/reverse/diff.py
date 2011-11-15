@@ -38,7 +38,7 @@ def make(opts):
     vaddr, pos = utils.closestFloorValueNumpy(offset, context.structures_addresses)
     st = context.structures[vaddr]
     structures.add(st)
-  log.info('[+] On %d diffs, found %d structs'%( len(offsets), len(structures) ))
+  log.info('[+] On %d diffs, found %d structs with different values. Outputing to file (will be long-ish)'%( len(offsets), len(structures) ))
   # print original struct in one file, diffed struct in the other
   d1out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump1.name) 
   d2out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump2.name) 
@@ -47,12 +47,14 @@ def make(opts):
   for st in structures:
     st2 = structure.remapLoad(context, st.vaddr, newmappings)
     # get the fields
+    ##### TODO FIXME , fix and leverage Field.getValue() to update from a changed mapping
+    #### TODO, in toString(), pointer value should be in comment, to check for pointer change, when same pointed struct.
     st.decodeFields()
-    st.resolvePointers(context.structures_addresses, context.structures)
-    st._aggregateFields()
+    #st.resolvePointers(context.structures_addresses, context.structures)
+    #st._aggregateFields()
     st2.decodeFields()
-    st2.resolvePointers(context.structures_addresses, context.structures)
-    st2._aggregateFields()
+    #st2.resolvePointers(context.structures_addresses, context.structures)
+    #st2._aggregateFields()
     #write the files
     f1.write(st.toString())
     f1.write('\n')
