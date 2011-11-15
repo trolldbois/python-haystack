@@ -45,9 +45,17 @@ def make(opts):
   f1 = file(d1out, 'w')
   f2 = file(d2out, 'w')
   for st in structures:
+    st2 = structure.remapLoad(context, st.vaddr, newmappings)
+    # get the fields
+    st.decodeFields()
+    st.resolvePointers(context.structures_addresses, context.structures)
+    st._aggregateFields()
+    st2.decodeFields()
+    st2.resolvePointers(context.structures_addresses, context.structures)
+    st2._aggregateFields()
+    #write the files
     f1.write(st.toString())
     f1.write('\n')
-    st2 = structure.remapLoad(context, st.vaddr, newmappings)
     f2.write(st2.toString())
     f2.write('\n')
   f1.close()
