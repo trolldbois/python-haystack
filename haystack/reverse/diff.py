@@ -25,10 +25,13 @@ log = logging.getLogger('diff')
 
 def make(opts):
   log.info('[+] Loading context of %s'%(opts.dump1.name))
-  context = reversers.getContext('../../outputs/skype.1.a') # TODO 
-  heap = context.mappings.getHeap()
+  context = reversers.getContext(opts.dump1.name) #'../../outputs/skype.1.a') # TODO 
+  heap1 = context.mappings.getHeap()
+  log.info('[+] Loading mappings of %s'%(opts.dump2.name))
+  newmappings = memory_dumper.load( opts.dump2, lazy=True)  
+  heap2 = newmappings.getHeap()
   log.info('[+] finding diff values with %s'%(opts.dump2.name))
-  offsets = findDiffsOffsets(opts.dump1, opts.dump2, heap.start)
+  offsets = findDiffsOffsets_mappings(heap1, heap2, heap1.start)
   # now compare with structures addresses
   structures = set()
   for offset in offsets:
@@ -36,12 +39,25 @@ def make(opts):
     st = context.structures[vaddr]
     structures.add(st)
   log.info('[+] On %d diffs, found %d structs'%( len(offsets), len(structures) ))
-  
+  # print original struct in one file, diffed struct in the other
+  d1out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump1.name) 
+  d2out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump2.name) 
+  f1 = file(d1out, 'w')
+  f2 = file(d2out, 'w')
+  for st in structures:
+    f1.write(st.toString())
+    f1.write('\n')
+    st2 = structure.remapLoad(context, st.vaddr, newmappings)
+    f2.write(st2.toString())
+    f2.write('\n')
+  f1.close()
+  f2.close()
+  log.info('[+] diffed structures dumped in %s %s'%(d1out, d2out))
 '''
 Make a dichotomic search of unequals values in bytebuffers.
 returns offsets of unequals word value
 '''
-def findDiffsOffsets(file1, file2, baseOffset):
+def findDiffsOffsets_files(file1, file2, baseOffset):
   size1 = os.fstat(file1.fileno()).st_size
   size2 = os.fstat(file2.fileno()).st_size
   if size1 != size2:
@@ -55,6 +71,27 @@ def findDiffsOffsets(file1, file2, baseOffset):
   while offset < size1 and offset < size2:
     data1 = d1.read(buflen) 
     data2 = d2.read(buflen) 
+    if data1 != data2:
+      diffs = cmp_recursive(buflen, data1, data2, baseOffset)
+      offsets.extend(diffs)
+      #log.debug('%d diff at offsets %d'%(len(diffs), offset))
+    offset += buflen
+    baseOffset += buflen
+  log.debug('simple finished with %d diffs'%(len(offsets)))
+  return sorted(offsets)
+
+def findDiffsOffsets_mappings(heap1, heap2, baseOffset):
+  size1 = len(heap1)
+  size2 = len(heap2)
+  if size1 != size2:
+    log.debug('different sizes')
+  #
+  offsets = []
+  buflen=2**16
+  offset=0
+  while offset < size1 and offset < size2:
+    data1 = heap1.readBytes(baseOffset, buflen) 
+    data2 = heap2.readBytes(baseOffset, buflen) 
     if data1 != data2:
       diffs = cmp_recursive(buflen, data1, data2, baseOffset)
       offsets.extend(diffs)

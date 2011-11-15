@@ -70,6 +70,19 @@ def cacheLoadAll(context):
       yield addr, p
   return
 
+def remapLoad(context, addr, newmappings):
+  dumpname = context.dumpname
+  if not os.access(dumpname,os.F_OK):
+    return None
+  fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  p = pickle.load(file(fname,'r'))
+  if p is None:
+    return None
+  p.mappings = newmappings
+  p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+  return p
+
+
 def cacheLoadAllLazy(context):
   dumpname = context.dumpname
   addresses = context.structures_addresses
