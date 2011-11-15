@@ -401,7 +401,7 @@ class AnonymousStructInstance():
         pass
       elif field.value in self.mappings: # other mappings
         inMappings+=1
-        tgt = 'ext_lib'
+        tgt = 'ext_lib_%d'%(field.offset)
         field._ptr_to_ext_lib = True
         field.target_struct_addr = self.mappings.getMmapForAddr(field.value).start
         pass
