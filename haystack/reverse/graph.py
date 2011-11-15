@@ -15,6 +15,8 @@ from collections import defaultdict
 from haystack import config
 from haystack.reverse import utils
 
+log = logging.getLogger('graph')
+
 
 def printGraph(G, gname):
   h = networkx.DiGraph()
@@ -196,6 +198,10 @@ def deref(f):
 # identify chained list ( see isolatedGraphs[0] )
 
 # b800dcc is a big kernel
+
+#print deref(sb800[7]).toString()
+#>>> hex(16842753)
+#'0x1010001'  -> bitfield
 
 
 #s1._aggregateFields()
