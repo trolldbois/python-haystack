@@ -46,7 +46,10 @@ myvaddr = qtmaps[0].start+offset
 ret = libdl.dladdr( myvaddr, ctypes.byref(info))
 print info
 
-
+signed_addr = libdl.dlsym( 0, 'dladdr', 'xxx')
+vaddr_dladdr = struct.unpack('L',struct.pack('l', signed_addr) )[0]
+ret = libdl.dladdr( vaddr_dladdr, ctypes.byref(info))
+print info.dli_sname.string
 
 
 import pattern 
