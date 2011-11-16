@@ -1,4 +1,54 @@
 
+
+	( 'ptr_ext_lib' , ctypes.c_void_p ), # @ b6b3ef68 /usr/lib/libQtCore.so.4.7.2 
+
+
+local python
+b6c63000-b6efa000 r-xp 00000000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
+b6efa000-b6f01000 r--p 00296000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
+b6f01000-b6f04000 rw-p 0029d000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
+
+
+
+import os
+import ctypes
+
+offset = 0xb6b3ef68 - 0xb68b1000
+
+from haystack import memory_mapping, utils
+
+class Dl_info(ctypes.Structure):
+  _fields_ = [
+  ('dli_fname', ctypes.c_char_p), #Pathname of shared object that contains address
+  ('dli_fbase', ctypes.c_void_p), #Address at which shared object is loaded
+  ('dli_sname', ctypes.c_char_p), #Name of nearest symbol with address lower than addr
+  ('dli_saddr', ctypes.c_void_p)  #Exact address of symbol named in dli_sname
+  ]
+  
+
+info = Dl_info()
+
+libdl = ctypes.CDLL('libdl.so')
+#handle = libdl.dlopen('/usr/lib/libQtCore.so.4.7.2')
+
+libname = '/usr/lib/libQtCore.so.4.7.2'
+libname2 = libname[libname.rindex(os.path.sep)+1:libname.index('.so')+3]
+print libname2
+libqt = ctypes.CDLL(libname2)
+
+me = utils.Dummy()
+me.pid = os.getpid()
+localmappings = memory_mapping.readProcessMappings(me)
+qtmaps = [m for m in localmappings if m.pathname is not None and libname2 in m.pathname ]
+
+myvaddr = qtmaps[0].start+offset
+
+ret = libdl.dladdr( myvaddr, ctypes.byref(info))
+print info
+
+
+
+
 import pattern 
 pattern.main('outputs/skype.1.a outputs/skype.2.a outputs/skype.3.a'.split())
 mapper = pattern.mapper
