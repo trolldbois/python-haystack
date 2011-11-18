@@ -83,10 +83,8 @@ class MemoryMapping:
       return self.start <= address < self.end
 
   def __str__(self):
-    text = "%s-%s" % (formatAddress(self.start), formatAddress(self.end))
-    if self.pathname:
-      text += " => %s" % self.pathname
-    text += " (%s)" % self.permissions
+    text = ' '.join([formatAddress(self.start), formatAddress(self.end), self.permissions,
+           '%0.8d'%(self.offset), '%0.2d:%0.2d'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
     return text
 
   __repr__ = __str__
@@ -143,7 +141,7 @@ class MemoryMapping:
 
   def vtop(self, vaddr):
     return vaddr - self.start
-    
+  
   # ---- to implement if needed
   def readWord(self, address):
     raise NotImplementedError
