@@ -14,7 +14,7 @@ import math
 import weakref
 
 from haystack.config import Config
-from haystack import memory_dumper
+from haystack import dump_loader
 
 import fieldtypes
 from fieldtypes import Field, FieldType, makeArrayField
@@ -911,7 +911,7 @@ class %s(LoadableMembers):  # %s
 
   def __setstate__(self, d):
     self.__dict__ = d
-    #self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
+    #self.mappings = dump_loader.load( file(self.dumpname), lazy=True)  
     #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
     self.mappings = None
     self.bytes = None

@@ -232,10 +232,7 @@ def load(dumpfile,lazy=True):
   return memdump.getMappings()
 
 def argparser():
-  rootparser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
-  subparsers = rootparser.add_subparsers(help='sub-command help')
-
-  load_parser = subparsers.add_parser('load', help='search help')
+  load_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
   load_parser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='The dump file')
   load_parser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
   load_parser.set_defaults(func=_load)  

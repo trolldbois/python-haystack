@@ -18,7 +18,7 @@ import numbers
 
 from haystack.config import Config
 from haystack.utils import Dummy
-from haystack import memory_dumper
+from haystack import dump_loader
 
 import utils
 import signature 
@@ -168,7 +168,7 @@ def make(opts):
   log.info('Make the signature.')
   ppMapper = PinnedPointersMapper()  
   for dumpfile in opts.dumpfiles:
-    mappings = memory_dumper.load( dumpfile, lazy=True)  
+    mappings = dump_loader.load( dumpfile, lazy=True)  
     heap_sig = PointerIntervalSignature(mappings, '[heap]') 
     log.info('pinning offset list created for heap %s.'%(heap_sig))
     ppMapper.addSignature(heap_sig)

@@ -17,7 +17,7 @@ import time
 
 from haystack.config import Config
 from haystack.utils import Dummy
-from haystack import memory_dumper
+from haystack import dump_loader
 
 import structure
 import fieldtypes
@@ -103,7 +103,7 @@ class ReverserContext():
 
   def __setstate__(self, d):
     self.__dict__ = d
-    #self.mappings = memory_dumper.load( file(self.dumpname), lazy=True)  
+    #self.mappings = dump_loader.load( file(self.dumpname), lazy=True)  
     #self.heap = self.mappings.getMmap(d['heapPathname'])
     self.structures = { } 
     self.structures_addresses = numpy.array([],int)
@@ -386,7 +386,7 @@ def save_headers(context):
 
 
 def getContext(fname):
-  mappings = memory_dumper.load( file(fname), lazy=True)  
+  mappings = dump_loader.load( file(fname), lazy=True)  
   try:
     context = ReverserContext.cacheLoad(mappings)
   except IOError,e:

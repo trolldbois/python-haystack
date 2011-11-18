@@ -10,9 +10,9 @@ import itertools
 import operator
 
 import statushandler
-from .. import memory_dumper
-from .. import memory_mapping
-from .. import signature
+from haystack import dump_loader
+from haystack import memory_mapping
+from haystack import signature
 
 log = logging.getLogger('gui')
 
@@ -339,7 +339,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
   
   def _openDumpfile(self, dumpfile):
     # load memorymapping
-    mappings = memory_dumper.load(dumpfile)
+    mappings = dump_loader.load(dumpfile)
     # TODO : make a mapping chooser 
     if len(mappings) > 1:
       heap = [m for m in mappings if m.pathname == '[heap]'][0]
@@ -396,7 +396,7 @@ def dropToInteractive():
 def gui(opt):
   app = QtGui.QApplication(sys.argv)
 
-  #mappings = memory_dumper.load(opt)
+  #mappings = dump_loader.load(opt)
   mappings = None
   root = MyMain(opt)
   root.show()

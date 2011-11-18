@@ -11,7 +11,7 @@ import re
 import struct
 import ctypes
 
-from haystack import memory_dumper
+from haystack import dump_loader
 from haystack.utils import xrange
 
 log = logging.getLogger('signature')
@@ -291,7 +291,7 @@ lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
 
 def _openDumpfile(dumpfile):
   # load memorymapping
-  mappings = memory_dumper.load(dumpfile)
+  mappings = dump_loader.load(dumpfile)
   # TODO : make a mapping chooser 
   if len(mappings) > 1:
     heap = [m for m in mappings if m.pathname == '[heap]'][0]

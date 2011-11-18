@@ -28,7 +28,7 @@ def make(opts):
   context = reversers.getContext(opts.dump1.name) #'../../outputs/skype.1.a') # TODO 
   heap1 = context.mappings.getHeap()
   log.info('[+] Loading mappings of %s'%(opts.dump2.name))
-  newmappings = memory_dumper.load( opts.dump2, lazy=True)  
+  newmappings = dump_loader.load( opts.dump2, lazy=True)  
   heap2 = newmappings.getHeap()
   log.info('[+] finding diff values with %s'%(opts.dump2.name))
   offsets = findDiffsOffsets_mappings(heap1, heap2, heap1.start)

@@ -14,7 +14,7 @@ import sys
 import numpy
 
 from haystack.config import Config
-from haystack import memory_dumper
+from haystack import dump_loader
 
 from fieldtypes import FieldType
 import signature 
@@ -47,7 +47,7 @@ def make(opts):
   log.info('[+] Extracting structures from pointer values and offsets.')
   ## get the list of pointers values pointing to heap
   ## need cache
-  mappings = memory_dumper.load( opts.dumpfile, lazy=True)  
+  mappings = dump_loader.load( opts.dumpfile, lazy=True)  
   values,heap_addrs, aligned, not_aligned = utils.getHeapPointers(opts.dumpfile.name, mappings)
   dumpname = opts.dumpfile.name
   # we

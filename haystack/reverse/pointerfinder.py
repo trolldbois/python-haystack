@@ -10,15 +10,15 @@ import re
 import struct
 import ctypes
 
-import memory_dumper
-import signature
+from haystack import dump_loader
+from haystack.reverse import signature
 
 log = logging.getLogger('pointerfinder')
 
 
 def _openDumpfile(dumpfile):
   # load memorymapping
-  mappings = memory_dumper.load(dumpfile)
+  mappings = dump_loader.load(dumpfile)
   # TODO : make a mapping chooser 
   stack, heap = None, None
   if len(mappings) > 1:
