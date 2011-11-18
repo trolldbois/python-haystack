@@ -92,7 +92,7 @@ class MemoryMapping:
 
   def __str__(self):
     text = ' '.join([formatAddress(self.start), formatAddress(self.end), self.permissions,
-           '%0.8x'%(self.offset), '%s:%s'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
+           '0x%0.8x'%(self.offset), '%0.2x:%0.2x'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
     return text
 
   __repr__ = __str__
@@ -148,7 +148,10 @@ class MemoryMapping:
     return ''.join(string), truncated
 
   def vtop(self, vaddr):
-    return vaddr - self.start
+    ret = vaddr - self.start
+    if ret<0 or ret>len(self):
+      raise ValueError('%x/%x is not a valid vaddr for me'%(vaddr,ret))
+    return ret
   
   # ---- to implement if needed
   def readWord(self, address):
@@ -240,7 +243,10 @@ class LocalMemoryMapping(MemoryMapping):
     self._bytebuffer = None
 
   def vtop(self, vaddr):
-    return vaddr - self.start + self._address 
+    ret = vaddr - self.start + self._address 
+    if ret<self._address or ret>(self._address+len(self)):
+      raise ValueError('%x/%x is not a valid vaddr for me'%(vaddr,ret))
+    return ret
 
   def mmap(self):
     return self
@@ -419,7 +425,10 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     return self
 
   def vtop(self, vaddr):
-    return vaddr - self.start
+    ret = vaddr - self.start
+    if ret<0 or ret>len(self):
+      raise ValueError('%x/%x is not a valid vaddr for me'%(vaddr,ret))
+    return ret
 
   def readBytes(self, vaddr, size):
     laddr = self.vtop(vaddr)
