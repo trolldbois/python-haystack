@@ -84,7 +84,7 @@ class MemoryDumper:
     tmpdir = tempfile.mkdtemp()
     tmpname = os.path.join(tmpdir, os.path.basename(name))
     log.debug('running shutil.make_archive')
-    archive = shutil.make_archive(tmpname, 'gztar', srcdir)
+    archive = shutil.make_archive(tmpname, 'tar', srcdir) #gztar
     shutil.move(archive, name )
     shutil.rmtree(tmpdir ) # not working ?
 
@@ -106,7 +106,7 @@ def argparser():
   dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack')
   dump_parser.set_defaults(func=dump)  
 
-  return rootparser
+  return dump_parser
 
 def main(argv):
   logging.basicConfig(level=logging.DEBUG)
