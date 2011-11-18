@@ -92,7 +92,7 @@ class MemoryMapping:
 
   def __str__(self):
     text = ' '.join([formatAddress(self.start), formatAddress(self.end), self.permissions,
-           '%0.8x'%(self.offset), '%s:%s'%(self.major_device, self.minor_device), '%0.7x'%(self.inode), str(self.pathname)])
+           '%0.8x'%(self.offset), '%s:%s'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
     return text
 
   __repr__ = __str__
