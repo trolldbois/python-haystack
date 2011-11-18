@@ -604,15 +604,6 @@ class LoadableMembers(ctypes.Structure):
       elif isArrayType(attrtype): ## array of something else than int
         s+='%s (@0x%lx)  :['%(field, ctypes.addressof(attr),)+','.join(["%s"%(val) for val in attr ])+'],\n'
         continue
-      elif isPointerType(attrtype):
-        if not bool(attr) :
-          s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
-        elif not is_address_local(attr) :
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
-        elif type(self) == type(attr.contents): # do not recurse in lists
-          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(attr.contents) ) # use struct printer
-        else:
-          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
       elif isCStringPointer(attrtype):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
@@ -620,6 +611,16 @@ class LoadableMembers(ctypes.Structure):
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
+      elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
+        print field, attrtype
+        if not bool(attr) :
+          s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
+        elif not is_address_local(attr) :
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+        elif type(self) == type(attr.contents): # do not recurse in lists
+          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(attr.contents) ) # use struct printer
+        else:
+          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
       elif type(attr) is long or type(attr) is int:
         s+='%s : %s\n'%(field, hex(attr) )  
       else:
