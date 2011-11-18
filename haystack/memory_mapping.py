@@ -1,5 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner
+# Its intendted to be retrofittable with ptrace's memory mappings
+#
+# The rest is Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
 
-
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import os
 import logging
@@ -84,7 +92,7 @@ class MemoryMapping:
 
   def __str__(self):
     text = ' '.join([formatAddress(self.start), formatAddress(self.end), self.permissions,
-           '%0.8d'%(self.offset), '%0.2d:%0.2d'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
+           '%0.8x'%(self.offset), '%s:%s'%(self.major_device, self.minor_device), '%0.7x'%(self.inode), str(self.pathname)])
     return text
 
   __repr__ = __str__
@@ -307,9 +315,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._memdump = memdump
     self._base = None
-    s = len(LazyMmap(self._memdump))
-    if offset > s:
-      raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
+    #s = len(LazyMmap(self._memdump))
+    #if offset > s: # complety false and stupid
+    #  raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     if preload:
       self._mmap()
   
