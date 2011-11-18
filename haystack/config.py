@@ -18,10 +18,11 @@ OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/')
 class ConfigClass():
   def __init__(self, outputDir=OUTPUTDIR):
     self.cacheDir = os.path.normpath(outputDir)
-    self.structsCacheDir = os.path.sep.join([self.cacheDir,'structs'])
     self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
     self.WORDSIZE = 4
     self.commentMaxSize = 64
+    #
+    self.CACHE_STRUCT_DIR = '.structs'
     # cache file names
     self.CACHE_GENERATED_PY_HEADERS_VALUES = '.headers_values.py'
     self.CACHE_GENERATED_PY_HEADERS = '.headers.py'
@@ -39,6 +40,12 @@ class ConfigClass():
   def getCacheFilename(self, typ, dumpfilename):
     root = os.path.basename(dumpfilename)
     return os.path.sep.join([self.cacheDir, root+typ])
+
+  ''' 
+  @param typ: one of Config.CACHE_XX types'''
+  def getStructsCacheDir(self, dumpfilename):
+    root = os.path.basename(dumpfilename)
+    return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
 
 Config = ConfigClass()

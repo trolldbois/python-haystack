@@ -222,13 +222,14 @@ class PointerReverser(StructureOrientedReverser):
         context.structures[ ptr_value ] = mystruct
         #mystruct.save()
         # get pointers addrs in start -> start+size
+        log.debug('Adding %d pointer fields field '%( len(my_pointers_addrs)) )
         for p_addr in my_pointers_addrs:
           f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
-          log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
+          #log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
 
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
-        rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(fromcache))
+        rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(loaded+fromcache)) #DEBUG...
         log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*rate, loaded, fromcache ) )
     log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache ) )
     

@@ -218,7 +218,7 @@ class AnonymousStructInstance():
   def saveme(self, context):
     if not self.dirty:
       return
-    sdir = Config.getCacheFilename(self.CACHE_STRUCT_DIR, context.dumpname)
+    sdir = Config.getStructsCacheDir(context.dumpname)
     self.fname = os.path.sep.join([sdir, str(self)])
     pickle.dump(self, file(self.fname,'w'))
     return
