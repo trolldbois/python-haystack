@@ -13,6 +13,7 @@ import sys
 import tarfile
 import zipfile # relatively useless
 
+from haystack import dbg
 from haystack import memory_mapping
 
 log = logging.getLogger('loader')
@@ -105,28 +106,33 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         
   def loadMappings(self):
     mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
-    self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
+    self.metalines = [l.strip().split(' ') for l in mappingsFile.readlines()]
     self_mappings = []
-    #for mmap_fname in self.mmaps:
-    for mmap_fname, mmap_pathname in self.metalines:
-      start,end = mmap_fname.split('-') # get the './' away
+    for start, end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
       start,end = int(start,16),int(end,16 )
+      offset = int(offset,16)
+      inode = int(inode)
+      #rebuild filename
+      mmap_fname = "%s-%s" % (dbg.formatAddress(start), dbg.formatAddress(end))
+      # get devices nums
+      major_device, minor_device = devices.split(':')
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
+      # open the file in the archive
       mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
       if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
         log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
-        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
         mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
       elif end-start > 1000000: # use file mmap when file is too big
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).'+
                     ' Search will fail. Buffer is needed.'%(mmap_pathname))
-        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
       else:
         log.debug('Using a MemoryDumpMemoryMapping. small size')
-        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
       self_mappings.append(mmap)
     self.mappings = memory_mapping.Mappings(self_mappings, os.path.normpath(self.dumpfile.name))
     return    
@@ -135,37 +141,42 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
 class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
   def loadMappings(self):
     mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
-    self.metalines = [l.strip().split(',') for l in mappingsFile.readlines()]
+    self.metalines = [l.strip().split(' ') for l in mappingsFile.readlines()]
     self_mappings = []
     #for mmap_fname in self.mmaps:
-    for mmap_fname, mmap_pathname in self.metalines:
-      metaOnly = False
-      start,end = mmap_fname.split('-') # get the './' away
+    for start, end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
+      print start, end, permissions, offset, devices, inode, mmap_pathname
       start,end = int(start,16),int(end,16 )
+      offset = int(offset,16)
+      inode = int(inode)
+      #rebuild filename
+      mmap_fname = "%s-%s" % (dbg.formatAddress(start), dbg.formatAddress(end))
+      # get devices nums
+      major_device, minor_device = devices.split(':')
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
       try:
         mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
       except KeyError, e:
         log.debug('Ignore absent file')
-        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
         self_mappings.append(mmap)
         continue
       
       #else
       if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
         log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
-        mmap = memory_mapping.MemoryMapping( start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
         mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
       elif end-start > 10000000: # use file mmap when file is too big
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap. Search will fail. Buffer is needed.')
-        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
       else:
         log.debug('Using a MemoryDumpMemoryMapping. small size')
-        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions='rwx-', offset=0x0, 
-                                major_device=0x0, minor_device=0x0, inode=0x0,pathname=mmap_pathname)
+        mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
       self_mappings.append(mmap)
     self.mappings = memory_mapping.Mappings(self_mappings, os.path.normpath(self.dumpfile.name) )
     return    
