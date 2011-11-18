@@ -116,6 +116,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       mmap_fname = "%s-%s" % (dbg.formatAddress(start), dbg.formatAddress(end))
       # get devices nums
       major_device, minor_device = devices.split(':')
+      major_device = int(major_device,16)
+      minor_device = int(minor_device,16)
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
       # open the file in the archive
       mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
@@ -145,7 +147,6 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
     self_mappings = []
     #for mmap_fname in self.mmaps:
     for start, end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
-      print start, end, permissions, offset, devices, inode, mmap_pathname
       start,end = int(start,16),int(end,16 )
       offset = int(offset,16)
       inode = int(inode)
@@ -153,6 +154,8 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
       mmap_fname = "%s-%s" % (dbg.formatAddress(start), dbg.formatAddress(end))
       # get devices nums
       major_device, minor_device = devices.split(':')
+      major_device = int(major_device,16)
+      minor_device = int(minor_device,16)
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
       try:
         mmap_content_file = getattr(self.archive, self.openFile_attrname)(self.filePrefix+mmap_fname)
