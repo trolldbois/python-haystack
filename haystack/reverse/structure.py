@@ -50,7 +50,7 @@ def cacheLoad(context, addr):
   dumpname = context.dumpname
   if not os.access(dumpname,os.F_OK):
     return None
-  fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
@@ -62,7 +62,7 @@ def cacheLoadAll(context):
   dumpname = context.dumpname
   addresses = context.structures_addresses
   for addr in addresses:      
-    fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
+    fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
     if os.access(fname,os.F_OK):
       p = pickle.load(file(fname,'r'))
       p.mappings = context.mappings
@@ -74,7 +74,7 @@ def remapLoad(context, addr, newmappings):
   dumpname = context.dumpname
   if not os.access(dumpname,os.F_OK):
     return None
-  fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
@@ -98,7 +98,8 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   refs = lrucache.LRUCache(5000)
   def __init__(self, context, addr):
     self.addr = addr
-    self.fname = os.path.sep.join([Config.structsCacheDir, 'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), addr ) ])
+    self.fname = os.path.sep.join([Config.getStructsCacheDir(context.dumpname), 
+                  'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), addr ) ])
     if not os.access(self.fname,os.F_OK):
       raise ValueError()
     self.context = context
@@ -214,10 +215,11 @@ class AnonymousStructInstance():
     self.fields.sort()
     return field
   
-  def saveme(self):
+  def saveme(self, context):
     if not self.dirty:
       return
-    self.fname = os.path.sep.join([Config.structsCacheDir, str(self)])
+    sdir = Config.getCacheFilename(self.CACHE_STRUCT_DIR, context.dumpname)
+    self.fname = os.path.sep.join([sdir, str(self)])
     pickle.dump(self, file(self.fname,'w'))
     return
   

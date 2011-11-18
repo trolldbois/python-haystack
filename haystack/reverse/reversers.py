@@ -174,7 +174,7 @@ class StructureOrientedReverser():
     for i,s in enumerate(ctx.structures.values()):
       #  print s.dirty
       try:
-        s.saveme()
+        s.saveme(ctx)
       except KeyboardInterrupt,e:
         os.remove(s.fname)
         raise e
@@ -297,7 +297,7 @@ class PointerFieldReverser(StructureOrientedReverser):
           #  log.error('damned, no mappings in %x'%(ptr_value))
           #  anon.mappings = context.mappings
           anon.resolvePointers(context.structures_addresses, context.structures)
-          anon.saveme()
+          anon.saveme(context)
       except EOFError,e:
         #raise e
         pass
@@ -398,6 +398,8 @@ def search(opts):
   log.info('[+] Loading the memory dump ')
   try:
     context = getContext(opts.dumpfile.name)
+    if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
+      os.mkdir(Config.getStructsCacheDir(context.dumpname))
     # find basic boundaries
     ptrRev = PointerReverser()
     context = ptrRev.reverse(context)
