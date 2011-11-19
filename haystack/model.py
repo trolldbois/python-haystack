@@ -272,12 +272,11 @@ class LoadableMembers(ctypes.Structure):
     return valid
 
   def _isValid(self,mappings):
-    ''' real implementation.  '''
-    # precheck for quick unvalidation
-    # myfields=dict(self._fields_)  ## some fields are initialised...
+    ''' real implementation.  check expectedValues first, then the other fields '''
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     myfields=dict(_fieldsTuple)
     done=[]
+    # check expectedValues first
     for attrname, expected in self.expectedValues.iteritems():
       attrtype = myfields[attrname]
       attr=getattr(self,attrname)
@@ -290,16 +289,12 @@ class LoadableMembers(ctypes.Structure):
     todo = [ (f[0],f[1]) for f in self._fields_ if f[0] not in done ]
     for attrname,attrtype, in todo:
       attr=getattr(self,attrname)
-      # get expected values
       if attrname in self.expectedValues:
-        # shortcut
         if self.expectedValues[attrname] is IgnoreMember:
-          continue # oho ho
-      # validate
+          continue
       if not self._isValidAttr(attr,attrname,attrtype,mappings):
         return False
-      #continue
-    # loop done
+    # validation done
     return True
     
   def _isValidAttr(self,attr,attrname,attrtype,mappings):
