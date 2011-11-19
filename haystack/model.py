@@ -273,6 +273,7 @@ class LoadableMembers(ctypes.Structure):
 
   def _isValid(self,mappings):
     ''' real implementation.  check expectedValues first, then the other fields '''
+    log.debug(' ------ isValid ----------')
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     myfields=dict(_fieldsTuple)
     done=[]
@@ -304,28 +305,28 @@ class LoadableMembers(ctypes.Structure):
     if isBasicType(attrtype):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
-          log.debug('b: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
+          log.debug('basicType: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
           return False
-      log.debug('b: %s %s %s ok'%(attrname,attrtype,repr(attr) ))
+      log.debug('basicType: %s %s %s ok'%(attrname,attrtype,repr(attr) ))
       return True
     # b)
     if isStructType(attrtype):
       ### do i need to load it first ? becaus it should be memcopied with the super()..
       if not attr.isValid(mappings):
-        log.debug('st: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
+        log.debug('structType: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
         return False
-      log.debug('st: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
+      log.debug('structType: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
       return True
     # c)
     if isBasicTypeArray(attr):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
-          log.debug('b: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
+          log.debug('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
           return False
-      log.debug('ba: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
+      log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
       return True
     if isArrayType(attrtype):
-      log.debug('a: %s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
+      log.debug('array: %s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
         return True
@@ -342,14 +343,14 @@ class LoadableMembers(ctypes.Structure):
         if not bool(myaddress) :
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
-            log.debug('s: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
+            log.debug('str: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
             return False
-          log.debug('s: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+          log.debug('str: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       if (myaddress != 0) and ( not is_valid_address_value( myaddress, mappings) )   :
-        log.debug('s: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
+        log.debug('str: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
         return False
-      log.debug('s: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
+      log.debug('str: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
       return True
     # e) 
     if isPointerType(attrtype):
@@ -359,9 +360,9 @@ class LoadableMembers(ctypes.Structure):
         if not bool(attr):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
-            log.debug('p: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
+            log.debug('ptr: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
             return False
-          log.debug('p: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+          log.debug('ptr: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       # all case, 
       _attrType=None
@@ -370,20 +371,20 @@ class LoadableMembers(ctypes.Structure):
         #print 'is_valid_addres: ', is_valid_address( attr, mappings)
         #print 'getaddress(attr): ', getaddress(attr)
         if not is_valid_address_value( attr, mappings):
-          log.debug('sp: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
+          log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
       elif attrtype not in self.classRef:
-        log.debug("p: I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
+        log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
         _attrType=None
       else:
         # test valid address mapping
         _attrType=self.classRef[attrtype]
       #log.debug(" ihave decided on pointed attrType to be %s"%(_attrType))
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
-        log.debug('p: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
+        log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
         return False
       # null is accepted by default 
-      log.debug('p: %s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
+      log.debug('ptr: %s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
     # ?
     if isUnionType(attrtype):
