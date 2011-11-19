@@ -277,6 +277,7 @@ class LoadableMembers(ctypes.Structure):
     # myfields=dict(self._fields_)  ## some fields are initialised...
     _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
     myfields=dict(_fieldsTuple)
+    done=[]
     for attrname, expected in self.expectedValues.iteritems():
       attrtype = myfields[attrname]
       attr=getattr(self,attrname)
@@ -284,10 +285,10 @@ class LoadableMembers(ctypes.Structure):
         continue
       if not self._isValidAttr(attr,attrname,attrtype,mappings):
         return False
-    #if len(self.expectedValues) >0 :
-    #  log.info('maybe valid . full validation follows validated :%s'%(self.expectedValues.keys()))    
-    # normal check
-    for attrname,attrtype, in _fieldsTuple:
+      done.append(attrname)
+    # check the rest for validation
+    todo = [ (f[0],f[1]) for f in self._fields_ if f[0] not in done ]
+    for attrname,attrtype, in todo:
       attr=getattr(self,attrname)
       # get expected values
       if attrname in self.expectedValues:
