@@ -53,14 +53,13 @@ def is_valid_address_value(addr, mappings, structType=None):
   
   Returns the mapping in which the address stands otherwise.
   '''
-  for m in mappings:
-    if addr in m:
-      # check if end of struct is ALSO in m
-      if (structType is not None):
-        s=ctypes.sizeof(structType)
-        if (addr+s) not in m:
-          return False
-      return m
+  m = mappings.getMmapForAddr(addr)
+  if m:
+    if (structType is not None):
+      s = ctypes.sizeof(structType)
+      if (addr+s) not in m:
+        return False
+    return m
   return False
 
 def is_address_local(obj, structType=None):
@@ -77,7 +76,7 @@ def is_address_local(obj, structType=None):
     pid=os.getpid()
   from memory_mapping import readProcessMappings  # loading dependencies
   mappings = readProcessMappings(P()) # memory_mapping
-  return is_valid_address(obj,mappings, structType)
+  return is_valid_address(obj, mappings, structType)
 
 def getaddress(obj):
   ''' 
