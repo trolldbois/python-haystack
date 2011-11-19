@@ -356,7 +356,7 @@ def argparser():
   search_parser = subparsers.add_parser('search', help='search help')
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
-  search_parser.add_argument('--hint', type=int, action='store', default=0, help='hintOffset to start at')
+  search_parser.add_argument('--hint', type=int16, action='store', default=0, help='hintOffset to start at in hex')
   search_parser.set_defaults(func=search)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
@@ -365,6 +365,8 @@ def argparser():
   #
   return rootparser
 
+def int16( v):
+  return int(v,16)
 
 def getKlass(name):
   '''
@@ -429,6 +431,7 @@ def search(args):
       m = mappings.getMmapForAddr(args.hint)
       if not m:
         log.error('This hint is not a valid addr (0x%x)'%(args.hint))
+        return
       targetMapping = [m]
     else:
       targetMapping = [m for m in mappings if m.pathname == '[heap]']
@@ -436,7 +439,7 @@ def search(args):
     if len(targetMapping) == 0:
       log.warning('No memorymapping found. Searching everywhere.')
       targetMapping = mappings
-  print mappings, targetMapping
+  print mappings, targetMapping[0]
   finder = StructFinder(mappings, targetMapping)
   try:
     outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)
