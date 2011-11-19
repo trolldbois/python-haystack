@@ -439,7 +439,6 @@ def search(args):
     if len(targetMapping) == 0:
       log.warning('No memorymapping found. Searching everywhere.')
       targetMapping = mappings
-  print mappings, targetMapping[0]
   finder = StructFinder(mappings, targetMapping)
   try:
     outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)
