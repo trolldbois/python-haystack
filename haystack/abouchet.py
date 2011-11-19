@@ -18,6 +18,7 @@ import json
 
 import model
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
+from haystack import memory_mapping 
 
 from utils import xrange
 
@@ -57,11 +58,11 @@ class StructFinder:
     for m in self.targetMappings:
       ##debug, most structures are on head
       log.info("Looking at %s (%d bytes)"%(m, len(m)))
-      if not hasValidPermissions(m):
-        log.warning("Invalid permission for memory %s"%m)
-        continue
-      else:
-        log.debug("%s,%s"%(m,m.permissions))
+      #if not hasValidPermissions(m):
+      #  log.warning("Invalid permission for memory %s. Stil looking at it"%m)
+      #  #continue
+      #else:
+      #  log.debug("%s,%s"%(m,m.permissions))
       log.debug('look for %s'%(structType))
       outputs.extend(self.find_struct_in( m, structType, hintOffset=hintOffset, maxNum=maxNum, maxDepth=maxDepth))
       # check out
@@ -355,7 +356,7 @@ def argparser():
   search_parser = subparsers.add_parser('search', help='search help')
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
-  search_parser.add_argument('--hint', type=int, action='store', default=1, help='hintOffset to start at')
+  search_parser.add_argument('--hint', type=int, action='store', default=0, help='hintOffset to start at')
   search_parser.set_defaults(func=search)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
@@ -423,10 +424,19 @@ def search(args):
   if args.fullscan:
     targetMapping = mappings
   else:
-    targetMapping = [m for m in mappings if m.pathname == '[heap]']
+    if args.hint:
+      log.debug('Looking for the mmap containing the hint addr.')
+      m = mappings.getMmapForAddr(args.hint)
+      if not m:
+        log.error('This hint is not a valid addr (0x%x)'%(args.hint))
+      targetMapping = [m]
+    else:
+      targetMapping = [m for m in mappings if m.pathname == '[heap]']
+    targetMapping = memory_mapping.Mappings(targetMapping, mappings.name)
     if len(targetMapping) == 0:
-      log.warning('No [heap] memorymapping found. Searching everywhere.')
+      log.warning('No memorymapping found. Searching everywhere.')
       targetMapping = mappings
+  print mappings, targetMapping
   finder = StructFinder(mappings, targetMapping)
   try:
     outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)

@@ -578,7 +578,7 @@ def readProcessMappings(process):
       line = line.rstrip()
       match = PROC_MAP_REGEX.match(line)
       if not match:
-        raise ProcessError(process, "Unable to parse memoy mapping: %r" % line)
+        raise ProcessError(process, "Unable to parse memory mapping: %r" % line)
       map = ProcessMemoryMapping(
         process,
         int(match.group(1), 16),
@@ -593,5 +593,5 @@ def readProcessMappings(process):
   finally:
     if type(mapsfile) is file:
       mapsfile.close()
-  return maps
+  return Mappings(maps, maps[0].pathname)
 
