@@ -243,6 +243,19 @@ class LoadableMembers(ctypes.Structure):
   classRef=dict()
   expectedValues=dict()
 
+  ''' 
+    Iterate over the fields and types of this structure, including inherited ones.
+  '''
+  def getFields(self):
+    mro = type(self).mro()[:-3] # cut Structure, _CData and object
+    mro.reverse()
+    for typ in mro: # firsts are first
+      if not hasattr(typ, '_fields_'):
+        continue
+      for f in typ._fields_:
+        yield (f[0],f[1])
+    raise StopIteration
+
   def isValid(self,mappings):
     ''' 
     Checks if each members has coherent data 

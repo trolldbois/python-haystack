@@ -76,6 +76,9 @@ def printSizeof(mini=-1):
       if ctypes.sizeof(klass) > mini:
         print '%s:'%name,ctypes.sizeof(klass)
 
+e= E()
+
+print [f for f in e.getFields()]
 ##########
 
 
