@@ -287,7 +287,7 @@ class LoadableMembers(ctypes.Structure):
   def _isValid(self,mappings):
     ''' real implementation.  check expectedValues first, then the other fields '''
     log.debug(' ------ isValid ----------')
-    _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
+    _fieldsTuple = self.getFields()
     myfields=dict(_fieldsTuple)
     done=[]
     # check expectedValues first
@@ -300,7 +300,7 @@ class LoadableMembers(ctypes.Structure):
         return False
       done.append(attrname)
     # check the rest for validation
-    todo = [ (f[0],f[1]) for f in self._fields_ if f[0] not in done ]
+    todo = [ (name, typ) for name,typ in self.getFields() if name not in done ]
     for attrname,attrtype, in todo:
       attr=getattr(self,attrname)
       if attrname in self.expectedValues:
@@ -436,8 +436,7 @@ class LoadableMembers(ctypes.Structure):
       return False
     log.debug('%s do loadMembers ----------------'%(self.__class__.__name__))
     ## go through all members. if they are pointers AND not null AND in valid memorymapping AND a struct type, load them as struct pointers
-    _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
-    for attrname,attrtype in _fieldsTuple:
+    for attrname,attrtype in self.getFields():
       attr=getattr(self,attrname)
       # shorcut ignores
       if attrname in self.expectedValues:
@@ -546,8 +545,7 @@ class LoadableMembers(ctypes.Structure):
     The returned string should be python-compatible...
     '''
     s="%s # %s\n"%(prefix,repr(self) )
-    _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
-    for field,typ in _fieldsTuple:
+    for field,typ in self.getFields():
       attr=getattr(self,field)
       s+=self._attrToString(attr,field,typ,prefix)
     return s
@@ -598,8 +596,7 @@ class LoadableMembers(ctypes.Structure):
 
   def __str__(self):
     s=repr(self)+'\n'
-    _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
-    for field,attrtype in _fieldsTuple:
+    for field,attrtype in self.getFields():
       attr=getattr(self,field)
       if isStructType(attrtype):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
@@ -651,8 +648,7 @@ class LoadableMembers(ctypes.Structure):
     if hasRef(my_class, ctypes.addressof(self) ):
       return getRef(my_class, ctypes.addressof(self) )
     keepRef(my_self, my_class, ctypes.addressof(self) )
-    _fieldsTuple = [ (f[0],f[1]) for f in self._fields_] 
-    for field,typ in _fieldsTuple:
+    for field,typ in self.getFields():
       attr=getattr(self,field)
       member=self._attrToPyObject(attr,field,typ)
       setattr(my_self, field, member)
@@ -775,7 +771,7 @@ class pyObj(object):
 
   def __iter__(self):
     ''' iterate on a instance's type's _fields_ members following the original type field order '''
-    for k,typ in [ (f[0],f[1]) for f in self._ctype_._fields_]:
+    for k,typ in self._ctype_.getFields():
       v = getattr(self,k)
       yield (k,v,typ)
     pass
