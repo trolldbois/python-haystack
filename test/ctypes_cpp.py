@@ -29,6 +29,12 @@ class A(CPP):
   _fields_ = [
     ('a', ctypes.c_uint)
   ]
+  def get_a(self):
+    print A._fields_
+    return self.a
+  
+  def set_a(self, val):
+    self.a = val
   
 class B(A):
   _fields_ = [
@@ -49,6 +55,11 @@ class E(D,C):
   _fields_ = [
     ('e', ctypes.c_uint)
   ]
+  def __init__(self):
+    D.__init__(self)
+    D.set_a(self, 1)
+    C.__init__(self)
+    C.set_a(self, 12)
 
 ################ START copy generated classes ##########################
 
@@ -79,6 +90,14 @@ def printSizeof(mini=-1):
 e= E()
 
 print [f for f in e.getFields()]
+
+print dict(e.getFields())
+
+#print D.set_a(e, 12)
+#print C.set_a(e, 44)
+
+print 'c:',C.get_a(e)
+print 'd:',D.get_a(e)
 ##########
 
 
