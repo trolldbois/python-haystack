@@ -1,7 +1,8 @@
 #!/usr/bin/make -f
 
+CFLAGS = -O2 -g -Wall
 CPPFLAGS = -O2 -g -Wall
-LIBS = 
+LDFLAGS = -ldl
 INCLS = 
 
 EXTRA =
@@ -14,11 +15,11 @@ FLAGS= ${INCLS} ${EXTRA}
 	
 
 
-.c.test:
-	gcc ${FLAGS} ${LIBS} $(.SOURCE) -o $(.TARGET)
+test-ctypes1: test-ctypes1.c
+	$(CC) $(CFLAGS)  $<  $(LDFLAGS)  -o $@
 	
-.cpp.test: 
-	g++ ${FLAGS} ${LIBS} $(.SOURCE) -o $(.TARGET)
+test-ctypes2: test-ctypes2.cpp
+	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
 
 

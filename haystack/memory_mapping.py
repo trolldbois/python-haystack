@@ -329,7 +329,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   
   def useByteBuffer(self):
     # toddo use bitstring
-    self._mmap().getByteBuffer()
+    self._mmap().getByteBuffer() ## XXX FIXME buggy
     # force readBytes update
     self.readBytes = self._base.readBytes
   

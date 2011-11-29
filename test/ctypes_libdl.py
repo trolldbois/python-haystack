@@ -93,7 +93,6 @@ def dumpMemory(pid, fname):
 def makeDumps():
   dumps = []
   
-  logging.getLogger('dumper').setLevel(logging.ERROR)
   cmd = ['./src/test-ctypes2']
   p = subprocess.Popen(cmd, bufsize=1, stdin=PIPE, stdout=PIPE)
   q,t = getOutput(p)
@@ -136,32 +135,54 @@ def getDiff(d1, d2):
   from haystack import dump_loader
   mappings1 = dump_loader.load(d1)
   mappings2 = dump_loader.load(d2)
-  log.debug('Building hashes for %s'%(d1))
+  log.debug('Building hashes for %s'%(d1.name))
   m1 = dict(buildMappingsHashes(mappings1))
-  revm1 = dict((v,k) for k, v in m1.items())
-  log.debug('Building hashes for %s'%(d2))
+  log.debug('Building hashes for %s'%(d2.name))
   m2 = dict(buildMappingsHashes(mappings2))
-  revm2 = dict((v,k) for k, v in m2.items())
   
   # new mappings in d2
-  new2 = set([m.pathname for m in m2.keys()]) - set([m.pathname for m in m1.keys()])
-  print 'new mappings :'
+  pnames1 = set([m.pathname for m in m1.values()])
+  pnames2 = set([m.pathname for m in m2.values()])
+  new2 = pnames2 - pnames1
+  news = []
   for pathname in new2:
-    print mappings2.getMmap(pathname)
+    news.extend(mappings2.getMmap(pathname))
+  print 'new mappings in %s:'%(d2.name)
+  for n in news:
+    print n
   # believe in hash funcs.
-  diff1 = set(m1.keys()) - set(m2.keys())
   diff2 = set(m2.keys()) - set(m1.keys())
-  print 'modified mappings:'
-  for h1 in diff:
-    print m1[h1]
-  import code
-  code.interact(local=locals())
-
+  diffs = []
+  revm1 = dict((v,k) for k, v in m1.items())  
+  print 'modified mappings in %s:'%(d2.name)
+  for h2 in diff2:
+    m = m2[h2]
+    if m.pathname in pnames1:
+      print m
+      diffs.append(m)
+  return news, diffs
+  
 def main():
+  logging.basicConfig(level=logging.DEBUG)
+
+  logging.getLogger('dumper').setLevel(logging.ERROR)
+  logging.getLogger('loader').setLevel(logging.DEBUG)
+  logging.getLogger('ctypes_libdl').setLevel(logging.DEBUG)
+  
   #dumps = makeDumps()
   dumps = [file('test-ctypes2.dump.%d'%i,'rb') for i in range(4)]
   
-  getDiff(dumps[0], dumps[1])
+  #n1, diff1 = getDiff(dumps[0], dumps[1])
+  #import code
+  #code.interact(local=locals())
+
+  n2, diff2 = getDiff(dumps[1], dumps[2])
+  import code
+  code.interact(local=locals())
+
+  n3, diff3 = getDiff(dumps[2], dumps[3])
+  import code
+  code.interact(local=locals())
 
 if __name__ == '__main__':
   main() #printSizeof()
