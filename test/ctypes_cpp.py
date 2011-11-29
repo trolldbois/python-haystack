@@ -29,13 +29,7 @@ class A(CPP):
   _fields_ = [
     ('a', ctypes.c_uint)
   ]
-  def get_a(self):
-    print A._fields_
-    return self.a
-  
-  def set_a(self, val):
-    self.a = val
-  
+
 class B(A):
   _fields_ = [
     ('b', ctypes.c_uint)
@@ -51,15 +45,13 @@ class D(B):
     ('d', ctypes.c_uint)
   ]
 
+
 class E(D,C):
   _fields_ = [
+    ('C', C),
+    #('C', C),
     ('e', ctypes.c_uint)
   ]
-  def __init__(self):
-    D.__init__(self)
-    D.set_a(self, 1)
-    C.__init__(self)
-    C.set_a(self, 12)
 
 ################ START copy generated classes ##########################
 
@@ -89,18 +81,26 @@ def printSizeof(mini=-1):
 
 e= E()
 
-print [f for f in e.getFields()]
+e.a = 1
+e.b = 2
+e.c = 3
+e.d = 4
+e.e = 5
 
-print dict(e.getFields())
+C.__setattr__(e, 'a', 99)
+D.__setattr__(e, 'a', 66)
+e.C.a = 122
 
-#print D.set_a(e, 12)
-#print C.set_a(e, 44)
+for f in e.getFields():
+  print f[0], getattr(e, f[0])
 
-print 'c:',C.get_a(e)
-print 'd:',D.get_a(e)
+print e.C.a
+
+#print dict(e.getFields())
+
 ##########
 
 
 if __name__ == '__main__':
-  printSizeof()
+  pass #printSizeof()
 
