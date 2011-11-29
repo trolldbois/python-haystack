@@ -511,7 +511,7 @@ class Mappings:
   def getMmap(self, pathname):
     mmap = None
     if len(self.mappings) >= 1:
-      mmap = [m for m in self.mappings if m.pathname == pathname][0]
+      mmap = [m for m in self.mappings if m.pathname == pathname]
     if mmap is None:
       raise IndexError('No mmap of pathname %s'%(pathname))
     return mmap
@@ -523,7 +523,7 @@ class Mappings:
     return False
 
   def getHeap(self):
-    heap = self.getMmap('[heap]')
+    heap = self.getMmap('[heap]')[0]
     # optimise code to load heap in ram
     if isinstance(heap, FileBackedMemoryMapping):
       i = self.mappings.index(heap)
@@ -532,7 +532,7 @@ class Mappings:
       self.mappings[i]=heap
     return heap
   def getStack(self):
-    stack = self.getMmap('[stack]')  
+    stack = self.getMmap('[stack]')[0] 
     if isinstance(stack, FileBackedMemoryMapping):
       i = self.mappings.index(stack)
       stack = MemoryDumpMemoryMapping.fromFile(stack, stack._memdump)
