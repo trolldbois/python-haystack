@@ -208,7 +208,7 @@ class PointerIntervalSignature:
     self._load()
 
   def _getMmap(self):
-    self.mmap = self.mappings.getMmap(self.mmap_pathname)
+    self.mmap = self.mappings.getMmap(self.mmap_pathname)[0] ## XXX todo this is getHeap...
     return
 
   def _load(self):
