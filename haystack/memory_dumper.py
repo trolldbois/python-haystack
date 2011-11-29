@@ -35,7 +35,7 @@ class MemoryDumper:
     self.mappings = memory_mapping.readProcessMappings(self.process)
     log.debug('mappings read. Dropping ptrace on pid.')
     return
-    
+
   def dumpMemfile(self):
     tmpdir = tempfile.mkdtemp()
     self.index = file(os.path.join(tmpdir,'mappings'),'w+')
@@ -89,7 +89,16 @@ class MemoryDumper:
     shutil.rmtree(tmpdir ) # not working ?
 
 
+class Dummy:
+  pass
 
+def dumpToFile(pid, outfile, heapOnly=False, stackOnly=False):
+  opt = Dummy()
+  opt.pid = int(pid)
+  opt.dumpfile = file(outfile,'wb')
+  opt.heap = heapOnly
+  opt.stack = stackOnly
+  return dump(opt)
 
 def dump(opt):
   dumper = MemoryDumper(opt)
