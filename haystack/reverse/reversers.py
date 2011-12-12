@@ -100,6 +100,9 @@ class ReverserContext():
     del d['heap']
     del d['structures']
     del d['structures_addresses']
+    del d['pointer_offsets']
+    del d['malloc_addresses']
+    del d['malloc_sizes']
     #d['dumpname'] = os.path.normpath(self.dumpname )
     #d['heapPathname']= self.heap.pathname
     #d['structures_addresses'] = self.structures_addresses
@@ -217,6 +220,7 @@ class MallocReverser(StructureOrientedReverser):
     unused = 0
     todo = sorted(set(context.malloc_addresses) - set(context.structures.keys()))
     fromcache = len(context.malloc_addresses) - len(todo)
+    offsets = list(context.pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from malloc_chunks contents')
     for i, ptr_value in enumerate(context.malloc_addresses):
@@ -229,7 +233,13 @@ class MallocReverser(StructureOrientedReverser):
         if mc1.check_inuse(context.mappings, chunk_addr):
           mystruct = structure.makeStructure(context, ptr_value, size)
           context.structures[ ptr_value ] = mystruct
-          mystruct.saveme(context)
+          # add pointerFields
+          offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
+          log.debug('Adding %d pointer fields field '%( len(my_pointers_addrs)) )
+          for p_addr in my_pointers_addrs:
+            f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+          # save it
+          #mystruct.saveme(context)
         else:
           unused+=1
       # next
@@ -321,6 +331,9 @@ class FieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
+    ## writing to file
+    fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
+    towrite=[]
     #for ptr_value,anon in context.structures.items():
     for ptr_value in sorted(context.structures.keys()):
       anon = context.structures[ptr_value]
@@ -334,11 +347,15 @@ class FieldReverser(StructureOrientedReverser):
       except EOFError,e:
         log.error('incomplete unpickling')
         raise e
+      ## output headers
+      towrite.append(anon.toString())
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
+        fout.write('\n'.join(towrite) )
+        towrite=[]
     
     log.info('[+] FieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     context.parsed.add(str(self))
