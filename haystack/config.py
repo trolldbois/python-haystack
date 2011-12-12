@@ -13,7 +13,7 @@ from haystack.utils import Dummy
 
 log = logging.getLogger('config')
 
-OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/')
+OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/malloc/')
 
 class ConfigClass():
   def __init__(self, outputDir=OUTPUTDIR):
@@ -31,6 +31,8 @@ class ConfigClass():
     self.CACHE_STACK_ADDRS = '.stack.pointers.offsets'
     self.CACHE_STACK_VALUES = '.stack.pointers.values'
     self.CACHE_STRUCTURES = '.structures'
+    self.CACHE_MALLOC_CHUNKS_ADDRS = '.mchunks.addrs'
+    self.CACHE_MALLOC_CHUNKS_SIZES = '.mchunks.sizes'
     self.CACHE_CONTEXT = '.ctx'
     self.CACHE_GRAPH = '.gexf'
     self.DIFF_PY_HEADERS='.diff_headers'
