@@ -60,16 +60,20 @@ class ReverserContext():
   def _init2(self):
     log.info('[+] Fetching cached structures addresses list')
     ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
-    self.structures_addresses = aligned_ptr
-    self.pointers_offsets = ptr_offsets
+    self.pointers_addresses = aligned_ptr
+    self.pointers_offsets = ptr_offsets # need 
     
-    log.info('[+] Fetching cached structures list')
-    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self) ])
-    self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
-
     log.info('[+] Fetching cached malloc chunks list')
     self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
 
+    # TODO switched
+    if True:
+      self.structures_addresses = self.malloc_addresses
+    else:
+      self.structures_addresses = self.pointers_addresses # false
+        
+    log.info('[+] Fetching cached structures list')
+    self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
     return
   
@@ -100,6 +104,7 @@ class ReverserContext():
     del d['heap']
     del d['structures']
     del d['structures_addresses']
+    del d['pointers_addresses']
     del d['pointers_offsets']
     del d['malloc_addresses']
     del d['malloc_sizes']
@@ -207,24 +212,20 @@ class MallocReverser(StructureOrientedReverser):
   '''
   def _reverse(self, context):
     log.info('[+] Reversing malloc_chunk in %s'%(context.heap))
-    
-    addresses, lengths = utils.getAllocations(context.dumpname, context.mappings, context.heap)
-    
-    context.malloc_addresses = addresses
-    log.info('[+] Reversed %d allocations from the malloc_chunks'%(len(addresses)))
-    
+        
     ## we really should be lazyloading structs..
     t0 = time.time()
     tl = t0
     loaded = 0
     prevLoaded = 0
     unused = 0
-    todo = sorted(set(context.malloc_addresses) - set(context.structures.keys()))
-    fromcache = len(context.malloc_addresses) - len(todo)
+    lengths = context.malloc_sizes
+    todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
+    fromcache = len(context.structures_addresses) - len(todo)
     offsets = list(context.pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from malloc_chunks contents')
-    for i, ptr_value in enumerate(context.malloc_addresses):
+    for i, ptr_value in enumerate(context.structures_addresses):
       if ptr_value in todo:
         loaded += 1
         size = lengths[i]
@@ -256,7 +257,7 @@ class MallocReverser(StructureOrientedReverser):
   def check_inuse(self, context):
     import libc.ctypes_malloc
     chunks = context.malloc_addresses
-    pointers = context.structures_addresses
+    pointers = context.pointers_addresses
     unused = set(chunks) - set(pointers)
     heap = context.heap
     used=0

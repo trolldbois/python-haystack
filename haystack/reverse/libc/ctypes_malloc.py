@@ -43,7 +43,7 @@ if Config.WORDSIZE == 4:
 elif Config.WORDSIZE == 8:
   UINT = ctypes.c_uint64
 
-def getUserAllocations(mappings, heap):
+def getUserAllocations(mappings, heap, filterInuse=False):
   ''' 
   Lists all (addr, size) of allocated space by malloc_chunks.
   '''
@@ -58,7 +58,11 @@ def getUserAllocations(mappings, heap):
   #print chunk.toString(''), 'real_size = ', chunk.real_size()
   #print hexdump(data)
   #print ' ---------------- '
-  yield  (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
+  if filterInuse:
+    if chunk.check_inuse(mappings, orig_addr):
+      yield  (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
+  else:
+    yield  (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
 
   while True:
     next, next_addr = chunk.getNextChunk(mappings, orig_addr)
@@ -72,7 +76,11 @@ def getUserAllocations(mappings, heap):
     #print next.toString(''), 'real_size = ', next.real_size()
     #print test.hexdump(next.getUserData(mappings, next_addr))
     #print ' ---------------- '
-    yield (next.get_mem_addr(next_addr), next.get_mem_size()) 
+    if filterInuse:
+      if next.check_inuse(mappings, next_addr):
+        yield  (next.get_mem_addr(next_addr), next.get_mem_size()) 
+    else:
+      yield (next.get_mem_addr(next_addr), next.get_mem_size()) 
     # next loop
     orig_addr = next_addr
     chunk = next

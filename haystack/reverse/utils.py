@@ -131,7 +131,7 @@ def getAllocations(dumpfilename, mappings, heap):
   sizes = int_array_cache(f_sizes)
   if addrs is None or sizes is None:
     log.info('[+] Making new cache - getting malloc_chunks from heap ')
-    allocations = libc.ctypes_malloc.getUserAllocations(mappings, heap)
+    allocations = libc.ctypes_malloc.getUserAllocations(mappings, heap, filterInuse=True)
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
     int_array_save(f_sizes, sizes)
