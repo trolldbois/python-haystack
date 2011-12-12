@@ -250,16 +250,36 @@ class AnonymousStructInstance():
         if field.decoded: # do not redecode, save
           continue
         #
-        fieldType = field.decodeType()
-        if fieldType is None: # we could not decode. mark it as unknown
-          field.padding = False
-          field.decoded = True
-          continue
-        # Found a new field in a padding, with a probable type...          
+        while True: # if same size, we are finished
+          presize = len(field)
+          preoffset = field.offset
+          #TODO check
+          ## at field+len(field), there is ( most of the time) a field to be decoded.
+          ## no need to fix gaps for that
+          fieldType = field.decodeType()
+          if fieldType is None: # we could not decode. mark it as unknown
+            field.padding = False
+            field.decoded = True
+            break
+          # is there a gap ?
+          nextsize = presize - len(field)
+          if nextsize <= 0: # get out
+            break
+          # lets try next field after
+          if field.offset == preoffset: # field in head
+            nextOffset = field.offset+len(field)
+            # _addField(self, offset, typename, size, padding):
+            field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head
+          elif preoffset+presize == field.offset+len(field): # field in tail
+            field = self._addField( preoffset, FieldType.UNKNOWN, presize-len(field), True) # insert new field in head
+          else : # field ( zeroes ) somewhere in the middle, lets let gaps handle that
+            break
+
+        #
+        #if fieldType is None: # we could not decode. mark it as unknown. let the gap open
+        #  continue
+        # Found a new field in a padding, with a probable type...
         pass
-      #TODO FIXME
-      ## at field+len(field), there is ( most of the time) a field to be decoded.
-      ## no need to fix gaps for that
       
       # reroll until completion
       self._fixGaps() 
