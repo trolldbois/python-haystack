@@ -16,6 +16,14 @@ log = logging.getLogger('field')
 
 ## Field related functions and classes
 
+def findFirstNot(s, c):
+  for i in xrange(len(s)):
+    if s[i] != c:
+      return i
+  return -1
+
+
+
 def makeArrayField(parent, fields): 
   #vaddr = parent.vaddr+firstField.offset
   newField = ArrayField(parent, fields)
@@ -185,32 +193,18 @@ class Field:
     ''' iterate over the bytes until a byte if not \x00 
     '''
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
-    previous = -1
-    for i, val in enumerate(bytes):
-      log.debug('LEAD: charAt:%s,value:%s  bytes[%d:%d]: %s' %(i, ord(val), self.offset+i,self.offset+self.size, repr(bytes[i:i+32]) ))
-      if (self.offset+i) % Config.WORDSIZE == 0: # aligned word
-        previous = i
-      if val != '\x00':  # ah ! its not null !
-        if previous == i: # aligned word
-          if i > 0: # we have at least a byte of padding
-            self.size = i
-            self.value = bytes[:self.size]
-            return True
-          else: # first byte is not null
-            return False
-        else: # unaligned word, we can say the padding stopped at the previous alignement
-          if previous <= 0: # never was a padding
-            return False
-          else: # the padding stopped after 'previous' bytes 
-            self.size = previous
-            self.value = bytes[:self.size]
-            return True
-      #continue
-    if previous != -1:
-      # self.size = i # change is not necessary
+    index = findFirstNot(bytes, '\x00')
+    if index < Config.WORDSIZE:
+      return False
+    if index == -1:
+      self.size = len(bytes)
       self.value = bytes
-      return True
-    return False
+    else:
+      previous = index - (index%Config.WORDSIZE)
+      self.size = previous
+      self.value = bytes[:self.size]
+    return True
+    
 
   def checkEndingZeroes(self):
     ''' iterate over the bytes until a byte if not \x00 
@@ -350,11 +344,11 @@ class Field:
     # in order, pointer, small integer (two nul bytes doesnt make a string ), zeroes, string
     if self.checkPointer():
       log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
+    elif self.checkZeroes():
+      # ok, inlined in checkZeroes
+      pass
     elif self.checkInteger():
       log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
-    elif self.checkZeroes():
-      # ok, inlined
-      pass
     elif self.checkString(): # Found a new string...
       self.typename = FieldType.STRING
     #elif self.checkIntegerArray():
