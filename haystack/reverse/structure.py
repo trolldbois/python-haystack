@@ -268,12 +268,13 @@ class AnonymousStructInstance():
           # lets try next field after
           if field.offset == preoffset: # field in head
             nextOffset = field.offset+len(field)
-            # _addField(self, offset, typename, size, padding):
             field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head
           elif preoffset+presize == field.offset+len(field): # field in tail
             field = self._addField( preoffset, FieldType.UNKNOWN, presize-len(field), True) # insert new field in head
-          else : # field ( zeroes ) somewhere in the middle, lets let gaps handle that
-            break
+          else : # field ( zeroes ) somewhere in the middle, lets let _fixGaps handle the head
+            nextOffset = field.offset+len(field)
+            nextsize = presize - (nextOffset - preoffset)
+            field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head
 
         #
         #if fieldType is None: # we could not decode. mark it as unknown. let the gap open
