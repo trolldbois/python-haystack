@@ -22,6 +22,7 @@ from haystack import dump_loader
 import structure
 import fieldtypes
 import utils
+import libc
 
 log = logging.getLogger('reversers')
 
@@ -236,7 +237,7 @@ class MallocReverser(StructureOrientedReverser):
         tl = time.time()
         rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(loaded+fromcache)) #DEBUG...
         log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*rate, loaded, fromcache ) )
-    log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache, unused ) )
+    log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache, unused ) )
     
     context.parsed.add(str(self))
     return
