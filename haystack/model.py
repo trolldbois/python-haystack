@@ -192,7 +192,7 @@ def keepRef(obj,typ=None,origAddr=None):
     else:
       origAddr=hex(origAddr)
     if typ is not None:
-      log.warning('references already in cache %s/%s'%(typ,origAddr))
+      log.debug('references already in cache %s/%s'%(typ,origAddr))
     return
   __book.addRef(obj,typ,origAddr)
   return
@@ -247,13 +247,23 @@ class LoadableMembers(ctypes.Structure):
     Iterate over the fields and types of this structure, including inherited ones.
   '''
   def getFields(self):
-    mro = type(self).mro()[:-3] # cut Structure, _CData and object
+    return type(self).getFields()
+  
+  @classmethod
+  def getFields(cls):
+    mro = cls.mro()[:-3] # cut Structure, _CData and object
     mro.reverse()
-    for typ in mro: # firsts are first
+    me = mro.pop(-1)
+    for typ in mro: # firsts are first, cls is in here in [-1]
       if not hasattr(typ, '_fields_'):
         continue
-      for f in typ._fields_:
-        yield (f[0],f[1])
+      for name,vtyp in typ.getFields():
+        #yield ('%s_%s'%(typ.__name__, name), vtyp)
+        yield (name, vtyp)
+    # print mines.
+    for f in me._fields_:
+      yield (f[0],f[1])
+    
     raise StopIteration
 
   def isValid(self,mappings):
