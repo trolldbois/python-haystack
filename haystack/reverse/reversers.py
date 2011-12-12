@@ -65,6 +65,10 @@ class ReverserContext():
     log.info('[+] Fetching cached structures list')
     #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAll(self) ])
     self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
+
+    log.info('[+] Fetching cached malloc chunks list')
+    self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
+
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
     return
   
@@ -179,15 +183,78 @@ class StructureOrientedReverser():
         os.remove(s.fname)
         raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
-        tl = time.time()
+        t0 = time.time()
         log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
+        tl = t0
     tf = time.time()
     log.info('\t[.] saved in %2.2f secs'%(tf-t0))
     return
       
   def __str__(self):
     return '<%s>'%(self.__class__.__name__)
-  
+
+
+'''
+  Looks at malloc's malloc_chunk .
+'''
+class MallocReverser(StructureOrientedReverser):
+  ''' 
+  slice the mapping in several structures delimited per malloc_chunk-boundaries
+  '''
+  def _reverse(self, context):
+    log.info('[+] Reversing malloc_chunk in %s'%(context.heap))
+    
+    addresses, lengths = utils.getAllocations(context.dumpname, context.mappings, context.heap)
+    
+    context.malloc_addresses = addresses
+    log.info('[+] Reversed %d allocations from the malloc_chunks'%(len(addresses)))
+    
+    ## we really should be lazyloading structs..
+    t0 = time.time()
+    tl = t0
+    loaded = 0
+    unused = 0
+    todo = sorted(set(context.malloc_addresses) - set(context.structures.keys()))
+    fromcache = len(context.malloc_addresses) - len(todo)
+    # build structs from pointers boundaries. and creates pointer fields if possible.
+    log.info('[+] Adding new raw structures from malloc_chunks contents')
+    for i, ptr_value in enumerate(context.malloc_addresses):
+      if ptr_value in todo:
+        loaded += 1
+        size = lengths[i]
+        # save the ref/struct type
+        chunk_addr = ptr_value-2*Config.WORDSIZE
+        mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
+        if mc1.check_inuse(context.mappings, chunk_addr):
+          mystruct = structure.makeStructure(context, ptr_value, size)
+          context.structures[ ptr_value ] = mystruct
+          mystruct.saveme(context)
+        else:
+          unused+=1
+      # next
+      if time.time()-tl > 10: #i>0 and i%10000 == 0:
+        tl = time.time()
+        rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(loaded+fromcache)) #DEBUG...
+        log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*rate, loaded, fromcache ) )
+    log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache, unused ) )
+    
+    context.parsed.add(str(self))
+    return
+
+  def check_inuse(self, context):
+    import libc.ctypes_malloc
+    chunks = context.malloc_addresses
+    pointers = context.structures_addresses
+    unused = set(chunks) - set(pointers)
+    heap = context.heap
+    used=0
+    for m1 in unused:
+      mc1 = heap.readStruct(m1-8, libc.ctypes_malloc.malloc_chunk)
+      if mc1.check_inuse(context.mappings, m1-8):
+        used+=1
+    log.info('[+] Found %s allocs used by not referenced by pointers'%(used))
+    return 
+    
 '''
   Looks at pointers values to build basic structures boundaries.
 '''
@@ -308,7 +375,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         pass
       if time.time()-tl > 30: 
         tl = time.time()
-        rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
+        rate = ((tl-t0)/(1+decoded+fromcache)) if decoded else ((tl-t0)/(1+fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
             (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
@@ -401,19 +468,22 @@ def search(opts):
     context = getContext(opts.dumpfile.name)
     if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
       os.mkdir(Config.getStructsCacheDir(context.dumpname))
-    # find basic boundaries
-    ptrRev = PointerReverser()
-    context = ptrRev.reverse(context)
+
+    mallocRev = MallocReverser()
+    context = mallocRev.reverse(context)
+    mallocRev.check_inuse(context)
+    ## find basic boundaries
+    #ptrRev = PointerReverser()
+    #context = ptrRev.reverse(context)
     # identify pointer relation between structures
     pfr = PointerFieldReverser()
     context = pfr.reverse(context)
+
     # graph pointer relations between structures
-    ptrgraph = PointerGraphReverser()
-    context = ptrgraph.reverse(context)
-    
+    #ptrgraph = PointerGraphReverser()
+    #context = ptrgraph.reverse(context)
     #ptrgraph._saveStructures(context)
-    return
-    
+        
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()
@@ -421,7 +491,7 @@ def search(opts):
 
     log.info('[+] saving headers')
     save_headers(context)
-
+    fr._saveStructures(context)
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context

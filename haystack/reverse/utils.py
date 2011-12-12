@@ -117,6 +117,29 @@ def getHeapPointers(dumpfilename, mappings):
   return values,heap_addrs, aligned, not_aligned
 
 
+def getAllocations(dumpfilename, mappings, heap):
+  ''' Search malloc_chunks in heap .
+      records addrs and sizes.
+  '''
+  # TODO if linux
+  import libc.ctypes_malloc
+  
+  f_addrs = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_ADDRS, dumpfilename+'.%s'%(heap.start))
+  f_sizes = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_SIZES, dumpfilename+'.%s'%(heap.start))
+  log.debug('reading from %s'%(f_addrs))
+  addrs = int_array_cache(f_addrs)
+  sizes = int_array_cache(f_sizes)
+  if addrs is None or sizes is None:
+    log.info('[+] Making new cache - getting malloc_chunks from heap ')
+    allocations = libc.ctypes_malloc.getUserAllocations(mappings, heap)
+    addrs, sizes = zip(*allocations)
+    int_array_save(f_addrs, addrs)
+    int_array_save(f_sizes, sizes)
+    log.info('\t[-] we have %d malloc_chunks'%(len(addrs)) )
+  else:
+    log.info('[+] Loading from cache')
+  log.info('\t[-] we have %d malloc_chunks'%(len(addrs)) )
+  return addrs, sizes
 
 '''
   a shareBytes array of bytes. no allocation buffer should be made, only indexes.
