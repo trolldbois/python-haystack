@@ -100,7 +100,7 @@ class ReverserContext():
     del d['heap']
     del d['structures']
     del d['structures_addresses']
-    del d['pointer_offsets']
+    del d['pointers_offsets']
     del d['malloc_addresses']
     del d['malloc_sizes']
     #d['dumpname'] = os.path.normpath(self.dumpname )
@@ -217,6 +217,7 @@ class MallocReverser(StructureOrientedReverser):
     t0 = time.time()
     tl = t0
     loaded = 0
+    prevLoaded = 0
     unused = 0
     todo = sorted(set(context.malloc_addresses) - set(context.structures.keys()))
     fromcache = len(context.malloc_addresses) - len(todo)
@@ -239,7 +240,7 @@ class MallocReverser(StructureOrientedReverser):
           for p_addr in my_pointers_addrs:
             f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
           # save it
-          #mystruct.saveme(context)
+          mystruct.saveme(context)
         else:
           unused+=1
       # next
