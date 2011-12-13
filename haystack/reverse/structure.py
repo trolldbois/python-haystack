@@ -116,9 +116,14 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   def _load(self):
     if self.obj is not None:  # 
       return self.obj
-    p = pickle.load(file(self.fname,'r'))
+    try:
+      p = pickle.load(file(self.fname,'r'))
+    except EOFError,e:
+      log.error('Could not load %s - removing it '%(self.fname))
+      os.remove(self.fname)
+      raise e
     if not isinstance(p, AnonymousStructInstance):
-      raise EOFError('not a AnonymousStructInstance in cache.')
+      raise EOFError('not a AnonymousStructInstance in cache. %s'%(p.__class__))
     p.mappings = self.context.mappings
     p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
     p.dirty = False
@@ -220,7 +225,15 @@ class AnonymousStructInstance():
       return
     sdir = Config.getStructsCacheDir(context.dumpname)
     self.fname = os.path.sep.join([sdir, str(self)])
-    pickle.dump(self, file(self.fname,'w'))
+    try:
+      pickle.dump(self, file(self.fname,'w'))
+    except KeyboardInterrupt, e:
+      # clean it, its stale
+      os.remove(self.fname)
+      log.warning('removing %s'%(self.fname))
+      import sys
+      ex = sys.exc_info()
+      raise ex[1], None, ex[2]
     return
   
   def _check(self,field):
@@ -924,7 +937,7 @@ class %s(LoadableMembers):  # %s
     try:
       d['dumpname'] = os.path.normpath(self.mappings.name)
     except AttributeError,e:
-      log.error('no mappings name in %s \n %s %x'%(d, self.__class__, self.vaddr))
+      log.error('no mappings name in %s \n %s %x \n %s'%(d, self.__class__, self.vaddr, e))
       d['dumpname'] = None
     del d['mappings']
     del d['bytes']

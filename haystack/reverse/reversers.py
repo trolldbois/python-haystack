@@ -85,7 +85,8 @@ class ReverserContext():
     log.info('\t[-] loaded my context fromcache, Mapping heap to mem')
     context.mappings = mappings
     context.heap = context.mappings.getHeap()
-
+    log.info('\t[-] loaded heap')
+    
     context._init2()
     return context
     
@@ -157,6 +158,12 @@ class StructureOrientedReverser():
       else:
         # call the heuristic
         self._reverse(ctx)
+    except EOFError,e: # error while unpickling
+      log.error('incomplete unpickling : %s - resetting context.parsed'%(e))
+      context.parsed = set()
+      import sys
+      ex = sys.exc_info()
+      raise ex[1], None, ex[2]
     finally:
       if cacheEnabled:
         self._putCache(ctx)
@@ -337,18 +344,14 @@ class FieldReverser(StructureOrientedReverser):
     fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
     #for ptr_value,anon in context.structures.items():
-    for ptr_value in sorted(context.structures.keys()):
+    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
       anon = context.structures[ptr_value]
-      try:
-        if anon.isResolved(): # TODO this is a performance hit, unproxying...
-          fromcache+=1
-        else:
-          decoded+=1
-          anon.decodeFields()
-          #context.structures[ptr_value].save()
-      except EOFError,e:
-        log.error('incomplete unpickling')
-        raise e
+      if anon.isResolved(): # TODO this is a performance hit, unproxying...
+        fromcache+=1
+      else:
+        decoded+=1
+        anon.decodeFields()
+        anon.saveme(context)
       ## output headers
       towrite.append(anon.toString())
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
@@ -374,25 +377,17 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
-    for ptr_value in sorted(context.structures.keys()):
+    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
       anon = context.structures[ptr_value]
-      try:
-        if anon.isPointerResolved():
-          fromcache+=1
-        else:
-          decoded+=1
-          #if not hasattr(anon, 'mappings'):
-          #  log.error('damned, no mappings in %x'%(ptr_value))
-          #  anon.mappings = context.mappings
-          anon.resolvePointers(context.structures_addresses, context.structures)
-          anon.saveme(context)
-      except EOFError,e:
-        #raise e
-        pass
-      except TypeError,e:
-        print 'choked on ',anon.__class__
-        raise e
-        pass
+      if anon.isPointerResolved():
+        fromcache+=1
+      else:
+        decoded+=1
+        #if not hasattr(anon, 'mappings'):
+        #  log.error('damned, no mappings in %x'%(ptr_value))
+        #  anon.mappings = context.mappings
+        anon.resolvePointers(context.structures_addresses, context.structures)
+        anon.saveme(context)
       if time.time()-tl > 30: 
         tl = time.time()
         rate = ((tl-t0)/(1+decoded+fromcache)) if decoded else ((tl-t0)/(1+fromcache))
@@ -495,6 +490,12 @@ def search(opts):
     ## find basic boundaries
     #ptrRev = PointerReverser()
     #context = ptrRev.reverse(context)
+
+    # decode bytes contents to find basic types.
+    # DEBUG reactivate, 
+    fr = FieldReverser()
+    context = fr.reverse(context)
+
     # identify pointer relation between structures
     pfr = PointerFieldReverser()
     context = pfr.reverse(context)
@@ -504,10 +505,6 @@ def search(opts):
     #context = ptrgraph.reverse(context)
     #ptrgraph._saveStructures(context)
         
-    # decode bytes contents to find basic types.
-    # DEBUG reactivate, 
-    fr = FieldReverser()
-    context = fr.reverse(context)
 
     log.info('[+] saving headers')
     save_headers(context)
