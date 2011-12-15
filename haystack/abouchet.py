@@ -180,6 +180,7 @@ def hasValidPermissions(memmap):
 
 def _callFinder(cmd_line):
   """ Call the haystack finder in a subprocess. Will use pickled objects to communicate results. """
+  log.debug(cmd_line)
   env = os.environ
   env['PYTHONPATH'] = environSep.join(sys.path) # add possible pythonpaths to environnement
   p = subprocess.Popen(cmd_line, stdin=None, stdout=subprocess.PIPE, close_fds=True , env=env)
