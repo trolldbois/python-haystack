@@ -216,7 +216,7 @@ def pointer2bytes(attr,nbElement):
 
 def isCTypes(obj):
   ''' Checks if an object is a ctypes type object'''
-  return  (type(obj).__module__ in ['ctypes','_ctypes']) 
+  return  issubclass(type(obj), ctypes.Structure) #or (type(obj).__module__ in ['ctypes','_ctypes']) 
     
 def isBasicType(objtype):
   ''' Checks if an object is a ctypes basic type, or a python basic type.'''

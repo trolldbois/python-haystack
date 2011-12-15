@@ -379,7 +379,7 @@ class LoadableMembers(ctypes.Structure):
     if isPointerType(attrtype):
       if attrname in self.expectedValues:
         # test if NULL is an option
-        log.debug('XXXXX:%s %s'%(bool(attr), attr))
+        log.debug('isPointerType: bool(attr):%s attr:%s'%(bool(attr), attr))
         if not bool(attr):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
@@ -393,7 +393,7 @@ class LoadableMembers(ctypes.Structure):
         log.debug('Its a simple type. Checking mappings only.')
         #print 'is_valid_addres: ', is_valid_address( attr, mappings)
         #print 'getaddress(attr): ', getaddress(attr)
-        if not is_valid_address_value( attr, mappings):
+        if getaddress(attr) != 0 and not is_valid_address_value( attr, mappings): # NULL can be accepted
           log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
       elif attrtype not in self.classRef:
@@ -629,7 +629,7 @@ class LoadableMembers(ctypes.Structure):
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
-        print field, attrtype
+        #print field, attrtype
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
@@ -683,7 +683,7 @@ class LoadableMembers(ctypes.Structure):
         obj=(None,getaddress(attr) )
       else:
         contents=attr.contents
-        if isStructType(contents) :
+        if isStructType(attrtype) :
           attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
           cache = getRef(attr_py_class, getaddress(attr) )
           if cache:
@@ -789,15 +789,19 @@ class pyObj(object):
 def findCtypesInPyObj(obj):
   ''' check function to help in unpickling errors correction '''
   ret = False
-  if isinstance(obj, pyObj):
+  if hasattr(obj, 'findCtypes'):
+    print obj, 'is a instance of pyObj'
     if obj.findCtypes():
       log.warning('Found a ctypes in array/tuple')
       return True
   elif type(obj) is tuple or type(obj) is list:
+    print obj, 'is a list or tuple'
     for el in obj:
       if findCtypesInPyObj(el):
         log.warning('Found a ctypes in array/tuple')
         return True
+  elif isCTypes(obj):
+    return True
   return False
       
 import inspect,sys
