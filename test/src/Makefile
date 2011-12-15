@@ -21,6 +21,9 @@ test-ctypes1: test-ctypes1.c
 test-ctypes2: test-ctypes2.cpp
 	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
+test-ctypes3: test-ctypes3.c
+	$(CC) $(CFLAGS)  $<  $(LDFLAGS)  -o $@
+	
 
 
 
