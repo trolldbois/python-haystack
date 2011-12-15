@@ -159,8 +159,8 @@ class StructureOrientedReverser():
         # call the heuristic
         self._reverse(ctx)
     except EOFError,e: # error while unpickling
-      log.error('incomplete unpickling : %s - resetting context.parsed'%(e))
-      context.parsed = set()
+      log.error('incomplete unpickling : %s - You should probably reset context.parsed'%(e))
+      ###context.parsed = set()
       import sys
       ex = sys.exc_info()
       raise ex[1], None, ex[2]
