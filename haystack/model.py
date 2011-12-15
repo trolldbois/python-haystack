@@ -74,7 +74,6 @@ Example :
       "iqmp": [NotNull]
     }
     def loadMembers(self, mappings, maxDepth):
-      print 'example'
       if not LoadableMembers.loadMembers(self, mappings, maxDepth):
         log.debug('RSA not loaded')
         return False
@@ -391,8 +390,6 @@ class LoadableMembers(ctypes.Structure):
       _attrType=None
       if isVoidPointerType(attrtype):
         log.debug('Its a simple type. Checking mappings only.')
-        #print 'is_valid_addres: ', is_valid_address( attr, mappings)
-        #print 'getaddress(attr): ', getaddress(attr)
         if getaddress(attr) != 0 and not is_valid_address_value( attr, mappings): # NULL can be accepted
           log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
@@ -629,7 +626,6 @@ class LoadableMembers(ctypes.Structure):
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
-        #print field, attrtype
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
