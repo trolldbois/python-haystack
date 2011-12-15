@@ -49,7 +49,6 @@ class MemoryMapper:
   def initPid(self, args):
     dbg = PtraceDebugger()
     process = dbg.addProcess(args.pid, is_attached=False)
-    print process.__dict__.keys()
     if process is None:
       log.error("Error initializing Process debugging for %d"% args.pid)
       raise IOError
