@@ -15,22 +15,24 @@ import pickle
 import sys
 
 from haystack.config import Config
-#from haystack.reverse import structure
-#import haystack.reverse.structure as structure
 sys.path.append('../haystack/reverse/')
-import structure
+from haystack.reverse import structure
+from haystack.reverse import reversers
+from haystack.reverse.reversers import *
 #from haystack.reverse.utils import SharedBytes
 SharedBytes=str
 
+context = reversers.getContext('../outputs/skype.1.a')
+
 class TestStructure(unittest.TestCase):
 
-  def asetUp(self):
-    self.s1 = pickle.load(file('AnonStruct_skype.1.a_ad35de0','r') )
+  def setUp(self):  
+    self.s1 = structure.cacheLoad(context, 0xad35de0)
+    #self.s1 = pickle.load(file('AnonStruct_skype.1.a_ad35de0','r') )
     self.s1_bytes = SharedBytes(file('AnonymousStruct_84_ad35de0.bytes','r').read())
-    self.s2 = pickle.load(file('AnonStruct_skype.1.a_ad39240','r') )
+    self.s2 = structure.cacheLoad(context, 0xad39240)
+    #self.s2 = pickle.load(file('AnonStruct_skype.1.a_ad39240','r') )
     self.s2_bytes = SharedBytes(file('AnonymousStruct_130256_ad39240.bytes','r').read())
-    self.s2 = structure.AnonymousStructInstance(self.s2.mappings, 0, self.s2_bytes)
-  
   #
   '''
   def test_guessField(self):
@@ -61,7 +63,6 @@ class TestStructure(unittest.TestCase):
     return  
   '''
   def test_aggregateFields(self):
-    self.asetUp()
     logging.basicConfig(level=logging.INFO)
     #logging.getLogger('pattern').setLevel(logging.DEBUG)
     #print self.s2.fields
@@ -104,7 +105,7 @@ class TestStructure(unittest.TestCase):
     self.s2._checkBufferLen()
     file('%s.checkBufLen'%(self.s2),'w').write( self.s2.toString() )
 
-    self.s2.save()
+    #self.s2.save()
     # field 0 untyped 
     return  
 
