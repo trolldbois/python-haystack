@@ -905,11 +905,12 @@ class AnonymousStructInstance():
     info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
+    clsname = ('%s'%(self)).replace('.','_')
     ctypes_def = '''
 class %s(LoadableMembers):  # %s
   _fields_ = %s
 
-''' % (self, info, fieldsString)
+''' % (clsname, info, fieldsString)
     return ctypes_def
 
   def __contains__(self, other):
@@ -937,7 +938,7 @@ class %s(LoadableMembers):  # %s
     try:
       d['dumpname'] = os.path.normpath(self.mappings.name)
     except AttributeError,e:
-      log.error('no mappings name in %s \n %s %x \n %s'%(d, self.__class__, self.vaddr, e))
+      #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
       d['dumpname'] = None
     del d['mappings']
     del d['bytes']
