@@ -1,5 +1,5 @@
 
-
+'''
 	( 'ptr_ext_lib' , ctypes.c_void_p ), # @ b6b3ef68 /usr/lib/libQtCore.so.4.7.2 
 
 
@@ -8,7 +8,7 @@ b6c63000-b6efa000 r-xp 00000000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCo
 b6efa000-b6f01000 r--p 00296000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
 b6f01000-b6f04000 rw-p 0029d000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
 
-
+'''
 
 import os
 import ctypes
