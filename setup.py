@@ -3,7 +3,7 @@ from setuptools import setup
 from glob import glob
 
 setup(name="haystack",
-    version="0.13",
+    version="0.14",
     description="Search C Structures in a process' memory",
     long_description=open('README').read(),
 
@@ -26,6 +26,8 @@ setup(name="haystack",
     packages = ['haystack','haystack.gui'],
     scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump', 'scripts/haystack-pointer-merge'],
     install_requires = ["python-ptrace","argparse"],
+    test_suite="haystack",
+    #tests_require="haystack",
 )
 
 
