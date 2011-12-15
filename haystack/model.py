@@ -651,12 +651,13 @@ class LoadableMembers(ctypes.Structure):
     reference should be handled nicely.
     '''
     # get self class.
-    #log.info("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
+    #log.debug("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
     my_class=getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
     my_self=my_class()
     #keep ref
     if hasRef(my_class, ctypes.addressof(self) ):
       return getRef(my_class, ctypes.addressof(self) )
+    # we are saving us in a partially resolved state, to keep from loops.
     keepRef(my_self, my_class, ctypes.addressof(self) )
     for field,typ in self.getFields():
       attr=getattr(self,field)
@@ -683,7 +684,7 @@ class LoadableMembers(ctypes.Structure):
         obj=(None,getaddress(attr) )
       else:
         contents=attr.contents
-        if isStructType(attrtype) :
+        if isStructType(type(contents)) :
           attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
           cache = getRef(attr_py_class, getaddress(attr) )
           if cache:
@@ -762,6 +763,7 @@ class pyObj(object):
       if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
         ret = True
+    return ret
 
   def _attrFindCtypes(self, attr, attrname, typ):
     ret = False
@@ -790,12 +792,10 @@ def findCtypesInPyObj(obj):
   ''' check function to help in unpickling errors correction '''
   ret = False
   if hasattr(obj, 'findCtypes'):
-    print obj, 'is a instance of pyObj'
     if obj.findCtypes():
       log.warning('Found a ctypes in array/tuple')
       return True
   elif type(obj) is tuple or type(obj) is list:
-    print obj, 'is a list or tuple'
     for el in obj:
       if findCtypesInPyObj(el):
         log.warning('Found a ctypes in array/tuple')
