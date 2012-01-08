@@ -20,9 +20,9 @@ from haystack import memory_mapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
 __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
 log = logging.getLogger('dumper')
@@ -118,6 +118,7 @@ class MemoryDumper:
     """continue() the process."""
     self.process.cont()
     self.dbg.deleteProcess(process=self.process)
+    self.dbg.quit()
     return 
     
   def _dump_mapping(self, m, tmpdir):
