@@ -60,7 +60,7 @@ class TestMemoryDumper(unittest.TestCase):
     self.tgts.append(tgt)
     return tgt
 
-  def __test_type_dir(self):
+  def test_dumptype_dir(self):
     tgt1 = self._make_tgt_dir()
     tgt2 = self._make_tgt_dir()
     tgt3 = self._make_tgt_dir()
@@ -87,7 +87,7 @@ class TestMemoryDumper(unittest.TestCase):
     # test opening by dump_loader
     from haystack import dump_loader
     from haystack import memory_mapping
-    mappings = dump_loader.load(file(out3))
+    mappings = dump_loader.load(out3)
     self.assertIsInstance( mappings, memory_mapping.Mappings)
     
     
@@ -120,16 +120,16 @@ class TestMemoryDumper(unittest.TestCase):
     # test opening by dump_loader
     from haystack import dump_loader
     from haystack import memory_mapping
-    mappings = dump_loader.load(file(out3))
+    mappings = dump_loader.load(out3)
     self.assertIsInstance( mappings, memory_mapping.Mappings)
 
     return 
 
-  def test_type_tar(self):
+  def test_dumptype_tar(self):
     self._test_type_file("tar")
     return 
 
-  def test_type_gztar(self):
+  def test_dumptype_gztar(self):
     self._test_type_file("gztar")
     return 
 
