@@ -24,7 +24,20 @@ from haystack import utils
 log = logging.getLogger('memory_mapping')
 
 '''
-Memory mappings.
+Memory mapping classes are wrappers around the memory mappings of a process.
+Short story, the memory of a process is segmented in several memory zone called
+memory mapping, exemple: the heap, the stack, mmap(2)-s of files, mmap(2)-ing a 
+dynamic library, etc.
+Theses memory mapping represent the memory space of a process. Each mapping has
+a start and a end address, which gives boundaries for the range of valid 
+pointer values.
+
+There are several ways to wraps around a memory mapping, given the precise 
+scenario you are in. You could need a wrapper for a live process debugging, a
+wrapper for a mapping that has been dumps in a file, a wrapper for a mapping 
+that has been remapped to memory, etc.
+
+Classes:
 - MemoryMapping : memory mapping metadata
 - ProcessMemoryMapping: memory space from a live process with the possibility to mmap the memspace at any moment.
 - LocalMemoryMapping .fromAddress: memorymapping that lives in local space in a ctypes buffer. 
