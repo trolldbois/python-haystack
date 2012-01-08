@@ -1,15 +1,25 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+"""Setuptools scripts."""
+
 from setuptools import setup
-from glob import glob
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__status__ = "Production"
 
 setup(name="haystack",
     version="0.14",
     description="Search C Structures in a process' memory",
-    long_description=open('README').read(),
+    long_description=open("README").read(),
 
     url="http://packages.python.org/haystack/",
     download_url="http://github.com/trolldbois/python-haystack/tree/master",
-    license='GPL',
+    license="GPL",
     classifiers=[
         "Topic :: System :: Networking",
         "Topic :: Security",
@@ -20,13 +30,13 @@ setup(name="haystack",
         "Programming Language :: Python",
         "Development Status :: 5 - Production/Stable",
     ],
-    keywords=['memory','analysis','forensics','struct','ptrace','reverse'],
+    keywords=["memory","analysis","forensics","struct","ptrace","reverse"],
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
-    packages = ['haystack','haystack.gui'],
-    scripts = ['scripts/haystack', 'scripts/haystack-gui', 'scripts/haystack-dump', 'scripts/haystack-pointer-merge'],
-    install_requires = ["python-ptrace","argparse"],
-    test_suite="haystack",
+    packages = ["haystack", "haystack.gui"],
+    scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-pointer-merge"],
+    install_requires = ["python-ptrace", "argparse"],
+    test_suite= "test",
     #tests_require="haystack",
 )
 
