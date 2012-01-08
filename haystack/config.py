@@ -8,9 +8,9 @@ import os
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
 __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
 log = logging.getLogger('config')
@@ -25,6 +25,7 @@ class ConfigClass():
     self.WORDSIZE = 4
     self.commentMaxSize = 64
     #
+    self.MAX_MAPPING_SIZE_FOR_MMAP = 10*1024*1024
     self.CACHE_STRUCT_DIR = '.structs'
     # cache file names
     self.CACHE_GENERATED_PY_HEADERS_VALUES = '.headers_values.py'
