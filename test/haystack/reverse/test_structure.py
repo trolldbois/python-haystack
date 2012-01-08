@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+"""Tests for haystack.reverse.structure."""
 
 import logging
 import struct
@@ -15,14 +12,22 @@ import pickle
 import sys
 
 from haystack.config import Config
-sys.path.append('../haystack/reverse/')
 from haystack.reverse import structure
 from haystack.reverse import reversers
 from haystack.reverse.reversers import *
 #from haystack.reverse.utils import SharedBytes
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
+# TODO: attempted a shared binary readonly string buffer
 SharedBytes=str
 
-context = reversers.getContext('../outputs/skype.1.a')
+context = reversers.getContext( os.path.sep.join([Config.cacheDir,'skype.5.a']) )
 
 class TestStructure(unittest.TestCase):
 

@@ -25,7 +25,7 @@ int shared_activated_start = 0;
 #include <dlfcn.h>
 #include <stdbool.h>
 
-#include "ldsodefs.h"
+//#include "ldsodefs.h"
 
 //#undef _dl_mcount_wrapper_check
 

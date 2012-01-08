@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+"""Tests haystack.utils ."""
 
 import struct
 import operator
@@ -16,6 +13,12 @@ from haystack.config import Config
 from haystack.model import *
 from haystack import utils
 
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__status__ = "Production"
 
 class St(LoadableMembers):
   _fields_ = [ ('a',ctypes.c_int) ]
