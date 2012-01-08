@@ -9,13 +9,15 @@ EXTRA =
 
 FLAGS= ${INCLS} ${EXTRA}
 
+pid=
 
 .PHONY: 
 	
 all: test-ctypes1 test-ctypes2 test-ctypes3
 	
-
-
+dumps:
+	sudo python make.py
+	
 test-ctypes1: test-ctypes1.c
 	$(CC) $(CFLAGS) $<  $(LDFLAGS)  -o $@
 	
