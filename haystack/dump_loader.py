@@ -1,31 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
-"""
-This module offers several classes in charge of loading the memory mapping dumps
-into a MemoryMappings list of MemoryMapping, given a
-previously saved format ( file, archive, ... ).
-Basically MemoryMappings are in archive of all the mappings dumped to file + a 
-special 'mappings' index file that give all metadata about thoses mappings.
+"""This module offers several classes in charge of loading the memory 
+mapping dumps into a MemoryMappings list of MemoryMapping, given a 
+previously saved format ( file, archive, ... ). 
+Basically MemoryMappings are in archive of all the mappings dumped to 
+file + a special 'mappings' index file that give all metadata about 
+thoses mappings.
 
 Classes:
  - MemoryDumpLoader:  abstract loader for a memory dump loader
- - ProcessMemoryDumpLoader(MemoryDumpLoader): handles memory load from several
-      recognized format.
- - LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader): loads mappings contents
-      with a tolerance to partial dumps with partial list of mappings dumped 
-      ( ie: only [heap] and [stack] are dumped to file ). 
-      As long as the missing mappings are not read(), the MemoryMappings 
-      metadata should be enough for your algorithm
- - KCoreDumpLoader(MemoryDumpLoader): Mapping loader for kernel memory mappings.
+ - ProcessMemoryDumpLoader: handles memory load from several recognized 
+    format.
+ - LazyProcessMemoryDumpLoader: loads mappings contents with a tolerance
+    to partial dumps with a partial list of mappings dumped. 
+ - KCoreDumpLoader: Mapping loader for kernel memory mappings dumps.
 
 Functions:
- - load(dumpfile,lazy=True): load MemoryMappings from the source dumpfile.
+ - load: load MemoryMappings from the source dumpfile.
 
 """
 
@@ -40,13 +32,20 @@ import zipfile # relatively useless
 from haystack import dbg
 from haystack import memory_mapping
 
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
 log = logging.getLogger('loader')
 
 
 class MemoryDumpLoader:
-  ''' Loads a memory dump done by MemoryDumper.
-  It's basically a tgz of all memorymaps 
-  self.mapping should be a memory_mapping.Mappings isntance
+  ''' Abstract interface to a memory dump loader.
+  
+  isValid and loadMapping should be implemented.
   '''
   def __init__(self, dumpfile):
     self.dumpfile = dumpfile
@@ -62,7 +61,7 @@ class MemoryDumpLoader:
     
 
 class ProcessMemoryDumpLoader(MemoryDumpLoader):
-
+  """ Handles memory load from several recognized format."""
   tarfn={ 'open': tarfile.open , 'openFile': 'extractfile' }
   zipfn={ 'open': zipfile.ZipFile , 'openFile': 'open' }
   dirfn={ 'open': __builtins__ , 'openFile': 'open' }
@@ -165,6 +164,11 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
 
 class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
+  """Loads mappings contents with a tolerance to partial dumps with partial list of 
+mappings dumped ( ie: only [heap] and [stack] are dumped to file ). 
+As long as the missing mappings are not read(), the MemoryMappings metadata 
+should be enough for your algorithm
+"""
   def loadMappings(self):
     mappingsFile = getattr(self.archive, self.openFile_attrname)(self.indexFilename)
     self.metalines = [l.strip().split(' ') for l in mappingsFile.readlines()]
@@ -210,6 +214,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
 
 
 class KCoreDumpLoader(MemoryDumpLoader):
+  """Mapping loader for kernel memory mappings."""
   def isValid(self):
     # debug we need a system map to validate...... probably
     return True

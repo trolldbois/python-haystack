@@ -1,36 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner
-# Its intendted to be retrofittable with ptrace's memory mappings
-#
-# The rest is Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+'''Provide several memory mapping wrappers to handle different situations.
 
-import os
-import logging
-import re
-import ctypes
-import struct
-import mmap
-from weakref import ref
-
-# local
-from dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
-from haystack import utils
-
-log = logging.getLogger('memory_mapping')
-
-'''
-Memory mapping classes are wrappers around the memory mappings of a process.
-Short story, the memory of a process is segmented in several memory zone called
-memory mapping, exemple: the heap, the stack, mmap(2)-s of files, mmap(2)-ing a 
-dynamic library, etc.
-Theses memory mapping represent the memory space of a process. Each mapping has
-a start and a end address, which gives boundaries for the range of valid 
-pointer values.
+Short story, the memory of a process is segmented in several memory 
+zones called memory mapping, 
+  exemple: the heap, the stack, mmap(2)-s of files, mmap(2)-ing a 
+           dynamic library, etc.
+Theses memory mapping represent the memory space of a process. Each 
+mapping hasca start and a end address, which gives boundaries for the 
+range of valid pointer values.
 
 There are several ways to wraps around a memory mapping, given the precise 
 scenario you are in. You could need a wrapper for a live process debugging, a
@@ -43,8 +22,33 @@ Classes:
 - LocalMemoryMapping .fromAddress: memorymapping that lives in local space in a ctypes buffer. 
 - MemoryDumpMemoryMapping .fromFile : memory space from a raw file, with lazy loading capabilities.
 - FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
+
+This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
+Its intended to be retrofittable with ptrace's memory mappings.
 '''
 
+import os
+import logging
+import re
+import ctypes
+import struct
+import mmap
+from weakref import ref
+
+# haystack
+from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
+from haystack import utils
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+__credits__ = ["Victor Skinner"]
+
+
+log = logging.getLogger('memory_mapping')
 
 PROC_MAP_REGEX = re.compile(
     # Address range: '08048000-080b0000 '
