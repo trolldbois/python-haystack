@@ -1,7 +1,6 @@
-biblio
 *~
 *.pyc
-test/*
+test/dumps/
 *.xml
 build
 dist

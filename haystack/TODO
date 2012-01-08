@@ -1,4 +1,17 @@
+
+\xfc\xff\xff\xff
+
+si bytes[2] et bytes[3] == \xff \xff -> ctypes.c_int
+
+si zeroes.size = 4 -> ctypes.c_uint
+si zeroes.size == 8 -> 2* ctypes.c_uint
+si untyped.size == 4 -> ctypes.c_uint
+
 ada29ff
+
+
+SIG:P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 
+-> to reg == P4I4 (I4u4z4P4)*32
 
 class AnonymousStruct_544_ad90d00(LoadableMembers):  # resolved:True pointerResolved:False
 
@@ -104,17 +117,12 @@ see class AnonymousStruct_544_ad90d00(LoadableMembers)
 members[3:] are all char[][]
 
 bug :
-class AnonymousStruct_8208_ad16c58(LoadableMembers):  # resolved:True SIG:P4z1542z6650u4z4u4 pointerResolved:True
-  _fields_ = [ 
-	( 'ptr_AnonymousStruct_8208_ad14c48' , ctypes.c_void_p ), # @ ad14c48 [heap] 
-	( 'zerroes_4' , ctypes.c_ubyte * 1542 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0...
-	( 'zerroes_1546' , ctypes.c_ubyte * 6650 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0...
-	( 'untyped_8196' , ctypes.c_ubyte * 4 ), #   bytes:'\x11 \x00\x00'
-	( 'zerroes_8200' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
-	( 'untyped_8204' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x08'
- ]
 
-wtf ?
+awk '/SIG:/ { print $5 }' ../outputs/headers.py | sort -n |uniq^C
+2954 sur 40004
+
+
+
 
 
 
