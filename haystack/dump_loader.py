@@ -27,6 +27,7 @@ import sys
 import tarfile
 import zipfile # relatively useless
 
+from haystack.config import Config
 from haystack import dbg
 from haystack import memory_mapping
 
@@ -138,7 +139,13 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     return False
   
   def loadMappings(self):
-    """Loads the mappings content from the dump to a MemoryMappings."""
+    """Loads the mappings content from the dump to a MemoryMappings.
+    
+    If an underlying file containing a memory dump does not exists, still
+    create a MemoryMap for metadata purposes.
+    If the memory map is > Config.MAX_MAPPING_SIZE_FOR_MMAP, use a slow FileBackedMemoryMapping.
+    Else, load the mapping in memory.
+    """
     mappingsFile = self._open_file(self.archive, self.indexFilename)
     self.metalines = [l.strip().split(' ') for l in mappingsFile.readlines()]
     self_mappings = []
@@ -168,7 +175,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
                                 major_device, minor_device, inode,pathname=mmap_pathname)
         mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
-      elif end-start > 10000000: # use file mmap when file is too big
+      elif end-start > Config.MAX_MAPPING_SIZE_FOR_MMAP: # use file mmap when file is too big
         log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).'%(mmap_pathname)+
                     ' Search will fail. Buffer is needed.')
         mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
@@ -196,7 +203,6 @@ class KCoreDumpLoader(MemoryDumpLoader):
         log.info('found base_offset @ %s'%(addr))
         return int(addr,16)
     return None
-
 
   def getInitTask(self,systemmap):
     systemmap.seek(0)
