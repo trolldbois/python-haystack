@@ -41,12 +41,11 @@ from haystack import utils
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
 __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 __credits__ = ["Victor Skinner"]
-
 
 log = logging.getLogger('memory_mapping')
 

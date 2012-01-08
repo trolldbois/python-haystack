@@ -66,87 +66,89 @@ def save_graph_headers(context, graph, fname):
 def make(opts):
   fname = opts.gexf
 
-import reversers
-from reversers import *  # by the pickle of my thumb
-context = reversers.getContext('../../outputs/skype.1.a')
+if __name__ == '__main__':
 
-import networkx
-import matplotlib.pyplot as plt
+  import reversers
+  from reversers import *  # by the pickle of my thumb
+  context = reversers.getContext('../../outputs/skype.1.a')
 
-digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
+  import networkx
+  import matplotlib.pyplot as plt
 
-# clean solos
-isolates = networkx.algorithms.isolate.isolates(digraph)
-digraph.remove_nodes_from(isolates)
+  digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
 
-# clean solos clusters
-graph = networkx.Graph(digraph) #undirected
-subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
-isolates1 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 1) ) # self connected
-isolates2 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 2) ) 
-isolates3 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 3) ) 
-digraph.remove_nodes_from(isolates1)
-digraph.remove_nodes_from(isolates2)
-digraph.remove_nodes_from(isolates3)
+  # clean solos
+  isolates = networkx.algorithms.isolate.isolates(digraph)
+  digraph.remove_nodes_from(isolates)
 
-#
-#graph = digraph.to_undirected()
-#subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
-subgraphs = [g for g in subgraphs if len(g)>3]
-isolatedGraphs = subgraphs[1:100]
+  # clean solos clusters
+  graph = networkx.Graph(digraph) #undirected
+  subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
+  isolates1 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 1) ) # self connected
+  isolates2 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 2) ) 
+  isolates3 = set( utils.flatten( g.nodes() for g in subgraphs if len(g) == 3) ) 
+  digraph.remove_nodes_from(isolates1)
+  digraph.remove_nodes_from(isolates2)
+  digraph.remove_nodes_from(isolates3)
 
-
-# group by nodes number
-isoDict = defaultdict(list)
-[isoDict[len(g)].append(g) for g in isolatedGraphs]
-
-# test isomorphism
-isoGraphs = dict()
-for numNodes, graphs in isoDict.items():
-  numgraphs = len(graphs)
-  if numgraphs == 1:
-    continue
-  isoGraph = networkx.Graph()
-  # quick find isomorphisms
-  todo = set(graphs)
-  for i,g1 in enumerate(graphs):
-    for g2 in graphs[i+1:]:
-      if networkx.is_isomorphic(g1, g2):
-        print 'numNodes:%d graphs %d, %d are isomorphic'%(numNodes, i, i+1)
-        isoGraph.add_edge(g1,g2, {'isomorphic':True})
-        if g2 in todo:  todo.remove(g2) 
-        if g1 in todo:  todo.remove(g1) 
-        break # we can stop here, chain comparaison will work between g2 and g3
-    
-  if len(isoGraph) > 0:
-    isoGraphs[numNodes] = isoGraph
-
-# draw the isomorphisms
-for i,item in enumerate(isoGraphs.items()):
-  num,g = item
-  #networkx.draw(g)
-  for rg in g.nodes():
-    networkx.draw(rg)
-  fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
-  plt.savefig(fname)
-  plt.clf()
-# need to use gephi-like for rendering nicely on the same pic
+  #
+  #graph = digraph.to_undirected()
+  #subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
+  subgraphs = [g for g in subgraphs if len(g)>3]
+  isolatedGraphs = subgraphs[1:100]
 
 
-bigGraph = networkx.DiGraph()
-bigGraph.add_edges_from( digraph.edges( subgraphs[0].nodes() ) )
+  # group by nodes number
+  isoDict = defaultdict(list)
+  [isoDict[len(g)].append(g) for g in isolatedGraphs]
 
-stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
-stack_addrs_txt = set(['%x'%(addr) for addr in stack_addrs]) # new, no long
+  # test isomorphism
+  isoGraphs = dict()
+  for numNodes, graphs in isoDict.items():
+    numgraphs = len(graphs)
+    if numgraphs == 1:
+      continue
+    isoGraph = networkx.Graph()
+    # quick find isomorphisms
+    todo = set(graphs)
+    for i,g1 in enumerate(graphs):
+      for g2 in graphs[i+1:]:
+        if networkx.is_isomorphic(g1, g2):
+          print 'numNodes:%d graphs %d, %d are isomorphic'%(numNodes, i, i+1)
+          isoGraph.add_edge(g1,g2, {'isomorphic':True})
+          if g2 in todo:  todo.remove(g2) 
+          if g1 in todo:  todo.remove(g1) 
+          break # we can stop here, chain comparaison will work between g2 and g3
+      
+    if len(isoGraph) > 0:
+      isoGraphs[numNodes] = isoGraph
 
-stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
-print 'stacknodes left',len(stacknodes)
-orig = list(set(graph.nodes()) & stack_addrs_txt)
-print 'stacknodes orig',len(orig)
+  # draw the isomorphisms
+  for i,item in enumerate(isoGraphs.items()):
+    num,g = item
+    #networkx.draw(g)
+    for rg in g.nodes():
+      networkx.draw(rg)
+    fname = os.path.sep.join([config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png'%(num) ] )
+    plt.savefig(fname)
+    plt.clf()
+  # need to use gephi-like for rendering nicely on the same pic
 
-# identify strongly referenced structures
-degreesList = [ (bigGraph.in_degree(node),node)  for node in bigGraph.nodes() ]
-degreesList.sort(reverse=True)
+
+  bigGraph = networkx.DiGraph()
+  bigGraph.add_edges_from( digraph.edges( subgraphs[0].nodes() ) )
+
+  stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
+  stack_addrs_txt = set(['%x'%(addr) for addr in stack_addrs]) # new, no long
+
+  stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
+  print 'stacknodes left',len(stacknodes)
+  orig = list(set(graph.nodes()) & stack_addrs_txt)
+  print 'stacknodes orig',len(orig)
+
+  # identify strongly referenced structures
+  degreesList = [ (bigGraph.in_degree(node),node)  for node in bigGraph.nodes() ]
+  degreesList.sort(reverse=True)
 
 ##### important struct
 def printImportant(ind):

@@ -1,30 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
+
+"""Qt GUI to haytack."""
 
 import logging
-import argparse, os, pickle, time, sys
+import argparse
 import itertools
 import operator
+import os
+import pickle
+import time
+import sys
 
 import statushandler
 from haystack import dump_loader
 from haystack import memory_mapping
-from haystack import signature
-
-log = logging.getLogger('gui')
+from haystack.reverse import signature
 
 from PyQt4 import QtGui, QtCore
 
-import view
-import widgets
-import infomodel
-import qhexedit
-from memmaptab import Ui_MemoryMappingWidget
-from mainwindow import Ui_MainWindow
-import searchinfoview
+from haystack.gui import view
+from haystack.gui import widgets
+from haystack.gui import infomodel
+from haystack.gui import qhexedit
+from haystack.gui.memmaptab import Ui_MemoryMappingWidget
+from haystack.gui.mainwindow import Ui_MainWindow
+from haystack.gui import searchinfoview
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
+log = logging.getLogger('gui')
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -356,7 +366,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     return self.tabWidget.currentWidget()
   
   def dialog_searchStructure(self):
-    import searchview
+    from haystack.gui import searchview
     #save a ref ?
     self.searchStructureDialog = searchview.SearchStructDialog(self)
     self.searchStructureDialog.show()

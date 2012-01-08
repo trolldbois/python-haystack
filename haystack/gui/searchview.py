@@ -14,9 +14,16 @@ import inspect
 
 from searchStruct import Ui_Search_Structure
 
-from .. import model
-from .. import signature
-from .. import utils
+from haystack import model
+from haystack.reverse import signature
+from haystack import utils
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
 
 class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
 
