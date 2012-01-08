@@ -9,7 +9,7 @@ b6efa000-b6f01000 r--p 00296000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCo
 b6f01000-b6f04000 rw-p 0029d000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCore.so.4.7.4
 
 '''
-
+import struct
 import os
 import ctypes
 
