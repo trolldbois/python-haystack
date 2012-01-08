@@ -6,6 +6,30 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+"""
+This module offers several classes in charge of loading the memory mapping dumps
+into a MemoryMappings list of MemoryMapping, given a
+previously saved format ( file, archive, ... ).
+Basically MemoryMappings are in archive of all the mappings dumped to file + a 
+special 'mappings' index file that give all metadata about thoses mappings.
+
+Classes:
+ - MemoryDumpLoader:  abstract loader for a memory dump loader
+ - ProcessMemoryDumpLoader(MemoryDumpLoader): handles memory load from several
+      recognized format.
+ - LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader): loads mappings contents
+      with a tolerance to partial dumps with partial list of mappings dumped 
+      ( ie: only [heap] and [stack] are dumped to file ). 
+      As long as the missing mappings are not read(), the MemoryMappings 
+      metadata should be enough for your algorithm
+ - KCoreDumpLoader(MemoryDumpLoader): Mapping loader for kernel memory mappings.
+
+Functions:
+ - load(dumpfile,lazy=True): load MemoryMappings from the source dumpfile.
+
+"""
+
+
 import logging
 import argparse
 import os
