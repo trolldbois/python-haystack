@@ -25,7 +25,7 @@ class ConfigClass():
     self.WORDSIZE = 4
     self.commentMaxSize = 64
     #
-    self.MAX_MAPPING_SIZE_FOR_MMAP = 10*1024*1024
+    self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*10
     self.CACHE_STRUCT_DIR = '.structs'
     # cache file names
     self.CACHE_GENERATED_PY_HEADERS_VALUES = '.headers_values.py'
