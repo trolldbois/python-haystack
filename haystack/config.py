@@ -15,7 +15,7 @@ __status__ = "Production"
 
 log = logging.getLogger('config')
 
-OUTPUTDIR=os.path.expanduser('~/outputs/malloc/') # .haystack-tmp ?
+OUTPUTDIR=os.path.expanduser('~/outputs/') # .haystack-tmp ?
 
 class ConfigClass():
   """Project-wide config class. """
