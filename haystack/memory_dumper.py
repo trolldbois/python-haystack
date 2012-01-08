@@ -43,7 +43,7 @@ def validWritablePathname(f):
 
 class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
-  ARCHIVE_TYPES = ["tar","gztar", "dir"]
+  ARCHIVE_TYPES = ["dir", "tar","gztar"]
   
   def __init__(self, pid, dest, archiveType="dir", justStack=False, justHeap=False):
     self._pid = pid
@@ -173,7 +173,7 @@ def argparser():
   dump_parser.add_argument('--heap', action='store_const', const=True , help='Restrict dump to the heap.')
   dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack.')
   dump_parser.add_argument('--type',  type=archiveTypes, action='store' , default="dir", 
-            help='Dump in "gztar","tar" or"dir" format. Defaults to "dir".')
+            help='Dump in "gztar","tar" or "dir" format. Defaults to "dir".')
   dump_parser.add_argument('dumpname', type=validWritablePathname, action='store', help='The dump name.')
   dump_parser.set_defaults(func=_dump)  
 
