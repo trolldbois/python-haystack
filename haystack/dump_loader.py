@@ -19,7 +19,6 @@ Functions:
 
 """
 
-
 import logging
 import argparse
 import os
@@ -30,6 +29,7 @@ import zipfile # relatively useless
 from haystack.config import Config
 from haystack import dbg
 from haystack import memory_mapping
+from haystack import argparse_utils
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -39,14 +39,6 @@ __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
 log = logging.getLogger('loader')
-
-def validReadable(f):
-  """Validates if the pathname is readable (dir or file)."""
-  f = os.path.normpath(f)
-  if not os.access(f, os.F_OK|os.R_OK):
-    raise ValueError("%s is not readable."%(f))
-  return f
-
 
 class MemoryDumpLoader:
   ''' Abstract interface to a memory dump loader.
@@ -251,7 +243,7 @@ def _load(opt):
 
 def argparser():
   load_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
-  load_parser.add_argument('dumpname', type=validReadable, action='store', help='The dump file')
+  load_parser.add_argument('dumpname', type=argparse_utils.validReadable, action='store', help='The dump file')
   load_parser.set_defaults(func=_load)  
   return rootparser
 

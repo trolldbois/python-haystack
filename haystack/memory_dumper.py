@@ -17,6 +17,7 @@ import zipfile
 
 from haystack import dbg
 from haystack import memory_mapping
+from haystack import argparse_utils
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -32,14 +33,6 @@ def archiveTypes(s):
   if s not in MemoryDumper.ARCHIVE_TYPES:
     raise ValueError
   return s
-
-def validWritablePathname(f):
-  """Validates if the pathname is writable (dir or file)."""
-  f = os.path.normpath(f)
-  if os.access(f, os.F_OK):
-    if not os.access(f, os.W_OK):
-      raise ValueError("%s is not writable."%(f))
-  return f
 
 class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
@@ -175,7 +168,7 @@ def argparser():
   dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack.')
   dump_parser.add_argument('--type',  type=archiveTypes, action='store' , default="dir", 
             help='Dump in "gztar","tar" or "dir" format. Defaults to "dir".')
-  dump_parser.add_argument('dumpname', type=validWritablePathname, action='store', help='The dump name.')
+  dump_parser.add_argument('dumpname', type=argparse_utils.validWritablePathname, action='store', help='The dump name.')
   dump_parser.set_defaults(func=_dump)  
 
   return dump_parser
