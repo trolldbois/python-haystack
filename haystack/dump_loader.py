@@ -156,7 +156,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       # open the file in the archive
       try:
         mmap_content_file = self._open_file(self.archive, self.filePrefix+mmap_fname)
-      except KeyError, e:
+      except (IOError, KeyError), e:
         log.debug('Ignore absent file')
         mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
                                 major_device, minor_device, inode,pathname=mmap_pathname)

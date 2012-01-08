@@ -28,7 +28,22 @@ def get_folder_size(folder):
   return folder_size
 
 class TestMemoryDumper(unittest.TestCase):
-  """Tests MemoryDumper with 3 format types."""
+  """Tests MemoryDumper with 3 format types.
+  
+  Tests : 
+  for each format, 
+    launch a process
+    dump the heap
+    kill the process
+    launch a process
+    dump the heap and stack
+    kill the process
+    launch a process
+    dump all the memory mappings
+    kill the process
+    compare size which should be incremental
+    compare mappings files which should be the same
+  """
 
   def setUp(self):
     self.devnull = file('/dev/null')
@@ -87,9 +102,17 @@ class TestMemoryDumper(unittest.TestCase):
     # test opening by dump_loader
     from haystack import dump_loader
     from haystack import memory_mapping
-    mappings = dump_loader.load(out3)
-    self.assertIsInstance( mappings, memory_mapping.Mappings)
+    mappings1 = dump_loader.load(out1)
+    self.assertIsInstance( mappings1, memory_mapping.Mappings)
+
+    mappings2 = dump_loader.load(out2)
+    mappings3 = dump_loader.load(out3)
     
+    pathnames1 = [m.pathname for m in mappings1]
+    pathnames2 = [m.pathname for m in mappings2]
+    pathnames3 = [m.pathname for m in mappings3]
+    self.assertEquals(pathnames1, pathnames2)
+    self.assertEquals(pathnames3, pathnames2)
     
     return 
 
@@ -120,8 +143,17 @@ class TestMemoryDumper(unittest.TestCase):
     # test opening by dump_loader
     from haystack import dump_loader
     from haystack import memory_mapping
-    mappings = dump_loader.load(out3)
-    self.assertIsInstance( mappings, memory_mapping.Mappings)
+    mappings1 = dump_loader.load(out1)
+    self.assertIsInstance( mappings1, memory_mapping.Mappings)
+
+    mappings2 = dump_loader.load(out2)
+    mappings3 = dump_loader.load(out3)
+    
+    pathnames1 = [m.pathname for m in mappings1]
+    pathnames2 = [m.pathname for m in mappings2]
+    pathnames3 = [m.pathname for m in mappings3]
+    self.assertEquals(pathnames1, pathnames2)
+    self.assertEquals(pathnames3, pathnames2)
 
     return 
 
