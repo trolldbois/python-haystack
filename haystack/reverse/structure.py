@@ -905,7 +905,8 @@ class AnonymousStructInstance():
     info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
-    clsname = ('%s'%(self)).replace('.','_')
+    #clsname = ('%s'%(self)).replace('.','_')
+    clsname = 'struct_%s'%(self.vaddr)
     ctypes_def = '''
 class %s(LoadableMembers):  # %s
   _fields_ = %s
