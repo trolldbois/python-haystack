@@ -13,7 +13,7 @@ from haystack.utils import Dummy
 
 log = logging.getLogger('config')
 
-OUTPUTDIR=os.path.expanduser('~/Compil/python-haystack/outputs/malloc/')
+OUTPUTDIR=os.path.expanduser('~/Compil/outputs/malloc/')
 
 class ConfigClass():
   def __init__(self, outputDir=OUTPUTDIR):
