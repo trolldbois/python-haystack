@@ -1,29 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-import mmap, logging
-import os, time
+"""Gets memory mappings from a PID or a haystack dump."""
 
-from dbg import PtraceDebugger
+import mmap
+import logging
+import os
+import time
+
+from haystack.dbg import PtraceDebugger
 # local
+from haystack.config import Config
 from haystack import memory_mapping
-from haystack import memory_dumper
+from haystack import dump_loader
 
 log = logging.getLogger('mapper')
 
-MAX_DUMP_SIZE=200000000
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__status__ = "Production"
+
 
 class MemoryMapper:
+  """Build MemoryMappings from a PID or a haystack memory dump."""
   def __init__(self, args):
     # args are checked by the parser
     if not (args.pid is None):
       mappings = self.initPid(args)
     elif not (args.memfile is None):
       mappings = self.initMemfile(args)
-    elif not (args.dumpfile is None):
+    elif not (args.dumpname is None):
       mappings = self.initProcessDumpfile(args)
     self.mappings = mappings
     return
@@ -32,13 +41,13 @@ class MemoryMapper:
     return self.mappings
     
   def initProcessDumpfile(self,args):
-    loader = memory_dumper.ProcessMemoryDumpLoader(args.dumpfile)
+    loader = dump_loader.ProcessMemoryDumpLoader(args.dumpname)
     mappings = loader.getMappings()
     return mappings
 
   def initMemfile(self,args):
     size = os.fstat(args.memfile.fileno()).st_size
-    if size > MAX_DUMP_SIZE:
+    if size > Config.MAX_MAPPING_SIZE_FOR_MMAP:
       mem = memory_mapping.FileBackedMemoryMapping(args.memfile, args.baseOffset, args.baseOffset+size) ## is that valid ?
       log.warning('Dump file size is big. Using file backend memory mapping. Its gonna be slooow')
     else:
@@ -65,3 +74,4 @@ class MemoryMapper:
       process.cont()
       log.info('Memory mmaped, process released after %02.02f secs'%(time.time()-t0))
     return mappings
+

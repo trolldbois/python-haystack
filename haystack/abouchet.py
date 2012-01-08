@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+"""Search for a known structure type in a process memory. """
 
 import argparse
 import logging
@@ -16,11 +13,19 @@ import ctypes
 import subprocess
 import json
 
-import model
+from haystack import model
+from haystack import argparse_utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack import memory_mapping 
 
-from utils import xrange
+from haystack.utils import xrange
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__status__ = "Production"
 
 log=logging.getLogger('haystack')
 
@@ -346,7 +351,7 @@ def argparser():
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
-  target.add_argument('--dumpfile', type=argparse.FileType('r'), help='Use a haystack memory dump instead of a live process ID')
+  target.add_argument('--dumpname', type=argparse_utils.validReadable, help='Use a haystack memory dump instead of a live process ID')
 
   output = rootparser.add_mutually_exclusive_group(required=True)
   output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
@@ -550,8 +555,8 @@ def main(argv):
     log.debug("done for pid %d"%opts.pid)
   elif opts.memfile:
     log.debug("done for file %s"%opts.memfile.name)
-  elif opts.dumpfile:
-    log.debug("done for file %s"%opts.dumpfile.name)
+  elif opts.dumpname:
+    log.debug("done for file %s"%opts.dumpname)
   return 0
 
 

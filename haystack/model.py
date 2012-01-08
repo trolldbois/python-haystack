@@ -123,11 +123,16 @@ Enjoy.
 
 '''
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
 import ctypes
 import logging
-from utils import *
+from haystack.utils import *
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__status__ = "Production"
 
 log = logging.getLogger('model')
 
