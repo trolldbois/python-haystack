@@ -75,6 +75,14 @@ class ReverserContext():
     log.info('[+] Fetching cached structures list')
     self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
+
+    if len(self.structures) == 0: # no structures yet, make them from MallocReverser
+      log.info('[+] No cached structures - making them from malloc reversers')
+      mallocRev = MallocReverser()
+      context = mallocRev.reverse(self)
+      mallocRev.check_inuse(self)
+      log.info('[+] Built %d structures from malloc blocs'%( len(self.structures) ))
+    
     return
   
   @classmethod
@@ -117,7 +125,7 @@ class ReverserContext():
 
   def __setstate__(self, d):
     self.__dict__ = d
-    #self.mappings = dump_loader.load( file(self.dumpname), lazy=True)  
+    #self.mappings = dump_loader.load( self.dumpname, lazy=True)  
     #self.heap = self.mappings.getMmap(d['heapPathname'])
     self.structures = { } 
     self.structures_addresses = numpy.array([],int)
@@ -469,7 +477,7 @@ def save_headers(context):
 
 
 def getContext(fname):
-  mappings = dump_loader.load( file(fname), lazy=True)  
+  mappings = dump_loader.load( fname)  
   try:
     context = ReverserContext.cacheLoad(mappings)
   except IOError,e:
