@@ -38,7 +38,7 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-log = logging.getLogger('loader')
+log = logging.getLogger('dump_loader')
 
 class MemoryDumpLoader:
   ''' Abstract interface to a memory dump loader.
@@ -47,14 +47,18 @@ class MemoryDumpLoader:
   '''
   def __init__(self, dumpname):
     self.dumpname = os.path.normpath(dumpname)
-    if not self.isValid():
+    self.mappings = None
+    if not self._is_valid():
       raise ValueError('memory dump not valid for %s '%(self.__class__))
-    self.loadMappings()
+
   def getMappings(self):
+    if self.mappings is None:
+      self._load_mappings()      
     return self.mappings
-  def isValid(self):
+
+  def _is_valid(self):
     raise NotImplementedError()
-  def loadMappings(self):
+  def _load_mappings(self):
     raise NotImplementedError()
     
 
@@ -63,7 +67,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
   indexFilename = 'mappings'
   filePrefix = './'
   
-  def isValid(self):
+  def _is_valid(self):
     """Validates if we handle the format."""
     if os.path.isdir(self.dumpname):
       if self._test_dir() : 
@@ -129,8 +133,11 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     except OSError,e:
       log.info('Not a valid directory')
     return False
+
+  def _protected_open_file(self, mmap_fname, mmap_pathname):
+    return self._open_file(self.archive, self.filePrefix+mmap_fname)
   
-  def loadMappings(self):
+  def _load_mappings(self):
     """Loads the mappings content from the dump to a MemoryMappings.
     
     If an underlying file containing a memory dump does not exists, still
@@ -154,10 +161,18 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       log.debug('Loading %s - %s'%(mmap_fname, mmap_pathname))
       # open the file in the archive
       try:
-        mmap_content_file = self._open_file(self.archive, self.filePrefix+mmap_fname)
+        mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
       except (IOError, KeyError), e:
-        log.debug('Ignore absent file')
+        log.debug('Ignore absent file : %s'%(e))
+        raise e
         mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
+                                major_device, minor_device, inode,pathname=mmap_pathname)
+        self_mappings.append(mmap)
+        continue
+      except ValueError,e: # explicit non-loading
+        log.debug('Ignore useless file : %s'%(e))
+        mmap_content_file = file(os.path.sep.join([self.archive, self.filePrefix+mmap_fname]),'rb')
+        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                 major_device, minor_device, inode,pathname=mmap_pathname)
         self_mappings.append(mmap)
         continue
@@ -179,6 +194,26 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       self_mappings.append(mmap)
     self.mappings = memory_mapping.Mappings(self_mappings, self.dumpname)
     return    
+
+
+class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
+  def __init__(self, dumpname, maps_to_load=None):
+    self.dumpname = os.path.normpath(dumpname)
+    self.mappings = None
+    if not self._is_valid():
+      raise ValueError('memory dump not valid for %s '%(self.__class__))
+    if maps_to_load is None:
+      self._maps_to_load = ['[heap]', '[stack]']
+    return
+    
+  def _protected_open_file(self, mmap_fname, mmap_pathname):
+    log.debug( '%s %s '%(mmap_pathname, self._maps_to_load))
+    if mmap_pathname is not None and mmap_pathname in self._maps_to_load:
+      log.debug( 'SELECTED')
+      return self._open_file(self.archive, self.filePrefix+mmap_fname)
+    else:
+      log.debug( 'IGNORED')
+      raise ValueError('Lazy - we do not want to load this one')
 
 
 class KCoreDumpLoader(MemoryDumpLoader):
@@ -230,7 +265,7 @@ loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]
 def load(dumpname):
   """Loads a haystack dump."""
   try:
-    memdump = ProcessMemoryDumpLoader( os.path.normpath(dumpname) )
+    memdump = LazyProcessMemoryDumpLoader( os.path.normpath(dumpname) )
     log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
   except IndexError,e: ### ValueError,e:
     log.warning(e)
@@ -243,7 +278,7 @@ def _load(opt):
 
 def argparser():
   load_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
-  load_parser.add_argument('dumpname', type=argparse_utils.validReadable, action='store', help='The dump file')
+  load_parser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='The dump file')
   load_parser.set_defaults(func=_load)  
   return rootparser
 
