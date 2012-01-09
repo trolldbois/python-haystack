@@ -43,6 +43,15 @@ DEBUG_ADDRS=[]
 
 # Compare sruct type from parent with multiple pointer (
 
+def makeFilename(context, st):
+  sdir = Config.getStructsCacheDir(context.dumpname)
+  if not os.path.isdir(sdir):
+    os.mkdir(sdir)
+  return os.path.sep.join([sdir, str(st)])
+
+def makeFilenameFromAddr(context, addr):
+  return makeFilename(context, 'struct_%x'%( addr ) )
+
 def makeStructure(context, start, size):
   return AnonymousStructInstance(context.mappings, start, context.heap.readBytes(start, size) )
 
@@ -50,7 +59,7 @@ def cacheLoad(context, addr):
   dumpname = context.dumpname
   if not os.access(dumpname,os.F_OK):
     return None
-  fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  fname = makeFilenameFromAddr(context, addr)
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
@@ -62,7 +71,7 @@ def cacheLoadAll(context):
   dumpname = context.dumpname
   addresses = context.structures_addresses
   for addr in addresses:      
-    fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ])
+    fname = makeFilenameFromAddr(context, addr)
     if os.access(fname,os.F_OK):
       p = pickle.load(file(fname,'r'))
       p.mappings = context.mappings
@@ -74,7 +83,7 @@ def remapLoad(context, addr, newmappings):
   dumpname = context.dumpname
   if not os.access(dumpname,os.F_OK):
     return None
-  fname = os.path.sep.join([Config.getStructsCacheDir(dumpname), 'AnonStruct_%s_%x'%(os.path.basename(dumpname), addr ) ] )
+  fname = makeFilenameFromAddr(context, addr)
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
@@ -98,8 +107,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
   refs = lrucache.LRUCache(5000)
   def __init__(self, context, addr):
     self.addr = addr
-    self.fname = os.path.sep.join([Config.getStructsCacheDir(context.dumpname), 
-                  'AnonStruct_%s_%x'%(os.path.basename(context.mappings.name), addr ) ])
+    self.fname = makeFilenameFromAddr(context, addr)
     if not os.access(self.fname,os.F_OK):
       raise ValueError()
     self.context = context
@@ -148,7 +156,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     return cmp(self.addr,other.addr)
 
   def __str__(self):
-    return 'AnonStruct_%s_%x'%(os.path.basename(self.context.mappings.name), self.vaddr )
+    return 'AnonStruct_%x'%(self.vaddr )
     
 
 
@@ -224,13 +232,15 @@ class AnonymousStructInstance():
     if not self.dirty:
       return
     sdir = Config.getStructsCacheDir(context.dumpname)
-    self.fname = os.path.sep.join([sdir, str(self)])
+    if not os.path.isdir(sdir):
+      os.mkdir(sdir)
+    fname = makeFilename(context, self)
     try:
-      pickle.dump(self, file(self.fname,'w'))
+      pickle.dump(self, file(fname,'w'))
     except KeyboardInterrupt, e:
       # clean it, its stale
-      os.remove(self.fname)
-      log.warning('removing %s'%(self.fname))
+      os.remove(fname)
+      log.warning('removing %s'%(fname))
       import sys
       ex = sys.exc_info()
       raise ex[1], None, ex[2]
@@ -473,7 +483,7 @@ class AnonymousStructInstance():
   
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
     ## TODO DEBUG, i got gaps in my memory mappings structures
-    #  AnonStruct_skype.1.a_add16e8 -> AnonStruct_skype.1.a_add173c
+    #  struct_add16e8 -> struct_add173c
     if len(structs_addrs) == 0:
       raise TypeError
       #return None
@@ -905,13 +915,11 @@ class AnonymousStructInstance():
     info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
-    #clsname = ('%s'%(self)).replace('.','_')
-    clsname = 'struct_%s'%(self.vaddr)
     ctypes_def = '''
 class %s(LoadableMembers):  # %s
   _fields_ = %s
 
-''' % (clsname, info, fieldsString)
+''' % (self, info, fieldsString)
     return ctypes_def
 
   def __contains__(self, other):
@@ -949,15 +957,14 @@ class %s(LoadableMembers):  # %s
 
   def __setstate__(self, d):
     self.__dict__ = d
-    #self.mappings = dump_loader.load( file(self.dumpname), lazy=True)  
+    #self.mappings = dump_loader.load( self.dumpname, lazy=True)  
     #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
     self.mappings = None
     self.bytes = None
     return
         
   def __str__(self):
-    return 'AnonStruct_%s_%x'%(os.path.basename(self.mappings.name), self.vaddr )
-    # 'AnonymousStruct_%s_%s'%(len(self), self.prefixname )
+    return 'struct_%x'%(self.vaddr )
   
 
 
