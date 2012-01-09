@@ -15,7 +15,8 @@ __status__ = "Production"
 
 log = logging.getLogger('config')
 
-OUTPUTDIR=os.path.expanduser('~/outputs/') # .haystack-tmp ?
+#OUTPUTDIR=os.path.expanduser('~/outputs/') # .haystack-tmp ?
+OUTPUTDIR=os.getcwd()
 
 class ConfigClass():
   """Project-wide config class. """
@@ -25,7 +26,7 @@ class ConfigClass():
     self.WORDSIZE = 4
     self.commentMaxSize = 64
     #
-    self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*10
+    self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
     self.CACHE_STRUCT_DIR = '.structs'
     # cache file names
     self.CACHE_GENERATED_PY_HEADERS_VALUES = '.headers_values.py'
