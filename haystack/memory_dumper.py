@@ -168,7 +168,7 @@ def argparser():
   dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack.')
   dump_parser.add_argument('--type',  type=archiveTypes, action='store' , default="dir", 
             help='Dump in "gztar","tar" or "dir" format. Defaults to "dir".')
-  dump_parser.add_argument('dumpname', type=argparse_utils.validWritablePathname, action='store', help='The dump name.')
+  dump_parser.add_argument('dumpname', type=argparse_utils.writeable, action='store', help='The dump name.')
   dump_parser.set_defaults(func=_dump)  
 
   return dump_parser
