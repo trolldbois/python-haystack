@@ -179,7 +179,6 @@ class MemoryMapping:
   def readArray(self, address, basetype, count):
     raise NotImplementedError
 
-
 class ProcessMemoryMapping(MemoryMapping):
   """
   Process memory mapping (metadata about the mapping).
@@ -336,10 +335,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._memdump = memdump
+    log.debug('memdump %s'%( memdump))
     self._base = None
-    #s = len(LazyMmap(self._memdump))
-    #if offset > s: # complety false and stupid
-    #  raise ValueError('offset 0x%x too big for filesize 0x%x'%(offset, s))
     if preload:
       self._mmap()
   
@@ -434,11 +431,13 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
     MemoryDumpMemoryMapping.__init__(self, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
     self._local_mmap = LazyMmap(self._memdump)
+    log.debug( 'FileBackedMemoryMapping created')
     return
 
   def _mmap(self):
     ''' returns self to force super() to read through us  '''
     return self
+
 
   def vtop(self, vaddr):
     ret = vaddr - self.start
@@ -494,8 +493,9 @@ class LazyMmap:
     except OverflowError:
       memdump.seek(os.fstat(memdump.fileno()).st_size)
     self.size = memdump.tell()
-    self.memdump = memdump
+    self.memdump_name = memdump.name
     memdump.seek(i)
+    memdump.close()
   
   def __len__(self):
     return self.size
@@ -512,9 +512,12 @@ class LazyMmap:
     return self._get(start, size)
   
   def _get(self, offset,size):
-    self.memdump.seek(offset)
-    me = utils.bytes2array(self.memdump.read(size) ,ctypes.c_ubyte)
+    memdump = file(self.memdump_name, 'rb')
+    memdump.seek(offset)
+    me = utils.bytes2array(memdump.read(size) ,ctypes.c_ubyte)
+    memdump.close()
     return me
+
 
 
 class Mappings:
@@ -540,20 +543,9 @@ class Mappings:
 
   def getHeap(self):
     heap = self.getMmap('[heap]')[0]
-    # optimise code to load heap in ram
-    if isinstance(heap, FileBackedMemoryMapping):
-      i = self.mappings.index(heap)
-      heap = MemoryDumpMemoryMapping.fromFile(heap, heap._memdump)
-      heap.useByteBuffer() # load a bytebuffer form
-      self.mappings[i]=heap
     return heap
   def getStack(self):
     stack = self.getMmap('[stack]')[0] 
-    if isinstance(stack, FileBackedMemoryMapping):
-      i = self.mappings.index(stack)
-      stack = MemoryDumpMemoryMapping.fromFile(stack, stack._memdump)
-      stack.useByteBuffer() # load a bytebuffer form
-      self.mappings[i]=stack
     return stack
 
   def __contains__(self, vaddr):
