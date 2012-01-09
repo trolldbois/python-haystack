@@ -351,7 +351,7 @@ def argparser():
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
-  target.add_argument('--dumpname', type=argparse_utils.validReadable, help='Use a haystack memory dump instead of a live process ID')
+  target.add_argument('--dumpname', type=argparse_utils.readable, help='Use a haystack memory dump instead of a live process ID')
 
   output = rootparser.add_mutually_exclusive_group(required=True)
   output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')

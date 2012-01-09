@@ -12,15 +12,14 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-
-def validReadable(f):
+def readable(f):
   """Validates if the pathname is readable (dir or file)."""
   f = os.path.normpath(f)
   if not os.access(f, os.F_OK|os.R_OK):
     raise ValueError("%s is not readable."%(f))
   return f
 
-def validWritablePathname(f):
+def writeable(f):
   """Validates if the pathname is writable (dir or file)."""
   f = os.path.normpath(f)
   if os.access(f, os.F_OK):
