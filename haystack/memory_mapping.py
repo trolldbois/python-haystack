@@ -346,6 +346,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # force readBytes update
     self.readBytes = self._base.readBytes
   
+  def getByteBuffer(self):
+    return self._mmap().getByteBuffer() 
+  
   def isMmaped(self):
     return not (self._base is None)
     
