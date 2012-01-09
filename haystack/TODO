@@ -1,4 +1,10 @@
 
+
+
+struct_a5d96f0 +/- 35k ptr
+
+
+
 \xfc\xff\xff\xff
 
 si bytes[2] et bytes[3] == \xff \xff -> ctypes.c_int
