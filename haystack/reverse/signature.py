@@ -289,9 +289,9 @@ lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
   '''
   
 
-def _openDumpfile(dumpfile):
+def _openDumpfile(dumpname):
   # load memorymapping
-  mappings = dump_loader.load(dumpfile)
+  mappings = dump_loader.load(dumpanme)
   # TODO : make a mapping chooser 
   if len(mappings) > 1:
     heap = [m for m in mappings if m.pathname == '[heap]'][0]
@@ -299,9 +299,9 @@ def _openDumpfile(dumpfile):
     heap = mappings[0]
   return heap
 
-def toFile(dumpFile, outputFile):
+def toFile(dumpname, outputFile):
   log.info('Loading the mappings in the memory dump file.')
-  mapping = _openDumpfile(dumpFile)
+  mapping = _openDumpfile(dumpname)
   log.info('Make the signature.')
   sigMaker = SignatureMaker(mapping)
   sig = sigMaker.search()
@@ -312,12 +312,12 @@ def toFile(dumpFile, outputFile):
   return
 
 def makesig(opt):
-  toFile(opt.dumpfile, opt.sigfile)
+  toFile(opt.dumpname, opt.sigfile)
   pass
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')
-  rootparser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
   rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
   rootparser.set_defaults(func=makesig)  
   return rootparser
