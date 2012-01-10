@@ -78,10 +78,15 @@ def make(opts):
         #log.warning('difference in the malloc_chunk structure . this has been reallocated')
         st_addr = structs_addr_iter.next()
         st_size = structs_size_iter.next()
-        structures.append( context.structures[ st_addr ]) # tag the structure as different
-        realloc+=1
-        while (addr - st_addr) >= st_size : # delete mods in the malloc_chunk
-          addr = addr_iter.next() 
+
+        # Still we do not want to tag a structure if its contents has not changed.
+        # the question is, should we check malloc_chunk in file2 to find changes in allocations ?
+        # -> ctypes_libc.getAllocations(dump2) and compare addresses.... ( and unallocated_addresses ? )
+        ##structures.append( context.structures[ st_addr ]) # tag the structure as different
+        ##realloc+=1
+        ##while (addr - st_addr) >= st_size : # delete mods in the malloc_chunk
+        ##  addr = addr_iter.next() 
+        pass
 
       while (addr - st_addr) < st_size : # enumerate offsets in st range
         addr = addr_iter.next()
