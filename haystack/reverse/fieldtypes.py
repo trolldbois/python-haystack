@@ -160,9 +160,9 @@ class Field:
     if len(bytes) != Config.WORDSIZE:
       return False      
     value = struct.unpack('L',bytes)[0] #TODO biteorder
-    log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
     # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
     if value in self.struct.mappings:
+      log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
       self.value = value
       self.size = Config.WORDSIZE
       self.comment = self.struct.mappings.getMmapForAddr(self.value).pathname

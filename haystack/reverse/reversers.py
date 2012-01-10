@@ -67,7 +67,7 @@ class ReverserContext():
     self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
 
     # TODO switched
-    if True:
+    if True: # malloc reverser
       self.structures_addresses = self.malloc_addresses
     else:
       self.structures_addresses = self.pointers_addresses # false
@@ -239,7 +239,7 @@ class MallocReverser(StructureOrientedReverser):
     fromcache = len(context.structures_addresses) - len(todo)
     offsets = list(context.pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
-    log.info('[+] Adding new raw structures from malloc_chunks contents')
+    log.info('[+] Adding new raw structures from malloc_chunks contents - %d todo'%(len(todo)))
     for i, ptr_value in enumerate(context.structures_addresses):
       if ptr_value in todo:
         loaded += 1
@@ -252,9 +252,12 @@ class MallocReverser(StructureOrientedReverser):
           context.structures[ ptr_value ] = mystruct
           # add pointerFields
           offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
-          log.debug('Adding %d pointer fields field '%( len(my_pointers_addrs)) )
-          for p_addr in my_pointers_addrs:
-            f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+          log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
+          # optimise insertion
+          if len(my_pointers_addrs) > 0:
+            mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+          #for p_addr in my_pointers_addrs:
+          #  f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
           # save it
           mystruct.saveme(context)
         else:

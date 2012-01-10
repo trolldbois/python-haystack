@@ -210,6 +210,18 @@ class AnonymousStructInstance():
     self.fields.sort()
     return field
 
+  def addFields(self, vaddrList, typename, size, padding ):
+    vaddrList.sort()
+    if min(vaddrList) < self.vaddr or max(vaddrList) > self.vaddr+len(self):
+      raise IndexError()
+    if typename is None:
+      raise ValueError()
+    self.dirty=True
+    fields = [ Field(self, vaddr - self.vaddr, typename, size, padding) for vaddr in vaddrList]
+    self.fields.extend(fields)
+    self.fields.sort()
+    return
+
   def addField(self, vaddr, typename, size, padding ):
     self.dirty=True
     offset = vaddr - self.vaddr
@@ -929,7 +941,7 @@ class %s(LoadableMembers):  # %s
         return True
       return False
     else:
-      raise NotImplementedError()
+      raise NotImplementedError(type(other))
       
   def __getitem__(self, i):
     return self.fields[i]
