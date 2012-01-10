@@ -179,6 +179,14 @@ class AnonymousStructInstance():
     self.pointerResolved = False
     self.dirty=True
     return
+
+  def reset(self):
+    self.size = len(bytes)
+    self.fields = []
+    self.resolved = False
+    self.pointerResolved = False
+    self.dirty=True
+    return    
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
     self.dirty=True

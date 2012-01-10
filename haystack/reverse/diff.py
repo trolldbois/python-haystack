@@ -52,6 +52,7 @@ def make(opts):
   
   # now compare with structures addresses
   structures = []
+  realloc=0
   log.info('[+] Looking at %d differences'%( len(addrs) ))
   st = []
   # joined iteration, found structure affected
@@ -63,20 +64,24 @@ def make(opts):
     addr = addr_iter.next()
     st_addr = structs_addr_iter.next()
     st_size = structs_size_iter.next()
-    oldcnt=0
     cnt=1
     while True:
-      if cnt-oldcnt > 100:
-        log.debug('%d/%d'%(oldcnt, len(addrs)))
         
-      while (addr - st_addr+st_size ) > 0 : # find st containing offset
+      while (addr - st_addr-st_size ) > 0 : # find st containing offset
         st_addr = structs_addr_iter.next()
         st_size = structs_size_iter.next()
 
       if (addr - st_addr) < st_size: # check if offset is really in st ( should be always if your not dumb/there no holes )
         structures.append( context.structures[ st_addr ]) # tag the structure as different
-      else:
-        log.warning('your algo sucks/hole in malloc_chunk before offset: %x st_addr: %x st_size: %x'%(addr,st_addr,st_size))
+      else: ## exactly on the last byte+1 of the struct - we have malloc_chunk info in that space
+        #log.warning('your algo sucks/hole in malloc_chunk before offset: %x st_addr: %x st_size: %x'%(addr,st_addr,st_size))
+        #log.warning('difference in the malloc_chunk structure . this has been reallocated')
+        st_addr = structs_addr_iter.next()
+        st_size = structs_size_iter.next()
+        structures.append( context.structures[ st_addr ]) # tag the structure as different
+        realloc+=1
+        while (addr - st_addr) >= st_size : # delete mods in the malloc_chunk
+          addr = addr_iter.next() 
 
       while (addr - st_addr) < st_size : # enumerate offsets in st range
         addr = addr_iter.next()
@@ -86,22 +91,29 @@ def make(opts):
   addrs_found = cnt
         
     
-  log.info('[+] On %d diffs, found %d structs with different values.'%(addrs_found, len(structures), saved))
+  log.info('[+] On %d diffs, found %d structs with different values. realloc: %d'%(addrs_found, len(structures), realloc))
   log.info('[+] Outputing to file (will be long-ish)')
-
+  
+  print_diff_files(opts, context, newmappings, structures)
+  
+def print_diff_files(opts, context, newmappings, structures):
   # print original struct in one file, diffed struct in the other
-  d1out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump1) 
-  d2out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, opts.dump2) 
+  d1out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, '%s-%s'%(opts.dump1, opts.dump1) ) 
+  d2out = config.Config.getCacheFilename(config.Config.DIFF_PY_HEADERS, '%s-%s'%(opts.dump1, opts.dump2) )
   f1 = file(d1out, 'w')
   f2 = file(d2out, 'w')
   for st in structures:
     st2 = structure.remapLoad(context, st.vaddr, newmappings)
+    #if st.bytes == st2.bytes: 
+    #  print 'identic bit field !!!'
+    #  return
     # get the fields
     ##### TODO FIXME , fix and leverage Field.getValue() to update from a changed mapping
     #### TODO, in toString(), pointer value should be in comment, to check for pointer change, when same pointed struct.
     st.decodeFields()
     #st.resolvePointers(context.structures_addresses, context.structures)
     #st._aggregateFields()
+    st2.reset() # clean previous state
     st2.decodeFields()
     #st2.resolvePointers(context.structures_addresses, context.structures)
     #st2._aggregateFields()
@@ -110,6 +122,9 @@ def make(opts):
     f1.write('\n')
     f2.write(st2.toString())
     f2.write('\n')
+    sys.stdout.write('.')
+    sys.stdout.flush()
+  print 
   f1.close()
   f2.close()
   log.info('[+] diffed structures dumped in %s %s'%(d1out, d2out))
@@ -133,7 +148,7 @@ def cmd_cmp(heap1, heap2, baseOffset):
         cols.pop(0)
     except:
       continue
-    addrs.append(int(cols.pop(0))+baseOffset)
+    addrs.append(int(cols.pop(0))+baseOffset -1 ) # starts with 1
   
   return addrs
   
