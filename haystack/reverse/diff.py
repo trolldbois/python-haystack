@@ -50,21 +50,45 @@ def make(opts):
   log.info('[+] finding diff values with %s'%(opts.dump2))
   #offsets = findDiffsOffsets_mappings(heap1, heap2, heap1.start)
   #offsets = diff_iterator(heap1, heap2, heap1.start)
-  offsets = cmd_cmp(heap1, heap2, heap1.start)
+  addrs = cmd_cmp(heap1, heap2, heap1.start)
   
   # now compare with structures addresses
   structures = []
-  log.info('[+] Looking at %d offsets'%( len(offsets) ))
+  log.info('[+] Looking at %d differences'%( len(addrs) ))
   st = []
-  saved=0
-  for offsets_found, offset in enumerate(offsets):
-    if offset in st: # last structure could hold this offset too
-      saved+=1
-      continue
-    vaddr, pos = utils.closestFloorValueNumpy(offset, context.structures_addresses)
-    st = context.structures[vaddr]
-    structures.append(st)
-  log.info('[+] On %d diffs, found %d structs with different values. saved: %d'%(offsets_found, len(structures), saved))
+  # joined iteration, found structure affected
+  # use info from malloc : structures.start + .size 
+  addr_iter = iter(addrs)
+  structs_addr_iter = iter(context.malloc_addresses)
+  structs_size_iter = iter(context.malloc_sizes) 
+  try:
+    addr = addr_iter.next()
+    st_addr = structs_addr_iter.next()
+    st_size = structs_size_iter.next()
+    oldcnt=0
+    cnt=1
+    while True:
+      if cnt-oldcnt > 100:
+        log.debug('%d/%d'%(oldcnt, len(addrs)))
+        
+      while (addr - st_addr+st_size ) > 0 : # find st containing offset
+        st_addr = structs_addr_iter.next()
+        st_size = structs_size_iter.next()
+
+      if (addr - st_addr) < st_size: # check if offset is really in st ( should be always if your not dumb/there no holes )
+        structures.append( context.structures[ st_addr ]) # tag the structure as different
+      else:
+        log.warning('your algo sucks/hole in malloc_chunk before offset: %x st_addr: %x st_size: %x'%(addr,st_addr,st_size))
+
+      while (addr - st_addr) < st_size : # enumerate offsets in st range
+        addr = addr_iter.next()
+        cnt+=1
+  except StopIteration,e:
+    pass
+  addrs_found = cnt
+        
+    
+  log.info('[+] On %d diffs, found %d structs with different values.'%(addrs_found, len(structures), saved))
   log.info('[+] Outputing to file (will be long-ish)')
 
   # print original struct in one file, diffed struct in the other
@@ -185,7 +209,7 @@ def cmd_cmp(heap1, heap2, baseOffset):
   f1 = heap1._memdump.name
   f2 = heap2._memdump.name
   
-  offsets = []
+  addrs = []
   try:
     res = subprocess.check_output(['cmp',f1,f2,'-l'])
   except subprocess.CalledProcessError,e:
@@ -197,9 +221,9 @@ def cmd_cmp(heap1, heap2, baseOffset):
         cols.pop(0)
     except:
       continue
-    offsets.append(int(cols.pop(0)))
+    addrs.append(int(cols.pop(0))+baseOffset)
   
-  return offsets
+  return addrs
   
   
 def argparser():
