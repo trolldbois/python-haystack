@@ -87,6 +87,19 @@ def getUserAllocations(mappings, heap, filterInuse=False):
 
   raise StopIteration
 
+
+def isMallocHeap(mappings, mapping):
+  """test if a mapping is a malloc generated heap"""
+  orig_addr = mapping.start
+  chunk = mapping.readStruct(orig_addr, malloc_chunk)
+  ret = chunk.loadMembers(mappings, 10, orig_addr)
+  if not ret:
+    return False
+  return True
+
+
+
+
 class malloc_chunk(mallocStruct):
   '''FAKE python representation of a struct malloc_chunk
 
