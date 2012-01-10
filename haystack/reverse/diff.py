@@ -67,26 +67,23 @@ def make(opts):
     cnt=1
     while True:
         
-      while (addr - st_addr-st_size ) > 0 : # find st containing offset
+      while (addr - st_addr) >= st_size : # find st containing offset
         st_addr = structs_addr_iter.next()
         st_size = structs_size_iter.next()
-
-      if (addr - st_addr) < st_size: # check if offset is really in st ( should be always if your not dumb/there no holes )
+      # check for gaps
+      if (addr - st_addr) < 0: # went to far - no struct overlapping
+        while (addr - st_addr) < 0: # addr is in between two struct - dump all addr stuck out of malloc_chunks
+          addr = addr_iter.next()
+          pass
+        continue
+      
+      #
+      if 0 <= (addr - st_addr) < st_size: # check if offset is really in st ( should be always if your not dumb/there no holes )
         structures.append( context.structures[ st_addr ]) # tag the structure as different
-      else: ## exactly on the last byte+1 of the struct - we have malloc_chunk info in that space
-        #log.warning('your algo sucks/hole in malloc_chunk before offset: %x st_addr: %x st_size: %x'%(addr,st_addr,st_size))
-        #log.warning('difference in the malloc_chunk structure . this has been reallocated')
-        st_addr = structs_addr_iter.next()
-        st_size = structs_size_iter.next()
-
-        # Still we do not want to tag a structure if its contents has not changed.
-        # the question is, should we check malloc_chunk in file2 to find changes in allocations ?
-        # -> ctypes_libc.getAllocations(dump2) and compare addresses.... ( and unallocated_addresses ? )
-        ##structures.append( context.structures[ st_addr ]) # tag the structure as different
-        ##realloc+=1
-        ##while (addr - st_addr) >= st_size : # delete mods in the malloc_chunk
-        ##  addr = addr_iter.next() 
-        pass
+      else: 
+        ## (addr - st_addr) < 0 # impossible by previous while
+        ## (addr - st_addr) >= st_size # then continur
+        continue
 
       while (addr - st_addr) < st_size : # enumerate offsets in st range
         addr = addr_iter.next()
@@ -109,9 +106,9 @@ def print_diff_files(opts, context, newmappings, structures):
   f2 = file(d2out, 'w')
   for st in structures:
     st2 = structure.remapLoad(context, st.vaddr, newmappings)
-    #if st.bytes == st2.bytes: 
-    #  print 'identic bit field !!!'
-    #  return
+    if st.bytes == st2.bytes: 
+      print 'identic bit field !!!'
+      return
     # get the fields
     ##### TODO FIXME , fix and leverage Field.getValue() to update from a changed mapping
     #### TODO, in toString(), pointer value should be in comment, to check for pointer change, when same pointed struct.
