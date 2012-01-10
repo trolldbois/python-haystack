@@ -169,7 +169,7 @@ class AnonymousStructInstance():
     self.mappings = mappings
     self.vaddr = vaddr
     self.bytes = bytes
-    self.size = len(bytes)
+    self.size = len(self.bytes)
     self.fields = []
     if prefix is None:
       self.prefixname = '%lx'%(self.vaddr)
@@ -181,7 +181,7 @@ class AnonymousStructInstance():
     return
 
   def reset(self):
-    self.size = len(bytes)
+    self.size = len(self.bytes)
     self.fields = []
     self.resolved = False
     self.pointerResolved = False
