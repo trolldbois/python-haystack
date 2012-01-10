@@ -91,17 +91,16 @@ def getHeapPointers(dumpfilename, mappings):
   heap_addrs = int_array_cache(F_HEAP)
   stack_addrs = int_array_cache(F_STACK)
   if values is None or heap_addrs is None:
-    log.info('Making new cache')
-    log.info('getting pointers values from stack ')
+    log.info('[+] Making new cache - getting pointers values from stack')
     stack_enumerator = signature.PointerEnumerator(mappings.getStack())
     stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
     stack_enum = stack_enumerator.search()
     stack_offsets, stack_values = zip(*stack_enum)
-    log.info('  got %d pointers '%(len(stack_enum)) )
-    log.info('Merging pointers from heap')
+    log.info('\t[-] got %d pointers '%(len(stack_enum)) )
+    log.info('\t[-] merging pointers from heap')
     heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
     heap_addrs, heap_values = zip(*heap_enum) # TODO change to offsets
-    log.info('  got %d pointers '%(len(heap_enum)) )
+    log.info('\t[-] got %d pointers '%(len(heap_enum)) )
     # merge
     values = sorted(set(heap_values+stack_values))
     int_array_save(F_VALUES , values)
@@ -124,8 +123,8 @@ def getAllocations(dumpfilename, mappings, heap):
   # TODO if linux
   import libc.ctypes_malloc
   
-  f_addrs = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_ADDRS, dumpfilename+'.%s'%(heap.start))
-  f_sizes = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_SIZES, dumpfilename+'.%s'%(heap.start))
+  f_addrs = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_ADDRS, dumpfilename+'.%x'%(heap.start))
+  f_sizes = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_SIZES, dumpfilename+'.%x'%(heap.start))
   log.debug('reading from %s'%(f_addrs))
   addrs = int_array_cache(f_addrs)
   sizes = int_array_cache(f_sizes)
@@ -135,7 +134,6 @@ def getAllocations(dumpfilename, mappings, heap):
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
     int_array_save(f_sizes, sizes)
-    log.info('\t[-] we have %d malloc_chunks'%(len(addrs)) )
   else:
     log.info('[+] Loading from cache')
   log.info('\t[-] we have %d malloc_chunks'%(len(addrs)) )
