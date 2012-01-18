@@ -35,7 +35,7 @@ def int_array_cache(filename):
 
 def int_array_save(filename, lst):
   my_array = array.array('L')
-  my_array.extend(lst)
+  my_array.extend(lst) or True
   my_array.tofile(file(filename,'w'))
   return my_array
 
@@ -95,11 +95,14 @@ def getHeapPointers(dumpfilename, mappings):
     stack_enumerator = signature.PointerEnumerator(mappings.getStack())
     stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
     stack_enum = stack_enumerator.search()
-    stack_offsets, stack_values = zip(*stack_enum)
+    if len(stack_enum)>0:
+      stack_offsets, stack_values = zip(*stack_enum) 
+    else:
+      stack_offsets, stack_values = (),()
     log.info('\t[-] got %d pointers '%(len(stack_enum)) )
     log.info('\t[-] merging pointers from heap')
     heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
-    heap_addrs, heap_values = zip(*heap_enum) # TODO change to offsets
+    heap_addrs, heap_values = zip(*heap_enum) # or (),() # TODO change to offsets
     log.info('\t[-] got %d pointers '%(len(heap_enum)) )
     # merge
     values = sorted(set(heap_values+stack_values))
