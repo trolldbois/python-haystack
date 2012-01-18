@@ -469,9 +469,9 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
     #f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
     # get next and prev
-    if (f1 in context.heap) and (f2 in context.heap) and (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
-      st1 = context.structures[f1]
-      st2 = context.structures[f2]
+    if (f1 in context.heap) and (f2 in context.heap):
+      #st1 = context.structures[f1]
+      #st2 = context.structures[f2]
       ##if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
       ##  return False
       st1_f1,st1_f2 = struct.unpack('LL', self.twoWords(context, f1 ) )
@@ -484,8 +484,11 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if ( (ptr_value == st1_f2 == st2_f1 ) or
            (ptr_value == st2_f2 == st1_f1 ) ):
         log.debug('%x is part of a double linked-list'%(ptr_value))
-        return True
-      #log.debug('FP Bad candidate : %x '%(ptr_value))
+        if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
+          return True
+        else:
+          log.debug('FP Bad candidate not head of struct: %x '%(ptr_value))
+          return False
     return False
       
   def iterateList(self, context, head_addr):
@@ -641,6 +644,9 @@ def search(opts):
     doublelink = DoubleLinkedListReverser()
     context = doublelink.reverse(context)
 
+    log.info('[+] saving headers')
+    save_headers(context)
+    fr._saveStructures(context)
 
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
