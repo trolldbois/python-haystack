@@ -435,11 +435,11 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         done+=1
         continue # if not head of structure, not a classic DoubleLinkedList ( TODO, think kernel ctypes + offset)
       '''
-      anon = context.structures[ptr_value]
+      #anon = context.structures[ptr_value]
       if ptr_value in members:
         continue # already checked
-      if ( self.isLinkedListMember(context, anon, ptr_value)):
-        _members = self.iterateList(context, anon, ptr_value)
+      if ( self.isLinkedListMember(context, ptr_value)):
+        _members = self.iterateList(context, ptr_value)
         if _members is not None:
           members.update(_members)
           done+=len(_members)-1
@@ -461,9 +461,9 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return
 
   def twoWords(self, ctx, st_addr, offset=0):
-    return ctx.heap[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
+    return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
   
-  def isLinkedListMember(self, context, anon, ptr_value):
+  def isLinkedListMember(self, context, ptr_value):
     ##if len(anon) < 2*Config.WORDSIZE:
     ##  return False
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
@@ -485,9 +485,10 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
            (ptr_value == st2_f2 == st1_f1 ) ):
         log.debug('%x is part of a double linked-list'%(ptr_value))
         return True
+      log.debug('FP Bad candidate : %x '%(ptr_value))
     return False
       
-  def iterateList(self, context, head, head_addr):
+  def iterateList(self, context, head_addr):
     members=set()
     members.add(head_addr)
     f1,f2 = struct.unpack('LL', self.twoWords(context, head_addr ))
