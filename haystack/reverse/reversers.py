@@ -12,12 +12,14 @@ import numpy
 import os
 import pickle
 import shelve
+import struct 
 import sys
 import time
 
 from haystack.config import Config
 from haystack.utils import Dummy
 from haystack import dump_loader
+from haystack import argparse_utils
 
 import structure
 import fieldtypes
@@ -62,10 +64,10 @@ class ReverserContext():
     ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
     self.pointers_addresses = aligned_ptr
     self.pointers_offsets = ptr_offsets # need 
-    
+
     log.info('[+] Fetching cached malloc chunks list')
     self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
-
+    
     # TODO switched
     if True: # malloc reverser
       self.structures_addresses = self.malloc_addresses
@@ -211,7 +213,7 @@ class StructureOrientedReverser():
         log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
         tl = t0
     tf = time.time()
-    log.info('\t[.] saved in %2.2f secs'%(tf-t0))
+    log.info('\t[.] saved in %2.2f secs'%(tf-tl))
     return
       
   def __str__(self):
@@ -409,6 +411,106 @@ class PointerFieldReverser(StructureOrientedReverser):
     return
 
 '''
+  Identify double Linked list. ( list, vector, ... )
+'''
+class DoubleLinkedListReverser(StructureOrientedReverser):
+  
+  def _reverse(self, context):
+    log.info('[+] DoubleLinkedListReverser: resolving first two pointers')
+    t0 = time.time()
+    tl = t0
+    done = 0
+    found = 0
+    members = set()
+    lists = []
+    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
+      anon = context.structures[ptr_value]
+      if ptr_value in members:
+        continue # already checked
+      if ( self.isLinkedListMember(context, anon, ptr_value)):
+        _members = self.iterateList(context, anon)
+        if _members is not None:
+          members.update(_members)
+          done+=len(_members)-1
+          lists.append(_members) # save list chain
+          found +=1
+      done+=1
+    if time.time()-tl > 30: 
+        tl = time.time()
+        rate = ((tl-t0)/(1+done))
+        log.info('%2.2f secondes to go (d:%d,f:%d)'%( 
+            ( done, found)))
+    log.info('[+] DoubleLinkedListReverser: finished %d structures in %2.0f (f:%d)'%(done, time.time()-t0, found ) )
+    context.parsed.add(str(self))
+    #
+    context.lists = lists
+    return
+
+  def isLinkedListMember(self, context, anon, ptr_value):
+    if len(anon) < 2*Config.WORDSIZE:
+      return False
+    f1 = struct.unpack('L', anon.bytes[:Config.WORDSIZE])[0]
+    f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+    # get next and prev
+    if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
+      st1 = context.structures[f1]
+      st2 = context.structures[f2]
+      if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
+        return False
+      st1_f1 = struct.unpack('L', st1.bytes[:Config.WORDSIZE])[0]
+      st1_f2 = struct.unpack('L', st1.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      st2_f1 = struct.unpack('L', st2.bytes[:Config.WORDSIZE])[0]
+      st2_f2 = struct.unpack('L', st2.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      # check if the three pointer work
+      if ( (ptr_value == st1_f2 == st2_f1 ) or
+           (ptr_value == st2_f2 == st1_f1 ) ):
+        log.debug('%x is part of a double linked-list'%(ptr_value))
+        return True
+    return False
+      
+  def iterateList(self, context, head):
+    members=set()
+    members.add(head.addr)
+    f1 = struct.unpack('L', head.bytes[:Config.WORDSIZE])[0]
+    f2 = struct.unpack('L', head.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+
+    current = head
+    while (f1 in context.structures_addresses ):
+      first = context.structures[f1]
+      if (len(first) < 2*Config.WORDSIZE):
+        log.warning('list element is too small')
+        return None
+      first_f1 = struct.unpack('L', first.bytes[:Config.WORDSIZE])[0]
+      first_f2 = struct.unpack('L', first.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      if first.addr in members:
+        log.debug('loop to head')
+        return members
+      if ( current.addr == first_f2 ) :
+        members.add(first.addr)
+        f1 = first_f1
+        current = first
+      else:
+        log.warning('(st:%x f1:%x) f2:%x is not current.addr:%x'%(current, first_f1, first_f2, current.addr))
+        return None
+        
+    #current = head
+    #while (f2 in context.structures_addresses ):
+    #  sec = context.structures[f2]
+    #  if (len(sec) < 2*Config.WORDSIZE):
+    #    return None
+    #  sec_f1 = struct.unpack('L', sec.bytes[:Config.WORDSIZE])[0]
+    #  sec_f2 = struct.unpack('L', sec.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+    #  if ( (current.addr == sec_f1 ) :
+    #    members.add(sec.addr)
+    #    f2 = first_f2
+    #  else:
+    #    log.warning('f2:%x is not current.addr:%x'%(sec_f1, current.addr))
+    #    return None
+  
+    log.debug('returning %d members from head.addr %x'%(len(members), head.addr))
+    return members
+
+'''
   use the pointer relation between structure to map a graph.
 '''
 class PointerGraphReverser(StructureOrientedReverser):
@@ -491,7 +593,7 @@ def search(opts):
   #
   log.info('[+] Loading the memory dump ')
   try:
-    context = getContext(opts.dumpfile.name)
+    context = getContext(opts.dumpname)
     if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
       os.mkdir(Config.getStructsCacheDir(context.dumpname))
 
@@ -512,9 +614,9 @@ def search(opts):
     context = pfr.reverse(context)
 
     # graph pointer relations between structures
-    #ptrgraph = PointerGraphReverser()
-    #context = ptrgraph.reverse(context)
-    #ptrgraph._saveStructures(context)
+    ptrgraph = PointerGraphReverser()
+    context = ptrgraph.reverse(context)
+    ptrgraph._saveStructures(context)
         
 
     log.info('[+] saving headers')
@@ -523,6 +625,11 @@ def search(opts):
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context
+    
+    
+    doublelink = DoubleLinkedListReverser()
+    context = doublelink.reverse(context)
+    
     # etc
   except KeyboardInterrupt,e:
     #except IOError,e:
@@ -535,7 +642,7 @@ def search(opts):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reversers', description='Do a iterative pointer search to find structure.')
   rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
-  rootparser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
   rootparser.set_defaults(func=search)  
   return rootparser
 
