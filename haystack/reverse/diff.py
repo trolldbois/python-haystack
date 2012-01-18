@@ -80,6 +80,7 @@ def make(opts):
       #
       if 0 <= (addr - st_addr) < st_size: # check if offset is really in st ( should be always if your not dumb/there no holes )
         structures.append( context.structures[ st_addr ]) # tag the structure as different
+        cnt+=1
       else: 
         ## (addr - st_addr) < 0 # impossible by previous while
         ## (addr - st_addr) >= st_size # then continur
