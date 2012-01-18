@@ -416,7 +416,7 @@ class PointerFieldReverser(StructureOrientedReverser):
 class DoubleLinkedListReverser(StructureOrientedReverser):
   
   def _reverse(self, context):
-    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context.pointers_offsets) ))
+    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context.structures) ))
     t0 = time.time()
     tl = t0
     done = 0
@@ -439,7 +439,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if ptr_value in members:
         continue # already checked
       if ( self.isLinkedListMember(context, anon, ptr_value)):
-        _members = self.iterateList(context, anon)
+        _members = self.iterateList(context, anon, ptr_value)
         if _members is not None:
           members.update(_members)
           done+=len(_members)-1
@@ -460,21 +460,24 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     context.lists = lists
     return
 
+  def twoWords(self, ctx, st_addr, offset=0):
+    return ctx.heap[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
+  
   def isLinkedListMember(self, context, anon, ptr_value):
-    if len(anon) < 2*Config.WORDSIZE:
-      return False
-    f1,f2 = struct.unpack('LL', anon.bytes[:2*Config.WORDSIZE])
+    ##if len(anon) < 2*Config.WORDSIZE:
+    ##  return False
+    f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
     #f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
     # get next and prev
     if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
       st1 = context.structures[f1]
       st2 = context.structures[f2]
-      if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
-        return False
-      st1_f1,st1_f2 = struct.unpack('LL', st1.bytes[:2*Config.WORDSIZE])
+      ##if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
+      ##  return False
+      st1_f1,st1_f2 = struct.unpack('LL', self.twoWords(context, f1 ) )
       #st1_f1 = struct.unpack('L', st1.bytes[:Config.WORDSIZE])[0]
       #st1_f2 = struct.unpack('L', st1.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
-      st2_f1,st2_f2 = struct.unpack('LL', st2.bytes[:2*Config.WORDSIZE])
+      st2_f1,st2_f2 = struct.unpack('LL', self.twoWords(context, f2 ))
       #st2_f1 = struct.unpack('L', st2.bytes[:Config.WORDSIZE])[0]
       #st2_f2 = struct.unpack('L', st2.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
       # check if the three pointer work
@@ -484,27 +487,27 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         return True
     return False
       
-  def iterateList(self, context, head):
+  def iterateList(self, context, head, head_addr):
     members=set()
-    members.add(head.addr)
-    f1,f2 = struct.unpack('LL', head.bytes[:2*Config.WORDSIZE])[0]
+    members.add(head_addr)
+    f1,f2 = struct.unpack('LL', self.twoWords(context, head_addr ))
 
-    current = head
+    current = head_addr
     while (f1 in context.structures_addresses ):
-      first = context.structures[f1]
-      if (len(first) < 2*Config.WORDSIZE):
-        log.warning('list element is too small')
-        return None
-      first_f1,first_f2 = struct.unpack('LL', first.bytes[:2*Config.WORDSIZE])
-      if first.addr in members:
+      if f1 in members:
         log.debug('loop to head')
         return members
-      if ( current.addr == first_f2 ) :
+      first = context.structures[f1]
+      #if (len(first) < 2*Config.WORDSIZE):
+      #  log.warning('list element is too small')
+      #  return None
+      first_f1,first_f2 = struct.unpack('LL', self.twoWords(context, f1 ))
+      if ( current == first_f2 ) :
         members.add(first.addr)
+        current = f1
         f1 = first_f1
-        current = first
       else:
-        log.warning('(st:%x f1:%x) f2:%x is not current.addr:%x'%(current, first_f1, first_f2, current.addr))
+        log.warning('(st:%x f1:%x) f2:%x is not current.addr:%x'%(current, first_f1, first_f2, current))
         return None
         
     #current = head
@@ -521,7 +524,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     #    log.warning('f2:%x is not current.addr:%x'%(sec_f1, current.addr))
     #    return None
   
-    log.debug('returning %d members from head.addr %x'%(len(members), head.addr))
+    log.debug('returning %d members from head.addr %x'%(len(members), head_addr))
     return members
 
 '''
