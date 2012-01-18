@@ -433,13 +433,15 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
           members.update(_members)
           done+=len(_members)-1
           lists.append(_members) # save list chain
+          #TODO get substructures ( P4P4xx ) signature and 
+          # a) extract substructures
+          # b) group by signature
           found +=1
       done+=1
-    if time.time()-tl > 30: 
-        tl = time.time()
-        rate = ((tl-t0)/(1+done))
-        log.info('%2.2f secondes to go (d:%d,f:%d)'%( 
-            ( done, found)))
+      if time.time()-tl > 30: 
+          tl = time.time()
+          rate = ((tl-t0)/(1+done))
+          log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.structures)-done)*rate, done, found))
     log.info('[+] DoubleLinkedListReverser: finished %d structures in %2.0f (f:%d)'%(done, time.time()-t0, found ) )
     context.parsed.add(str(self))
     #
@@ -567,7 +569,23 @@ def save_headers(context):
   ''' structs_addrs is sorted '''
   fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
   towrite = []
+  if hasattr(context, 'lists'):
+    vaddrs = [ addr for list1 in context.lists for addr in list1 ]
+    for vaddr in vaddrs:
+      anon = context.structures[vaddr]
+      towrite.append(anon.toString())
+      if len(towrite) >= 10000:
+        try:
+          fout.write('\n'.join(towrite) )
+        except UnicodeDecodeError, e:
+          print 'ERROR on ',anon
+        towrite = []
+        fout.flush()
+
   for vaddr,anon in context.structures.items():
+    if hasattr(context, 'lists'):
+      if vaddr in vaddrs:
+        continue
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
       try:
@@ -604,6 +622,10 @@ def search(opts):
     #ptrRev = PointerReverser()
     #context = ptrRev.reverse(context)
 
+    doublelink = DoubleLinkedListReverser()
+    context = doublelink.reverse(context)
+
+
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()
@@ -618,6 +640,7 @@ def search(opts):
     context = ptrgraph.reverse(context)
     ptrgraph._saveStructures(context)
         
+    
 
     log.info('[+] saving headers')
     save_headers(context)
@@ -626,9 +649,6 @@ def search(opts):
     ##context = libRev.reverse(context)
     # we have more enriched context
     
-    
-    doublelink = DoubleLinkedListReverser()
-    context = doublelink.reverse(context)
     
     # etc
   except KeyboardInterrupt,e:
