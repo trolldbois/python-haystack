@@ -469,7 +469,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
     #f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
     # get next and prev
-    if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
+    if (f1 in context.heap) and (f2 in context.heap) and (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
       st1 = context.structures[f1]
       st2 = context.structures[f2]
       ##if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
@@ -485,7 +485,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
            (ptr_value == st2_f2 == st1_f1 ) ):
         log.debug('%x is part of a double linked-list'%(ptr_value))
         return True
-      log.debug('FP Bad candidate : %x '%(ptr_value))
+      #log.debug('FP Bad candidate : %x '%(ptr_value))
     return False
       
   def iterateList(self, context, head_addr):
@@ -525,7 +525,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     #    log.warning('f2:%x is not current.addr:%x'%(sec_f1, current.addr))
     #    return None
   
-    log.debug('returning %d members from head.addr %x'%(len(members), head_addr))
+    log.debug('returning %d members from head.addr %x f1:%x'%(len(members), head_addr, f1))
     return members
 
 '''
