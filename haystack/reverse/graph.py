@@ -11,9 +11,15 @@ import logging
 import os
 import sys
 from collections import defaultdict
+import networkx
+import matplotlib.pyplot as plt
+
 
 from haystack import config
+from haystack import argparse_utils
 from haystack.reverse import utils
+from haystack.reverse  import reversers
+from haystack.reverse.reversers import *  # by the pickle of my thumb
 
 log = logging.getLogger('graph')
 
@@ -21,7 +27,7 @@ log = logging.getLogger('graph')
 def printGraph(G, gname):
   h = networkx.DiGraph()
   h.add_edges_from( G.edges() )
-  networkx.draw_spectral(h)
+  networkx.draw_graphviz(h)
   fname = os.path.sep.join([config.Config.imgCacheDir, 'graph_%s.png'%(gname) ] )
   plt.savefig(fname)
   plt.clf()
@@ -65,18 +71,25 @@ def save_graph_headers(context, graph, fname):
 
 def make(opts):
   fname = opts.gexf
+  
+  #if __name__ == '__main__':
+  #if False:
+  #context = reversers.getContext('../../outputs/skype.1.a')
+  context = reversers.getContext(opts.dumpname)
 
-if __name__ == '__main__':
+  #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
+  digraph=networkx.readwrite.gexf.read_gexf(  opts.gexf.name)
+  heap = context.mappings.getHeap()
 
-  import reversers
-  from reversers import *  # by the pickle of my thumb
-  context = reversers.getContext('../../outputs/skype.1.a')
+  # only add heap structure with links
+  edges = [(x,y) for x,y in digraph.edges() if int(x,16) in heap and int(y,16) in heap]
+  graph = networkx.DiGraph()
+  graph.add_edges_from( edges )
 
-  import networkx
-  import matplotlib.pyplot as plt
+  printGraph(graph, os.path.basename(opts.dumpname) )
 
-  digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
 
+def clean():
   # clean solos
   isolates = networkx.algorithms.isolate.isolates(digraph)
   digraph.remove_nodes_from(isolates)
@@ -218,6 +231,7 @@ def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reversers-graph', description='Play with graph repr of pointers relationships.')
   rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
   rootparser.add_argument('gexf', type=argparse.FileType('rb'), action='store', help='Source gexf.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source gexf.')
   rootparser.set_defaults(func=make)  
   return rootparser
 
