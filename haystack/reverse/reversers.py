@@ -416,14 +416,25 @@ class PointerFieldReverser(StructureOrientedReverser):
 class DoubleLinkedListReverser(StructureOrientedReverser):
   
   def _reverse(self, context):
-    log.info('[+] DoubleLinkedListReverser: resolving first two pointers')
+    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context.pointers_offsets) ))
     t0 = time.time()
     tl = t0
     done = 0
     found = 0
     members = set()
     lists = []
-    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
+    for ptr_value in sorted(context.structures.keys()):
+      #self.pointers_addresses = aligned_ptr
+      #self.pointers_offsets = ptr_offsets # need 
+      '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
+      if context.pointers_offsets[i-1]+Config.WORDSIZE != context.pointers_offsets[i]:
+        done+=1
+        continue
+      ptr_value = context.pointers_addresses[i-1]
+      if ptr_value not in context.structures_addresses:
+        done+=1
+        continue # if not head of structure, not a classic DoubleLinkedList ( TODO, think kernel ctypes + offset)
+      '''
       anon = context.structures[ptr_value]
       if ptr_value in members:
         continue # already checked
@@ -441,7 +452,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if time.time()-tl > 30: 
           tl = time.time()
           rate = ((tl-t0)/(1+done))
-          log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.structures)-done)*rate, done, found))
+          #log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.structures)-done)*rate, done, found))
+          log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.pointers_offsets)-done)*rate, done, found))
     log.info('[+] DoubleLinkedListReverser: finished %d structures in %2.0f (f:%d)'%(done, time.time()-t0, found ) )
     context.parsed.add(str(self))
     #
@@ -451,18 +463,20 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   def isLinkedListMember(self, context, anon, ptr_value):
     if len(anon) < 2*Config.WORDSIZE:
       return False
-    f1 = struct.unpack('L', anon.bytes[:Config.WORDSIZE])[0]
-    f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+    f1,f2 = struct.unpack('LL', anon.bytes[:2*Config.WORDSIZE])
+    #f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
     # get next and prev
     if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
       st1 = context.structures[f1]
       st2 = context.structures[f2]
       if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
         return False
-      st1_f1 = struct.unpack('L', st1.bytes[:Config.WORDSIZE])[0]
-      st1_f2 = struct.unpack('L', st1.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
-      st2_f1 = struct.unpack('L', st2.bytes[:Config.WORDSIZE])[0]
-      st2_f2 = struct.unpack('L', st2.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      st1_f1,st1_f2 = struct.unpack('LL', st1.bytes[:2*Config.WORDSIZE])
+      #st1_f1 = struct.unpack('L', st1.bytes[:Config.WORDSIZE])[0]
+      #st1_f2 = struct.unpack('L', st1.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      st2_f1,st2_f2 = struct.unpack('LL', st2.bytes[:2*Config.WORDSIZE])
+      #st2_f1 = struct.unpack('L', st2.bytes[:Config.WORDSIZE])[0]
+      #st2_f2 = struct.unpack('L', st2.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
       # check if the three pointer work
       if ( (ptr_value == st1_f2 == st2_f1 ) or
            (ptr_value == st2_f2 == st1_f1 ) ):
@@ -473,8 +487,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   def iterateList(self, context, head):
     members=set()
     members.add(head.addr)
-    f1 = struct.unpack('L', head.bytes[:Config.WORDSIZE])[0]
-    f2 = struct.unpack('L', head.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+    f1,f2 = struct.unpack('LL', head.bytes[:2*Config.WORDSIZE])[0]
 
     current = head
     while (f1 in context.structures_addresses ):
@@ -482,8 +495,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if (len(first) < 2*Config.WORDSIZE):
         log.warning('list element is too small')
         return None
-      first_f1 = struct.unpack('L', first.bytes[:Config.WORDSIZE])[0]
-      first_f2 = struct.unpack('L', first.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
+      first_f1,first_f2 = struct.unpack('LL', first.bytes[:2*Config.WORDSIZE])
       if first.addr in members:
         log.debug('loop to head')
         return members
