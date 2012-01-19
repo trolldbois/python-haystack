@@ -86,6 +86,7 @@ int main(){
   test1();
   
   printf("pid %d\n",getpid());
+  fflush(stdout);
   sleep(-1);
   
   return 0;

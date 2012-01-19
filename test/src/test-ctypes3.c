@@ -55,6 +55,7 @@ int main(){
   test3();
   
   printf("pid %d\n",getpid());
+  fflush(stdout);
   sleep(-1);
   
   return 0;

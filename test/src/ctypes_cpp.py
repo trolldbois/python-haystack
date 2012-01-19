@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+"""Expected testing structures."""
 
 import ctypes
 import logging, sys
@@ -14,6 +11,9 @@ from haystack import model
 
 from haystack.model import is_valid_address,is_valid_address_value,getaddress,array2bytes,bytes2array
 from haystack.model import LoadableMembers,RangeValue,NotNull,CString
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+
 
 log=logging.getLogger('cpp')
 
