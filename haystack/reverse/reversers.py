@@ -470,6 +470,9 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   
   def isLinkedListMember(self, context, ptr_value):
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
+    if (f1 == ptr_value) or (f2 == ptr_value):
+      # this are self pointers. ?
+      return False
     # get next and prev
     if (f1 in context.heap) and (f2 in context.heap):
       st1_f1,st1_f2 = struct.unpack('LL', self.twoWords(context, f1 ) )
@@ -491,8 +494,11 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     f1,f2 = struct.unpack('LL', self.twoWords(context, head_addr ))
     if (f1 == head_addr):
       log.debug('f1 is head_addr too')
+      return None,None
     if (f2 == head_addr):
       log.debug('f2 is head_addr too')
+      context.structures[head_addr].setName('struct')
+      print context.structures[head_addr].toString()
       
     current = head_addr
     while (f1 in context.structures_addresses ):
