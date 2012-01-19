@@ -439,10 +439,6 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if ( self.isLinkedListMember(context, ptr_value)):
         head, _members = self.iterateList(context, ptr_value)
         if _members is not None:
-          print 'head', hex(head), 'members',
-          for m in _members:
-            print hex(m),
-          print
           members.update(_members)
           done+=len(_members)-1
           lists.append( (head,_members) ) # save list chain
