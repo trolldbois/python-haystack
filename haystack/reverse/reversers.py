@@ -642,13 +642,13 @@ def search(opts):
     #context = ptrRev.reverse(context)
 
     doublelink = DoubleLinkedListReverser()
-    context = doublelink.reverse(context, False)
-    log.info('[+] saving linkedlist headers')
-    vaddrs = [ addr for (head, list1) in context.lists for addr in list1 ]
-    save_headers(context, vaddrs)
+    context = doublelink.reverse(context)
+    #log.info('[+] saving linkedlist headers')
+    #vaddrs = [ addr for (head, list1) in context.lists for addr in list1 ]
+    #save_headers(context, vaddrs)
     #fr._saveStructures(context.lists)
     
-    return 
+    
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()
