@@ -156,7 +156,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     return cmp(self.addr,other.addr)
 
   def __str__(self):
-    return 'AnonStruct_%x'%(self.vaddr )
+    return 'struct_%x'%(self.vaddr )
     
 
 
@@ -171,15 +171,18 @@ class AnonymousStructInstance():
     self.bytes = bytes
     self.size = len(self.bytes)
     self.fields = []
-    if prefix is None:
-      self.prefixname = '%lx'%(self.vaddr)
-    else:
-      self.prefixname = '%lx_%s'%( self.vaddr, self.prefix)
     self.resolved = False
     self.pointerResolved = False
     self.dirty=True
+    self.setName(prefix)
     return
 
+  def setName(self, name):
+    if name is None:
+      self._name = 'struct_%x'%(self.vaddr)
+    else:
+      self._name = '%s_%x'%(name, self.vaddr)
+  
   def reset(self):
     self.size = len(self.bytes)
     self.fields = []
@@ -932,7 +935,7 @@ class AnonymousStructInstance():
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
-    info = 'resolved:%s SIG:%s'%(self.resolved, self.getSignature(text=True))
+    info = 'resolved:%s SIG:%s size:%d'%(self.resolved, self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.pointerResolved)
     ctypes_def = '''
@@ -981,10 +984,12 @@ class %s(LoadableMembers):  # %s
     #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
     self.mappings = None
     self.bytes = None
+    if '_name' not in d:
+      self.setName(None)
     return
         
   def __str__(self):
-    return 'struct_%x'%(self.vaddr )
+    return self._name
   
 
 
