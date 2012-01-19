@@ -160,6 +160,7 @@ class StructureOrientedReverser():
   ''' Improve the reversing process
   '''
   def reverse(self, ctx, cacheEnabled=True):
+    skip = False
     if cacheEnabled:
       ctx,skip = self._getCache(ctx)
     try:
@@ -180,7 +181,7 @@ class StructureOrientedReverser():
     return ctx
   
   ''' Subclass implementation of the reversing process '''
-  def _reverse(self, ctx):
+  def _reverse(self, ctx, addrs=None):
     raise NotImplementedError
 
   def _getCache(self, ctx):
@@ -198,7 +199,7 @@ class StructureOrientedReverser():
     ctx.save()
     return 
 
-  def _saveStructures(self,ctx):
+  def _saveStructures(self, ctx):
     tl = time.time()
     # dump all structures
     for i,s in enumerate(ctx.structures.values()):
@@ -243,27 +244,24 @@ class MallocReverser(StructureOrientedReverser):
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from malloc_chunks contents - %d todo'%(len(todo)))
     for i, ptr_value in enumerate(context.structures_addresses):
-      if ptr_value in todo:
-        loaded += 1
-        size = lengths[i]
-        # save the ref/struct type
-        chunk_addr = ptr_value-2*Config.WORDSIZE
-        mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
-        if mc1.check_inuse(context.mappings, chunk_addr):
-          mystruct = structure.makeStructure(context, ptr_value, size)
-          context.structures[ ptr_value ] = mystruct
-          # add pointerFields
-          offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
-          log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
-          # optimise insertion
-          if len(my_pointers_addrs) > 0:
-            mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
-          #for p_addr in my_pointers_addrs:
-          #  f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
-          # save it
-          mystruct.saveme(context)
-        else:
-          unused+=1
+      if ptr_value in context.structures.keys():
+        continue
+      loaded += 1
+      size = lengths[i]
+      # save the ref/struct type
+      chunk_addr = ptr_value-2*Config.WORDSIZE
+      mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
+      if mc1.check_inuse(context.mappings, chunk_addr):
+        mystruct = structure.makeStructure(context, ptr_value, size)
+        context.structures[ ptr_value ] = mystruct
+        # add pointerFields
+        offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
+        log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
+        # optimise insertion
+        if len(my_pointers_addrs) > 0:
+          mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+        #cache to disk
+        mystruct.saveme(context)
       # next
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
@@ -439,11 +437,18 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if ptr_value in members:
         continue # already checked
       if ( self.isLinkedListMember(context, ptr_value)):
-        _members = self.iterateList(context, ptr_value)
+        head, _members = self.iterateList(context, ptr_value)
         if _members is not None:
+          print 'head', hex(head), 'members',
+          for m in _members:
+            print hex(m),
+          print
           members.update(_members)
           done+=len(_members)-1
-          lists.append(_members) # save list chain
+          lists.append( (head,_members) ) # save list chain
+          # set names
+          context.structures[head].setName('list_head')
+          [context.structures[m].setName('list_%x_%d'%(head,i)) for i,m in enumerate(_members)]
           #TODO get substructures ( P4P4xx ) signature and 
           # a) extract substructures
           # b) group by signature
@@ -464,72 +469,73 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
   
   def isLinkedListMember(self, context, ptr_value):
-    ##if len(anon) < 2*Config.WORDSIZE:
-    ##  return False
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
-    #f2 = struct.unpack('L', anon.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
     # get next and prev
     if (f1 in context.heap) and (f2 in context.heap):
-      #st1 = context.structures[f1]
-      #st2 = context.structures[f2]
-      ##if (len(st1) < 2*Config.WORDSIZE) or (len(st2) < 2*Config.WORDSIZE):
-      ##  return False
       st1_f1,st1_f2 = struct.unpack('LL', self.twoWords(context, f1 ) )
-      #st1_f1 = struct.unpack('L', st1.bytes[:Config.WORDSIZE])[0]
-      #st1_f2 = struct.unpack('L', st1.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
       st2_f1,st2_f2 = struct.unpack('LL', self.twoWords(context, f2 ))
-      #st2_f1 = struct.unpack('L', st2.bytes[:Config.WORDSIZE])[0]
-      #st2_f2 = struct.unpack('L', st2.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
       # check if the three pointer work
       if ( (ptr_value == st1_f2 == st2_f1 ) or
            (ptr_value == st2_f2 == st1_f1 ) ):
-        log.debug('%x is part of a double linked-list'%(ptr_value))
+        #log.debug('%x is part of a double linked-list'%(ptr_value))
         if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
           return True
         else:
-          log.debug('FP Bad candidate not head of struct: %x '%(ptr_value))
+          #log.debug('FP Bad candidate not head of struct: %x '%(ptr_value))
           return False
     return False
       
   def iterateList(self, context, head_addr):
-    members=set()
-    members.add(head_addr)
+    members = []
+    members.append(head_addr)
     f1,f2 = struct.unpack('LL', self.twoWords(context, head_addr ))
-
+    if (f1 == head_addr):
+      log.debug('f1 is head_addr too')
+    if (f2 == head_addr):
+      log.debug('f2 is head_addr too')
+      
     current = head_addr
     while (f1 in context.structures_addresses ):
       if f1 in members:
-        log.debug('loop to head')
-        return members
-      first = context.structures[f1]
-      #if (len(first) < 2*Config.WORDSIZE):
-      #  log.warning('list element is too small')
-      #  return None
+        log.debug('loop to head - returning %d members from head.addr %x f1:%x'%(len(members)-1, head_addr, f1))
+        return self.findHead(context, members)
       first_f1,first_f2 = struct.unpack('LL', self.twoWords(context, f1 ))
       if ( current == first_f2 ) :
-        members.add(first.addr)
+        members.append(f1)
         current = f1
         f1 = first_f1
       else:
         log.warning('(st:%x f1:%x) f2:%x is not current.addr:%x'%(current, first_f1, first_f2, current))
-        return None
+        return None, None
         
-    #current = head
-    #while (f2 in context.structures_addresses ):
-    #  sec = context.structures[f2]
-    #  if (len(sec) < 2*Config.WORDSIZE):
-    #    return None
-    #  sec_f1 = struct.unpack('L', sec.bytes[:Config.WORDSIZE])[0]
-    #  sec_f2 = struct.unpack('L', sec.bytes[Config.WORDSIZE:2*Config.WORDSIZE])[0]
-    #  if ( (current.addr == sec_f1 ) :
-    #    members.add(sec.addr)
-    #    f2 = first_f2
-    #  else:
-    #    log.warning('f2:%x is not current.addr:%x'%(sec_f1, current.addr))
-    #    return None
-  
-    log.debug('returning %d members from head.addr %x f1:%x'%(len(members), head_addr, f1))
-    return members
+    # if you leave the while, you are out of the heap address space. That is probably not a linked list...
+    return None, None
+
+  def findHead(self, ctx, members):
+    sizes = [(ctx.malloc_sizes[ctx.structures_addresses.index(m)], m) for m in members]
+    sizes.sort()
+    if sizes[0]<3*Config.WORDSIZE:
+      log.error('a double linked list element must be 3 WORD at least')
+      raise ValueError('a double linked list element must be 3 WORD at least')
+    numWordSized = [s for s,addr in sizes].count(3*Config.WORDSIZE)
+    if numWordSized == 1:
+      head = sizes.pop(0)[1]
+    else: #if numWordSized > 1:
+      ## find one element with 0, and take that for granted...
+      head = None
+      for s, addr in sizes:
+        if s == 3*Config.WORDSIZE:
+          # read ->next ptr and first field of struct || null
+          f2, field0 = struct.unpack('LL', self.twoWords(ctx, addr+Config.WORDSIZE ) )
+          if field0 == 0: # this could be HEAD. or a 0 value.
+            head = addr
+            log.debug('We had to guess the HEAD for this linked list %x'%(addr))
+            break
+      if head == None:
+        head = sizes[0][1]
+        #raise TypeError('No NULL pointer/HEAD in the double linked list')
+        log.warning('No NULL pointer/HEAD in the double linked list - head is now %x'%(head))
+    return (head,[m for (s,m) in sizes])
 
 '''
   use the pointer relation between structure to map a graph.
@@ -584,27 +590,15 @@ def refreshOne(context, ptr_value):
   #resolvePointers
   return mystruct
   
-def save_headers(context):
+def save_headers(context, addrs=None):
   ''' structs_addrs is sorted '''
   fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
   towrite = []
-  if hasattr(context, 'lists'):
-    vaddrs = [ addr for list1 in context.lists for addr in list1 ]
-    for vaddr in vaddrs:
-      anon = context.structures[vaddr]
-      towrite.append(anon.toString())
-      if len(towrite) >= 10000:
-        try:
-          fout.write('\n'.join(towrite) )
-        except UnicodeDecodeError, e:
-          print 'ERROR on ',anon
-        towrite = []
-        fout.flush()
+  if addrs is None:
+    addrs = iter(context.structures.keys())
 
-  for vaddr,anon in context.structures.items():
-    if hasattr(context, 'lists'):
-      if vaddr in vaddrs:
-        continue
+  for vaddr in addrs:
+    anon = context.structures[vaddr]
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
       try:
@@ -642,12 +636,13 @@ def search(opts):
     #context = ptrRev.reverse(context)
 
     doublelink = DoubleLinkedListReverser()
-    context = doublelink.reverse(context)
-
-    log.info('[+] saving headers')
-    save_headers(context)
-    fr._saveStructures(context)
-
+    context = doublelink.reverse(context, False)
+    log.info('[+] saving linkedlist headers')
+    vaddrs = [ addr for (head, list1) in context.lists for addr in list1 ]
+    save_headers(context, vaddrs)
+    #fr._saveStructures(context.lists)
+    
+    return 
     # decode bytes contents to find basic types.
     # DEBUG reactivate, 
     fr = FieldReverser()
