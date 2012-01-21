@@ -114,7 +114,7 @@ class MemoryDumper:
     self.index = file(os.path.join(destdir,'mappings'),'w+')
     # test dump only the heap
     err=0
-    print '\n'.join([str(m) for m in self.mappings])
+    #print '\n'.join([str(m) for m in self.mappings])
     for m in self.mappings:
       try:
         self._dump_mapping(m, destdir)

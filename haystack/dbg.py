@@ -70,16 +70,21 @@ else:
   from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
   class WinAppDebugger:
     def __init__(self):
-      self.pids = []
+      self.procs = []
     def addProcess(self,pid, is_attached=False):
       proc = Process(pid)
       proc.pid = pid
-      self.pids.append(proc)
+      self.procs.append(proc)
       def readArray(vaddr, typ, s):
-        print 'HIHIHI',proc, vaddr, typ, s
+        #print 'HIHIHI',proc, vaddr, typ, s
         return proc.read_structure( vaddr, typ*s)
       proc.readArray = readArray 
+      proc.cont = proc.resume 
       return proc
+    def deleteProcess(self,process):
+      self.procs.remove(process)
+    def quit(self):
+      pass
   #globals  
   PtraceDebugger = WinAppDebugger
   HAS_PROC = True
