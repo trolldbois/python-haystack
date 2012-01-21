@@ -1,4 +1,7 @@
 
+patch winaddpdbg with model.py for ctypes search.
+much more logical.
+
 
 
 struct_a5d96f0 +/- 35k ptr

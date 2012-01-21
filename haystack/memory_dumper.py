@@ -91,11 +91,30 @@ class MemoryDumper:
     self._make_archive(tmpdir, self._dest)
     return 
 
+  def _dump_all_mappings_winapp(self, destdir):
+    # winappdbg
+    self.index = file(os.path.join(destdir,'mappings'),'w+')
+    # test dump only the heap
+    err=0
+    memory_maps = self.process.generate_memory_snaphost() 
+    for mbi in memory_maps:
+      #TODO
+      try:
+        self._dump_mapping(m, destdir)
+      except IOError,e:
+        err+=1
+        log.warning(e)
+        pass # no se how to read windows
+    log.debug('%d mapping in error, destdir: %s'%(err, destdir))
+    self.index.close()
+    return
+
   def _dump_all_mappings(self, destdir):
     """Iterates on all mappings and dumps them to file."""
     self.index = file(os.path.join(destdir,'mappings'),'w+')
     # test dump only the heap
     err=0
+    print '\n'.join([str(m) for m in self.mappings])
     for m in self.mappings:
       try:
         self._dump_mapping(m, destdir)
@@ -114,6 +133,7 @@ class MemoryDumper:
     self.dbg.quit()
     return 
     
+
   def _dump_mapping(self, m, tmpdir):
     """Dump one mapping to one file in one tmpdir."""
     log.debug('Dumping %s to %s'%(m,tmpdir))
