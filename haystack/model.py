@@ -874,7 +874,7 @@ def registerModule( targetmodule ):
     return
   _registered = 0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
-    if typ.__module__.startswith(targetmodule.__name__):
+    if typ.__module__.startswith(targetmodule.__name__) and issubclass(typ, ctypes.Structure):
       register( typ )
       _registered += 1
   # create POPO's
