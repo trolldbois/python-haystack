@@ -5,14 +5,18 @@
 
 import logging
 import argparse
+import os
 import sys
 import re
-import struct
-import ctypes
+import array
+
 
 from haystack import dump_loader
+from haystack import argparse_utils
+from haystack.config import Config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
+from haystack.reverse import utils
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -25,6 +29,75 @@ __status__ = "Beta"
 log = logging.getLogger('signature')
 
 
+class SignatureGroupMaker:
+  """From a list of addresses, groups similar signature together.
+  HINT: structure should be resolved but not reverse-patternised for arrays...??"""
+  def __init__(self, context, addrs):
+    self._structures_addresses = addrs
+    self._context = context
+  
+  def make(self):
+    addr1 = self._structures_addresses[0]     # we could use malloc_sizes but
+    s1 = len(self._context.structures[addr1]) # we need to access ctx.structures anyway.
+    log.debug('\t[-] Making signatures for %d structures (?s:%d)'%( len(self._structures_addresses), s1 ))
+    self._signatures = [ self._context.structures[addr].getSignature() for addr in self._structures_addresses ]
+    log.debug('\t[-] Signatures done.')
+    return
+  
+
+class StructureSizeCache:
+  """Loads structures, get their signature (and size) and sort them in 
+  fast files dictionaries."""
+  def __init__(self,ctx):
+    self._context = ctx
+    self._sizes = None
+  
+  def reset(self):
+    self._context.malloc_addresses, self._context.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
+  
+  def getStructureLength(self, addr):
+    if not (self._context.malloc_sizes):
+      raise ValueError('context does not hold a malloc_sizes')
+    if not (self._context.malloc_addresses):
+      raise ValueError('context does not hold a malloc_sizes')
+    return self._context.malloc_sizes[self._context.malloc_addresses.index[addr]]
+
+  def cacheSizes(self):
+    """Find the number of different sizes, and creates that much numpyarray"""
+    # if not os.access
+    outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_SIZES_DIR, self._context.dumpname)
+    if not os.path.isdir(outdir):
+      os.mkdir(outdir)
+    if not os.access(outdir, os.W_OK):
+      raise IOError('cant write to %s'%(outdir))
+    #
+    sizes = set(self._context.malloc_sizes)
+    arrays = dict([(s,[]) for s in sizes])
+    log.debug("sort all addr in all sizes.. this will take a bit of time")
+    [arrays[ self._context.malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context.malloc_addresses) ]
+    log.debug("saving all sizes dictionary in files.. this will take a bit of time too")
+    for size,lst in arrays.items():
+      fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
+      arrays[size] = utils.int_array_save( fout , lst)
+      
+    log.debug("saved all sizes dictionaries.")
+    self._sizes = arrays    
+    return
+    
+  def getStructuresOfSize(self, size):
+    if self._sizes is None:
+      self.cacheSizes()
+    if size not in self._sizes:
+      return []
+    return array.array('L', self._sizes[size])
+    
+  def __iter__(self):
+    if self._sizes is None:
+      self.cacheSizes()
+    for size in self._sizes.keys():
+      yield (size, array.array('L', self._sizes[size]) )
+  
+      
 class SignatureMaker(pointerfinder.AbstractSearcher):
   ''' 
   make a condensed signature of the mapping. 
@@ -184,6 +257,26 @@ def toFile(dumpname, outputFile):
   del sigMaker
   return
 
+
+def saveSizes(opt):
+  from haystack.reverse import reversers
+  log.info('[+] Loading the context for a dumpname.')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] Make the size dictionnaries.')
+  sizeCache = StructureSizeCache(context)
+  sizeCache.cacheSizes()
+  log.info("[+] Group structures's signatures by sizes.")
+  sgms=[]
+  for size,lst in sizeCache:
+    log.debug("[+] Group signatures for structures of size %d"%(size))
+    sgm = SignatureGroupMaker(context, lst )
+    sgm.make()
+    sgms.append(sgm)
+
+  import code
+  code.interact(local=locals())
+  return sgms
+
 def makesig(opt):
   toFile(opt.dumpname, opt.sigfile)
   pass
@@ -191,12 +284,13 @@ def makesig(opt):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')
   rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
-  rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
-  rootparser.set_defaults(func=makesig)  
+  #rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
+  #rootparser.set_defaults(func=makesig)  
+  rootparser.set_defaults(func=saveSizes)  
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG)
   logging.getLogger('haystack').setLevel(logging.INFO)
   logging.getLogger('model').setLevel(logging.INFO)
   logging.getLogger('widget').setLevel(logging.INFO)
