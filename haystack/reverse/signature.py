@@ -9,8 +9,7 @@ import os
 import sys
 import re
 import array
-import collections
-
+import Levenshtein #seqmatcher ?
 
 from haystack import dump_loader
 from haystack import argparse_utils
@@ -42,8 +41,18 @@ class SignatureGroupMaker:
     s1 = len(self._context.structures[addr1]) # we need to access ctx.structures anyway.
     log.debug('\t[-] Making signatures for %d structures (?s:%d)'%( len(self._structures_addresses), s1 ))
     # get text signature for Counter to parse
-    self._signatures = [ self._context.structures[addr].getSignature(True) for addr in self._structures_addresses ]
-    self._ctr = collections.Counter( self._signatures )
+    self._signatures = [ (addr,self._context.structures[addr].getSignature(True)) for addr in self._structures_addresses ]
+    #
+    self._similarities = []
+    for i,x1 in enumerate(self._signatures[:-1]):
+      for x2 in self._signatures[i+1:]:
+        addr1, el1 = x1
+        addr2, el2 = x2
+        lev=Levenshtein.ratio(el1,el2) # seqmatcher ?
+        if lev >0.75:
+          self._similarities.append( ((addr1,el1),(addr2,el2)) )
+    # check for chains
+    # TODO      
     log.debug('\t[-] Signatures done.')
     return
   
