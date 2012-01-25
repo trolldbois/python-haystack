@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
+
+"""Tools around structure signature"""
 
 import logging
 import argparse
@@ -13,146 +12,20 @@ import ctypes
 
 from haystack import dump_loader
 from haystack.utils import xrange
+from haystack.reverse import pointerfinder
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Beta"
+
 
 log = logging.getLogger('signature')
 
-'''
-AbstractSearcher, abstract impl, return vaddr of match on iter(), search()
-AbstractEnumerator, abstr impl, return offset,value of match on iter(), search()
-                          expect a boolean, value tuple from testMatch
 
-
-'''
-
-
-
-
-''' 
-see bsdiff python-bsdiff 
-see cmp --list
-'''
-
-  
-class FeedbackGiver:
-  def _initSteps(self, _len, steps=10):
-    pass
-  
-  def _checkSteps(self):
-    pass
-  
-  def feedback(self, step, val):
-    ''' make a feedback'''
-    #log.info('processing vaddr 0x%x'%(val))
-    pass
-
-class AbstractSearcher(FeedbackGiver):
-  ''' Search for something in memspace. 
-    feedback(step, val) will be called each step  
-  '''
-  WORDSIZE = ctypes.sizeof(ctypes.c_void_p) # config
-  
-  def __init__(self, searchMapping, steps=10, feedback=None):
-    '''
-      search in searchMapping for something.
-    '''
-    self.searchMapping = searchMapping
-    self.targetMapping = searchMapping
-    self._initSteps(self.searchMapping.start, self.searchMapping.end, steps)
-
-  def _initSteps(self, start, end, steps):
-    ''' calculate the vaddr at which feedback would be given '''
-    self.steps = [o for o in range(start,end, (end-start)/steps)] # py 3 compatible
-    return
-
-  def setTargetMapping(self, m):
-    self.targetMapping = m
-    return
-  def getTargetMapping(self):
-    return self.targetMapping
-  
-  def _checkSteps(self, step):
-    if len(self.steps) == 0:
-      return
-    if step > self.steps[0]:
-      val = self.steps.pop(0)
-      self.feedback(step, val)
-    return
-  
-  def getSearchMapping(self):
-    return self.searchMapping
-  
-  def search(self):
-    ''' find all valid matches offsets in the memory space '''
-    self.values = set()
-    log.debug('search %s mapping for matching values'%(self.getSearchMapping()))
-    self.values = [t for t in self]
-    return self.values    
-    
-  def __iter__(self):
-    ''' Iterate over the mapping to find all valid matches '''
-    log.debug('iterate %s mapping for matching values'%(self.getSearchMapping()))
-    for vaddr in xrange(self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
-      self._checkSteps(vaddr) # be verbose
-      if self.testMatch(vaddr):
-        yield vaddr
-    return 
-
-  def testMatch(self, vaddr):
-    ''' implement this methods to test for a match at that offset '''
-    raise NotImplementedError
-
-
-
-class PointerSearcher(AbstractSearcher):
-  ''' 
-  Search for pointers by checking if the word value is a valid addresses in memspace.
-  '''
-  def testMatch(self, vaddr):
-    word = self.getSearchMapping().readWord(vaddr)
-    if word in self.getTargetMapping():
-      return True
-    return False
-
-
-class AbstractEnumerator(AbstractSearcher):
-  ''' return vaddr,value 
-  expect a boolean, value tuple from testMatch'''
-    
-  def __iter__(self):
-    ''' Iterate over the mapping to find all valid matches '''
-    start = self.getSearchMapping().start
-    for vaddr in xrange(start, self.getSearchMapping().end, self.WORDSIZE):
-      self._checkSteps(vaddr) # be verbose
-      b,val = self.testMatch(vaddr) # expect a boolean, value tuple from testMatch
-      if b:
-        yield (vaddr, val )
-    return
-  
-  def testMatch(self, vaddr):
-    ''' implement this methods to test for a match at that offset 
-    should return boolean, value
-    '''
-    raise NotImplementedError
-
-class PointerEnumerator(AbstractEnumerator):
-  def testMatch(self, vaddr):
-    word = self.getSearchMapping().readWord(vaddr)
-    if word in self.getTargetMapping():
-      return True, word
-    return False, None
-
-
-class NullSearcher(AbstractSearcher):
-  ''' 
-  Search for Nulls words in memspace.
-  '''
-  def testMatch(self, vaddr):
-    word = self.getSearchMapping().readWord(vaddr)
-    if word == 0:
-      return True
-    return False
-
-class SignatureMaker(AbstractSearcher):
+class SignatureMaker(pointerfinder.AbstractSearcher):
   ''' 
   make a condensed signature of the mapping. 
   We could then search the signature file for a specific signature
@@ -164,9 +37,9 @@ class SignatureMaker(AbstractSearcher):
   OTHER = 0x4
 
   def __init__(self, mapping):
-    AbstractSearcher.__init__(self,mapping)
-    self.pSearch = PointerSearcher(self.getSearchMapping()) 
-    self.nSearch = NullSearcher(self.getSearchMapping()) 
+    pointerfinder.AbstractSearcher.__init__(self,mapping)
+    self.pSearch = pointerfinder.PointerSearcher(self.getSearchMapping()) 
+    self.nSearch = pointerfinder.NullSearcher(self.getSearchMapping()) 
     
   def testMatch(self, vaddr):
     ''' return either NULL, POINTER or OTHER '''
@@ -204,12 +77,12 @@ class PointerSignatureMaker(SignatureMaker):
 
 
 
-class RegexpSearcher(AbstractSearcher):
+class RegexpSearcher(pointerfinder.AbstractSearcher):
   ''' 
   Search by regular expression in memspace.
   '''
   def __init__(self, mapping, regexp):
-    AbstractSearcher.__init__(self,mapping)
+    pointerfinder.AbstractSearcher.__init__(self,mapping)
     self.regexp = regexp
     self.pattern = re.compile(regexp, re.IGNORECASE)
 

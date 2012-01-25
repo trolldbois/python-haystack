@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+"""Build pattern out of signatures."""
 
 import logging
 import argparse, os, pickle, time, sys
@@ -20,8 +17,16 @@ from haystack.config import Config
 from haystack.utils import Dummy
 from haystack import dump_loader
 
-import utils
-import signature 
+from haystack.reverse import utils
+from haystack.reverse import pointerfinder
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
 
 log = logging.getLogger('pattern')
 
@@ -217,7 +222,7 @@ class PointerIntervalSignature:
     sig = utils.int_array_cache(myname)
     if sig is None:
       log.info("Signature has to be calculated for %s. It's gonna take a while."%(self.name))
-      pointerSearcher = signature.PointerSearcher(self.mmap)
+      pointerSearcher = pointerfinder.PointerSearcher(self.mmap)
       self.WORDSIZE = pointerSearcher.WORDSIZE
       sig = []
       # save first offset
@@ -338,7 +343,7 @@ class PinnedPointers:
   '''
   def __init__(self, sequence, sig, offset):
     self.sequence = sequence
-    self.nb_bytes = sum(sequence) +  signature.PointerSearcher.WORDSIZE # add wordSIZE
+    self.nb_bytes = sum(sequence) +  pointerfinder.PointerSearcher.WORDSIZE # add wordSIZE
     self.offset = offset
     self.sig = sig 
     self.relations = {}
@@ -431,7 +436,7 @@ class AnonymousStructRange:
     self.pinnedPointer = pinnedPointer
     self.start = pinnedPointer.getAddress() # by default we start at the first pointer
     self.stop = pinnedPointer.getAddress(len(pinnedPointer)) # by default we stop at the last pointer
-    self.stop += signature.PointerSearcher.WORDSIZE # add the length of the last pointer
+    self.stop += pointerfinder.PointerSearcher.WORDSIZE # add the length of the last pointer
     self.pointers = None 
     self.pointersTypes = {}
     self.pointersValues = None 
