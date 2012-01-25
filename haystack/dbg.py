@@ -32,6 +32,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
+log=logging.getLogger("gbd")
+
 import ctypes
 if hasattr(ctypes, 'original_c_char_p'):
   #model is already active, ptrace is not loaded, need to go back to original c_char_p before ptrace loads
@@ -65,10 +69,22 @@ else:
   import winappdbg
   from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
   class WinAppDebugger:
+    def __init__(self):
+      self.procs = []
     def addProcess(self,pid, is_attached=False):
       proc = Process(pid)
       proc.pid = pid
+      self.procs.append(proc)
+      def readArray(vaddr, typ, s):
+        #print 'HIHIHI',proc, vaddr, typ, s
+        return proc.read_structure( vaddr, typ*s)
+      proc.readArray = readArray 
+      proc.cont = proc.resume 
       return proc
+    def deleteProcess(self,process):
+      self.procs.remove(process)
+    def quit(self):
+      pass
   #globals  
   PtraceDebugger = WinAppDebugger
   HAS_PROC = True
@@ -85,6 +101,8 @@ else:
     # 08048000-080b0000 r-xp 0804d000 fe:01 3334030  /usr/myfile  
     lines = []
     for mbi in memoryMap:
+      if not mbi.is_readable():
+        continue
       addr = ''
       perm = '--- ' 
       offset=''
@@ -172,7 +190,19 @@ else:
       lines.append('%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename) )
       log.debug(   '%s %s %s %s %s %s\n'%(addr,perm,offset,device,inode,filename) )
 
+    ##generate_memory_snapshot(self, minAddr=None, maxAddr=None)
     return lines
+    
+    #process.suspend()
+    #try:
+    #    snapshot = process.generate_memory_snapshot()
+    #    for mbi in snapshot:
+    #        print HexDump.hexblock(mbi.content, mbi.BaseAddress)
+    #finally:
+    #    process.resume()
+    
+    
+    # process.read_structure()
     
     process         = Process(pid)
     fileName        = process.get_filename()
