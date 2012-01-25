@@ -11,7 +11,6 @@ import struct
 import ctypes
 
 from haystack import dump_loader
-from haystack.reverse import signature
 
 log = logging.getLogger('pointerfinder')
 
