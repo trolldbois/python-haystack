@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
+
+""" Old poc code integrated in reversers. """
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
