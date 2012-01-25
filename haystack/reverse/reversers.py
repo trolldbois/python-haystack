@@ -66,6 +66,7 @@ class ReverserContext():
     self.pointers_offsets = ptr_offsets # need 
 
     log.info('[+] Fetching cached malloc chunks list')
+    # malloc_size is the structures_sizes
     self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
     
     # TODO switched
