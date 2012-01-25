@@ -9,6 +9,7 @@ import os
 import sys
 import re
 import array
+import collections
 
 
 from haystack import dump_loader
@@ -40,7 +41,9 @@ class SignatureGroupMaker:
     addr1 = self._structures_addresses[0]     # we could use malloc_sizes but
     s1 = len(self._context.structures[addr1]) # we need to access ctx.structures anyway.
     log.debug('\t[-] Making signatures for %d structures (?s:%d)'%( len(self._structures_addresses), s1 ))
-    self._signatures = [ self._context.structures[addr].getSignature() for addr in self._structures_addresses ]
+    # get text signature for Counter to parse
+    self._signatures = [ self._context.structures[addr].getSignature(True) for addr in self._structures_addresses ]
+    self._ctr = collections.Counter( self._signatures )
     log.debug('\t[-] Signatures done.')
     return
   
@@ -73,14 +76,13 @@ class StructureSizeCache:
     #
     sizes = set(self._context.malloc_sizes)
     arrays = dict([(s,[]) for s in sizes])
-    log.debug("sort all addr in all sizes.. this will take a bit of time")
+    #sort all addr in all sizes.. 
     [arrays[ self._context.malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context.malloc_addresses) ]
-    log.debug("saving all sizes dictionary in files.. this will take a bit of time too")
+    #saving all sizes dictionary in files...
     for size,lst in arrays.items():
       fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
-      arrays[size] = utils.int_array_save( fout , lst)
-      
-    log.debug("saved all sizes dictionaries.")
+      arrays[size] = utils.int_array_save( fout , lst) 
+    #saved all sizes dictionaries.
     self._sizes = arrays    
     return
     
@@ -267,12 +269,14 @@ def saveSizes(opt):
   sizeCache.cacheSizes()
   log.info("[+] Group structures's signatures by sizes.")
   sgms=[]
-  for size,lst in sizeCache:
-    log.debug("[+] Group signatures for structures of size %d"%(size))
-    sgm = SignatureGroupMaker(context, lst )
-    sgm.make()
-    sgms.append(sgm)
-
+  try:
+    for size,lst in sizeCache:
+      log.debug("[+] Group signatures for structures of size %d"%(size))
+      sgm = SignatureGroupMaker(context, lst )
+      sgm.make()
+      sgms.append(sgm)
+  except KeyboardInterrupt,e:
+    pass
   import code
   code.interact(local=locals())
   return sgms
