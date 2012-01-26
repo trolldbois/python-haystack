@@ -11,6 +11,7 @@ import struct
 import ctypes
 
 from haystack import dump_loader
+from haystack.utils import xrange
 
 log = logging.getLogger('pointerfinder')
 

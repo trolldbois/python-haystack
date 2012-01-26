@@ -81,7 +81,7 @@ def getHeapPointers(dumpfilename, mappings):
   ''' Search Heap pointers values in stack and heap.
       records values and pointers address in heap.
   '''
-  import signature
+  import pointerfinder  
   
   F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
   F_HEAP = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
@@ -92,7 +92,7 @@ def getHeapPointers(dumpfilename, mappings):
   stack_addrs = int_array_cache(F_STACK)
   if values is None or heap_addrs is None:
     log.info('[+] Making new cache - getting pointers values from stack')
-    stack_enumerator = signature.PointerEnumerator(mappings.getStack())
+    stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
     stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
     stack_enum = stack_enumerator.search()
     if len(stack_enum)>0:
@@ -101,7 +101,7 @@ def getHeapPointers(dumpfilename, mappings):
       stack_offsets, stack_values = (),()
     log.info('\t[-] got %d pointers '%(len(stack_enum)) )
     log.info('\t[-] merging pointers from heap')
-    heap_enum = signature.PointerEnumerator(mappings.getHeap()).search()
+    heap_enum = pointerfinder.PointerEnumerator(mappings.getHeap()).search()
     heap_addrs, heap_values = zip(*heap_enum) # or (),() # TODO change to offsets
     log.info('\t[-] got %d pointers '%(len(heap_enum)) )
     # merge
