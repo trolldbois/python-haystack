@@ -10,6 +10,7 @@ import sys
 import re
 import array
 import Levenshtein #seqmatcher ?
+import pickle
 
 from haystack import dump_loader
 from haystack import argparse_utils
@@ -32,7 +33,8 @@ log = logging.getLogger('signature')
 class SignatureGroupMaker:
   """From a list of addresses, groups similar signature together.
   HINT: structure should be resolved but not reverse-patternised for arrays...??"""
-  def __init__(self, context, addrs):
+  def __init__(self, context, name, addrs):
+    self._name = name
     self._structures_addresses = addrs
     self._context = context
   
@@ -52,10 +54,35 @@ class SignatureGroupMaker:
         if lev >0.75:
           self._similarities.append( ((addr1,el1),(addr2,el2)) )
     # check for chains
-    # TODO      
+    # TODO      we need a group maker with an iterator to push group proposition to the user
     log.debug('\t[-] Signatures done.')
     return
-  
+
+  def persist(self):
+    outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_GROUPS_DIR, self._context.dumpname)
+    if not os.path.isdir(outdir):
+      os.mkdir(outdir)
+    if not os.access(outdir, os.W_OK):
+      raise IOError('cant write to %s'%(outdir))
+    #
+    out = file(os.path.sep.join([outdir,self._name]),'w')
+    pickle.dump(self._similarities, out)
+    out.close()
+    return
+    
+  def isPersisted(self):
+    outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_GROUPS_DIR, self._context.dumpname)
+    return os.access(os.path.sep.join([outdir,self._name]), os.F_OK)
+
+  def load(self):
+    outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_GROUPS_DIR, self._context.dumpname)
+    inf = file(os.path.sep.join([outdir,self._name]),'r')
+    self._similarities = pickle.load(self._similarities, inf)
+    inf.close()
+    return 
+
+  def getGroups(self):
+    return self._similarities    
 
 class StructureSizeCache:
   """Loads structures, get their signature (and size) and sort them in 
@@ -269,6 +296,42 @@ def toFile(dumpname, outputFile):
   return
 
 
+def showStructures(opt):
+  from haystack.reverse import reversers
+  log.info('[+] Loading the context for a dumpname.')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] Make the size dictionnaries.')
+  sizeCache = StructureSizeCache(context)
+  sizeCache.cacheSizes()
+  log.info("[+] Group structures's signatures by sizes.")
+  sgms=[]
+  try:
+    for size,lst in sizeCache:
+      if opt.size is not None:
+        if size != opt.size:
+          continue # ignore different size
+      log.debug("[+] Group signatures for structures of size %d"%(size))
+      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
+      if sgm.isPersisted():
+        sgm.load()
+      else:
+        sgm.make()
+        sgm.persist()
+      sgms.append(sgm)
+      # interact
+      structs = set()
+      for s1,s2 in sgm.getGroups():
+        structs.update([s1,s2])
+      for s in structs:
+        print s.toString()
+      
+  except KeyboardInterrupt,e:
+    pass
+  import code
+  code.interact(local=locals())
+  return sgms
+
+
 def saveSizes(opt):
   from haystack.reverse import reversers
   log.info('[+] Loading the context for a dumpname.')
@@ -281,8 +344,9 @@ def saveSizes(opt):
   try:
     for size,lst in sizeCache:
       log.debug("[+] Group signatures for structures of size %d"%(size))
-      sgm = SignatureGroupMaker(context, lst )
+      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
       sgm.make()
+      sgm.persist()
       sgms.append(sgm)
   except KeyboardInterrupt,e:
     pass
@@ -297,9 +361,21 @@ def makesig(opt):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')
   rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
-  #rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
-  #rootparser.set_defaults(func=makesig)  
-  rootparser.set_defaults(func=saveSizes)  
+
+  subparsers = rootparser.add_subparsers(help='sub-command help')
+  makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
+  makesig.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
+  makesig.set_defaults(func=makesig)  
+
+  sort = subparsers.add_parser('sort', help='sort structure by size and signature')
+  sort.set_defaults(func=saveSizes)  
+
+  show = subparsers.add_parser('show', help='show sorted structure by size and signature')
+  show.add_argument('--size', type=int, action='store', default=None, help='Limit to a specific structure size')
+  show.add_argument('--originAddr', type=str, action='store', default=None, help='Limit to structure similar to the structure pointed at originAddr')
+  show.set_defaults(func=showStructures)  
+
+
   return rootparser
 
 def main(argv):
