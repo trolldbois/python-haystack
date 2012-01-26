@@ -77,7 +77,7 @@ class SignatureGroupMaker:
   def load(self):
     outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_GROUPS_DIR, self._context.dumpname)
     inf = file(os.path.sep.join([outdir,self._name]),'r')
-    self._similarities = pickle.load(self._similarities, inf)
+    self._similarities = pickle.load(inf)
     inf.close()
     return 
 
@@ -320,8 +320,10 @@ def showStructures(opt):
       sgms.append(sgm)
       # interact
       structs = set()
+      # TODO make a chain
       for s1,s2 in sgm.getGroups():
-        structs.update([s1,s2])
+        # s1 = addr1, sig1
+        structs.update([context.structures[s1[0]], context.structures[s2[0]] ])
       for s in structs:
         print s.toString()
       
