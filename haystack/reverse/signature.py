@@ -305,32 +305,47 @@ def showStructures(opt):
   sizeCache.cacheSizes()
   log.info("[+] Group structures's signatures by sizes.")
   sgms=[]
-  try:
-    for size,lst in sizeCache:
-      if opt.size is not None:
-        if size != opt.size:
-          continue # ignore different size
-      log.debug("[+] Group signatures for structures of size %d"%(size))
-      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
-      if sgm.isPersisted():
-        sgm.load()
+  #
+  for size,lst in sizeCache:
+    if opt.size is not None:
+      if size != opt.size:
+        continue # ignore different size
+    log.debug("[+] Group signatures for structures of size %d"%(size))
+    sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
+    if sgm.isPersisted():
+      sgm.load()
+    else:
+      sgm.make()
+      sgm.persist()
+    sgms.append(sgm)
+    # interact
+    groups = dict()
+    # make a chain and use --originAddr
+    for s1,s2 in sgm.getGroups():
+      addr1, sig1 = s1
+      addr2, sig2 = s2
+      if addr1 in groups:
+        # join lists if similar == CHAIN
+        if addr2 in groups and groups[addr1] != groups[addr2]: 
+          groups[addr1].extend(groups[addr2]) # mv all links
+        groups[addr2] = groups[addr1] # ANYCASE - copy identic - addr2 is already in the addr2 list
       else:
-        sgm.make()
-        sgm.persist()
-      sgms.append(sgm)
-      # interact
-      structs = set()
-      # TODO make a chain
-      for s1,s2 in sgm.getGroups():
-        # s1 = addr1, sig1
-        structs.update([context.structures[s1[0]], context.structures[s2[0]] ])
-      for s in structs:
-        print s.toString()
+        groups[addr1]=[addr1,addr2]   # dont forget self
+    # make CHAINS
+    chains = groups.values()
+    chains.sort()
+    done = []
+    for chain in chains:
+      if chain in done:
+        continue # ignore same chains
+      if opt.originAddr is not None:
+        if originAddr not in chain:
+          continue # ignore chain if originAddr is not in it
+      done.append(chain)
+      for addr in chain:
+        print context.structures[addr].toString()
+      print '-'*80
       
-  except KeyboardInterrupt,e:
-    pass
-  import code
-  code.interact(local=locals())
   return sgms
 
 
