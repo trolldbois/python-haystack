@@ -41,9 +41,13 @@ class SignatureGroupMaker:
   def make(self):
     addr1 = self._structures_addresses[0]     # we could use malloc_sizes but
     s1 = len(self._context.structures[addr1]) # we need to access ctx.structures anyway.
-    log.debug('\t[-] Making signatures for %d structures (?s:%d)'%( len(self._structures_addresses), s1 ))
+    log.debug('\t[-] Making signatures for %d structures (?s:%d) - decodingFields (longish)'%( len(self._structures_addresses), s1 ))
     # get text signature for Counter to parse
-    self._signatures = [ (addr,self._context.structures[addr].getSignature(True)) for addr in self._structures_addresses ]
+    # need to force resolve of structures
+    self._signatures = []
+    for addr in self._structures_addresses:
+      self._context.structures[addr].decodeFields() # can be long
+      self._signatures.append( (addr, self._context.structures[addr].getSignature(True)) )
     #
     self._similarities = []
     for i,x1 in enumerate(self._signatures[:-1]):
@@ -329,20 +333,27 @@ def showStructures(opt):
         if addr2 in groups and groups[addr1] != groups[addr2]: 
           groups[addr1].extend(groups[addr2]) # mv all links
         groups[addr2] = groups[addr1] # ANYCASE - copy identic - addr2 is already in the addr2 list
+        groups[addr1].append(addr2)
       else:
-        groups[addr1]=[addr1,addr2]   # dont forget self
+        if addr2 in groups: 
+          groups[addr2].append(addr1)
+          groups[addr1]=groups[addr2]
+        else:
+          groups[addr1]=[addr1,addr2]   # dont forget self
+          groups[addr2]=groups[addr1]
     # make CHAINS
     chains = groups.values()
     chains.sort()
     done = []
     for chain in chains:
-      if chain in done:
+      schain = set(chain)
+      if schain in done:
         continue # ignore same chains
       if opt.originAddr is not None:
-        if originAddr not in chain:
+        if originAddr not in schain:
           continue # ignore chain if originAddr is not in it
-      done.append(chain)
-      for addr in chain:
+      done.append( schain )
+      for addr in schain:
         print context.structures[addr].toString()
       print '-'*80
       
