@@ -146,7 +146,12 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     Else, load the mapping in memory.
     """
     mappingsFile = self._open_file(self.archive, self.indexFilename)
-    self.metalines = [l.strip().split(' ') for l in mappingsFile.readlines()]
+    self.metalines = []
+    for l in mappingsFile.readlines():
+      fields = l.strip().split(' ')
+      if '' in fields:
+        fields.remove('')
+      self.metalines.append( ( fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:]) )  )
     self_mappings = []
     for start, end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
       start,end = int(start,16),int(end,16 )
