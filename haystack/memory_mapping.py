@@ -369,7 +369,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
       if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
-        log.warning('Memory Mapping content mmap-ed() (double copy) : %s'%(self))
+        log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
         # we have the bytes
         local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
         # we need an ctypes
@@ -457,8 +457,9 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   def readStruct(self, vaddr, structType):
     laddr = self.vtop(vaddr)
     size = ctypes.sizeof(structType)
-    stspace = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
-    return self._mmap().readStruct(vaddr, structType)
+    ###WTF is that ? stspace = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
+    ###WTF return self._mmap().readStruct(vaddr, structType)
+    return structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
 
   def readWord(self, vaddr):
     """Address have to be aligned!"""
@@ -534,7 +535,7 @@ class Mappings:
     mmap = None
     if len(self.mappings) >= 1:
       mmap = [m for m in self.mappings if m.pathname == pathname]
-    if mmap is None:
+    if len(mmap) < 1:
       raise IndexError('No mmap of pathname %s'%(pathname))
     return mmap
 
