@@ -65,6 +65,11 @@ Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should
 Automatic Memory Reverser (IA forensics):
 ------------------------------------------
 
+
+''' resolve structures, create a signature, and group them by sig. Show only structs of size 324, grouped by similarities '''
+$ python haystack/reverse/signature.py dumpname show --size 324 > test
+
+
 $ python reversers.py <yourdumpfile>
 
 s = pickle.load(file('./structs/AnonStruct_software.1.a_b24a198'))
