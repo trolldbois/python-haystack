@@ -33,14 +33,14 @@ def int_array_cache(filename):
     nb = os.path.getsize(f.name)/4 # simple TODO 
     my_array = array.array('L')
     my_array.fromfile(f,nb)
-    return numpy.array(my_array)
+    return numpy.asarray(my_array)
   return None
 
 def int_array_save(filename, lst):
   my_array = array.array('L')
   my_array.extend(lst) or True
   my_array.tofile(file(filename,'w'))
-  return numpy.array(my_array)
+  return numpy.asarray(my_array)
 
 
 def closestFloorValueNumpy(val, lst):
@@ -59,7 +59,7 @@ def closestFloorValueNumpy(val, lst):
       pass
     return closestFloorValueOld(val, lst)
   indicetab = numpy.searchsorted(lst, [val]) 
-  ind = indicetab[0]
+  ind = int(indicetab[0])
   i = max(0,ind-1)
   return lst[i], i
 

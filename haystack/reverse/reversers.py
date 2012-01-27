@@ -93,24 +93,30 @@ class ReverserContext():
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
-    return [self._pointers_offsets[offset] for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
+    return [int(self._pointers_offsets[offset]) for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
 
   def listStructuresAddrForPointerValue(self, ptr_value):
     '''Returns the list of structures addresses with a member with this pointer value '''
-    return sorted(set([ self.getStructureAddrForOffset(offset) for offset in self.listOffsetsForPointerValue(ptr_value)]))
+    return sorted(set([ int(self.getStructureAddrForOffset(offset)) for offset in self.listOffsetsForPointerValue(ptr_value)]))
 
   def listStructuresForPointerValue(self, ptr_value):
     '''Returns the list of structures with a member with this pointer value '''
     return [ self._get_structures()[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
   
   def listStructuresAddresses(self):
-    return iter(self._structures_addresses)
+    for x in self._structures_addresses:
+      yield int(x)
   
   @classmethod
   def cacheLoad(cls, mappings):
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
-    context = pickle.load(file(context_cache,'r'))
+    try:
+      context = pickle.load(file(context_cache,'r'))
+    except EOFError,e:
+      os.remove(context_cache)
+      log.error('Error in the context file. File cleaned. Please restart.')
+      raise e
     log.info('\t[-] loaded my context from cache')
     context.mappings = mappings
     context.heap = context.mappings.getHeap()
@@ -128,12 +134,6 @@ class ReverserContext():
     d = self.__dict__.copy()
     del d['mappings']
     del d['heap']
-    del d['structures']
-    del d['structures_addresses']
-    del d['pointers_addresses']
-    del d['pointers_offsets']
-    del d['malloc_addresses']
-    del d['malloc_sizes']
 
     del d['_structures']
     del d['_structures_addresses']
@@ -210,16 +210,16 @@ class StructureOrientedReverser():
   def _saveStructures(self, ctx):
     tl = time.time()
     # dump all structures
-    for i,s in enumerate(ctx.structures.values()):
+    for i,s in enumerate(ctx._structures.values()):
       #  print s.dirty
       try:
-        s.saveme(ctx)
+        s.saveme()
       except KeyboardInterrupt,e:
         os.remove(s.fname)
         raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         t0 = time.time()
-        log.info('\t\t - %2.2f secondes to go '%( (len(ctx.structures)-i)*((tl-t0)/i) ) )
+        log.info('\t\t - %2.2f secondes to go '%( (len(ctx._structures)-i)*((tl-t0)/i) ) )
         tl = t0
     tf = time.time()
     log.info('\t[.] saved in %2.2f secs'%(tf-tl))
@@ -245,14 +245,14 @@ class MallocReverser(StructureOrientedReverser):
     loaded = 0
     prevLoaded = 0
     unused = 0
-    lengths = context.malloc_sizes
-    todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
-    fromcache = len(context.structures_addresses) - len(todo)
-    offsets = list(context.pointers_offsets)
+    lengths = context._malloc_sizes
+    todo = sorted(set(context._structures_addresses) - set(context._structures.keys()))
+    fromcache = len(context._structures_addresses) - len(todo)
+    offsets = list(context._pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from malloc_chunks contents - %d todo'%(len(todo)))
-    for i, ptr_value in enumerate(context.structures_addresses):
-      if ptr_value in context.structures.keys():
+    for i, ptr_value in enumerate(context.listStructuresAddresses()):
+      if ptr_value in context._structures.keys():
         continue
       loaded += 1
       size = lengths[i]
@@ -261,7 +261,7 @@ class MallocReverser(StructureOrientedReverser):
       mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
       if mc1.check_inuse(context.mappings, chunk_addr):
         mystruct = structure.makeStructure(context, ptr_value, size)
-        context.structures[ ptr_value ] = mystruct
+        context._structures[ ptr_value ] = mystruct
         # add pointerFields
         offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
         log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
@@ -269,7 +269,7 @@ class MallocReverser(StructureOrientedReverser):
         if len(my_pointers_addrs) > 0:
           mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
         #cache to disk
-        mystruct.saveme(context)
+        mystruct.saveme()
       # next
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
         tl = time.time()
@@ -282,8 +282,8 @@ class MallocReverser(StructureOrientedReverser):
 
   def check_inuse(self, context):
     import libc.ctypes_malloc
-    chunks = context.malloc_addresses
-    pointers = context.pointers_addresses
+    chunks = context._malloc_addresses
+    pointers = context._pointers_addresses
     unused = set(chunks) - set(pointers)
     heap = context.heap
     used=0
@@ -305,18 +305,18 @@ class PointerReverser(StructureOrientedReverser):
     log.info('[+] Reversing pointers in %s'%(context.heap))
     
     # make structure lengths from interval between pointers
-    lengths = self.makeLengths(context.heap, context.structures_addresses)    
+    lengths = self.makeLengths(context.heap, context._structures_addresses)    
     
     ## we really should be lazyloading structs..
     t0 = time.time()
     tl = t0
     loaded = 0
-    todo = sorted(set(context.structures_addresses) - set(context.structures.keys()))
-    fromcache = len(context.structures_addresses) - len(todo)
+    todo = sorted(set(context._structures_addresses) - set(context._structures.keys()))
+    fromcache = len(context._structures_addresses) - len(todo)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from pointers boundaries')
-    offsets = list(context.pointers_offsets)
-    for i, ptr_value in enumerate(context.structures_addresses):
+    offsets = list(context._pointers_offsets)
+    for i, ptr_value in enumerate(context._structures_addresses):
       # toh stoupid
       if ptr_value in todo:
         loaded+=1
@@ -325,7 +325,7 @@ class PointerReverser(StructureOrientedReverser):
         offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
         # save the ref/struct type
         mystruct = structure.makeStructure(context, ptr_value, size)
-        context.structures[ ptr_value ] = mystruct
+        context._structures[ ptr_value ] = mystruct
         #mystruct.save()
         # get pointers addrs in start -> start+size
         log.debug('Adding %d pointer fields field '%( len(my_pointers_addrs)) )
@@ -363,21 +363,21 @@ class FieldReverser(StructureOrientedReverser):
     fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
     #for ptr_value,anon in context.structures.items():
-    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
-      anon = context.structures[ptr_value]
+    for ptr_value in sorted(context._structures.keys(), reverse=True): # lets try reverse
+      anon = context._structures[ptr_value]
       if anon.isResolved(): # TODO this is a performance hit, unproxying...
         fromcache+=1
       else:
         decoded+=1
         anon.decodeFields()
-        anon.saveme(context)
+        anon.saveme()
       ## output headers
       towrite.append(anon.toString())
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         tl = time.time()
         rate = ((tl-t0)/(decoded+fromcache)) if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
-            (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
+            (len(context._structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
         fout.write('\n'.join(towrite) )
         towrite=[]
     
@@ -396,8 +396,8 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
-    for ptr_value in sorted(context.structures.keys(), reverse=True): # lets try reverse
-      anon = context.structures[ptr_value]
+    for ptr_value in sorted(context._structures.keys(), reverse=True): # lets try reverse
+      anon = context._structures[ptr_value]
       if anon.isPointerResolved():
         fromcache+=1
       else:
@@ -405,13 +405,13 @@ class PointerFieldReverser(StructureOrientedReverser):
         #if not hasattr(anon, 'mappings'):
         #  log.error('damned, no mappings in %x'%(ptr_value))
         #  anon.mappings = context.mappings
-        anon.resolvePointers(context.structures_addresses, context.structures)
-        anon.saveme(context)
+        anon.resolvePointers(context._structures_addresses, context._structures)
+        anon.saveme()
       if time.time()-tl > 30: 
         tl = time.time()
         rate = ((tl-t0)/(1+decoded+fromcache)) if decoded else ((tl-t0)/(1+fromcache))
         log.info('%2.2f secondes to go (d:%d,c:%d)'%( 
-            (len(context.structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
+            (len(context._structures)-(fromcache+decoded))*rate, decoded,fromcache ) )
     log.info('[+] PointerFieldReverser: finished %d structures in %2.0f (d:%d,c:%d)'%(fromcache+decoded, time.time()-t0, decoded,fromcache ) )
     context.parsed.add(str(self))
     return
@@ -422,14 +422,14 @@ class PointerFieldReverser(StructureOrientedReverser):
 class DoubleLinkedListReverser(StructureOrientedReverser):
   
   def _reverse(self, context):
-    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context.structures) ))
+    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context._structures) ))
     t0 = time.time()
     tl = t0
     done = 0
     found = 0
     members = set()
     lists = []
-    for ptr_value in sorted(context.structures.keys()):
+    for ptr_value in sorted(context._structures.keys()):
       #self.pointers_addresses = aligned_ptr
       #self.pointers_offsets = ptr_offsets # need 
       '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
@@ -451,8 +451,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
           done+=len(_members)-1
           lists.append( (head,_members) ) # save list chain
           # set names
-          context.structures[head].setName('list_head')
-          [context.structures[m].setName('list_%x_%d'%(head,i)) for i,m in enumerate(_members)]
+          context._structures[head].setName('list_head')
+          [context._structures[m].setName('list_%x_%d'%(head,i)) for i,m in enumerate(_members)]
           #TODO get substructures ( P4P4xx ) signature and 
           # a) extract substructures
           # b) group by signature
@@ -461,8 +461,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if time.time()-tl > 30: 
           tl = time.time()
           rate = ((tl-t0)/(1+done))
-          #log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.structures)-done)*rate, done, found))
-          log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context.pointers_offsets)-done)*rate, done, found))
+          #log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context._structures)-done)*rate, done, found))
+          log.info('%2.2f secondes to go (d:%d,f:%d)'%( (len(context._pointers_offsets)-done)*rate, done, found))
     log.info('[+] DoubleLinkedListReverser: finished %d structures in %2.0f (f:%d)'%(done, time.time()-t0, found ) )
     context.parsed.add(str(self))
     #
@@ -485,7 +485,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if ( (ptr_value == st1_f2 == st2_f1 ) or
            (ptr_value == st2_f2 == st1_f1 ) ):
         #log.debug('%x is part of a double linked-list'%(ptr_value))
-        if (f1 in context.structures_addresses ) and (f2 in context.structures_addresses ): 
+        if (f1 in context._structures_addresses ) and (f2 in context._structures_addresses ): 
           return True
         else:
           #log.debug('FP Bad candidate not head of struct: %x '%(ptr_value))
@@ -501,11 +501,11 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       return None,None
     if (f2 == head_addr):
       log.debug('f2 is head_addr too')
-      context.structures[head_addr].setName('struct')
-      print context.structures[head_addr].toString()
+      context._structures[head_addr].setName('struct')
+      print context._structures[head_addr].toString()
       
     current = head_addr
-    while (f1 in context.structures_addresses ):
+    while (f1 in context._structures_addresses ):
       if f1 in members:
         log.debug('loop to head - returning %d members from head.addr %x f1:%x'%(len(members)-1, head_addr, f1))
         return self.findHead(context, members)
@@ -522,7 +522,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return None, None
 
   def findHead(self, ctx, members):
-    sizes = [(ctx.malloc_sizes[ctx.structures_addresses.index(m)], m) for m in members]
+    sizes = [(ctx._malloc_sizes[ctx._structures_addresses.index(m)], m) for m in members]
     sizes.sort()
     if sizes[0]<3*Config.WORDSIZE:
       log.error('a double linked list element must be 3 WORD at least')
