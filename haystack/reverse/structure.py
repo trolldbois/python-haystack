@@ -68,7 +68,7 @@ def cacheLoad(context, addr):
 
 def cacheLoadAll(context):
   dumpname = context.dumpname
-  addresses = context.structures_addresses
+  addresses = context.listStructuresAddresses()
   for addr in addresses:      
     fname = makeFilenameFromAddr(context, addr)
     if os.access(fname,os.F_OK):

@@ -40,14 +40,14 @@ class SignatureGroupMaker:
   
   def make(self):
     addr1 = self._structures_addresses[0]     # we could use malloc_sizes but
-    s1 = len(self._context.structures[addr1]) # we need to access ctx.structures anyway.
+    s1 = len(self._context.getStructureForAddr(addr1)) # we need to access ctx.structures anyway.
     log.debug('\t[-] Making signatures for %d structures (?s:%d) - decodingFields (longish)'%( len(self._structures_addresses), s1 ))
     # get text signature for Counter to parse
     # need to force resolve of structures
     self._signatures = []
     for addr in self._structures_addresses:
-      self._context.structures[addr].decodeFields() # can be long
-      self._signatures.append( (addr, self._context.structures[addr].getSignature(True)) )
+      self._context.getStructureForAddr(addr).decodeFields() # can be long
+      self._signatures.append( (addr, self._context.getStructureForAddr(addr).getSignature(True)) )
     #
     self._similarities = []
     for i,x1 in enumerate(self._signatures[:-1]):
@@ -95,16 +95,6 @@ class StructureSizeCache:
     self._context = ctx
     self._sizes = None
   
-  def reset(self):
-    self._context.malloc_addresses, self._context.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
-  
-  def getStructureLength(self, addr):
-    if not (self._context.malloc_sizes):
-      raise ValueError('context does not hold a malloc_sizes')
-    if not (self._context.malloc_addresses):
-      raise ValueError('context does not hold a malloc_sizes')
-    return self._context.malloc_sizes[self._context.malloc_addresses.index[addr]]
-
   def cacheSizes(self):
     """Find the number of different sizes, and creates that much numpyarray"""
     # if not os.access
@@ -114,10 +104,10 @@ class StructureSizeCache:
     if not os.access(outdir, os.W_OK):
       raise IOError('cant write to %s'%(outdir))
     #
-    sizes = set(self._context.malloc_sizes)
+    sizes = set(self._context._malloc_sizes)
     arrays = dict([(s,[]) for s in sizes])
     #sort all addr in all sizes.. 
-    [arrays[ self._context.malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context.malloc_addresses) ]
+    [arrays[ self._context._malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context._malloc_addresses) ]
     #saving all sizes dictionary in files...
     for size,lst in arrays.items():
       fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
@@ -354,7 +344,7 @@ def showStructures(opt):
           continue # ignore chain if originAddr is not in it
       done.append( schain )
       for addr in schain:
-        print context.structures[addr].toString()
+        print context.getStructure(addr).toString()
       print '-'*80
       
   return sgms

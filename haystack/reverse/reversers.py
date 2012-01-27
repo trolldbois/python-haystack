@@ -60,10 +60,10 @@ class ReverserContext():
 
     return 
   
-  def getStructuresForAddr(self, addr):
+  def getStructureForAddr(self, addr):
     ''' return the structure.AnonymousStructInstance associated with this addr'''
     return self._get_structures()[addr]
-  
+
   def _get_structures(self):
     if self._structures is not None:
       return self._structures
@@ -89,7 +89,7 @@ class ReverserContext():
 
   def getStructureForOffset(self, offset):
     '''Returns the structure containing this address'''
-    return self.getStructuresForAddr(self.getStructureAddrForOffset(offset))
+    return self.getStructureForAddr(self.getStructureAddrForOffset(offset))
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
