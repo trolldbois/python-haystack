@@ -27,4 +27,7 @@ def writeable(f):
       raise ValueError("%s is not writable."%(f))
   return f
 
-
+def int16(s):
+  """Validates an hexadecimal (0x...) value"""
+  i=int(s,16)
+  return i
