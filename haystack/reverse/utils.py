@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
 '''
 This module holds some basic utils function.
 '''
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import itertools
 import logging
@@ -21,6 +17,13 @@ import sys
 
 from haystack.config import Config
 
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
 log = logging.getLogger('utils')
 
 def int_array_cache(filename):
@@ -30,27 +33,38 @@ def int_array_cache(filename):
     nb = os.path.getsize(f.name)/4 # simple TODO 
     my_array = array.array('L')
     my_array.fromfile(f,nb)
-    return my_array
+    return numpy.array(my_array)
   return None
 
 def int_array_save(filename, lst):
   my_array = array.array('L')
   my_array.extend(lst) or True
   my_array.tofile(file(filename,'w'))
-  return my_array
+  return numpy.array(my_array)
 
 
 def closestFloorValueNumpy(val, lst):
   ''' return the closest previous value to where val should be in lst (or val)
    please use numpy.array for lst
+   PERF ANOUNCEMENT - AFTER TESTING
+   you are better using numpy.array, 15x for [] for type(lst) than array.array (x22)
+   array.array is bad algo perf....
   ''' 
-  indicetab = numpy.searchsorted(lst, [val])
+  # Find indices where elements should be inserted to maintain order.
+  try:
+    return lst.index(val) # be positive, its a small hit compared to searchsorted on non-numpy array
+  except ValueError,e:
+    pass
+  if isinstance(lst, list): #TODO delete
+    log.warning('misuse of closestFloorValue')
+    return closestFloorValueOld(val, lst)
+  indicetab = numpy.searchsorted(lst, [val]) 
   ind = indicetab[0]
   i = max(0,ind-1)
   return lst[i], i
 
 def closestFloorValueOld(val, lst):
-  ''' return the closest previous value to val in lst '''
+  ''' return the closest previous value to val in lst. O(4) than numpy with numpy.array '''
   if val in lst:
     return val, lst.index(val)
   prev = lst[0]
@@ -116,7 +130,7 @@ def getHeapPointers(dumpfilename, mappings):
   aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
   not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
   log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
-  return values,heap_addrs, aligned, not_aligned
+  return values, heap_addrs, aligned, not_aligned
 
 
 def getAllocations(dumpfilename, mappings, heap):
@@ -216,13 +230,13 @@ class SharedBytes():
 
 
 def nextStructure(context, struct):
-  ind = context.structures_addresses.index(struct.vaddr)
+  ind = numpy.where(context.pointers_addresses == struct.vaddr)[0][0]
   val = context.structures_addresses[ind+1]
   if val not in context.structures:
     return None
   if struct.vaddr+len(struct) != val:
     print '*** WARNING nextStruct is not concurrent to struct'
-  return context.structures[val]
+  return context.getStructureForOffset[val]
 
 
 def printNext(ctx, s):
