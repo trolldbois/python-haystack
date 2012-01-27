@@ -63,8 +63,7 @@ def cacheLoad(context, addr):
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
-  p.mappings = context.mappings
-  p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+  p.setContext(context)
   return p
 
 def cacheLoadAll(context):
@@ -74,8 +73,7 @@ def cacheLoadAll(context):
     fname = makeFilenameFromAddr(context, addr)
     if os.access(fname,os.F_OK):
       p = pickle.load(file(fname,'r'))
-      p.mappings = context.mappings
-      p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+      p.setContext(context)
       yield addr, p
   return
 
@@ -87,8 +85,10 @@ def remapLoad(context, addr, newmappings):
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
-  p.mappings = newmappings
-  p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
+  p.setContext(context)
+  # YES we do want to over-write mappings and bytes
+  p._mappings = newmappings
+  p._bytes = newmappings.getHeap().readBytes(p.vaddr, p.size)
   return p
 
 
@@ -106,11 +106,11 @@ def cacheLoadAllLazy(context):
 class CacheWrapper: # this is kind of a weakref proxy, but hashable
   refs = lrucache.LRUCache(5000)
   def __init__(self, context, addr):
-    self.addr = addr
-    self.fname = makeFilenameFromAddr(context, addr)
-    if not os.access(self.fname,os.F_OK):
+    self._addr = addr
+    self._fname = makeFilenameFromAddr(context, addr)
+    if not os.access(self._fname,os.F_OK):
       raise ValueError()
-    self.context = context
+    self._context = context
     self.obj = None
     
   def __getattr__(self,*args):
@@ -125,16 +125,15 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     if self.obj is not None:  # 
       return self.obj
     try:
-      p = pickle.load(file(self.fname,'r'))
+      p = pickle.load(file(self._fname,'r'))
     except EOFError,e:
-      log.error('Could not load %s - removing it '%(self.fname))
-      os.remove(self.fname)
+      log.error('Could not load %s - removing it '%(self._fname))
+      os.remove(self._fname)
       raise e
     if not isinstance(p, AnonymousStructInstance):
       raise EOFError('not a AnonymousStructInstance in cache. %s'%(p.__class__))
-    p.mappings = self.context.mappings
-    p.bytes = p.mappings.getHeap().readBytes(p.vaddr, p.size)
-    p.dirty = False
+    p.setContext(self._context)
+    p._dirty = False
     self.obj = p
     return p
 
@@ -151,12 +150,12 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     raise TypeError
     
   def __hash__(self):
-    return hash(self.addr)
+    return hash(self._addr)
   def __cmp__(self, other):
-    return cmp(self.addr,other.addr)
+    return cmp(self._addr,other._addr)
 
   def __str__(self):
-    return 'struct_%x'%(self.vaddr )
+    return 'struct_%x'%(self._vaddr )
     
 
 
@@ -166,34 +165,30 @@ class AnonymousStructInstance():
   Comparaison between struct is done is relative addresse space.
   '''
   def __init__(self, mappings, vaddr, bytes, prefix=None):
-    self.mappings = mappings
-    self.vaddr = vaddr
-    self.bytes = bytes
-    self.size = len(self.bytes)
-    self.fields = []
-    self.resolved = False
-    self.pointerResolved = False
-    self.dirty=True
+    self._mappings = mappings
+    self._vaddr = vaddr
+    self._bytes = bytes
+    self.reset() # set fields
     self.setName(prefix)
     return
 
   def setName(self, name):
     if name is None:
-      self._name = 'struct_%x'%(self.vaddr)
+      self._name = 'struct_%x'%(self._vaddr)
     else:
-      self._name = '%s_%x'%(name, self.vaddr)
+      self._name = '%s_%x'%(name, self._vaddr)
   
   def reset(self):
-    self.size = len(self.bytes)
-    self.fields = []
-    self.resolved = False
-    self.pointerResolved = False
-    self.dirty=True
+    self._size = len(self._bytes)
+    self._fields = []
+    self._resolved = False
+    self._pointerResolved = False
+    self._dirty=True
     return    
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
-    self.dirty=True
-    offset = vaddr - self.vaddr
+    self._dirty=True
+    offset = vaddr - self._vaddr
     if offset < 0 or offset > len(self):
       raise IndexError()
     if typename is None:
@@ -201,7 +196,7 @@ class AnonymousStructInstance():
     ## find the maximum size
     if size == -1:
       try: 
-        nextStruct = itertools.dropwhile(lambda x: (x.offset < offset), sorted(self.fields) ).next()
+        nextStruct = itertools.dropwhile(lambda x: (x.offset < offset), sorted(self._fields) ).next()
         nextStructOffset = nextStruct.offset
       except StopIteration, e:
         nextStructOffset = len(self)
@@ -217,25 +212,25 @@ class AnonymousStructInstance():
     if field.size == -1:
       raise ValueError('error here %s %s'%(field, field.typename))
     # field has been typed
-    self.fields.append(field)
-    self.fields.sort()
+    self._fields.append(field)
+    self._fields.sort()
     return field
 
   def addFields(self, vaddrList, typename, size, padding ):
     vaddrList.sort()
-    if min(vaddrList) < self.vaddr or max(vaddrList) > self.vaddr+len(self):
+    if min(vaddrList) < self._vaddr or max(vaddrList) > self._vaddr+len(self):
       raise IndexError()
     if typename is None:
       raise ValueError()
-    self.dirty=True
-    fields = [ Field(self, vaddr - self.vaddr, typename, size, padding) for vaddr in vaddrList]
-    self.fields.extend(fields)
-    self.fields.sort()
+    self._dirty=True
+    fields = [ Field(self, vaddr - self._vaddr, typename, size, padding) for vaddr in vaddrList]
+    self._fields.extend(fields)
+    self._fields.sort()
     return
 
   def addField(self, vaddr, typename, size, padding ):
-    self.dirty=True
-    offset = vaddr - self.vaddr
+    self._dirty=True
+    offset = vaddr - self._vaddr
     return self._addField(offset, typename, size, padding)
     
   def _addField(self, offset, typename, size, padding):
@@ -243,21 +238,21 @@ class AnonymousStructInstance():
       raise IndexError()
     if typename is None:
       raise ValueError()
-    self.dirty=True
+    self._dirty=True
     # make a field with no autodecode
     field = Field(self, offset, typename, size, padding)
     # field has been typed
-    self.fields.append(field)
-    self.fields.sort()
+    self._fields.append(field)
+    self._fields.sort()
     return field
   
-  def saveme(self, context):
-    if not self.dirty:
+  def saveme(self):
+    if not self._dirty:
       return
-    sdir = Config.getStructsCacheDir(context.dumpname)
+    sdir = Config.getStructsCacheDir(self.context.dumpname)
     if not os.path.isdir(sdir):
       os.mkdir(sdir)
-    fname = makeFilename(context, self)
+    fname = makeFilename(self.context, self)
     try:
       pickle.dump(self, file(fname,'w'))
     except KeyboardInterrupt, e:
@@ -280,19 +275,19 @@ class AnonymousStructInstance():
             if yes add a new field
         compare the size of the gap and the size of the fiel
     '''
-    if self.resolved:
+    if self._resolved:
       return
-    self.dirty=True
+    self._dirty=True
     # should be done by 
     #if len(self.fields) == 0: ## add a fake all-struct field
     #  self._addField(0, FieldType.UNKNOWN, size, True)
     self._fixGaps() # add padding zones
-    gaps = [ f for f in self.fields if f.padding == True ] 
+    gaps = [ f for f in self._fields if f.padding == True ] 
     sg = len(gaps)
     while  sg > 0 :
       log.debug('decode: %d gaps left'%(sg))
       # try to decode padding zone
-      for field in self.fields:
+      for field in self._fields:
         if field.decoded: # do not redecode, save
           continue
         #
@@ -330,7 +325,7 @@ class AnonymousStructInstance():
       
       # reroll until completion
       self._fixGaps() 
-      gaps = [ f for f in self.fields if f.padding == True ] 
+      gaps = [ f for f in self._fields if f.padding == True ] 
       sg = len(gaps)
     #endwhile
     self._fixOverlaps()
@@ -340,9 +335,9 @@ class AnonymousStructInstance():
 
   def _aggregateZeroes(self):
     ''' sometimes we have a pointer in the middle of a zeroes buffer. we need to aggregate '''
-    self.dirty=True
+    self._dirty=True
     log.debug('aggregateZeroes: start')
-    myfields = sorted([ f for f in self.fields if f.padding != True ])
+    myfields = sorted([ f for f in self._fields if f.padding != True ])
     if len(myfields) < 2:
       log.debug('aggregateZeroes: not so much fields')
       return
@@ -359,18 +354,18 @@ class AnonymousStructInstance():
           raise e
       else:
         newFields.append(f)
-    self.fields = newFields
+    self._fields = newFields
     self._fixGaps()
     return
     
   def _fixGaps(self):
     ''' Fix this structure and populate empty offsets with default unknown padding fields '''
-    self.dirty=True
+    self._dirty=True
     nextoffset = 0
     self._gaps = 0
     overlaps = set()
-    self.fields = [ f for f in self.fields if f.padding != True ] # clean paddings to check new fields
-    myfields = list(self.fields) # DEBUG XXX already sorted.
+    self._fields = [ f for f in self._fields if f.padding != True ] # clean paddings to check new fields
+    myfields = list(self._fields) # DEBUG XXX already sorted.
     for f in myfields:
       if f.offset > nextoffset : # add temp padding field
         self._gaps += 1
@@ -393,30 +388,30 @@ class AnonymousStructInstance():
       log.info('fixGaps: overlapping fields to fix %s %s'%(self, overlaps))
       self._fixOverlaps()
       #print (self.toString())
-    self.fields.sort()
+    self._fields.sort()
     return
   
 
   def _fixOverlaps(self):
     ''' fix overlapping string fields '''
-    self.dirty=True
-    fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
+    self._dirty=True
+    fields = sorted([ f for f in self._fields if f.padding != True ]) # clean paddings to check new fields
     for f1, f2 in self._getOverlapping():
       log.debug('overlappings %s %s'%(f1,f2))
       f1_end = f1.offset+len(f1)
       f2_end = f2.offset+len(f2)
       if (f1.typename == f2.typename and
           f2_end == f1_end ): # same end, same type
-        self.fields.remove(f2) # use the last one
+        self._fields.remove(f2) # use the last one
         log.debug('Cleaned a  field overlaps %s %s'%(f1, f2))
       elif f1.isZeroes() and f2.isZeroes(): # aggregate
         log.debug('aggregate Zeroes')
         start = min(f1.offset,f2.offset)
         size = max(f1_end, f2_end)-start
         try:
-          self.fields.remove(f1)
-          self.fields.remove(f2)
-          self.fields.append( Field(self, start, FieldType.ZEROES, size, False) )
+          self._fields.remove(f1)
+          self._fields.remove(f2)
+          self._fields.append( Field(self, start, FieldType.ZEROES, size, False) )
         except ValueError,e:
           log.error('please bugfix')
       else: # TODO
@@ -425,7 +420,7 @@ class AnonymousStructInstance():
   
   def _getOverlapping(self):
     #FIXME TODO useless double parsing. take it from fixGaps.
-    fields = sorted([ f for f in self.fields if f.padding != True ]) # clean paddings to check new fields
+    fields = sorted([ f for f in self._fields if f.padding != True ]) # clean paddings to check new fields
     lastend = 0
     oldf = None
     for f in fields:
@@ -437,9 +432,9 @@ class AnonymousStructInstance():
     return
   
   def resolvePointers(self, structs_addrs, structCache):
-    if self.pointerResolved:
+    if self._pointerResolved:
       return
-    self.dirty=True
+    self._dirty=True
     resolved = 0
     pointerFields = self.getPointerFields()
     log.debug('got %d pointerfields'%(len(pointerFields)))
@@ -466,7 +461,7 @@ class AnonymousStructInstance():
           log.debug('target %s is undecoded'%(tgt))
           continue
         field._target_field = tgt[0] #first field of struct
-      elif field.value in self.mappings.getHeap():
+      elif field.value in self._mappings.getHeap():
         # elif target is a STRING in the HEAP
         # set pointer type to char_p
         inHeap+=1
@@ -481,11 +476,11 @@ class AnonymousStructInstance():
           undecoded+=1
           #log.debug('target %x is unresolvable in a field'%(field.value))        
         pass
-      elif field.value in self.mappings: # other mappings
+      elif field.value in self._mappings: # other mappings
         inMappings+=1
         tgt = 'ext_lib_%d'%(field.offset)
         field._ptr_to_ext_lib = True
-        field.target_struct_addr = self.mappings.getMmapForAddr(field.value).start
+        field.target_struct_addr = self._mappings.getMmapForAddr(field.value).start
         pass
       #
       if tgt is not None:
@@ -499,9 +494,9 @@ class AnonymousStructInstance():
     if len(pointerFields) == (resolved+fromcache):
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
-      self.pointerResolved = True
+      self._pointerResolved = True
     else:
-      self.pointerResolved = False
+      self._pointerResolved = False
     return
   
   def _resolvePointerToStructField(self, field, structs_addrs, structCache):
@@ -530,9 +525,9 @@ class AnonymousStructInstance():
   def _aggregateFields(self):
     #if not self.pointerResolved:
     #  raise ValueError('I should be resolved')
-    self.dirty=True
+    self._dirty=True
     
-    self.fields.sort()
+    self._fields.sort()
     myfields = []
     
     signature = self.getSignature()
@@ -552,14 +547,14 @@ class AnonymousStructInstance():
       #print 'fieldTypesAndSizes:',fieldTypesAndSizes
       if nb == 1:
         fieldType = fieldTypesAndSizes[0] # its a tuple
-        field = self.fields.pop(0)
+        field = self._fields.pop(0)
         myfields.append(field) # single el
         #log.debug('simple field:%s '%(field) )
       elif len(fieldTypesAndSizes) > 1: #  array of subtructure DEBUG XXX TODO
         log.debug('substructure with sig %s'%(fieldTypesAndSizes))
         myelements=[]
         for i in range(nb):
-          fields = [ self.fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
+          fields = [ self._fields.pop(0) for i in range(len(fieldTypesAndSizes)) ] # nb-1 left
           #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ] 
           # need global ref to compare substructure signature to other anonstructure
           firstField = FieldType.makeStructField(self, fields[0].offset, fields)
@@ -568,7 +563,7 @@ class AnonymousStructInstance():
         myfields.append(array) 
         #log.debug('array of structure %s'%(array))
       elif len(fieldTypesAndSizes) == 1: #make array of elements or
-        log.debug('found array of %s'%(self.fields[0].typename.basename))
+        log.debug('found array of %s'%(self._fields[0].typename.basename))
         fields = [ self.fields.pop(0) for i in range(nb) ]
         array = makeArrayField(self, fields )
         myfields.append(array) 
@@ -577,7 +572,7 @@ class AnonymousStructInstance():
         raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypesAndSizes)))
     
     log.debug('done with aggregateFields')    
-    self.fields = myfields
+    self._fields = myfields
     #print 'final', self.fields
     return
 
@@ -585,11 +580,11 @@ class AnonymousStructInstance():
   # XX TODO DEBUG, this is not a substructure.
   '''
   def _findSubStructures(self):
-    if not self.pointerResolved:
+    if not self._pointerResolved:
       raise ValueError('I should be resolved')
-    self.dirty=True
+    self._dirty=True
     
-    self.fields.sort()
+    self._fields.sort()
     myfields = []
     
     signature = self.getTypeSignature()
@@ -607,7 +602,7 @@ class AnonymousStructInstance():
     #so we need to dequeue self.fields at the same time to enqueue in myfields
     for nb, fieldTypes in patterns:
       if nb == 1:
-        field = self.fields.pop(0)
+        field = self._fields.pop(0)
         myfields.append(field) # single el
         #log.debug('simple field:%s '%(field) )
       elif len(fieldTypes) > 1: #  array of subtructure DEBUG XXX TODO
@@ -615,7 +610,7 @@ class AnonymousStructInstance():
         log.debug('substructure with sig %s'%(''.join([ft.sig[0] for ft in fieldTypes])  ))
         myelements=[]
         for i in range(nb):
-          fields = [ self.fields.pop(0) for i in range(len(fieldTypes)) ] # nb-1 left
+          fields = [ self._fields.pop(0) for i in range(len(fieldTypes)) ] # nb-1 left
           #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ] 
           # need global ref to compare substructure signature to other anonstructure
           firstField = FieldType.makeStructField(self, fields[0].offset, fields)
@@ -624,8 +619,8 @@ class AnonymousStructInstance():
         myfields.append(array) 
         #log.debug('array of structure %s'%(array))
       elif len(fieldTypes) == 1: #make array of elements obase on same base type
-        log.debug('found array of %s'%(self.fields[0].typename.basename))
-        fields = [ self.fields.pop(0) for i in range(nb) ]
+        log.debug('found array of %s'%(self._fields[0].typename.basename))
+        fields = [ self._fields.pop(0) for i in range(nb) ]
         array = makeArrayField(self, fields )
         myfields.append(array) 
         #log.debug('array of elements %s'%(array))
@@ -633,17 +628,17 @@ class AnonymousStructInstance():
         raise ValueError('fields patterns len is incorrect %d'%(len(fieldTypes)))
     
     log.debug('done with findSubstructure')    
-    self.fields = myfields
+    self._fields = myfields
     #print 'final', self.fields
     return
 
   
   def _aggZeroesBetweenIntArrays(self):
-    if len(self.fields) < 3:
+    if len(self._fields) < 3:
       return
-    self.dirty=True
+    self._dirty=True
     
-    myfields = sorted(self.fields)
+    myfields = sorted(self._fields)
     i = 0
     while ( i < len(myfields) - 3 ):
       prev = myfields[i]
@@ -671,36 +666,36 @@ class AnonymousStructInstance():
           myfields.insert(i, array)
       #
       i+=1
-    self.fields = myfields
+    self._fields = myfields
     return
 
   '''
   Check if head or tail ( excluding zeroes) is different from the lot ( not common )
   '''
   def _excludeSizeVariableFromIntArray(self):
-    if len(self.fields) < 2:
+    if len(self._fields) < 2:
       return
-    self.dirty=True
+    self._dirty=True
     
     ''' nested func will explode the array fields in 3 fields '''
     def cutInThree():
       log.debug('cutting in three %d %d %d'%(ind, nbSeen, val))
       # cut array in three
-      index = self.fields.index(_arrayField)
-      oldArray = self.fields.pop(index) # cut it from self.fields
+      index = self._fields.index(_arrayField)
+      oldArray = self._fields.pop(index) # cut it from self.fields
       # cut the field in 3 parts ( ?zerroes, val, list)
       # add the rest
       if len(_arrayField.elements[ind+1:]) > 1: # add zerroes in front
-        self.fields.insert(index, makeArrayField(self, _arrayField.elements[ind+1:]) )
+        self._fields.insert(index, makeArrayField(self, _arrayField.elements[ind+1:]) )
       elif len(_arrayField.elements[ind+1:]) == 1: # add zero field
-        self.fields.insert(index, _arrayField.elements[ind+1])
+        self._fields.insert(index, _arrayField.elements[ind+1])
       # add the value
-      self.fields.insert(index, _arrayField.elements[ind])
+      self._fields.insert(index, _arrayField.elements[ind])
       # add zerroes in front
       if ind > 1: 
-        self.fields.insert(index, makeArrayField(self, _arrayField.elements[:ind]) )
+        self._fields.insert(index, makeArrayField(self, _arrayField.elements[:ind]) )
       elif ind == 1: # add zero field
-        self.fields.insert(index, _arrayField.elements[0])
+        self._fields.insert(index, _arrayField.elements[0])
       #end
 
     # test    
@@ -711,7 +706,7 @@ class AnonymousStructInstance():
     #  self._chopAnywhere(values)
     
     # small array, no interest.
-    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    intArrays = [ f for f in self._fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
     log.debug( '%d intArrays'%(len(intArrays)) )
     for _arrayField in intArrays:
       values = [ f.value for f in _arrayField.elements ]
@@ -723,7 +718,7 @@ class AnonymousStructInstance():
 
     log.debug('going choping reverse')
     # small array, no interest.
-    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    intArrays = [ f for f in self._fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
     log.debug( 'reverse %d intArrays'%(len(intArrays)) )
     for _arrayField in intArrays:
       ## tail
@@ -776,7 +771,7 @@ class AnonymousStructInstance():
         print 'nbseens we should cut ', cutTargets
   
   def _checkZeroesIndexes(self):
-    intArrays = [ f for f in self.fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
+    intArrays = [ f for f in self._fields if f.isArray() and fieldtypes.isIntegerType(f.basicTypename) and len(f.elements) > 7]
     print( '_checkZeroesIndexes %d intArrays'%(len(intArrays)) )
     for _arrayField in intArrays:
       values = [ f.value for f in _arrayField.elements ]
@@ -805,7 +800,7 @@ class AnonymousStructInstance():
           log.debug('Untyped Buffer resize we are missing %d bytes'%(target-l))
           cnt = l
           newfields = []
-          for f2 in self.fields[i+1:]:
+          for f2 in self._fields[i+1:]:
             cnt+=len(f2)
             newfields.append(f2)
             if cnt < target:
@@ -852,7 +847,7 @@ class AnonymousStructInstance():
           self._fixGaps()
     #cleaning
     for f in fieldsToRemove:
-      self.fields.remove(f)
+      self._fields.remove(f)
     return
       
   def todo(self):
@@ -913,31 +908,36 @@ class AnonymousStructInstance():
     
   
   def getPointerFields(self):
-    return [f for f in self.fields if f.isPointer()]
+    return [f for f in self._fields if f.isPointer()]
     
   def getSignature(self, text=False):
     if text:
-      return ''.join(['%s%d'%(f.getSignature()[0].sig,f.getSignature()[1]) for f in self.fields])
-    return [f.getSignature() for f in self.fields]
+      return ''.join(['%s%d'%(f.getSignature()[0].sig,f.getSignature()[1]) for f in self._fields])
+    return [f.getSignature() for f in self._fields]
 
   def getTypeSignature(self, text=False):
     if text:
-      return ''.join([f.getSignature()[0].sig.upper() for f in self.fields])
-    return [f.getSignature()[0] for f in self.fields]
+      return ''.join([f.getSignature()[0].sig.upper() for f in self._fields])
+    return [f.getSignature()[0] for f in self._fields]
+
+  def setContext(self, context):
+    self._context = context
+    self._mappings = context.mappings
+    self._bytes = self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
 
   def isResolved(self):
-    return self.resolved
+    return self._resolved
 
   def isPointerResolved(self):
-    return self.pointerResolved
+    return self._pointerResolved
 
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
-    info = 'resolved:%s SIG:%s size:%d'%(self.resolved, self.getSignature(text=True), len(self))
+    info = 'resolved:%s SIG:%s size:%d'%(self._resolved, self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
-      info += ' pointerResolved:%s'%(self.pointerResolved)
+      info += ' pointerResolved:%s'%(self._pointerResolved)
     ctypes_def = '''
 class %s(LoadableMembers):  # %s
   _fields_ = %s
@@ -948,42 +948,41 @@ class %s(LoadableMembers):  # %s
   def __contains__(self, other):
     if isinstance(other, numbers.Number):
       # test vaddr in struct instance len
-      if self.vaddr <= other <= self.vaddr+len(self):
+      if self._vaddr <= other <= self._vaddr+len(self):
         return True
       return False
     else:
       raise NotImplementedError(type(other))
       
   def __getitem__(self, i):
-    return self.fields[i]
+    return self._fields[i]
     
   def __len__(self):
-    return len(self.bytes)
+    return len(self._bytes)
 
   def __cmp__(self, other):
     if not isinstance(other, AnonymousStructInstance):
       return -1
-    return cmp(self.vaddr, other.vaddr)
+    return cmp(self._vaddr, other._vaddr)
 
   def __getstate__(self):
     d = self.__dict__.copy()
     try:
-      d['dumpname'] = os.path.normpath(self.mappings.name)
+      d['dumpname'] = os.path.normpath(self._mappings.name)
     except AttributeError,e:
       #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
       d['dumpname'] = None
-    del d['mappings']
-    del d['bytes']
-    d['mappings'] = None
-    d['bytes'] = None
+    del d['_mappings']
+    del d['_bytes']
+    d['_mappings'] = None
+    d['_bytes'] = None
+    d['_context'] = None
     return d
 
   def __setstate__(self, d):
     self.__dict__ = d
-    #self.mappings = dump_loader.load( self.dumpname, lazy=True)  
-    #self.bytes = self.mappings.getHeap().readBytes(self.vaddr, self.size)
-    self.mappings = None
-    self.bytes = None
+    self._mappings = None
+    self._bytes = None
     if '_name' not in d:
       self.setName(None)
     return
