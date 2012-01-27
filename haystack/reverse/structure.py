@@ -53,7 +53,7 @@ def makeFilenameFromAddr(context, addr):
   return makeFilename(context, 'struct_%x'%( addr ) )
 
 def makeStructure(context, start, size):
-  return AnonymousStructInstance(context.mappings, start, context.heap.readBytes(start, size) )
+  return AnonymousStructInstance(context, start, context.heap.readBytes(start, size) )
 
 def cacheLoad(context, addr):
   dumpname = context.dumpname
@@ -164,8 +164,9 @@ class AnonymousStructInstance():
   AnonymousStruct in absolute address space.
   Comparaison between struct is done is relative addresse space.
   '''
-  def __init__(self, mappings, vaddr, bytes, prefix=None):
-    self._mappings = mappings
+  def __init__(self, context, vaddr, bytes, prefix=None):
+    self._context = context
+    self._mappings = context.mappings
     self._vaddr = vaddr
     self._bytes = bytes
     self.reset() # set fields
@@ -249,10 +250,10 @@ class AnonymousStructInstance():
   def saveme(self):
     if not self._dirty:
       return
-    sdir = Config.getStructsCacheDir(self.context.dumpname)
+    sdir = Config.getStructsCacheDir(self._context.dumpname)
     if not os.path.isdir(sdir):
       os.mkdir(sdir)
-    fname = makeFilename(self.context, self)
+    fname = makeFilename(self._context, self)
     try:
       pickle.dump(self, file(fname,'w'))
     except KeyboardInterrupt, e:
