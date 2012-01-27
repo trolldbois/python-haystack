@@ -280,7 +280,7 @@ class Field:
     
   def checkInteger(self):
     log.debug('checking Integer')
-    if (self.struct.vaddr+self.offset) % Config.WORDSIZE != 0:
+    if (self.struct._vaddr+self.offset) % Config.WORDSIZE != 0:
       # TODO  txt[:11] + 0 + int for alignement
       # non aligned int is not an int
       #print 'OUT noon aligned'
@@ -413,8 +413,8 @@ class Field:
   def __str__(self):
     i = 'new'
     try:
-      if self in self.struct.fields:
-        i = self.struct.fields.index(self)
+      if self in self.struct._fields:
+        i = self.struct._fields.index(self)
     except ValueError, e:
       log.warning('self in struct.fields but not found by index()')
     return '<Field %s offset:%d size:%s t:%s'%(i, self.offset, self.size, self.typename)
