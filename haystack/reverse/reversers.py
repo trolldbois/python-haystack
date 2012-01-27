@@ -65,7 +65,7 @@ class ReverserContext():
     return self._get_structures()[addr]
 
   def _get_structures(self):
-    if self._structures is not None:
+    if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
       return self._structures
     # cache Load
     log.info('[+] Fetching cached structures list')
