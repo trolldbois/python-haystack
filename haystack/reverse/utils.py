@@ -51,12 +51,12 @@ def closestFloorValueNumpy(val, lst):
    array.array is bad algo perf....
   ''' 
   # Find indices where elements should be inserted to maintain order.
-  try:
-    return lst.index(val) # be positive, its a small hit compared to searchsorted on non-numpy array
-  except ValueError,e:
-    pass
   if isinstance(lst, list): #TODO delete
     log.warning('misuse of closestFloorValue')
+    try:
+      return lst.index(val) # be positive, its a small hit compared to searchsorted on non-numpy array
+    except ValueError,e:
+      pass
     return closestFloorValueOld(val, lst)
   indicetab = numpy.searchsorted(lst, [val]) 
   ind = indicetab[0]

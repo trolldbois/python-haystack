@@ -62,7 +62,7 @@ class ReverserContext():
   
   def getStructuresForAddr(self, addr):
     ''' return the structure.AnonymousStructInstance associated with this addr'''
-    return self._get_structures(addr)
+    return self._get_structures()[addr]
   
   def _get_structures(self):
     if self._structures is not None:
@@ -79,13 +79,13 @@ class ReverserContext():
       mallocRev.check_inuse(self)
       log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
     
-    return     
+    return self._structures
 
   def getStructureAddrForOffset(self, offset):
     '''Returns the closest containing structure address for this offset in this heap.'''
     if offset not in self.heap:
       raise ValueError('address not in heap')
-    return utils.closestFloorValue(offset, self.structures_addresses)
+    return utils.closestFloorValue(offset, self._structures_addresses)[0] # [1] is the index of [0]
 
   def getStructureForOffset(self, offset):
     '''Returns the structure containing this address'''
@@ -93,7 +93,7 @@ class ReverserContext():
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
-    return [self.pointers_offsets[offset] for offset in numpy.where(self.pointers_addresses==ptr_value)]
+    return [self._pointers_offsets[offset] for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
 
   def listStructuresAddrForPointerValue(self, ptr_value):
     '''Returns the list of structures addresses with a member with this pointer value '''
@@ -101,7 +101,7 @@ class ReverserContext():
 
   def listStructuresForPointerValue(self, ptr_value):
     '''Returns the list of structures with a member with this pointer value '''
-    return [ self.structures[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
+    return [ self._get_structures()[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
   
   def listStructuresAddresses(self):
     return iter(self._structures_addresses)
@@ -111,10 +111,9 @@ class ReverserContext():
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
     context = pickle.load(file(context_cache,'r'))
-    log.info('\t[-] loaded my context fromcache, Mapping heap to mem')
+    log.info('\t[-] loaded my context from cache')
     context.mappings = mappings
     context.heap = context.mappings.getHeap()
-    log.info('\t[-] loaded heap')
     
     context._init2()
     return context
