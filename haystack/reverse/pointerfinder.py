@@ -11,7 +11,16 @@ import struct
 import ctypes
 
 from haystack import dump_loader
+from haystack import argparse_utils
 from haystack.utils import xrange
+from haystack.reverse import utils
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
 
 log = logging.getLogger('pointerfinder')
 
@@ -209,12 +218,38 @@ class NullSearcher(AbstractSearcher):
 def merge(opt):
   mergeDump(opt.dumpfile)
   pass
+
+def reverseLookup(opt):
+  from haystack.reverse import reversers
+  log.info('[+] Load context')
+  context = reversers.getContext(opt.dumpname)
+  addr = opt.struct_addr
+  log.info('[+] find offsets of struct_addr:%x'%(opt.struct_addr))
+  i = -1
+  structs = set()
+  while True:
+    try:
+      i = context.pointers_addresses.index(addr, i+1)
+    except ValueError,e:
+      break
+    offset = context.pointers_offsets[i]
+    st_addr = context.getStructureAddrForOffset(offset)
+    structs.add(st_addr)
+  log.info('[+] Found %d structures.')
+  for addr in structs:
+    print context.getStructureForOffset(addr).toString()
+  return
+  
   
 def argparser():
-  rootparser = argparse.ArgumentParser(prog='haystack-pointer-merge', description='Collect heap pointers in heap, heap pointers in stack, relative position in stack, and try to guess structures with all that.')
-  rootparser.add_argument('dumpfile', type=argparse.FileType('rb'), action='store', help='Source memory dump by haystack.')
-  #rootparser.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
-  rootparser.set_defaults(func=merge)  
+  rootparser = argparse.ArgumentParser(prog='haystack-pointer-tools', description='Tools around pointers.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+
+  subparsers = rootparser.add_subparsers(help='sub-command help')
+  reverse = subparsers.add_parser('reverse', help='reverse pointer lookup - find structures that contains struct_addr value')
+  reverse.add_argument('struct_addr', type=argparse_utils.int16, action='store', help='target structure addresse')
+  reverse.set_defaults(func=reverseLookup)  
+
   return rootparser
 
 def main(argv):
