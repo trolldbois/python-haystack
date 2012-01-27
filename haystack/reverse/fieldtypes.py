@@ -161,11 +161,11 @@ class Field:
       return False      
     value = struct.unpack('L',bytes)[0] #TODO biteorder
     # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
-    if value in self.struct.mappings:
+    if value in self.struct._mappings:
       log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
       self.value = value
       self.size = Config.WORDSIZE
-      self.comment = self.struct.mappings.getMmapForAddr(self.value).pathname
+      self.comment = self.struct._mappings.getMmapForAddr(self.value).pathname
       self.typename = FieldType.POINTER
       return True
     else:
