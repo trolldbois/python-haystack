@@ -72,7 +72,7 @@ class ReverserContext():
     self._structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self._structures) ))
 
-    if len(self._structures) == 0: # no structures yet, make them from MallocReverser
+    if len(self._structures) != len(self._malloc_addresses): # no all structures yet, make them from MallocReverser
       log.info('[+] No cached structures - making them from malloc reversers')
       mallocRev = MallocReverser()
       context = mallocRev.reverse(self)
