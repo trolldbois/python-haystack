@@ -227,17 +227,14 @@ def reverseLookup(opt):
   log.info('[+] find offsets of struct_addr:%x'%(opt.struct_addr))
   i = -1
   structs = set()
-  while True:
-    try:
-      i = context.pointers_addresses.index(addr, i+1)
-    except ValueError,e:
-      break
-    offset = context.pointers_offsets[i]
-    st_addr = context.getStructureAddrForOffset(offset)
-    structs.add(st_addr)
-  log.info('[+] Found %d structures.')
-  for addr in structs:
-    print context.getStructureForOffset(addr).toString()
+  try:
+    structs = context.listStructuresForPointerValue(addr)
+  except ValueError,e:
+    log.info('[+] Found no structures.')
+    return
+  log.info('[+] Found %d structures.'%( len(structs) ))
+  for st in structs:
+    print st.toString()
   return
   
   

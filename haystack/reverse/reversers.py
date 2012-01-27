@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
-
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import argparse
 import logging
@@ -25,6 +20,14 @@ import structure
 import fieldtypes
 import utils
 import libc
+
+__author__ = "Loic Jaquemet"
+__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
+__license__ = "GPL"
+__maintainer__ = "Loic Jaquemet"
+__email__ = "loic.jaquemet+python@gmail.com"
+__status__ = "Production"
+
 
 log = logging.getLogger('reversers')
 
@@ -87,6 +90,29 @@ class ReverserContext():
       log.info('[+] Built %d structures from malloc blocs'%( len(self.structures) ))
     
     return
+
+  def getStructureAddrForOffset(self, offset):
+    '''Returns the closest containing structure address for this offset in this heap.'''
+    if offset not in heap:
+      raise ValueError('address not in heap')
+    return utils.closestFloorValue(offset, self.structures_addresses)
+
+  def getStructureForOffset(self, offset):
+    '''Returns the structure containing this address'''
+    return self.structures[self.getStructureAddrForOffset(offset)]
+
+  def listOffsetsForPointerValue(self, ptr_value):
+    '''Returns the list of offsets where this value has been found'''
+    return [self.pointers_offsets[offset] for offset in numpy.where(self.pointers_addresses==ptr_value)]
+
+  def listStructuresAddrForPointerValue(self, ptr_value):
+    '''Returns the list of structures addresses with a member with this pointer value '''
+    return sorted(set([ self.getStructureAddrForOffset[offset] for offset in self.getListOffsetsForPointerValue(ptr_value)]))
+
+  def listStructuresForPointerValue(self, ptr_value):
+    '''Returns the list of structures with a member with this pointer value '''
+    return [ self.structures[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
+    
   
   @classmethod
   def cacheLoad(cls, mappings):
