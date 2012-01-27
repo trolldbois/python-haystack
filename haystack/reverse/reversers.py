@@ -36,70 +36,60 @@ class ReverserContext():
   #dummy
   def __init__(self, mappings, heap):
     self.mappings = mappings
-    # meta
     self.dumpname = mappings.name
     self.heap = heap
-    self._init()
-    return
-    
-  def _init(self):
-    self.heapPathname= self.heap.pathname
-    self.base = self.heap.start
-    self.size = len(self.heap)
-    # content
-    self.structures = { } 
-    #self.structures_addresses = numpy.array([],int)
-    self.lastReversedStructureAddr = self.base # save our last state
-
-    self.pointersMeta = Dummy()
-    self.typesMeta = Dummy()
-    
-    self.resolved = False # True if all fields have been checked
-    self.pointerResolved = False # True if all pointer fields have been checked
-
     self.parsed = set()
-    
+    # refresh heap pointers list and allocators chunks
     self._init2()
     return
 
   def _init2(self):
+    # force reload JIT
+    self._structures = None
+
     log.info('[+] Fetching cached structures addresses list')
     ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
-    self.pointers_addresses = aligned_ptr
-    self.pointers_offsets = ptr_offsets # need 
+    self._pointers_addresses = aligned_ptr
+    self._pointers_offsets = ptr_offsets # need 
 
     log.info('[+] Fetching cached malloc chunks list')
-    # malloc_size is the structures_sizes
-    self.malloc_addresses, self.malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
-    
-    # TODO switched
-    if True: # malloc reverser
-      self.structures_addresses = self.malloc_addresses
-    else:
-      self.structures_addresses = self.pointers_addresses # false
-        
-    log.info('[+] Fetching cached structures list')
-    self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
-    log.info('[+] Fetched %d cached structures addresses from disk'%( len(self.structures) ))
+    # malloc_size is the structures_sizes, 
+    # TODO adaptable allocator win32/linux
+    self._malloc_addresses, self._malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
+    self._structures_addresses = self._malloc_addresses
 
-    if len(self.structures) == 0: # no structures yet, make them from MallocReverser
+    return 
+  
+  def getStructuresForAddr(self, addr):
+    ''' return the structure.AnonymousStructInstance associated with this addr'''
+    return self._get_structures(addr)
+  
+  def _get_structures(self):
+    if self._structures is not None:
+      return self._structures
+    # cache Load
+    log.info('[+] Fetching cached structures list')
+    self._structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
+    log.info('[+] Fetched %d cached structures addresses from disk'%( len(self._structures) ))
+
+    if len(self._structures) == 0: # no structures yet, make them from MallocReverser
       log.info('[+] No cached structures - making them from malloc reversers')
       mallocRev = MallocReverser()
       context = mallocRev.reverse(self)
       mallocRev.check_inuse(self)
-      log.info('[+] Built %d structures from malloc blocs'%( len(self.structures) ))
+      log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
     
-    return
+    return     
 
   def getStructureAddrForOffset(self, offset):
     '''Returns the closest containing structure address for this offset in this heap.'''
-    if offset not in heap:
+    if offset not in self.heap:
       raise ValueError('address not in heap')
     return utils.closestFloorValue(offset, self.structures_addresses)
 
   def getStructureForOffset(self, offset):
     '''Returns the structure containing this address'''
-    return self.structures[self.getStructureAddrForOffset(offset)]
+    return self.getStructuresForAddr(self.getStructureAddrForOffset(offset))
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
@@ -107,12 +97,14 @@ class ReverserContext():
 
   def listStructuresAddrForPointerValue(self, ptr_value):
     '''Returns the list of structures addresses with a member with this pointer value '''
-    return sorted(set([ self.getStructureAddrForOffset[offset] for offset in self.getListOffsetsForPointerValue(ptr_value)]))
+    return sorted(set([ self.getStructureAddrForOffset(offset) for offset in self.listOffsetsForPointerValue(ptr_value)]))
 
   def listStructuresForPointerValue(self, ptr_value):
     '''Returns the list of structures with a member with this pointer value '''
     return [ self.structures[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
-    
+  
+  def listStructuresAddresses(self):
+    return iter(self._structures_addresses)
   
   @classmethod
   def cacheLoad(cls, mappings):
@@ -132,9 +124,6 @@ class ReverserContext():
     # we only need dumpfilename to reload mappings, addresses to reload cached structures
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, self.dumpname)
     pickle.dump(self, file(context_cache,'w'))
-    #d = shelve.open(context_cache)
-    #d['context'] = self
-    #d.close()
   
   def __getstate__(self):
     d = self.__dict__.copy()
@@ -146,26 +135,19 @@ class ReverserContext():
     del d['pointers_offsets']
     del d['malloc_addresses']
     del d['malloc_sizes']
-    #d['dumpname'] = os.path.normpath(self.dumpname )
-    #d['heapPathname']= self.heap.pathname
-    #d['structures_addresses'] = self.structures_addresses
-    #d['lastReversedStructureAddr'] = self.lastReversedStructureAddr
+
+    del d['_structures']
+    del d['_structures_addresses']
+    del d['_pointers_addresses']
+    del d['_pointers_offsets']
+    del d['_malloc_addresses']
+    del d['_malloc_sizes']
     return d
 
   def __setstate__(self, d):
-    self.__dict__ = d
-    #self.mappings = dump_loader.load( self.dumpname, lazy=True)  
-    #self.heap = self.mappings.getMmap(d['heapPathname'])
-    self.structures = { } 
-    self.structures_addresses = numpy.array([],int)
-    #self._init()
-    #self.structures_addresses = d['structures_addresses'] # load from int_array its quicker
-    #self.lastReversedStructureAddr = d['lastReversedStructureAddr']
-    #load structures from cache
-    #self.structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self.dumpname,self.structures_addresses)])
-    #self.structures = {}
-    #self.parsed = d['parsed']
-
+    self.dumpname = d['dumpname']
+    self.parsed = d['parsed']
+    self._structures = None
     return
   
 
