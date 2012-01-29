@@ -364,8 +364,8 @@ class FieldReverser(StructureOrientedReverser):
     fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
     #for ptr_value,anon in context.structures.items():
-    for ptr_value in sorted(context._structures.keys(), reverse=True): # lets try reverse
-      anon = context._structures[ptr_value]
+    for ptr_value in context.listStructuresAddresses(): # lets try reverse
+      anon = context.getStructureForAddr(ptr_value)
       if anon.isResolved(): # TODO this is a performance hit, unproxying...
         fromcache+=1
       else:
@@ -397,8 +397,8 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
-    for ptr_value in sorted(context._structures.keys(), reverse=True): # lets try reverse
-      anon = context._structures[ptr_value]
+    for ptr_value in context.listStructuresAddresses(): # lets try reverse
+      anon = context.getStructureForAddr(ptr_value)
       if anon.isPointerResolved():
         fromcache+=1
       else:
@@ -423,14 +423,14 @@ class PointerFieldReverser(StructureOrientedReverser):
 class DoubleLinkedListReverser(StructureOrientedReverser):
   
   def _reverse(self, context):
-    log.info('[+] DoubleLinkedListReverser: resolving first two pointers for %d'%( len(context._structures) ))
+    log.info('[+] DoubleLinkedListReverser: resolving first two pointers' )
     t0 = time.time()
     tl = t0
     done = 0
     found = 0
     members = set()
     lists = []
-    for ptr_value in sorted(context._structures.keys()):
+    for ptr_value in context.listStructuresAddresses():
       #self.pointers_addresses = aligned_ptr
       #self.pointers_offsets = ptr_offsets # need 
       '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
@@ -452,8 +452,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
           done+=len(_members)-1
           lists.append( (head,_members) ) # save list chain
           # set names
-          context._structures[head].setName('list_head')
-          [context._structures[m].setName('list_%x_%d'%(head,i)) for i,m in enumerate(_members)]
+          context.getStructureForAddr(head).setName('list_head')
+          [context.getStructureForAddr(m).setName('list_%x_%d'%(head,i)) for i,m in enumerate(_members)]
           #TODO get substructures ( P4P4xx ) signature and 
           # a) extract substructures
           # b) group by signature
@@ -471,7 +471,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return
 
   def twoWords(self, ctx, st_addr, offset=0):
-    return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
+    #return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
+    return ctx.heap.readBytes( st_addr+offset, 2*Config.WORDSIZE )
   
   def isLinkedListMember(self, context, ptr_value):
     f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
@@ -502,8 +503,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       return None,None
     if (f2 == head_addr):
       log.debug('f2 is head_addr too')
-      context._structures[head_addr].setName('struct')
-      print context._structures[head_addr].toString()
+      context.getStructureForAddr(head_addr).setName('struct')
+      print context.getStructureForAddr(head_addr).toString()
       
     current = head_addr
     while (f1 in context._structures_addresses ):
@@ -558,12 +559,12 @@ class PointerGraphReverser(StructureOrientedReverser):
     #import code
     #code.interact(local=locals())
     graph = networkx.DiGraph()
-    graph.add_nodes_from([ '%x'%k for k in context.structures.keys()]) # we only need the addresses...
+    graph.add_nodes_from([ '%x'%k for k in context.listStructuresAddresses()]) # we only need the addresses...
     log.info('[+] Graph - added %d nodes'%(graph.number_of_nodes()))
     t0 = time.time()
     tl = t0
-    for i, item in enumerate(sorted(context.structures.items())):
-      ptr_value, struct = item
+    for i, ptr_value in enumerate(context.listStructuresAddresses()) :
+      struct = context.getStructureForAddr(ptr_value)
       targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr ) for child in struct.getPointerFields()) #target_struct_addr
       ## DEBUG
       if len(struct.getPointerFields()) >0:
@@ -575,7 +576,7 @@ class PointerGraphReverser(StructureOrientedReverser):
         tl = time.time()
         rate = ((tl-t0)/(i)) #if decoded else ((tl-t0)/(fromcache))
         log.info('%2.2f secondes to go (g:%d)'%( 
-            (len(context.structures)-(i))*rate, i ) )
+            (len(graph)-(i))*rate, i ) )
     log.info('[+] Graph - added %d edges'%(graph.number_of_edges()))
     networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
     context.parsed.add(str(self))
