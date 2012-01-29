@@ -366,9 +366,14 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # mmap.mmap has a full bytebuffer API, so we can use it as is for bytebuffer.
     # we have to get a ctypes pointer-able instance to make our ctypes structure read efficient.
     # sad we can't have a bytebuffer from that same raw memspace
-    # we do not keep the btyebuffer in memory, because it's a lost of space in most cases.
+    # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
-      if hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
+      mmap_hack = True
+      if mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+        self._local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+        heapmap = id(self.local_mmap_bytebuffer) + 8 # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
+        self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(heapmap)
+      elif hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
         # we have the bytes
         local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
