@@ -97,40 +97,46 @@ def getHeapPointers(dumpfilename, mappings):
   '''
   import pointerfinder  
   
-  F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
-  F_HEAP = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
-  F_STACK = Config.getCacheFilename(Config.CACHE_STACK_VALUES, dumpfilename)
-  log.debug('reading from %s'%(F_VALUES))
-  values = int_array_cache(F_VALUES)
-  heap_addrs = int_array_cache(F_HEAP)
-  stack_addrs = int_array_cache(F_STACK)
-  if values is None or heap_addrs is None:
-    log.info('[+] Making new cache - getting pointers values from stack')
-    stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
-    stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
-    stack_enum = stack_enumerator.search()
-    if len(stack_enum)>0:
-      stack_offsets, stack_values = zip(*stack_enum) 
-    else:
-      stack_offsets, stack_values = (),()
-    log.info('\t[-] got %d pointers '%(len(stack_enum)) )
-    log.info('\t[-] merging pointers from heap')
+  #F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
+  F_HEAP_O = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
+  F_HEAP_V = Config.getCacheFilename(Config.CACHE_HEAP_VALUES, dumpfilename)
+  #F_STACK_O = Config.getCacheFilename(Config.CACHE_STACK_ADDRS, dumpfilename)
+  #F_STACK_V = Config.getCacheFilename(Config.CACHE_STACK_VALUES, dumpfilename)
+  #log.debug('reading from %s'%(F_VALUES))
+  #values = int_array_cache(F_VALUES)
+  heap_addrs = int_array_cache(F_HEAP_O)
+  heap_values = int_array_cache(F_HEAP_V)
+  #stack_addrs = int_array_cache(F_STACK_O)
+  #stack_values = int_array_cache(F_STACK_V)
+  if heap_addrs is None or heap_values is None:
+    log.info('[+] Making new cache ') #- getting pointers values from stack')
+    #stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
+    #stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
+    #stack_enum = stack_enumerator.search()
+    #if len(stack_enum)>0:
+    #  stack_offsets, stack_values = zip(*stack_enum) 
+    #else:
+    #  stack_offsets, stack_values = (),()
+    #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
+    #log.info('\t[-] merging pointers from heap')
     heap_enum = pointerfinder.PointerEnumerator(mappings.getHeap()).search()
-    heap_addrs, heap_values = zip(*heap_enum) # or (),() # TODO change to offsets
+    heap_addrs, heap_values = zip(*heap_enum) # WTF
     log.info('\t[-] got %d pointers '%(len(heap_enum)) )
     # merge
-    values = sorted(set(heap_values+stack_values))
-    int_array_save(F_VALUES , values)
-    int_array_save(F_HEAP, heap_addrs)
-    int_array_save(F_STACK, stack_values)
-    log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
+    #values = sorted(set(heap_values+stack_values))
+    #int_array_save(F_VALUES , values)
+    int_array_save(F_HEAP_O, heap_addrs)
+    int_array_save(F_HEAP_V, heap_values)
+    #int_array_save(F_STACK_O, stack_addrs)
+    #int_array_save(F_STACK_V, stack_values)
+    #log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
-    log.info('[+] Loading from cache')
-    log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
-  aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
-  not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
-  log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
-  return values, heap_addrs, aligned, not_aligned
+    log.info('[+] Loading from cache %d pointers %d unique'%(len(heap_values), set(heap_values) ))
+    #log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
+  #aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
+  #not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
+  #log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
+  return heap_addrs, heap_values, stack_addrs, stack_values #values, aligned, not_aligned
 
 
 def getAllocations(dumpfilename, mappings, heap):

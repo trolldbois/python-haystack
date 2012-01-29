@@ -48,9 +48,10 @@ class ReverserContext():
     self._structures = None
 
     log.info('[+] Fetching cached structures addresses list')
-    ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
-    self._pointers_addresses = aligned_ptr
-    self._pointers_offsets = ptr_offsets # need 
+    #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
+    heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
+    self._pointers_addresses = heap_values
+    self._pointers_offsets = heap_offsets
 
     log.info('[+] Fetching cached malloc chunks list')
     # malloc_size is the structures_sizes, 
@@ -73,7 +74,7 @@ class ReverserContext():
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self._structures) ))
 
     if len(self._structures) != len(self._malloc_addresses): # no all structures yet, make them from MallocReverser
-      log.info('[+] No cached structures - making them from malloc reversers')
+      log.info('[+] No cached structures - making them from malloc reversers %d|%d'%(len(self._structures) ,len(self._malloc_addresses)))
       mallocRev = MallocReverser()
       context = mallocRev.reverse(self)
       mallocRev.check_inuse(self)
@@ -93,7 +94,10 @@ class ReverserContext():
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
-    return [int(self._pointers_offsets[offset]) for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
+    l= [int(self._pointers_offsets[offset]) for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
+    addr = int(self._pointers_offsets[offset])
+    print hex(l[0]), numpy.where(self._pointers_addresses==ptr_value), hex(struct.unpack('L', self.heap.readBytes(addr, 4)) )
+    return l
 
   def listStructuresAddrForPointerValue(self, ptr_value):
     '''Returns the list of structures addresses with a member with this pointer value '''
@@ -287,7 +291,7 @@ class MallocReverser(StructureOrientedReverser):
     unused = set(chunks) - set(pointers)
     heap = context.heap
     used=0
-    for m1 in unused:
+    for m1 in map(int,unused):
       mc1 = heap.readStruct(m1-8, libc.ctypes_malloc.malloc_chunk)
       if mc1.check_inuse(context.mappings, m1-8):
         used+=1
