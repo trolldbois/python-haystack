@@ -236,8 +236,8 @@ class SharedBytes():
 
 
 def nextStructure(context, struct):
-  ind = numpy.where(context.pointers_addresses == struct.vaddr)[0][0]
-  val = context.structures_addresses[ind+1]
+  ind = numpy.where(context._pointers_values == struct.vaddr)[0][0]
+  val = context._structures_addresses[ind+1]
   if val not in context.structures:
     return None
   if struct.vaddr+len(struct) != val:

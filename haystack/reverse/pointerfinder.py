@@ -238,8 +238,8 @@ def reverseLookup(opt):
       st.decodeFields()
       print st.toString()
     # wait for input
-    #import code
-    #code.interact(local=locals())
+    import code
+    code.interact(local=locals())
     sys.stdin.read(1)
     addr = st._vaddr
   return
