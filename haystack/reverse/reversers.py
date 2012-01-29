@@ -96,7 +96,7 @@ class ReverserContext():
     '''Returns the list of offsets where this value has been found'''
     l= [int(self._pointers_offsets[offset]) for offset in numpy.where(self._pointers_addresses==ptr_value)[0]]
     addr = int(self._pointers_offsets[offset])
-    print hex(l[0]), numpy.where(self._pointers_addresses==ptr_value), hex(struct.unpack('L', self.heap.readBytes(addr, 4)) )
+    print hex(l[0]), numpy.where(self._pointers_addresses==ptr_value), hex(struct.unpack('L', self.heap.readBytes(addr, 4))[0] )
     return l
 
   def listStructuresAddrForPointerValue(self, ptr_value):

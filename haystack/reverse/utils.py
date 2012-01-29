@@ -131,12 +131,12 @@ def getHeapPointers(dumpfilename, mappings):
     #int_array_save(F_STACK_V, stack_values)
     #log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
   else:
-    log.info('[+] Loading from cache %d pointers %d unique'%(len(heap_values), set(heap_values) ))
+    log.info('[+] Loading from cache %d pointers %d unique'%(len(heap_values), len(set(heap_values)) ))
     #log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
   #aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
   #not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
   #log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
-  return heap_addrs, heap_values, stack_addrs, stack_values #values, aligned, not_aligned
+  return heap_addrs, heap_values #, stack_addrs, stack_values #values, aligned, not_aligned
 
 
 def getAllocations(dumpfilename, mappings, heap):
