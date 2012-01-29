@@ -935,7 +935,7 @@ class AnonymousStructInstance():
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
-    fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self.fields]))
+    fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
     info = 'resolved:%s SIG:%s size:%d'%(self._resolved, self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self._pointerResolved)
