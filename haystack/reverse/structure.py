@@ -94,7 +94,7 @@ def remapLoad(context, addr, newmappings):
 
 def cacheLoadAllLazy(context):
   dumpname = context.dumpname
-  addresses = context.listStructuresAddresses()
+  addresses = context._structures_addresses
   for addr in addresses:      
     try:
       yield addr,CacheWrapper(context, addr )

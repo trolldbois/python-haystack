@@ -45,7 +45,7 @@ class ReverserContext():
 
   def _init2(self):
     # force reload JIT
-    self._structures = None
+    self._structures = dict()
 
     log.info('[+] Fetching cached structures addresses list')
     #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
@@ -111,7 +111,7 @@ class ReverserContext():
     return [ self._get_structures()[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
   
   def listStructuresAddresses(self):
-    return self._get_structures().keys():
+    return self._get_structures().keys()
 
   def listStructures(self):
     return self._get_structures().values()
@@ -155,7 +155,7 @@ class ReverserContext():
   def __setstate__(self, d):
     self.dumpname = d['dumpname']
     self.parsed = d['parsed']
-    self._structures = None
+    self._structures = dict()
     return
   
 
@@ -254,19 +254,19 @@ class MallocReverser(StructureOrientedReverser):
     loaded = 0
     prevLoaded = 0
     unused = 0
-    lengths = context._malloc_sizes
-    doneStructs = context.listStructuresAddresses() 
+    #lengths = context._malloc_sizes
+    doneStructs = context._structures.keys() 
     todo = sorted(set(context._malloc_addresses) - set(doneStructs))
     fromcache = len(context._malloc_addresses) - len(todo)
     offsets = list(context._pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from malloc_chunks contents - %d todo'%(len(todo)))
     #for i, ptr_value in enumerate(context.listStructuresAddresses()):
-    for i, ptr_value in enumerate(context._malloc_addresses):
+    for i, (ptr_value, size) in enumerate(zip(map(int,context._malloc_addresses), map(int,context._malloc_sizes))):
       if ptr_value in doneStructs:
         continue
       loaded += 1
-      size = lengths[i]
+      #size = lengths[i]
       # save the ref/struct type
       chunk_addr = ptr_value-2*Config.WORDSIZE
       mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
