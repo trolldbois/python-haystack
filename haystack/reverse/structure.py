@@ -88,7 +88,7 @@ def remapLoad(context, addr, newmappings):
   p.setContext(context)
   # YES we do want to over-write mappings and bytes
   p._mappings = newmappings
-  p._bytes = newmappings.getHeap().readBytes(p.vaddr, p.size)
+  p._bytes = newmappings.getHeap().readBytes(p._vaddr, p.size)
   return p
 
 
@@ -99,7 +99,7 @@ def cacheLoadAllLazy(context):
     try:
       yield addr,CacheWrapper(context, addr )
     except ValueError,e:
-      # TODO rebuild the struct
+      log.warning(' TODO rebuild the struct')
       pass
   return
 
@@ -467,7 +467,7 @@ class AnonymousStructInstance():
         # set pointer type to char_p
         inHeap+=1
         tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
-        field.target_struct_addr = tgt_struct.vaddr
+        field.target_struct_addr = tgt_struct._vaddr
         if tgt_field is not None:
           ### field.ctypes = str(tgt_struct) # no
           field.typename = FieldType.makePOINTER(tgt_field.typename)
@@ -515,7 +515,7 @@ class AnonymousStructInstance():
     log.debug('tgt_st %s'%tgt_st)
     if field.value in tgt_st:
       offset = field.value - nearest_addr
-      for f in tgt_st.fields:
+      for f in tgt_st._fields:
         if f.offset == offset:
           tgt_field = f
           log.debug('Found %s'%f)

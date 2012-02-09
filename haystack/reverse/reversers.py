@@ -66,7 +66,9 @@ class ReverserContext():
     return self._get_structures()[addr]
 
   def structuresCount(self):
-    return len(self._get_structures())
+    if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
+      return len(self._get_structures())
+    return len(self._malloc_addresses)
 
   def _get_structures(self):
     if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
@@ -219,7 +221,7 @@ class StructureOrientedReverser():
   def _saveStructures(self, ctx):
     tl = time.time()
     # dump all structures
-    for i,s in enumerate(ctx.listStructures()):
+    for i,s in enumerate(ctx._structures.values()):
       #  print s.dirty
       try:
         s.saveme()
@@ -228,7 +230,7 @@ class StructureOrientedReverser():
         raise e
       if time.time()-tl > 30: #i>0 and i%10000 == 0:
         t0 = time.time()
-        log.info('\t\t - %2.2f secondes to go '%( (ctx.structuresCount()-i)*((tl-t0)/i) ) )
+        log.info('\t\t - %2.2f secondes to go '%( (len(ctx._structures)-i)*((tl-t0)/i) ) )
         tl = t0
     tf = time.time()
     log.info('\t[.] saved in %2.2f secs'%(tf-tl))
@@ -270,7 +272,8 @@ class MallocReverser(StructureOrientedReverser):
       # save the ref/struct type
       chunk_addr = ptr_value-2*Config.WORDSIZE
       mc1 = context.heap.readStruct(chunk_addr, libc.ctypes_malloc.malloc_chunk)
-      if mc1.check_inuse(context.mappings, chunk_addr):
+      #if mc1.check_inuse(context.mappings, chunk_addr):
+      if True:
         mystruct = structure.makeStructure(context, ptr_value, size)
         context._structures[ ptr_value ] = mystruct
         # add pointerFields
@@ -618,7 +621,8 @@ def save_headers(context, addrs=None):
     addrs = iter(context.listStructuresAddresses())
 
   for vaddr in addrs:
-    anon = context.structures[vaddr]
+    #anon = context._get_structures()[vaddr]
+    anon = context.getStructureForAddr( vaddr )
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
       try:
