@@ -1,34 +1,96 @@
-HOWTO:
-------
+Introduction:
+=============
+
+python-haystack is an heap analysis framework, focused on classic 
+C structure matching.
+
+The first class of algorithms gives the ability to search for known
+structures in a live process's memory, or in a memory dump.
+
+The second class of algorithms aims at giving a reverse engineering look
+at a memory dump, focusing on reconstruction, classification of classic
+C structures from memory. Heap analysis. Dynamic types definition.
+
+How to get a memory dump:
+=========================
+
+While technically you could use a third party tool, we actually need 
+memory mapping information to work with. So there is a dumping tool 
+included :
+
+$ sudo haystack-dump dump 26725 dumps/myssh.dump
+
+You can easily reproduce the format of the dump, its a folder/archive 
+containing each memory map in a separate file :
+* content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
+* 'mappings' file containing memory mappings metadata.  ( mappings )
 
 
-Run as command line :
+Search for known structures:
+============================
 
-$ sudo haystack --pid 26725 sslsnoop.ctypes_openssh.session_state search > instance.pickled
-$ sudo haystack --pid 26725 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
-$ sudo haystack --pid 26725 <your ctypes Structure > search > instance.pickled
+Prerequisite: sslsnoop for the definition of openssl/openssh structures.
 
-Or as a Graphical GUI ( Qt4 )
+Quick info: This tool demonstrate the ability to brute-force the search 
+of a known structure, based on fields types assumptions. 
 
-$ haystack-gui
+The magic is performed in the model.py module.
 
-Run in a python script :
+Command line example: 
+---------------------
+
+For example, this will dump the session_state structures + pointed 
+children structures as an python object that we can play with.
+Lets assume we have an ssh client or server as pid 4042.
+
+$ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state search > instance.pickled
+$ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+$ sudo haystack --pid xxxx <your ctypes Structure> search > instance.pickled
+
+
+Graphic example :
+-----------------
+
+There is also an attempt at a Graphical GUI ( Qt4 )
+Dump the process, then you can open it in the GUI :
+
+$ haystack-gui # ( and Ctrl-O , click click)
+$ haystack-gui --dumpname dumps/myssh.dump
+
+
+You can the search a structure into that memory mapping ( in [heap] for now ).
+You have to import your extensions before that ( try sslsnoop.ctypes_openssh ) to have them listed in the search dialog.
+
+Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should have it installed.
+
+
+python script interpreter example:
+----------------------------------
 >>> import haystack
->>> pid = 12345
+>>> pid = 4042
 >>> haystack.findStruct( pid , sslsnoop.ctypes_openssh.session_state)
 >>> haystack.findStruct( pid , ctypes_example.big_struct)
 
-It's easy to add new structures (check ctypeslib or do it by hand or check sslsnoop on github)
+
+Extensibility:
+--------------
+
+It's easy to add new structures. Its basically the ctypes definition of 
+C structures that should be done following the next 4 steps :
 
 a) Your class must extend haystack.model.LoadableMembers.
 b) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure 
 c) You can add an expectedValues dict() to your class to refine your search
 d) call model.registerModule(sys.modules[__name__])
 
-Easy 'creation' : use h2xml and xml2py from ctypeslib
-Advanced use : You can override methods to fine tune some validation or loading
+Easy 'creation' : 
+  use h2xml and xml2py from ctypeslib
+Advanced use : 
+  You can override methods to fine tune some validation or loading 
+  ( see sslsnoop for void pointers )
 
 The global algorithm :
+
 a)  The ctypes structure is mapped at the first offset of the memory mapping.
 b)  The method loadMembers is called.
 c)  The method isValid is called on self.
@@ -39,65 +101,47 @@ e)  Each members is then 'loaded' to local space.
     If the recursive loading fails, the calls fails. bye-bye.
 f) Move to see next offset, goto a)
 
-GUI usage:
-----------
 
-You need to have a process memory dump :
+Heap analysis / Memory Reverser / Memory forensics:
+===================================================
 
-$ sudo haystack-dump dump 26725 dumps/myssh.dump
+Quick info: This tool parse the heap for allocator structures, pointers
+values, small integers and text (ascii/utf).
+Given all the previous information, it can extract instances 
+(future work wishes starting)
+and helps you in classifying and defining structures types, based on 
+signature algoritms.
 
-(I'm lazy really, you could just open the process in the gui.. but... )
+Command line example:
+--------------------
+This will create several files in the folder containing <yourdumpname>.
 
-Then you can open it in the GUI :
+$ python haystack-reverse <yourdumpname>
 
-$ haystack-gui # ( and Ctrl-O , click click)
-$ haystack-gui --dumpfile dumps/myssh.dump
+The most insteresting one being the <yourdumpname>_headers.py that
+gives you an ctypes listing of all found structures, with gestimates
+on fields types.
 
-The dump file format is a simple tar containing each memory map :
-* content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
-* 'mappings' file containing memory mappings metadata.  ( mappings )
+Other demo:
+------------
 
-You can the search a structure into that memory mapping ( in [heap] for now ).
-You have to import your extensions before that ( try sslsnoop.ctypes_openssh ) to have them listed in the search dialog.
-
-Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should have it installed.
-
-Automatic Memory Reverser (IA forensics):
-------------------------------------------
-
-
-''' resolve structures, create a signature, and group them by sig. Show only structs of size 324, grouped by similarities '''
+$ python haystack-signature {show,sort} <yourdumpname>
 $ python haystack/reverse/signature.py dumpname show --size 324 > test
 
-
-$ python reversers.py <yourdumpfile>
-
-s = pickle.load(file('./structs/AnonStruct_software.1.a_b24a198'))
->>> s.__dict__
-{'resolved': False, 'pointerResolved': False, 'mappings': <haystack.memory_mapping.Mappings instance at 0x92da38c>, 'fields': [], 'bytes': '\xa8\xf7l\xb7\xa8\xa1$\x0b\xcaL\xb9\xff\xc1\x00\x00\x00', 'fname': '/home/user/workspace/outputs/structs/AnonStruct_software.1.a_b24a198', 'prefixname': 'b24a198', 'vaddr': 186950040L}
-
->>> s.decodeFields()
->>> print s.toString()
-
-class AnonStruct_software.1.a_b24a198(LoadableMembers):  # resolved:True SIG:P4P4u8 pointerResolved:False
-  _fields_ = [ 
-        ( 'ptr_0' , ctypes.c_void_p ), # @ b76cf7a8 /usr/lib/libQtGui.so.4.7.2 
-        ( 'ptr_4' , ctypes.c_void_p ), # @ b24a1a8 [heap] 
-        ( 'untyped_8' , ctypes.c_ubyte * 8 ), #   else bytes:'\xcaL\xb9\xff\xc1\x00\x00\x00'
- ]
-
-
+This will resolve structures, create a signature, and group them by sig. 
+Show only structs of size 324, grouped by similarities.
+Work in progress.
 
 
 
 Extension examples :
----------------------
+====================
 @ see sslsnoop in the Pypi repo. openssl and nss structures are generated.
 @ see ctypes-kernel on my github. Linux kernel structure are generated from a build kernel tree. (VMM is abitch)
 
 
-Pseudo Example :
-
+Pseudo Example for extension :
+==============================
 from haystack.model import LoadableMembers, RangeValue, NotNull
 
 class OpenSSLStruct(LoadableMembers):
@@ -151,13 +195,18 @@ class RSA(OpenSSLStruct):
 # register to haystack
 model.registerModule(sys.modules[__name__])
 
+#EOF
+
 
 not so FAQ :
 ============
 
 What does it do ?:
 ------------------
-The basic functionnality is to search in a process' memory maps for a specific C Structures.
+The basic functionnality is to search in a process' memory maps for a 
+specific C Structures.
+The extended reverse engineering functionnality aims at reversing 
+structures from memory/heap analysis.
 
 How do it knows that the structures is valid ? :
 ------------------------------------------------
@@ -165,18 +214,17 @@ You add some constraints ( expectedValues ) on the fields. Pointers are also a g
  
 Where does the idea comes from ? :
 -----------------------------------
-use http://www.hsc.fr/ressources/breves/passe-partout.html.fr  to get keys
-use http://pauldotcom.com/2010/10/tsharkwireshark-ssl-decryption.html  
- or http://www.rtfm.com/ssldump/ to read streams
-use scapy, because it's fun ? but we need IP reassembly . 
-pynids could be more useful...
-dsniff is now in python ?
-flowgrep
-use python.
+http://www.hsc.fr/ressources/breves/passe-partout.html.fr originally.
+since I started in March 2011, I have uncovered several other related 
+previous work.
+Most of them are in the docs/ folder.
+Other related work are mona.py from Immunity, some other Madiant stuff...
+In a nutshell, this is probably not an original idea. But yet, I could 
+not find a operational standalone lib for live memory extraction for sslsnoop, soo....
 
 
 What are the dependencies ? :
 ----------------------------
-python-ptrace
-
-
+python-ptrace on linux
+winappdbg on win32
+several others...

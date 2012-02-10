@@ -1,4 +1,25 @@
 
+upgrade the signature-sort by graph-signature with the following equality evaluation fn:
+* %-tage of same pointer offset
+* %-tage of same size comparaison of children structs 
+
+
+Would it be possible that struct_a558e88 is the root instance ?
+its not referenced anywhere. Could also be the Qt application pointer...
+
+
+struct_a57bbe8 is a list of 54 3-short ( struct_a654a58 )
+>>> vals = [struct.unpack('hhh', b[l:l+6]) for l in range(0,len(b),6)]
+looks like an range+indices set.
+(67, 67, 0), (73, 73, 1), (92, 92, 2), (190, 191, 3), (195, 196, 5),
+not 4 because 3 in 190-191 , not 6 because 5 is 195-196
+??? regexp result + indice match ?
+
+
+
+you should totally use a real persistence thingy. You know, the thing they call, a database ? tsii
+
+
 patch winaddpdbg with model.py for ctypes search.
 much more logical.
 
