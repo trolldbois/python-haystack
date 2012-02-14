@@ -39,16 +39,17 @@ class SignatureGroupMaker:
     self._structures_addresses = addrs
     self._context = context
   
-  def make(self):
-    addr1 = self._structures_addresses[0]     # we could use malloc_sizes but
-    s1 = len(self._context.getStructureForAddr(addr1)) # we need to access ctx.structures anyway.
-    log.debug('\t[-] Making signatures for %d structures (?s:%d) - decodingFields (longish)'%( len(self._structures_addresses), s1 ))
+  def _init_signatures(self):
     # get text signature for Counter to parse
     # need to force resolve of structures
     self._signatures = []
     for addr in self._structures_addresses:
       self._context.getStructureForAddr(addr).decodeFields() # can be long
       self._signatures.append( (addr, self._context.getStructureForAddr(addr).getSignature(True)) )
+    return
+    
+  def make(self):
+    self._init_signatures()
     #
     self._similarities = []
     for i,x1 in enumerate(self._signatures[:-1]):
@@ -336,7 +337,7 @@ def showStructures(opt):
     # interact
     groups = dict()
     # make a chain and use --originAddr
-    log.info('[+] make a graph and use --originAddr')
+    log.info('[+] make a graph and use --originAddr for %d structs of size %d'%(len(lst), size))
     graph = networkx.Graph() 
     graph.add_edges_from(sgm.getGroups())
     subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
@@ -357,6 +358,7 @@ def showStructures(opt):
           continue # ignore chain if originAddr is not in it
       #done.append( schain )
       for addr in schain:
+        context.getStructureForAddr(addr).decodeFields() # can be long
         print context.getStructureForAddr(addr).toString()
       print '-'*80
     
@@ -369,6 +371,7 @@ def showStructures(opt):
     if opt.originAddr is not None:
       if originAddr != addr:
         continue # ignore chain if originAddr is not in it
+    context.getStructureForAddr(addr).decodeFields() # can be long
     print context.getStructureForAddr(addr).toString()
     print '-'*80
   
