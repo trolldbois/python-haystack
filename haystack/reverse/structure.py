@@ -99,12 +99,13 @@ def cacheLoadAllLazy(context):
     try:
       yield addr,CacheWrapper(context, addr )
     except ValueError,e:
-      log.warning(' TODO rebuild the struct')
+      #log.warning(' TODO rebuild the struct')
       pass
   return
 
 class CacheWrapper: # this is kind of a weakref proxy, but hashable
-  refs = lrucache.LRUCache(5000)
+  # TODO put that refs in the context
+  refs = lrucache.LRUCache(1500)
   def __init__(self, context, addr):
     self._addr = addr
     self._fname = makeFilenameFromAddr(context, addr)
@@ -114,16 +115,19 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     self.obj = None
     
   def __getattr__(self,*args):
-    if self.obj is None:  # 
+    if self.obj is None or self.obj() is None :  # 
       self._load()
-    return getattr(self.obj,*args)
+    return getattr(self.obj(),*args)
 
   def unload(self):
+    if self._addr in CacheWrapper.refs:
+      del CacheWrapper.refs[self._addr]
     self.obj = None
     
   def _load(self):
     if self.obj is not None:  # 
-      return self.obj
+      if self.obj() is not None:  # 
+        return self.obj()
     try:
       p = pickle.load(file(self._fname,'r'))
     except EOFError,e:
@@ -134,13 +138,14 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
       raise EOFError('not a AnonymousStructInstance in cache. %s'%(p.__class__))
     p.setContext(self._context)
     p._dirty = False
-    self.obj = p
-    return p
+    CacheWrapper.refs[self._addr]=p
+    self.obj = weakref.ref(p)
+    return
 
   def save(self):
-    if self.obj is None:
+    if self.obj() is None:
       return 
-    self.obj.save()
+    self.obj().save()
 
   def __setstate__(self,d):
     log.error('setstate %s'%d)
