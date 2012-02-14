@@ -18,6 +18,7 @@ from haystack.config import Config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
 from haystack.reverse import utils
+from haystack.reverse.reversers import *
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -95,6 +96,18 @@ class StructureSizeCache:
     self._context = ctx
     self._sizes = None
   
+  def _loadCache(self):
+    outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_SIZES_DIR, self._context.dumpname)
+    fdone = os.path.sep.join([outdir, Config.CACHE_SIGNATURE_SIZES_DIR_TAG]) 
+    if not os.access(fdone, os.R_OK):
+      return False
+    for myfile in os.listdir(outdir):
+      try:
+        addr = int( myfile.split(_)[1], 16 )
+      except IndexError,e:
+        continue # ignore file
+    
+      
   def cacheSizes(self):
     """Find the number of different sizes, and creates that much numpyarray"""
     # if not os.access
@@ -105,14 +118,21 @@ class StructureSizeCache:
       raise IOError('cant write to %s'%(outdir))
     #
     sizes = set(self._context._malloc_sizes)
+    
+    print 'sizes',sizes
+    print 'addrs' , self._context._malloc_addresses
+    
     arrays = dict([(s,[]) for s in sizes])
     #sort all addr in all sizes.. 
     [arrays[ self._context._malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context._malloc_addresses) ]
     #saving all sizes dictionary in files...
     for size,lst in arrays.items():
       fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
+      print 'list if size',size,lst
       arrays[size] = utils.int_array_save( fout , lst) 
     #saved all sizes dictionaries.
+    # tag it as done
+    file(os.path.sep.join([outdir, Config.CACHE_SIGNATURE_SIZES_DIR_TAG]),'w')
     self._sizes = arrays    
     return
     
@@ -121,13 +141,13 @@ class StructureSizeCache:
       self.cacheSizes()
     if size not in self._sizes:
       return []
-    return array.array('L', self._sizes[size])
+    return numpy.asarray(self._sizes[size])
     
   def __iter__(self):
     if self._sizes is None:
       self.cacheSizes()
     for size in self._sizes.keys():
-      yield (size, array.array('L', self._sizes[size]) )
+      yield (size, numpy.asarray(self._sizes[size]) )
   
       
 class SignatureMaker(pointerfinder.AbstractSearcher):
@@ -352,6 +372,7 @@ def showStructures(opt):
 
 def saveSizes(opt):
   from haystack.reverse import reversers
+  from haystack.reverse.reversers import ReverserContext
   log.info('[+] Loading the context for a dumpname.')
   context = reversers.getContext(opt.dumpname)
   log.info('[+] Make the size dictionnaries.')
@@ -375,6 +396,30 @@ def saveSizes(opt):
 def makesig(opt):
   toFile(opt.dumpname, opt.sigfile)
   pass
+
+
+def compare(opt):
+  from haystack.reverse import reversers
+  log.info('[+] Loading the context for a dumpname.')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] Make the size dictionnaries.')
+  sizeCache = StructureSizeCache(context)
+  sizeCache.cacheSizes()
+  log.info("[+] Group structures's signatures by sizes.")
+  sgms=[]
+  try:
+    for size,lst in sizeCache:
+      log.debug("[+] Group signatures for structures of size %d"%(size))
+      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
+      sgm.make()
+      sgm.persist()
+      sgms.append(sgm)
+  except KeyboardInterrupt,e:
+    pass
+  import code
+  code.interact(local=locals())
+  return sgms
+
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')

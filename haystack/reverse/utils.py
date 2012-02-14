@@ -30,17 +30,22 @@ def int_array_cache(filename):
   if os.access(filename,os.F_OK):
     # load
     f = file(filename,'r')
-    nb = os.path.getsize(f.name)/4 # simple TODO 
-    my_array = array.array('L')
-    my_array.fromfile(f,nb)
-    return numpy.asarray(my_array)
+    #nb = os.path.getsize(f.name)/4 # simple TODO 
+    #my_array = array.array('L')
+    #my_array.fromfile(f,nb)
+    #numpy.asarray(my_array)
+    return numpy.load(f)
   return None
 
 def int_array_save(filename, lst):
-  my_array = array.array('L')
-  my_array.extend(lst) or True
-  my_array.tofile(file(filename,'w'))
-  return numpy.asarray(my_array)
+  #my_array = array.array('L')
+  print lst, type(lst), type(lst[0])
+  #my_array.extend(lst) #or True
+  #my_array.tofile(file(filename,'w'))
+  #return numpy.asarray(my_array)
+  my_array = numpy.asarray(lst)
+  numpy.save(file(filename,'w'), my_array)
+  return my_array
 
 
 def closestFloorValueNumpy(val, lst):
