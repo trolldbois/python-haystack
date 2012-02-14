@@ -48,20 +48,24 @@ om.compute_referrers()
 # om[ addr].children
 
 # get the biggest Field
-om[ s.summaries[1].max_address ] 
+f_addr = s.summaries[1].max_address
+om[ f_addr ] 
 
 #Field(179830860 552B 21refs 1par)
 
-om[ 179830860 ].parents
+om[ f_addr ].parents
 # [179834316]
 # >>> om[ 179834316 ]
 # list(179834316 132B 19refs 1par)  <- list of fields in Struct
 
-om[ 179834316 ].parents
+l_addr = om[ f_addr ].parents[0]
+om[ l_addr ].parents
 # [179849516]
 # >>> om[ 179849516 ]
 # AnonymousStructInstance(179849516 552B 23refs 19par)
 
+anon_addr = om[ l_addr ].parents[0]
+om[ anon_addr ] 
 #179849516 is a anon struct
 import networkx
 import matplotlib.pyplot as plt
@@ -69,8 +73,18 @@ import matplotlib.pyplot as plt
 def n(o):
   return str(o).split(' ')[0]
 
+def stop(o):
+  s = n(om[o])
+  if s.startswith('classobj') or s.startswith('func'):
+    return True
+  if s.startswith('module') or s.startswith('local'):
+    return True
+  return False
+
 def rec_add_child( graph, knowns, addr, t=''):
   for c in om[ addr ].children:
+    if stop(c):
+      return
     graph.add_edge( n(om[addr]), n(om[c]) )
     childscount = len(om[ c ].children)
     print 'c:',c,'has', childscount, 'children'
@@ -80,10 +94,13 @@ def rec_add_child( graph, knowns, addr, t=''):
     if c in knowns:
       return
     knowns.add( c )
-    rec_add( graph, knowns, c, t+'\t')    
+    rec_add_child( graph, knowns, c, t+'\t')    
+    rec_add_parent( graph, knowns, c, t+'\t')    
 
 def rec_add_parent( graph, knowns, addr, t=''):
   for p in om[ addr ].parents:
+    if stop(p):
+      return
     graph.add_edge( n(om[p]), n(om[addr]) )
     childscount = len(om[ p ].parents)
     print 'p:',p,'has', childscount, 'parents'
@@ -93,11 +110,12 @@ def rec_add_parent( graph, knowns, addr, t=''):
     if p in knowns:
       return
     knowns.add( p )
-    rec_add( graph, knowns, p, t+'\t')    
+    rec_add_parent( graph, knowns, p, t+'\t')    
+    rec_add_child( graph, knowns, p, t+'\t')    
     
 
 mygraph = networkx.DiGraph()
-addr = 179849516
+addr = anon_addr
 known = set()
 known.add(addr)
 
@@ -107,8 +125,8 @@ known = set()
 known.add(addr)
 rec_add_parent( mygraph, known, addr)
 
-pos = networkx.spring_layout(mygraph)
-networkx.draw(mygraph,pos)
+#pos = networkx.spring_layout(mygraph)
+#networkx.draw(mygraph,pos)
 
 #plt.show()
 networkx.readwrite.gexf.write_gexf( mygraph, 'test.gexf')
