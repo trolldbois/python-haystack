@@ -9,7 +9,8 @@ import os
 import sys
 import re
 import Levenshtein #seqmatcher ?
-import pickle
+import networkx
+
 
 from haystack import dump_loader
 from haystack import argparse_utils
@@ -56,7 +57,9 @@ class SignatureGroupMaker:
         addr2, el2 = x2
         lev=Levenshtein.ratio(el1,el2) # seqmatcher ?
         if lev >0.75:
-          self._similarities.append( ((addr1,el1),(addr2,el2)) )
+          #self._similarities.append( ((addr1,el1),(addr2,el2)) )
+          self._similarities.append( (addr1,addr2) )
+          # we do not need the signature.
     # check for chains
     # TODO      we need a group maker with an iterator to push group proposition to the user
     log.debug('\t[-] Signatures done.')
@@ -69,9 +72,8 @@ class SignatureGroupMaker:
     if not os.access(outdir, os.W_OK):
       raise IOError('cant write to %s'%(outdir))
     #
-    out = file(os.path.sep.join([outdir,self._name]),'w')
-    pickle.dump(self._similarities, out)
-    out.close()
+    outname = os.path.sep.join([outdir,self._name])
+    ar = utils.int_array_save(outname, self._similarities)
     return
     
   def isPersisted(self):
@@ -80,9 +82,8 @@ class SignatureGroupMaker:
 
   def load(self):
     outdir = Config.getCacheFilename(Config.CACHE_SIGNATURE_GROUPS_DIR, self._context.dumpname)
-    inf = file(os.path.sep.join([outdir,self._name]),'r')
-    self._similarities = pickle.load(inf)
-    inf.close()
+    inname = os.path.sep.join([outdir,self._name])
+    self._similarities = utils.int_array_cache(inname)
     return 
 
   def getGroups(self):
@@ -117,17 +118,12 @@ class StructureSizeCache:
       raise IOError('cant write to %s'%(outdir))
     #
     sizes = set(self._context._malloc_sizes)
-    
-    print 'sizes',sizes
-    print 'addrs' , self._context._malloc_addresses
-    
     arrays = dict([(s,[]) for s in sizes])
     #sort all addr in all sizes.. 
     [arrays[ self._context._malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context._malloc_addresses) ]
     #saving all sizes dictionary in files...
     for size,lst in arrays.items():
       fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
-      print 'list if size',size,lst
       arrays[size] = utils.int_array_save( fout , lst) 
     #saved all sizes dictionaries.
     # tag it as done
@@ -330,31 +326,44 @@ def showStructures(opt):
     else:
       sgm.make()
       sgm.persist()
+    print 'append'
     sgms.append(sgm)
     # interact
     groups = dict()
     # make a chain and use --originAddr
-    for s1,s2 in sgm.getGroups():
-      addr1, sig1 = s1
-      addr2, sig2 = s2
-      if addr1 in groups:
-        # join lists if similar == CHAIN
-        if addr2 in groups and groups[addr1] != groups[addr2]: 
-          groups[addr1].extend(groups[addr2]) # mv all links
-        groups[addr2] = groups[addr1] # ANYCASE - copy identic - addr2 is already in the addr2 list
-        groups[addr1].append(addr2)
-      else:
-        if addr2 in groups: 
-          groups[addr2].append(addr1)
-          groups[addr1]=groups[addr2]
+    # TODO: a graph
+    if False:
+      print ' make a chain and use --originAddr'
+      for addr1,addr2 in sgm.getGroups():
+        if addr1 in groups:
+          # join lists if similar == CHAIN
+          if addr2 in groups and groups[addr1] != groups[addr2]: 
+            groups[addr1].extend(groups[addr2]) # mv all links
+          groups[addr2] = groups[addr1] # ANYCASE - copy identic - addr2 is already in the addr2 list
+          groups[addr1].append(addr2)
         else:
-          groups[addr1]=[addr1,addr2]   # dont forget self
-          groups[addr2]=groups[addr1]
-    # make CHAINS
-    chains = groups.values()
+          if addr2 in groups: 
+            groups[addr2].append(addr1)
+            groups[addr1]=groups[addr2]
+          else:
+            groups[addr1]=[addr1,addr2]   # dont forget self
+            groups[addr2]=groups[addr1]
+      # make CHAINS
+      chains = groups.values()
+    else: # graph
+      print ' make a graph and use --originAddr'
+      graph = networkx.Graph() 
+      graph.add_edges_from(sgm.getGroups())
+      subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
+      print 'subgraphs', len(subgraphs)
+      chains = [g.nodes() for g in subgraphs ]
+      
+    
+    print 'chains.sort()'
     chains.sort()
     done = []
     for chain in chains:
+      print 'chain len:', len(chain)
       schain = set(chain)
       if schain in done:
         continue # ignore same chains
@@ -363,7 +372,7 @@ def showStructures(opt):
           continue # ignore chain if originAddr is not in it
       done.append( schain )
       for addr in schain:
-        print context.getStructure(addr).toString()
+        print context.getStructureForAddr(addr).toString()
       print '-'*80
       
   return sgms
