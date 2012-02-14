@@ -120,6 +120,7 @@ class ReverserContext():
   
   @classmethod
   def cacheLoad(cls, mappings):
+    from haystack.reverse.reversers import ReverserContext
     dumpname = os.path.normpath(mappings.name)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
     try:
@@ -637,6 +638,7 @@ def save_headers(context, addrs=None):
 
 
 def getContext(fname):
+  from haystack.reverse.reversers import ReverserContext
   mappings = dump_loader.load( fname)  
   try:
     context = ReverserContext.cacheLoad(mappings)
