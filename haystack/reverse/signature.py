@@ -314,6 +314,7 @@ def showStructures(opt):
   sizeCache.cacheSizes()
   log.info("[+] Group structures's signatures by sizes.")
   sgms=[]
+  solos = set()
   #
   for size,lst in sizeCache:
     if opt.size is not None:
@@ -327,6 +328,11 @@ def showStructures(opt):
       sgm.make()
       sgm.persist()
     sgms.append(sgm)
+    
+    if len(lst) == 1: # solo
+      solos.add(lst[0])
+      continue
+      
     # interact
     groups = dict()
     # make a chain and use --originAddr
@@ -336,22 +342,36 @@ def showStructures(opt):
     subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
     print 'subgraphs', len(subgraphs)
     chains = [g.nodes() for g in subgraphs ]
+    # TODO, do not forget this does only gives out structs with similarities.
+    # lonely structs are not printed here...
       
     chains.sort()
-    done = []
+    #done = []
     for chain in chains:
       log.debug('\t[-] chain len:%d'%len(chain) )
       schain = set(chain)
-      if schain in done:
-        continue # ignore same chains
+      #if schain in done:
+      #  continue # ignore same chains
       if opt.originAddr is not None:
         if originAddr not in schain:
           continue # ignore chain if originAddr is not in it
-      done.append( schain )
+      #done.append( schain )
       for addr in schain:
         print context.getStructureForAddr(addr).toString()
       print '-'*80
-      
+    
+    # TODO next step, compare struct links in a DiGraph with node == struct size
+    # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
+  
+  # print solos:
+  log.info('[+] printing %d solo structs'%(len(solos)) )
+  for addr in solos:
+    if opt.originAddr is not None:
+      if originAddr != addr:
+        continue # ignore chain if originAddr is not in it
+    print context.getStructureForAddr(addr).toString()
+    print '-'*80
+  
   return sgms
 
 
