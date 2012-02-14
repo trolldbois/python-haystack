@@ -326,44 +326,21 @@ def showStructures(opt):
     else:
       sgm.make()
       sgm.persist()
-    print 'append'
     sgms.append(sgm)
     # interact
     groups = dict()
     # make a chain and use --originAddr
-    # TODO: a graph
-    if False:
-      print ' make a chain and use --originAddr'
-      for addr1,addr2 in sgm.getGroups():
-        if addr1 in groups:
-          # join lists if similar == CHAIN
-          if addr2 in groups and groups[addr1] != groups[addr2]: 
-            groups[addr1].extend(groups[addr2]) # mv all links
-          groups[addr2] = groups[addr1] # ANYCASE - copy identic - addr2 is already in the addr2 list
-          groups[addr1].append(addr2)
-        else:
-          if addr2 in groups: 
-            groups[addr2].append(addr1)
-            groups[addr1]=groups[addr2]
-          else:
-            groups[addr1]=[addr1,addr2]   # dont forget self
-            groups[addr2]=groups[addr1]
-      # make CHAINS
-      chains = groups.values()
-    else: # graph
-      print ' make a graph and use --originAddr'
-      graph = networkx.Graph() 
-      graph.add_edges_from(sgm.getGroups())
-      subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
-      print 'subgraphs', len(subgraphs)
-      chains = [g.nodes() for g in subgraphs ]
+    log.info('[+] make a graph and use --originAddr')
+    graph = networkx.Graph() 
+    graph.add_edges_from(sgm.getGroups())
+    subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
+    print 'subgraphs', len(subgraphs)
+    chains = [g.nodes() for g in subgraphs ]
       
-    
-    print 'chains.sort()'
     chains.sort()
     done = []
     for chain in chains:
-      print 'chain len:', len(chain)
+      log.debug('\t[-] chain len:%d'%len(chain) )
       schain = set(chain)
       if schain in done:
         continue # ignore same chains
