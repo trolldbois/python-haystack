@@ -426,8 +426,9 @@ def fixType(context, chains):
     schain = set(chain)
     name = getname()
     for addr in schain:
-      # FIXME context.getStructureForAddr(addr).setName()
-      context.getStructureForAddr(addr)._name = name
+      # FIXME 
+      context.getStructureForAddr(addr).setName(name)
+      #context.getStructureForAddr(addr)._name = name
   
 
 def saveSizes(opt):
