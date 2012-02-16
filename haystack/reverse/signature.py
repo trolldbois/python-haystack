@@ -313,12 +313,19 @@ def showStructures(opt):
   log.info('[+] Make the size dictionnaries.')
   sizeCache = StructureSizeCache(context)
   sizeCache.cacheSizes()
+  
+  solos = set()
+  for chains, solos in buildStructureGroup(context, sizeCache, solos, opt.size ):
+    printStructureGroups(context, chains, opt.originAddr )
+  printSolos(context, solos, opt.originAddr)
+  
+  
+def buildStructureGroup(context, sizeCache , solos, optsize=None ):
   log.info("[+] Group structures's signatures by sizes.")
   sgms=[]
-  solos = set()
   #
   for size,lst in sizeCache:
-    if opt.size is not None:
+    if optsize is not None:
       if size != opt.size:
         continue # ignore different size
     log.debug("[+] Group signatures for structures of size %d"%(size))
@@ -345,38 +352,83 @@ def showStructures(opt):
     chains = [g.nodes() for g in subgraphs ]
     # TODO, do not forget this does only gives out structs with similarities.
     # lonely structs are not printed here...
-      
-    chains.sort()
-    #done = []
-    for chain in chains:
-      log.debug('\t[-] chain len:%d'%len(chain) )
-      schain = set(chain)
-      #if schain in done:
-      #  continue # ignore same chains
-      if opt.originAddr is not None:
-        if originAddr not in schain:
-          continue # ignore chain if originAddr is not in it
-      #done.append( schain )
-      for addr in schain:
-        context.getStructureForAddr(addr).decodeFields() # can be long
-        print context.getStructureForAddr(addr).toString()
-      print '-'*80
     
-    # TODO next step, compare struct links in a DiGraph with node == struct size
-    # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
+    yield (chains, solos )
+    
+def printStructureGroups(context, chains, originAddr=None):      
+  chains.sort()
+  #done = []
+  for chain in chains:
+    log.debug('\t[-] chain len:%d'%len(chain) )
+    schain = set(chain)
+    #if schain in done:
+    #  continue # ignore same chains
+    if originAddr is not None:
+      if originAddr not in schain:
+        continue # ignore chain if originAddr is not in it
+    #done.append( schain )
+    for addr in schain:
+      context.getStructureForAddr(addr).decodeFields() # can be long
+      print context.getStructureForAddr(addr).toString()
+    print '-'*80
   
+  # TODO next step, compare struct links in a DiGraph with node == struct size
+  # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
+
+def printSolos(context, solos, originAddr=None):  
   # print solos:
-  log.info('[+] printing %d solo structs'%(len(solos)) )
+  log.info('[+] printing %d solo structs'%(len(solos)) ) 
   for addr in solos:
-    if opt.originAddr is not None:
+    if originAddr is not None:
       if originAddr != addr:
         continue # ignore chain if originAddr is not in it
     context.getStructureForAddr(addr).decodeFields() # can be long
     print context.getStructureForAddr(addr).toString()
     print '-'*80
   
-  return sgms
+  return
 
+
+def showTemplates(opt):
+  from haystack.reverse import reversers
+  log.info('[+] Loading the context for a dumpname.')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] Make the size dictionnaries.')
+  sizeCache = StructureSizeCache(context)
+  sizeCache.cacheSizes()
+  
+  log.info('[+] FIRST PASS - set names.')
+  solos = set()
+  for chains, solos in buildStructureGroup(context, sizeCache, solos):
+    fixType(context, chains)
+  fixType(context, [solos])
+
+  log.info('[+] SECOND PASS - rebuild structure fields names.')
+  for s in context.listStructures():
+    s.reset()
+    s.decodeFields()
+    print s.toString()
+
+  return 
+  
+# fixme
+_NAMES = [ s.strip() for s in file(os.path.sep.join([Config.cacheDir,'words.100']),'r').readlines() ]
+
+def getname():
+  return _NAMES.pop()  
+  
+
+def fixType(context, chains):      
+  chains.sort()
+  #done = []
+  for chain in chains:
+    log.debug('\t[-] chain len:%d'%len(chain) )
+    schain = set(chain)
+    name = getname()
+    for addr in schain:
+      # FIXME context.getStructureForAddr(addr).setName()
+      context.getStructureForAddr(addr)._name = name
+  
 
 def saveSizes(opt):
   from haystack.reverse import reversers
@@ -445,6 +497,9 @@ def argparser():
   show.add_argument('--size', type=int, action='store', default=None, help='Limit to a specific structure size')
   show.add_argument('--originAddr', type=str, action='store', default=None, help='Limit to structure similar to the structure pointed at originAddr')
   show.set_defaults(func=showStructures)  
+
+  template = subparsers.add_parser('template', help='show template structure from default structure matching')
+  template.set_defaults(func=showTemplates)  
 
 
   return rootparser
