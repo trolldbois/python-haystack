@@ -343,6 +343,12 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
       
     # interact
     groups = dict()
+    
+    ## TODO DEBUG
+    #if len(lst) >100:
+    #  log.error('too big a list, DELETE THIS ')
+    #  return
+    
     # make a chain and use --originAddr
     log.info('[+] make a graph and use --originAddr for %d structs of size %d'%(len(lst), size))
     graph = networkx.Graph() 
@@ -357,17 +363,12 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
     
 def printStructureGroups(context, chains, originAddr=None):      
   chains.sort()
-  #done = []
   for chain in chains:
     log.debug('\t[-] chain len:%d'%len(chain) )
-    schain = set(chain)
-    #if schain in done:
-    #  continue # ignore same chains
     if originAddr is not None:
-      if originAddr not in schain:
+      if originAddr not in chain:
         continue # ignore chain if originAddr is not in it
-    #done.append( schain )
-    for addr in schain:
+    for addr in chain:
       context.getStructureForAddr(addr).decodeFields() # can be long
       print context.getStructureForAddr(addr).toString()
     print '-'*80
@@ -390,6 +391,9 @@ def printSolos(context, solos, originAddr=None):
 
 
 def showTemplates(opt):
+  ''' Load a dump, sort structures by size, compare signatures for each size groups.
+  Makes a chains out of similar structures. Changes the structure names for a single
+  typename when possible. Changes the ctypes types of each pointer field.'''
   from haystack.reverse import reversers
   log.info('[+] Loading the context for a dumpname.')
   context = reversers.getContext(opt.dumpname)
@@ -403,12 +407,16 @@ def showTemplates(opt):
     fixType(context, chains)
   fixType(context, [solos])
 
-  log.info('[+] SECOND PASS - rebuild structure fields names.')
+  log.info('[+] SECOND PASS - rebuild structure fields names and types.')
   for s in context.listStructures():
     s.reset()
     s.decodeFields()
+    for f in s.getPointerFields():
+      addr = f._getValue(0)
+      if addr in context.heap:
+        f.setCTypes( context.getStructureForOffset(addr).getName() ) # TODO fix accessor 
+        f.setComment('renamed')
     print s.toString()
-
   return 
   
 # fixme
@@ -419,17 +427,17 @@ def getname():
   
 
 def fixType(context, chains):      
-  chains.sort()
-  #done = []
+  #chains.sort()
+  i=0
   for chain in chains:
-    log.debug('\t[-] chain len:%d'%len(chain) )
-    schain = set(chain)
     name = getname()
-    for addr in schain:
+    log.debug('\t[-] fix type of size:%d with name name:%s'% (len(chain), name ) )
+    for addr in chain:
       # FIXME 
       context.getStructureForAddr(addr).setName(name)
-      #context.getStructureForAddr(addr)._name = name
-  
+      i+=1
+        
+  print 'fixed ', i
 
 def saveSizes(opt):
   from haystack.reverse import reversers

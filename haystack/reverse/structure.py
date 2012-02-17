@@ -105,7 +105,10 @@ def cacheLoadAllLazy(context):
 
 class CacheWrapper: # this is kind of a weakref proxy, but hashable
   # TODO put that refs in the context
-  refs = lrucache.LRUCache(1500)
+  refs = lrucache.LRUCache(5000) 
+  # duh, it works ! TODO: .saveme() on cache eviction
+  # but there is no memory reduction as the GC does not collect that shit. 
+  # i would guess too many fields, map, context...
   def __init__(self, context, addr):
     self._addr = addr
     self._fname = makeFilenameFromAddr(context, addr)
@@ -183,6 +186,9 @@ class AnonymousStructInstance():
       self._name = 'struct_%x'%(self._vaddr)
     else:
       self._name = '%s_%x'%(name, self._vaddr)
+  
+  def getName(self):
+    return self._name
   
   def reset(self):
     self._size = len(self._bytes)
@@ -948,7 +954,7 @@ class AnonymousStructInstance():
 class %s(LoadableMembers):  # %s
   _fields_ = %s
 
-''' % (self, info, fieldsString)
+''' % (self.getName(), info, fieldsString)
     return ctypes_def
 
   def __contains__(self, other):
@@ -994,7 +1000,7 @@ class %s(LoadableMembers):  # %s
     return
         
   def __str__(self):
-    return self._name
+    return 'struct_%x'%(self._vaddr )
   
 
 
