@@ -918,6 +918,8 @@ class AnonymousStructInstance():
     #  return False
     return field._target_field.isString()
     
+  def getFields(self):
+    return [f for f in self._fields ]
   
   def getPointerFields(self):
     return [f for f in self._fields if f.isPointer()]
@@ -1002,5 +1004,26 @@ class %s(LoadableMembers):  # %s
   def __str__(self):
     return 'struct_%x'%(self._vaddr )
   
+
+def makeCtypes( structureInstance, typebook ):
+  import haystack.model
+  name = structureInstance.getName().split('_')[0]
+  if name in typebook:
+    ctypes_type = typebook[name]
+  else:
+    ctypes_type = type(name ,( haystack.model.LoadableMembers ,),{})
+  _fields = [ makeCtypesField(typebook, f) for f in structureInstance.getFields() ]
+  setattr(ctypes_type, '_fields_', _fields)
+  return ctypes_type
+  
+def makeCtypesField( typebook, field):
+  # TODO CTypes should be a real ctypes
+  ctype = field.getCTypes() # duh its a "ctypes.POINTER(mellow_0987655455)"
+  if ctype in typebook:
+    ctype = typebook[ctype]
+  return (field.getName(), ctype )
+  
+
+
 
 

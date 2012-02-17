@@ -306,7 +306,10 @@ def toFile(dumpname, outputFile):
   return
 
 
-def showStructures(opt):
+def _showStructures(opt):
+  return showStructures( opt.dumpname, opt.size, opt.originAddr)
+  
+def showStructures(dumpname, size=None, originAddr=None):
   from haystack.reverse import reversers
   log.info('[+] Loading the context for a dumpname.')
   context = reversers.getContext(opt.dumpname)
@@ -317,8 +320,10 @@ def showStructures(opt):
   solos = set()
   for chains, solos in buildStructureGroup(context, sizeCache, solos, opt.size ):
     printStructureGroups(context, chains, opt.originAddr )
+    #print len(chains), len(solos)
   printSolos(context, solos, opt.originAddr)
   
+  return
   
 def buildStructureGroup(context, sizeCache , solos, optsize=None ):
   log.info("[+] Group structures's signatures by sizes.")
@@ -326,7 +331,7 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
   #
   for size,lst in sizeCache:
     if optsize is not None:
-      if size != opt.size:
+      if size != optsize:
         continue # ignore different size
     log.debug("[+] Group signatures for structures of size %d"%(size))
     sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
@@ -337,9 +342,9 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
       sgm.persist()
     sgms.append(sgm)
     
-    if len(lst) == 1: # solo
-      solos.add(lst[0])
-      continue
+    #if len(lst) == 1: # solo
+    #  solos.add(lst[0])
+    #  continue
       
     # interact
     groups = dict()
@@ -352,9 +357,10 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
     # make a chain and use --originAddr
     log.info('[+] make a graph and use --originAddr for %d structs of size %d'%(len(lst), size))
     graph = networkx.Graph() 
-    graph.add_edges_from(sgm.getGroups())
+    graph.add_edges_from(sgm.getGroups()) # add similarities as linked structs
+    graph.add_nodes_from(lst) # add all structs all nodes . Should spwan isolated graphs
     subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(graph)
-    print 'subgraphs', len(subgraphs)
+    #print 'subgraphs', len(subgraphs)
     chains = [g.nodes() for g in subgraphs ]
     # TODO, do not forget this does only gives out structs with similarities.
     # lonely structs are not printed here...
@@ -416,6 +422,26 @@ def showTemplates(opt):
       if addr in context.heap:
         f.setCTypes( context.getStructureForOffset(addr).getName() ) # TODO fix accessor 
         f.setComment('renamed')
+    #print s.toString()
+
+  log.info('[+] THIRD PASS - make ctypes structures.')
+  book=dict()
+  for s in context.listStructures():
+    #FIXME
+    name = s._name.split('_')[0]
+    if name in book:
+      ctype = book[name]
+    else:
+      ctype = structure.makeCtypes( s, book)
+      book[name] = ctype
+
+  log.info('[+] FOURTH PASS - fix ctypes types to fields.')
+  for s in book.values():
+    for f in s.getPointerFields():
+      addr = f._getValue(0)
+      if addr in context.heap:
+        #structure.makeCtypes( s)
+        pass
     print s.toString()
   return 
   
@@ -427,18 +453,15 @@ def getname():
   
 
 def fixType(context, chains):      
-  #chains.sort()
-  i=0
+  ''' Fix the name of each structure to a generic word/type name '''
   for chain in chains:
     name = getname()
     log.debug('\t[-] fix type of size:%d with name name:%s'% (len(chain), name ) )
     for addr in chain:
       # FIXME 
       context.getStructureForAddr(addr).setName(name)
-      i+=1
-        
-  print 'fixed ', i
-
+  return 
+  
 def saveSizes(opt):
   from haystack.reverse import reversers
   from haystack.reverse.reversers import ReverserContext
@@ -493,6 +516,7 @@ def compare(opt):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')
   rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
 
   subparsers = rootparser.add_subparsers(help='sub-command help')
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
@@ -523,6 +547,12 @@ def main(argv):
   logging.getLogger('gui').setLevel(logging.INFO)
   parser = argparser()
   opts = parser.parse_args(argv)
+
+  level=logging.INFO
+  if opts.debug :
+    level=logging.DEBUG
+  logging.basicConfig(level=level)
+
   opts.func(opts)
   
 
