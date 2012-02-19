@@ -13,7 +13,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 setup(name="haystack",
-    version="0.14",
+    version="0.15",
     description="Search C Structures in a process' memory",
     long_description=open("README").read(),
 
@@ -36,7 +36,6 @@ setup(name="haystack",
     packages = ["haystack", "haystack.gui", "haystack.reverse", "haystack.reverse.libc", "haystack.reverse.win32"],
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
     package_data={"haystack.reverse": ['data/words.100']},
-    #data_files=[('data', ['docs/words.100'])],
     install_requires = ["python-ptrace", "argparse"],
     test_suite= "test",
     #tests_require="haystack",
