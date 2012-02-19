@@ -69,7 +69,6 @@ def closestFloorValueOld(val, lst):
   return lst[-1], len(lst)-1
 
 closestFloorValue = closestFloorValueNumpy
-  
 
 def dequeue(addrs, start, end):
   ''' 

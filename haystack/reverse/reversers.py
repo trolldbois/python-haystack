@@ -66,11 +66,6 @@ class ReverserContext():
     ''' return the structure.AnonymousStructInstance associated with this addr'''
     return self._get_structures()[addr]
 
-  def structuresCount(self):
-    if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
-      return len(self._get_structures())
-    return len(self._malloc_addresses)
-
   ''' TODO implement a LRU cache '''
   def _get_structures(self):
     if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
@@ -91,6 +86,16 @@ class ReverserContext():
       log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
     
     return self._structures
+
+  def getStructureSizeForAddr(self, addr):
+    ''' return the structure.AnonymousStructInstance associated with this addr'''
+    itemindex=numpy.where(self._malloc_addresses == numpy.int64(addr))[0][0]
+    return self._malloc_sizes[itemindex]
+
+  def structuresCount(self):
+    if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
+      return len(self._get_structures())
+    return len(self._malloc_addresses)
 
   def getStructureAddrForOffset(self, offset):
     '''Returns the closest containing structure address for this offset in this heap.'''
@@ -115,7 +120,7 @@ class ReverserContext():
     return [ self._get_structures()[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
   
   def listStructuresAddresses(self):
-    return self._get_structures().keys()
+    return map(int,self._get_structures().keys())
 
   def listStructures(self):
     return self._get_structures().values()
@@ -166,6 +171,7 @@ class ReverserContext():
     del d['_pointers_offsets']
     del d['_malloc_addresses']
     del d['_malloc_sizes']
+    #print d
     return d
 
   def __setstate__(self, d):
@@ -496,7 +502,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     log.info('[+] DoubleLinkedListReverser: finished %d structures in %2.0f (f:%d)'%(done, time.time()-t0, found ) )
     context.parsed.add(str(self))
     #
-    context.lists = lists
+    #context.lists = lists
     return
 
   def twoWords(self, ctx, st_addr, offset=0):
@@ -553,7 +559,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return None, None
 
   def findHead(self, ctx, members):
-    sizes = [(ctx._malloc_sizes[ctx._structures_addresses.index(m)], m) for m in members]
+    sizes = [(ctx.getStructureSizeForAddr(m), m) for m in members]
     sizes.sort()
     if sizes[0]<3*Config.WORDSIZE:
       log.error('a double linked list element must be 3 WORD at least')
