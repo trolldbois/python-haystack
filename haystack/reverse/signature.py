@@ -325,6 +325,8 @@ def showStructures(dumpname, size=None, originAddr=None):
   return
   
 def buildStructureGroup(context, sizeCache , optsize=None ):
+  ''' Iterate of structure instances grouped by size, find similar signatures, 
+  and outputs a list of groups of similar structures instances.'''
   log.info("\t[-] Group structures's signatures by sizes.")
   sgms=[]
   #
@@ -372,26 +374,35 @@ def printStructureGroups(context, chains, originAddr=None):
       print context.getStructureForAddr(addr).toString()
     print '-'*80
   
-  # TODO next step, compare struct links in a DiGraph with node == struct size
   # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
 
 
 def showTemplates(opt):
+  '''reverse types from a memorydump, and write structure definition to file '''
+  context = makeReversedTypes(opt.dumpname)
+  outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILE, context.dumpname),'w')
+  for revStructType in context.listReversedTypes():
+    outfile.write(revStructType.toString())
+  outfile.close()
+  log.info('[+] Wrote to %s'%(outfile.name))
+
+def makeReversedTypes(dumpname):
   ''' Load a dump, sort structures by size, compare signatures for each size groups.
   Makes a chains out of similar structures. Changes the structure names for a single
   typename when possible. Changes the ctypes types of each pointer field.'''
   from haystack.reverse import reversers
   log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(opt.dumpname)
+  context = reversers.getContext(dumpname)
   log.debug('\t[-] Make the size dictionnaries.')
   sizeCache = StructureSizeCache(context)
   sizeCache.cacheSizes()
   
-  log.info('[+] FIRST PASS - set names and types.')
+  log.info('[+] Build groups of similar instances, create a reversed type for each group.')
   for chains in buildStructureGroup(context, sizeCache):
     fixType(context, chains)
 
-  log.info('[+] SECOND PASS - rebuild structure fields names and types.')
+  
+  log.info('[+] For each instances, fix pointers fields to newly created types.')
   import ctypes
   for s in context.listStructures():
     s.reset()
@@ -400,17 +411,14 @@ def showTemplates(opt):
       addr = f._getValue(0)
       if addr in context.heap:
         f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
-        f.setComment('renamed')
-
-  log.info('[+] THIRD PASS - print reversed types to file.')
-  outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILE, context.dumpname),'w')
+        f.setComment('pointer fixed')
+  
+  
+  log.info('[+] For new reversed type, fix their definitive fields.')
   for revStructType in context.listReversedTypes():
     revStructType.makeFields(context)
-    outfile.write(revStructType.toString())
-  outfile.close()
-  log.info('[+] Wrote to %s'%(outfile.name))
     
-  return 
+  return context
   
 # fixme
 _NAMES = [ s.strip() for s in file(os.path.sep.join([Config.cacheDir,'words.100']),'r').readlines() ]
@@ -520,15 +528,15 @@ def main(argv):
   level=logging.WARNING
   if opts.debug :
     level=logging.DEBUG
-
-  #flog = os.path.sep.join([Config.cacheDir,'log'])
-  #flog = '/dev/null'
-  #logging.basicConfig(level=level, filename=flog, filemode='w')
-  #logging.basicConfig(level=level)
-
-  logging.getLogger('signature').setLevel(logging.INFO)
-  logging.getLogger('root').addHandler(logging.StreamHandler(stream=sys.stdout))
-  logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
+    flog = os.path.sep.join([Config.cacheDir,'log'])
+    logging.basicConfig(level=level, filename=flog, filemode='w')
+    logging.getLogger('signature').setLevel(logging.DEBUG)
+    logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
+    log.debug('[+] **** COMPLETE debug log to %s'%(flog))    
+  else:
+    logging.getLogger('signature').setLevel(logging.INFO)
+    logging.getLogger('reversers').setLevel(logging.INFO)
+    logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
 
   opts.func(opts)
   
