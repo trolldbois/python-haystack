@@ -10,11 +10,166 @@ __doc__ = '''
   Reverse heap analysis.
 '''
 
-import os, sys
+import argparse
+import logging
+import os
+import sys
+
+import haystack
+from haystack import argparse_utils
+from haystack.config import Config
+from haystack.reverse import signature, reversers
+
+def reverseInstances(opts):
+  #
+  log.info('[+] Loading the memory dump ')
+  try:
+    context = getContext(opts.dumpname)
+    if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
+      os.mkdir(Config.getStructsCacheDir(context.dumpname))
+
+    mallocRev = MallocReverser()
+    context = mallocRev.reverse(context)
+    mallocRev.check_inuse(context)
+    ## find basic boundaries
+    #ptrRev = PointerReverser()
+    #context = ptrRev.reverse(context)
+
+    doublelink = DoubleLinkedListReverser()
+    context = doublelink.reverse(context)
+    #log.info('[+] saving linkedlist headers')
+    #vaddrs = [ addr for (head, list1) in context.lists for addr in list1 ]
+    #save_headers(context, vaddrs)
+    #fr._saveStructures(context.lists)
+    
+    
+    # decode bytes contents to find basic types.
+    # DEBUG reactivate, 
+    fr = FieldReverser()
+    context = fr.reverse(context)
+
+    # identify pointer relation between structures
+    pfr = PointerFieldReverser()
+    context = pfr.reverse(context)
+
+    # graph pointer relations between structures
+    ptrgraph = PointerGraphReverser()
+    context = ptrgraph.reverse(context)
+    ptrgraph._saveStructures(context)
+        
+    
+
+    log.info('[+] saving headers')
+    save_headers(context)
+    fr._saveStructures(context)
+    ##libRev = KnowStructReverser('libQt')
+    ##context = libRev.reverse(context)
+    # we have more enriched context
+    
+    
+    # etc
+  except KeyboardInterrupt,e:
+    #except IOError,e:
+    log.warning(e)
+    log.info('[+] %d structs extracted'%(  context.structuresCount()) )
+    raise e
+    pass
+  pass
+
+
+def writeReversedTypes(opt):
+  '''reverse types from a memorydump, and write structure definition to file '''
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  context = signature.makeReversedTypes(context, sizeCache)
+  outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILE, context.dumpname),'w')
+  for revStructType in context.listReversedTypes():
+    outfile.write(revStructType.toString())
+  outfile.close()
+  log.info('[+] Wrote to %s'%(outfile.name))
+  return 
+
+def saveSizes(opt):
+  ''' ?? group signatures but not otuput ?'''
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  context, sgms  = makeGroupSignature(context, sizeCache)
+  return 
+
+def showStructures(opt):
+  ''' print structures to stdout '''
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
+    signature.printStructureGroups(context, chains, opt.originAddr )
+  return context
+  
+  
+def saveSignatures(opt):
+  sig = signature.makeSignatures(opt.dumpname, opt.sigfile)
+  outputFile.write(sig)
+  log.info('[+] Signature written to %s.'%(outputFile.name))
+  return
+  pass
+
+  
+def argparser():
+  rootparser = argparse.ArgumentParser(prog='haystack-reversers', description='Do a iterative pointer search to find structure.')
+  subparsers = rootparser.add_subparsers(help='sub-command help')
+
+  instances = subparsers.add_parser('instances', 
+    help='Reverse and list structures instances with virtual address and member types.')
+  instances.set_defaults(func=reverseInstances)  
+
+  template = subparsers.add_parser('typemap', 
+        help='Reverse and list of structure types.')
+  template.set_defaults(func=writeReversedTypes)  
+
+  sort = subparsers.add_parser('sort', help='sort structure instances by size and signature')
+  sort.set_defaults(func=saveSizes)  
+
+  show = subparsers.add_parser('show', help='show sorted structure by size and signature')
+  show.add_argument('--size', type=int, action='store', default=None, 
+        help='Limit to a specific structure size')
+  show.add_argument('--originAddr', type=str, action='store', default=None, 
+        help='Limit to structure similar to the structure pointed at originAddr')
+  show.set_defaults(func=showStructures)  
+
+
+  makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
+  makesig.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
+  makesig.set_defaults(func=saveSignatures)  
+
+  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+
+
+  return rootparser
+
+def main(argv):
+
+  parser = argparser()
+  opts = parser.parse_args(argv)
+
+  level=logging.WARNING
+  if opts.debug :
+    level=logging.DEBUG
+    flog = os.path.sep.join([Config.cacheDir,'log'])
+    logging.basicConfig(level=level, filename=flog, filemode='w')
+    logging.getLogger('signature').setLevel(logging.DEBUG)
+    logging.getLogger('reversers').setLevel(logging.DEBUG)
+    logging.getLogger().debug('[+] **** COMPLETE debug log to %s'%(flog))    
+  else:
+    logging.getLogger('signature').setLevel(logging.INFO)
+    logging.getLogger('reversers').setLevel(logging.INFO)
+
+  logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
+  logging.getLogger('reversers').addHandler(logging.StreamHandler(stream=sys.stdout))
+
+  opts.func(opts)
+  
+
+
 
 if __name__ == "__main__":
   sys.path.append(os.getcwd())
-  from haystack.reverse import reversers 
-  reversers.main(sys.argv[1:])
+  main(sys.argv[1:])
 
 

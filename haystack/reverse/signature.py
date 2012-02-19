@@ -283,46 +283,17 @@ lib["phone"] = re.compile("0[-\d\s]{10,}")
 lib["ninumber"] = re.compile("[a-z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[a-z]",re.IGNORECASE)
 lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
   '''
-  
 
-def _openDumpfile(dumpname):
-  # load memorymapping
-  mappings = dump_loader.load(dumpanme)
-  # TODO : make a mapping chooser 
-  if len(mappings) > 1:
-    heap = [m for m in mappings if m.pathname == '[heap]'][0]
-  else:
-    heap = mappings[0]
-  return heap
-
-def toFile(dumpname, outputFile):
-  log.info('Loading the mappings in the memory dump file.')
-  mapping = _openDumpfile(dumpname)
-  log.info('Make the signature.')
-  sigMaker = SignatureMaker(mapping)
-  sig = sigMaker.search()
-  outputFile.write(sig)
-  log.info('Signature written to %s.'%(outputFile.name))
-  del sig
-  del sigMaker
-  return
-
-
-def _showStructures(opt):
-  return showStructures( opt.dumpname, opt.size, opt.originAddr)
-  
-def showStructures(dumpname, size=None, originAddr=None):
+def makeSizeCaches(dumpname):
+  ''' gets all structures instances from the dump, order them by size.'''
   from haystack.reverse import reversers
   log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(opt.dumpname)
+  context = reversers.getContext(dumpname)
   log.debug('\t[-] Make the size dictionnaries.')
   sizeCache = StructureSizeCache(context)
   sizeCache.cacheSizes()
-  
-  for chains in buildStructureGroup(context, sizeCache, opt.size ):
-    printStructureGroups(context, chains, opt.originAddr )
-  
-  return
+
+  return context, sizeCache  
   
 def buildStructureGroup(context, sizeCache , optsize=None ):
   ''' Iterate of structure instances grouped by size, find similar signatures, 
@@ -377,30 +348,14 @@ def printStructureGroups(context, chains, originAddr=None):
   # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
 
 
-def showTemplates(opt):
-  '''reverse types from a memorydump, and write structure definition to file '''
-  context = makeReversedTypes(opt.dumpname)
-  outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILE, context.dumpname),'w')
-  for revStructType in context.listReversedTypes():
-    outfile.write(revStructType.toString())
-  outfile.close()
-  log.info('[+] Wrote to %s'%(outfile.name))
-
-def makeReversedTypes(dumpname):
-  ''' Load a dump, sort structures by size, compare signatures for each size groups.
+def makeReversedTypes(context, sizeCache):
+  ''' Compare signatures for each size groups.
   Makes a chains out of similar structures. Changes the structure names for a single
   typename when possible. Changes the ctypes types of each pointer field.'''
-  from haystack.reverse import reversers
-  log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(dumpname)
-  log.debug('\t[-] Make the size dictionnaries.')
-  sizeCache = StructureSizeCache(context)
-  sizeCache.cacheSizes()
   
   log.info('[+] Build groups of similar instances, create a reversed type for each group.')
   for chains in buildStructureGroup(context, sizeCache):
     fixType(context, chains)
-
   
   log.info('[+] For each instances, fix pointers fields to newly created types.')
   import ctypes
@@ -413,13 +368,38 @@ def makeReversedTypes(dumpname):
         f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
         f.setComment('pointer fixed')
   
-  
   log.info('[+] For new reversed type, fix their definitive fields.')
   for revStructType in context.listReversedTypes():
     revStructType.makeFields(context)
     
   return context
   
+def makeSignatures(dumpname):
+  from haystack.reverse import reversers
+  log.debug('\t[-] Loading the context for a dumpname.')
+  context = reversers.getContext(opt.dumpname)
+  heap = context.heap
+  
+  log.info('[+] Make the signatures.')
+  sigMaker = SignatureMaker(mapping)
+  sig = sigMaker.search()
+  return sig  
+
+def makeGroupSignature(context, sizecache): 
+  ''' From the structures cache ordered by size, group similar instances together. '''
+  log.info("[+] Group structures's signatures by sizes.")
+  sgms=[]
+  try:
+    for size,lst in sizeCache:
+      log.debug("[+] Group signatures for structures of size %d"%(size))
+      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
+      sgm.make()
+      sgm.persist()
+      sgms.append(sgm)
+  except KeyboardInterrupt,e:
+    pass
+  return context, sgms
+
 # fixme
 _NAMES = [ s.strip() for s in file(os.path.sep.join([Config.cacheDir,'words.100']),'r').readlines() ]
 
@@ -444,102 +424,7 @@ def fixType(context, chains):
       context.getStructureForAddr(addr).setCtype(ctypes_type)
   return 
 
-  
-def saveSizes(opt):
-  from haystack.reverse import reversers
-  from haystack.reverse.reversers import ReverserContext
-  log.info('[+] Loading the context for a dumpname.')
-  context = reversers.getContext(opt.dumpname)
-  log.info('[+] Make the size dictionnaries.')
-  sizeCache = StructureSizeCache(context)
-  sizeCache.cacheSizes()
-  log.info("[+] Group structures's signatures by sizes.")
-  sgms=[]
-  try:
-    for size,lst in sizeCache:
-      log.debug("[+] Group signatures for structures of size %d"%(size))
-      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
-      sgm.make()
-      sgm.persist()
-      sgms.append(sgm)
-  except KeyboardInterrupt,e:
-    pass
-  import code
-  code.interact(local=locals())
-  return sgms
 
-def makesig(opt):
-  toFile(opt.dumpname, opt.sigfile)
-  pass
-
-
-def compare(opt):
-  from haystack.reverse import reversers
-  log.info('[+] Loading the context for a dumpname.')
-  context = reversers.getContext(opt.dumpname)
-  log.info('[+] Make the size dictionnaries.')
-  sizeCache = StructureSizeCache(context)
-  sizeCache.cacheSizes()
-  log.info("[+] Group structures's signatures by sizes.")
-  sgms=[]
-  try:
-    for size,lst in sizeCache:
-      log.debug("[+] Group signatures for structures of size %d"%(size))
-      sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
-      sgm.make()
-      sgm.persist()
-      sgms.append(sgm)
-  except KeyboardInterrupt,e:
-    pass
-  import code
-  code.interact(local=locals())
-  return sgms
-
-  
-def argparser():
-  rootparser = argparse.ArgumentParser(prog='haystack-sig', description='Make a heap signature.')
-  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
-  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
-
-  subparsers = rootparser.add_subparsers(help='sub-command help')
-  makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
-  makesig.add_argument('sigfile', type=argparse.FileType('wb'), action='store', help='The output signature filename.')
-  makesig.set_defaults(func=makesig)  
-
-  sort = subparsers.add_parser('sort', help='sort structure by size and signature')
-  sort.set_defaults(func=saveSizes)  
-
-  show = subparsers.add_parser('show', help='show sorted structure by size and signature')
-  show.add_argument('--size', type=int, action='store', default=None, help='Limit to a specific structure size')
-  show.add_argument('--originAddr', type=str, action='store', default=None, help='Limit to structure similar to the structure pointed at originAddr')
-  show.set_defaults(func=showStructures)  
-
-  template = subparsers.add_parser('template', help='show template structure from default structure matching')
-  template.set_defaults(func=showTemplates)  
-
-
-  return rootparser
-
-def main(argv):
-
-  parser = argparser()
-  opts = parser.parse_args(argv)
-
-  level=logging.WARNING
-  if opts.debug :
-    level=logging.DEBUG
-    flog = os.path.sep.join([Config.cacheDir,'log'])
-    logging.basicConfig(level=level, filename=flog, filemode='w')
-    logging.getLogger('signature').setLevel(logging.DEBUG)
-    logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
-    log.debug('[+] **** COMPLETE debug log to %s'%(flog))    
-  else:
-    logging.getLogger('signature').setLevel(logging.INFO)
-    logging.getLogger('reversers').setLevel(logging.INFO)
-    logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
-
-  opts.func(opts)
-  
 
 if __name__ == '__main__':
-  main(sys.argv[1:])
+  pass
