@@ -1,4 +1,7 @@
 
+
+use pynsource to print the graph of structs.
+
 upgrade the signature-sort by graph-signature with the following equality evaluation fn:
 * %-tage of same pointer offset
 * %-tage of same size comparaison of children structs 

@@ -15,6 +15,7 @@ import weakref
 
 from haystack.config import Config
 from haystack import dump_loader
+from haystack import model
 
 import fieldtypes
 from fieldtypes import Field, FieldType, makeArrayField
@@ -189,6 +190,14 @@ class AnonymousStructInstance():
   
   def getName(self):
     return self._name
+
+  def setCtype(self, t):
+    self._ctype = t
+
+  def getCtype(self):
+    if self._ctype is None:
+      raise TypeError('Structure has no type')
+    return self._ctype
   
   def reset(self):
     self._size = len(self._bytes)
@@ -1005,25 +1014,61 @@ class %s(LoadableMembers):  # %s
     return 'struct_%x'%(self._vaddr )
   
 
-def makeCtypes( structureInstance, typebook ):
-  import haystack.model
-  name = structureInstance.getName().split('_')[0]
-  if name in typebook:
-    ctypes_type = typebook[name]
-  else:
-    ctypes_type = type(name ,( haystack.model.LoadableMembers ,),{})
-  _fields = [ makeCtypesField(typebook, f) for f in structureInstance.getFields() ]
-  setattr(ctypes_type, '_fields_', _fields)
-  return ctypes_type
+class ReversedType(model.LoadableMembers):
   
-def makeCtypesField( typebook, field):
-  # TODO CTypes should be a real ctypes
-  ctype = field.getCTypes() # duh its a "ctypes.POINTER(mellow_0987655455)"
-  if ctype in typebook:
-    ctype = typebook[ctype]
-  return (field.getName(), ctype )
+  @classmethod
+  def create(cls, context, name):
+    ctypes_type = context.getReversedType(name)
+    if ctypes_type is None: # make type an register it 
+      ctypes_type = type(name ,( cls ,),{ '_instances': dict() }) # leave _fields_ out
+      context.addReversedType(name, ctypes_type )
+    return ctypes_type
   
+  ''' add the instance to be a instance of this type '''
+  @classmethod
+  def addInstance(cls, anonymousStruct):
+    vaddr = anonymousStruct._vaddr
+    cls._instances[vaddr] = anonymousStruct
 
+  #@classmethod
+  #def setFields(cls, fields):
+  #  cls._fields_ = fields
+    
+  @classmethod
+  def getInstances(cls):
+    return cls._instances
 
+  @classmethod
+  def makeFields(cls, context):
+    #print '****************** makeFields(%s, context)'%(cls.__name__)
+    root = cls.getInstances().values()[0]
+    #try:
+    cls._fields_ = [ ( f.getName(), f.getCtype()) for f in root.getFields()]
+    #except AttributeError,e:
+    #  for f in root.getFields():
+    #    print 'error', f.getName(), f.getCtype()
+
+  @classmethod
+  def toString(cls):
+    import ctypes
+    #fieldsString = '[ \n%s ]'% ( ''.join([ '(%s, %s),\n'%(attrname, attrtyp.__name__) for attrname, attrtyp in cls.getFields() ]))
+    
+    # if attrtyp isPointerType, get pointed type and print ctypes.POINTER( ptype)
+    fieldsStrings = []
+    for attrname, attrtyp in cls.getFields(): # model
+      if model.isPointerType(attrtyp) and not model.isVoidPointerType(attrtyp):
+        #print attrtyp
+        fieldsStrings.append('(%s, ctypes.POINTER(%s) ),\n'%(attrname, attrtyp._type_.__name__) )
+      else:
+        fieldsStrings.append('(%s, %s ),\n'%(attrname, attrtyp.__name__) )
+    fieldsString = '[ \n%s ]'% ( ''.join(fieldsStrings) )
+
+    info = 'size:%d'%( ctypes.sizeof(cls) )
+    ctypes_def = '''
+class %s(LoadableMembers):  # %s
+  _fields_ = %s
+
+''' % (cls.__name__, info, fieldsString)
+    return ctypes_def
 
 

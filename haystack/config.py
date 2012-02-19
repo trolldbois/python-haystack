@@ -43,7 +43,9 @@ class ConfigClass():
     self.CACHE_GRAPH = '.gexf'
     self.DIFF_PY_HEADERS='.diff_headers'
     self.CACHE_SIGNATURE_SIZES_DIR = '.structs.sizes.d'
+    self.CACHE_SIGNATURE_SIZES_DIR_TAG = '.done'
     self.CACHE_SIGNATURE_GROUPS_DIR = '.structs.groups.d'
+    self.REVERSED_TYPES_FILE = '.reversed_types.py'
   
   def getCacheFilename(self, typ, dumpfilename):
     '''Returns a filename for caching a type of data based on the dump filename.

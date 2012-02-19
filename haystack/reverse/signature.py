@@ -12,6 +12,8 @@ import Levenshtein #seqmatcher ?
 import networkx
 
 
+import haystack
+import haystack.model
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.config import Config
@@ -311,29 +313,26 @@ def _showStructures(opt):
   
 def showStructures(dumpname, size=None, originAddr=None):
   from haystack.reverse import reversers
-  log.info('[+] Loading the context for a dumpname.')
+  log.debug('\t[-] Loading the context for a dumpname.')
   context = reversers.getContext(opt.dumpname)
-  log.info('[+] Make the size dictionnaries.')
+  log.debug('\t[-] Make the size dictionnaries.')
   sizeCache = StructureSizeCache(context)
   sizeCache.cacheSizes()
   
-  solos = set()
-  for chains, solos in buildStructureGroup(context, sizeCache, solos, opt.size ):
+  for chains in buildStructureGroup(context, sizeCache, opt.size ):
     printStructureGroups(context, chains, opt.originAddr )
-    #print len(chains), len(solos)
-  printSolos(context, solos, opt.originAddr)
   
   return
   
-def buildStructureGroup(context, sizeCache , solos, optsize=None ):
-  log.info("[+] Group structures's signatures by sizes.")
+def buildStructureGroup(context, sizeCache , optsize=None ):
+  log.info("\t[-] Group structures's signatures by sizes.")
   sgms=[]
   #
   for size,lst in sizeCache:
     if optsize is not None:
       if size != optsize:
         continue # ignore different size
-    log.debug("[+] Group signatures for structures of size %d"%(size))
+    log.debug("\t[-] Group signatures for structures of size %d"%(size))
     sgm = SignatureGroupMaker(context, 'structs.%x'%(size), lst )
     if sgm.isPersisted():
       sgm.load()
@@ -342,20 +341,14 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
       sgm.persist()
     sgms.append(sgm)
     
-    #if len(lst) == 1: # solo
-    #  solos.add(lst[0])
-    #  continue
-      
-    # interact
-    groups = dict()
-    
     ## TODO DEBUG
-    #if len(lst) >100:
-    #  log.error('too big a list, DELETE THIS ')
-    #  return
+    if len(lst) >100:
+      log.error('too big a list, DELETE THIS ')
+      continue
+      #return
     
     # make a chain and use --originAddr
-    log.info('[+] make a graph and use --originAddr for %d structs of size %d'%(len(lst), size))
+    log.info('\t[-] Sort %d structs of size %d in groups'%(len(lst), size))
     graph = networkx.Graph() 
     graph.add_edges_from(sgm.getGroups()) # add similarities as linked structs
     graph.add_nodes_from(lst) # add all structs all nodes . Should spwan isolated graphs
@@ -365,7 +358,7 @@ def buildStructureGroup(context, sizeCache , solos, optsize=None ):
     # TODO, do not forget this does only gives out structs with similarities.
     # lonely structs are not printed here...
     
-    yield (chains, solos )
+    yield chains
     
 def printStructureGroups(context, chains, originAddr=None):      
   chains.sort()
@@ -382,67 +375,41 @@ def printStructureGroups(context, chains, originAddr=None):
   # TODO next step, compare struct links in a DiGraph with node == struct size
   # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
 
-def printSolos(context, solos, originAddr=None):  
-  # print solos:
-  log.info('[+] printing %d solo structs'%(len(solos)) ) 
-  for addr in solos:
-    if originAddr is not None:
-      if originAddr != addr:
-        continue # ignore chain if originAddr is not in it
-    context.getStructureForAddr(addr).decodeFields() # can be long
-    print context.getStructureForAddr(addr).toString()
-    print '-'*80
-  
-  return
-
 
 def showTemplates(opt):
   ''' Load a dump, sort structures by size, compare signatures for each size groups.
   Makes a chains out of similar structures. Changes the structure names for a single
   typename when possible. Changes the ctypes types of each pointer field.'''
   from haystack.reverse import reversers
-  log.info('[+] Loading the context for a dumpname.')
+  log.debug('\t[-] Loading the context for a dumpname.')
   context = reversers.getContext(opt.dumpname)
-  log.info('[+] Make the size dictionnaries.')
+  log.debug('\t[-] Make the size dictionnaries.')
   sizeCache = StructureSizeCache(context)
   sizeCache.cacheSizes()
   
-  log.info('[+] FIRST PASS - set names.')
-  solos = set()
-  for chains, solos in buildStructureGroup(context, sizeCache, solos):
+  log.info('[+] FIRST PASS - set names and types.')
+  for chains in buildStructureGroup(context, sizeCache):
     fixType(context, chains)
-  fixType(context, [solos])
 
   log.info('[+] SECOND PASS - rebuild structure fields names and types.')
+  import ctypes
   for s in context.listStructures():
     s.reset()
     s.decodeFields()
     for f in s.getPointerFields():
       addr = f._getValue(0)
       if addr in context.heap:
-        f.setCTypes( context.getStructureForOffset(addr).getName() ) # TODO fix accessor 
+        f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
         f.setComment('renamed')
-    #print s.toString()
 
-  log.info('[+] THIRD PASS - make ctypes structures.')
-  book=dict()
-  for s in context.listStructures():
-    #FIXME
-    name = s._name.split('_')[0]
-    if name in book:
-      ctype = book[name]
-    else:
-      ctype = structure.makeCtypes( s, book)
-      book[name] = ctype
-
-  log.info('[+] FOURTH PASS - fix ctypes types to fields.')
-  for s in book.values():
-    for f in s.getPointerFields():
-      addr = f._getValue(0)
-      if addr in context.heap:
-        #structure.makeCtypes( s)
-        pass
-    print s.toString()
+  log.info('[+] THIRD PASS - print reversed types to file.')
+  outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILE, context.dumpname),'w')
+  for revStructType in context.listReversedTypes():
+    revStructType.makeFields(context)
+    outfile.write(revStructType.toString())
+  outfile.close()
+  log.info('[+] Wrote to %s'%(outfile.name))
+    
   return 
   
 # fixme
@@ -459,8 +426,16 @@ def fixType(context, chains):
     log.debug('\t[-] fix type of size:%d with name name:%s'% (len(chain), name ) )
     for addr in chain:
       # FIXME 
-      context.getStructureForAddr(addr).setName(name)
+      instance = context.getStructureForAddr(addr)
+      #
+      instance.setName(name)
+      ctypes_type = context.getReversedType(name)
+      if ctypes_type is None: # make type
+        ctypes_type = structure.ReversedType.create( context, name )
+      ctypes_type.addInstance( instance )
+      context.getStructureForAddr(addr).setCtype(ctypes_type)
   return 
+
   
 def saveSizes(opt):
   from haystack.reverse import reversers
@@ -538,20 +513,22 @@ def argparser():
   return rootparser
 
 def main(argv):
-  logging.basicConfig(level=logging.INFO)
-  logging.getLogger('haystack').setLevel(logging.INFO)
-  logging.getLogger('model').setLevel(logging.INFO)
-  logging.getLogger('widget').setLevel(logging.INFO)
-  logging.getLogger('ctypes_openssh').setLevel(logging.INFO)
-  logging.getLogger('widget').setLevel(logging.INFO)
-  logging.getLogger('gui').setLevel(logging.INFO)
+
   parser = argparser()
   opts = parser.parse_args(argv)
 
-  level=logging.INFO
+  level=logging.WARNING
   if opts.debug :
     level=logging.DEBUG
-  logging.basicConfig(level=level)
+
+  #flog = os.path.sep.join([Config.cacheDir,'log'])
+  #flog = '/dev/null'
+  #logging.basicConfig(level=level, filename=flog, filemode='w')
+  #logging.basicConfig(level=level)
+
+  logging.getLogger('signature').setLevel(logging.INFO)
+  logging.getLogger('root').addHandler(logging.StreamHandler(stream=sys.stdout))
+  logging.getLogger('signature').addHandler(logging.StreamHandler(stream=sys.stdout))
 
   opts.func(opts)
   

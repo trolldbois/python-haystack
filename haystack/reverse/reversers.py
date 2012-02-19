@@ -45,6 +45,7 @@ class ReverserContext():
 
   def _init2(self):
     # force reload JIT
+    self._reversedTypes = dict()
     self._structures = dict()
 
     log.info('[+] Fetching cached structures addresses list')
@@ -70,6 +71,7 @@ class ReverserContext():
       return len(self._get_structures())
     return len(self._malloc_addresses)
 
+  ''' TODO implement a LRU cache '''
   def _get_structures(self):
     if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
       return self._structures
@@ -117,7 +119,18 @@ class ReverserContext():
 
   def listStructures(self):
     return self._get_structures().values()
-  
+
+  def getReversedType(self, typename):
+    if typename is self._reversedTypes:
+      return self._reversedTypes[ typename ]
+    return None
+
+  def addReversedType(self, typename, t):
+    self._reversedTypes[ typename ] = t
+
+  def listReversedTypes(self):
+    return self._reversedTypes.values()
+    
   @classmethod
   def cacheLoad(cls, mappings):
     from haystack.reverse.reversers import ReverserContext
@@ -129,7 +142,7 @@ class ReverserContext():
       os.remove(context_cache)
       log.error('Error in the context file. File cleaned. Please restart.')
       raise e
-    log.info('\t[-] loaded my context from cache')
+    log.debug('\t[-] loaded my context from cache')
     context.mappings = mappings
     context.heap = context.mappings.getHeap()
     
@@ -258,7 +271,8 @@ class MallocReverser(StructureOrientedReverser):
     prevLoaded = 0
     unused = 0
     #lengths = context._malloc_sizes
-    doneStructs = context._structures.keys() 
+    doneStructs = context._structures.keys() # LIST ?????
+    print type(doneStructs)
     todo = sorted(set(context._malloc_addresses) - set(doneStructs))
     fromcache = len(context._malloc_addresses) - len(todo)
     offsets = list(context._pointers_offsets)
@@ -266,7 +280,11 @@ class MallocReverser(StructureOrientedReverser):
     log.info('[+] Adding new raw structures from malloc_chunks contents - %d todo'%(len(todo)))
     #for i, ptr_value in enumerate(context.listStructuresAddresses()):
     for i, (ptr_value, size) in enumerate(zip(map(int,context._malloc_addresses), map(int,context._malloc_sizes))):
-      if ptr_value in doneStructs:
+      # TODO if len(_structure.keys()) +/- 30% de _malloc, do malloc_addr - keys() , 
+      # and use fsking utils.dequeue()
+      if ptr_value in doneStructs: # FIXME TODO THAT IS SUCKY SUCKY
+        sys.stdout.write('.')
+        sys.stdout.flush()
         continue
       loaded += 1
       #size = lengths[i]

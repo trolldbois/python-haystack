@@ -10,7 +10,9 @@ import struct
 import itertools
 
 from haystack.config import Config
-import re_string
+from haystack.reverse import re_string
+
+import ctypes
 
 log = logging.getLogger('field')
 
@@ -30,12 +32,13 @@ def makeArrayField(parent, fields):
   return newField
 
 
-class FieldType:
+class FieldType(object):
   types = set()
-  def __init__(self, _id, basename, ctypes, sig, isPtr=False):
+  def __init__(self, _id, basename, typename, ctype, sig, isPtr=False):
     self._id = _id
     self.basename = basename
-    self.ctypes = ctypes
+    self.ctypes = typename
+    self._ctype = ctype
     self.sig = sig
     self.isPtr = isPtr
   @classmethod
@@ -89,19 +92,19 @@ class FieldTypeArray(FieldType):
     FieldType.__init__(self, 0x8, 'array_%s'%basicTypeName, None, 'a', isPtr=False)
 
 
-FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte',   'u')
-FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p',  'P', True)
-FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte',   'z')
-FieldType.STRUCT   = FieldType(0x3, 'struct',      'Structure',    'K')
-FieldType.STRING   = FieldType(0x4, 'text',      'ctypes.c_char',    'T')
-FieldType.STRING_POINTER   = FieldType(0xb, 'text_ptr',      'ctypes.c_char_p', 's', True)
-FieldType.INTEGER  = FieldType(0x5, 'int',       'ctypes.c_uint',    'I')
-FieldType.SMALLINT = FieldType(0x6, 'small_int', 'ctypes.c_uint',    'i')
-FieldType.SIGNED_SMALLINT = FieldType(0x7, 'signed_small_int', 'ctypes.c_int',    'i')
-FieldType.ARRAY    = FieldType(0x8, 'array',     'Array',   'a')
-FieldType.BYTEARRAY    = FieldType(0x9, 'array',     'ctypes.c_ubyte',   'a')
+FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte', ctypes.c_ubyte,   'u')
+FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p', ctypes.c_void_p, 'P', True)
+FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte', ctypes.c_ubyte,  'z')
+FieldType.STRUCT   = FieldType(0x3, 'struct',      'Structure', None,   'K')
+FieldType.STRING   = FieldType(0x4, 'text',      'ctypes.c_char', ctypes.c_char,   'T')
+FieldType.STRING_POINTER   = FieldType(0xb, 'text_ptr',      'ctypes.c_char_p', ctypes.c_char_p, 's', True)
+FieldType.INTEGER  = FieldType(0x5, 'int',       'ctypes.c_uint', ctypes.c_uint,   'I')
+FieldType.SMALLINT = FieldType(0x6, 'small_int', 'ctypes.c_uint', ctypes.c_uint,   'i')
+FieldType.SIGNED_SMALLINT = FieldType(0x7, 'signed_small_int', 'ctypes.c_int', ctypes.c_uint,   'i')
+FieldType.ARRAY    = FieldType(0x8, 'array',     'Array',  None,  'a')
+FieldType.BYTEARRAY    = FieldType(0x9, 'array',     'ctypes.c_ubyte', ctypes.c_ubyte,  'a')
 #FieldType.ARRAY_CHAR_P = FieldType(0x9, 'array_char_p',     'ctypes.c_char_p',   'Sp')
-FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte',   'X')
+FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte', ctypes.c_ubyte,  'X')
 
   
 class Field:
@@ -110,6 +113,7 @@ class Field:
     self.offset = offset
     self.size = size
     self.typename = typename
+    self._ctype = None
     self.padding = isPadding
     self.typesTested = []
     self.value = None
@@ -363,17 +367,21 @@ class Field:
     self.setName('%s_%d'%(self.typename.basename, self.offset))
     return self.typename
   
-  def setCTypes(self, name):
-    self.ctypes = name
+  def setCtype(self, name):
+    self._ctype = name
   
-  def getCTypes(self):
-    if hasattr(self, 'ctypes'):
-      return self.ctypes
+  def getCtype(self):
+    if self._ctype is None:
+      return self.typename._ctype
+    return self._ctype
+    # FIXME TODO
+
+  def getTypename(self):
     if self.isString() or self.isZeroes():
       return '%s * %d' %(self.typename.ctypes, len(self) )
-    if self.isArray():
+    elif self.isArray():
       return '%s * %d' %(self.typename.ctypes, len(self)/self.element_size ) #TODO should be in type
-    if self.typename == FieldType.UNKNOWN:
+    elif self.typename == FieldType.UNKNOWN:
       return '%s * %d' %(self.typename.ctypes, len(self) )
     return self.typename.ctypes
   
@@ -447,7 +455,7 @@ class Field:
   def getSignature(self):
     return (self.typename, self.size)
   
-  def toString(self, prefix):
+  def toString(self, prefix=''):
     #log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
     #    %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
   
@@ -463,7 +471,7 @@ class Field:
       #unknown
       comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 
           
-    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
+    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getTypename(), comment) 
     return fstr
     
 
@@ -488,9 +496,10 @@ class ArrayField(Field):
   def isArray(self):
     return True
 
-  def getCTypes(self):
-    if hasattr(self, 'ctypes'):
-      return self.ctypes
+  def getCtype(self):
+    return self._ctype
+
+  def getTypename(self):
     return '%s * %d' %(self.basicTypename.ctypes, self.nbElements )
 
   def _getValue(self, maxLen):
@@ -506,7 +515,7 @@ class ArrayField(Field):
         %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
     #
     comment = '# %s %s array:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) )
-    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getCTypes(), comment) 
+    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getTypename(), comment) 
     return fstr
 
 
