@@ -1,9 +1,10 @@
 *~
 *.pyc
 test/dumps/
-test/src/test-ctypes1
-test/src/test-ctypes2
-test/src/test-ctypes3
+test/src/test-ctypes1*
+test/src/test-ctypes2*
+test/src/test-ctypes3*
+test/src/test-ctypes4*
 *.xml
 build
 dist
