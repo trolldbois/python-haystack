@@ -400,10 +400,19 @@ def makeGroupSignature(context, sizeCache):
     pass
   return context, sgms
 
-# fixme
-_NAMES = [ s.strip() for s in file(os.path.sep.join([Config.cacheDir,'words.100']),'r').readlines() ]
+# FIXME: 100 maybe is a bit short
+try:
+  import pkgutil
+  _words = pkgutil.get_data(__name__, Config.WORDS_FOR_REVERSE_TYPES_FILE)
+except ImportError:
+  import pkg_resources
+  _words = pkg_resources.resource_string(__name__, Config.WORDS_FOR_REVERSE_TYPES_FILE)
+_NAMES = [ s.strip() for s in _words.split('\n') ]
 
 def getname():
+  global _NAMES
+  if len(_NAMES) == 0:
+    _NAMES = [ '%s%s'%(s1.strip(), s2.strip()) for s1 in _words.split('\n') for s2 in _words.split('\n') ]
   return _NAMES.pop()  
   
 
