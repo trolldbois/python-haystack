@@ -246,7 +246,7 @@ class LoadableMembers(ctypes.Structure):
   '''
   classRef=dict()
   expectedValues=dict()
-
+  
   ''' 
     Iterate over the fields and types of this structure, including inherited ones.
   '''
