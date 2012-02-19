@@ -84,7 +84,7 @@ class ReverserContext():
       log.info('[+] No cached structures - making them from malloc reversers %d|%d'%
                       (len(self._structures) ,len(self._malloc_addresses)))
       if ( len(self._malloc_addresses) - len(self._structures) ) < 10 :
-        print set( self._malloc_addresses ) - set( self._structures )
+        log.warning('close numbers to check %s'%(set( self._malloc_addresses ) - set( self._structures ) ))
       mallocRev = MallocReverser()
       context = mallocRev.reverse(self)
       mallocRev.check_inuse(self)
@@ -236,7 +236,6 @@ class StructureOrientedReverser():
     tl = time.time()
     # dump all structures
     for i,s in enumerate(ctx._structures.values()):
-      #  print s.dirty
       try:
         s.saveme()
       except KeyboardInterrupt,e:
@@ -271,8 +270,8 @@ class MallocReverser(StructureOrientedReverser):
     prevLoaded = 0
     unused = 0
     #lengths = context._malloc_sizes
-    doneStructs = context._structures.keys() # LIST ?????
-    print type(doneStructs)
+    doneStructs = context._structures.keys() # FIXME why is that a LIST ?????
+    
     todo = sorted(set(context._malloc_addresses) - set(doneStructs))
     fromcache = len(context._malloc_addresses) - len(todo)
     offsets = list(context._pointers_offsets)
@@ -324,7 +323,7 @@ class MallocReverser(StructureOrientedReverser):
       mc1 = heap.readStruct(m1-8, libc.ctypes_malloc.malloc_chunk)
       if mc1.check_inuse(context.mappings, m1-8):
         used+=1
-    log.info('[+] Found %s allocs used by not referenced by pointers'%(used))
+    log.info('[+] Found %s allocs used but not referenced by pointers'%(used))
     return 
     
 '''
