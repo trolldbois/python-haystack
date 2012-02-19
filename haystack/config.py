@@ -45,7 +45,8 @@ class ConfigClass():
     self.CACHE_SIGNATURE_SIZES_DIR = '.structs.sizes.d'
     self.CACHE_SIGNATURE_SIZES_DIR_TAG = '.done'
     self.CACHE_SIGNATURE_GROUPS_DIR = '.structs.groups.d'
-    self.REVERSED_TYPES_FILE = '.reversed_types.py'
+    self.REVERSED_TYPES_FILENAME = '.reversed_types.py'
+    self.SIGNATURES_FILENAME = '.signatures'
   
   def getCacheFilename(self, typ, dumpfilename):
     '''Returns a filename for caching a type of data based on the dump filename.

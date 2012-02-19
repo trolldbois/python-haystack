@@ -377,15 +377,15 @@ def makeReversedTypes(context, sizeCache):
 def makeSignatures(dumpname):
   from haystack.reverse import reversers
   log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(opt.dumpname)
+  context = reversers.getContext(dumpname)
   heap = context.heap
   
   log.info('[+] Make the signatures.')
-  sigMaker = SignatureMaker(mapping)
+  sigMaker = SignatureMaker(heap)
   sig = sigMaker.search()
-  return sig  
+  return context, sig  
 
-def makeGroupSignature(context, sizecache): 
+def makeGroupSignature(context, sizeCache): 
   ''' From the structures cache ordered by size, group similar instances together. '''
   log.info("[+] Group structures's signatures by sizes.")
   sgms=[]

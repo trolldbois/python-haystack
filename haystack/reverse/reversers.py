@@ -634,6 +634,7 @@ def refreshOne(context, ptr_value):
   
 def save_headers(context, addrs=None):
   ''' structs_addrs is sorted '''
+  log.info('[+] saving headers')
   fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
   towrite = []
   if addrs is None:
@@ -663,6 +664,53 @@ def getContext(fname):
   except IOError,e:
     context = ReverserContext(mappings, mappings.getHeap())  
   return context
+
+def reverseInstances(dumpname):
+
+  log.debug ('[+] Loading the memory dump ')
+  try:
+    context = getContext(dumpname)
+    if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
+      os.mkdir(Config.getStructsCacheDir(context.dumpname))
+    
+    # we use common allocators to find structures.
+    mallocRev = MallocReverser()
+    context = mallocRev.reverse(context)
+    mallocRev.check_inuse(context)
+
+    # try to find some logical constructs.
+    doublelink = DoubleLinkedListReverser()
+    context = doublelink.reverse(context)
+
+    # decode bytes contents to find basic types.
+    fr = FieldReverser()
+    context = fr.reverse(context)
+
+    # identify pointer relation between structures
+    pfr = PointerFieldReverser()
+    context = pfr.reverse(context)
+
+    # graph pointer relations between structures
+    ptrgraph = PointerGraphReverser()
+    context = ptrgraph.reverse(context)
+    ptrgraph._saveStructures(context)
+
+    #save to file 
+    save_headers(context)
+    fr._saveStructures(context)
+    ##libRev = KnowStructReverser('libQt')
+    ##context = libRev.reverse(context)
+    # we have more enriched context
+    
+    
+    # etc
+  except KeyboardInterrupt,e:
+    #except IOError,e:
+    log.warning(e)
+    log.info('[+] %d structs extracted'%(  context.structuresCount()) )
+    raise e
+    pass
+  pass
 
 
 if __name__ == '__main__':
