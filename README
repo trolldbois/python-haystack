@@ -14,11 +14,11 @@ C structures from memory. Heap analysis. Dynamic types definition.
 How to get a memory dump:
 =========================
 
-While technically you could use a third party tool, we actually need 
-memory mapping information to work with. So there is a dumping tool 
-included :
+While technically you could use a third party tool, haystack actually 
+need memory mapping information to work with. 
+So there is a dumping tool included :
 
-$ sudo haystack-dump dump 26725 dumps/myssh.dump
+$ sudo haystack-dump dump <pid> dumps/myssh.dump
 
 You can easily reproduce the format of the dump, its a folder/archive 
 containing each memory map in a separate file :
@@ -29,12 +29,17 @@ containing each memory map in a separate file :
 Search for known structures:
 ============================
 
-Prerequisite: sslsnoop for the definition of openssl/openssh structures.
+You need the python definition/ctypes structures of the known 
+structures.
+An example would be sslsnoop, which provide python ctypes structures for
+openssl and openssh structures.
 
-Quick info: This tool demonstrate the ability to brute-force the search 
-of a known structure, based on fields types assumptions. 
+Quick info: This demonstrate the ability to brute-force the search 
+of a known structure, based on fields types assumptions or constraints. 
 
 The magic is performed in the model.py module.
+The constraints are applied on the python ctypes structures by the 
+'expectedValues' static field.
 
 Command line example: 
 ---------------------
@@ -57,11 +62,13 @@ Dump the process, then you can open it in the GUI :
 $ haystack-gui # ( and Ctrl-O , click click)
 $ haystack-gui --dumpname dumps/myssh.dump
 
+You can the search a structure from the heap of that memory mapping.
+You have to import your extensions before that to have them listed in 
+the search dialog.
+( try sslsnoop.ctypes_openssh ) 
 
-You can the search a structure into that memory mapping ( in [heap] for now ).
-You have to import your extensions before that ( try sslsnoop.ctypes_openssh ) to have them listed in the search dialog.
-
-Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. You should have it installed.
+Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. 
+You should have it installed.
 
 
 python script interpreter example:
@@ -79,27 +86,38 @@ It's easy to add new structures. Its basically the ctypes definition of
 C structures that should be done following the next 4 steps :
 
 a) Your class must extend haystack.model.LoadableMembers.
-b) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure 
-c) You can add an expectedValues dict() to your class to refine your search
+b) You must give your class a completed _fields_ (with one _ ), like 
+   all ctypes.Structure 
+b bis) Optional - You can add an expectedValues dict() to your ctype 
+       classes to add some constraints.
+b ter) Optional - You can override isValid and loadMembers to implement
+       advanced constraints validation.
 d) call model.registerModule(sys.modules[__name__])
 
 Easy 'creation' : 
-  use h2xml and xml2py from ctypeslib
+  use h2xml and xml2py from ctypeslib to generate a python module from
+  a C header.
+
 Advanced use : 
-  You can override methods to fine tune some validation or loading 
-  ( see sslsnoop for void pointers )
+  You can override methods isValid and loadMembers to implements 
+  advanced data loading and constraints validation.
+  ( see sslsnoop for loading cipher structures from void pointers )
 
 The global algorithm :
 
-a)  The ctypes structure is mapped at the first offset of the memory mapping.
-b)  The method loadMembers is called.
-c)  The method isValid is called on self.
-d) A validation test is done for each members, it's expected values and memory space validity (pointers) are tested.
-    The validation does not recurse.
-e)  Each members is then 'loaded' to local space. 
-    If the value is a pointer or a model.LoadableMembers type, it's recursively Loaded. ( and validated).
-    If the recursive loading fails, the calls fails. bye-bye.
-f) Move to see next offset, goto a)
+a) The ctypes structure is mapped at the first offset of the memory 
+   mapping.
+b) The method loadMembers is called.
+c) The method isValid is called on self.
+d) A validation test is done for each members, constraints and 
+   memory space validity (pointers) are tested.
+   The validation does not recurse.
+e) Each members is then 'loaded' to local space. 
+   If the value is a pointer or a model.LoadableMembers type, it's 
+   recursively Loaded. ( and validated).
+   If the recursive loading fails, the calls fails. bye-bye.
+f) If all contraints are respected, we have a match.
+g) Move to see next offset, goto a)
 
 
 Heap analysis / Memory Reverser / Memory forensics:
@@ -108,30 +126,36 @@ Heap analysis / Memory Reverser / Memory forensics:
 Quick info: This tool parse the heap for allocator structures, pointers
 values, small integers and text (ascii/utf).
 Given all the previous information, it can extract instances 
-(future work wishes starting)
-and helps you in classifying and defining structures types, based on 
-signature algoritms.
+and helps you in classifying and defining structures types.
+
+TODO: implement feedback
 
 Command line example:
 --------------------
 This will create several files in the folder containing <yourdumpname>.
 
-$ python haystack-reverse <yourdumpname>
+$ python haystack-reverse instances <yourdumpname>
 
-The most insteresting one being the <yourdumpname>_headers.py that
-gives you an ctypes listing of all found structures, with gestimates
-on fields types.
+  The most insteresting one being the <yourdumpname>.headers_values.py that
+  gives you an ctypes listing of all found structures, with gestimates
+  on fields types.
 
-Other demo:
-------------
+  A <yourdumpname>.gexf file is also produced to help you visualize 
+  instances links. It gets messy for any kind of serious application.
 
-$ python haystack-signature {show,sort} <yourdumpname>
-$ python haystack/reverse/signature.py dumpname show --size 324 > test
 
-This will resolve structures, create a signature, and group them by sig. 
-Show only structs of size 324, grouped by similarities.
-Work in progress.
+Show ordered list of structures, by similarities :
 
+$ python haystack-reverse show <yourdumpname>
+
+Show only structures of size 324:
+
+$ python haystack-reverse show --size 324 <yourdumpname>
+
+
+Write to file an attempt to reversed the original types hierachy :
+
+$ python haystack-reverse typemap <yourdumpname>
 
 
 Extension examples :
