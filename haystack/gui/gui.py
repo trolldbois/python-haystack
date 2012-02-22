@@ -14,8 +14,10 @@ import sys
 
 import statushandler
 from haystack import dump_loader
+from haystack import argparse_utils
 from haystack import memory_mapping
 from haystack.reverse import signature
+from haystack.reverse import pointerfinder
 
 from PyQt4 import QtGui, QtCore
 
@@ -154,9 +156,10 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     self._init() # pass if not self._dirty
     self.mapping = mapping
     self.mappings = mappings
-    if self.mapping not in self.mappings:
-      raise ValueError('mapping not in mapping list.')
-    # init the view
+    #FIXME : useless?
+    #if self.mapping not in self.mappings:
+    #  raise ValueError('mapping not in mapping list.')
+    ## init the view
     self.graphicsView.loadMapping(mapping)
     self.scene = self.graphicsView.GetScene()
     self._dirty = True # reload will clean it
@@ -184,7 +187,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     log.info('search %s mapping for pointer'%(self.mapping_name))
     found = 0 
     start = self.mapping.start
-    searcher = signature.PointerSearcher(self.mapping)
+    searcher = pointerfinder.PointerSearcher(self.mapping)
     for vaddr in searcher:
       word = self.mapping.readWord(vaddr) #searcher should return [(offset, value)]
       offset = vaddr - start
@@ -202,7 +205,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     found = 0 
     tmpnull = []
     start = self.mapping.start
-    searcher = signature.NullSearcher(self.mapping)
+    searcher = pointerfinder.NullSearcher(self.mapping)
     for vaddr in searcher:
       offset = vaddr - start
       tmpnull.append(offset/searcher.WORDSIZE)
@@ -289,11 +292,11 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     #widgets.Structure( 2000, Dummy(12000), color=QtCore.Qt.green, scene=self.scene)
     self.argv = argv
     # if command line, to command line
-    if self.argv.dumpfile is not None:
-      self._openDumpfile(self.argv.dumpfile)
-    else:
-      m = Dummy(0,value=0)
-      self.make_memory_tab('/dev/null',m,[m])
+    if self.argv.dumpname is not None:
+      self._openDump(self.argv.dumpname)
+    #else:
+    #  m = Dummy(0,value=0)
+    #  self.make_memory_tab('/dev/null',m,[m])
 
   def setupUi(self,me):
     super(MyMain,self).setupUi(self)
@@ -339,23 +342,23 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
   def openDump(self):
     #self.fileChooser = QtGui.QFileDialog(self)
-    filenames = QtGui.QFileDialog.getOpenFileNames(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
+    #filenames = QtGui.QFileDialog.getOpenFileNames(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
+    filenames = QtGui.QFileDialog.getExistingDirectory(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
     for filename in filenames:
       log.info('Opening %s'%(filename))
-      dumpfile = file(str(filename))
-      self._openDumpfile(dumpfile)
+      self._openDump(filename)
       log.info('Dump opened')
     return
   
-  def _openDumpfile(self, dumpfile):
+  def _openDump(self, dumpname):
     # load memorymapping
-    mappings = dump_loader.load(dumpfile)
+    mappings = dump_loader.load(dumpname)
     # TODO : make a mapping chooser 
     if len(mappings) > 1:
       heap = [m for m in mappings if m.pathname == '[heap]'][0]
     else:
       heap = mappings[0]
-    return self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpfile.name),heap.pathname]), heap, mappings)
+    return self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpname),heap.pathname]), heap, mappings)
   
   
   def closeTab(self):
@@ -415,7 +418,7 @@ def gui(opt):
 
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-gui', description='Graphical tool.')
-  rootparser.add_argument('--dumpfile', type=argparse.FileType('rb'), action='store', help='Source memdump')
+  rootparser.add_argument('--dumpname', type=argparse_utils.readable, action='store', help='Source memdump')
   rootparser.add_argument('--lazy', action='store_const', const=True , help='Lazy load')
   rootparser.set_defaults(func=gui)  
   return rootparser
