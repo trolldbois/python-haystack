@@ -124,6 +124,13 @@
      </widget>
     </widget>
    </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="list_structures">
+     <property name="text">
+      <string>List Structures allocations</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

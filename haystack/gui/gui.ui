@@ -169,6 +169,11 @@
     <string>Open a live process</string>
    </property>
   </action>
+  <action name="menu_tools_list_structures">
+   <property name="text">
+    <string>List structures allocations</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>

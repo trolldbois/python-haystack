@@ -130,6 +130,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # signals - connect higlighting options
     self.connect(self.show_pointers, QtCore.SIGNAL('stateChanged(int)'), self._showPointers)
     self.connect(self.show_null, QtCore.SIGNAL('stateChanged(int)'), self._showNull)
+    self.connect(self.list_structures, QtCore.SIGNAL('clicked()'), self._listStructures)
  
   def _showPointers(self):
     if self.pointers is None:
@@ -147,6 +148,11 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     else:
       self.nullWords.show()
 
+  def _listStructures(self):
+    from haystack.reverse import reversers
+    self.context = reversers.getContext(self.mappings.name)
+    self.show_structures_allocated(self.context)
+    return
   
   def loadMapping(self, mapping, mappings):
     ''' 
@@ -273,7 +279,16 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     # resize 
     #self.tab_search_structures
     return res
-
+  
+  def show_structures_allocated(self, context):
+    self.allocated_structures = QtGui.QGraphicsItemGroup(scene=self.scene)
+    def offset(vaddr):
+      # FIXME
+      return vaddr - context.heap.start
+    for s in context.listStructures():
+      #offset, value, color = QtCore.Qt.green, scene=None, parent=None):
+      self.allocated_structures.addToGroup(widgets.Structure(offset(s._vaddr), s, scene = self.scene, color = QtCore.Qt.blue) )
+    return
 
 
 class MyMain(QtGui.QMainWindow, Ui_MainWindow):
@@ -376,12 +391,11 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     return
 
   def dialog_addModule(self):
-    import addmoduleview
+    from haystack.gui import addmoduleview
     self.addModuleDialog = addmoduleview.AddModuleDialog(self)
     self.addModuleDialog.show()
     return
-  
-  
+
   def closeEvent(self, event):
     #debug
     event.accept()
