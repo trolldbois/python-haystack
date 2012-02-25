@@ -315,10 +315,10 @@ def buildStructureGroup(context, sizeCache , optsize=None ):
     sgms.append(sgm)
     
     ## TODO DEBUG
-    if len(lst) >100:
-      log.error('too big a list, DELETE THIS ')
-      continue
-      #return
+    #if len(lst) >100:
+    #  log.error('too big a list, DELETE THIS ')
+    #  continue
+    #  #return
     
     # make a chain and use --originAddr
     log.info('\t[-] Sort %d structs of size %d in groups'%(len(lst), size))

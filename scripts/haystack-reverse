@@ -52,6 +52,24 @@ def saveSignatures(opt):
   log.info('[+] Signature written to %s'%(outfile))
   return
 
+
+def printParents(opt):
+  ''' print the parental structures '''
+  log.info('[+] Load context')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] find offsets of struct_addr:%x'%(opt.address))
+  i = 0
+  try:
+    for st in context.listStructuresForPointerValue(opt.address):
+      st.decodeFields()
+      print st.toString()
+      i+=1
+  except ValueError,e:
+    log.info('[+] Found no structures.')
+    return
+  log.info('[+] Found %d structures.'%( i ))
+  return
+
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
@@ -72,6 +90,11 @@ def argparser():
   show.add_argument('--originAddr', type=str, action='store', default=None, 
         help='Limit to structure similar to the structure pointed at originAddr')
   show.set_defaults(func=showStructures)  
+
+  parent = subparsers.add_parser('parent', help='print parental structures pointing to this address.')
+  parent.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
+        help='Hex address of the child structure.')
+  parent.set_defaults(func=printParents)  
 
   #oldies
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')

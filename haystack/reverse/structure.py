@@ -205,6 +205,7 @@ class AnonymousStructInstance():
     self._resolved = False
     self._pointerResolved = False
     self._dirty=True
+    self._ctype = None
     return    
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
