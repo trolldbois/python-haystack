@@ -100,7 +100,8 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
   ''' values: ALIGNED pointer values
   '''
   lengths=[]
-  
+  ############3 kill me I need a context
+  raise NotImplementedError('kill me I need a context instead of a mapping. Who uses me anyway')
   aligned = list(_aligned)
   for i in range(len(aligned)-1):
     lengths.append(aligned[i+1]-aligned[i])
@@ -137,7 +138,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     # the pointers values, that are not aligned
     unaligned, my_unaligned_addrs = utils.dequeue(unaligned, start, start+size)
     ### read the struct
-    anon = structure.AnonymousStructInstance(mappings, aligned[i], heap.readBytes(start, size) )
+    anon = structure.makeStructure(mappings, aligned[i], size )
     #save the ref/struct type
     structCache[ anon.vaddr ] = anon
     structs_addrs = numpy.append(structs_addrs, anon.vaddr)
