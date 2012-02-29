@@ -159,6 +159,19 @@ class ReverserContext():
     # we only need dumpfilename to reload mappings, addresses to reload cached structures
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, self.dumpname)
     pickle.dump(self, file(context_cache,'w'))
+
+  def reset(self):
+    try:
+      os.remove(Config.getCacheFilename(Config.CACHE_CONTEXT, self.dumpname) ) 
+    except OSError,e:
+      pass
+    try:
+      for r,d,files in os.walk( Config.getCacheFilename(Config.CACHE_STRUCT_DIR, self.dumpname)):
+        for f in files:
+          os.remove(os.path.join(r,f) )
+      os.rmdir(r)
+    except OSError,e:
+      pass
   
   def __getstate__(self):
     d = self.__dict__.copy()
