@@ -52,7 +52,7 @@ class FieldType(object):
     import structure
     vaddr = parent.vaddr+offset
     newfieldType = FieldTypeStruct('%lx'%(vaddr), fields)
-    newfieldType.setStruct(structure.AnonymousStructInstance(parent.context, vaddr, parent.bytes[offset:offset+len(newfieldType)] ) )
+    newfieldType.setStruct(structure.makeStructure(parent.context, vaddr, len(newfieldType) ) )
     newField = Field(parent, offset, newfieldType, len(newfieldType), False)
     return newField
 
