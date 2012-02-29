@@ -671,32 +671,14 @@ class AnonymousStructInstance():
     ## the controller can have different heuristics to apply to struct :
     ##     * aggregates: char[][], buffers
     ##     * type definition: substructs, final reverse type step, c++ objects, 
-
-    ## done
-    ## if a zeroes field (%WORDSIZE == 0) is stuck between 2 Integer arrays
-    ## make a big array of the 3 fields
-
-    ## done
-    ## on each integer array of significant ( > 8 ) size, Count the number of values.
-    ## if rare value ( stats distibution ?) are present at the end or beginning, move array boundaries to exclude thoses value in integer fields
     
     ## on each integer array, look indices for \x00
     ## if there is a regular interval between \x00 in the sequence ( 5 char then 0 ) then make some sub arrays, nul terminated
-
-    ## BOF. different sizes means different substructures
-    ## aggregate pattern based on pure basic type without length ( string, pointer, array, integer, zeroes )
-    ## that gives us other probable substructure
-
-    ## in a structure starting with an integer
-    ## check for his value against the structure size
 
     ## magic len approach on untyped bytearrays or array of int. - TRY TO ALIGN ON 2**x
     ## if len(fields[i:i+n]) == 4096 // ou un exposant de 2 > 63 # m = math.modf(math.log( l, 2)) %% m[0] == 0.0 && m[1]>5.0
     ## alors on a un buffer de taille l
     ## fields[i:i+n] ne devrait contenir que du zeroes, untyped et int
-    
-    ## for each untyped field > 64 check if first integer is not a small int by the way
-    ## on intel/amd check for endianness to find network struct.
     
     return
   
