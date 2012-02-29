@@ -54,7 +54,7 @@ def makeFilenameFromAddr(context, addr):
   return makeFilename(context, 'struct_%x'%( addr ) )
 
 def makeStructure(context, start, size):
-  return AnonymousStructInstance(context, start, context.heap.readBytes(start, size) )
+  return AnonymousStructInstance(context, start, size)
 
 def cacheLoad(context, addr):
   dumpname = context.dumpname
@@ -173,11 +173,11 @@ class AnonymousStructInstance():
   AnonymousStruct in absolute address space.
   Comparaison between struct is done is relative addresse space.
   '''
-  def __init__(self, context, vaddr, bytes, prefix=None):
+  def __init__(self, context, vaddr, size, prefix=None):
     self._context = context
     self._mappings = context.mappings
     self._vaddr = vaddr
-    self._bytes = bytes
+    ##self._bytes = bytes # TODO dynamic property
     self.reset() # set fields
     self.setName(prefix)
     return
@@ -204,12 +204,12 @@ class AnonymousStructInstance():
     self._fields = []
     self._resolved = False
     self._pointerResolved = False
-    self._dirty=True
+    self._dirty = True
     self._ctype = None
     return    
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
-    self._dirty=True
+    self._dirty = True
     offset = vaddr - self._vaddr
     if offset < 0 or offset > len(self):
       raise IndexError()
@@ -297,7 +297,7 @@ class AnonymousStructInstance():
             if yes add a new field
         compare the size of the gap and the size of the fiel
     '''
-    if self._resolved:
+    if self.isResolved():
       return
     self._dirty=True
     # should be done by 
@@ -453,9 +453,10 @@ class AnonymousStructInstance():
       lastend = newend
     return
   
-  def resolvePointers(self, structs_addrs, structCache):
-    if self._pointerResolved:
+  def resolvePointers(self):
+    if self.isPointerResolved():
       return
+    structs_addrs, structCache = None, None
     self._dirty=True
     resolved = 0
     pointerFields = self.getPointerFields()
@@ -473,37 +474,39 @@ class AnonymousStructInstance():
           continue
       # if pointed is not None:  # erase previous info
       tgt = None
-      if field.value in structs_addrs: 
+      try:
+        tgt = self._context.getStructureForAddr(field.value)
         known+=1
-        tgt = structCache[field.value]
         field.target_struct_addr = field.value
         field.ctypes = 'ctypes.POINTER(%s)'%(tgt) # change the basic ctypes
-        if not tgt.resolved: # fields have not been decoded yet
+        if not tgt._resolved: # fields have not been decoded yet
           undecoded+=1
           log.debug('target %s is undecoded'%(tgt))
           continue
         field._target_field = tgt[0] #first field of struct
-      elif field.value in self._mappings.getHeap():
-        # elif target is a STRING in the HEAP
-        # set pointer type to char_p
-        inHeap+=1
-        tgt_struct, tgt_field = self._resolvePointerToStructField(field, structs_addrs, structCache)
-        field.target_struct_addr = tgt_struct._vaddr
-        if tgt_field is not None:
-          ### field.ctypes = str(tgt_struct) # no
-          field.typename = FieldType.makePOINTER(tgt_field.typename)
-          field._target_field = tgt_field
-          tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
-        else:
-          undecoded+=1
-          #log.debug('target %x is unresolvable in a field'%(field.value))        
-        pass
-      elif field.value in self._mappings: # other mappings
-        inMappings+=1
-        tgt = 'ext_lib_%d'%(field.offset)
-        field._ptr_to_ext_lib = True
-        field.target_struct_addr = self._mappings.getMmapForAddr(field.value).start
-        pass
+      except ValueError, e:
+        if field.value in self._mappings.getHeap():
+          # elif target is a STRING in the HEAP
+          # set pointer type to char_p
+          inHeap+=1
+          # TODO use context's helpers
+          tgt_struct, tgt_field = self._resolvePointerToStructField(field) 
+          field.target_struct_addr = tgt_struct._vaddr
+          if tgt_field is not None:
+            ### field.ctypes = str(tgt_struct) # no
+            field.typename = FieldType.makePOINTER(tgt_field.typename)
+            field._target_field = tgt_field
+            tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
+          else:
+            undecoded+=1
+            #log.debug('target %x is unresolvable in a field'%(field.value))        
+          pass
+        elif field.value in self._mappings: # other mappings
+          inMappings+=1
+          tgt = 'ext_lib_%d'%(field.offset)
+          field._ptr_to_ext_lib = True
+          field.target_struct_addr = self._mappings.getMmapForAddr(field.value).start
+          pass
       #
       if tgt is not None:
         resolved+=1
@@ -521,13 +524,15 @@ class AnonymousStructInstance():
       self._pointerResolved = False
     return
   
-  def _resolvePointerToStructField(self, field, structs_addrs, structCache):
+  def _resolvePointerToStructField(self, field): #, structs_addrs, structCache):
     ## TODO DEBUG, i got gaps in my memory mappings structures
     #  struct_add16e8 -> struct_add173c
-    if len(structs_addrs) == 0:
+    #if len(structs_addrs) == 0:
+    if len(self._context._malloc_addresses) == 0:
       raise TypeError
       #return None
-    nearest_addr, ind = utils.closestFloorValue(field.value, structs_addrs)
+    # TODO use context's helpers
+    nearest_addr, ind = utils.closestFloorValue(field.value, self._context._malloc_addresses)
     log.debug('nearest_addr:%x ind:%d'%(nearest_addr, ind))
     tgt_st = structCache[nearest_addr]
     if field.value%Config.WORDSIZE != 0:
@@ -602,7 +607,7 @@ class AnonymousStructInstance():
   # XX TODO DEBUG, this is not a substructure.
   '''
   def _findSubStructures(self):
-    if not self._pointerResolved:
+    if not self.isPointerResolved():
       raise ValueError('I should be resolved')
     self._dirty=True
     
@@ -712,7 +717,11 @@ class AnonymousStructInstance():
   def setContext(self, context):
     self._context = context
     self._mappings = context.mappings
-    self._bytes = self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
+    #self._bytes = self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
+
+  @property # TODO add a cache property ?
+  def bytes(self):
+    return self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
 
   def isResolved(self):
     return self._resolved
@@ -724,9 +733,9 @@ class AnonymousStructInstance():
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
-    info = 'resolved:%s SIG:%s size:%d'%(self._resolved, self.getSignature(text=True), len(self))
+    info = 'resolved:%s SIG:%s size:%d'%(self.isResolved(), self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
-      info += ' pointerResolved:%s'%(self._pointerResolved)
+      info += ' pointerResolved:%s'%(self.isPointerResolved)
     ctypes_def = '''
 class %s(LoadableMembers):  # %s
   _fields_ = %s
