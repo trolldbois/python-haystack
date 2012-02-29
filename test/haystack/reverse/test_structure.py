@@ -90,31 +90,6 @@ class TestStructure(unittest.TestCase):
         else:
           self.assertIn( value, [None, False], name+' not resetted' )
 
-  '''
-  def test_guessField(self):
-    self.assertEqual( None, None)
-    return  
-
-  def test_aggregateZeroes(self):
-    return  
-    
-  def test_fixGaps(self):
-    return  
-  
-  def test_fixOverlaps(self):
-    return  
-  
-  def test_getOverlapping(self):
-    return  
-  
-  def test_resolvePointers(self):
-    return  
-  
-  def test_resolvePointerToStructField(self):
-    return  
-  '''
-  def test_aggregateFields(self):
-    return  
 
 
 
