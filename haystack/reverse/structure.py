@@ -86,10 +86,8 @@ def remapLoad(context, addr, newmappings):
   p = pickle.load(file(fname,'r'))
   if p is None:
     return None
-  p.setContext(context)
   # YES we do want to over-write mappings and bytes
-  p._mappings = newmappings
-  p._bytes = newmappings.getHeap().readBytes(p._vaddr, p.size)
+  p.setContext(context)
   return p
 
 
@@ -175,9 +173,8 @@ class AnonymousStructInstance():
   '''
   def __init__(self, context, vaddr, size, prefix=None):
     self._context = context
-    self._mappings = context.mappings
     self._vaddr = vaddr
-    ##self._bytes = bytes # TODO dynamic property
+    self._size = size
     self.reset() # set fields
     self.setName(prefix)
     return
@@ -200,7 +197,6 @@ class AnonymousStructInstance():
     return self._ctype
   
   def reset(self):
-    self._size = len(self._bytes)
     self._fields = []
     self._resolved = False
     self._pointerResolved = False
@@ -485,7 +481,7 @@ class AnonymousStructInstance():
           continue
         field._target_field = tgt[0] #first field of struct
       except ValueError, e:
-        if field.value in self._mappings.getHeap():
+        if field.value in self._heap:
           # elif target is a STRING in the HEAP
           # set pointer type to char_p
           inHeap+=1
@@ -716,12 +712,18 @@ class AnonymousStructInstance():
 
   def setContext(self, context):
     self._context = context
-    self._mappings = context.mappings
-    #self._bytes = self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
+
+  @property
+  def _mappings(self):
+    return self._context.mapping
+
+  @property
+  def _heap(self):
+    return self._context.mapping.getHeap()
 
   @property # TODO add a cache property ?
   def bytes(self):
-    return self._mappings.getHeap().readBytes(self._vaddr, self._size) # TODO Shared bytes
+    return self._heap.readBytes(self._vaddr, self._size) # TODO Shared bytes
 
   def isResolved(self):
     return self._resolved
@@ -756,7 +758,7 @@ class %s(LoadableMembers):  # %s
     return self._fields[i]
     
   def __len__(self):
-    return len(self._bytes)
+    return self._size
 
   def __cmp__(self, other):
     if not isinstance(other, AnonymousStructInstance):
@@ -770,17 +772,11 @@ class %s(LoadableMembers):  # %s
     except AttributeError,e:
       #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
       d['dumpname'] = None
-    del d['_mappings']
-    del d['_bytes']
-    d['_mappings'] = None
-    d['_bytes'] = None
     d['_context'] = None
     return d
 
   def __setstate__(self, d):
     self.__dict__ = d
-    self._mappings = None
-    self._bytes = None
     if '_name' not in d:
       self.setName(None)
     return
