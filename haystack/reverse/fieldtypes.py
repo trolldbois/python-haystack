@@ -144,7 +144,7 @@ class Field:
     ''' if there is no \x00 termination, its not a string
     that means that if we have a bad pointer in the middle of a string, 
     the first part will not be understood as a string'''
-    bytes = self.struct._bytes[self.offset:]
+    bytes = self.struct.bytes[self.offset:]
     ret = re_string.startsWithNulTerminatedString(bytes)
     if not ret:
       self.typesTested.append(FieldType.STRING)
@@ -160,7 +160,7 @@ class Field:
   def checkPointer(self):
     if (self.offset%Config.WORDSIZE != 0):
       return False
-    bytes = self.struct._bytes[self.offset:self.offset+Config.WORDSIZE]
+    bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
     if len(bytes) != Config.WORDSIZE:
       return False      
     value = struct.unpack('L',bytes)[0] #TODO biteorder
@@ -196,7 +196,7 @@ class Field:
   def checkLeadingZeroes(self):
     ''' iterate over the bytes until a byte if not \x00 
     '''
-    bytes = self.struct._bytes[self.offset:self.offset+self.size]
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]
     index = findFirstNot(bytes, '\x00')
     if index < Config.WORDSIZE:
       return False
@@ -213,7 +213,7 @@ class Field:
   def checkEndingZeroes(self):
     ''' iterate over the bytes until a byte if not \x00 
     '''
-    bytes = self.struct._bytes[self.offset:self.offset+self.size]
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]
     start = len(bytes)-len(bytes)%Config.WORDSIZE
     if start < 4:
       log.debug('ENDING: bytes are %d long'%(start))
@@ -233,7 +233,7 @@ class Field:
     return False    
 
   def checkContainsZeroes(self):
-    bytes = self.struct._bytes[self.offset:self.offset+self.size]    
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]    
     size = len(bytes)
     if size <= 11:
       return False
@@ -263,7 +263,7 @@ class Field:
 
   def checkIntegerArray(self):
     # this should be last resort
-    bytes = self.struct._bytes[self.offset:self.offset+self.size]
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
     if size < 4:
       return False
@@ -294,7 +294,7 @@ class Field:
     elif self.checkSmallInt(endianess='>'):
       return True
     elif self.size == Config.WORDSIZE:
-      bytes = self.struct._bytes[self.offset:self.offset+self.size]
+      bytes = self.struct.bytes[self.offset:self.offset+self.size]
       self.value = struct.unpack('@L',bytes[:Config.WORDSIZE])[0] 
       self.typename = FieldType.INTEGER
       self.endianess = '@' # unknown
@@ -303,7 +303,7 @@ class Field:
 
   def checkSmallInt(self, endianess='<'):
     # TODO
-    bytes = self.struct._bytes[self.offset:self.offset+self.size]
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
     if size < Config.WORDSIZE:
       return False
@@ -440,14 +440,14 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return self.value #struct.unpack('L',(self.struct._bytes[self.offset:self.offset+len(self)]) )[0]
+      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
     elif self.isZeroes():
       bytes=repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
       log.warning('ARRAY in Field type, %s'%self.typename)
       bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])
     elif self.padding or self.typename == FieldType.UNKNOWN:
-      bytes = self.struct._bytes[self.offset:self.offset+len(self)]
+      bytes = self.struct.bytes[self.offset:self.offset+len(self)]
     else: # bytearray, pointer...
       return self.value
     return bytes
