@@ -14,8 +14,6 @@ import sys
 from haystack.config import Config
 from haystack.reverse import structure
 from haystack.reverse import reversers
-from haystack.reverse.reversers import *
-#from haystack.reverse.utils import SharedBytes
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -24,29 +22,59 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-# TODO: attempted a shared binary readonly string buffer
-SharedBytes=str
+sys.path.append('test/src/')
+import ctypes3
 
-context = reversers.getContext( os.path.sep.join([Config.cacheDir,'skype.5.a']) )
+import ctypes 
 
 class TestStructure(unittest.TestCase):
 
+  @classmethod
+  def setUpClass(self):
+    context = reversers.getContext('test/src/test-ctypes3.dump')
+    context.reset()      
+
   def setUp(self):  
-    self.s1 = structure.cacheLoad(context, 0xad35de0)
-    #self.s1 = pickle.load(file('AnonStruct_skype.1.a_ad35de0','r') )
-    self.s1_bytes = SharedBytes(file('AnonymousStruct_84_ad35de0.bytes','r').read())
-    self.s2 = structure.cacheLoad(context, 0xad39240)
-    #self.s2 = pickle.load(file('AnonStruct_skype.1.a_ad39240','r') )
-    self.s2_bytes = SharedBytes(file('AnonymousStruct_130256_ad39240.bytes','r').read())
-  #
-  '''
-  def test_guessField(self):
-    self.assertEqual( None, None)
+    self.context = reversers.getContext('test/src/test-ctypes3.dump')
+
+  def test_init(self):
+    for s in self.context.listStructures():
+      if len(s) == 12 : #Node + padding, 1 pointer on create
+        self.assertEqual( len(s.getFields()), len(s.getPointerFields()))
+      elif len(s) == 20 : #test3, 1 pointer on create
+        self.assertEqual( len(s.getFields()), len(s.getPointerFields()))
     return  
 
   def test_decodeFields(self):
-    #self.s2.decodeFields()
-    #print self.s2.toString()
+    for s in self.context.listStructures():
+      s.decodeFields()
+      if len(s) == 12 : #Node + padding, 1 pointer on create
+        self.assertEqual( len(s.getFields()), 3 ) # 1, 2 and padding
+        self.assertEqual( len(s.getPointerFields()), 1)
+      elif len(s) == 20 : #test3, 1 pointer on create
+        # fields, no heuristic to detect medium sized int
+        # TODO untyped of size < 8 == int * x
+        self.assertEqual( len(s.getFields()), 3 )
+        self.assertEqual( len(s.getPointerFields()), 1)
+    return  
+
+  def test_resolvePointers(self):
+    for s in self.context.listStructures():
+      s.resolvePointers()
+    self.assertTrue(True) # test no error
+
+  def test_resolvePointers2(self):
+    for s in self.context.listStructures():
+      s.decodeFields()
+      s.resolvePointers()
+      if len(s) == 12 : #Node + padding, 1 pointer on create
+        self.assertEqual( len(s.getFields()), 3 ) # 1, 2 and padding
+        self.assertEqual( len(s.getPointerFields()), 1)
+  
+
+  '''
+  def test_guessField(self):
+    self.assertEqual( None, None)
     return  
 
   def test_aggregateZeroes(self):
@@ -68,116 +96,7 @@ class TestStructure(unittest.TestCase):
     return  
   '''
   def test_aggregateFields(self):
-    logging.basicConfig(level=logging.INFO)
-    #logging.getLogger('pattern').setLevel(logging.DEBUG)
-    #print self.s2.fields
-    #print 'resolved:',self.s2.resolved
-    #print 'pointerResolved:',self.s2.pointerResolved
-    for f in self.s2.fields:
-      f.decodeType()
-    self.s2.decodeFields()
-    file('%s.before'%(self.s2),'w').write( self.s2.toString() )
-    self.s2.pointerResolved=True
-    self.s2._aggregateFields()
-    file('%s.agg'%(self.s2),'w').write( self.s2.toString() )
-
-    l1 = -1
-    l2 = -2
-    i = 0
-    ''' loop until there is not array xtraction to be made '''
-    while l1 != l2:
-      self.s2._excludeSizeVariableFromIntArray()
-      file('%s.exclude.run%d'%(self.s2,i),'w').write( self.s2.toString() )
-      l1 = len(self.s2.fields)
-      
-      self.s2._aggZeroesBetweenIntArrays()
-      file('%s.IZItoIntArray.run%d'%(self.s2,i),'w').write( self.s2.toString() )
-      l2 = len(self.s2.fields)
-      i+=1
-
-    #logging.getLogger('structure').setLevel(logging.DEBUG)
-    #self.s2._findSubStructures()
-    #file('%s.findsub'%(self.s2),'w').write( self.s2.toString() )
-    #self.s2.save()
-
-    self.s2._aggregateFields()
-    file('%s.agg.post'%(self.s2),'w').write( self.s2.toString() )
-    
-    #self.s2._checkZeroesIndexes()
-    #file('%s.ZeroesIndexes'%(self.s2),'w').write( self.s2.toString() )
-    
-    logging.getLogger('structure').setLevel(logging.DEBUG)
-    self.s2._checkBufferLen()
-    file('%s.checkBufLen'%(self.s2),'w').write( self.s2.toString() )
-
-    #self.s2.save()
-    # field 0 untyped 
     return  
-
-  '''
-from haystack.reverse import structure
-from  structure import *
-import logging
-logging.basicConfig(level=logging.DEBUG)
-import pickle
-s2 = pickle.load(file('AnonymousStruct_130256_0'))
-
-f0=s2.fields[0]
-f0.decoded=False
-f0.typename = fieldtypes.FieldType.UNKNOWN
-f0.decodeType()
-
-s=512
-source = s2.bytes[:s*4] # first field size is probably a 2**12
-# not. 512 really
-ha = []
-hb = []
-ints = [i for i in struct.unpack('L'*(len(source)/4), source)]
-groups = [ (ints[i:i+4], ints[i+4:i+8]) for i in range(0,len(ints),8)]
-for a,b in groups:
-  ha.extend(a)
-  hb.extend(b)
-
-has=sorted(ha)
-iA = [has[i+1]-has[i] for i in range(len(has)-1)]
-iiA = [iA[i]-iA[i+1] for i in range(len(iA)-1)]
-iiiA = [iiA[i]-iiA[i+1] for i in range(len(iiA)-1)]
-
-mid = has[len(has)/2]
-var = [ v-mid for v in ha]
-
-
-
-'''  
-  ''' 
-  def test_isPointerToString(self):
-    return  
-    
-  
-  def test_getPointerFields(self):
-    return  
-    
-  def test_getSignature(self):
-    return  
-  
-  def test_toString(self):
-    return  
-
-  def test_contains(self):
-    return  
-      
-  def test_getitem(self):
-    return  
-    
-  def test_len(self):
-    return  
-
-  def test_cmp(self):
-    return  
-  
-  def test_str(self):
-    return 
-  '''
 
 
 
