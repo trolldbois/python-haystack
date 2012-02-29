@@ -715,11 +715,11 @@ class AnonymousStructInstance():
 
   @property
   def _mappings(self):
-    return self._context.mapping
+    return self._context.mappings
 
   @property
   def _heap(self):
-    return self._context.mapping.getHeap()
+    return self._context.mappings.getHeap()
 
   @property # TODO add a cache property ?
   def bytes(self):

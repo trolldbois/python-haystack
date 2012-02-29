@@ -71,6 +71,24 @@ class TestStructure(unittest.TestCase):
         self.assertEqual( len(s.getFields()), 3 ) # 1, 2 and padding
         self.assertEqual( len(s.getPointerFields()), 1)
   
+  def test_reset(self):
+    for s in self.context.listStructures():
+      s.reset()
+      if isinstance(s, structure.CacheWrapper):
+        members = s.obj().__dict__
+      else:
+        members = s.__dict__
+      for name,value in members.items():
+        if name in ['_size', '_context', '_name', '_vaddr']:
+          self.assertNotIn( value, [None, False] )
+        elif name in ['_dirty']:
+          self.assertTrue( value )
+        elif name in ['_fields']:
+          self.assertEquals( value, list() )
+        elif name in ['dumpname']:
+          self.assertTrue( os.access(value,os.F_OK) )
+        else:
+          self.assertIn( value, [None, False], name+' not resetted' )
 
   '''
   def test_guessField(self):
