@@ -122,9 +122,9 @@ def getUserAllocations(mappings, heap, filterInuse=False):
   if not ret:
     raise ValueError('heap dos not start with an malloc_chunk')
   #data = chunk.getUserData(mappings, orig_addr)
-  #print chunk.toString(''), 'real_size = ', chunk.real_size()
-  #print hexdump(data)
-  #print ' ---------------- '
+  print chunk.toString(''), 'real_size = ', chunk.real_size()
+  print repr(data)
+  print ' ---------------- '
   if filterInuse:
     if chunk.check_inuse():
       yield  (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
@@ -136,13 +136,13 @@ def getUserAllocations(mappings, heap, filterInuse=False):
     if next_addr is None:
       #print 'no next chunk'
       break
-    #print ' next_addr 0x%x, size: %x'%(next_addr, next.size)   
+    print ' next_addr 0x%x, size: %x'%(next_addr, next.size)   
     ret = next.loadMembers(mappings, 10, next_addr)
     if not ret:
       raise ValueError
-    #print next.toString(''), 'real_size = ', next.real_size()
-    #print test.hexdump(next.getUserData(mappings, next_addr))
-    #print ' ---------------- '
+    print next.toString(''), 'real_size = ', next.real_size()
+    print test.hexdump(next.getUserData(mappings, next_addr))
+    print ' ---------------- '
     if filterInuse:
       if next.check_inuse():
         yield  (next.get_mem_addr(next_addr), next.get_mem_size()) 
@@ -157,10 +157,13 @@ def getUserAllocations(mappings, heap, filterInuse=False):
 
 def isMallocHeap(mappings, mapping):
   """test if a mapping is a malloc generated heap"""
-  orig_addr = mapping.start
-  chunk = mapping.readStruct(orig_addr, malloc_chunk)
-  ret = chunk.loadMembers(mappings, 10, orig_addr)
-  if not ret:
+  try:
+    orig_addr = mapping.start
+    chunk = mapping.readStruct(orig_addr, malloc_chunk)
+    ret = chunk.loadMembers(mappings, 10, orig_addr)
+    if not ret:
+      return False
+  except:
     return False
   return True
 
