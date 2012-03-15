@@ -1,6 +1,3 @@
-
-from haystack.utils import *
-
 from ctypes import *
 
 STRING = c_char_p
@@ -28,8 +25,8 @@ _SLIST_HEADER._fields_ = [
     ('Depth', __uint16_t),
     ('Sequence', __uint16_t),
 ]
-SLIST_HEADER = _SLIST_HEADER
 PSLIST_HEADER = POINTER(_SLIST_HEADER)
+SLIST_HEADER = _SLIST_HEADER
 class _SINGLE_LIST_ENTRY(Structure):
     pass
 _SINGLE_LIST_ENTRY._fields_ = [
@@ -74,7 +71,7 @@ N11_HEAP_ENTRY3DOT_13DOT_5E._fields_ = [
 ]
 __uint64_t = c_ulonglong
 N11_HEAP_ENTRY3DOT_1E._pack_ = 4
-N11_HEAP_ENTRY3DOT_1E._anonymous_ = ['_2', '_1', '_0']
+N11_HEAP_ENTRY3DOT_1E._anonymous_ = ['_1', '_2', '_0']
 N11_HEAP_ENTRY3DOT_1E._fields_ = [
     ('_0', N11_HEAP_ENTRY3DOT_13DOT_2E),
     ('_1', N11_HEAP_ENTRY3DOT_13DOT_3E),
@@ -120,8 +117,8 @@ _HEAP_TUNING_PARAMETERS._fields_ = [
     ('CommittThresholdShift', __uint32_t),
     ('MaxPreCommittThreshold', __uint32_t),
 ]
-PHEAP_TUNING_PARAMETERS = POINTER(_HEAP_TUNING_PARAMETERS)
 HEAP_TUNING_PARAMETERS = _HEAP_TUNING_PARAMETERS
+PHEAP_TUNING_PARAMETERS = POINTER(_HEAP_TUNING_PARAMETERS)
 class _HEAP_SEGMENT(Structure):
     pass
 _HEAP_SEGMENT._fields_ = [
@@ -141,11 +138,6 @@ _HEAP_SEGMENT._fields_ = [
     ('UCRSegmentList', _LIST_ENTRY),
 ]
 HEAP_SEGMENT = _HEAP_SEGMENT
-_HEAP_SEGMENT.expectedValued = {
-  'SegmentSignature':[0xffeeffee],
-}
-
-
 PHEAP_SEGMENT = POINTER(_HEAP_SEGMENT)
 class _HEAP_TAG_ENTRY(Structure):
     pass
@@ -197,21 +189,8 @@ _HEAP._fields_ = [
     ('Counters', _HEAP_COUNTERS),
     ('TuningParameters', _HEAP_TUNING_PARAMETERS),
 ]
-HEAP = _HEAP
-
-_HEAP.expectedValues = {
-#    'MaximumAllocationSize' : [NotNull],
-#    'HeaderValidateCopy' : [NotNull],
-#    'TagEntries' : [NotNull],
-#    'BlocksIndex' : [NotNull],
-#    'UCRIndex' : [NotNull],
-#    'PseudoTagEntries' : [NotNull],
-#    'LockVariable' : [NotNull],
-    'Signature':[0xeeffeeff],
-    }
-
-
 PHEAP = POINTER(_HEAP)
+HEAP = _HEAP
 class _HEAP_ENTRY_EXTRA(Structure):
     pass
 class N17_HEAP_ENTRY_EXTRA3DOT_6E(Union):
@@ -256,8 +235,8 @@ _HEAP_LIST_LOOKUP._fields_ = [
     ('ListsInUseUlong', POINTER(__uint32_t)),
     ('ListHints', POINTER(POINTER(_LIST_ENTRY))),
 ]
-HEAP_LIST_LOOKUP = _HEAP_LIST_LOOKUP
 PHEAP_LIST_LOOKUP = POINTER(_HEAP_LIST_LOOKUP)
+HEAP_LIST_LOOKUP = _HEAP_LIST_LOOKUP
 class _HEAP_LOOKASIDE(Structure):
     pass
 _HEAP_LOOKASIDE._fields_ = [
@@ -294,7 +273,7 @@ N14_INTERLOCK_SEQ3DOT_84DOT_10E._fields_ = [
 ]
 __int64_t = c_longlong
 N14_INTERLOCK_SEQ3DOT_8E._pack_ = 4
-N14_INTERLOCK_SEQ3DOT_8E._anonymous_ = ['_1', '_0']
+N14_INTERLOCK_SEQ3DOT_8E._anonymous_ = ['_0', '_1']
 N14_INTERLOCK_SEQ3DOT_8E._fields_ = [
     ('_0', N14_INTERLOCK_SEQ3DOT_83DOT_9E),
     ('_1', N14_INTERLOCK_SEQ3DOT_84DOT_10E),
@@ -314,8 +293,8 @@ _HEAP_TAG_ENTRY._fields_ = [
     ('CreatorBackTraceIndex', __uint16_t),
     ('TagName', __uint16_t * 24),
 ]
-PHEAP_TAG_ENTRY = POINTER(_HEAP_TAG_ENTRY)
 HEAP_TAG_ENTRY = _HEAP_TAG_ENTRY
+PHEAP_TAG_ENTRY = POINTER(_HEAP_TAG_ENTRY)
 class _HEAP_UCR_DESCRIPTOR(Structure):
     pass
 _HEAP_UCR_DESCRIPTOR._fields_ = [
@@ -343,8 +322,8 @@ _HEAP_USERDATA_HEADER._fields_ = [
     ('SizeIndex', __uint32_t),
     ('Signature', __uint32_t),
 ]
-PHEAP_USERDATA_HEADER = POINTER(_HEAP_USERDATA_HEADER)
 HEAP_USERDATA_HEADER = _HEAP_USERDATA_HEADER
+PHEAP_USERDATA_HEADER = POINTER(_HEAP_USERDATA_HEADER)
 class _HEAP_VIRTUAL_ALLOC_ENTRY(Structure):
     pass
 _HEAP_VIRTUAL_ALLOC_ENTRY._fields_ = [
@@ -413,8 +392,8 @@ _HEAP_SUBSEGMENT._fields_ = [
     ('SFreeListEntry', _SINGLE_LIST_ENTRY),
     ('Lock', __uint32_t),
 ]
-PHEAP_SUBSEGMENT = POINTER(_HEAP_SUBSEGMENT)
 HEAP_SUBSEGMENT = _HEAP_SUBSEGMENT
+PHEAP_SUBSEGMENT = POINTER(_HEAP_SUBSEGMENT)
 _LFH_HEAP._fields_ = [
     ('Lock', __uint32_t * 6),
     ('SubSegmentZones', _LIST_ENTRY),
