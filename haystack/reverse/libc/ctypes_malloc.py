@@ -90,10 +90,14 @@ def getUserAllocations(mappings, heap, filterInuse=False):
 
 def isMallocHeap(mappings, mapping):
   """test if a mapping is a malloc generated heap"""
-  orig_addr = mapping.start
-  chunk = mapping.readStruct(orig_addr, malloc_chunk)
-  ret = chunk.loadMembers(mappings, 10, orig_addr)
-  if not ret:
+  try:
+    sizes = [size for addr,size in getUserAllocations(mappings, mapping ) ]
+    size = sum(sizes)
+  except ValueError, e:
+    return False
+  
+  if size != ( len(mapping) - Config.WORDSIZE*len(sizes) ):
+    log.debug('expected %d/%d bytes, got %d'%(len(mapping), len(mapping) - 2*Config.WORDSIZE*len(sizes), size ) )
     return False
   return True
 
