@@ -277,14 +277,19 @@ def load(dumpname):
     raise e
   return memdump.getMappings()
 
-def _load(opt):
-  """Loads a haystack dump."""
-  return load(opt.dumpname)
+def _heap(opt):
+  """find  the heap in a haystack dump."""
+  mappings = load(opt.dumpname)
+  from haystack.reverse import libc as linux
+  from haystack.reverse import win32
+  for m in mappings:
+    pass
+  
 
 def argparser():
-  load_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
-  load_parser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='The dump file')
-  load_parser.set_defaults(func=_load)  
+  heap_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
+  heap_parser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='The dump file')
+  heap_parser.set_defaults(func=_heap)  
   return rootparser
 
 def main(argv):
