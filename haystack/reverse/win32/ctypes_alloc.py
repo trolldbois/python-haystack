@@ -13,23 +13,33 @@ import sys
 from haystack import model, memory_mapping
 from haystack.model import is_valid_address,is_valid_address_value,pointer2bytes,array2bytes,bytes2array,getaddress
 from haystack.model import LoadableMembers,RangeValue,NotNull,CString, IgnoreMember, PerfectMatch
+from haystack.reverse.win32 import win7heap
 
 from haystack.config import Config
 import struct
 
-log=logging.getLogger('ctypes_win32_malloc')
+log=logging.getLogger('ctypes_win32_alloc')
 
 
-SIZE_SZ = Config.WORDSIZE
-MIN_CHUNK_SIZE    = 4 * SIZE_SZ
-MALLOC_ALIGNMENT  = 2 * SIZE_SZ
-MALLOC_ALIGN_MASK = MALLOC_ALIGNMENT - 1
-MINSIZE           = (MIN_CHUNK_SIZE+MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK
+class Windows7HeapWalker:
+  def __init__(self, mappings, mapping, offset=0):
+    self._mappings = mappings
+    self._mapping = mapping
+    self._offset = offset
+    self._initHeap()
+  
+  def _initHeap(self):
+    self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
+    if not self._heap.loadMembers(self._mappings, -1):
+      raise TypeError('HEAP.loadMembers returned False')
+  
+  def listVirtualAlloc(self):
+    '''
+  +0x050 VirtualAllocdBlocks : _LIST_ENTRY
 
-PREV_INUSE     = 1
-IS_MMAPPED     = 2
-NON_MAIN_ARENA = 4
-SIZE_BITS      = (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
+Allocations that are greater than the virtual allocation size threshold are not managed as part of the segments and free lists. Rather, these allocations are allocated directly from the virtual memory manager. You track these allocations by keeping a list as part of the _HEAP structure that contains all virtual allocations.
+'''
+    
 
 
 class mallocStruct(LoadableMembers):
@@ -122,8 +132,9 @@ def getUserAllocations(mappings, heap, filterInuse=False):
   if not ret:
     raise ValueError('heap dos not start with an malloc_chunk')
   #data = chunk.getUserData(mappings, orig_addr)
+  #data = chunk[]
   print chunk.toString(''), 'real_size = ', chunk.real_size()
-  print repr(data)
+  #print repr(data)
   print ' ---------------- '
   if filterInuse:
     if chunk.check_inuse():
@@ -141,7 +152,7 @@ def getUserAllocations(mappings, heap, filterInuse=False):
     if not ret:
       raise ValueError
     print next.toString(''), 'real_size = ', next.real_size()
-    print test.hexdump(next.getUserData(mappings, next_addr))
+    #print test.hexdump(next.getUserData(mappings, next_addr))
     print ' ---------------- '
     if filterInuse:
       if next.check_inuse():
@@ -332,5 +343,4 @@ malloc_chunk.expectedValues = {    }
 
 #model.registerModule(sys.modules[__name__])
 
-  
 
