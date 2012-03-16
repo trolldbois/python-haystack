@@ -239,7 +239,7 @@ class CString(ctypes.Union):
   pass
 
 
-class LoadableMembers(ctypes.Structure):
+class LoadableMembers(object): #ctypes.Structure):
   ''' 
   This is the main class, to be inherited by all ctypes structure.
   It adds a generic validaiton framework, based on simple assertion, 
@@ -614,8 +614,9 @@ class LoadableMembers(ctypes.Structure):
     elif isBasicType(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
       s=prefix+'"%s": %s, \n'%(field, repr(attr) )  
     elif isUnionType(attrtype): # UNION
-      s=prefix+'"%s": %s, # UNION DEFAULT repr\n'%(field, repr(attr) )  
-    else: # wtf ? UNION
+      #s=prefix+'"%s": %s, # UNION DEFAULT repr\n'%(field, repr(attr) )  
+      s=prefix+'"%s": { # UNION DEFAULT repr\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )  
+    else: # wtf ? 
       s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr\n'%(field, repr(attr) )  
     return s
 
@@ -820,9 +821,9 @@ def findCtypesInPyObj(obj):
   return False
 
 
-class LoadableMembersUnion(LoadableMembers):
+class LoadableMembersUnion(ctypes.Union, LoadableMembers):
   pass
-class LoadableMembersStructure(LoadableMembers):
+class LoadableMembersStructure(ctypes.Structure, LoadableMembers):
   pass
 
 import inspect,sys
@@ -863,7 +864,8 @@ def createPOPOClasses( targetmodule ):
     if typ.__module__.startswith(targetmodule.__name__):
       kpy = type('%s.%s_py'%(targetmodule.__name__, klass),( pyObj ,),{})
       # add the structure size to the class
-      if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
+      #if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
+      if type(typ) == type(LoadableMembersStructure) or type(typ) == type( ctypes.Union) :
         setattr(kpy, '_len_',ctypes.sizeof(typ) )
       else:
         setattr(kpy, '_len_', None )
@@ -910,9 +912,10 @@ def isRegistered(cls):
 
 # create local POPO ( lodableMembers )
 #createPOPOClasses(sys.modules[__name__] )
-LoadableMembers_py = type('%s.%s_py'%(__name__, LoadableMembers),( pyObj ,),{})
+LoadableMembersStructure_py = type('%s.%s_py'%(__name__, LoadableMembersStructure),( pyObj ,),{})
+LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( pyObj ,),{})
 # register LoadableMembers 
-register(LoadableMembers)
+register(LoadableMembersStructure)
 
 
 # replace c_char_p - it can handle memory parsing without reading it 
@@ -922,6 +925,6 @@ if ctypes.c_char_p.__name__ == 'c_char_p':
 # switch class - we need our methods on ctypes.Structures for generated classes to work  
 if ctypes.Structure.__name__ == 'Structure':
   ctypes.Structure = LoadableMembersStructure
-#if ctypes.Union.__name__ == 'Union':
-#  ctypes.Union = LoadableMembersUnion
+if ctypes.Union.__name__ == 'Union':
+  ctypes.Union = LoadableMembersUnion
 
