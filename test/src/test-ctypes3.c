@@ -26,7 +26,7 @@ int test3(){
   t3->val1b = 0xdeadbeef;
   t3->val2 = 0x10101010;
   t3->val2b = 0x10101010;
-  t3->me = t3;
+  t3->me = (unsigned int *) t3;
   printf("test3 0x%x\n",(unsigned int )t3);
   
   return 0;
