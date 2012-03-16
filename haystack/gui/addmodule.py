@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'addmodule.ui'
 #
-# Created: Mon Aug 15 23:03:05 2011
-#      by: PyQt4 UI code generator 4.8.3
+# Created: Tue Feb 21 20:08:27 2012
+#      by: PyQt4 UI code generator 4.8.5
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -19,6 +19,7 @@ class Ui_addModuleDialog(object):
         addModuleDialog.setObjectName(_fromUtf8("addModuleDialog"))
         addModuleDialog.setWindowModality(QtCore.Qt.ApplicationModal)
         addModuleDialog.resize(394, 110)
+        addModuleDialog.setWindowTitle(QtGui.QApplication.translate("addModuleDialog", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
         addModuleDialog.setSizeGripEnabled(False)
         addModuleDialog.setModal(True)
         self.gridLayout = QtGui.QGridLayout(addModuleDialog)
@@ -26,6 +27,7 @@ class Ui_addModuleDialog(object):
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.label = QtGui.QLabel(addModuleDialog)
+        self.label.setText(QtGui.QApplication.translate("addModuleDialog", "Module name", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setObjectName(_fromUtf8("label"))
         self.horizontalLayout.addWidget(self.label)
         self.lineEdit = QtGui.QLineEdit(addModuleDialog)
@@ -44,6 +46,5 @@ class Ui_addModuleDialog(object):
         QtCore.QMetaObject.connectSlotsByName(addModuleDialog)
 
     def retranslateUi(self, addModuleDialog):
-        addModuleDialog.setWindowTitle(QtGui.QApplication.translate("addModuleDialog", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("addModuleDialog", "Module name", None, QtGui.QApplication.UnicodeUTF8))
+        pass
 

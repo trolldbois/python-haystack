@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'searchinfoStruct.ui'
 #
-# Created: Mon Aug 15 23:03:05 2011
-#      by: PyQt4 UI code generator 4.8.3
+# Created: Tue Feb 21 20:08:27 2012
+#      by: PyQt4 UI code generator 4.8.5
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -18,6 +18,7 @@ class Ui_SearchInfoStructWidget(object):
     def setupUi(self, SearchInfoStructWidget):
         SearchInfoStructWidget.setObjectName(_fromUtf8("SearchInfoStructWidget"))
         SearchInfoStructWidget.resize(421, 501)
+        SearchInfoStructWidget.setWindowTitle(QtGui.QApplication.translate("SearchInfoStructWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
         self.gridLayout = QtGui.QGridLayout(SearchInfoStructWidget)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.info_listview = QtGui.QListView(SearchInfoStructWidget)
@@ -29,5 +30,5 @@ class Ui_SearchInfoStructWidget(object):
         QtCore.QMetaObject.connectSlotsByName(SearchInfoStructWidget)
 
     def retranslateUi(self, SearchInfoStructWidget):
-        SearchInfoStructWidget.setWindowTitle(QtGui.QApplication.translate("SearchInfoStructWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
+        pass
 
