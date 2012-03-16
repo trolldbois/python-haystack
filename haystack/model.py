@@ -143,6 +143,8 @@ if ctypes.c_char_p.__name__ == 'c_char_p':
 # keep orig class and Use our model instead as base Structure class
 if ctypes.Structure.__name__ == 'Structure':
   ctypes.original_Structure = ctypes.Structure
+if ctypes.Union.__name__ == 'Union':
+  ctypes.original_Union = ctypes.Union
 
 # The book registers all haystack modules, and classes, and can keep 
 # some pointer refs on memory allocated within special cases...
@@ -552,20 +554,25 @@ class LoadableMembers(ctypes.Structure):
     #TATAFN
     return True
   
-  def toString(self,prefix=''):
+  def toString(self, prefix='', depth=10):
     ''' Returns a string formatted description of this Structure. 
     The returned string should be python-compatible...
     '''
+    # TODO: use a ref table to stop loops on parsed instance, 
+    #       depth kinda sux.
+    if depth == 0 :
+      return '# DEPTH LIMIT REACHED\n'
     s="%s # %s\n"%(prefix,repr(self) )
     for field,typ in self.getFields():
-      attr=getattr(self,field)
-      s+=self._attrToString(attr,field,typ,prefix)
+      attr = getattr(self,field)
+      s += self._attrToString(attr, field, typ, prefix, depth)
     return s
     
-  def _attrToString(self,attr,field,attrtype,prefix):
+  def _attrToString(self,attr,field,attrtype,prefix, depth=-1):
     s=''
     if isStructType(attrtype):
-      s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t'),prefix )  
+      s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )  
+      #print field, attrtype, s
     elif isFunctionType(attrtype):
       s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
     elif isBasicTypeArray(attr): ## array of something else than int      
@@ -584,25 +591,31 @@ class LoadableMembers(ctypes.Structure):
       if not bool(attr) :
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif isVoidPointerType(attrtype) :
-        s=prefix+'"%s": 0x%lx, #Void pointer NOT LOADED\n'%(field, attr )   # only print address/null
+        s=prefix+'"%s": 0x%lx, #Void pointer NOT LOADED \n'%(field, attr )   # only print address/null
       elif not is_address_local(attr) :
         s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         contents=attr.contents
         if type(self) == type(contents):
-          s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), type(attr.contents), prefix) # use struct printer
+          s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, 
+                          getaddress(attr), type(attr.contents), prefix) # use struct printer
         elif isStructType(type(contents)): # do not enter in lists
-          s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), attr.contents.toString(prefix+'\t'),prefix) # use struct printer
+          s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), 
+                          attr.contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
         elif isPointerType(type(contents)):
-          s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), self._attrToString(attr.contents, None, None, prefix+'\t'), prefix ) # use struct printer
+          s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), 
+                          self._attrToString(attr.contents, None, None, prefix+'\t'), prefix ) # use struct printer
         else:
-          s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), attr.contents, prefix) # use struct printer
+          s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), 
+                          attr.contents, prefix) # use struct printer
     elif isCStringPointer(attrtype):
       s=prefix+'"%s": "%s" , #(CString)\n'%(field, attr.string)  
     elif isBasicType(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
       s=prefix+'"%s": %s, \n'%(field, repr(attr) )  
-    else: # wtf ?
+    elif isUnionType(attrtype): # UNION
+      s=prefix+'"%s": %s, # UNION DEFAULT repr\n'%(field, repr(attr) )  
+    else: # wtf ? UNION
       s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr\n'%(field, repr(attr) )  
     return s
 
@@ -761,6 +774,7 @@ class pyObj(object):
         continue
       typ = type(attr)
       attr = getattr(self, attrname)
+      print attrname
       if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
         ret = True
@@ -804,7 +818,13 @@ def findCtypesInPyObj(obj):
   elif isCTypes(obj):
     return True
   return False
-      
+
+
+class LoadableMembersUnion(LoadableMembers):
+  pass
+class LoadableMembersStructure(LoadableMembers):
+  pass
+
 import inspect,sys
 
 def copyGeneratedClasses(src, dst):
@@ -901,5 +921,7 @@ if ctypes.c_char_p.__name__ == 'c_char_p':
 
 # switch class - we need our methods on ctypes.Structures for generated classes to work  
 if ctypes.Structure.__name__ == 'Structure':
-  ctypes.Structure = LoadableMembers
+  ctypes.Structure = LoadableMembersStructure
+#if ctypes.Union.__name__ == 'Union':
+#  ctypes.Union = LoadableMembersUnion
 
