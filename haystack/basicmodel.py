@@ -203,12 +203,12 @@ class LoadableMembers(object):
     log.error('What type are You ?: %s/%s'%(attrname,attrtype))
     return True
 
-  def _isLoadableMember(self, attr):
+  def _isLoadableMember(self, attr, attrname, attrtype):
     '''
       Check if the member is loadable.
       A c_void_p cannot be load generically, You have to take care of that.
     '''
-    attrtype=type(attr)
+    #attrtype=type(attr)
     return ( (isPointerType(attrtype) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attrtype) ) or
               isStructType(attrtype)  or isCStringPointer(attrtype) or
               (isArrayType(attrtype) and not isBasicTypeArray(attr) ) ) # should we iterate on Basictypes ? no
@@ -254,7 +254,7 @@ class LoadableMembers(object):
     
   def _loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
     # skip static basic data members
-    if not self._isLoadableMember(attr):
+    if not self._isLoadableMember(attr, attrname, attrtype):
       log.debug("%s %s not loadable  bool(attr) = %s"%(attrname,attrtype, bool(attr)) )
       return True
     # load it, fields are valid

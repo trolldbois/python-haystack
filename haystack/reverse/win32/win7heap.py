@@ -61,10 +61,11 @@ _HEAP.expectedValues = {
 }
 
 # Setup list decorators
-_HEAP_UCR_DESCRIPTOR.listMember = ['ListEntry']
-_HEAP_UCR_DESCRIPTOR.listHead = [
+_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
+_HEAP_UCR_DESCRIPTOR._listHead_ = [
   ('SegmentEntry', _HEAP_SEGMENT),
-}
+  ]
+
 
 
 def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
@@ -162,7 +163,7 @@ def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
   loadListPart2(self, 'UCRSegmentList', part1)
   return True
 
-_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
+#_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
 
 def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
   ''' '''
@@ -173,7 +174,7 @@ def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
   loadListPart2(self, 'UCRSegmentList', part1)
   return True
 
-_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
+#_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
 
 
 
@@ -196,5 +197,5 @@ def _HEAP_UCR_DESCRIPTOR_loadMembers(self, mappings, maxDepth):
   return True
 
     
-_HEAP_UCR_DESCRIPTOR.loadMembers = _HEAP_UCR_DESCRIPTOR_loadMembers
+#_HEAP_UCR_DESCRIPTOR.loadMembers = _HEAP_UCR_DESCRIPTOR_loadMembers
 
