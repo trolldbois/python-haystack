@@ -342,7 +342,7 @@ class LoadableMembers(object): #ctypes.Structure):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
           log.debug('basicType: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
-          return False
+          raise NotValid('basicType: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
       log.debug('basicType: %s %s %s ok'%(attrname,attrtype,repr(attr) ))
       return True
     # b)
@@ -350,7 +350,7 @@ class LoadableMembers(object): #ctypes.Structure):
       ### do i need to load it first ? becaus it should be memcopied with the super()..
       if not attr.isValid(mappings):
         log.debug('structType: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
-        return False
+        raise NotValid('structType: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ) )
       log.debug('structType: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
       return True
     # c)
@@ -358,7 +358,7 @@ class LoadableMembers(object): #ctypes.Structure):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
           log.debug('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
-          return False
+          raise NotValid('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
       log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
       return True
     if isArrayType(attrtype):
@@ -380,12 +380,12 @@ class LoadableMembers(object): #ctypes.Structure):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
             log.debug('str: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
-            return False
+            raise NotValid('str: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
           log.debug('str: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       if (myaddress != 0) and ( not is_valid_address_value( myaddress, mappings) )   :
         log.debug('str: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
-        return False
+        raise NotValid('str: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
       log.debug('str: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
       return True
     # e) 
@@ -397,7 +397,7 @@ class LoadableMembers(object): #ctypes.Structure):
           if not ( (None in self.expectedValues[attrname]) or
                    (0 in self.expectedValues[attrname]) ):
             log.debug('ptr: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
-            return False
+            raise NotValid('ptr: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
           log.debug('ptr: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
           return True
       # all case, 
@@ -406,7 +406,7 @@ class LoadableMembers(object): #ctypes.Structure):
         log.debug('Its a simple type. Checking mappings only.')
         if getaddress(attr) != 0 and not is_valid_address_value( attr, mappings): # NULL can be accepted
           log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
-          return False
+          raise NotValid('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
       elif attrtype not in self.classRef:
         log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
         _attrType=None
@@ -416,7 +416,7 @@ class LoadableMembers(object): #ctypes.Structure):
       #log.debug(" ihave decided on pointed attrType to be %s"%(_attrType))
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
         log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
-        return False
+        raise NotValid('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
       # null is accepted by default 
       log.debug('ptr: %s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
