@@ -43,14 +43,6 @@ class ListModel(object):
     ''' 
     we need to load the pointed entry as a valid struct at the right offset, 
     and parse it.
-    
-    LIST_ENTRY == struct 2 pointers 
-    we need to force allocation in local space of a list of structType size, 
-    instead of just the list_entry size.
-    
-    a) load first element as structType at offset - sizeof(_LIST_ENTRY).
-        because user structs are allocated INSIDE list members
-    b) delegate loadMembers to first element
     '''
     head = getattr(self, fieldname)
     flink = utils.getaddress(head.FLink) 
@@ -123,17 +115,47 @@ class ListModel(object):
                           structType, structFieldname, maxDepth ) 
    
     return True
+
+  def getFieldIterator(self, mappings, fieldname):
+    if fieldname not in self._listMember_:
+      raise ValueError('No such listMember field ')
     
-########## _reattach to class
+    listfield = getattr(type(self), fieldname)
+    offset = 0 - listfield.offset - listfield.size 
+    
+    done = []
+    obj = self
+    link = getattr(obj, fieldname).FLink # XXX
+    while link not in done:
 
-#model.LoadableMembers.loadListOfType = loadListOfType
-#model.LoadableMembers.loadListEntries = loadListEntries
-#model.LoadableMembers.loadListPart2 = loadListPart2
+      done.append(link)
 
-#if ctypes.Structure.__name__ == 'Structure':
-#  ctypes.Structure = LoadableMembersStructure
-#if ctypes.Union.__name__ == 'Union':
-#  ctypes.Union = LoadableMembersUnion
+      if not bool(link):
+        log.warning('%s has a Null pointer %s - NOT loading'%(fieldname, name))
+        raise StopIteration
 
+      link = link+offset
+      # use cache if possible, avoid loops.
+      from haystack import model
+      st = model.getRef( structType, link)
+      if st: # struct has already been loaded, bail out
+        log.debug("%s.%s loading from references cache %s/0x%lx"%(fieldname, name, structType, link ))
+        yield st
+      else:
+        #  OFFSET read, specific to a LIST ENTRY model
+        memoryMap = utils.is_valid_address_value( link, mappings, structType)
+        st = memoryMap.readStruct( link, structType) # point at the right offset
+        model.keepRef(st, structType, link)
+        yield st
+      #
+      link = getattr(st, fieldname).FLink # XXX
 
+    raise StopIteration
+
+  def getListEntryIterator(self):
+    ''' returns [(fieldname, iterator), .. ] '''
+    for fieldname in self._listMember_:
+      yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
+  
+  
 
