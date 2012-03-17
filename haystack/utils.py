@@ -57,7 +57,7 @@ def is_valid_address_value(addr, mappings, structType=None):
   if m:
     if (structType is not None):
       s = ctypes.sizeof(structType)
-      if (addr+s) not in m:
+      if (addr+s) < m.start or (addr+s) > m.end:
         return False
     return m
   return False
