@@ -463,8 +463,8 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   def readStruct(self, vaddr, structType):
     laddr = self.vtop(vaddr)
     size = ctypes.sizeof(structType)
-    ###WTF is that ? stspace = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0).value # is non-aligned a pb ?
-    ###WTF return self._mmap().readStruct(vaddr, structType)
+    ## YES you DO need to have a copy, otherwise you finish with a allocated
+    ## struct in a read-only mmaped file. Not good if you want to changed members pointers after that.
     return structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
 
   def readWord(self, vaddr):
