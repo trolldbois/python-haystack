@@ -543,16 +543,7 @@ class LoadableMembers(object): #ctypes.Structure):
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s) /%d bytes"%(attrname,attr,attr_obj_address, memoryMap, ctypes.sizeof(_attrType) ))
       ##### Read the struct in memory and make a copy to play with.
-      ###attr.contents = _attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-      log.debug('1')
-      a = _attrType.from_buffer(memoryMap.readStruct(attr_obj_address, _attrType ))
-      log.debug('2')
-      print attr
-      print _attrType
-      print hex( ctypes.addressof(a) )
-      print hex( ctypes.addressof(attr) )
-      attr.contents = a
-      log.debug('3')
+      attr.contents = _attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
       # save that validated and loaded ref and original addr so we dont need to recopy it later
       keepRef( attr.contents, _attrType, attr_obj_address)
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
