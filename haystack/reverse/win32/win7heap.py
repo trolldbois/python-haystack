@@ -60,66 +60,28 @@ _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
 }
 
-# DEBUG
-#_HEAP_UCR_DESCRIPTOR.expectedValued = {
-#  'SegmentEntry': model.IgnoreMember,
-#}
+# Setup list decorators
+_HEAP_UCR_DESCRIPTOR.listMember = ['ListEntry']
+_HEAP_UCR_DESCRIPTOR.listHead = [
+  ('SegmentEntry', _HEAP_SEGMENT),
+}
 
 
-def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
-  ''' ''' 
-  if not self.isValid(mappings):
-    log.debug('LIST_ENTRY tries to load members when its not validated')
-    return False
-  # Cast first element to _SLIST_HEADER
-  attr_obj_address = getaddress(self.FLink)
-  if not bool(self.FLink):
-    log.debug('List_entry has a Null pointer Flink')
-    return True
-  memoryMap = is_valid_address_value( attr_obj_address, mappings)
-  contents = memoryMap.readStruct( attr_obj_address, _SLIST_HEADER)
-  log.debug('contents acquired %d'%ctypes.sizeof(contents))
-  #self.d.contents=BN_ULONG.from_address(ctypes.addressof(contents))
-  #self.d=ctypes.cast(contents, ctypes.POINTER(BN_ULONG) ) 
-  print ' ********* ', contents.toString()
-  return True
+def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
+  ''' load self.fieldname as a list of structType '''
+  offset = model.offsetof( structType, listFieldname ) + ctypes.sizeof(_LIST_ENTRY)
+  print structType, listFieldname, offset
+  return _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset)
 
-#def BIGNUM_isValid(self,mappings):
-#  if ( self.dmax < 0 or self.top < 0 or self.dmax < self.top ):
-#    return False
-#  return LoadableMembers.isValid(self,mappings)
 
-#_LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
-
-"""
-'SegmentListEntry' 
-limit toString because first element is self.
-"""
-#def _attrToString(self,attr,field,attrtype,prefix):
-
-##########
-
-def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
-  ''' '''
-  ## TODO load/walk links in UCRSegmentList as _HEAP_UCR_DESCRIPTOR
-  ## first two pointers are flink, blink list double pointers.
-  ## TODO pyobj
+def loadListEntries(self, fieldname, mappings, maxDepth):
+  ''' load self.fieldname as a list of self-typed '''
+  offset = model.offsetof( type(self), fieldname ) + ctypes.sizeof(_LIST_ENTRY)
+  print type(self), fieldname, offset
+  return _loadListEntries(self, fieldname, mappings, self.__class__ , maxDepth, offset)
   
-  flink, blink = loadListEntries(self, mappings, 'UCRSegmentList', _HEAP_UCR_DESCRIPTOR, maxDepth )
-  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
-    return False
-  # leak 2 list_entry of allocations ?
-  
-  print '-'*10
-  self.UCRSegmentList.FLink.contents = _LIST_ENTRY.from_address( flink )
-  self.UCRSegmentList.BLink.contents = _LIST_ENTRY.from_address( blink )
-  
-  print self.UCRSegmentList
-  return True
 
-_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
-
-def loadListEntries(self, mappings, fieldname, structType, maxDepth):
+def _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset):
   ''' LIST_ENTRY == struct 2 pointers 
   we need to force allocation in local space of a list of structType size, 
   instead of just the list_entry size.
@@ -129,11 +91,9 @@ def loadListEntries(self, mappings, fieldname, structType, maxDepth):
   b) delegate loadMembers to first element
   '''
   head = getattr(self, fieldname)
-  offset = ctypes.sizeof( _LIST_ENTRY ) 
-  ##print offset
   flink = getaddress(head.FLink)
   blink = getaddress(head.BLink)
-  print '--Listentry %s.%s 0x%x 0x%x'%(structType.__name__, fieldname, flink, blink)
+  print '--Listentry %s.%s 0x%x 0x%x with offset %d'%(structType.__name__, fieldname, flink, blink, offset)
   if flink == blink:
     log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
   links = []
@@ -156,7 +116,8 @@ def loadListEntries(self, mappings, fieldname, structType, maxDepth):
       #  OFFSET read, specific to a LIST ENTRY model
       st = structType.from_buffer_copy(memoryMap.readStruct( link-offset, structType)) # reallocate the right size
       model.keepRef(st, structType, link)
-      # load the list entry
+      print st
+      # load the list entry structure members
       if not st.loadMembers(mappings, maxDepth-1):
         raise ValueError
       # save the pointer
@@ -164,30 +125,73 @@ def loadListEntries(self, mappings, fieldname, structType, maxDepth):
   
   return links[0],links[1]
 
+def loadListPart2(self, fieldname, part1):
+  ''' 
+  Change the local allocated pointer values to the local pointers with proper
+    sizes 
+  '''
+  flink, blink = part1
+  field = getattr(self,fieldname)
+  field.FLink.contents = _LIST_ENTRY.from_address( flink )
+  field.BLink.contents = _LIST_ENTRY.from_address( blink )
+  return
 
-def _HEAP_UCR_DESCRIPTOR_loadMembers(self, mappings, maxDepth):
+########## _HEAP
 
-  flink, blink = loadListEntries(self, mappings, 'ListEntry', _HEAP_UCR_DESCRIPTOR, maxDepth-1 )
-
-  e1 = _LIST_ENTRY.from_address( flink )
-  e2 = _LIST_ENTRY.from_address( flink - 8 )
-  e3 = _LIST_ENTRY.from_address( flink - 16 )
-
-  #print e1,'-'*80, e2,'-'*80, e3,'-'*80, 
-  
-  #d = _HEAP_UCR_DESCRIPTOR
-
-  #raise ValueError
+def _HEAP_loadMembers(self, mappings, maxDepth):
+  ''' '''
+  part1 = loadListOfType(self, 'SegmentList', mappings, 
+                    _HEAP_SEGMENT, 'SegmentListEntry', maxDepth )
   if not LoadableMembers.loadMembers(self, mappings, maxDepth):
     return False
 
-  print ' ****************8 '   
-  # load list entries
-  self.ListEntry.FLink.contents = _LIST_ENTRY.from_address( flink )
-  self.ListEntry.BLink.contents = _LIST_ENTRY.from_address( blink )
+  loadListPart2(self, 'SegmentList', part1)
+  
+  return True
+
+#_HEAP.loadMembers = _HEAP_loadMembers
+
+########## _HEAP_SEGMENT
+
+def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
+  ''' '''
+  part1 = loadListOfType(self, 'UCRSegmentList', mappings,
+                    _HEAP_UCR_DESCRIPTOR, 'ListEntry', maxDepth )
+  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+    return False
+  loadListPart2(self, 'UCRSegmentList', part1)
+  return True
+
+_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
+
+def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
+  ''' '''
+  part1 = loadListOfType(self, 'UCRSegmentList', mappings,
+                    _HEAP_UCR_DESCRIPTOR, 'ListEntry', maxDepth )
+  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+    return False
+  loadListPart2(self, 'UCRSegmentList', part1)
+  return True
+
+_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
+
+
+
+###############
+def _HEAP_UCR_DESCRIPTOR_loadMembers(self, mappings, maxDepth):
+
+  part1 = loadListEntries(self, 'ListEntry', mappings, maxDepth )
+  #segment1 = loadListOfType(self, 'SegmentEntry', mappings, 
+  #                    _HEAP_SEGMENT, 'SegmentListEntry', maxDepth )
+  
+  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+    return False
+
+  loadListPart2(self, 'ListEntry', part1)
+  #loadListPart2(self, 'SegmentEntry', segment1)
   
   # load segment list
-  ## ? self.loadListEntries(mappings, 'SegmentEntry', _HEAP_SEGMENT, maxDepth-1 )
+  ## ? loadListEntries(self, 'SegmentEntry', mappings,  _HEAP_SEGMENT, maxDepth-1 )
 
   return True
 
