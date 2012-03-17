@@ -113,8 +113,9 @@ def offsetof(typ, membername):
   @param typ: the structure type.
   @param membername: the membername in that structure.
   '''
-  T=typ()
-  return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
+  #T=typ()
+  #return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
+  return getattr(typ, membername).offset
 
 
 ''' MISSING
