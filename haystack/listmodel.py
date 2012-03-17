@@ -16,6 +16,7 @@ __status__ = "Beta"
 ''' insure ctypes basic types are subverted '''
 from haystack import utils
 
+import ctypes
 import logging
 
 log=logging.getLogger('listmodel')
@@ -26,16 +27,20 @@ class ListModel(object):
 
   def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
     ''' load self.fieldname as a list of structType '''
-    offset = utils.offsetof( structType, listFieldname ) + ctypes.sizeof(_LIST_ENTRY)
+    listfield = getattr(structType, listFieldname)
+    offset = listfield.offset + listfield.size 
+    #utils.offsetof( structType, listFieldname ) + ctypes.sizeof(_LIST_ENTRY)
     print structType, listFieldname, offset
-    return _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset)
+    return self._loadListEntries(fieldname, mappings,  structType, maxDepth, offset)
 
 
   def loadListEntries(self, fieldname, mappings, maxDepth):
     ''' load self.fieldname as a list of self-typed '''
-    offset = utils.offsetof( type(self), fieldname ) + ctypes.sizeof(_LIST_ENTRY)
+    listfield = getattr(type(self), fieldname)
+    offset = listfield.offset + listfield.size 
+    #offset = utils.offsetof( type(self), fieldname ) + ctypes.sizeof(_LIST_ENTRY)
     print type(self), fieldname, offset
-    return _loadListEntries(self, fieldname, mappings, self.__class__ , maxDepth, offset)
+    return self._loadListEntries(fieldname, mappings, self.__class__ , maxDepth, offset)
     
 
   def _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset):
@@ -52,42 +57,42 @@ class ListModel(object):
     b) delegate loadMembers to first element
     '''
     head = getattr(self, fieldname)
-    flink = getaddress(head.FLink)
-    blink = getaddress(head.BLink)
+    flink = utils.getaddress(head.FLink)
+    blink = utils.getaddress(head.BLink)
     print '--Listentry %s.%s 0x%x 0x%x with offset %d'%(structType.__name__, fieldname, flink, blink, offset)
     if flink == blink:
       log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
-    links = []
+
     # load both links// both ways, BLink is expected to be loaded from cache
     for link, name in [(flink, 'FLink'), (blink, 'BLink')]:
       if not bool(link):
-        log.warning('%s has a Null pointer %s'%(fieldname, name))
-        links.append( link )
+        log.warning('%s has a Null pointer %s - NOT loading'%(fieldname, name))
         continue
-      memoryMap = is_valid_address_value( link, mappings)
-      if memoryMap is False:
-        raise ValueError('invalid address %s 0x%x, not in the mappings.'%(name, link))
+
+      # validation of pointer values already have been made in isValid
+
       # use cache if possible, avoid loops.
       #XXX 
       from haystack import model
       ref = model.getRef( structType, link)
-      if ref:
+      if ref: # struct has already been loaded, bail out
         log.debug("%s.%s loading from references cache %s/0x%lx"%(fieldname, name, structType, link ))
-        links.append( ctypes.addressof(ref) )
         continue # goto Blink or finish
       else:
         #  OFFSET read, specific to a LIST ENTRY model
-        st = structType.from_buffer_copy(memoryMap.readStruct( link-offset, structType)) # reallocate the right size
+        memoryMap = utils.is_valid_address_value( link, mappings, structType)
+        st = memoryMap.readStruct( link-offset, structType) # point at the right offset
         model.keepRef(st, structType, link)
         print st
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
           raise ValueError
-        # save the pointer
-        links.append( ctypes.addressof(st) )
     
-    return links[0],links[1]
+    return True
 
+  def _readStructFromListOffset(self, structType, ):
+    pass  
+  
   #def loadListPart2(self, fieldname, part1):
   #  ''' 
   #  Change the local allocated pointer values to the local pointers with proper
@@ -111,40 +116,24 @@ class ListModel(object):
     return True
     
   def loadMembers(self,mappings, maxDepth):
-    # preload pointers
-    log.debug('Loading with ListModel support on %s'%(type(self).__name__))
-    samePart1 = [ self.loadListEntries(self, fieldname, mappings, maxDepth ) for fieldname in self._listMember_]
-    log.debug( self.__class__._listMember_)
-
-    #_HEAP_UCR_DESCRIPTOR.listHead = [
-    #('SegmentEntry', _HEAP_SEGMENT),
-    #]
-    headPart1=[]
-    #for fieldname,structType in self._listHead_:
-    #  headPart1.append( self.loadListOfType(self, fieldname, mappings, 
-    #                _HEAP_SEGMENT, 'SegmentListEntry', maxDepth ) for fieldname in self._listMember_
+    ''' 
+    load basic types members, 
+    then load list elements members recursively,
+    then load list head elements members recursively.
+    '''
 
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
-    
-    #
-    #[ self.loadListPart2(self, fieldname, loadedLinks) for loadedLinks in samePart1]
-    #[ self.loadListPart2(self, fieldname, loadedLinks) for loadedLinks in headPart1]
-    
-    print '-'*10,'**** listmodel active'
-    for loadedLinks in headPart1:
-      print hex(loadedLinks[0]), hex(loadedLinks[1])
-      
-      
-    # TODO
-    # load head as a specific case. its not like a void_p beacuse of offset
-    #
-    # readStruct mecanism should be offladed to LIST_ENTRY structure, for overload capabilities.
-    #
-    #
-    #
-    #
-    #
+
+    log.debug('load list elements members recursively on %s'%(type(self).__name__))
+    log.debug( self.__class__._listMember_)
+    for fieldname in self._listMember_:
+      self.loadListEntries(fieldname, mappings, maxDepth )
+
+    log.debug('load list head elements members recursively on %s'%(type(self).__name__))
+    for fieldname,structType,structFieldname in self._listHead_:
+      self.loadListOfType(fieldname, mappings, 
+                          structType, structFieldname, maxDepth ) 
    
     return True
     

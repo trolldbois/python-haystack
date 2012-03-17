@@ -70,7 +70,7 @@ _HEAP.expectedValues = {
 # Setup list decorators
 _HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
 _HEAP_UCR_DESCRIPTOR._listHead_ = [
-  ('SegmentEntry', _HEAP_SEGMENT),
+  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),
   ]
 
 ########## _HEAP
