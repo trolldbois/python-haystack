@@ -55,8 +55,8 @@ class ListModel(object):
     head = getattr(self, fieldname)
     flink = utils.getaddress(head.FLink) 
     blink = utils.getaddress(head.BLink) 
-    print '--Listentry %s.%s 0x%x/0x%x 0x%x/0x%x with offset %d'%(structType.__name__, 
-      fieldname, flink+offset, flink, blink+offset, blink, offset)
+    #print '--Listentry %s.%s 0x%x/0x%x 0x%x/0x%x with offset %d'%(structType.__name__, 
+    #  fieldname, flink+offset, flink, blink+offset, blink, offset)
     if flink == blink:
       log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
 
@@ -79,12 +79,11 @@ class ListModel(object):
       else:
         #  OFFSET read, specific to a LIST ENTRY model
         memoryMap = utils.is_valid_address_value( link, mappings, structType)
-  
-        print hex(link), memoryMap, structType, ctypes.sizeof(structType)
-
         st = memoryMap.readStruct( link, structType) # point at the right offset
         model.keepRef(st, structType, link)
-        print st
+  
+        ##print st
+  
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
           raise ValueError
