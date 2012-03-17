@@ -39,7 +39,11 @@ class ListModel(object):
     
 
   def _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset):
-    ''' LIST_ENTRY == struct 2 pointers 
+    ''' 
+    we need to load the pointed entry as a valid struct at the right offset, 
+    and parse it.
+    
+    LIST_ENTRY == struct 2 pointers 
     we need to force allocation in local space of a list of structType size, 
     instead of just the list_entry size.
     
@@ -84,16 +88,16 @@ class ListModel(object):
     
     return links[0],links[1]
 
-  def loadListPart2(self, fieldname, part1):
-    ''' 
-    Change the local allocated pointer values to the local pointers with proper
-      sizes 
-    '''
-    flink, blink = part1
-    field = getattr(self,fieldname)
-    field.FLink.contents = _LIST_ENTRY.from_address( flink )
-    field.BLink.contents = _LIST_ENTRY.from_address( blink )
-    return
+  #def loadListPart2(self, fieldname, part1):
+  #  ''' 
+  #  Change the local allocated pointer values to the local pointers with proper
+  #    sizes 
+  #  '''
+  #  flink, blink = part1
+  #  field = getattr(self,fieldname)
+  #  field.FLink.contents = _LIST_ENTRY.from_address( flink )
+  #  field.BLink.contents = _LIST_ENTRY.from_address( blink )
+  #  return
 
   def _isLoadableMemberList(self, attr, attrname, attrtype):
     '''
@@ -108,21 +112,24 @@ class ListModel(object):
     
   def loadMembers(self,mappings, maxDepth):
     # preload pointers
-    log.debug('Loading with ListModel support ')
-    samePart1 = [ loadListEntries(self, fieldname, mappings, maxDepth ) for fieldname in self._listMember_]
+    log.debug('Loading with ListModel support on %s'%(type(self).__name__))
+    samePart1 = [ self.loadListEntries(self, fieldname, mappings, maxDepth ) for fieldname in self._listMember_]
+    log.debug( self.__class__._listMember_)
 
     #_HEAP_UCR_DESCRIPTOR.listHead = [
     #('SegmentEntry', _HEAP_SEGMENT),
     #]
     headPart1=[]
-    for fieldname,structType in self._listHead_:
-    headPart1.append( loadListOfType(self, fieldname, mappings, 
-                    _HEAP_SEGMENT, 'SegmentListEntry', maxDepth ) for fieldname in self._listMember_
+    #for fieldname,structType in self._listHead_:
+    #  headPart1.append( self.loadListOfType(self, fieldname, mappings, 
+    #                _HEAP_SEGMENT, 'SegmentListEntry', maxDepth ) for fieldname in self._listMember_
 
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
-
-    [ loadListPart2(self, fieldname, loadedLinks) for loadedLinks in samePart1]
+    
+    #
+    #[ self.loadListPart2(self, fieldname, loadedLinks) for loadedLinks in samePart1]
+    #[ self.loadListPart2(self, fieldname, loadedLinks) for loadedLinks in headPart1]
     
     print '-'*10,'**** listmodel active'
     for loadedLinks in headPart1:
