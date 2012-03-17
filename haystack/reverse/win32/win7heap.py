@@ -13,6 +13,7 @@ __status__ = "Production"
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
+from haystack.config import Config
 
 from haystack.model import is_valid_address,is_valid_address_value,getaddress,array2bytes,bytes2array
 from haystack.model import LoadableMembers,RangeValue,NotNull,CString
@@ -61,9 +62,7 @@ _HEAP.expectedValues = {
 
 
 def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
-  ''' '''
-  print ' ********* _SLIST_HEADER_loadMembers'
-  
+  ''' ''' 
   if not self.isValid(mappings):
     log.debug('LIST_ENTRY tries to load members when its not validated')
     return False
@@ -85,7 +84,7 @@ def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
 #    return False
 #  return LoadableMembers.isValid(self,mappings)
 
-_LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
+#_LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
 
 """
 'SegmentListEntry' 
@@ -97,38 +96,86 @@ limit toString because first element is self.
 
 def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
   ''' '''
-  print ' **  reload First entry and Last valid entry', hex(ctypes.addressof(self.FirstEntry)), hex(ctypes.addressof(self.LastValidEntry))
+  ## TODO load/walk links in UCRSegmentList as _HEAP_UCR_DESCRIPTOR
+  ## first two pointers are flink, blink list double pointers.
+  ## TODO pyobj
   
-  # Cast first element to Union structure
-  attr_obj_address = getaddress(self.FirstEntry)
-  if not bool(self.FirstEntry):
-    log.debug('FirstEntry has a Null pointer Flink')
-    return True
-  memoryMap = is_valid_address_value( attr_obj_address, mappings)
-  if not memoryMap:
-    print 'not memorymap', hex(attr_obj_address), hex(ctypes.addressof(self.FirstEntry))
-    return False
-
-  # Cast to type: HEAP_ENTRY
-  # _0 N11_HEAP_ENTRY3DOT_13DOT_2E
-  # _1 N11_HEAP_ENTRY3DOT_13DOT_3E
-  # _2 N11_HEAP_ENTRY3DOT_13DOT_5E
-  # AgregateCode uint64_t
-
-  aggcode = struct.unpack('Q', memoryMap.readBytes( attr_obj_address, ctypes.sizeof(ctypes.c_ulonglong)))[0]
-  print '** AgregateCode uint64_t', hex(aggcode)
-  contents = memoryMap.readStruct( attr_obj_address, N11_HEAP_ENTRY3DOT_13DOT_2E)
-  print '** _0 2E ', contents.toString('')
-  contents = memoryMap.readStruct( attr_obj_address, N11_HEAP_ENTRY3DOT_13DOT_3E)
-  print '** _1 3E ', contents.toString('')
-  contents = memoryMap.readStruct( attr_obj_address, N11_HEAP_ENTRY3DOT_13DOT_5E)
-  print '** _2 5E ', contents.toString('')
-
+  flink, blink = loadListEntries(self, mappings, 'UCRSegmentList', _HEAP_UCR_DESCRIPTOR, maxDepth )
 
   if not LoadableMembers.loadMembers(self, mappings, maxDepth):
     return False
+  # leak 2 list_entry of allocations ?
+  
+  self.UCRSegmentList.FLink.contents = _LIST_ENTRY.from_address( flink )
+  self.UCRSegmentList.BLink.contents = _LIST_ENTRY.from_address( blink )
 
   return True
 
 _HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
+
+def loadListEntries(self, mappings, fieldname, structType, maxDepth):
+  ''' LIST_ENTRY == struct 2 pointers 
+  we need to force allocation in local space of a list of structType size, 
+  instead of just the list_entry size.
+  
+  a) load first element as structType.
+  b) delegate loadMembers to first element
+  '''
+  head = getattr(self, fieldname)
+  flink = getaddress(head.FLink)
+  print hex(flink)
+  blink = getaddress(head.BLink)
+  if flink == blink:
+    log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
+  
+  links = []
+  # load both links// both ways, BLink is expected to be loaded from cache
+  for link, name in [(flink, 'FLink'), (blink, 'BLink')]:
+    if not bool(link):
+      log.warning('%s has a Null pointer %s'%(fieldname, name))
+      return True
+    memoryMap = is_valid_address_value( link, mappings)
+    if memoryMap is False:
+      raise ValueError('invalid address %s 0x%x, not in the mappings.'%(name, link))
+    # use cache if possible, avoid loops.
+    ref = model.getRef( structType, link)
+    if ref:
+      log.debug("%s.%s loading from references cache %s/0x%lx"%(fieldname, name, structType, link ))
+      ##getattr(head, name).contents = _LIST_ENTRY.from_address( ctypes.addressof(ref) )
+      links.append( ctypes.addressof(ref) )
+      continue # goto Blink or finish
+    else:
+      st = memoryMap.readStruct( link, structType) # reallocate the right size
+      model.keepRef(st, structType, link)
+      # load the list entry
+      if not st.loadMembers(mappings, maxDepth-1):
+        raise ValueError
+      # set the pointer
+      ##getattr(head, name).contents = _LIST_ENTRY.from_address( ctypes.addressof(st) )
+      links.append( ctypes.addressof(ref) )
+  
+  #print self.UCRSegmentList
+  #raise IOError
+  return links[0],links[1]
+
+
+def _HEAP_UCR_DESCRIPTOR_loadMembers(self, mappings, maxDepth):
+
+  flink, blink = loadListEntries(self, mappings, 'ListEntry', _HEAP_UCR_DESCRIPTOR, maxDepth-1 )
+
+  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+    return False
+
+  print ' ****************8 '   
+  # load list entries
+  self.ListEntry.FLink.contents = _LIST_ENTRY.from_address( flink )
+  self.ListEntry.BLink.contents = _LIST_ENTRY.from_address( blink )
+  
+  # load segment list
+  ## ? self.loadListEntries(mappings, 'SegmentEntry', _HEAP_SEGMENT, maxDepth-1 )
+
+  return True
+
+    
+_HEAP_UCR_DESCRIPTOR.loadMembers = _HEAP_UCR_DESCRIPTOR_loadMembers
 

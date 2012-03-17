@@ -239,6 +239,13 @@ class CString(ctypes.Union):
   pass
 
 
+class NotValid(Exception):
+  pass
+
+class LoadException(Exception):
+  pass
+  
+
 class LoadableMembers(object): #ctypes.Structure):
   ''' 
   This is the main class, to be inherited by all ctypes structure.
@@ -464,7 +471,7 @@ class LoadableMembers(object): #ctypes.Structure):
           return False
       except ValueError, e:
         log.error( 'maxDepth was %d'% maxDepth)
-        raise e
+        raise #
 
     log.debug('%s END loadMembers ----------------'%(self.__class__.__name__))
     return True
