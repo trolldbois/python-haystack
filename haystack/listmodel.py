@@ -28,18 +28,14 @@ class ListModel(object):
   def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
     ''' load self.fieldname as a list of structType '''
     listfield = getattr(structType, listFieldname)
-    offset = listfield.offset + listfield.size 
-    #utils.offsetof( structType, listFieldname ) + ctypes.sizeof(_LIST_ENTRY)
-    print structType, listFieldname, offset
+    offset = 0 - listfield.offset - listfield.size 
     return self._loadListEntries(fieldname, mappings,  structType, maxDepth, offset)
 
 
   def loadListEntries(self, fieldname, mappings, maxDepth):
     ''' load self.fieldname as a list of self-typed '''
     listfield = getattr(type(self), fieldname)
-    offset = listfield.offset + listfield.size 
-    #offset = utils.offsetof( type(self), fieldname ) + ctypes.sizeof(_LIST_ENTRY)
-    print type(self), fieldname, offset
+    offset = 0 - listfield.offset - listfield.size 
     return self._loadListEntries(fieldname, mappings, self.__class__ , maxDepth, offset)
     
 
@@ -57,9 +53,10 @@ class ListModel(object):
     b) delegate loadMembers to first element
     '''
     head = getattr(self, fieldname)
-    flink = utils.getaddress(head.FLink)
-    blink = utils.getaddress(head.BLink)
-    print '--Listentry %s.%s 0x%x 0x%x with offset %d'%(structType.__name__, fieldname, flink, blink, offset)
+    flink = utils.getaddress(head.FLink) 
+    blink = utils.getaddress(head.BLink) 
+    print '--Listentry %s.%s 0x%x/0x%x 0x%x/0x%x with offset %d'%(structType.__name__, 
+      fieldname, flink+offset, flink, blink+offset, blink, offset)
     if flink == blink:
       log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
 
@@ -69,6 +66,7 @@ class ListModel(object):
         log.warning('%s has a Null pointer %s - NOT loading'%(fieldname, name))
         continue
 
+      link = link+offset
       # validation of pointer values already have been made in isValid
 
       # use cache if possible, avoid loops.
@@ -81,7 +79,10 @@ class ListModel(object):
       else:
         #  OFFSET read, specific to a LIST ENTRY model
         memoryMap = utils.is_valid_address_value( link, mappings, structType)
-        st = memoryMap.readStruct( link-offset, structType) # point at the right offset
+  
+        print hex(link), memoryMap, structType, ctypes.sizeof(structType)
+
+        st = memoryMap.readStruct( link, structType) # point at the right offset
         model.keepRef(st, structType, link)
         print st
         # load the list entry structure members
@@ -90,19 +91,6 @@ class ListModel(object):
     
     return True
 
-  def _readStructFromListOffset(self, structType, ):
-    pass  
-  
-  #def loadListPart2(self, fieldname, part1):
-  #  ''' 
-  #  Change the local allocated pointer values to the local pointers with proper
-  #    sizes 
-  #  '''
-  #  flink, blink = part1
-  #  field = getattr(self,fieldname)
-  #  field.FLink.contents = _LIST_ENTRY.from_address( flink )
-  #  field.BLink.contents = _LIST_ENTRY.from_address( blink )
-  #  return
 
   def _isLoadableMemberList(self, attr, attrname, attrtype):
     '''
@@ -121,12 +109,12 @@ class ListModel(object):
     then load list elements members recursively,
     then load list head elements members recursively.
     '''
-
+    log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
 
     log.debug('load list elements members recursively on %s'%(type(self).__name__))
-    log.debug( self.__class__._listMember_)
+    log.debug( 'listmember %s'%self.__class__._listMember_)
     for fieldname in self._listMember_:
       self.loadListEntries(fieldname, mappings, maxDepth )
 

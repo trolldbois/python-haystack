@@ -50,28 +50,26 @@ _HEAP_LOCK._fields_ = [
   ('voidme', ctypes.c_ubyte),
   ]
 
-## make a match
+
+## HEAP_SEGMENT
 
 _HEAP_SEGMENT.expectedValued = {
   'SegmentSignature':[0xffeeffee],
 }
-_HEAP_SEGMENT._listHead_ = [
-  ('UCRSegmentList', _HEAP_SEGMENT),
-  ]
 
-_HEAP_SEGMENT._listMember_ = ['SegmentListEntry']
+_HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry'),]
+#_HEAP_SEGMENT._listMember_ = ['SegmentListEntry']
 
 
+###### HEAP
 
 _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
 }
 
-# Setup list decorators
+#### HEAP_UCR_DESCRIPTOR
 _HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
-_HEAP_UCR_DESCRIPTOR._listHead_ = [
-  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),
-  ]
+#_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP, 'SegmentListEntry'),  ]
 
 ########## _HEAP
 def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
@@ -81,65 +79,4 @@ _LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
 
 
 
-########## _HEAP
-
-def _HEAP_loadMembers(self, mappings, maxDepth):
-  ''' '''
-  part1 = loadListOfType(self, 'SegmentList', mappings, 
-                    _HEAP_SEGMENT, 'SegmentListEntry', maxDepth )
-  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
-    return False
-
-  loadListPart2(self, 'SegmentList', part1)
-  
-  return True
-
-#_HEAP.loadMembers = _HEAP_loadMembers
-
-########## _HEAP_SEGMENT
-
-def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
-  ''' '''
-  part1 = loadListOfType(self, 'UCRSegmentList', mappings,
-                    _HEAP_UCR_DESCRIPTOR, 'ListEntry', maxDepth )
-  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
-    return False
-  loadListPart2(self, 'UCRSegmentList', part1)
-  return True
-
-#_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
-
-def _HEAP_SEGMENT_loadMembers(self, mappings, maxDepth):
-  ''' '''
-  part1 = loadListOfType(self, 'UCRSegmentList', mappings,
-                    _HEAP_UCR_DESCRIPTOR, 'ListEntry', maxDepth )
-  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
-    return False
-  loadListPart2(self, 'UCRSegmentList', part1)
-  return True
-
-#_HEAP_SEGMENT.loadMembers = _HEAP_SEGMENT_loadMembers
-
-
-
-###############
-def _HEAP_UCR_DESCRIPTOR_loadMembers(self, mappings, maxDepth):
-
-  part1 = loadListEntries(self, 'ListEntry', mappings, maxDepth )
-  #segment1 = loadListOfType(self, 'SegmentEntry', mappings, 
-  #                    _HEAP_SEGMENT, 'SegmentListEntry', maxDepth )
-  
-  if not LoadableMembers.loadMembers(self, mappings, maxDepth):
-    return False
-
-  loadListPart2(self, 'ListEntry', part1)
-  #loadListPart2(self, 'SegmentEntry', segment1)
-  
-  # load segment list
-  ## ? loadListEntries(self, 'SegmentEntry', mappings,  _HEAP_SEGMENT, maxDepth-1 )
-
-  return True
-
-    
-#_HEAP_UCR_DESCRIPTOR.loadMembers = _HEAP_UCR_DESCRIPTOR_loadMembers
 
