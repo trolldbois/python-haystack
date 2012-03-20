@@ -19,7 +19,7 @@ from haystack import utils
 import ctypes
 import logging
 
-log=logging.getLogger('listmodel')
+log = logging.getLogger('listmodel')
 
 class ListModel(object):
   _listMember_=[] # members that are the 2xpointer of same type linl
@@ -45,40 +45,32 @@ class ListModel(object):
     and parse it.
     '''
     head = getattr(self, fieldname)
-    flink = utils.getaddress(head.FLink) 
-    blink = utils.getaddress(head.BLink) 
-    #print '--Listentry %s.%s 0x%x/0x%x 0x%x/0x%x with offset %d'%(structType.__name__, 
-    #  fieldname, flink+offset, flink, blink+offset, blink, offset)
-    if flink == blink:
-      log.debug('Load LIST_ENTRY on %s, only 1 element'%(fieldname))
-
-    # load both links// both ways, BLink is expected to be loaded from cache
-    for link, name in [(flink, 'FLink'), (blink, 'BLink')]:
-      if not bool(link):
-        log.warning('%s has a Null pointer %s - NOT loading'%(fieldname, name))
-        continue
-
-      link = link+offset
-      # validation of pointer values already have been made in isValid
-
+    
+    for entry in head.iterateList(mappings):
+      #addr = utils.getaddress(entry) 
+      #print entry, addr
+      #if not bool(addr):
+      #  log.warning('%s has a Null pointer - NOT loading'%(fieldname))
+      #  raise StopIteration
+      #link = addr+ offset
+      link = entry + offset
       # use cache if possible, avoid loops.
       #XXX 
       from haystack import model
       ref = model.getRef( structType, link)
       if ref: # struct has already been loaded, bail out
-        log.debug("%s.%s loading from references cache %s/0x%lx"%(fieldname, name, structType, link ))
-        continue # goto Blink or finish
+        log.debug("%s loading from references cache %s/0x%lx"%(fieldname, structType, link ))
+        continue # do not reload
       else:
         #  OFFSET read, specific to a LIST ENTRY model
         memoryMap = utils.is_valid_address_value( link, mappings, structType)
+        if memoryMap is False:
+          raise ValueError('error while valiating address %x'%(link))
         st = memoryMap.readStruct( link, structType) # point at the right offset
         model.keepRef(st, structType, link)
-  
-        ##print st
-  
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
-          raise ValueError
+          raise ValueError('error while loading members')
     
     return True
 
@@ -182,11 +174,12 @@ def declare_double_linked_list_type( structType, forward, backward):
       log.debug('iterateList got a %s/%s'%(link,addr))
       while addr not in done:
         done.append(addr)
+        print '\n%x '%(addr)
         memoryMap = utils.is_valid_address_value( addr, mappings, structType)
         if memoryMap == False:
           raise ValueError('the link of this linked list has a bad value')
         st = memoryMap.readStruct( addr, structType)
-        yield st
+        yield addr
         # next
         link = getattr(st, fieldname)
         addr = utils.getaddress(link)
