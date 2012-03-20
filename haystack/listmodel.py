@@ -157,5 +157,45 @@ class ListModel(object):
     for fieldname in self._listMember_:
       yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
   
+
+def declare_double_linked_list_type( structType, forward, backward):
+  ''' declare a double linked list type.
+  '''
+  # test existence
+  flinkType = getattr(structType, forward) 
+  blinkType = getattr(structType, backward)
+  d = dict(structType.getFields())
+  flinkType = d[forward]
+  blinkType = d[backward]
+  if not utils.isPointerType(flinkType):
+    raise TypeError('The %s field is not a pointer.'%(forward))
+  if not utils.isPointerType(blinkType):
+    raise TypeError('The %s field is not a pointer.'%(backward))
+
+  def iterateList(self, mappings):
+    ''' iterate forward, then backward, until null or duplicate '''    
+    done = [0]
+    obj = self
+    for fieldname in [forward, backward]:
+      link = getattr(obj, fieldname)
+      addr = utils.getaddress(link)
+      log.debug('iterateList got a %s/%s'%(link,addr))
+      while addr not in done:
+        done.append(addr)
+        memoryMap = utils.is_valid_address_value( addr, mappings, structType)
+        if memoryMap == False:
+          raise ValueError('the link of this linked list has a bad value')
+        st = memoryMap.readStruct( addr, structType)
+        yield st
+        # next
+        link = getattr(st, fieldname)
+        addr = utils.getaddress(link)
+
+    raise StopIteration
   
+  # set iterator on the list structure
+  structType.iterateList = iterateList
+  log.debug('%s has beed fitted with a list iterator self.iterateList(mappings)'%(structType))
+  return
+    
 

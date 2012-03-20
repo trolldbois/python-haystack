@@ -71,11 +71,26 @@ _HEAP.expectedValues = {
 _HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
 #_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP, 'SegmentListEntry'),  ]
 
-########## _HEAP
+########## _LIST_ENTRY
+from haystack import listmodel
+listmodel.declare_double_linked_list_type(_LIST_ENTRY, 'FLink', 'BLink')
+
+
 def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
+  #if not super(LoadableMembers,self).loadMembers( mappings, maxDepth):
+  #  return False
+  
+  #self.__mappings = mappings
+  #log.debug('saved mappings in self')
+  #print "log.debug('saved mappings in self')"
   return True
 
 _LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
+
+
+
+
+
 
 
 
