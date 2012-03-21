@@ -25,28 +25,39 @@ class ListModel(object):
   _listMember_=[] # members that are the 2xpointer of same type linl
   _listHead_=[] # head structure of a linkedlist
 
-  def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
-    ''' load self.fieldname as a list of structType '''
-    listfield = getattr(structType, listFieldname)
-    offset = 0 - listfield.offset #- listfield.size 
-    return self._loadListEntries(fieldname, mappings,  structType, maxDepth, offset)
+  def loadListOfType(self, fieldname, mappings, structType, listFieldname, offset, maxDepth):
+    ''' 
+    load self.fieldname as a list of structType.
+    the list of structType wil be loaded with an iteration on structType.listFieldname.
+    the offset of the pointer values in self.fieldname can be different that the offset of the
+        lsitFieldname. So thats why there is an offset.
+    '''
+    #listfield = getattr(structType, listFieldname)
+    #offset = 0 - listfield.offset #- listfield.size 
+    return self._loadListEntries(fieldname, mappings,  structType, offset, maxDepth)
 
 
   def loadListEntries(self, fieldname, mappings, maxDepth):
     ''' load self.fieldname as a list of self-typed '''
     listfield = getattr(type(self), fieldname)
     offset = 0 - listfield.offset #- listfield.size 
-    return self._loadListEntries(fieldname, mappings, self.__class__ , maxDepth, offset)
+    return self._loadListEntries(fieldname, mappings, self.__class__ , offset, maxDepth)
     
 
-  def _loadListEntries(self, fieldname, mappings,  structType, maxDepth, offset):
+  def _loadListEntries(self, fieldname, mappings,  structType, offset, maxDepth):
     ''' 
     we need to load the pointed entry as a valid struct at the right offset, 
     and parse it.
     '''
+    # DO NOT think HEAD is a valid entry.
+    # if its a ListEntries, self has already been loaded anyway.
+    headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
     head = getattr(self, fieldname)
     
     for entry in head.iterateList(mappings):
+      # DO NOT think HEAD is a valid entry
+      if entry == headAddr:
+        continue
       link = entry + offset
       log.debug('got a element of list at %s 0x%x/0x%x offset:%d'%(fieldname, entry, link, offset))
       # use cache if possible, avoid loops.
@@ -60,11 +71,6 @@ class ListModel(object):
         #  OFFSET read, specific to a LIST ENTRY model
         memoryMap = utils.is_valid_address_value( link, mappings, structType)
         if memoryMap is False:
-          ## DEBUG
-          #link -= 8
-          #memoryMap = utils.is_valid_address_value( link, mappings, structType)
-          #print memoryMap.readStruct( link, structType) 
-          ## DEBUG
           log.error('error while validating address 0x%x type:%s @end:0x%x'%(link, 
                   structType.__name__, link+ctypes.sizeof(structType)) )
           log.error('self : %s , fieldname : %s'%(self.__class__.__name__, fieldname))
@@ -77,7 +83,7 @@ class ListModel(object):
           log.error('Error while loading members on %s'%(self.__class__.__name__))
           print st
           raise ValueError('error while loading members')
-    
+
     return True
 
 
@@ -104,17 +110,15 @@ class ListModel(object):
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
 
-    print 'I HAVE an instance._orig_address_ %x'%self._orig_address_
-
-    log.debug('load list elements members recursively on %s @%x '%(type(self).__name__, ctypes.addressof(self)))
+    log.debug('load list elements members recursively on %s @%x '%(type(self).__name__, self._orig_address_))
     log.debug('listmember %s'%self.__class__._listMember_)
     for fieldname in self._listMember_:
       self.loadListEntries(fieldname, mappings, maxDepth )
 
     log.debug('load list head elements members recursively on %s'%(type(self).__name__))
-    for fieldname,structType,structFieldname in self._listHead_:
+    for fieldname,structType,structFieldname,offset in self._listHead_:
       self.loadListOfType(fieldname, mappings, 
-                          structType, structFieldname, maxDepth ) 
+                          structType, structFieldname, offset, maxDepth ) 
    
     log.debug('-+ <%s> loadMembers END +-'%(self.__class__.__name__))
     return True

@@ -223,7 +223,6 @@ class LoadableMembers(object):
 
     @returns True if everything has been loaded, False if something went wrong. 
     '''
-    print 'I HAVE an instance._orig_address_ %x'%self._orig_address_
     if maxDepth == 0:
       log.debug('Maximum depth reach. Not loading any deeper members.')
       log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
@@ -261,12 +260,19 @@ class LoadableMembers(object):
     if isStructType(attrtype):
       offset = offsetof(type(self),attrname)
       log.debug('st: %s %s is STRUCT at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
+      # TODO pydoc for impl.
       attr._orig_address_ = self._orig_address_ + offset
       if not attr.loadMembers(mappings, maxDepth+1):
         log.debug("st: %s %s not valid, erreur while loading inner struct "%(attrname,attrtype) )
         return False
       log.debug("st: %s %s inner struct LOADED "%(attrname,attrtype) )
       return True
+    #if isUnionType(attrtype):
+    #  offset = offsetof(type(self),attrname)
+    #  log.debug('st: %s %s is UNION at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
+    #  # TODO pydoc for impl.
+    #  attr._orig_address_ = self._orig_address_ + offset
+    #  return True
     # maybe an array
     if isBasicTypeArray(attr):
       return True
@@ -351,7 +357,11 @@ class LoadableMembers(object):
     #       depth kinda sux.
     if depth == 0 :
       return '# DEPTH LIMIT REACHED\n'
-    s="%s # %s\n"%(prefix,repr(self) )
+    if hasattr(self, '_orig_address_'):
+      s="%s # <%s at @%x>\n"%(prefix, self.__class__.__name__, self._orig_address_)
+    else:
+      s="%s # <%s at @???>\n"%(prefix, self.__class__.__name__)
+    #s="%s # <%s @%x>\n"%(prefix, self.__class__.__name__, self._orig_address_ )
     for field,typ in self.getFields():
       attr = getattr(self,field)
       s += self._attrToString(attr, field, typ, prefix, depth)
@@ -410,13 +420,18 @@ class LoadableMembers(object):
     return s
 
   def __str__(self):
-    s=repr(self)+'\n'
+    #print type(self), isUnionType(type(self))
+    if hasattr(self, '_orig_address_'):
+      s="# <%s at @%x>\n"%(self.__class__.__name__, self._orig_address_)
+    else:
+      s="# <%s at @???>\n"%(self.__class__.__name__)
     for field,attrtype in self.getFields():
       attr=getattr(self,field)
       if isStructType(attrtype):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
+        #s+='%s (@0x%lx) : {\t%s}\n'%(field, attr._orig_address_, attr )  
       elif isFunctionType(attrtype):
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+        s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
       elif isBasicTypeArray(attr):
         try:
           s+='%s (@0x%lx) : %s\n'%(field,ctypes.addressof(attr), repr(array2bytes(attr)) )  

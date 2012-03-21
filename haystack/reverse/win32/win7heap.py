@@ -57,8 +57,13 @@ _HEAP_SEGMENT.expectedValued = {
   'SegmentSignature':[0xffeeffee],
 }
 
-_HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry'),]
+#_HEAP_SEGMENT.UCRSegmentList. points to _HEAP_UCR_DESCRIPTOR.SegmentEntry.
+#_HEAP_UCR_DESCRIPTOR.SegmentEntry. points to _HEAP_SEGMENT.UCRSegmentList.
+
+_HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', -8),]
+##_HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'SegmentEntry'),]
 #_HEAP_SEGMENT._listMember_ = ['SegmentListEntry']
+
 
 
 ###### HEAP
@@ -66,26 +71,18 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
 }
+##_HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry'),]
+#HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
+#SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
+# you need to ignore the Head in the iterator...
 
 #### HEAP_UCR_DESCRIPTOR
-_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
-#_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP, 'SegmentListEntry'),  ]
+#_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
+#_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),  ]
 
 ########## _LIST_ENTRY
 from haystack import listmodel
 listmodel.declare_double_linked_list_type(_LIST_ENTRY, 'FLink', 'BLink')
-
-
-def _LIST_ENTRY_loadMembers(self, mappings, maxDepth):
-  #if not super(LoadableMembers,self).loadMembers( mappings, maxDepth):
-  #  return False
-  
-  #self.__mappings = mappings
-  #log.debug('saved mappings in self')
-  #print "log.debug('saved mappings in self')"
-  return True
-
-_LIST_ENTRY.loadMembers = _LIST_ENTRY_loadMembers
 
 
 
