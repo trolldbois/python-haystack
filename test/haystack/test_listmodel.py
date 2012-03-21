@@ -35,15 +35,45 @@ class TestListStruct(unittest.TestCase):
     self.heap = self.m.readStruct(offset, win7heap.HEAP)
   
   def test_iter(self):
-    try:
-      self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
-    except ValueError,e:
-      raise e # quiet
 
-    for el in self.heap.UCRList.iterateList(self.mappings):
+    self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
+
+    segments = [segment for segment in self.heap.iterateListField(self.mappings, 'SegmentList')]
+    self.assertEquals( len(segments), 1)
+    
+    ucrs = [ucr for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList') for segment in segments]
+    self.assertEquals( len(ucrs), 1)
+
+    for segment in segments:
+      skiplist = []
+      for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList'):
+        skiplist.append( (ucr.Address, ucr.Size) )
+        print "a:%x, s:%x"%(ucr.Address, ucr.Size)
+        
+      print segment
+        
+
+    for el in self.heap.UCRList._iterateList(self.mappings):
       print el
 
     return 
+
+  def test_getListFieldInfo(self):
+    
+    heap = win7heap.HEAP()
+    self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap._HEAP_SEGMENT,-16))
+    
+    seg = win7heap._HEAP_SEGMENT()
+    self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap._HEAP_UCR_DESCRIPTOR,-8))
+    
+  def test_otherHeap(self):
+    heaps =[  0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
+    for addr in heaps:
+      m = self.mappings.getMmapForAddr(addr)
+      heap = self.m.readStruct(addr, win7heap.HEAP)
+      self.assertTrue(heap.loadMembers(self.mappings, 10 ))
+      print heap
+    
 
 class TestListStructTest5:#(unittest.TestCase):
   '''
@@ -62,7 +92,7 @@ class TestListStructTest5:#(unittest.TestCase):
     
     self.assertTrue(self.usual.loadMembers(self.mappings, 10 ))
         
-    nodes_addrs = [el for el in self.usual.root.iterateList(self.mappings)]
+    nodes_addrs = [el for el in self.usual.root._iterateList(self.mappings)]
 
     self.assertEquals( len(nodes_addrs), 2)
 
@@ -72,9 +102,9 @@ class TestListStructTest5:#(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
-  logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
-  logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
-  logging.basicConfig(level=logging.DEBUG)  
-  unittest.main(verbosity=0)
+  #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
+  #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
+  #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
+  #logging.basicConfig(level=logging.INFO)  
+  unittest.main(verbosity=2)
 

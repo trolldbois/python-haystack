@@ -25,36 +25,20 @@ class ListModel(object):
   _listMember_=[] # members that are the 2xpointer of same type linl
   _listHead_=[] # head structure of a linkedlist
 
-  def loadListOfType(self, fieldname, mappings, structType, listFieldname, offset, maxDepth):
-    ''' 
-    load self.fieldname as a list of structType.
-    the list of structType wil be loaded with an iteration on structType.listFieldname.
-    the offset of the pointer values in self.fieldname can be different that the offset of the
-        lsitFieldname. So thats why there is an offset.
-    '''
-    #listfield = getattr(structType, listFieldname)
-    #offset = 0 - listfield.offset #- listfield.size 
-    return self._loadListEntries(fieldname, mappings,  structType, offset, maxDepth)
-
-
-  def loadListEntries(self, fieldname, mappings, maxDepth):
-    ''' load self.fieldname as a list of self-typed '''
-    listfield = getattr(type(self), fieldname)
-    offset = 0 - listfield.offset #- listfield.size 
-    return self._loadListEntries(fieldname, mappings, self.__class__ , offset, maxDepth)
-    
-
-  def _loadListEntries(self, fieldname, mappings,  structType, offset, maxDepth):
+  def _loadListEntries(self, fieldname, mappings, maxDepth):
     ''' 
     we need to load the pointed entry as a valid struct at the right offset, 
     and parse it.
     '''
+    
+    structType, offset = self._getListFieldInfo(fieldname)
+    
     # DO NOT think HEAD is a valid entry.
     # if its a ListEntries, self has already been loaded anyway.
     headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
     head = getattr(self, fieldname)
     
-    for entry in head.iterateList(mappings):
+    for entry in head._iterateList(mappings):
       # DO NOT think HEAD is a valid entry
       if entry == headAddr:
         continue
@@ -95,7 +79,11 @@ class ListModel(object):
     if not super(ListModel, self)._isLoadableMemberList(attr, attrname, attrtype) :
       return False
     if attrname in self._listMember_:
+      log.debug('loadMembers do NOT load %s, its a list element'%(attrname))
       return False
+    ##if attrname in [ name for name,t,f,o in self._listHead_]:
+    ##  log.debug('loadMembers do NOT load %s, its a list HEAD element'%(attrname))
+    ##  return False
     return True
     
   def loadMembers(self, mappings, maxDepth):
@@ -113,53 +101,62 @@ class ListModel(object):
     log.debug('load list elements members recursively on %s @%x '%(type(self).__name__, self._orig_address_))
     log.debug('listmember %s'%self.__class__._listMember_)
     for fieldname in self._listMember_:
-      self.loadListEntries(fieldname, mappings, maxDepth )
+      self._loadListEntries(fieldname, mappings, maxDepth )
 
     log.debug('load list head elements members recursively on %s'%(type(self).__name__))
     for fieldname,structType,structFieldname,offset in self._listHead_:
-      self.loadListOfType(fieldname, mappings, 
-                          structType, structFieldname, offset, maxDepth ) 
+      self._loadListEntries(fieldname, mappings, maxDepth ) 
    
     log.debug('-+ <%s> loadMembers END +-'%(self.__class__.__name__))
     return True
 
-  def __getFieldIterator(self, mappings, fieldname):
-    if fieldname not in self._listMember_:
-      raise ValueError('No such listMember field ')
+
+  def iterateListField(self, mappings, fieldname):
+    ''' 
+    start from the field  and iterate a list. 
+    does not return self.'''
     
-    listfield = getattr(type(self), fieldname)
-    offset = 0 - listfield.offset - listfield.size 
+    structType, offset = self._getListFieldInfo(fieldname)
     
-    done = []
-    obj = self
-    link = getattr(obj, fieldname).FLink # XXX
-    while link not in done:
+    # @ of the field
+    headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
+    head = getattr(self, fieldname)
 
-      done.append(link)
+    if not hasattr(head, '_iterateList'):
+      raise ValueError('Not an iterable field. Probably not declared as a list.')
 
-      if not bool(link):
-        log.warning('%s has a Null pointer %s - NOT loading'%(fieldname, name))
-        raise StopIteration
-
-      link = link+offset
+    from haystack import model
+    done = [headAddr]
+    for entry in head._iterateList(mappings):
+      # DO NOT think HEAD is a valid entry
+      if entry in done:
+        continue
+      # save it
+      done.append(entry)
+      # @ of the struct, entry is not null, head._iterateList garantizes it.
+      link = entry + offset
       # use cache if possible, avoid loops.
-      from haystack import model
       st = model.getRef( structType, link)
-      if st: # struct has already been loaded, bail out
-        log.debug("%s.%s loading from references cache %s/0x%lx"%(fieldname, name, structType, link ))
+      if st: 
         yield st
       else:
-        #  OFFSET read, specific to a LIST ENTRY model
-        memoryMap = utils.is_valid_address_value( link, mappings, structType)
-        st = memoryMap.readStruct( link, structType) # point at the right offset
-        model.keepRef(st, structType, link)
-        yield st
-      #
-      link = getattr(st, fieldname).FLink # XXX
+        raise ValueError('the structure has not been loaded, please use loadMembers.')
 
     raise StopIteration
 
-  #def getListEntryIterator(self):
+  def _getListFieldInfo(self, fieldname):
+    ''' 
+    if fieldname is in listmember, return offset of fieldname.
+    if fieldname id in listhead, return offset of target field.
+    '''
+    if fieldname in self._listMember_:
+      return type(self), utils.offsetof( type(self), fieldname)
+    for fname,typ,typFieldname,offset in self._listHead_:
+      if fieldname == fname:
+        return typ, offset
+    raise TypeError('This field %s is not a list.'%(fieldname))    
+
+  #def getListFieldIterator(self):
   #  ''' returns [(fieldname, iterator), .. ] '''
   #  for fieldname in self._listMember_:
   #    yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
@@ -202,13 +199,14 @@ def declare_double_linked_list_type( structType, forward, backward):
     raise StopIteration
   
   def loadMembers(self, mappings, depth):
+    # should not be called, field typed as non loadable.
     log.debug('- <%s> loadMembers return TRUE'%(structType.__name__))
     return True
     
   # set iterator on the list structure
-  structType.iterateList = iterateList
+  structType._iterateList = iterateList
   structType.loadMembers = loadMembers
-  log.debug('%s has beed fitted with a list iterator self.iterateList(mappings)'%(structType))
+  log.debug('%s has beed fitted with a list iterator self._iterateList(mappings)'%(structType))
   return
     
 

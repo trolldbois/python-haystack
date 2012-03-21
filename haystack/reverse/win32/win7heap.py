@@ -71,7 +71,7 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
 }
-##_HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry'),]
+_HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),]
 #HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
