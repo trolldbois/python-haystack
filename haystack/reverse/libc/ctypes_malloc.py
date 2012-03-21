@@ -12,7 +12,7 @@ import sys
 
 from haystack import model, memory_mapping
 from haystack.model import is_valid_address,is_valid_address_value,pointer2bytes,array2bytes,bytes2array,getaddress
-from haystack.model import LoadableMembers,RangeValue,NotNull,CString, IgnoreMember, PerfectMatch
+from haystack.model import LoadableMembers,LoadableMembersStructure,RangeValue,NotNull,CString, IgnoreMember, PerfectMatch
 
 from haystack.config import Config
 import struct
@@ -32,7 +32,7 @@ NON_MAIN_ARENA = 4
 SIZE_BITS      = (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
 
 
-class mallocStruct(LoadableMembers):
+class mallocStruct(LoadableMembersStructure):
   ''' defines classRef '''
   pass
 
