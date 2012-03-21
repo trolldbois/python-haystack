@@ -40,11 +40,17 @@ ctypes3.py: test-ctypes3.c
 	which h2xml.py
 	$(XML2PY) -kdst $< -o $@
 
+
+test-ctypes5: test-ctypes5.c
+	$(CC) $(CFLAGS)  $<  $(LDFLAGS)  -o $@
+	h2xml.py -I. test-ctypes5.c -o test-ctypes5.xml
+	xml2py.py test-ctypes5.xml -o ctypes5.py
 	
 clean:
 	rm test-ctypes1 test-ctypes2 test-ctypes3
 	rm test-ctypes4
 	rm test-ctypes3.py
+	rm test-ctypes5
 	
 
 
