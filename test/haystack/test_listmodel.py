@@ -70,7 +70,7 @@ class TestListStruct(unittest.TestCase):
     heaps =[  0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
     for addr in heaps:
       m = self.mappings.getMmapForAddr(addr)
-      heap = self.m.readStruct(addr, win7heap.HEAP)
+      heap = m.readStruct(addr, win7heap.HEAP)
       self.assertTrue(heap.loadMembers(self.mappings, 10 ))
       print heap
     
