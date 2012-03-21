@@ -194,7 +194,7 @@ class LoadableMembers(object):
         log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
         return False
       # null is accepted by default 
-      log.debug('ptr: %s %s 0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
+      log.debug('ptr: name:%s repr:%s getaddress:0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
     # ?
     if isUnionType(attrtype):
@@ -317,20 +317,21 @@ class LoadableMembers(object):
       ref=getRef(_attrType,attr_obj_address)
       if ref:
         log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
-        attr.contents = ref
+        #DO NOT CHANGE STUFF SOUPID attr.contents = ref
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### Read the struct in memory and make a copy to play with.
-      attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
+      ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
+      contents=memoryMap.readStruct(attr_obj_address, _attrType )
       # save that validated and loaded ref and original addr so we dont need to recopy it later
-      keepRef( attr.contents, _attrType, attr_obj_address)
+      keepRef( contents, _attrType, attr_obj_address)
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
       if not bool(attr):
         log.warning('Member %s is null after copy: %s'%(attrname,attr))
         return True
       # go and load the pointed struct members recursively
-      if not attr.contents.loadMembers(mappings, maxDepth):
+      if not contents.loadMembers(mappings, maxDepth):
         log.debug('member %s was not loaded'%(attrname))
         #invalidate the cache ref.
         delRef( _attrType, attr_obj_address)
