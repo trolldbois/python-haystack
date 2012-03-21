@@ -80,12 +80,12 @@ class LoadableMembers(object):
               if False, return False, else continue
     '''
     valid = self._isValid(mappings)
-    log.debug('%s isValid = %s'%(self.__class__.__name__,valid))
+    log.debug('-- <%s> isValid = %s'%(self.__class__.__name__,valid))
     return valid
 
   def _isValid(self,mappings):
     ''' real implementation.  check expectedValues first, then the other fields '''
-    log.debug(' ------ isValid ----------')
+    log.debug(' -- <%s> isValid --'%(self.__class__.__name__))
     _fieldsTuple = self.getFields()
     myfields=dict(_fieldsTuple)
     done=[]
@@ -228,10 +228,9 @@ class LoadableMembers(object):
       log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
       return True
     maxDepth-=1
-    log.debug('%s loadMembers'%(self.__class__.__name__))
     if not self.isValid(mappings):
       return False
-    log.debug('%s do loadMembers ----------------'%(self.__class__.__name__))
+    log.debug('- <%s> do loadMembers -'%(self.__class__.__name__))
     ## go through all members. if they are pointers AND not null AND in valid memorymapping AND a struct type, load them as struct pointers
     for attrname,attrtype in self.getFields():
       attr=getattr(self,attrname)
@@ -249,7 +248,7 @@ class LoadableMembers(object):
         log.error( 'maxDepth was %d'% maxDepth)
         raise #
 
-    log.debug('%s END loadMembers ----------------'%(self.__class__.__name__))
+    log.debug('- <%s> END loadMembers -'%(self.__class__.__name__))
     return True
     
   def _loadMember(self,attr,attrname,attrtype,mappings, maxDepth):

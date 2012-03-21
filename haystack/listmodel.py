@@ -28,14 +28,14 @@ class ListModel(object):
   def loadListOfType(self, fieldname, mappings, structType, listFieldname, maxDepth):
     ''' load self.fieldname as a list of structType '''
     listfield = getattr(structType, listFieldname)
-    offset = 0 - listfield.offset - listfield.size 
+    offset = 0 - listfield.offset #- listfield.size 
     return self._loadListEntries(fieldname, mappings,  structType, maxDepth, offset)
 
 
   def loadListEntries(self, fieldname, mappings, maxDepth):
     ''' load self.fieldname as a list of self-typed '''
     listfield = getattr(type(self), fieldname)
-    offset = 0 - listfield.offset - listfield.size 
+    offset = 0 - listfield.offset #- listfield.size 
     return self._loadListEntries(fieldname, mappings, self.__class__ , maxDepth, offset)
     
 
@@ -47,13 +47,8 @@ class ListModel(object):
     head = getattr(self, fieldname)
     
     for entry in head.iterateList(mappings):
-      #addr = utils.getaddress(entry) 
-      #print entry, addr
-      #if not bool(addr):
-      #  log.warning('%s has a Null pointer - NOT loading'%(fieldname))
-      #  raise StopIteration
-      #link = addr+ offset
       link = entry + offset
+      log.debug('got a element of list at 0x%x/0x%x offset:%d'%(entry, link, offset))
       # use cache if possible, avoid loops.
       #XXX 
       from haystack import model
@@ -70,6 +65,7 @@ class ListModel(object):
         model.keepRef(st, structType, link)
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
+          print st
           raise ValueError('error while loading members')
     
     return True
@@ -92,7 +88,9 @@ class ListModel(object):
     then load list elements members recursively,
     then load list head elements members recursively.
     '''
-    log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
+    log.debug('-+ <%s> loadMembers +-'%(self.__class__.__name__))
+
+    #log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
 
@@ -106,6 +104,7 @@ class ListModel(object):
       self.loadListOfType(fieldname, mappings, 
                           structType, structFieldname, maxDepth ) 
    
+    log.debug('-+ <%s> loadMembers END +-'%(self.__class__.__name__))
     return True
 
   def getFieldIterator(self, mappings, fieldname):
@@ -171,10 +170,10 @@ def declare_double_linked_list_type( structType, forward, backward):
     for fieldname in [forward, backward]:
       link = getattr(obj, fieldname)
       addr = utils.getaddress(link)
-      log.debug('iterateList got a %s/%s'%(link,addr))
+      log.debug('iterateList got a <%s>/0x%x'%(link.__class__.__name__,addr))
       while addr not in done:
         done.append(addr)
-        print '\n%x '%(addr)
+        #print '\n%x '%(addr)
         memoryMap = utils.is_valid_address_value( addr, mappings, structType)
         if memoryMap == False:
           raise ValueError('the link of this linked list has a bad value')
@@ -186,8 +185,13 @@ def declare_double_linked_list_type( structType, forward, backward):
 
     raise StopIteration
   
+  def loadMembers(self, mappings, depth):
+    log.debug('- <%s> loadMembers return TRUE'%(structType.__name__))
+    return True
+    
   # set iterator on the list structure
   structType.iterateList = iterateList
+  structType.loadMembers = loadMembers
   log.debug('%s has beed fitted with a list iterator self.iterateList(mappings)'%(structType))
   return
     

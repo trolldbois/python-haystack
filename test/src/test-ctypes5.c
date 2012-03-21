@@ -1,10 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/queue.h>
-#include <dlfcn.h>
-#include <stdbool.h>
 
 typedef struct entry Entry;
 
