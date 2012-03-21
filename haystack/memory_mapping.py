@@ -286,6 +286,7 @@ class LocalMemoryMapping(MemoryMapping):
   def readStruct(self, vaddr, struct):
     laddr = self.vtop( vaddr )
     struct = struct.from_address(laddr)
+    struct._orig_address_ = vaddr
     return struct
 
   def readArray(self, vaddr, basetype, count):
@@ -465,7 +466,12 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     size = ctypes.sizeof(structType)
     ## YES you DO need to have a copy, otherwise you finish with a allocated
     ## struct in a read-only mmaped file. Not good if you want to changed members pointers after that.
-    return structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
+    # but at the same time, why would you want to CHANGE anything ?
+    struct = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
+    struct._orig_address_ = vaddr
+    return struct
+
+    
 
   def readWord(self, vaddr):
     """Address have to be aligned!"""
