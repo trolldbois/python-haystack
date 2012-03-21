@@ -214,7 +214,6 @@ class ProcessMemoryMapping(MemoryMapping):
 
   def readStruct(self, address, struct):
     struct = self._base.readStruct(address, struct)
-    print '+'*12
     return struct
 
   def readArray(self, address, basetype, count):
@@ -288,7 +287,6 @@ class LocalMemoryMapping(MemoryMapping):
     laddr = self.vtop( vaddr )
     struct = struct.from_address(laddr)
     struct._orig_address_ = vaddr
-    print '&'*12, 'LocalMemoryMapping'
     return struct
 
   def readArray(self, vaddr, basetype, count):
@@ -403,7 +401,6 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     return self._mmap().readBytes(vaddr, size)
 
   def readStruct(self, vaddr, structType):
-    print 'a'*12  , 'MemoryDumpMemoryMapping'
     return self._mmap().readStruct(vaddr, structType)
 
   def readArray(self, vaddr, basetype, count):
@@ -472,7 +469,6 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     # but at the same time, why would you want to CHANGE anything ?
     struct = structType.from_buffer_copy(self._local_mmap[laddr:laddr+size], 0)
     struct._orig_address_ = vaddr
-    print '*'*12
     return struct
 
     
