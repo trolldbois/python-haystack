@@ -48,7 +48,7 @@ class ListModel(object):
     
     for entry in head.iterateList(mappings):
       link = entry + offset
-      log.debug('got a element of list at 0x%x/0x%x offset:%d'%(entry, link, offset))
+      log.debug('got a element of list at %s 0x%x/0x%x offset:%d'%(fieldname, entry, link, offset))
       # use cache if possible, avoid loops.
       #XXX 
       from haystack import model
@@ -60,11 +60,21 @@ class ListModel(object):
         #  OFFSET read, specific to a LIST ENTRY model
         memoryMap = utils.is_valid_address_value( link, mappings, structType)
         if memoryMap is False:
-          raise ValueError('error while valiating address %x'%(link))
+          ## DEBUG
+          #link -= 8
+          #memoryMap = utils.is_valid_address_value( link, mappings, structType)
+          #print memoryMap.readStruct( link, structType) 
+          ## DEBUG
+          log.error('error while validating address 0x%x type:%s @end:0x%x'%(link, 
+                  structType.__name__, link+ctypes.sizeof(structType)) )
+          log.error('self : %s , fieldname : %s'%(self.__class__.__name__, fieldname))
+          raise ValueError('error while validating address 0x%x type:%s @end:0x%x'%(link, 
+                  structType.__name__, link+ctypes.sizeof(structType)) )
         st = memoryMap.readStruct( link, structType) # point at the right offset
         model.keepRef(st, structType, link)
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
+          log.error('Error while loading members on %s'%(self.__class__.__name__))
           print st
           raise ValueError('error while loading members')
     
@@ -82,20 +92,22 @@ class ListModel(object):
       return False
     return True
     
-  def loadMembers(self,mappings, maxDepth):
+  def loadMembers(self, mappings, maxDepth):
     ''' 
     load basic types members, 
     then load list elements members recursively,
     then load list head elements members recursively.
     '''
-    log.debug('-+ <%s> loadMembers +-'%(self.__class__.__name__))
+    log.debug('-+ <%s> loadMembers +- @%x'%(self.__class__.__name__, self._orig_address_))
 
     #log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
     if not super(ListModel, self).loadMembers(mappings, maxDepth):
       return False
 
-    log.debug('load list elements members recursively on %s'%(type(self).__name__))
-    log.debug( 'listmember %s'%self.__class__._listMember_)
+    print 'I HAVE an instance._orig_address_ %x'%self._orig_address_
+
+    log.debug('load list elements members recursively on %s @%x '%(type(self).__name__, ctypes.addressof(self)))
+    log.debug('listmember %s'%self.__class__._listMember_)
     for fieldname in self._listMember_:
       self.loadListEntries(fieldname, mappings, maxDepth )
 
@@ -107,7 +119,7 @@ class ListModel(object):
     log.debug('-+ <%s> loadMembers END +-'%(self.__class__.__name__))
     return True
 
-  def getFieldIterator(self, mappings, fieldname):
+  def __getFieldIterator(self, mappings, fieldname):
     if fieldname not in self._listMember_:
       raise ValueError('No such listMember field ')
     
@@ -143,10 +155,10 @@ class ListModel(object):
 
     raise StopIteration
 
-  def getListEntryIterator(self):
-    ''' returns [(fieldname, iterator), .. ] '''
-    for fieldname in self._listMember_:
-      yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
+  #def getListEntryIterator(self):
+  #  ''' returns [(fieldname, iterator), .. ] '''
+  #  for fieldname in self._listMember_:
+  #    yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
   
 
 def declare_double_linked_list_type( structType, forward, backward):

@@ -113,7 +113,7 @@ class LoadableMembers(object):
   def _isValidAttr(self,attr,attrname,attrtype,mappings):
     ''' Validation of a single member '''
     # a) 
-    log.debug('valid: %s'%(attrtype))
+    log.debug('valid: %s, %s'%(attrname, attrtype))
     if isBasicType(attrtype):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
@@ -223,6 +223,7 @@ class LoadableMembers(object):
 
     @returns True if everything has been loaded, False if something went wrong. 
     '''
+    print 'I HAVE an instance._orig_address_ %x'%self._orig_address_
     if maxDepth == 0:
       log.debug('Maximum depth reach. Not loading any deeper members.')
       log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
@@ -258,7 +259,9 @@ class LoadableMembers(object):
       return True
     # load it, fields are valid
     if isStructType(attrtype):
-      log.debug('st: %s %s is STRUCT'%(attrname,attrtype) )
+      offset = offsetof(type(self),attrname)
+      log.debug('st: %s %s is STRUCT at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
+      attr._orig_address_ = self._orig_address_ + offset
       if not attr.loadMembers(mappings, maxDepth+1):
         log.debug("st: %s %s not valid, erreur while loading inner struct "%(attrname,attrtype) )
         return False
