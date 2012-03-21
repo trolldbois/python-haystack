@@ -113,7 +113,10 @@ def getHeapPointers(dumpfilename, mappings):
     #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
     #log.info('\t[-] merging pointers from heap')
     heap_enum = pointerfinder.PointerEnumerator(mappings.getHeap()).search()
-    heap_addrs, heap_values = zip(*heap_enum) # WTF
+    if len(heap_enum)>0:
+      heap_addrs, heap_values = zip(*heap_enum) # WTF
+    else:
+      heap_addrs, heap_values = (),()
     log.info('\t[-] got %d pointers '%(len(heap_enum)) )
     # merge
     #values = sorted(set(heap_values+stack_values))
