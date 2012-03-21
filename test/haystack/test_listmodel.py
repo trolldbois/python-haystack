@@ -23,30 +23,29 @@ __status__ = "Production"
 
 
 
-#class TestListStruct(unittest.TestCase):
-class TestListStruct:#(unittest.TestCase):
+class TestListStruct(unittest.TestCase):
   '''
   haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
   '''
 
   def setUp(self):
     offset = 0x390000
-    self.mappings = dump_loader.load('putty.1.dump')
+    self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     self.m = self.mappings.getMmapForAddr(offset)
     self.heap = self.m.readStruct(offset, win7heap.HEAP)
   
   def test_iter(self):
-    #self.skipTest('notready')
     try:
       self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
-    except e:
-      self.assertTrue(False)
-    
+    except ValueError,e:
+      raise e # quiet
+
     for el in self.heap.UCRList.iterateList(self.mappings):
       print el
+
     return 
 
-class TestListStructTest5(unittest.TestCase):
+class TestListStructTest5:#(unittest.TestCase):
   '''
   haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
   '''
@@ -60,13 +59,13 @@ class TestListStructTest5(unittest.TestCase):
     self.usual = self.m.readStruct(offset, ctypes5.usual)
   
   def test_iter(self):
-    try:
-      self.assertTrue(self.usual.loadMembers(self.mappings, 10 ))
-    except Exception:
-      self.assertTrue(False)
     
-    for el in self.usual.root.iterateList(self.mappings):
-      print el
+    self.assertTrue(self.usual.loadMembers(self.mappings, 10 ))
+        
+    nodes_addrs = [el for el in self.usual.root.iterateList(self.mappings)]
+
+    self.assertEquals( len(nodes_addrs), 2)
+
     return 
 
 
@@ -74,6 +73,8 @@ class TestListStructTest5(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
+  logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
+  logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
   logging.basicConfig(level=logging.DEBUG)  
-  unittest.main(verbosity=2)
+  unittest.main(verbosity=0)
 
