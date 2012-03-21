@@ -138,7 +138,6 @@ class StructFinder:
     #instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
     instance=memoryMap.readStruct(offset,structType)
     # check if data matches
-    print 'I HAVE an instance._orig_address_ %x'%instance._orig_address_
     if ( instance.loadMembers(self.mappings, depth) ):
       log.info( "found instance %s @ 0x%lx"%(structType,offset) )
       # do stuff with it.
