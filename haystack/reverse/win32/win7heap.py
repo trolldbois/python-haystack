@@ -99,6 +99,9 @@ def _HEAP_getHeapEntries(self, mappings):
       print 'Entry: @%x Size:%x'%(ptr, entry_addr-ptr)
       ptr = entry_addr + entry_size
 
+_HEAP.getHeapEntries = _HEAP_getHeapEntries
+
+
 
 #### HEAP_UCR_DESCRIPTOR
 #_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']

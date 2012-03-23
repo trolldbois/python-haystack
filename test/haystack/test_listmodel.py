@@ -29,12 +29,12 @@ class TestListStruct(unittest.TestCase):
   '''
 
   def setUp(self):
-    offset = 0x390000
     self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
-    self.m = self.mappings.getMmapForAddr(offset)
-    self.heap = self.m.readStruct(offset, win7heap.HEAP)
   
   def test_iter(self):
+    offset = 0x390000
+    self.m = self.mappings.getMmapForAddr(offset)
+    self.heap = self.m.readStruct(offset, win7heap.HEAP)
 
     self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
 
@@ -43,14 +43,8 @@ class TestListStruct(unittest.TestCase):
     
     ucrs = [ucr for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList') for segment in segments]
     self.assertEquals( len(ucrs), 1)
-
-    for segment in segments:
-      skiplist = []
-      for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList'):
-        skiplist.append( (ucr.Address, ucr.Size) )
-        print "a:%x, s:%x"%(ucr.Address, ucr.Size)
         
-      print segment
+      #print segment
         
 
     for el in self.heap.UCRList._iterateList(self.mappings):
@@ -67,12 +61,17 @@ class TestListStruct(unittest.TestCase):
     self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap._HEAP_UCR_DESCRIPTOR,-8))
     
   def test_otherHeap(self):
-    heaps =[  0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
+    heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
     for addr in heaps:
+      print ''
       m = self.mappings.getMmapForAddr(addr)
       heap = m.readStruct(addr, win7heap.HEAP)
       self.assertTrue(heap.loadMembers(self.mappings, 10 ))
-      print heap
+      segments = [segment for segment in heap.iterateListField(self.mappings, 'SegmentList')]
+      self.assertEquals( len(segments), 1)
+      
+      for entry in heap.getHeapEntries(mappings):
+        pass
     
 
 class TestListStructTest5:#(unittest.TestCase):
