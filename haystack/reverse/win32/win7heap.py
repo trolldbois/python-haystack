@@ -13,10 +13,8 @@ __status__ = "Production"
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
+from haystack import utils
 from haystack.config import Config
-
-from haystack.model import is_valid_address,is_valid_address_value,getaddress,array2bytes,bytes2array
-from haystack.model import LoadableMembers,RangeValue,NotNull,CString
 
 from haystack.reverse.win32 import win7heap_generated as gen
 
@@ -71,14 +69,15 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
 }
-_HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),]
+_HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
+                      ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
 #HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
 
 
 
-def _HEAP_getHeapEntries(self, mappings):
+def _HEAP_getSegmentList(self, mappings):
   ''' list all heap entries attached to one Heap structure. '''
   for segment in self.iterateListField( mappings, 'SegmentList'):
     print 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry))
@@ -88,7 +87,7 @@ def _HEAP_getHeapEntries(self, mappings):
       print "UCR address:@%x size:%x"%(ucr.Address, ucr.Size)
 
     ptr = utils.getaddress(segment.FirstEntry)
-    ptrend = utils.getaddress(segment.LastValidEntry) + win7heap._HEAP_SEGMENT.Entry.size
+    ptrend = utils.getaddress(segment.LastValidEntry) + _HEAP_SEGMENT.Entry.size
     skiplist = [ (ucr.Address, ucr.Size) for ucr in 
             segment.iterateListField(mappings, 'UCRSegmentList') 
               if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
@@ -97,10 +96,53 @@ def _HEAP_getHeapEntries(self, mappings):
     skiplist.sort()
     for entry_addr, entry_size in skiplist:
       print 'Entry: @%x Size:%x'%(ptr, entry_addr-ptr)
+      entry = _HEAP_ENTRY.from_address(ptr) 
+      yield (ptr, entry_addr-ptr)
+      #self.scan_heap_segment( mappings, ptr, entry_size)
+
       ptr = entry_addr + entry_size
+  raise StopIteration
 
-_HEAP.getHeapEntries = _HEAP_getHeapEntries
+_HEAP.getSegmentList = _HEAP_getSegmentList
 
+def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
+  off = 0
+  encsize, flags, unused = self.getChunkInfo()
+  chunks = 0
+  bad=0
+  while off < size:
+    m = mappings.getMmapForAddr( entry_addr+off )
+    he = m.readStruct(entry_addr+off, _HEAP_ENTRY)
+    sz = (he.Size ^ encsize)*8
+    if (he.Flags ^ flags) & 1 == 1: # allocated or not ?
+      #chunks[entry_addr+off+ _HEAP_SEGMENT.Entry.size] = sz - (he.UnusedBytes ^ unused)
+      chunks+=1
+      log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
+      yield ( (entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) )
+    else:
+      log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) )
+      bad+=1
+    off += sz
+  log.debug('Found %d allocated chunks and %d with bad flags'%(chunks, bad) )
+  raise StopIteration
+
+def _HEAP_getChunkInfo(self):
+	if self.EncodeFlagMask != 0:
+		return (self.Encoding.Size, self.Encoding.Flags, self.Encoding.UnusedBytes)
+	else:
+	  return (0,0,0)
+
+_HEAP.scan_heap_segment = _HEAP_scan_heap_segment
+_HEAP.getChunkInfo = _HEAP_getChunkInfo
+
+
+def _HEAP_getChunks(self, mappings):
+  for entry_addr,size in self.getSegmentList(mappings):
+    for chunk in self.scan_heap_segment( mappings, entry_addr, size):
+      yield chunk
+  raise StopIteration
+
+_HEAP.getChunks = _HEAP_getChunks
 
 
 #### HEAP_UCR_DESCRIPTOR
