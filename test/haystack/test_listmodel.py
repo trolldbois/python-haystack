@@ -88,7 +88,8 @@ class TestListStruct(unittest.TestCase):
       allocsize = sum( [c[1] for c in chunks ])
       print '+ %d chunks , for %d bytes'%( len(chunks), allocsize )
       
-    
+      for c in heap.getFrontendChunks(self.mappings):
+        pass
 
 class TestListStructTest5:#(unittest.TestCase):
   '''
@@ -122,6 +123,6 @@ if __name__ == '__main__':
   #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
   #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
   #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
-  logging.basicConfig(level=logging.INFO)  
+  logging.basicConfig(level=logging.DEBUG)  
   unittest.main(verbosity=2)
 
