@@ -76,11 +76,36 @@ _HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),]
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
 
+
+
+def _HEAP_getHeapEntries(self, mappings):
+  ''' list all heap entries attached to one Heap structure. '''
+  for segment in self.iterateListField( mappings, 'SegmentList'):
+    print 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry))
+    skiplist = []
+    for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
+      skiplist.append( (ucr.Address, ucr.Size) )
+      print "UCR address:@%x size:%x"%(ucr.Address, ucr.Size)
+
+    ptr = utils.getaddress(segment.FirstEntry)
+    ptrend = utils.getaddress(segment.LastValidEntry) + win7heap._HEAP_SEGMENT.Entry.size
+    skiplist = [ (ucr.Address, ucr.Size) for ucr in 
+            segment.iterateListField(mappings, 'UCRSegmentList') 
+              if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
+    skiplist.append( (ptrend, 1) )
+    print 'skiplist = ', ["@%x %x"%(a,s) for a,s in skiplist]
+    skiplist.sort()
+    for entry_addr, entry_size in skiplist:
+      print 'Entry: @%x Size:%x'%(ptr, entry_addr-ptr)
+      ptr = entry_addr + entry_size
+
+
 #### HEAP_UCR_DESCRIPTOR
 #_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
 #_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),  ]
 
 ########## _LIST_ENTRY
+
 from haystack import listmodel
 listmodel.declare_double_linked_list_type(_LIST_ENTRY, 'FLink', 'BLink')
 

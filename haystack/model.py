@@ -248,9 +248,11 @@ class LoadException(Exception):
 
 ## change LoadableMembers structure given the loaded plugins
 import basicmodel
-import listmodel
-
-heritance = tuple([listmodel.ListModel,basicmodel.LoadableMembers])
+if True:
+  import listmodel
+  heritance = tuple([listmodel.ListModel,basicmodel.LoadableMembers])
+else:
+  heritance = tuple([basicmodel.LoadableMembers])
 LoadableMembers = type('LoadableMembers', heritance, {})
 
 class LoadableMembersUnion(ctypes.Union, LoadableMembers):
