@@ -88,8 +88,11 @@ class TestListStruct(unittest.TestCase):
       allocsize = sum( [c[1] for c in chunks ])
       print '+ %d chunks , for %d bytes'%( len(chunks), allocsize )
       
+      fth=0
       for c in heap.getFrontendChunks(self.mappings):
+        fth+=1
         pass
+      print '+ %d frontend chunks'%( fth)
 
 class TestListStructTest5:#(unittest.TestCase):
   '''
@@ -118,8 +121,8 @@ class TestListStructTest5:#(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
-  logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)  
+  #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
+  #logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)  
   #logging.getLogger("root").setLevel(level=logging.DEBUG)  
   #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
   #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  

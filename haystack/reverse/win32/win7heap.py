@@ -170,7 +170,7 @@ def _HEAP_getFrontendChunks(self, mappings):
     print 'finding frontend at @%x'%(ptr)
     m = mappings.getMmapForAddr(ptr)
     st = m.readStruct( ptr, _LFH_HEAP)
-    print st
+    #print st
     # _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
     if not st.loadMembers(mappings, 10):
       log.error('Error on loading frontend')
@@ -180,14 +180,15 @@ def _HEAP_getFrontendChunks(self, mappings):
       for items_ptr in sinfo.CachedItems: # make getCachedItems()
         items_addr = utils.getaddress(items_ptr)
         if not bool(items_addr):
-          print 'NULL pointer items'
+          #print 'NULL pointer items'
           continue
-        print 'finding ITEMS at @%x'%(items_addr)
+        #print 'finding ITEMS at @%x'%(items_addr)
         m = mappings.getMmapForAddr(items_addr)
         subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
         ## TODO current subsegment.SFreeListEntry is on error at some depth.
         ## bad pointer value on the second subsegment
-        #scan_lfh_ss(subsegment)
+        for b in scan_lfh_ss(subsegment):
+          yield b
   else:
     print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
     raise StopIteration
@@ -199,11 +200,13 @@ _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
 def scan_lfh_ss(subseg):
   userBlocks = utils.getaddress(subseg.UserBlocks)
   if not bool(userBlocks):
-    return None
+    return []
   blocks = [ userBlocks + 0x10 + subseg.BlockSize*8*i for i in range(subseg.BlockCount)]
   #
-  free = []
-  ptr = subseg.FreeEntryOffset
+  ## TODO me DELETE, i need size with each block
+  return blocks 
+  #free = []
+  #ptr = subseg.FreeEntryOffset
   #subseg.depth.times { 
   #  free << (up + 8*ptr)
   #  ptr = @dbg.memory[up + 8*ptr + 8, 2].unpack('v')[0]
