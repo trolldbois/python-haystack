@@ -80,11 +80,11 @@ _HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
 def _HEAP_getSegmentList(self, mappings):
   ''' list all heap entries attached to one Heap structure. '''
   for segment in self.iterateListField( mappings, 'SegmentList'):
-    print 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry))
+    log.debug( 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry)) )
     skiplist = []
     for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
       skiplist.append( (ucr.Address, ucr.Size) )
-      print "UCR address:@%x size:%x"%(ucr.Address, ucr.Size)
+      log.debug("UCR address:@%x size:%x"%(ucr.Address, ucr.Size))
 
     ptr = utils.getaddress(segment.FirstEntry)
     ptrend = utils.getaddress(segment.LastValidEntry) + _HEAP_SEGMENT.Entry.size
@@ -92,14 +92,12 @@ def _HEAP_getSegmentList(self, mappings):
             segment.iterateListField(mappings, 'UCRSegmentList') 
               if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
     skiplist.append( (ptrend, 1) )
-    print 'skiplist = ', ["@%x %x"%(a,s) for a,s in skiplist]
+    log.debug( 'skiplist = %s'%( ["@%x %x"%(a,s) for a,s in skiplist]) )
     skiplist.sort()
     for entry_addr, entry_size in skiplist:
-      print 'Entry: @%x Size:%x'%(ptr, entry_addr-ptr)
+      log.debug('Entry: @%x Size:%x'%(ptr, entry_addr-ptr) )
       entry = _HEAP_ENTRY.from_address(ptr) 
       yield (ptr, entry_addr-ptr)
-      #self.scan_heap_segment( mappings, ptr, entry_size)
-
       ptr = entry_addr + entry_size
   raise StopIteration
 

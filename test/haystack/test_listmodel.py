@@ -68,7 +68,7 @@ class TestListStruct(unittest.TestCase):
     
     heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
     for addr in heaps:
-      print ''
+      print '\n+ Heap @%x'%(addr)
       m = self.mappings.getMmapForAddr(addr)
       heap = m.readStruct(addr, win7heap.HEAP)
       self.assertTrue(heap.loadMembers(self.mappings, 10 ))
@@ -77,13 +77,16 @@ class TestListStruct(unittest.TestCase):
 
       allocated = [ block for block in heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
       if len(allocated) == 0:
-        print ' NO vallocated blocks'
+        print '+ NO vallocated blocks'
       else:
+        print '+ vallocated blocks'
         for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') :
-          print 'vallocated commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
+          print '\t- vallocated commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
       
       #first = None
       chunks = [ chunk for chunk in heap.getChunks(self.mappings)]
+      allocsize = sum( [c[1] for c in chunks ])
+      print '+ %d chunks , for %d bytes'%( len(chunks), allocsize )
       
     
 
