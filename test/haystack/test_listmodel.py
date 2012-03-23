@@ -118,7 +118,8 @@ class TestListStructTest5:#(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
+  logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
+  logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)  
   #logging.getLogger("root").setLevel(level=logging.DEBUG)  
   #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
   #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  

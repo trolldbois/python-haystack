@@ -185,7 +185,9 @@ def _HEAP_getFrontendChunks(self, mappings):
         print 'finding ITEMS at @%x'%(items_addr)
         m = mappings.getMmapForAddr(items_addr)
         subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
-        scan_lfh_ss(subsegment)
+        ## TODO current subsegment.SFreeListEntry is on error at some depth.
+        ## bad pointer value on the second subsegment
+        #scan_lfh_ss(subsegment)
   else:
     print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
     raise StopIteration
@@ -227,6 +229,15 @@ def scan_lfh_ss(subseg):
 _HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
   'LocalData': utils.IgnoreMember,
 }
+
+
+
+## TODO current subsegment.SFreeListEntry is on error at some depth.
+## bad pointer value on the second subsegment
+_HEAP_SUBSEGMENT.expectedValues = {
+  'SFreeListEntry': utils.IgnoreMember,
+}
+
 
 ########## _LIST_ENTRY
 
