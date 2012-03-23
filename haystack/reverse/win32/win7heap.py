@@ -48,6 +48,10 @@ _HEAP_LOCK._fields_ = [
   ('voidme', ctypes.c_ubyte),
   ]
 
+_LFH_BLOCK_ZONE._fields_ = [
+  ('voidme', ctypes.c_ubyte),
+  ]
+
 
 ## HEAP_SEGMENT
 

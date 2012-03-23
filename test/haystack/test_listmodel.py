@@ -123,6 +123,6 @@ if __name__ == '__main__':
   #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
   #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
   #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
-  logging.basicConfig(level=logging.DEBUG)  
+  logging.basicConfig(level=logging.INFO)  
   unittest.main(verbosity=2)
 
