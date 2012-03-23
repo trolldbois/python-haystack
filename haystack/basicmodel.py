@@ -91,6 +91,7 @@ class LoadableMembers(object):
     done=[]
     # check expectedValues first
     for attrname, expected in self.expectedValues.iteritems():
+      log.debug(' +++ %s %s '%(attrname, expected))
       attrtype = myfields[attrname]
       attr=getattr(self,attrname)
       if expected is IgnoreMember:
@@ -144,6 +145,7 @@ class LoadableMembers(object):
         return True
       elType=type(attr[0])
       for i in range(0,attrLen):
+        # FIXME BUG DOES NOT WORK - offsetof("%s[%d]") is called, and %s exists, not %s[%d]
         if not self._isValidAttr(attr[i], "%s[%d]"%(attrname,i), elType, mappings ):
           return False
       return True
@@ -283,7 +285,9 @@ class LoadableMembers(object):
         return True
       elType=type(attr[0])
       for i in range(0,attrLen):
-        if not self._loadMember(attr[i], "%s[%d]"%(attrname,i), elType, mappings, maxDepth):
+        # FIXME BUG DOES NOT WORK - offsetof("%s[%d]") is called, and %s exists, not %s[%d]
+        #if not self._loadMember(attr[i], "%s[%d]"%(attrname,i), elType, mappings, maxDepth):
+        if not self._loadMember(attr[i], attrname, elType, mappings, maxDepth):
           return False
       return True
     # we have PointerType here . Basic or complex
@@ -321,7 +325,7 @@ class LoadableMembers(object):
         log.warning("%s %s not loadable 0x%lx but VALID "%(attrname, attr,attr_obj_address ))
         return True
 
-      from haystack.model import getRef, keepRef # TODO CLEAN
+      from haystack.model import getRef, keepRef, delRef # TODO CLEAN
 
       ref=getRef(_attrType,attr_obj_address)
       if ref:
