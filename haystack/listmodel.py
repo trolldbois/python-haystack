@@ -65,7 +65,7 @@ class ListModel(object):
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
           log.error('Error while loading members on %s'%(self.__class__.__name__))
-          print st
+          #print st
           raise ValueError('error while loading members')
 
     return True
