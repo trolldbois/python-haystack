@@ -57,6 +57,8 @@ _LFH_BLOCK_ZONE._fields_ = [
 
 _HEAP_SEGMENT.expectedValues = {
   'SegmentSignature':[0xffeeffee],
+# Cannot just ignore it... need to load it.
+#  'LastValidEntry': utils.IgnoreMember,
 }
 
 #_HEAP_SEGMENT.UCRSegmentList. points to _HEAP_UCR_DESCRIPTOR.SegmentEntry.
@@ -66,6 +68,10 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 ##_HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'SegmentEntry'),]
 #_HEAP_SEGMENT._listMember_ = ['SegmentListEntry']
 
+## LastValidEntry can be out of mappings
+# (is_valid_address: 0x01f00000 0x01f12000 rw- 0x00000000 fe:01 24422442 None)
+#DEBUG:basicmodel:ptr: LastValidEntry <class 'haystack.reverse.win32.win7heap_generated.LP__HEAP_ENTRY'>
+# <haystack.reverse.win32.win7heap_generated.LP__HEAP_ENTRY object at 0x904989c> 0x2000000 INVALID
 
 
 ###### HEAP

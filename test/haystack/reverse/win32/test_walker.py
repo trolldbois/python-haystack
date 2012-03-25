@@ -29,20 +29,26 @@ class TestAllocator(unittest.TestCase):
 
   def setUp(self):  
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
+    self._known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
+                    ( 0x00580000, 111111), (0x005c0000, 1704080) , 
+                    ( 0x01ef0000, 604), (0x02010000, 222222), 
+                    ( 0x02080000, 33333), (0x021f0000 , 18762),
+                    ( 0x03360000, 444), (0x04030000 , 555555555),
+                    ( 0x04110000, 666666), (0x041c0000 , 777),
+                    ]
+
 
   def test_search(self):
     ''' def search(mappings, heap, filterInuse=False ):'''
-    #self.skipTest('paused')
-
-    known_heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
+    self.skipTest('paused')
 
     found=[]
     for mapping in self._mappings:
       addr = mapping.start
       heap = mapping.readStruct( addr, HEAP )
-      if addr in known_heaps:
+      if addr in map(lambda x:x[0] , self._known_heaps):
         self.assertTrue(  heap.loadMembers(self._mappings, -1), "We expected a valid hit at @%x"%(addr) )
-        found.append(addr)
+        found.append(addr, )
       else:
         try:
           ret = heap.loadMembers(self._mappings, -1)
@@ -51,19 +57,17 @@ class TestAllocator(unittest.TestCase):
           self.assertRaisesRegexp( ValueError, 'error while loading members')
   
     found.sort()
-    self.assertEquals( known_heaps, found)
+    self.assertEquals( map(lambda x:x[0] , self._known_heaps), found)
   
     return  
 
   def test_getUserAllocations(self):
     ''' def getUserAllocations(mappings, heap, filterInuse=False):'''
     
-    self.skipTest('paused')
+    #self.skipTest('paused')
     
-    heaps = [ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
-    sizes = [ 8956, 868, 1704080, 604, 18762]
     ## TODO change for self._mappings.getHeaps()
-    for addr, size in zip(heaps, sizes):
+    for addr, size in self._known_heaps:
       m = self._mappings.getMmapForAddr(addr)
       #
       total = 0
@@ -78,7 +82,8 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
+  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
