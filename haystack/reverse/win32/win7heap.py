@@ -122,7 +122,7 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
       log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
       yield ( (entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) )
     else:
-      log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) )
+      log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) ) # HEAP_ENTRY_BUSY = 0x1
       bad+=1
     off += sz
   log.debug('Found %d allocated chunks and %d with bad flags'%(chunks, bad) )
@@ -167,7 +167,7 @@ def _HEAP_getFrontendChunks(self, mappings):
       ptr += ctypes.sizeof(_HEAP_LOOKASIDE)
   elif self.FrontEndHeapType == 2: # win7 per default
     ptr = self.FrontEndHeap
-    print 'finding frontend at @%x'%(ptr)
+    #print 'finding frontend at @%x'%(ptr)
     m = mappings.getMmapForAddr(ptr)
     st = m.readStruct( ptr, _LFH_HEAP)
     #print st
@@ -190,7 +190,7 @@ def _HEAP_getFrontendChunks(self, mappings):
         for b in scan_lfh_ss(subsegment):
           yield b
   else:
-    print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
+    #print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
     raise StopIteration
 
   
@@ -198,13 +198,24 @@ _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
 
 
 def scan_lfh_ss(subseg):
+  ####
+  #### TODO
+  ####
   userBlocks = utils.getaddress(subseg.UserBlocks)
   if not bool(userBlocks):
     return []
-  blocks = [ userBlocks + 0x10 + subseg.BlockSize*8*i for i in range(subseg.BlockCount)]
+  blocks = [ (userBlocks + 0x10 + subseg.BlockSize*8*i,subseg.BlockSize*8) for i in range(subseg.BlockCount)]
   #
   ## TODO me DELETE, i need size with each block
   return blocks 
+  free = []
+  ptr = utils.getaddress(subseg.AggregateExchg.FreeEntryOffset)
+  for i in range(subseg.AggregateExchg.Depth):
+    free.append( userBlocks+ 8*ptr)
+    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
+  return blocks 
+  
+  
   #free = []
   #ptr = subseg.FreeEntryOffset
   #subseg.depth.times { 
