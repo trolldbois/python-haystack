@@ -91,6 +91,7 @@ class LoadableMembers(object):
     done=[]
     # check expectedValues first
     for attrname, expected in self.expectedValues.iteritems():
+      done.append(attrname)
       log.debug(' +++ %s %s '%(attrname, expected))
       attrtype = myfields[attrname]
       attr=getattr(self,attrname)
@@ -98,14 +99,10 @@ class LoadableMembers(object):
         continue
       if not self._isValidAttr(attr,attrname,attrtype,mappings):
         return False
-      done.append(attrname)
     # check the rest for validation
     todo = [ (name, typ) for name,typ in self.getFields() if name not in done ]
     for attrname,attrtype, in todo:
       attr=getattr(self,attrname)
-      if attrname in self.expectedValues:
-        if self.expectedValues[attrname] is IgnoreMember:
-          continue
       if not self._isValidAttr(attr,attrname,attrtype,mappings):
         return False
     # validation done
@@ -466,6 +463,12 @@ class LoadableMembers(object):
       else:
         s+='%s : %s\n'%(field, repr(attr) )  
     return s
+
+  def __repr__(self):
+    if hasattr(self, '_orig_address_'):
+      return "# <%s at @%x>\n"%(self.__class__.__name__, self._orig_address_)
+    else:
+      return "# <%s at @???>\n"%(self.__class__.__name__)
     
   def toPyObject(self):
     ''' 
