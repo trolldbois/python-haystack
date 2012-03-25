@@ -10,9 +10,7 @@ __doc__ = '''
   Tools to reverse engineer the memory structures present in a MemoryMapping.
 '''
 
-#import pattern
 
 all =[
 ]
-
 
