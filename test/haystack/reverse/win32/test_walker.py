@@ -83,7 +83,7 @@ class TestAllocator(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
-  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
