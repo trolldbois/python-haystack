@@ -39,9 +39,9 @@ class TestAllocator(unittest.TestCase):
 
 
   def test_search(self):
-    ''' def search(mappings, heap, filterInuse=False ):'''
-    self.skipTest('paused')
-
+    '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
+    #self.skipTest('paused')
+    
     found=[]
     for mapping in self._mappings:
       addr = mapping.start
@@ -62,7 +62,7 @@ class TestAllocator(unittest.TestCase):
     return  
 
   def test_getUserAllocations(self):
-    ''' def getUserAllocations(mappings, heap, filterInuse=False):'''
+    ''' For each known _HEAP, load all user Allocation and compare the number of allocated bytes. '''
     
     #self.skipTest('paused')
     
@@ -87,6 +87,6 @@ if __name__ == '__main__':
   #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
-  unittest.main(verbosity=0)
+  unittest.main(verbosity=3)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
