@@ -30,11 +30,11 @@ class TestAllocator(unittest.TestCase):
   def setUp(self):  
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     self._known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
-                    ( 0x00580000, 111111), (0x005c0000, 1704080) , 
-                    ( 0x01ef0000, 604), (0x02010000, 222222), 
-                    ( 0x02080000, 33333), (0x021f0000 , 18762),
-                    ( 0x03360000, 444), (0x04030000 , 555555555),
-                    ( 0x04110000, 666666), (0x041c0000 , 777),
+                    ( 0x00580000, 111933), (0x005c0000, 1704080) , 
+                    ( 0x01ef0000, 604), (0x02010000, 61348), 
+                    ( 0x02080000, 474949), (0x021f0000 , 18762),
+                    ( 0x03360000, 604), (0x04030000 , 632),
+                    ( 0x04110000, 1334), (0x041c0000 , 644),
                     ]
 
 
@@ -83,7 +83,10 @@ class TestAllocator(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
-  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  logging.getLogger('dump_loader').setLevel(level=logging.INFO)
+  logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)

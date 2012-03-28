@@ -74,6 +74,64 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 # <haystack.reverse.win32.win7heap_generated.LP__HEAP_ENTRY object at 0x904989c> 0x2000000 INVALID
 
 
+# For LastValidEntry, we need a special treatment.
+# If the pointer is valid, we should load it.
+# if the pointer is out of mapping, ignore it.
+# Cannot just ignore it... need to load it.
+
+def _HEAP_SEGMENT_isValidAttr(self,attr,attrname,attrtype,mappings):
+  log.debug('_isValidAttr attrname : %s'%(attrname))
+  if attrname == 'LastValidEntry':
+    return True # ignore
+  else:
+    return super(_HEAP_SEGMENT,self)._isValidAttr(attr,attrname,attrtype,mappings)
+
+_HEAP_SEGMENT._isValidAttr = _HEAP_SEGMENT_isValidAttr
+
+def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
+  log.debug('_loadMember attrname : %s'%(attrname))
+  if attrname == 'LastValidEntry':
+    # isPointerType code.
+    log.debug('try pointer, ignore it if bad pointer.')
+    _attrname='_'+attrname
+    _attrType=self.classRef[attrtype]
+    attr_obj_address = utils.getaddress(attr)
+    setattr(self,'__'+attrname,attr_obj_address)
+    ####
+    memoryMap = utils.is_valid_address( attr, mappings, _attrType)
+    if(not memoryMap):
+      log.debug("LastValidEntry out of mapping - 0x%lx - ignore "%(attr_obj_address ))
+      return True
+    from haystack.model import getRef, keepRef, delRef # TODO CLEAN
+    ref=getRef(_attrType,attr_obj_address)
+    if ref:
+      log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
+      #DO NOT CHANGE STUFF SOUPID attr.contents = ref
+      return True
+    log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
+    ##### Read the struct in memory and make a copy to play with.
+    ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
+    contents=memoryMap.readStruct(attr_obj_address, _attrType )
+    # save that validated and loaded ref and original addr so we dont need to recopy it later
+    keepRef( contents, _attrType, attr_obj_address)
+    log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))   ))
+    # recursive validation checks on new struct
+    if not bool(attr):
+      log.warning('Member %s is null after copy: %s'%(attrname,attr))
+      return True
+    # go and load the pointed struct members recursively
+    if not contents.loadMembers(mappings, maxDepth):
+      log.debug('member %s was not loaded'%(attrname))
+      #invalidate the cache ref.
+      delRef( _attrType, attr_obj_address)
+      return False
+    return True
+  else:
+    return super(_HEAP_SEGMENT,self)._loadMember(attr,attrname,attrtype,mappings, maxDepth)
+
+
+_HEAP_SEGMENT._loadMember = _HEAP_SEGMENT_loadMember
+
 ###### HEAP
 
 _HEAP.expectedValues = {
@@ -120,6 +178,10 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
   bad=0
   while off < size:
     m = mappings.getMmapForAddr( entry_addr+off )
+    if not bool(m) :
+      # out of mapping LastValidEntry - do not load
+      # log.info('_HEAP scan-heap on @%x + off:%x = @%x- error'%(entry_addr, off, entry_addr+off))
+      break
     he = m.readStruct(entry_addr+off, _HEAP_ENTRY)
     sz = (he.Size ^ encsize)*8
     if (he.Flags ^ flags) & 1 == 1: # allocated or not ?
