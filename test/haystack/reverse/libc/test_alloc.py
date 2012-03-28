@@ -35,7 +35,7 @@ class TestAllocator(unittest.TestCase):
     return  
 
   def test_getUserAllocations(self):
-    ''' def getUserAllocations(mappings, heap, filterInuse=False):'''
+    ''' List all user allocations.'''
     #self.skipTest('notready')
        
     # we need mappings from 
@@ -43,7 +43,7 @@ class TestAllocator(unittest.TestCase):
       try:
         if ctypes_alloc.isMallocHeap(self.mappings, mapping):
           allocs = [a for a in ctypes_alloc.getUserAllocations(self.mappings, mapping)]
-          print '%d alloc blocks for %d bytes'%(len(allocs), sum( [size for addr,size in allocs ]))
+          print '%d alloc blocks for %d bytes/%d'%(len(allocs), sum( [size for addr,size in allocs ]), len(mapping))
       except ValueError,e:
         pass    
     
@@ -52,7 +52,7 @@ class TestAllocator(unittest.TestCase):
     return  
 
   def test_isMallocHeap(self):
-    ''' def isMallocHeap(mappings, mapping):'''
+    ''' test if a mpaping is a heap'''
     #self.skipTest('notready')
 
     # we need mappings from 
@@ -67,6 +67,6 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main(verbosity=0)
+  unittest.main(verbosity=3)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
