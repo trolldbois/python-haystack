@@ -140,6 +140,7 @@ def getAllocations(dumpfilename, mappings, heap):
       records addrs and sizes.
   '''
   # TODO if linux
+  # TODO from haystack.reverse import heapwalker
   import libc.ctypes_malloc
   
   f_addrs = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_ADDRS, dumpfilename+'.%x'%(heap.start))
@@ -149,6 +150,15 @@ def getAllocations(dumpfilename, mappings, heap):
   sizes = int_array_cache(f_sizes)
   if addrs is None or sizes is None:
     log.info('[+] Making new cache - getting malloc_chunks from heap ')
+    ### TODO : HeapWalker + order addresses ASC ...
+    # allocations = sorted(heapwalker.getUserAllocations(mappings, heap))
+    ## TODO 2 , allocations should be triaged by mmapping ( heap.start ) before write2disk.
+    ## Or the heap.start should be removed from the cache name.. it has no impact.
+    ## heapwalker.getuserAllocations should parse ALL mmappings to get all user allocations.
+    ### But in that case, there will/could be a problem when using utils.closestFloorValue...
+    ### in case of a pointer ( bad allocation ) out of a mmapping space.
+    ### But that is not possible, because we are reporting factual reference to existing address space.
+    ### OK. heap.start should be deleted from the cache name.
     allocations = libc.ctypes_malloc.getUserAllocations(mappings, heap, filterInuse=True)
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
