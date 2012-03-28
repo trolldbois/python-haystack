@@ -21,6 +21,8 @@ class HeapWalker(object):
     raise NotImplementedError('Please implement all methods')
   
   
-
+# TODO make a virtual function that plays libc or win32 ?
+# or put that in the MemoryMappings ?
+# or in the context ?
  
 

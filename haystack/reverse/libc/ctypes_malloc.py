@@ -53,7 +53,7 @@ def getUserAllocations(mappings, heap, filterInuse=False):
   chunk = heap.readStruct(orig_addr, malloc_chunk)
   ret = chunk.loadMembers(mappings, 10, orig_addr)
   if not ret:
-    raise ValueError('heap dos not start with an malloc_chunk')
+    raise ValueError('heap does not start with an malloc_chunk')
   #data = chunk.getUserData(mappings, orig_addr)
   #print chunk.toString(''), 'real_size = ', chunk.real_size()
   #print hexdump(data)
