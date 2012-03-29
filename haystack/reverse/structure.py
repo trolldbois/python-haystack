@@ -739,7 +739,7 @@ class AnonymousStructInstance():
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.isPointerResolved)
     ctypes_def = '''
-class %s(LoadableMembers):  # %s
+class %s(LoadableMembersStructure):  # %s
   _fields_ = %s
 
 ''' % (self.getName(), info, fieldsString)

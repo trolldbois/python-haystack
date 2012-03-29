@@ -20,13 +20,13 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-class St(LoadableMembers):
+class St(LoadableMembersStructure):
   _fields_ = [ ('a',ctypes.c_int) ]
 
-class St2(LoadableMembers):
+class St2(LoadableMembersStructure):
   _fields_ = [ ('a',ctypes.c_int) ]
 
-class SubSt2(LoadableMembers):
+class SubSt2(LoadableMembersStructure):
   _fields_ = [ ('a',ctypes.c_int) ]
 
 #
