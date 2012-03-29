@@ -740,23 +740,28 @@ def reverseInstances(dumpname):
       os.mkdir(Config.getStructsCacheDir(context.dumpname))
     
     # we use common allocators to find structures.
+    log.debug('Reversing malloc')
     mallocRev = MallocReverser()
     context = mallocRev.reverse(context)
     mallocRev.check_inuse(context)
 
     # try to find some logical constructs.
+    log.debug('Reversing DoubleLinkedListReverser')
     doublelink = DoubleLinkedListReverser()
     context = doublelink.reverse(context)
 
     # decode bytes contents to find basic types.
+    log.debug('Reversing Fields')
     fr = FieldReverser()
     context = fr.reverse(context)
 
     # identify pointer relation between structures
+    log.debug('Reversing PointerFields')
     pfr = PointerFieldReverser()
     context = pfr.reverse(context)
 
     # graph pointer relations between structures
+    log.debug('Reversing PointerGraph')
     ptrgraph = PointerGraphReverser()
     context = ptrgraph.reverse(context)
     ptrgraph._saveStructures(context)
