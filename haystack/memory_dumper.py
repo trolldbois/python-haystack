@@ -136,6 +136,9 @@ class MemoryDumper:
 
   def _dump_mapping(self, m, tmpdir):
     """Dump one mapping to one file in one tmpdir."""
+    if m.permissions[0] != 'r':
+      log.debug('Ignoring read protected mapping')
+      return
     log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
     mname = "%s-%s" % (dbg.formatAddress(m.start), dbg.formatAddress(m.end))
