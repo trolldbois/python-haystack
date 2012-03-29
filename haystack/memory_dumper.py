@@ -139,6 +139,9 @@ class MemoryDumper:
     if m.permissions[0] != 'r':
       log.debug('Ignoring read protected mapping')
       return
+    elif m.pathname in ['[vdso]','[vsyscall]']:
+      log.debug('Ignoring system mapping')
+      return
     log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
     mname = "%s-%s" % (dbg.formatAddress(m.start), dbg.formatAddress(m.end))
