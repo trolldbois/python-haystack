@@ -124,7 +124,7 @@ def main(argv):
     logging.getLogger('haystack-reverse').setLevel(logging.INFO)
     logging.getLogger('signature').setLevel(logging.INFO)
     logging.getLogger('reversers').setLevel(logging.INFO)
-  sh=logging.StreamHandler(stream=sys.stdout)
+  sh=logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
   logging.getLogger('signature').addHandler( sh )
   logging.getLogger('reversers').addHandler( sh )
   logging.getLogger('haystack-reverse').addHandler( sh )
