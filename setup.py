@@ -36,8 +36,8 @@ setup(name="haystack",
     packages = ["haystack", "haystack.gui", "haystack.reverse", "haystack.reverse.libc", "haystack.reverse.win32"],
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
     package_data={"haystack.reverse": ['data/words.100']},
-    install_requires = ["python-ptrace", "argparse"],
-    test_suite= "test",
+    install_requires = ["python-ptrace", "argparse" ], #, "Levenschtein", "networkx"],
+    test_suite= "test.haystack",
     #tests_require="haystack",
 )
 
