@@ -252,7 +252,7 @@ class LocalMemoryMapping(MemoryMapping):
   """
   def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-    self._local_mmap = (ctypes.c_byte * len(self)).from_address(address) # DEBUG TODO byte or ubyte 
+    self._local_mmap = (ctypes.c_byte * len(self)).from_address(int(address)) # DEBUG TODO byte or ubyte 
     self._address = ctypes.addressof(self._local_mmap)
     #self._vbase = self.start + self._address # shit, thats wraps up...
     self._bytebuffer = None
@@ -269,7 +269,7 @@ class LocalMemoryMapping(MemoryMapping):
   def readWord(self, vaddr ):
     """Address have to be aligned!"""
     laddr = self.vtop( vaddr )
-    word = MemoryMapping.WORDTYPE.from_address(laddr).value # is non-aligned a pb ?, indianess is at risk
+    word = MemoryMapping.WORDTYPE.from_address(int(laddr)).value # is non-aligned a pb ?, indianess is at risk
     return word
 
   def readBytes1(self, vaddr, size):
@@ -285,13 +285,13 @@ class LocalMemoryMapping(MemoryMapping):
   
   def readStruct(self, vaddr, struct):
     laddr = self.vtop( vaddr )
-    struct = struct.from_address(laddr)
+    struct = struct.from_address(int(laddr))
     struct._orig_address_ = vaddr
     return struct
 
   def readArray(self, vaddr, basetype, count):
     laddr = self.vtop( vaddr )
-    array = (basetype *count).from_address(laddr)
+    array = (basetype *count).from_address(int(laddr))
     return array
 
   def getByteBuffer(self):
@@ -374,7 +374,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         self._local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
-        self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(heapmap)
+        self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
       elif hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
         # we have the bytes
