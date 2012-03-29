@@ -13,7 +13,7 @@ import unittest
 
 from haystack import memory_mapping
 from haystack.config import Config
-from haystack.reverse import signature
+from haystack.reverse import pointerfinder
 
 Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000
@@ -62,7 +62,7 @@ class TestPointerSearcher(unittest.TestCase):
     self.seq = [4,4,8,128,4,8,4,4,12]
     self.mmap, self.values = makeMMap(self.seq)
     self.name = 'test_dump_1'
-    self.pointerSearcher = signature.PointerSearcher(self.mmap)
+    self.pointerSearcher = pointerfinder.PointerSearcher(self.mmap)
 
   def test_iter(self):
     iters = [value for value in self.pointerSearcher ]
@@ -78,7 +78,7 @@ class TestPointerEnumerator(unittest.TestCase):
     self.seq = [4,4,8,128,4,8,4,4,12]
     self.mmap, self.values = makeMMap(self.seq)
     self.name = 'test_dump_1'
-    self.pointerEnum = signature.PointerEnumerator(self.mmap)
+    self.pointerEnum = pointerfinder.PointerEnumerator(self.mmap)
 
   def test_iter(self):
     values = [value for offset,value in self.pointerEnum ]
