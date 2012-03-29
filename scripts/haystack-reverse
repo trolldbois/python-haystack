@@ -119,7 +119,7 @@ def main(argv):
     logging.getLogger('haystack-reverse').setLevel(logging.DEBUG)
     logging.getLogger('signature').setLevel(logging.DEBUG)
     logging.getLogger('reversers').setLevel(logging.DEBUG)
-    logging.getLogger().debug('[+] **** COMPLETE debug log to %s'%(flog))    
+    print ('[+] **** COMPLETE debug log to %s'%(flog))    
   else:
     logging.getLogger('haystack-reverse').setLevel(logging.INFO)
     logging.getLogger('signature').setLevel(logging.INFO)
