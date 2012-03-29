@@ -373,7 +373,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
       if mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
         self._local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-        heapmap = struct.unpack('L', (ctypes.c_uint).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
+        heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
         self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(heapmap)
       elif hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
         log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
