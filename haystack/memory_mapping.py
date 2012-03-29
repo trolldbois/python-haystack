@@ -558,6 +558,9 @@ class Mappings:
     return False
 
   def getHeap(self):
+    # This does not really exists on win32.
+    # getHeaps() will be more appropriate...
+    # this fn is used onlly in reverse/*
     heap = self.getMmap('[heap]')[0]
     return heap
   def getStack(self):
