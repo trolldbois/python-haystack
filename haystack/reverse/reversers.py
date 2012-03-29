@@ -68,6 +68,7 @@ class ReverserContext():
 
   ''' TODO implement a LRU cache '''
   def _get_structures(self):
+    #### TODO use HeapWalker ... win32 + libc
     if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
       return self._structures
     # cache Load
@@ -80,6 +81,7 @@ class ReverserContext():
                       (len(self._structures) ,len(self._malloc_addresses)))
       if ( len(self._malloc_addresses) - len(self._structures) ) < 10 :
         log.warning('close numbers to check %s'%(set( self._malloc_addresses ) - set( self._structures ) ))
+      # TODO use GenericHeapAllocationReverser
       mallocRev = MallocReverser()
       context = mallocRev.reverse(self)
       mallocRev.check_inuse(self)
@@ -344,6 +346,52 @@ class MallocReverser(StructureOrientedReverser):
         used+=1
     log.info('[+] Found %s allocs used but not referenced by pointers'%(used))
     return 
+
+
+class GenericHeapAllocationReverser(StructureOrientedReverser):
+  ''' use heapwalker to get user allocations into structures.  '''
+  def _reverse(self, context):
+    log.info('[+] Reversing user allocations ')
+    t0 = time.time()
+    tl = t0
+    loaded = 0
+    prevLoaded = 0
+    unused = 0
+    doneStructs = context._structures.keys() # FIXME why is that a LIST ?????
+    #    
+    todo = sorted(set(context._user_alloc_addresses) - set(doneStructs))
+    fromcache = len(context._user_alloc_addresses) - len(todo)
+    offsets = list(context._pointers_offsets)
+    # build structs from pointers boundaries. and creates pointer fields if possible.
+    log.info('[+] Adding new raw structures from getUserAllocations cached contents - %d todo'%(len(todo)))
+    for i, (ptr_value, size) in enumerate(zip(map(int,context._user_alloc_addresses), map(int,context._user_alloc_sizes))):
+      # TODO if len(_structure.keys()) +/- 30% de _malloc, do malloc_addr - keys() , 
+      # and use fsking utils.dequeue()
+      if ptr_value in doneStructs: # FIXME TODO THAT IS SUCKY SUCKY
+        sys.stdout.write('.')
+        sys.stdout.flush()
+        continue
+      loaded += 1
+      mystruct = structure.makeStructure(context, ptr_value, size)
+      context._structures[ ptr_value ] = mystruct
+      # add pointerFields
+      offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
+      log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
+      # optimise insertion
+      if len(my_pointers_addrs) > 0:
+        mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+      #cache to disk
+      mystruct.saveme()
+      # next
+      if time.time()-tl > 10: #i>0 and i%10000 == 0:
+        tl = time.time()
+        rate = ((tl-t0)/(loaded)) if loaded else ((tl-t0)/(loaded+fromcache)) #DEBUG...
+        log.info('%2.2f secondes to go (b:%d/c:%d)'%( (len(todo)-i)*rate, loaded, fromcache ) )
+    log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:%d)'%(loaded+ fromcache, time.time()-t0,loaded, fromcache, unused ) )
+    
+    context.parsed.add(str(self))
+    return
+
     
 '''
   Looks at pointers values to build basic structures boundaries.
