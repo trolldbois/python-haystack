@@ -171,13 +171,13 @@ class MemoryMapping:
   
   # ---- to implement if needed
   def readWord(self, address):
-    raise NotImplementedError
+    raise NotImplementedError(self)
   def readBytes(self, address, size):
-    raise NotImplementedError
+    raise NotImplementedError(self)
   def readStruct(self, address, struct):
-    raise NotImplementedError
+    raise NotImplementedError(self)
   def readArray(self, address, basetype, count):
-    raise NotImplementedError
+    raise NotImplementedError(self)
 
 class ProcessMemoryMapping(MemoryMapping):
   """
