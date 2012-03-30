@@ -217,7 +217,8 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
       return self._open_file(self.archive, self.filePrefix+mmap_fname)
     else:
       log.debug( 'IGNORED')
-      raise IOError('Lazy - we do not want to load this one')
+      return file(os.path.sep.join([self.archive, self.filePrefix+mmap_fname]),'r')
+      #raise LazyLoadingException('Lazy - we do not want to load this one', mmap_fname)
 
 
 class KCoreDumpLoader(MemoryDumpLoader):
