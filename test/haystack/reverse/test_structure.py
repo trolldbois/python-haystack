@@ -22,8 +22,8 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-sys.path.append('test/src/')
-import ctypes3
+#sys.path.append('test/src/')
+#import ctypes3
 
 import ctypes 
 

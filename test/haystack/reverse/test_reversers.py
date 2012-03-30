@@ -13,8 +13,8 @@ import unittest
 from haystack import model
 from haystack.reverse import reversers
 
-sys.path.append('test/src/')
-import ctypes3
+#sys.path.append('test/src/')
+#import ctypes3
 
 import ctypes 
 
@@ -22,6 +22,9 @@ class TestStructureSizes(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):    
+    sys.path.append('test/src/')
+    import ctypes3
+    
     node = ctypes3.Node
     node._expectedValues_ = dict([('val1',[0xdeadbeef]),('ptr2',[model.NotNull])])
     test3 = ctypes3.test3

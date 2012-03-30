@@ -15,8 +15,17 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+
+
+def alltests():
+  makeTests()
+  ret = unittest.TestLoader().discover('test/haystack/')
+  return ret
+
+
+#alltests = suite()
+
 if __name__ == '__main__':
-  print 'HEEEEEEEEELLOOO'
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
