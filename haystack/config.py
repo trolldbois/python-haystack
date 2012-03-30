@@ -62,6 +62,11 @@ class ConfigClass():
     if os.access(folder, os.F_OK):    
       shutil.rmtree(folder)
     return
+
+  def getCacheName(self, dumpname):
+    root = os.path.abspath(dumpname)
+    return os.path.sep.join([root, self.CACHE_NAME])
+    
   
   def getCacheFilename(self, typ, dumpname):
     '''Returns a filename for caching a type of data based on the dump filename.
@@ -69,8 +74,7 @@ class ConfigClass():
     typ: one of Config.CACHE_XX types.
     dumpname: the dump file name.
     '''
-    root = os.path.abspath(dumpname)
-    return os.path.sep.join([root, self.CACHE_NAME, typ])
+    return os.path.sep.join([self.getCacheName(dumpname), typ])
 
   def getStructsCacheDir(self, dumpname):
     '''Returns a dirname for caching the structures based on the dump filename.

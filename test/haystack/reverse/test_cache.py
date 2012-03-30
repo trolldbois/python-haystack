@@ -1,4 +1,11 @@
 
+#
+#
+# this should test the memoryleaks...
+#
+#
+#
+
 def main():
   from haystack.reverse import reversers
   context = reversers.getContext('test/dumps/skype/skype.1/skype.1.f')

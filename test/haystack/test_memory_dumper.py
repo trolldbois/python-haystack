@@ -157,13 +157,15 @@ class TestMemoryDumper(unittest.TestCase):
 
     return 
 
-  def test_dumptype_tar(self):
-    self._test_type_file("tar")
-    return 
+  # @deprecated
+  #def test_dumptype_tar(self):
+  #  self._test_type_file("tar")
+  #  return 
 
-  def test_dumptype_gztar(self):
-    self._test_type_file("gztar")
-    return 
+  # @deprecated
+  #def test_dumptype_gztar(self):
+  #  self._test_type_file("gztar")
+  #  return 
 
 
 if __name__ == '__main__':

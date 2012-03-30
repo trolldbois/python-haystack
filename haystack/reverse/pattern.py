@@ -206,7 +206,7 @@ class PointerIntervalSignature:
     self.mappings = mappings
     self.config = config
     self.name = mappings.name
-    self.cacheFilenamePrefix = os.path.sep.join([self.config.cacheDir,self.name])
+    self.cacheFilenamePrefix = self.config.getCacheName(self.name)
     self.addressCache = {}
     self.sig = None
     self._getMmap()
