@@ -172,7 +172,7 @@ def main(argv):
   if opts.debug :
     level=logging.DEBUG
   
-  flog = os.path.sep.join([config.Config.cacheDir,'log'])
+  flog = os.path.normpath('log')
   logging.basicConfig(level=level, filename=flog, filemode='w')
   
   logging.getLogger('diff').addHandler(logging.StreamHandler(stream=sys.stdout))

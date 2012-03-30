@@ -114,7 +114,7 @@ def main(argv):
   level=logging.WARNING
   if opts.debug :
     level=logging.DEBUG
-    flog = os.path.sep.join([Config.cacheDir,'log'])
+    flog = os.path.normpath('log')
     logging.basicConfig(level=level, filename=flog, filemode='w')
     logging.getLogger('haystack-reverse').setLevel(logging.DEBUG)
     logging.getLogger('signature').setLevel(logging.DEBUG)

@@ -480,7 +480,7 @@ class AnonymousStructInstance():
           log.debug('target %s is undecoded'%(tgt))
           continue
         field._target_field = tgt[0] #first field of struct
-      except ValueError, e:
+      except KeyError, e:
         if field.value in self._heap:
           # elif target is a STRING in the HEAP
           # set pointer type to char_p
@@ -530,7 +530,7 @@ class AnonymousStructInstance():
     # TODO use context's helpers
     nearest_addr, ind = utils.closestFloorValue(field.value, self._context._malloc_addresses)
     log.debug('nearest_addr:%x ind:%d'%(nearest_addr, ind))
-    tgt_st = structCache[nearest_addr]
+    tgt_st = self._context.getStructureForAddr(nearest_addr)
     if field.value%Config.WORDSIZE != 0:
       # non aligned, nothing could match
       return tgt_st, None
