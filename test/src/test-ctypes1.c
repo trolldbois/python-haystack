@@ -66,7 +66,7 @@ int main(){
   printf("__USE_GNU\n");
   #endif
 
-  handle = 1;
+  handle = (void *)1;
   //handle = dlopen ("libQtCore.so", RTLD_NOW|RTLD_GLOBAL);
   //handle = dlopen ("libQtGui.so", RTLD_NOW|RTLD_GLOBAL);
   handle = dlopen ("libQtNetwork.so", RTLD_NOW|RTLD_GLOBAL);

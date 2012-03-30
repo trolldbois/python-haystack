@@ -19,32 +19,23 @@ OBJS := $(patsubst %.c,%,$(SRCS))
 OBJS := $(patsubst %.cpp,%,$(OBJS))
 
 DUMPS := $(patsubst %,%.dump,$(OBJS))
-OUTLOGS := $(patsubst %,%.out,$(OBJS))
+OUTLOGS := $(patsubst %,%.stdout,$(OBJS))
 PY := $(patsubst test-%,%.py,$(OBJS))
 
 .PHONY: 
 	
-all: binaries dumps
+all: py binaries dumps
 
 binaries: $(OBJS)
 
-py: $(PY)
-	
-%.dump: %.c 
-	sudo python make.py $@
-	sudo chown -R jal.jal $@
-	
-%.dump: %.cpp
-	sudo python make.py $@
-	sudo chown -R jal.jal $@
-
-dumps: $(SRCS) $(DUMPS) $(OBJS) 
-	
 %: %.c
 	$(CC) $(CFLAGS) $<  $(LDFLAGS)  -o $@
 	
 %: %.cpp
 	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
+
+
+py: $(PY)
 
 %.xml: test-%.c
 	$(H2XML) -I. $< -o $@
@@ -55,13 +46,24 @@ dumps: $(SRCS) $(DUMPS) $(OBJS)
 %.py: %.xml
 	$(XML2PY) -kdst $< -o $@
 
+
+dumps: $(SRCS) $(DUMPS) $(OBJS) 
 	
-clean: cleandump
+%.dump: %.c 
+	sudo python make.py $@
+	sudo chown -R jal.jal $@
+	
+%.dump: %.cpp
+	sudo python make.py $@
+	sudo chown -R jal.jal $@
+
+	
+	
+clean: 
+	rm -f *~ *.pyc
 	rm -f $(OBJS)
 	rm -f $(OUTLOGS)
 	rm -f $(PY)
-	
-cleandump:
 	rm -rf $(DUMPS)
 
 
