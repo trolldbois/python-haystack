@@ -24,7 +24,8 @@ PY := $(patsubst test-%,%.py,$(OBJS))
 
 .PHONY: 
 	
-all: py binaries dumps
+#py
+all: binaries dumps 
 
 binaries: $(OBJS)
 
@@ -35,16 +36,16 @@ binaries: $(OBJS)
 	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
 
-py: $(PY)
-
-%.xml: test-%.c
-	$(H2XML) -I. $< -o $@
-
-%.xml: test-%.cpp
-	$(H2XML) -I. $< -o $@
-
-%.py: %.xml
-	$(XML2PY) -kdst $< -o $@
+#py: $(PY)
+#
+#%.xml: test-%.c
+#	$(H2XML) -I. $< -o $@
+#
+#%.xml: test-%.cpp
+#	$(H2XML) -I. $< -o $@
+#
+#%.py: %.xml
+#	$(XML2PY) -kdst $< -o $@
 
 
 dumps: $(SRCS) $(DUMPS) $(OBJS) 
