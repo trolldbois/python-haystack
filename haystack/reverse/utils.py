@@ -143,8 +143,8 @@ def getAllocations(dumpfilename, mappings, heap):
   # TODO from haystack.reverse import heapwalker
   import libc.ctypes_malloc
   
-  f_addrs = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_ADDRS, dumpfilename+'.%x'%(heap.start))
-  f_sizes = Config.getCacheFilename(Config.CACHE_MALLOC_CHUNKS_SIZES, dumpfilename+'.%x'%(heap.start))
+  f_addrs = Config.getCacheFilename('%x.%s'%(heap.start,Config.CACHE_MALLOC_CHUNKS_ADDRS), dumpfilename)
+  f_sizes = Config.getCacheFilename('%x.%s'%(heap.start,Config.CACHE_MALLOC_CHUNKS_SIZES), dumpfilename)
   log.debug('reading from %s'%(f_addrs))
   addrs = int_array_cache(f_addrs)
   sizes = int_array_cache(f_sizes)
