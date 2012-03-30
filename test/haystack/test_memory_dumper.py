@@ -94,7 +94,7 @@ class TestMemoryDumper(unittest.TestCase):
     size1 = get_folder_size(tgt1)
     size2 = get_folder_size(tgt2)
     size3 = get_folder_size(tgt3)
-
+    
     self.assertGreater(size1, 500) # not a null archive
     self.assertGreater(size2, size1) # more mappings
     self.assertGreater(size3, size2) # more mappings

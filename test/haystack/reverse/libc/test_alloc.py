@@ -43,7 +43,7 @@ class TestAllocator(unittest.TestCase):
       try:
         if ctypes_alloc.isMallocHeap(self.mappings, mapping):
           allocs = [a for a in ctypes_alloc.getUserAllocations(self.mappings, mapping)]
-          print '%d alloc blocks for %d bytes/%d'%(len(allocs), sum( [size for addr,size in allocs ]), len(mapping))
+          #print '%d alloc blocks for %d bytes/%d'%(len(allocs), sum( [size for addr,size in allocs ]), len(mapping))
       except ValueError,e:
         pass    
     
@@ -59,7 +59,8 @@ class TestAllocator(unittest.TestCase):
     for mapping in self.mappings:
       try:
         if ctypes_alloc.isMallocHeap(self.mappings, mapping):
-          print '8********** TRUE', len(mapping), mapping
+          #print '8********** TRUE', len(mapping), mapping
+          pass
       except ValueError,e:
         pass    
     self.assertTrue(True)
@@ -67,6 +68,6 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main(verbosity=3)
+  unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)

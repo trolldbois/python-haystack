@@ -11,6 +11,7 @@ import sys
 import unittest
 
 from haystack import model
+from haystack.config import Config
 from haystack.reverse import reversers
 
 #sys.path.append('test/src/')
@@ -55,11 +56,17 @@ class TestStructureSizes(unittest.TestCase):
 
     #print ctypes3.test3.__dict__
     #print ctypes3.Node.__dict__
-    #print ctypes.sizeof(ctypes3.Node)
+    #print 'test3',ctypes.sizeof(ctypes3.test3)
+    #if ctypes.sizeof(ctypes3.test3) % Config.WORDSIZE == 0:
+    #  print 'MOD'
     self.assertEqual( sizes[1], ctypes.sizeof(ctypes3.test3))
     
     # is that padding I see ?
-    self.assertEqual( sizes[0], ctypes.sizeof(ctypes3.Node))
+    self.assertNotEqual( sizes[0], ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
+    self.assertEqual( sizes[0]-4, ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
+    #print 'Node', ctypes.sizeof(ctypes3.Node)
+    #if ctypes.sizeof(ctypes3.Node) % Config.WORDSIZE == 0:
+    #  print 'MOD'
 
 
 

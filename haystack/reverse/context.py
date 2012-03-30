@@ -9,6 +9,8 @@ import pickle
 from haystack.config import Config
 from haystack.reverse import structure
 from haystack.reverse import utils
+from haystack.reverse import reversers
+
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -47,6 +49,8 @@ class ReverserContext():
     # TODO adaptable allocator win32/linux
     self._malloc_addresses, self._malloc_sizes = utils.getAllocations(self.dumpname, self.mappings, self.heap)
     self._structures_addresses = self._malloc_addresses
+    self._user_alloc_addresses = self._malloc_addresses
+    self._user_alloc_sizes = self._malloc_sizes
 
     return 
   
@@ -70,9 +74,9 @@ class ReverserContext():
       if ( len(self._malloc_addresses) - len(self._structures) ) < 10 :
         log.warning('close numbers to check %s'%(set( self._malloc_addresses ) - set( self._structures ) ))
       # TODO use GenericHeapAllocationReverser
-      mallocRev = MallocReverser()
+      mallocRev = reversers.GenericHeapAllocationReverser()
       context = mallocRev.reverse(self)
-      mallocRev.check_inuse(self)
+      #mallocRev.check_inuse(self)
       log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
     
     return self._structures

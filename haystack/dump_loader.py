@@ -169,7 +169,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
       except (IOError, KeyError), e:
         log.debug('Ignore absent file : %s'%(e))
-        raise e
         mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
                                 major_device, minor_device, inode,pathname=mmap_pathname)
         self_mappings.append(mmap)
@@ -218,7 +217,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
       return self._open_file(self.archive, self.filePrefix+mmap_fname)
     else:
       log.debug( 'IGNORED')
-      raise ValueError('Lazy - we do not want to load this one')
+      raise IOError('Lazy - we do not want to load this one')
 
 
 class KCoreDumpLoader(MemoryDumpLoader):
