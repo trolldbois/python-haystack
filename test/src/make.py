@@ -13,6 +13,21 @@ from haystack import memory_dumper
 log=logging.getLogger('cpp')
 
 def main():
+  dumpname = sys.argv[1]
+  fn = file('/dev/null')
+  app = './%s'%(dumpname[:dumpname.rindex('.')])
+  try:
+    shutil.rmtree(dumpname)
+  except:
+    pass
+  out = file(app+".stdout",'w')
+  #pid1 = subprocess.Popen([app], stdout=fn.fileno())
+  pid1 = subprocess.Popen([app], bufsize=-1, stdout=out.fileno())
+  time.sleep(0.9) # 
+  memory_dumper.dump(pid1.pid, dumpname)
+  pid1.kill()
+
+def mainold():
   fn = file('/dev/null')
   for app in ["./test-ctypes1", "./test-ctypes2", "./test-ctypes3", "./test-ctypes4"]:
     dumpname = app+'.dump'

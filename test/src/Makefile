@@ -14,44 +14,54 @@ pid=
 H2XML=h2xml.py
 XML2PY=xml2py.py
 
+SRCS := $(wildcard *.c *.cpp) 
+OBJS := $(patsubst %.c,%,$(SRCS))
+OBJS := $(patsubst %.cpp,%,$(OBJS))
+
+DUMPS := $(patsubst %,%.dump,$(OBJS))
+OUTLOGS := $(patsubst %,%.out,$(OBJS))
+PY := $(patsubst test-%,%.py,$(OBJS))
+
 .PHONY: 
 	
-all: test-ctypes1 test-ctypes2 test-ctypes3 test-ctypes4
+all: binaries dumps
 
-py: test-ctypes1.py test-ctypes2.py test-ctypes3.py test-ctypes4.py
+binaries: $(OBJS)
+
+py: $(PY)
 	
-dumps:
-	sudo python make.py
+%.dump: %.c 
+	sudo python make.py $@
+	sudo chown -R jal.jal $@
 	
-test-ctypes1: test-ctypes1.c
+%.dump: %.cpp
+	sudo python make.py $@
+	sudo chown -R jal.jal $@
+
+dumps: $(SRCS) $(DUMPS) $(OBJS) 
+	
+%: %.c
 	$(CC) $(CFLAGS) $<  $(LDFLAGS)  -o $@
 	
-test-ctypes2: test-ctypes2.cpp
+%: %.cpp
 	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
-test-ctypes3: test-ctypes3.c
-	$(CC) $(CFLAGS)  $<  $(LDFLAGS)  -o $@
-
-test-ctypes4: test-ctypes4.cpp
-	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
-
-ctypes3.py: test-ctypes3.c
+%.xml: test-%.c
 	$(H2XML) -I. $< -o $@
-	which h2xml.py
+
+%.xml: test-%.cpp
+	$(H2XML) -I. $< -o $@
+
+%.py: %.xml
 	$(XML2PY) -kdst $< -o $@
 
-
-test-ctypes5: test-ctypes5.c
-	$(CC) $(CFLAGS)  $<  $(LDFLAGS)  -o $@
-	#h2xml.py -I. test-ctypes5.c -o test-ctypes5.xml
-	#xml2py.py test-ctypes5.xml -o ctypes5.py
 	
-clean:
-	rm test-ctypes1 test-ctypes2 test-ctypes3
-	rm test-ctypes4
-	rm test-ctypes3.py
-	rm test-ctypes5
+clean: cleandump
+	rm -f $(OBJS)
+	rm -f $(OUTLOGS)
+	rm -f $(PY)
 	
-
+cleandump:
+	rm -rf $(DUMPS)
 
 
