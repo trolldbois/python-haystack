@@ -219,38 +219,44 @@ def _HEAP_getFrontendChunks(self, mappings):
   ''' windows xp ?
     the list of chunks from the frontend are deleted from the segment chunk list. 
   '''
+  log.debug('_HEAP_getFrontendChunks')
   if self.FrontEndHeapType == 1: # windows XP per default
     ptr = self.FrontEndHeap
     ## TODO delete this ptr from the heap-segment entries chunks
     for x in range(128):
-      print 'finding lookaside %d at @%x'%(x, ptr)
+      log.debug('finding lookaside %d at @%x'%(x, ptr))
       m = mappings.getMmapForAddr(ptr)
       st = m.readStruct( ptr, _HEAP_LOOKASIDE)
       # TODO loadmembers on frontendHeapType car c'est un void *
       for free in st.iterateList('ListHead'): # single link list.
         ## TODO delete this free from the heap-segment entries chunks
-        print 'free'
+        log.debug('free')
         yield( free ) #???
         pass
       ptr += ctypes.sizeof(_HEAP_LOOKASIDE)
   elif self.FrontEndHeapType == 2: # win7 per default
     ptr = self.FrontEndHeap
-    #print 'finding frontend at @%x'%(ptr)
+    log.debug('finding frontend at @%x'%(ptr))
     m = mappings.getMmapForAddr(ptr)
     st = m.readStruct( ptr, _LFH_HEAP)
     #print st
     # _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
+    # Probably, we should not try to load segments ...
+    #
+    #
+    #
+    #
     if not st.loadMembers(mappings, 10):
       log.error('Error on loading frontend')
       raise model.NotValid('Frontend load at @%x is not valid'%(ptr))
     #
-    for sinfo in st.LocalData[0].SegmentInfo:
+    for sinfo in st.LocalData[0].SegmentInfo: #### ?????
       for items_ptr in sinfo.CachedItems: # make getCachedItems()
         items_addr = utils.getaddress(items_ptr)
         if not bool(items_addr):
-          #print 'NULL pointer items'
+          log.debug('NULL pointer items')
           continue
-        #print 'finding ITEMS at @%x'%(items_addr)
+        log.debug('finding ITEMS at @%x'%(items_addr))
         m = mappings.getMmapForAddr(items_addr)
         subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
         ## TODO current subsegment.SFreeListEntry is on error at some depth.
