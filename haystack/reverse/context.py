@@ -128,7 +128,7 @@ class ReverserContext():
     
   @classmethod
   def cacheLoad(cls, mappings):
-    from haystack.reverse.reversers import ReverserContext
+    #from haystack.reverse.context import ReverserContext
     dumpname = os.path.normpath(mappings.name)
     Config.makeCache(dumpname)
     context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
