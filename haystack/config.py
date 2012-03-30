@@ -5,6 +5,7 @@
 
 import logging
 import os
+import shutil
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -55,6 +56,12 @@ class ConfigClass():
       os.mkdir(folder)
     return
   
+  def cleanCache(self, dumpname):
+    root = os.path.abspath(dumpname)
+    folder = os.path.sep.join([root, self.CACHE_NAME])
+    if os.access(folder, os.F_OK):    
+      shutil.rmtree(folder)
+    return
   
   def getCacheFilename(self, typ, dumpname):
     '''Returns a filename for caching a type of data based on the dump filename.

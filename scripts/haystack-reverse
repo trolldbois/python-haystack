@@ -70,6 +70,12 @@ def printParents(opt):
   log.info('[+] Found %d structures.'%( i ))
   return
 
+
+
+def clean(opt):
+  log.info('[+] Cleaning cache')
+  context = Config.cleanCache(opt.dumpname)
+
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
@@ -95,6 +101,9 @@ def argparser():
   parent.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
         help='Hex address of the child structure.')
   parent.set_defaults(func=printParents)  
+
+  cleanp = subparsers.add_parser('clean', help='clean the memory dump from cached info.')
+  cleanp.set_defaults(func=clean)  
 
   #oldies
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
