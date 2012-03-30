@@ -238,7 +238,9 @@ class LoadableMembers(object):
         # shortcut
         if self.expectedValues[attrname] is IgnoreMember:
           # make an new empty ctypes
-          setattr(self, attrname, attrtype())
+          #setattr(self, attrname, attrtype())
+          pass
+          ### we DO NOT WANT to modify read-only data
           return True      
       try:
         if not self._loadMember(attr,attrname,attrtype,mappings, maxDepth):
