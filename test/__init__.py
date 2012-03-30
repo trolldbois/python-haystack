@@ -6,6 +6,7 @@
 import unittest
 
 from run_src_app import run_app_test
+from run_src_app import makeTests
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -15,6 +16,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 if __name__ == '__main__':
+  print 'HEEEEEEEEELLOOO'
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
