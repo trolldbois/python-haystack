@@ -51,7 +51,7 @@ def save_graph_headers(context, graph, fname):
   structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
   for anon in structs:
     anon.decodeFields()
-    anon.resolvePointers(context.structures_addresses, context.structures)
+    anon.resolvePointers()
     #anon.pointerResolved=True
     anon._aggregateFields()
     print anon
@@ -187,7 +187,7 @@ def printImportant(ind):
   for node in impDiGraph.successors(saddr):
     st = context.structures[int(node,16)]
     st.decodeFields()
-    st.resolvePointers(context.structures_addresses, context.structures)
+    st.resolvePointers()
     #st.pointerResolved=True
     #st._aggregateFields()
     print node, st.getSignature(text=True)

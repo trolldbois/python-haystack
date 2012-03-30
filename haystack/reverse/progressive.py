@@ -161,7 +161,7 @@ def buildAnonymousStructs(mappings, heap, _aligned, not_aligned, p_addrs, struct
     ##log.debug('build: resolve pointers')
     ##structs_addrs.sort()
     #what is the point ? most of them are not resolvable yet...
-    ##anon.resolvePointers(structs_addrs, structCache)
+    ##anon.resolvePointers()
     # debug
     if hasMembers:
       for _f in anon.fields:
@@ -188,7 +188,7 @@ def rewrite(structs_addrs, structCache, dumpname):
     else:
       logging.getLogger('progressive').setLevel(logging.INFO)
     anon = structCache[vaddr]
-    anon.resolvePointers(structs_addrs, structCache)
+    anon.resolvePointers()
     towrite.append(anon.toString())
     if len(towrite) >= 10000:
       fout.write('\n'.join(towrite) )

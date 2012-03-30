@@ -505,7 +505,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         #if not hasattr(anon, 'mappings'):
         #  log.error('damned, no mappings in %x'%(ptr_value))
         #  anon.mappings = context.mappings
-        anon.resolvePointers(context._structures_addresses, context._structures)
+        anon.resolvePointers()
         anon.saveme()
       if time.time()-tl > 30: 
         tl = time.time()
@@ -695,7 +695,7 @@ def refreshOne(context, ptr_value):
   for p_addr in my_pointers_addrs:
     f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
   #resolvePointers
-  mystruct.resolvePointers(context._structures_addresses, context.listStructures())
+  mystruct.resolvePointers()
   #resolvePointers
   return mystruct
   
