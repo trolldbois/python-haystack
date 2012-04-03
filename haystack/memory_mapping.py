@@ -264,6 +264,7 @@ class LocalMemoryMapping(MemoryMapping):
     return ret
 
   def mmap(self):
+    print 'localmemeorymapping', self
     return self
     
   def readWord(self, vaddr ):
@@ -370,19 +371,29 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
       mmap_hack = True
-      if mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
-        self._local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-        # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-        heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
-        self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
-      elif hasattr(self._memdump,'fileno'): # normal file. mmap kinda useless i suppose.
-        log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
-        # we have the bytes
-        local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
-        # we need an ctypes
-        self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
+      if hasattr(self._memdump,'fileno'): # normal file. 
+        if mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+          #print 'mmap_hack', self
+          #if self.pathname.startswith('/usr/lib'):
+          #  raise Exception
+          self._local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+          self._memdump.close()
+          self._memdump = None
+          # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
+          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
+          self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
+        else: # fallback with no creepy hacks
+          print 'fallback', self
+          log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
+          # we have the bytes
+          local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
+          self._memdump.close()
+          # we need an ctypes
+          self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)      
       else: # dumpfile, file inside targz ... any read() API really
+        print 'readfile', self
         self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)
+        self._memdump.close()
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
       # make that _base
       self._base = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
@@ -497,6 +508,21 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     return cls(memdump, memoryMapping.start, memoryMapping.end, 
                 memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                 memoryMapping.inode, memoryMapping.pathname)
+
+class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
+  '''
+    Don't mmap the memoryMap. use the file name on disk to read data.
+  '''
+  def __init__(self, memdumpname, start, end, permissions='rwx-', offset=0x0, 
+                      major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+    MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset, 
+                                      major_device, minor_device, inode, pathname, preload=False)
+    self._memdumpname = memdumpname
+    return 
+
+  def _mmap(self):
+    self._memdump = file(self._memdumpname,'rb')
+    return MemoryDumpMemoryMapping._mmap(self)
 
 class LazyMmap:
   ''' 

@@ -40,6 +40,13 @@ __status__ = "Production"
 
 log = logging.getLogger('dump_loader')
 
+
+class LazyLoadingException(Exception):
+  def __init__(self, filename):
+    Exception.__init__(self)
+    self._filename = filename
+    return
+
 class MemoryDumpLoader:
   ''' Abstract interface to a memory dump loader.
   
@@ -173,10 +180,14 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                                 major_device, minor_device, inode,pathname=mmap_pathname)
         self_mappings.append(mmap)
         continue
-      except ValueError,e: # explicit non-loading
-        log.debug('Ignore useless file : %s'%(e))
-        mmap_content_file = file(os.path.sep.join([self.archive, self.filePrefix+mmap_fname]),'rb')
-        mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+      #except ValueError,e: # explicit non-loading
+      #  log.debug('Ignore useless file : %s'%(e))
+      #  mmap = memory_mapping.MemoryMapping(start, end, permissions, offset, 
+      #                          major_device, minor_device, inode,pathname=mmap_pathname)
+      #  self_mappings.append(mmap)
+      #  continue
+      except LazyLoadingException,e: 
+        mmap = memory_mapping.FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset, 
                                 major_device, minor_device, inode,pathname=mmap_pathname)
         self_mappings.append(mmap)
         continue
@@ -217,8 +228,9 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
       return self._open_file(self.archive, self.filePrefix+mmap_fname)
     else:
       log.debug( 'IGNORED')
-      return file(os.path.sep.join([self.archive, self.filePrefix+mmap_fname]),'r')
-      #raise LazyLoadingException('Lazy - we do not want to load this one', mmap_fname)
+      #return lambda: (file(os.path.sep.join([self.archive, self.filePrefix+mmap_fname]),'r')
+      raise LazyLoadingException( os.path.sep.join([self.archive, self.filePrefix+mmap_fname]))
+      # TODO FIX with name only, not file()
 
 
 class KCoreDumpLoader(MemoryDumpLoader):
