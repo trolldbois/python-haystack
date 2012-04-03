@@ -146,6 +146,7 @@ if ctypes.Structure.__name__ == 'Structure':
 if ctypes.Union.__name__ == 'Union':
   ctypes.original_Union = ctypes.Union
 
+
 # The book registers all haystack modules, and classes, and can keep 
 # some pointer refs on memory allocated within special cases...
 class _book(object):
@@ -165,6 +166,10 @@ class _book(object):
   def getClasses(self):
     return dict(self.classes)
   def getRef(self,typ,addr):
+    #print typ,addr
+    #print (typ,addr) in self.refs.keys()
+    if len(self.refs) > 1500:
+      log.warning('the book is full, you should haystack.model.reset()')
     return self.refs[(typ,addr)]
   def delRef(self,typ,addr):
     del self.refs[(typ,addr)]
@@ -174,6 +179,10 @@ class _book(object):
     
 # central model book register
 __book = _book()
+
+def reset():
+  global __book
+  __book.refs = dict()
 
 def printRefs():
   l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]

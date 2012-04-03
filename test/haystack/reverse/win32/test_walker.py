@@ -37,10 +37,13 @@ class TestAllocator(unittest.TestCase):
                     ( 0x04110000, 1334), (0x041c0000 , 644),
                     ]
 
+  def tearDown(self):
+    from haystack import model 
+    model.reset()
 
   def test_search(self):
     '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
-    #self.skipTest('paused')
+    self.skipTest('paused')
     
     found=[]
     for mapping in self._mappings:

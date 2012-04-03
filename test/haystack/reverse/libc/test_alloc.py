@@ -29,6 +29,11 @@ class TestAllocator(unittest.TestCase):
   def setUp(self):  
     self.mappings = dump_loader.load('test/dumps/ssh/ssh.1')
 
+  def tearDown(self):  
+    from haystack import model
+    model.reset()
+    return
+    
   def test_search(self):
     ''' def search(mappings, heap, filterInuse=False ):'''
     self.skipTest('notready')
@@ -39,6 +44,7 @@ class TestAllocator(unittest.TestCase):
     #self.skipTest('notready')
        
     # we need mappings from 
+    allocs = []
     for mapping in self.mappings:
       try:
         if ctypes_alloc.isMallocHeap(self.mappings, mapping):
@@ -48,7 +54,7 @@ class TestAllocator(unittest.TestCase):
         pass    
     
     self.assertTrue(True)
-    
+
     return  
 
   def test_isMallocHeap(self):
@@ -64,10 +70,12 @@ class TestAllocator(unittest.TestCase):
       except ValueError,e:
         pass    
     self.assertTrue(True)
+
     return  
 
 
 if __name__ == '__main__':
   unittest.main(verbosity=0)
+  #logging.basicConfig(level=logging.DEBUG)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)

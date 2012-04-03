@@ -31,12 +31,15 @@ class TestListStruct(unittest.TestCase):
   def setUp(self):
     self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
   
+  def tearDown(self):
+    model.reset()
+    pass
+  
   def test_iter(self):
     #offset = 0x390000
     offset = 0x1ef0000
     self.m = self.mappings.getMmapForAddr(offset)
     self.heap = self.m.readStruct(offset, win7heap.HEAP)
-
     self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
 
     segments = [segment for segment in self.heap.iterateListField(self.mappings, 'SegmentList')]
@@ -52,7 +55,6 @@ class TestListStruct(unittest.TestCase):
     for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') :
       print 'commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
     
-
     return 
 
   def test_getListFieldInfo(self):
@@ -124,6 +126,6 @@ if __name__ == '__main__':
   #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
   #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
   #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
-  logging.basicConfig(level=logging.INFO)  
+  #logging.basicConfig(level=logging.INFO)  
   unittest.main(verbosity=2)
 
