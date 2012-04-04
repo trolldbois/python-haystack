@@ -147,7 +147,7 @@ struct malloc_chunk {
     '''extract p's inuse bit
     doesnt not work on the top one
     '''
-    next_addr = self.next_addr(orig_addr) + ctypes.sizeof(memory_mapping.MemoryMapping.WORDTYPE)
+    next_addr = self.next_addr(orig_addr) + Config.WORDSIZE
     mmap = model.is_valid_address_value(next_addr, mappings)
     if not mmap:
       return 0

@@ -36,7 +36,7 @@ class ReverserContext():
   def _init2(self):
     # force reload JIT
     self._reversedTypes = dict()
-    self._structures = dict()
+    self._structures = None
 
     log.info('[+] Fetching cached structures addresses list')
     #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
@@ -78,6 +78,7 @@ class ReverserContext():
       context = mallocRev.reverse(self)
       #mallocRev.check_inuse(self)
       log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
+      print self._structures.keys() 
     
     return self._structures
 
@@ -185,7 +186,7 @@ class ReverserContext():
   def __setstate__(self, d):
     self.dumpname = d['dumpname']
     self.parsed = d['parsed']
-    self._structures = dict()
+    self._structures = None
     return
   
 

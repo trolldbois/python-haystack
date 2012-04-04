@@ -12,7 +12,6 @@ import sys
 import time
 
 from haystack.config import Config
-from haystack.utils import Dummy
 from haystack import dump_loader
 from haystack import argparse_utils
 
@@ -153,7 +152,7 @@ class MallocReverser(StructureOrientedReverser):
         context._structures[ ptr_value ] = mystruct
         # add pointerFields
         offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
-        log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
+        #log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
         # optimise insertion
         if len(my_pointers_addrs) > 0:
           mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
@@ -212,7 +211,7 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
       context._structures[ ptr_value ] = mystruct
       # add pointerFields
       offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
-      log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
+      ##log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
       # optimise insertion
       if len(my_pointers_addrs) > 0:
         mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)

@@ -27,7 +27,7 @@ import tarfile
 import zipfile # relatively useless
 
 from haystack.config import Config
-from haystack import dbg
+from haystack import utils
 from haystack import memory_mapping
 from haystack import argparse_utils
 
@@ -82,48 +82,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         self._list_names = os.listdir
         self._open_file = lambda archive,name: file( os.path.sep.join([archive,name]),'rb')
         return True
-    else: # file
-      if self._test_tarfile() : 
-        self._open_archive = tarfile.open
-        self._list_names = lambda archive: archive.getnames() 
-        self._open_file = lambda archive,name: archive.extractfile(name)
-        return True
-      elif self._test_zipfile() :
-        self._open_archive = zipfile.ZipFile
-        self._list_names = lambda archive: archive.namelist() 
-        self._open_file = lambda archive,name: archive.open(name)
-        return True
-    return False
-    
-  def _test_tarfile(self):
-    try :
-      self.archive = tarfile.open(None,'r', file(self.dumpname,'r'))
-      members = self.archive.getnames() # get the ./away
-      if self.filePrefix+self.indexFilename not in members:
-        log.error('no mappings index file in the tar archive.')
-        return False
-      #change prefix
-      self.indexFilename=self.filePrefix+self.indexFilename
-      self.mmaps = [ m for m in members if '-0x' in m ]
-      if len(self.mmaps)>0:
-        return True
-    except tarfile.ReadError,e:
-      log.info('Not a tar file')
-    return False
-    
-  def _test_zipfile(self):
-    try :
-      self.archive = zipfile.ZipFile(file(self.dumpname,'r'),'r' )
-      members = self.archive.namelist() # get the ./away
-      if self.indexFilename not in members:
-        log.error('no mappings index file in the zip archive.')
-        return False
-      self.filePrefix=''
-      self.mmaps = [ m for m in members if '-0x' in m ]
-      if len(self.mmaps)>0:
-        return True
-    except zipfile.BadZipfile,e:
-      log.info('Not a zip file')
     return False
 
   def _test_dir(self):
@@ -159,13 +117,17 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       if '' in fields:
         fields.remove('')
       self.metalines.append( ( fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:]) )  )
+    # test if x32 or x64
+    if len(fields[0]) > 10:
+      log.info('x64 arch dump detected')
+      Config.WORDSIZE = 8
     self_mappings = []
-    for start, end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
-      start,end = int(start,16),int(end,16 )
+    for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
+      start,end = int(_start,16),int(_end,16 )
       offset = int(offset,16)
       inode = int(inode)
       #rebuild filename
-      mmap_fname = "%s-%s" % (dbg.formatAddress(start), dbg.formatAddress(end))
+      mmap_fname = "%s-%s" % (utils.formatAddress(start), utils.formatAddress(end))
       # get devices nums
       major_device, minor_device = devices.split(':')
       major_device = int(major_device,16)

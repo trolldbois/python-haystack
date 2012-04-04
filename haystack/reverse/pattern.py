@@ -14,7 +14,6 @@ import collections
 import numbers
 
 from haystack.config import Config
-from haystack.utils import Dummy
 from haystack import dump_loader
 
 from haystack.reverse import utils
@@ -29,6 +28,9 @@ __status__ = "Production"
 
 
 log = logging.getLogger('pattern')
+
+class Dummy(object):
+  pass
 
 
 def findPatternText(sequence, elSize=1, minNbGroup=2):

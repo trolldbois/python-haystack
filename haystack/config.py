@@ -49,6 +49,17 @@ class ConfigClass():
     self.SIGNATURES_FILENAME = 'signatures'
     self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
   
+  def get_word_type(self):
+    import ctypes
+    if self.WORDSIZE == 4:
+      return ctypes.c_uint32
+    elif self.WORDSIZE == 8:
+      return ctypes.c_uint64
+    else:
+      return ctypes.c_ulong
+  
+  WORDTYPE = property(get_word_type)
+  
   def makeCache(self, dumpname):
     root = os.path.abspath(dumpname)
     folder = os.path.sep.join([root, self.CACHE_NAME])

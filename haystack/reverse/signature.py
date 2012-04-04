@@ -45,7 +45,8 @@ class SignatureGroupMaker:
     # get text signature for Counter to parse
     # need to force resolve of structures
     self._signatures = []
-    for addr in self._structures_addresses:
+    #for addr in self._structures_addresses:
+    for addr in self._context.listStructuresAddresses():
       self._context.getStructureForAddr(addr).decodeFields() # can be long
       self._signatures.append( (addr, self._context.getStructureForAddr(addr).getSignature(True)) )
     return

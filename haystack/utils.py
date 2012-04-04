@@ -13,15 +13,29 @@ Several useful function validation are also here, like pointer validation.
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 
-import ctypes, os
-from struct import pack,unpack
+import ctypes
+import os
+import struct
+from struct import pack
+from struct import unpack 
 
 import logging
 
+from haystack.config import Config
+
 log = logging.getLogger('utils')
 
-class Dummy(object):
-  pass
+def formatAddress(addr): #TODO move to utils
+  if Config.WORDSIZE == 4:
+    return u"0x%08x" % addr
+  else:
+    return u"0x%016x" % addr
+
+def unpackWord(bytes, endianess='@'):
+  if Config.WORDSIZE == 8:
+    return struct.unpack('%sQ'%endianess, bytes)
+  else:
+    return struct.unpack('%sI'%endianess, bytes)
 
 def is_valid_address(obj, mappings, structType=None):
   ''' 

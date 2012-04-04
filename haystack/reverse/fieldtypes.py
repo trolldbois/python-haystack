@@ -10,6 +10,7 @@ import struct
 import itertools
 
 from haystack.config import Config
+from haystack.utils import unpackWord
 from haystack.reverse import re_string
 
 import ctypes
@@ -163,7 +164,7 @@ class Field:
     bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
     if len(bytes) != Config.WORDSIZE:
       return False      
-    value = struct.unpack('L',bytes)[0] #TODO biteorder
+    value = unpackWord(bytes)[0] #TODO biteorder
     # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
     if value in self.struct._mappings:
       log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
@@ -220,7 +221,7 @@ class Field:
       return False
     log.debug('ENDING: range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): %s'%(len(bytes)-Config.WORDSIZE))
     for i in range(len(bytes)-Config.WORDSIZE,-1,-Config.WORDSIZE): #len(bytes)-Config.WORDSIZE
-      if struct.unpack('L',bytes[i:i+Config.WORDSIZE])[0] == 0: 
+      if unpackWord(bytes[i:i+Config.WORDSIZE])[0] == 0: 
         start = i
       else:
         break
@@ -243,13 +244,13 @@ class Field:
     it = itertools.dropwhile( lambda x: (x%Config.WORDSIZE != 0) , xrange(0, maxOffset) )
     aligned = it.next() # not exceptionnable here
     log.debug('aligned:%s'%aligned)
-    it = itertools.dropwhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
+    it = itertools.dropwhile( lambda x: (unpackWord(bytes[x:x+Config.WORDSIZE])[0] != 0)  , xrange(aligned, maxOffset, Config.WORDSIZE) )
     try: 
       start = it.next()
     except StopIteration,e:
       log.debug('Did not find zeroes aligned')
       return False
-    it = itertools.takewhile( lambda x: (struct.unpack('L',bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
+    it = itertools.takewhile( lambda x: (unpackWord(bytes[x:x+Config.WORDSIZE])[0] == 0)  , xrange(start, maxOffset, Config.WORDSIZE) )
     end = max(it) + Config.WORDSIZE
     size = end-start 
     if size < 4:
@@ -295,7 +296,7 @@ class Field:
       return True
     elif self.size == Config.WORDSIZE:
       bytes = self.struct.bytes[self.offset:self.offset+self.size]
-      self.value = struct.unpack('@L',bytes[:Config.WORDSIZE])[0] 
+      self.value = unpackWord(bytes[:Config.WORDSIZE], '@')[0] 
       self.typename = FieldType.INTEGER
       self.endianess = '@' # unknown
       return True
@@ -307,7 +308,7 @@ class Field:
     size = len(bytes)
     if size < Config.WORDSIZE:
       return False
-    val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
+    val = unpackWord(bytes[:Config.WORDSIZE], endianess)[0] 
     if val < 0xffff:
       self.value = val
       self.size = Config.WORDSIZE
@@ -315,7 +316,7 @@ class Field:
       self.endianess = endianess
       return True
     else: # check signed int
-      val = struct.unpack('%sL'%endianess,bytes[:Config.WORDSIZE])[0] 
+      val = unpackWord(bytes[:Config.WORDSIZE], endianess)[0] 
       if -0xffff <= val <= 0xffff:
         self.value = val
         self.size = Config.WORDSIZE

@@ -38,6 +38,7 @@ from weakref import ref
 # haystack
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
 from haystack import utils
+from haystack.config import Config
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -91,8 +92,6 @@ class MemoryMapping:
      - "repr(mapping)" create a string representation of the mapping,
        useful in list contexts
   """
-  WORDSIZE = ctypes.sizeof(ctypes.c_ulong)
-  WORDTYPE = ctypes.c_ulong
   def __init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname):
     self.start = start
     self.end = end
@@ -270,7 +269,7 @@ class LocalMemoryMapping(MemoryMapping):
   def readWord(self, vaddr ):
     """Address have to be aligned!"""
     laddr = self.vtop( vaddr )
-    word = MemoryMapping.WORDTYPE.from_address(int(laddr)).value # is non-aligned a pb ?, indianess is at risk
+    word = Config.WORDTYPE.from_address(long(laddr)).value # is non-aligned a pb ?, indianess is at risk
     return word
 
   def readBytes1(self, vaddr, size):
@@ -487,7 +486,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   def readWord(self, vaddr):
     """Address have to be aligned!"""
     laddr = self.vtop(vaddr)
-    word = MemoryMapping.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+MemoryMapping.WORDSIZE], 0).value # is non-aligned a pb ?
+    word = Config.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+Config.WORDSIZE], 0).value # is non-aligned a pb ?
     return word
 
   def readArray(self, address, basetype, count):

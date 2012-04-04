@@ -117,7 +117,7 @@ class ListModel(object):
     does not return self.'''
     
     structType, offset = self._getListFieldInfo(fieldname)
-    
+
     # @ of the field
     headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
     head = getattr(self, fieldname)
@@ -195,7 +195,6 @@ def declare_double_linked_list_type( structType, forward, backward):
         # next
         link = getattr(st, fieldname)
         addr = utils.getaddress(link)
-
     raise StopIteration
   
   def loadMembers(self, mappings, depth):
