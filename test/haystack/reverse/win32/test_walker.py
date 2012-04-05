@@ -43,7 +43,7 @@ class TestAllocator(unittest.TestCase):
 
   def test_search(self):
     '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
-    self.skipTest('paused')
+    #self.skipTest('paused')
     
     found=[]
     for mapping in self._mappings:
