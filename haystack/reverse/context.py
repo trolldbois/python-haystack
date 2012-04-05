@@ -120,7 +120,7 @@ class ReverserContext():
     return self._get_structures().values()
 
   def getReversedType(self, typename):
-    if typename is self._reversedTypes:
+    if typename in self._reversedTypes:
       return self._reversedTypes[ typename ]
     return None
 
