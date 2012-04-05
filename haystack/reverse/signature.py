@@ -32,6 +32,7 @@ __status__ = "Beta"
 
 log = logging.getLogger('signature')
 
+# TODO a Group maker based on field pointer memorymappings and structure instance/sizes...
 
 class SignatureGroupMaker:
   """From a list of addresses, groups similar signature together.
@@ -45,7 +46,7 @@ class SignatureGroupMaker:
     # get text signature for Counter to parse
     # need to force resolve of structures
     self._signatures = []
-    for addr in self._structures_addresses:
+    for addr in map(long,self._structures_addresses):
       self._context.getStructureForAddr(addr).decodeFields() # can be long
       self._signatures.append( (addr, self._context.getStructureForAddr(addr).getSignature(True)) )
     return
@@ -339,7 +340,7 @@ def printStructureGroups(context, chains, originAddr=None):
     if originAddr is not None:
       if originAddr not in chain:
         continue # ignore chain if originAddr is not in it
-    for addr in chain:
+    for addr in map(long,chain):
       context.getStructureForAddr(addr).decodeFields() # can be long
       print context.getStructureForAddr(addr).toString()
     print '-'*80
@@ -354,7 +355,6 @@ def makeReversedTypes(context, sizeCache):
   
   log.info('[+] Build groups of similar instances, create a reversed type for each group.')
   for chains in buildStructureGroup(context, sizeCache):
-    log.debug('chains of len %d'%(len(chains)) )
     fixType(context, chains)
   
   log.info('[+] For each instances, fix pointers fields to newly created types.')
