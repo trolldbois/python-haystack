@@ -411,7 +411,9 @@ try:
 except ImportError:
   import pkg_resources
   _words = pkg_resources.resource_string(__name__, Config.WORDS_FOR_REVERSE_TYPES_FILE)
-_NAMES = [ s.strip() for s in _words.split('\n') ]
+
+# global
+_NAMES = [ s.strip() for s in _words.split('\n') ][:-1]
 
 def getname():
   global _NAMES
