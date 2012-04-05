@@ -74,7 +74,8 @@ def printParents(opt):
   log.info('[+] find offsets of struct_addr:%x'%(opt.address))
   i = 0
   try:
-    for st in context.listStructuresForPointerValue(opt.address):
+    child_address = context.getStructureAddrForOffset(opt.address)
+    for st in context.listStructuresForPointerValue(child_address):
       st.decodeFields()
       print st.toString()
       i+=1
@@ -106,21 +107,21 @@ def argparser():
   subparsers = rootparser.add_subparsers(help='sub-command help')
 
   instances = subparsers.add_parser('instances', 
-    help='List all structures instances with virtual address and member types.')
+    help='List all structures instances with virtual address, member types guess and info.')
   instances.set_defaults(func=reverseInstances)  
 
   typemap = subparsers.add_parser('typemap', 
-        help='Reverse and list of structure types.')
+        help='Try to reverse generic types from instances\' similarities.')
   typemap.set_defaults(func=writeReversedTypes)  
 
-  groupparser = subparsers.add_parser('group', help='Show sorted structure instances groups by size and signature')
+  groupparser = subparsers.add_parser('group', help='Show structure instances groups by size and signature.')
   groupparser.add_argument('--size', type=int, action='store', default=None, 
         help='Limit to a specific structure size')
   groupparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
         help='Limit to structure similar to the structure pointed at <address>')
   groupparser.set_defaults(func=groupStructures)  
 
-  parent = subparsers.add_parser('parent', help='print parental structures pointing to this address.')
+  parent = subparsers.add_parser('parent', help='Print the parent structures pointing to the structure located at this address.')
   parent.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
         help='Hex address of the child structure.')
   parent.set_defaults(func=printParents)  
