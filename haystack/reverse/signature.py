@@ -45,8 +45,7 @@ class SignatureGroupMaker:
     # get text signature for Counter to parse
     # need to force resolve of structures
     self._signatures = []
-    #for addr in self._structures_addresses:
-    for addr in self._context.listStructuresAddresses():
+    for addr in self._structures_addresses:
       self._context.getStructureForAddr(addr).decodeFields() # can be long
       self._signatures.append( (addr, self._context.getStructureForAddr(addr).getSignature(True)) )
     return
@@ -355,6 +354,7 @@ def makeReversedTypes(context, sizeCache):
   
   log.info('[+] Build groups of similar instances, create a reversed type for each group.')
   for chains in buildStructureGroup(context, sizeCache):
+    log.debug('chains of len %d'%(len(chains)) )
     fixType(context, chains)
   
   log.info('[+] For each instances, fix pointers fields to newly created types.')
@@ -436,7 +436,7 @@ def fixType(context, chains):
   ''' Fix the name of each structure to a generic word/type name '''
   for chain in chains:
     name = getname()
-    log.debug('\t[-] fix type of size:%d with name name:%s'% (len(chain), name ) )
+    log.debug('\t[-] fix type of chain size:%d with name name:%s'% (len(chain), name ) )
     for addr in chain: # chain is a numpy
       addr = int(addr)
       # FIXME 
