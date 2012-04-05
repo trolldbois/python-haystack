@@ -421,7 +421,6 @@ def getname():
   if len(_NAMES) == 0:
     _NAMES_plen += 1
     _NAMES = [''.join(x) for x in itertools.permutations(_words.split('\n')[:-1], _NAMES_plen)]
-    #_NAMES = [ '%s%s'%(s1.strip(), s2.strip()) for s1 in _words.split('\n')[:-1] for s2 in _words.split('\n')[:-1] ]
   return _NAMES.pop()  
   
 
