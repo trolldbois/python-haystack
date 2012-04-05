@@ -106,7 +106,7 @@ def argparser():
   subparsers = rootparser.add_subparsers(help='sub-command help')
 
   instances = subparsers.add_parser('instances', 
-    help='Reverse and list structures instances with virtual address and member types.')
+    help='List all structures instances with virtual address and member types.')
   instances.set_defaults(func=reverseInstances)  
 
   typemap = subparsers.add_parser('typemap', 
