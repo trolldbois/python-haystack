@@ -346,6 +346,7 @@ def printStructureGroups(context, chains, originAddr=None):
     print '#','-'*78
   
 def graphStructureGroups(context, chains, originAddr=None):      
+  # TODO change generic fn
   chains.sort()
   import networkx
   graph = networkx.DiGraph()
