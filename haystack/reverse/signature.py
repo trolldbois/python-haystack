@@ -365,8 +365,11 @@ def makeReversedTypes(context, sizeCache):
     for f in s.getPointerFields():
       addr = f._getValue(0)
       if addr in context.heap:
-        print context.getStructureForOffset(addr).getCtype()
-        f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
+        try:
+          f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
+        except TypeError,e: # we have escapees, withouth a typed type... saved them from exception
+          ctypes_type = fixInstanceType(context, context.getStructureForOffset(addr), getname())
+          f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
         f.setComment('pointer fixed')
   
   log.info('[+] For new reversed type, fix their definitive fields.')
@@ -427,13 +430,17 @@ def fixType(context, chains):
       # FIXME 
       instance = context.getStructureForAddr(addr)
       #
-      instance.setName(name)
-      ctypes_type = context.getReversedType(name)
-      if ctypes_type is None: # make type
-        ctypes_type = structure.ReversedType.create( context, name )
-      ctypes_type.addInstance( instance )
-      context.getStructureForAddr(addr).setCtype(ctypes_type)
+      ctypes_type = fixInstanceType(context, instance, name)
   return 
+
+def fixInstanceType(context, instance, name):
+  instance.setName(name)
+  ctypes_type = context.getReversedType(name)
+  if ctypes_type is None: # make type
+    ctypes_type = structure.ReversedType.create( context, name )
+  ctypes_type.addInstance( instance )
+  instance.setCtype(ctypes_type)
+  return ctypes_type
 
 
 
