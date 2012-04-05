@@ -104,6 +104,10 @@ def graph(opt):
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
     description='Several tools to reverse engineer structures on the heap.')
+
+  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
+  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+
   subparsers = rootparser.add_subparsers(help='sub-command help')
 
   instances = subparsers.add_parser('instances', 
@@ -126,9 +130,6 @@ def argparser():
         help='Hex address of the child structure.')
   parent.set_defaults(func=printParents)  
 
-  cleanp = subparsers.add_parser('clean', help='clean the memory dump from cached info.')
-  cleanp.set_defaults(func=clean)  
-
   graphparser = subparsers.add_parser('graph', help='Show sorted structure instances groups by size and signature in a graph')
   graphparser.add_argument('--size', type=int, action='store', default=None, 
         help='Limit to a specific structure size')
@@ -145,8 +146,8 @@ def argparser():
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
   makesig.set_defaults(func=saveSignatures)  
 
-  rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
-  rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+  cleanp = subparsers.add_parser('clean', help='clean the memory dump from cached info.')
+  cleanp.set_defaults(func=clean)  
 
 
   return rootparser
