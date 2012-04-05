@@ -40,7 +40,7 @@ class ConfigClass():
     self.CACHE_MALLOC_CHUNKS_ADDRS = 'mchunks.addrs'
     self.CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'
     self.CACHE_CONTEXT = 'ctx'
-    self.CACHE_GRAPH = 'gexf'
+    self.CACHE_GRAPH = 'graph.gexf'
     self.DIFF_PY_HEADERS='diff_headers'
     self.CACHE_SIGNATURE_SIZES_DIR = 'structs.sizes.d'
     self.CACHE_SIGNATURE_SIZES_DIR_TAG = 'done'
