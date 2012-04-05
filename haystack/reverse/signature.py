@@ -13,7 +13,7 @@ import networkx
 import itertools
 
 import haystack
-import haystack.model
+from haystack import model
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.config import Config
@@ -366,15 +366,23 @@ def makeReversedTypes(context, sizeCache):
       addr = f._getValue(0)
       if addr in context.heap:
         try:
-          f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
+          ctypes_type = context.getStructureForOffset(addr).getCtype()
         except TypeError,e: # we have escapees, withouth a typed type... saved them from exception
           ctypes_type = fixInstanceType(context, context.getStructureForOffset(addr), getname())
-          f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
+        f.setCtype( ctypes.POINTER(ctypes_type) )
         f.setComment('pointer fixed')
   
   log.info('[+] For new reversed type, fix their definitive fields.')
   for revStructType in context.listReversedTypes():
     revStructType.makeFields(context)
+
+  # poitners not in the heap
+  #for s in context.listStructures():
+  #  for f in s.getPointerFields():
+  #    if model.isVoidPointerType(f.getCtype()):
+  #      print s,'has a c_void_p field', f._getValue(0), 
+  #      print context.getStructureForOffset( f._getValue(0) )
+
     
   return context
   
