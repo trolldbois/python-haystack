@@ -41,7 +41,7 @@ def showStructures(opt):
   ''' show sorted structure instances groups to stdout '''
   context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
   for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
-    signature.printStructureGroups(context, chains, opt.originAddr )
+    signature.printStructureGroups(context, chains, opt.address )
   return
   
 def saveSignatures(opt):
@@ -82,7 +82,7 @@ def graph(opt):
   log.info('[+] Graphing')
   context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
   for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
-    signature.graphStructureGroups(context, chains, opt.originAddr )
+    signature.graphStructureGroups(context, chains, opt.address )
   return
 
   
@@ -102,8 +102,8 @@ def argparser():
   show = subparsers.add_parser('show', help='Show sorted structure instances groups by size and signature')
   show.add_argument('--size', type=int, action='store', default=None, 
         help='Limit to a specific structure size')
-  show.add_argument('--originAddr', type=str, action='store', default=None, 
-        help='Limit to structure similar to the structure pointed at originAddr')
+  show.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
+        help='Limit to structure similar to the structure pointed at <address>')
   show.set_defaults(func=showStructures)  
 
   parent = subparsers.add_parser('parent', help='print parental structures pointing to this address.')
@@ -117,8 +117,8 @@ def argparser():
   graphparser = subparsers.add_parser('graph', help='Show sorted structure instances groups by size and signature in a graph')
   graphparser.add_argument('--size', type=int, action='store', default=None, 
         help='Limit to a specific structure size')
-  graphparser.add_argument('--originAddr', type=str, action='store', default=None, 
-        help='Limit to structure similar to the structure pointed at originAddr')
+  graphparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
+        help='Limit to structure similar to the structure pointed at <address>')
   graphparser.set_defaults(func=graph)  
 
   #oldies
