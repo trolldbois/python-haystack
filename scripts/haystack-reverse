@@ -76,6 +76,15 @@ def clean(opt):
   log.info('[+] Cleaning cache')
   context = Config.cleanCache(opt.dumpname)
 
+
+def graph(opt):
+  ''' show sorted structure instances groups to gefx '''
+  log.info('[+] Graphing')
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
+    signature.graphStructureGroups(context, chains, opt.originAddr )
+  return
+
   
 def argparser():
   rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
@@ -104,6 +113,13 @@ def argparser():
 
   cleanp = subparsers.add_parser('clean', help='clean the memory dump from cached info.')
   cleanp.set_defaults(func=clean)  
+
+  graphparser = subparsers.add_parser('graph', help='Show sorted structure instances groups by size and signature in a graph')
+  graphparser.add_argument('--size', type=int, action='store', default=None, 
+        help='Limit to a specific structure size')
+  graphparser.add_argument('--originAddr', type=str, action='store', default=None, 
+        help='Limit to structure similar to the structure pointed at originAddr')
+  graphparser.set_defaults(func=graph)  
 
   #oldies
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
