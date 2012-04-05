@@ -343,10 +343,31 @@ def printStructureGroups(context, chains, originAddr=None):
     for addr in map(long,chain):
       context.getStructureForAddr(addr).decodeFields() # can be long
       print context.getStructureForAddr(addr).toString()
-    print '-'*80
+    print '#','-'*78
   
-  # TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
+def graphStructureGroups(context, chains, originAddr=None):      
+  chains.sort()
+  import networkx
+  graph = networkx.DiGraph()
+  for chain in chains:
+    log.debug('\t[-] chain len:%d'%len(chain) )
+    if originAddr is not None:
+      if originAddr not in chain:
+        continue # ignore chain if originAddr is not in it
+    for addr in map(long,chain):
+      context.getStructureForAddr(addr).decodeFields() # can be long
+      print context.getStructureForAddr(addr).toString()
+      targets = set()
+      for f in context.getStructureForAddr(addr).getPointerFields():
+        addr_child = f._getValue(0)
+        child = context.getStructureForOffset(addr)
+        targets.add(( '%x'%addr, '%x'%child._vaddr ) ) 
+      graph.add_edges_from( targets )
+    print '#','-'*78
+  networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
 
+
+# TODO next next step, compare struct links in a DiGraph with node == struct size + pointer index as a field.
 
 def makeReversedTypes(context, sizeCache):
   ''' Compare signatures for each size groups.
