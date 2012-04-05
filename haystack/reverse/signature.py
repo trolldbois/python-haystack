@@ -299,7 +299,7 @@ def makeSizeCaches(dumpname):
 def buildStructureGroup(context, sizeCache , optsize=None ):
   ''' Iterate of structure instances grouped by size, find similar signatures, 
   and outputs a list of groups of similar structures instances.'''
-  log.info("\t[-] Group structures's signatures by sizes.")
+  log.debug("\t[-] Group structures's signatures by sizes.")
   sgms=[]
   #
   for size,lst in sizeCache:
@@ -322,7 +322,7 @@ def buildStructureGroup(context, sizeCache , optsize=None ):
     #  #return
     
     # make a chain and use --originAddr
-    log.info('\t[-] Sort %d structs of size %d in groups'%(len(lst), size))
+    log.debug('\t[-] Sort %d structs of size %d in groups'%(len(lst), size))
     graph = networkx.Graph() 
     graph.add_edges_from(sgm.getGroups()) # add similarities as linked structs
     graph.add_nodes_from(lst) # add all structs all nodes . Should spwan isolated graphs
