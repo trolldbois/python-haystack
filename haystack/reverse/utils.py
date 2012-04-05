@@ -55,7 +55,7 @@ def closestFloorValueNumpy(val, lst):
   indicetab = numpy.searchsorted(lst, [val]) 
   ind = int(indicetab[0])
   i = max(0,ind-1)
-  return lst[i], i
+  return long(lst[i]), i
 
 def closestFloorValueOld(val, lst):
   ''' return the closest previous value to val in lst. O(4) than numpy with numpy.array '''

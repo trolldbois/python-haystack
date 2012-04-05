@@ -758,7 +758,7 @@ class %s(LoadableMembersStructure):  # %s
     return self._fields[i]
     
   def __len__(self):
-    return self._size
+    return int(self._size)
 
   def __cmp__(self, other):
     if not isinstance(other, AnonymousStructInstance):

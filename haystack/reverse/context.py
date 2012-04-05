@@ -65,7 +65,7 @@ class ReverserContext():
       return self._structures
     # cache Load
     log.info('[+] Fetching cached structures list')
-    self._structures = dict([ (vaddr,s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
+    self._structures = dict([ (long(vaddr),s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self._structures) ))
 
     if len(self._structures) != len(self._malloc_addresses): # no all structures yet, make them from MallocReverser
@@ -77,8 +77,7 @@ class ReverserContext():
       mallocRev = reversers.GenericHeapAllocationReverser()
       context = mallocRev.reverse(self)
       #mallocRev.check_inuse(self)
-      log.info('[+] Built %d structures from malloc blocs'%( len(self._structures) ))
-      print self._structures.keys() 
+      log.info('[+] Built %d/%d structures from malloc blocs'%( len(self._structures) , len(self._malloc_addresses) ))
     
     return self._structures
 
@@ -115,7 +114,7 @@ class ReverserContext():
     return [ self._get_structures()[addr] for addr in self.listStructuresAddrForPointerValue(ptr_value)]
   
   def listStructuresAddresses(self):
-    return map(int,self._get_structures().keys())
+    return map(long,self._get_structures().keys())
 
   def listStructures(self):
     return self._get_structures().values()

@@ -121,10 +121,10 @@ class StructureSizeCache:
     if not os.access(outdir, os.W_OK):
       raise IOError('cant write to %s'%(outdir))
     #
-    sizes = set(self._context._malloc_sizes)
+    sizes = map(int,set(self._context._malloc_sizes))
     arrays = dict([(s,[]) for s in sizes])
     #sort all addr in all sizes.. 
-    [arrays[ self._context._malloc_sizes[i] ].append(addr) for i, addr in enumerate(self._context._malloc_addresses) ]
+    [arrays[ self._context._malloc_sizes[i] ].append( long(addr) ) for i, addr in enumerate(self._context._malloc_addresses) ]
     #saving all sizes dictionary in files...
     for size,lst in arrays.items():
       fout = os.path.sep.join([outdir, 'size.%0.4x'%(size)])
@@ -331,7 +331,6 @@ def buildStructureGroup(context, sizeCache , optsize=None ):
     chains = [g.nodes() for g in subgraphs ]
     # TODO, do not forget this does only gives out structs with similarities.
     # lonely structs are not printed here...
-    
     yield chains
     
 def printStructureGroups(context, chains, originAddr=None):      
@@ -422,7 +421,8 @@ def fixType(context, chains):
   for chain in chains:
     name = getname()
     log.debug('\t[-] fix type of size:%d with name name:%s'% (len(chain), name ) )
-    for addr in chain:
+    for addr in chain: # chain is a numpy
+      addr = int(addr)
       # FIXME 
       instance = context.getStructureForAddr(addr)
       #

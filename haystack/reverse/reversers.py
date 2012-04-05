@@ -199,7 +199,7 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
     offsets = list(context._pointers_offsets)
     # build structs from pointers boundaries. and creates pointer fields if possible.
     log.info('[+] Adding new raw structures from getUserAllocations cached contents - %d todo'%(len(todo)))
-    for i, (ptr_value, size) in enumerate(zip(map(int,context._user_alloc_addresses), map(int,context._user_alloc_sizes))):
+    for i, (ptr_value, size) in enumerate(zip(map(long,context._user_alloc_addresses), map(long,context._user_alloc_sizes))):
       # TODO if len(_structure.keys()) +/- 30% de _malloc, do malloc_addr - keys() , 
       # and use fsking utils.dequeue()
       if ptr_value in doneStructs: # FIXME TODO THAT IS SUCKY SUCKY
