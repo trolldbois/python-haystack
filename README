@@ -130,6 +130,36 @@ and helps you in classifying and defining structures types.
 
 TODO: implement feedback
 
+    usage: haystack-reverser [-h] [--debug]
+                             dumpname
+                             {instances,typemap,group,parent,graph,show,makesig,clean}
+                             ...
+
+    Several tools to reverse engineer structures on the heap.
+
+    positional arguments:
+      dumpname              Source memory dump by haystack.
+      {instances,typemap,group,parent,graph,show,makesig,clean}
+                            sub-command help
+        instances           List all structures instances with virtual address,
+                            member types guess and info.
+        typemap             Try to reverse generic types from instances'
+                            similarities.
+        group               Show structure instances groups by size and signature.
+        parent              Print the parent structures pointing to the structure
+                            located at this address.
+        graph               DISABLED - Show sorted structure instances groups by
+                            size and signature in a graph.
+        show                Show one structure instance.
+        makesig             Create a simple signature file of the heap - NULL,
+                            POINTERS, OTHER VALUES.
+        clean               Clean the memory dump from cached info.
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --debug               Debug mode on.
+
+
 Command line example:
 --------------------
 This will create several files in the folder containing <yourdumpname>.
