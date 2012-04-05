@@ -10,7 +10,7 @@ import sys
 import re
 import Levenshtein #seqmatcher ?
 import networkx
-
+import itertools
 
 import haystack
 import haystack.model
@@ -413,12 +413,15 @@ except ImportError:
   _words = pkg_resources.resource_string(__name__, Config.WORDS_FOR_REVERSE_TYPES_FILE)
 
 # global
-_NAMES = [ s.strip() for s in _words.split('\n') ][:-1]
+_NAMES = [ s.strip() for s in _words.split('\n')[:-1] ]
+_NAMES_plen = 1
 
 def getname():
-  global _NAMES
+  global _NAMES, _NAMES_plen  
   if len(_NAMES) == 0:
-    _NAMES = [ '%s%s'%(s1.strip(), s2.strip()) for s1 in _words.split('\n') for s2 in _words.split('\n') ]
+    _NAMES_plen += 1
+    _NAMES = [''.join(x) for x in itertools.permutations(_words.split('\n')[:-1], _NAMES_plen)]
+    #_NAMES = [ '%s%s'%(s1.strip(), s2.strip()) for s1 in _words.split('\n')[:-1] for s2 in _words.split('\n')[:-1] ]
   return _NAMES.pop()  
   
 
