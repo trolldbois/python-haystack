@@ -37,7 +37,7 @@ def writeReversedTypes(opt):
   log.info('[+] Wrote to %s'%(outfile.name))
   return 
 
-def showStructures(opt):
+def groupStructures(opt):
   ''' show sorted structure instances groups to stdout '''
   context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
   for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
@@ -52,6 +52,20 @@ def saveSignatures(opt):
   log.info('[+] Signature written to %s'%(outfile))
   return
 
+
+def show(opt):
+  ''' Show a structure '''
+  log.info('[+] Load context')
+  context = reversers.getContext(opt.dumpname)
+  log.info('[+] Find Structure at: @%x'%(opt.address))
+  try:
+    st = context.getStructureForOffset(opt.address)
+    st.decodeFields()
+    print st.toString()
+  except ValueError,e:
+    log.info('[+] Found no structure.')
+    return
+  return
 
 def printParents(opt):
   ''' print the parental structures '''
@@ -99,12 +113,12 @@ def argparser():
         help='Reverse and list of structure types.')
   typemap.set_defaults(func=writeReversedTypes)  
 
-  show = subparsers.add_parser('show', help='Show sorted structure instances groups by size and signature')
-  show.add_argument('--size', type=int, action='store', default=None, 
+  groupparser = subparsers.add_parser('group', help='Show sorted structure instances groups by size and signature')
+  groupparser.add_argument('--size', type=int, action='store', default=None, 
         help='Limit to a specific structure size')
-  show.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
+  groupparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
         help='Limit to structure similar to the structure pointed at <address>')
-  show.set_defaults(func=showStructures)  
+  groupparser.set_defaults(func=groupStructures)  
 
   parent = subparsers.add_parser('parent', help='print parental structures pointing to this address.')
   parent.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
@@ -120,6 +134,11 @@ def argparser():
   graphparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
         help='Limit to structure similar to the structure pointed at <address>')
   graphparser.set_defaults(func=graph)  
+
+  showparser = subparsers.add_parser('show', help='Show one structure instance from its address')
+  showparser.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
+        help='Specify the address of the structure, or of a structure member.')
+  showparser.set_defaults(func=show)  
 
   #oldies
   makesig = subparsers.add_parser('makesig', help='make signatures for dumpname')
