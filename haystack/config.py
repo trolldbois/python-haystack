@@ -22,7 +22,7 @@ class ConfigClass():
   def __init__(self):
     #self.cacheDir = os.path.normpath(outputDir)
     #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-    self.WORDSIZE = 4
+    self.__WORDSIZE = None
     self.commentMaxSize = 64
     #
     self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
@@ -48,6 +48,16 @@ class ConfigClass():
     self.REVERSED_TYPES_FILENAME = 'reversed_types.py'
     self.SIGNATURES_FILENAME = 'signatures'
     self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
+
+  def set_word_size(self, v):
+    self.__WORDSIZE = v
+
+  def get_word_size(self):
+    ''' default config to local arch. you can change it. '''
+    if self.__WORDSIZE is None:
+      import ctypes
+      self.__WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
+    return self.__WORDSIZE
   
   def get_word_type(self):
     import ctypes
@@ -58,6 +68,7 @@ class ConfigClass():
     else:
       return ctypes.c_ulong
   
+  WORDSIZE = property(get_word_size, set_word_size)
   WORDTYPE = property(get_word_type)
   
   def makeCache(self, dumpname):
