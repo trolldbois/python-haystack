@@ -365,6 +365,7 @@ def makeReversedTypes(context, sizeCache):
     for f in s.getPointerFields():
       addr = f._getValue(0)
       if addr in context.heap:
+        print context.getStructureForOffset(addr).getCtype()
         f.setCtype( ctypes.POINTER(context.getStructureForOffset(addr).getCtype()) )
         f.setComment('pointer fixed')
   

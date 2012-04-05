@@ -785,7 +785,7 @@ class %s(LoadableMembersStructure):  # %s
     return 'struct_%x'%(self._vaddr )
   
 
-class ReversedType(model.LoadableMembers):
+class ReversedType(model.LoadableMembersStructure):
   
   @classmethod
   def create(cls, context, name):
@@ -836,7 +836,7 @@ class ReversedType(model.LoadableMembers):
 
     info = 'size:%d'%( ctypes.sizeof(cls) )
     ctypes_def = '''
-class %s(LoadableMembers):  # %s
+class %s(LoadableMembersStructure):  # %s
   _fields_ = %s
 
 ''' % (cls.__name__, info, fieldsString)

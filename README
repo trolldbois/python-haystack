@@ -85,7 +85,7 @@ Extensibility:
 It's easy to add new structures. Its basically the ctypes definition of 
 C structures that should be done following the next 4 steps :
 
-a) Your class must extend haystack.model.LoadableMembers.
+a) Your class must extend haystack.model.LoadableMembersStructure.
 b) You must give your class a completed _fields_ (with one _ ), like 
    all ctypes.Structure 
 b bis) Optional - You can add an expectedValues dict() to your ctype 
@@ -113,7 +113,7 @@ d) A validation test is done for each members, constraints and
    memory space validity (pointers) are tested.
    The validation does not recurse.
 e) Each members is then 'loaded' to local space. 
-   If the value is a pointer or a model.LoadableMembers type, it's 
+   If the value is a pointer or a model.LoadableMembersStructure type, it's 
    recursively Loaded. ( and validated).
    If the recursive loading fails, the calls fails. bye-bye.
 f) If all contraints are respected, we have a match.
@@ -166,9 +166,9 @@ Extension examples :
 
 Pseudo Example for extension :
 ==============================
-from haystack.model import LoadableMembers, RangeValue, NotNull
+from haystack.model import LoadableMembersStructure, RangeValue, NotNull
 
-class OpenSSLStruct(LoadableMembers):
+class OpenSSLStruct(LoadableMembersStructure):
   pass
 
 class RSA(OpenSSLStruct):
@@ -211,7 +211,7 @@ class RSA(OpenSSLStruct):
   }
   def loadMembers(self, mappings, maxDepth):
     print 'example'
-    if not LoadableMembers.loadMembers(self, mappings, maxDepth):
+    if not LoadableMembersStructure.loadMembers(self, mappings, maxDepth):
       log.debug('RSA not loaded')
       return False
     return True

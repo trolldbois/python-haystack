@@ -26,7 +26,7 @@ Run in a python script :
 
 It's easy to add new structures (check ctypeslib or do it by hand or check sslsnoop on github)
 
-a) Your class must extend haystack.model.LoadableMembers.
+a) Your class must extend haystack.model.LoadableMembersStructure.
 b) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure
 c) You can add an expectedValues dict() to your class to refine your search
 d) call model.registerModule(sys.modules[__name__])
