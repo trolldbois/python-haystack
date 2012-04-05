@@ -446,6 +446,7 @@ def fixType(context, chains):
   return 
 
 def fixInstanceType(context, instance, name):
+  # TODO if instance.isFixed, return instance.getCtype()
   instance.setName(name)
   ctypes_type = context.getReversedType(name)
   if ctypes_type is None: # make type

@@ -828,9 +828,8 @@ class ReversedType(model.LoadableMembersStructure):
     fieldsStrings = []
     for attrname, attrtyp in cls.getFields(): # model
       if model.isPointerType(attrtyp) and not model.isVoidPointerType(attrtyp):
-        #print attrtyp
         fieldsStrings.append('(%s, ctypes.POINTER(%s) ),\n'%(attrname, attrtyp._type_.__name__) )
-      else:
+      else: # pointers not in the heap.
         fieldsStrings.append('(%s, %s ),\n'%(attrname, attrtyp.__name__) )
     fieldsString = '[ \n%s ]'% ( ''.join(fieldsStrings) )
 
