@@ -71,26 +71,26 @@ class TestListStruct(unittest.TestCase):
     heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
     for addr in heaps:
       m = self.mappings.getMmapForAddr(addr)
-      print '\n+ Heap @%x size: %d'%(addr, len(m))
+      #print '\n+ Heap @%x size: %d'%(addr, len(m))
       heap = m.readStruct(addr, win7heap.HEAP)
       self.assertTrue(heap.loadMembers(self.mappings, 10 ))
       segments = [segment for segment in heap.iterateListField(self.mappings, 'SegmentList')]
       self.assertEquals( len(segments), 1)
 
       allocated = [ block for block in heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
-      print '+ %d vallocated blocks'%( len(allocated) )
-      for block in allocated:
-        print '\t- vallocated commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
+      #print '+ %d vallocated blocks'%( len(allocated) )
+      #for block in allocated:
+      #  print '\t- vallocated commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
       
       chunks = [ chunk for chunk in heap.getChunks(self.mappings)]
       allocsize = sum( [c[1] for c in chunks ])
-      print '+ %d chunks, for %d bytes'%( len(chunks), allocsize )
+      #print '+ %d chunks, for %d bytes'%( len(chunks), allocsize )
       
       fth_chunks = [ chunk for chunk in heap.getFrontendChunks(self.mappings)]
       fth_allocsize = sum( [c[1] for c in fth_chunks ])
-      print '+ %d frontend chunks, for %d bytes'%( len(fth_chunks), fth_allocsize )
+      #print '+ %d frontend chunks, for %d bytes'%( len(fth_chunks), fth_allocsize )
 
-      print '+ Got a total of %d bytes'%(allocsize+fth_allocsize)
+      #print '+ Got a total of %d bytes'%(allocsize+fth_allocsize)
       
 
 class TestListStructTest5:#(unittest.TestCase):
