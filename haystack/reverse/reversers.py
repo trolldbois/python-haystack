@@ -575,10 +575,10 @@ def reverseInstances(dumpname):
       os.mkdir(Config.getStructsCacheDir(context.dumpname))
     
     # we use common allocators to find structures.
-    log.debug('Reversing malloc')
-    mallocRev = MallocReverser()
-    context = mallocRev.reverse(context)
-    mallocRev.check_inuse(context)
+    #log.debug('Reversing malloc')
+    #mallocRev = MallocReverser()
+    #context = mallocRev.reverse(context)
+    #mallocRev.check_inuse(context)
 
     # try to find some logical constructs.
     log.debug('Reversing DoubleLinkedListReverser')
