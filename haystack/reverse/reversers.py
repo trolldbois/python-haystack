@@ -404,16 +404,22 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   def twoWords(self, ctx, st_addr, offset=0):
     #return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
     return ctx.heap.readBytes( st_addr+offset, 2*Config.WORDSIZE )
+
+  def unpack(self, context, ptr_value):
+    if Config.WORDSIZE == 8:
+      return struct.unpack('QQ', self.twoWords(context, ptr_value ) )
+    else:
+      return struct.unpack('LL', self.twoWords(context, ptr_value ) )
   
   def isLinkedListMember(self, context, ptr_value):
-    f1,f2 = struct.unpack('LL', self.twoWords(context, ptr_value ) )
+    f1,f2 = self.unpack(context, ptr_value )
     if (f1 == ptr_value) or (f2 == ptr_value):
       # this are self pointers. ?
       return False
     # get next and prev
     if (f1 in context.heap) and (f2 in context.heap):
-      st1_f1,st1_f2 = struct.unpack('LL', self.twoWords(context, f1 ) )
-      st2_f1,st2_f2 = struct.unpack('LL', self.twoWords(context, f2 ))
+      st1_f1,st1_f2 = self.unpack(context, f1 )
+      st2_f1,st2_f2 = self.unpack(context, f2 )
       # check if the three pointer work
       if ( (ptr_value == st1_f2 == st2_f1 ) or
            (ptr_value == st2_f2 == st1_f1 ) ):
@@ -428,7 +434,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   def iterateList(self, context, head_addr):
     members = []
     members.append(head_addr)
-    f1,f2 = struct.unpack('LL', self.twoWords(context, head_addr ))
+    f1,f2 = self.unpack(context, head_addr )
     if (f1 == head_addr):
       log.debug('f1 is head_addr too')
       return None,None
@@ -442,7 +448,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       if f1 in members:
         log.debug('loop to head - returning %d members from head.addr %x f1:%x'%(len(members)-1, head_addr, f1))
         return self.findHead(context, members)
-      first_f1,first_f2 = struct.unpack('LL', self.twoWords(context, f1 ))
+      first_f1,first_f2 = self.unpack(context, f1 )
       if ( current == first_f2 ) :
         members.append(f1)
         current = f1
@@ -469,7 +475,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
       for s, addr in sizes:
         if s == 3*Config.WORDSIZE:
           # read ->next ptr and first field of struct || null
-          f2, field0 = struct.unpack('LL', self.twoWords(ctx, addr+Config.WORDSIZE ) )
+          f2, field0 = self.unpack(ctx, addr+Config.WORDSIZE )
           if field0 == 0: # this could be HEAD. or a 0 value.
             head = addr
             log.debug('We had to guess the HEAD for this linked list %x'%(addr))
