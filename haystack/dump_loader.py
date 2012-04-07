@@ -121,6 +121,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     if len(fields[0]) > 10:
       log.info('x64 arch dump detected')
       Config.WORDSIZE = 8
+    else:
+      Config.WORDSIZE = 4
     self_mappings = []
     for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
       start,end = int(_start,16),int(_end,16 )
