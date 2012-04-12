@@ -34,11 +34,13 @@ setup(name="haystack",
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
     packages = ["haystack", "haystack.gui", "haystack.reverse", "haystack.reverse.libc", "haystack.reverse.win32"],
+    #package_dir={"haystack.reverse": 'haystack/reverse'},
+    package_data={"haystack.reverse": ['data/words.100'], "README"},
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
-    package_data={"haystack.reverse": ['data/words.100']},
     install_requires = ["python-ptrace", "argparse" ], #, "Levenschtein", "networkx"],
     test_suite= "test.alltests",
     #tests_require="haystack",
+    #entry_points = {'haystack.plugins':['haystack.model:register']},
 )
 
 
