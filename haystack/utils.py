@@ -244,7 +244,7 @@ def isStructType(objtype):
   return issubclass(objtype, ctypes.Structure)
   #return isinstance(obj, ctypes.Structure)
 
-__ptrt = type(ctypes.POINTER(ctypes.c_int))
+__ptrt = type(ctypes.POINTER(Config.WORDTYPE))
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
   return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
@@ -268,7 +268,7 @@ def isBasicTypeArray(obj):
       return True
   return False
 
-__arrayt = type(ctypes.c_int*1)
+__arrayt = type(Config.WORDTYPE*1)
 def isArrayType(objtype):
   ''' Checks if an object is a ctype array.'''
   return __arrayt == type(objtype)

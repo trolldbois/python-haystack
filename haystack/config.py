@@ -67,8 +67,9 @@ class ConfigClass():
     elif self.WORDSIZE == 8:
       return ctypes.c_uint64
     else:
-      return ctypes.c_ulong
-  
+      raise ValueError('platform not supported for WORDIZE == %d'%(self.WORDSIZE))
+    return
+    
   WORDSIZE = property(get_word_size, set_word_size)
   WORDTYPE = property(get_word_type)
   
@@ -109,4 +110,5 @@ class ConfigClass():
 
 
 Config = ConfigClass()
+
 

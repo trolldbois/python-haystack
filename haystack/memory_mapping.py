@@ -64,17 +64,6 @@ PROC_MAP_REGEX = re.compile(
     # Filename: '  /usr/bin/synergyc'
     r'(?: +(.*))?')
 
-def mmap_hack(_memdump, start=0, end=1044):
-  _local_mmap_bytebuffer = mmap.mmap(_memdump.fileno(), end-start, access=mmap.ACCESS_READ)
-  _memdump.close()
-  _memdump = None
-  # so. we need to get the mmap structure...
-  for x in range(10):
-    print '%d word = %x'%(x, struct.unpack('L', (ctypes.c_ulong).from_address(id(_local_mmap_bytebuffer) + Config.WORDSIZE*x ) )[0] ) 
-  print ' please check mappings'
-  import time
-  time.sleep(100)
-
 class MemoryMapping:
   """ 
   Just the metadata.
@@ -273,7 +262,6 @@ class LocalMemoryMapping(MemoryMapping):
     return ret
 
   def mmap(self):
-    print 'localmemeorymapping', self
     return self
     
   def readWord(self, vaddr ):
@@ -388,10 +376,9 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           self._memdump.close()
           self._memdump = None
           # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*Config.WORDSIZE ) )[0] 
+          heapmap = struct.unpack('L', (Config.WORDTYPE).from_address(id(self._local_mmap_bytebuffer) + 2*Config.WORDSIZE ) )[0] 
           self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
         else: # fallback with no creepy hacks
-          print 'fallback', self
           log.warning('Memory Mapping content mmap-ed() (double copy of %s) : %s'%(self._memdump.__class__, self))
           # we have the bytes
           local_mmap_bytebuffer = mmap.mmap(self._memdump.fileno(), self.end-self.start, access=mmap.ACCESS_READ)
@@ -399,7 +386,6 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           # we need an ctypes
           self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)      
       else: # dumpfile, file inside targz ... any read() API really
-        print 'readfile', self
         self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)
         self._memdump.close()
         log.warning('Memory Mapping content copied to ctypes array : %s'%(self))
@@ -435,13 +421,6 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     d['_base'] = None
     d['_process'] = None
     return d
-  
-  #def __setstate__(self, dic):
-  #  print 'set', dic
-  #  self._memdump = file(dic['_memdump_filename'],'r')
-  #  s = len(LazyMmap(self._memdump))
-  #  return
-
   
   @classmethod
   def fromFile(cls, memoryMapping, aFile):
