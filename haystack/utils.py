@@ -207,7 +207,7 @@ def bytes2array(bytes, typ):
   import struct
   try:
     for i in range(0,arrayLen):
-      array[i]=unpackWord(fmt, bytes[typLen*i:typLen*(i+1)])[0]
+      array[i]=struct.unpack(fmt, bytes[typLen*i:typLen*(i+1)])[0]
   except struct.error,e:
     log.error('format:%s typLen*i:typLen*(i+1) = %d:%d'%(fmt, typLen*i,typLen*(i+1)))
     raise e
