@@ -441,7 +441,7 @@ class Field:
     if self.isString():
       bytes = repr(self.value)
     elif self.isInteger():
-      return self.value #struct.unpack('L',(self.struct.bytes[self.offset:self.offset+len(self)]) )[0]
+      return self.value 
     elif self.isZeroes():
       bytes=repr(self.value)#'\\x00'*len(self)
     elif self.isArray():

@@ -136,7 +136,7 @@ def offsetof(typ, membername):
 d 	double 	float 	8 	(4)
 p 	char[] 	string 	  	 
 '''
-bytestr_fmt={
+bytestr_fmt={ # XXX probable bug here on x64...
   'c_bool': '?',
   'c_char': 'c',
   'c_byte': 'b',
