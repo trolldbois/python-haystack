@@ -24,6 +24,7 @@ class ConfigClass():
     #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
     self.__WORDSIZE = None
     self.commentMaxSize = 64
+    self.mmap_hack = True # bad bad idea...
     #
     self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
     self.CACHE_NAME = 'cache'

@@ -64,6 +64,16 @@ PROC_MAP_REGEX = re.compile(
     # Filename: '  /usr/bin/synergyc'
     r'(?: +(.*))?')
 
+def mmap_hack(_memdump, start=0, end=1044):
+  _local_mmap_bytebuffer = mmap.mmap(_memdump.fileno(), end-start, access=mmap.ACCESS_READ)
+  _memdump.close()
+  _memdump = None
+  # so. we need to get the mmap structure...
+  for x in range(10):
+    print '%d word = %x'%(x, struct.unpack('L', (ctypes.c_ulong).from_address(id(_local_mmap_bytebuffer) + Config.WORDSIZE*x ) )[0] ) 
+  print ' please check mappings'
+  import time
+  time.sleep(100)
 
 class MemoryMapping:
   """ 
@@ -369,9 +379,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # sad we can't have a bytebuffer from that same raw memspace
     # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
-      mmap_hack = True
       if hasattr(self._memdump,'fileno'): # normal file. 
-        if mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+        if Config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
           #print 'mmap_hack', self
           #if self.pathname.startswith('/usr/lib'):
           #  raise Exception
@@ -379,7 +388,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           self._memdump.close()
           self._memdump = None
           # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 8 ) )[0] 
+          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*Config.WORDSIZE8 ) )[0] 
           self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
         else: # fallback with no creepy hacks
           print 'fallback', self
