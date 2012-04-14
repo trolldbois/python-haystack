@@ -388,7 +388,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           self._memdump.close()
           self._memdump = None
           # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*Config.WORDSIZE8 ) )[0] 
+          heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*Config.WORDSIZE ) )[0] 
           self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
         else: # fallback with no creepy hacks
           print 'fallback', self
