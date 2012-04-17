@@ -168,9 +168,11 @@ def test3():
       #print '0x%x is in %s'%(ptr, m)
       # find the right localm
       localmaps = localmappings.getMmap(m.pathname)
+      found = False
       for localm in localmaps:
         if localm.offset == m.offset and localm.permissions == m.permissions:
           # found it
+          found = True
           caddr = ptr - m.start + localm.start
           dl_name = getname(caddr)
           if dl_name is not None:
@@ -186,10 +188,13 @@ def test3():
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
           else:
-            print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s '%( 
-              ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
-              m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name )
+            #print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s '%( 
+            #  ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
+            #  m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name )
+            pass
           break
+      if not found:
+        print '[+] not a fn pointer %x\n'%(ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str,localmaps) )
   #pass
   return
   if True:
