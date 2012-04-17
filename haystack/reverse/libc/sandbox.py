@@ -112,9 +112,23 @@ def test3():
   # map all librairies
   # go through all pointers in librairies
   # try to dl_addr the pointers by rebasing.
-  from haystack import memory_loader
-  dump = memory_loader.load('/home/jal/outputs/dumps/ssh/ssh.1.dump')
+  #from haystack import dump_loader
+  #dump = memory_loader.load('/home/jal/outputs/dumps/ssh/ssh.1')
+  from haystack.reverse import reversers
+  print 'load context'
+  context = reversers.getContext('/home/jal/outputs/dumps/skype/skype.1/skype.1.a')
+  mappings = context.mappings
+  #mmap_libdl = [ m for m in mappings if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
+  for ptr in context.listPointerValueInHeap():
+    #for m in mmap_libdl:
+    #  if ptr in m:
+    #    print '0x%x is in %s'%(ptr, m)
+    m = mappings.getMmapForAddr(ptr)
+    if m.pathname not in ['None', '[heap]', '[stack]']:
+      print '0x%x is in %s'%(ptr, m)
+  
 
+  return
 
 libdl = ctypes.CDLL('libdl.so')
 

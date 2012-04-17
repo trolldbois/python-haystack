@@ -105,6 +105,10 @@ class ReverserContext():
     '''Returns the list of offsets where this value has been found'''
     return [int(self._pointers_offsets[offset]) for offset in numpy.where(self._pointers_values==ptr_value)[0]]
 
+  def listPointerValueInHeap(self):
+    '''Returns the list of pointers found in the heap'''
+    return map(long, self._pointers_values)
+
   def listStructuresAddrForPointerValue(self, ptr_value):
     '''Returns the list of structures addresses with a member with this pointer value '''
     return sorted(set([ int(self.getStructureAddrForOffset(offset)) for offset in self.listOffsetsForPointerValue(ptr_value)]))
