@@ -5,6 +5,7 @@
 #
 
 import logging
+import os
 import collections
 import struct
 import itertools
@@ -170,7 +171,12 @@ class Field:
       log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
       self.value = value
       self.size = Config.WORDSIZE
-      self.comment = self.struct._mappings.getMmapForAddr(self.value).pathname
+      # TODO: leverage the context._function_names 
+      if self.value in self.struct._context._function_names :
+        self.comment = ' %s::%s'%(os.path.basename(self.struct._mappings.getMmapForAddr(self.value).pathname), 
+                    self.struct._context._function_names[self.value])
+      else:
+        self.comment = self.struct._mappings.getMmapForAddr(self.value).pathname 
       self.typename = FieldType.POINTER
       return True
     else:

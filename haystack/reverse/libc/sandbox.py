@@ -126,8 +126,8 @@ def test3():
   IGNORES = ['None', '[heap]', '[stack]','[vdso]']
   
   from haystack.reverse import reversers, pointerfinder
-  #dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
-  dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
+  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
+  #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
   print '[+] load context', dumpname
   context = reversers.getContext(dumpname)
   mappings = context.mappings
@@ -184,7 +184,7 @@ def test3():
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
               #yield (ptr, m, dl_name)
             else:
-              continue
+              #continue
               print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
@@ -207,8 +207,8 @@ def test3():
 
 def test4():
   from haystack.reverse import reversers, pointerfinder
-  #dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
-  dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
+  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
+  #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
   print '[+] load context', dumpname
   context = reversers.getContext(dumpname)
   mappings = context.mappings
@@ -222,8 +222,8 @@ libdl = ctypes.CDLL('libdl.so')
 def main(argv):
   #test1()
   #test2()
-  #test3()
-  test4()
+  test3()
+  #test4()
 
 if __name__ == '__main__':
   main(sys.argv[1:])
