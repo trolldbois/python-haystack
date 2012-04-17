@@ -124,14 +124,18 @@ def test3():
   IGNORES = ['None', '[heap]', '[stack]','[vdso]']
   
   from haystack.reverse import reversers, pointerfinder
-  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
+  #dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
+  dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
   print '[+] load context', dumpname
   context = reversers.getContext(dumpname)
   mappings = context.mappings
   ldso = dict()
   for m in mappings:
     if m.pathname not in IGNORES and m.pathname not in ldso:
-      ldso[m.pathname] = ctypes.CDLL(m.pathname)
+      try:
+        ldso[m.pathname] = ctypes.CDLL(m.pathname)
+      except OSError,e:
+        IGNORES.append(m.pathname)
 
   
   print '[+] context loaded'
@@ -184,16 +188,19 @@ def test3():
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
             else:
+              continue
               print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
           else:
-            #print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s '%( 
-            #  ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
-            #  m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name )
+            continue
+            print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s '%( 
+              ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
+              m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name )
             pass
           break
       if not found:
+        continue
         print '[+] not a fn pointer %x\n'%(ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str,localmaps) )
   #pass
   return
