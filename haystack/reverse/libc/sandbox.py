@@ -110,7 +110,7 @@ def getname(fnaddr):
   info = Dl_info()
   ret = libdl.dladdr( fnaddr, ctypes.byref(info))
   #print 'dladdr test', info.dli_sname.string, info.dli_sname.string == 'ssl3_read'
-  return info.dli_sname.string
+  return info.dli_sname.string, info.dli_saddr
 
 
 def test3():
@@ -174,10 +174,10 @@ def test3():
           # found it
           found = True
           caddr = ptr - m.start + localm.start # rebase
-          dl_name = getname(caddr)
+          dl_name, fnaddr = getname(caddr)
           if dl_name is not None:
-            sym = libdl.dlsym( ldso[m.pathname]._handle, dl_name, 'xxx')
-            fnaddr = struct.unpack('L',struct.pack('l', sym) )[0]
+            #sym = libdl.dlsym( ldso[m.pathname]._handle, dl_name, 'xxx')
+            #fnaddr = struct.unpack('L',struct.pack('l', sym) )[0]
             if fnaddr == caddr: # reverse check
               print '[+] REBASE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
@@ -204,12 +204,26 @@ def test3():
 
   return
 
+
+def test4():
+  from haystack.reverse import reversers, pointerfinder
+  #dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
+  dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
+  print '[+] load context', dumpname
+  context = reversers.getContext(dumpname)
+  mappings = context.mappings
+  
+  for ptr,name in context._function_names.items():
+    print '@%x -> %s::%s'%(ptr, mappings.getMmapForAddr(ptr).pathname, name)
+  
+
 libdl = ctypes.CDLL('libdl.so')
 
 def main(argv):
   #test1()
   #test2()
-  test3()
+  #test3()
+  test4()
 
 if __name__ == '__main__':
   main(sys.argv[1:])

@@ -39,6 +39,7 @@ class ConfigClass():
     self.CACHE_STACK_VALUES = 'stack.pointers.values'
     self.CACHE_ALL_PTRS_ADDRS = 'all.pointers.offsets'
     self.CACHE_ALL_PTRS_VALUES = 'all.pointers.values'
+    self.CACHE_FUNCTION_NAMES = 'names.pointers.functions'
     self.CACHE_STRUCTURES = 'structures'
     self.CACHE_MALLOC_CHUNKS_ADDRS = 'mchunks.addrs'
     self.CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'

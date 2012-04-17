@@ -48,7 +48,11 @@ class ReverserContext():
     all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings) 
     self._pointers_values = all_values
     self._pointers_offsets = all_offsets
-
+    
+    log.info('[+] Reversing function pointers names')
+    from haystack.reverse.libc import libdl
+    self._function_names = dict(libdl.reverseLocalFonctionPointerNames(self) )
+    
     log.info('[+] Fetching cached malloc chunks list')
     # malloc_size is the structures_sizes, 
     # TODO adaptable allocator win32/linux
