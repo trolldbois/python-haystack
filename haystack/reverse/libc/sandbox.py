@@ -124,13 +124,13 @@ def test3():
   IGNORES = ['None', '[heap]', '[stack]','[vdso]']
   
   from haystack.reverse import reversers, pointerfinder
-  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'
+  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
   print '[+] load context', dumpname
   context = reversers.getContext(dumpname)
   mappings = context.mappings
   ldso = dict()
   for m in mappings:
-    if m.pathname not in IGNORES:
+    if m.pathname not in IGNORES and m.pathname not in ldso:
       ldso[m.pathname] = ctypes.CDLL(m.pathname)
 
   
@@ -145,20 +145,65 @@ def test3():
 
   localmappings = getMappings()
   
-  for ptr in all_ptrs:
+  crypto = mappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  for lm in crypto:
+    print lm
+  
+  print '---'
+  crypto = localmappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  for lm in crypto:
+    print lm
+  
+  
+  #return
+  for ptr in set(all_ptrs):
     #for m in mmap_libdl:
     #  if ptr in m:
     #    print '0x%x is in %s'%(ptr, m)
     m = mappings.getMmapForAddr(ptr)
     if m.pathname not in IGNORES:
+      # try to ignore writeable mmaps
+      #if 'w' in m.permissions:
+      #  continue
       #print '0x%x is in %s'%(ptr, m)
+      # find the right localm
       localmaps = localmappings.getMmap(m.pathname)
       for localm in localmaps:
+        if localm.offset == m.offset and localm.permissions == m.permissions:
+          # found it
+          caddr = ptr - m.start + localm.start
+          dl_name = getname(caddr)
+          if dl_name is not None:
+            sym = libdl.dlsym( ldso[m.pathname]._handle, dl_name, 'xxx')
+            #print 'sym', sym
+            fnaddr = struct.unpack('L',struct.pack('l', sym) )[0]
+            if fnaddr == caddr:
+              print '[+] REBASE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
+                ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
+                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
+            else:
+              print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
+                ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
+                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
+          else:
+            print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s '%( 
+              ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
+              m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name )
+          break
+  #pass
+  return
+  if True:
+      cnt = 0
+      #print localmaps
+      for localm in localmaps:
+        if localm.offset != m.offset:
+          continue
         caddr = ptr - m.start + localm.start
         dl_name = getname(caddr)
         if dl_name is not None:
-          print 'REBASE %s %s 0x%x ->  0x%x name : '%(m.pathname, m.permissions, ptr, caddr) , dl_name 
-  
+          print 'REBASE (%d) %s %s offset:%x 0x%x ->  0x%x perms==%s localoffset:%x name : '%(cnt, 
+            m.pathname, m.permissions, m.offset, ptr, caddr, localm.permissions == m.permissions, localm.offset) , dl_name 
+        cnt+=1
 
   return
 
