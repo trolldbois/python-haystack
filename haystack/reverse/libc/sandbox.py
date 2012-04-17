@@ -114,6 +114,8 @@ def getname(fnaddr):
 
 
 def test3():
+  ''' reverse fn pointer names by trying to rebase the ptr value to a local ld_open '''
+  
   # load local memdump
   # map all librairies
   # go through all pointers in librairies
@@ -140,8 +142,8 @@ def test3():
   
   print '[+] context loaded'
   #mmap_libdl = [ m for m in mappings if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
-  hptrs = context._pointers_values_heap
-  print '[+] %d pointers in heap to heap '%( len(hptrs) )
+  #hptrs = context._pointers_values_heap
+  #print '[+] %d pointers in heap to heap '%( len(hptrs) )
   
   # looking in [heap] pointing to elsewhere
   all_ptrs = context.listPointerValueInHeap()
@@ -149,44 +151,38 @@ def test3():
 
   localmappings = getMappings()
   
-  crypto = mappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
-  for lm in crypto:
-    print lm
+  #crypto = mappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  #for lm in crypto:
+  #  print lm
   
-  print '---'
-  crypto = localmappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
-  for lm in crypto:
-    print lm
+  #print '---'
+  #crypto = localmappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  #for lm in crypto:
+  #  print lm
   
   
   #return
   for ptr in set(all_ptrs):
-    #for m in mmap_libdl:
-    #  if ptr in m:
-    #    print '0x%x is in %s'%(ptr, m)
+    # get dump mmap
     m = mappings.getMmapForAddr(ptr)
     if m.pathname not in IGNORES:
-      # try to ignore writeable mmaps
-      #if 'w' in m.permissions:
-      #  continue
-      #print '0x%x is in %s'%(ptr, m)
-      # find the right localm
+      # find the right localmmap
       localmaps = localmappings.getMmap(m.pathname)
       found = False
       for localm in localmaps:
         if localm.offset == m.offset and localm.permissions == m.permissions:
           # found it
           found = True
-          caddr = ptr - m.start + localm.start
+          caddr = ptr - m.start + localm.start # rebase
           dl_name = getname(caddr)
           if dl_name is not None:
             sym = libdl.dlsym( ldso[m.pathname]._handle, dl_name, 'xxx')
-            #print 'sym', sym
             fnaddr = struct.unpack('L',struct.pack('l', sym) )[0]
-            if fnaddr == caddr:
+            if fnaddr == caddr: # reverse check
               print '[+] REBASE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions, 
                 m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr )
+              #yield (ptr, m, dl_name)
             else:
               continue
               print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x'%( 
@@ -203,19 +199,8 @@ def test3():
         continue
         print '[+] not a fn pointer %x\n'%(ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str,localmaps) )
   #pass
-  return
-  if True:
-      cnt = 0
-      #print localmaps
-      for localm in localmaps:
-        if localm.offset != m.offset:
-          continue
-        caddr = ptr - m.start + localm.start
-        dl_name = getname(caddr)
-        if dl_name is not None:
-          print 'REBASE (%d) %s %s offset:%x 0x%x ->  0x%x perms==%s localoffset:%x name : '%(cnt, 
-            m.pathname, m.permissions, m.offset, ptr, caddr, localm.permissions == m.permissions, localm.offset) , dl_name 
-        cnt+=1
+  for name, lib in ldso.items():
+    ret = libdl.dlclose(lib._handle)
 
   return
 
