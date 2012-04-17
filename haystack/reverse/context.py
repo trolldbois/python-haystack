@@ -41,8 +41,13 @@ class ReverserContext():
     log.info('[+] Fetching cached structures addresses list')
     #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
     heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
-    self._pointers_values = heap_values
-    self._pointers_offsets = heap_offsets
+    self._pointers_values_heap = heap_values
+    self._pointers_offsets_heap = heap_offsets
+
+    # test with all mmap in target
+    all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings) 
+    self._pointers_values = all_values
+    self._pointers_offsets = all_offsets
 
     log.info('[+] Fetching cached malloc chunks list')
     # malloc_size is the structures_sizes, 

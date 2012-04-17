@@ -134,6 +134,31 @@ def getHeapPointers(dumpfilename, mappings):
   #log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
   return heap_addrs, heap_values #, stack_addrs, stack_values #values, aligned, not_aligned
 
+def getAllPointers(dumpfilename, mappings):
+  ''' Search all mmap pointers values in heap.
+      records values and pointers address in heap.
+  '''
+  import pointerfinder  
+  F_HEAP_O = Config.getCacheFilename(Config.CACHE_ALL_PTRS_ADDRS, dumpfilename)
+  F_HEAP_V = Config.getCacheFilename(Config.CACHE_ALL_PTRS_VALUES, dumpfilename)
+  heap_addrs = int_array_cache(F_HEAP_O)
+  heap_values = int_array_cache(F_HEAP_V)
+  if heap_addrs is None or heap_values is None:
+    log.info('[+] Making new cache ') 
+    heap_enumerator = pointerfinder.PointerEnumerator(mappings.getHeap())
+    heap_enumerator.setTargetMapping(mappings) # all pointers
+    heap_enum = heap_enumerator.search()
+    if len(heap_enum)>0:
+      heap_addrs, heap_values = zip(*heap_enum) # WTF
+    else:
+      heap_addrs, heap_values = (),()
+    log.info('\t[-] got %d pointers '%(len(heap_enum)) )
+    # merge
+    int_array_save(F_HEAP_O, heap_addrs)
+    int_array_save(F_HEAP_V, heap_values)
+  else:
+    log.info('[+] Loading from cache %d pointers %d unique'%(len(heap_values), len(set(heap_values)) ))
+  return heap_addrs, heap_values 
 
 def getAllocations(dumpfilename, mappings, heap):
   ''' Search malloc_chunks in heap .
