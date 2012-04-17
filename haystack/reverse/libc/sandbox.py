@@ -106,6 +106,12 @@ dladdr test ssl3_read True
   
   return
 
+def getname(fnaddr):
+  info = Dl_info()
+  ret = libdl.dladdr( fnaddr, ctypes.byref(info))
+  #print 'dladdr test', info.dli_sname.string, info.dli_sname.string == 'ssl3_read'
+  return info.dli_sname.string
+
 
 def test3():
   # load local memdump
@@ -114,18 +120,44 @@ def test3():
   # try to dl_addr the pointers by rebasing.
   #from haystack import dump_loader
   #dump = memory_loader.load('/home/jal/outputs/dumps/ssh/ssh.1')
-  from haystack.reverse import reversers
-  print 'load context'
-  context = reversers.getContext('/home/jal/outputs/dumps/skype/skype.1/skype.1.a')
+  
+  IGNORES = ['None', '[heap]', '[stack]','[vdso]']
+  
+  from haystack.reverse import reversers, pointerfinder
+  dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'
+  print '[+] load context', dumpname
+  context = reversers.getContext(dumpname)
   mappings = context.mappings
+  ldso = dict()
+  for m in mappings:
+    if m.pathname not in IGNORES:
+      ldso[m.pathname] = ctypes.CDLL(m.pathname)
+
+  
+  print '[+] context loaded'
   #mmap_libdl = [ m for m in mappings if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
-  for ptr in context.listPointerValueInHeap():
+  hptrs = context._pointers_values_heap
+  print '[+] %d pointers in heap to heap '%( len(hptrs) )
+  
+  # looking in [heap] pointing to elsewhere
+  all_ptrs = context.listPointerValueInHeap()
+  print '[+] %d pointers in heap to elsewhere '%( len(all_ptrs) ) 
+
+  localmappings = getMappings()
+  
+  for ptr in all_ptrs:
     #for m in mmap_libdl:
     #  if ptr in m:
     #    print '0x%x is in %s'%(ptr, m)
     m = mappings.getMmapForAddr(ptr)
-    if m.pathname not in ['None', '[heap]', '[stack]']:
-      print '0x%x is in %s'%(ptr, m)
+    if m.pathname not in IGNORES:
+      #print '0x%x is in %s'%(ptr, m)
+      localmaps = localmappings.getMmap(m.pathname)
+      for localm in localmaps:
+        caddr = ptr - m.start + localm.start
+        dl_name = getname(caddr)
+        if dl_name is not None:
+          print 'REBASE %s %s 0x%x ->  0x%x name : '%(m.pathname, m.permissions, ptr, caddr) , dl_name 
   
 
   return
