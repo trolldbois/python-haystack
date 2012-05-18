@@ -551,6 +551,7 @@ class LazyMmap:
 
 class Mappings:
   def __init__(self, lst, filename):
+    self.heaps = None
     if type(lst) != list:
       raise TypeError('Please feed me a list')
     self.mappings = lst
@@ -571,15 +572,30 @@ class Mappings:
     return False
 
   def getHeap(self):
+  	return self.getHeaps()[0]
+
+  def getHeaps(self):
     # This does not really exists on win32.
     # getHeaps() will be more appropriate...
     # this fn is used onlly in reverse/*
-    heap = self.getMmap('[heap]')[0]
-    return heap
+    if self.heaps is None:
+	    self.heaps = self.getMmap('[heap]')
+    return self.heaps
+
   def getStack(self):
     stack = self.getMmap('[stack]')[0] 
     return stack
 
+  def search_win_heaps(self):
+    from haystack.reverse.win32 import win7heapwalker
+    self.heaps = list()
+    for mapping in self.mappings:
+      if win7heapwalker.isHeap(self, mapping):
+        self.heaps.append(mapping)
+        #log.debug
+        print ('%s is a Heap'%(mapping))
+    return
+  
   def __contains__(self, vaddr):
     for m in self.mappings:
       if vaddr in m:

@@ -110,6 +110,14 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     If the memory map is > Config.MAX_MAPPING_SIZE_FOR_MMAP, use a slow FileBackedMemoryMapping.
     Else, load the mapping in memory.
     """
+    self._load_metadata()
+    self._load_memory_mappings() # set self.mappings
+    if self._target_system == 'win32':
+      self.mappings.search_win_heaps()
+    return
+
+  def _load_metadata(self):
+    """ Load  amemory dump meta data """
     mappingsFile = self._open_file(self.archive, self.indexFilename)
     self.metalines = []
     for l in mappingsFile.readlines():
@@ -123,6 +131,16 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       Config.WORDSIZE = 8
     else:
       Config.WORDSIZE = 4
+      #default
+      self._target_system = 'linux'
+      for l in self.metalines:
+        if '\\System32\\' in l[6]:
+          log.debug('Found a windows executable dump')
+          self._target_system = 'win32'
+          break
+
+  def _load_memory_mappings(self):
+    """ make the python objects"""
     self_mappings = []
     for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
       start,end = int(_start,16),int(_end,16 )
