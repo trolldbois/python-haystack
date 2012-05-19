@@ -69,7 +69,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     return fth_chunks
 
 
-def getUserAllocations(mappings, heap, filterInUse=False):
+def getUserAllocations(mappings, heap, filterInUse=False,p1=1,p2=0):
   ''' list user allocations '''
   walker = Win7HeapWalker(mappings, heap, 0)
   for chunk_addr, chunk_size in walker.getUserAllocations():

@@ -184,7 +184,7 @@ def getAllocations(dumpfilename, mappings, heap):
     ### in case of a pointer ( bad allocation ) out of a mmapping space.
     ### But that is not possible, because we are reporting factual reference to existing address space.
     ### OK. heap.start should be deleted from the cache name.
-    allocations = libc.ctypes_malloc.getUserAllocations(mappings, heap, filterInuse=True)
+    allocations = mappings.getUserAllocations(mappings, heap, filterInUse=True)
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
     int_array_save(f_sizes, sizes)

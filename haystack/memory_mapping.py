@@ -557,6 +557,10 @@ class Mappings:
     self.mappings = lst
     self.name = filename
 
+  def getUserAllocations(self, heap, filterInUse=True):
+    """changed when the dump is loaded"""
+    raise NotImplementedError
+
   def getMmap(self, pathname):
     mmap = None
     if len(self.mappings) >= 1:
