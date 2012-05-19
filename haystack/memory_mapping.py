@@ -596,8 +596,7 @@ class Mappings:
     for mapping in self.mappings:
       if win7heapwalker.isHeap(self, mapping):
         self.heaps.append(mapping)
-        #log.debug
-        print ('%s is a Heap'%(mapping))
+        log.debug('%s is a Heap'%(mapping))
     return
   
   def __contains__(self, vaddr):

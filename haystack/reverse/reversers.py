@@ -90,6 +90,9 @@ class StructureOrientedReverser():
 
   def _saveStructures(self, ctx):
     tl = time.time()
+    if ctx._structures is None:
+      log.debug('No loading has been done, not saving anything')
+      return
     # dump all structures
     for i,s in enumerate(ctx._structures.values()):
       try:
