@@ -336,44 +336,7 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
     return None,None
   return instance,offset
 
-def argparser():
-  """
-    Builds the argparse tree.
-    See the command line --help .
-  """
-  rootparser = argparse.ArgumentParser(prog='StructFinder', description='Parse memory structs and pickle them.')
-  rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
-  rootparser.add_argument('--quiet', dest='quiet', action='store_const', const=True, help='setLevel to ERROR only')
-  rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')
-  rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
-  rootparser.add_argument('structName', type=str, help='Structure type name')
-  rootparser.add_argument('--baseOffset', type=str, help='base offset of the memory map in the dump file.')
-  
-  target = rootparser.add_mutually_exclusive_group(required=True)
-  target.add_argument('--pid', type=int, help='Target PID')
-  target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
-  target.add_argument('--dumpname', type=argparse_utils.readable, help='Use a haystack memory dump instead of a live process ID')
 
-  output = rootparser.add_mutually_exclusive_group(required=True)
-  output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
-  output.add_argument('--json', dest='json', action='store_const', const=True, help='Print results as json readable string')
-  output.add_argument('--pickled', dest='pickled', action='store_const', const=True, help='Print results as pickled string')
-    
-  subparsers = rootparser.add_subparsers(help='sub-command help')
-  search_parser = subparsers.add_parser('search', help='search help')
-  search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
-  search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
-  search_parser.add_argument('--hint', type=int16, action='store', default=0, help='hintOffset to start at in hex')
-  search_parser.set_defaults(func=search)
-  #
-  refresh_parser = subparsers.add_parser('refresh', help='refresh help')
-  refresh_parser.add_argument('addr', type=str, help='Structure memory address')
-  refresh_parser.set_defaults(func=refresh)
-  #
-  return rootparser
-
-def int16( v):
-  return int(v,16)
 
 def getKlass(name):
   '''

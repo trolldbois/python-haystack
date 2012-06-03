@@ -16,6 +16,9 @@ import logging
 import os
 import sys
 
+from haystack import argparse_utils
+from haystack import abouchet
+
 log = logging.getLogger('haystack')
 
 
@@ -46,16 +49,16 @@ def argparser():
   search_parser = subparsers.add_parser('search', help='search help')
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
-  search_parser.add_argument('--hint', type=int16, action='store', default=0, help='hintOffset to start at in hex')
-  search_parser.set_defaults(func=search)
+  search_parser.add_argument('--hint', type=argparse_utils.int16, action='store', default=0, help='hintOffset to start at in hex')
+  search_parser.set_defaults(func=abouchet.search)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
   refresh_parser.add_argument('addr', type=str, help='Structure memory address')
-  refresh_parser.set_defaults(func=refresh)
+  refresh_parser.set_defaults(func=abouchet.refresh)
   #
   watch_parser = subparsers.add_parser('watch', help='watch a structure in a live process')
   watch_parser.add_argument('addr', type=str, help='Structure memory address')
-  watch_parser.set_defaults(func=refresh)
+  watch_parser.set_defaults(func=abouchet.refresh)
   return rootparser
 
 
