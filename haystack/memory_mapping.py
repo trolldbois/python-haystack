@@ -604,7 +604,7 @@ class Mappings:
     return
   
   def get_target_system(self):
-    if self._target_system is None:
+    if self._target_system is not None:
       return self._target_system
     self._target_system = 'linux'
     for l in [m.pathname for m in self.mappings]:
