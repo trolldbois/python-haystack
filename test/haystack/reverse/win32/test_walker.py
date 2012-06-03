@@ -41,9 +41,22 @@ class TestAllocator(unittest.TestCase):
     from haystack import model 
     model.reset()
 
+  def test_isHeap(self):
+    #self.skipTest('paused')
+    
+    for m in self._mappings.getHeaps():
+      gen = self._mappings.getUserAllocations(self._mappings, m)
+      try:
+        for addr,s in gen:
+          print '(0x%x,0x%x)'%(addr,s) 
+        print('0x%x is heap'%(m.start))
+      except ValueError,e:
+        print('0x%x is not heap'%(m.start))
+    return  
+
   def test_search(self):
     '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
-    #self.skipTest('paused')
+    self.skipTest('paused')
     
     found=[]
     for mapping in self._mappings:
@@ -67,7 +80,7 @@ class TestAllocator(unittest.TestCase):
   def test_getUserAllocations(self):
     ''' For each known _HEAP, load all user Allocation and compare the number of allocated bytes. '''
     
-    #self.skipTest('paused')
+    self.skipTest('paused')
     
     ## TODO change for self._mappings.getHeaps()
     for addr, size in self._known_heaps:

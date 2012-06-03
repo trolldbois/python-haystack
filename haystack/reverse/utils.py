@@ -160,7 +160,7 @@ def getAllPointers(dumpfilename, mappings):
     log.info('[+] Loading from cache %d pointers %d unique'%(len(heap_values), len(set(heap_values)) ))
   return heap_addrs, heap_values 
 
-def getAllocations(dumpfilename, mappings, heap):
+def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
   ''' Search malloc_chunks in heap .
       records addrs and sizes.
   '''

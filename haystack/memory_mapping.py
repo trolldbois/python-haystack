@@ -584,7 +584,10 @@ class Mappings:
     # getHeaps() will be more appropriate...
     # this fn is used onlly in reverse/*
     if self.heaps is None:
-	    self.heaps = self.getMmap('[heap]')
+      if self.get_target_system() == 'linux':
+        self.heaps = self.getMmap('[heap]')
+      else:
+        self.search_win_heaps()
     return self.heaps
 
   def getStack(self):
@@ -604,8 +607,8 @@ class Mappings:
     if self._target_system is None:
       return self._target_system
     self._target_system = 'linux'
-    for l in self.metalines:
-      if '\\System32\\' in l[6]:
+    for l in [m.pathname for m in self.mappings]:
+      if '\\System32\\' in l:
         log.debug('Found a windows executable dump')
         self._target_system = 'win32'
         break

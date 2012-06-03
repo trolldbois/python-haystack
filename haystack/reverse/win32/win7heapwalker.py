@@ -102,7 +102,7 @@ def isHeap(mappings, mapping):
   """test if a mapping is a heap"""
   addr = mapping.start
   heap = mapping.readStruct( addr, win7heap.HEAP )
-  load = heap.loadMembers(mappings, 1)
+  load = heap.loadMembers(mappings, -1)
   return load
 
 #  return True
