@@ -271,9 +271,10 @@ def load(dumpname):
   try:
     memdump = LazyProcessMemoryDumpLoader( os.path.normpath(dumpname) )
     log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-  except IndexError,e: ### ValueError,e:
+  except IndexError,e: 
     log.warning(e)
     raise e
+  #excep mmap.error - to much openfile - increase ulimit 
   return memdump.getMappings()
 
 def _heap(opt):

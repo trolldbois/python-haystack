@@ -5,6 +5,7 @@
 
 import logging
 import os
+import resource 
 import shutil
 
 __author__ = "Loic Jaquemet"
@@ -52,7 +53,15 @@ class ConfigClass():
     self.REVERSED_TYPES_FILENAME = 'reversed_types.py'
     self.SIGNATURES_FILENAME = 'signatures'
     self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
-
+    #others
+    self._set_rlimits()
+    
+  def _set_rlimits(self):
+    '''set rlimits to maximum allowed'''
+    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
+    return   
+        
   def set_word_size(self, v):
     self.__WORDSIZE = v
 
