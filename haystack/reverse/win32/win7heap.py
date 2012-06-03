@@ -272,6 +272,28 @@ def _HEAP_getFrontendChunks(self, mappings):
 _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
 
 
+def _HEAP_getFreeLists(self, mappings):
+  freeList = []
+  # 128 blocks
+  start = ctypes.addressof(self.FreeLists)
+  logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
+  for freeBlock in self.FreeLists._iterateList( mappings):
+    # try to get the size
+    sizeaddr = freeBlock - Config.WORDSIZE
+    memoryMap = utils.is_valid_address_value( sizeaddr, mappings)
+    if memoryMap == False:
+      raise ValueError('the link of this linked list has a bad value')
+    val = memoryMap.readWord( sizeaddr)
+    print '\t - freeblock @%0.8x size:%d'%(freeBlock, val)
+    yield freeBlock
+  #free_chain = [freeBlock for freeBlock in self.iterateListField( mappings, 'FreeLists')]
+  logging.getLogger('listmodel').setLevel(level=logging.INFO)
+
+  raise StopIteration
+  
+
+_HEAP.getFreeLists = _HEAP_getFreeLists
+
 def scan_lfh_ss(subseg):
   ####
   #### TODO
