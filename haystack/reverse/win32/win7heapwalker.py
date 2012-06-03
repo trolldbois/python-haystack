@@ -25,8 +25,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     if not self._heap.loadMembers(self._mappings, -1):
       raise TypeError('HEAP.loadMembers returned False')
 
-    log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
-    print '+ Heap @%x size:%d FTH_Type:%x maskFlag:%x index:%x'%(self._mapping.start+self._offset, 
+    log.debug('+ Heap @%0.8x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
+    print '+ Heap @%0.8x size:%d FTH_Type:%x maskFlag:%x index:%x'%(self._mapping.start+self._offset, 
                   len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex) 
     return
 
