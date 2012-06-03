@@ -556,6 +556,7 @@ class Mappings:
       raise TypeError('Please feed me a list')
     self.mappings = lst
     self.name = filename
+    self._target_system = None
 
   def getUserAllocations(self, heap, filterInUse=True):
     """changed when the dump is loaded"""
@@ -599,6 +600,17 @@ class Mappings:
         log.debug('%s is a Heap'%(mapping))
     return
   
+  def get_target_system(self):
+    if self._target_system is None:
+      return self._target_system
+    self._target_system = 'linux'
+    for l in self.metalines:
+      if '\\System32\\' in l[6]:
+        log.debug('Found a windows executable dump')
+        self._target_system = 'win32'
+        break
+    return self._target_system
+    
   def __contains__(self, vaddr):
     for m in self.mappings:
       if vaddr in m:
