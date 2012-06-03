@@ -25,6 +25,8 @@ __status__ = "Production"
 
 import ctypes 
 
+log = logging.getLogger('testwalker')
+
 class TestAllocator(unittest.TestCase):
 
   def setUp(self):  
@@ -41,18 +43,78 @@ class TestAllocator(unittest.TestCase):
     from haystack import model 
     model.reset()
 
-  def test_isHeap(self):
-    #self.skipTest('paused')
+  def test_sortedHeaps(self):
+    ''' check if memory_mapping has sorted heap by index. '''
+    self.skipTest('paused')
     
+    for i, m in enumerate(self._mappings.getHeaps()):
+      #print '%d @%0.8x'%(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, m.start)
+      self.assertEquals(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, i+1, 'ProcesHeaps should have correct indexes')
+    return
+
+  def test_isHeap(self):
+    ''' check if the isHeap fn perform correctly.'''
+    self.skipTest('paused')
+
+    self.assertEquals( self._mappings.get_target_system(), 'win32')
+        
     for m in self._mappings.getHeaps():
       gen = self._mappings.getUserAllocations(self._mappings, m)
       try:
         for addr,s in gen:
-          print '(0x%x,0x%x)'%(addr,s) 
-        print('0x%x is heap'%(m.start))
+          #print '(0x%x,0x%x)'%(addr,s) 
+          pass
+        log.debug('0x%x is heap'%(m.start))
       except ValueError,e:
-        print('0x%x is not heap'%(m.start))
+        log.debug('0x%x is not heap'%(m.start))
     return  
+
+  def test_totalsize(self):
+    ''' check if there is an adequate allocation rate as per getUserAllocations '''
+    
+    self.assertEquals( self._mappings.get_target_system(), 'win32')
+    
+    allocs=list()
+    for m in self._mappings.getHeaps():
+      gen = self._mappings.getUserAllocations(self._mappings, m)
+      allocs.extend( [(addr,s) for addr,s in gen])
+    
+    self.assertEquals( len(allocs), len(set(allocs)) , 'duplicates allocs found')
+    
+    addrs = [addr for addr,s in allocs]
+    self.assertEquals( len(addrs), len(set(addrs)) , 'duplicates allocs found but different sizes')
+
+    where = dict()
+    for addr,s in allocs:
+      m = self._mappings.getMmapForAddr(addr)
+      if addr+s > m.end:
+        log.debug('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
+      if m in where:
+        where[m].append( (addr,s) )
+      else:
+        where[m] = [ (addr,s) ]
+    # calculate allocated size
+    for m,allocs in where.items():
+      totalsize = sum([s for addr,s in allocs])
+      log.info('@%0.8x size: %d allocated: %d = %0.2f %%'%(m.start,len(m), totalsize, 100*totalsize/len(m)) )
+      allocs.sort()
+      lastend = 0
+      lasts = 0
+      addsize =0
+      for addr,s in allocs:
+        if addr < lastend :
+          #log.debug('0x%0.8x (%d) last:0x%0.8x-0x%0.8x (%d) new:0x%0.8x-0x%0.8x (%d)'%(m.start, 
+          #                  len(m), lastend-lasts,lastend,lasts, addr, addr+s, s) )
+          addsize+=s
+        else: # keep last big chunk on the stack before moving to next one.
+          if addsize != 0:
+            #log.debug('previous fth_chunks cumulated to %d lasts:%d'%(addsize, lasts))
+            addsize = 0
+          lastend = addr+s
+          lasts = s
+    # so chunks are englobing fth_chunks
+    # _heap.ProcessHeapsListIndex give the order of heaps....
+    return
 
   def test_search(self):
     '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
@@ -98,11 +160,12 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  #logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
+  #logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-  #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
-  #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+  logging.getLogger('dump_loader').setLevel(level=logging.INFO)
+  logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
   unittest.main(verbosity=4)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
