@@ -13,7 +13,7 @@ import ctypes
 import subprocess
 import json
 
-from haystack import model
+from haystack import model, basicmodel
 from haystack import argparse_utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack import memory_mapping 
@@ -376,7 +376,7 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
   ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
   if len(ret) >0:
     log.debug("%s %s"%(ret[0], type(ret[0]) )   )
-  if model.findCtypesInPyObj(ret):
+  if basicmodel.findCtypesInPyObj(ret):
     log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
   return ret
 
@@ -476,7 +476,7 @@ def refresh(args):
        print '( %s, %s )'%(instance.toString(),validated)
     else:
       d=(instance.toPyObject(),validated)
-      if model.findCtypesInPyObj(d[0]):
+      if basicmodel.findCtypesInPyObj(d[0]):
         log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
       if args.json: #jsoned
         print json.dumps(ret)

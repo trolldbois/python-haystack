@@ -12,7 +12,10 @@ This specific plugin handles badics types.
 
 import ctypes
 import logging
+import sys
+
 from haystack.utils import *
+from haystack.model import hasRef, getRef, keepRef
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
