@@ -150,7 +150,7 @@ typedef struct _HEAP
 	UINT16       AllocatorBackTraceIndex;
 	UINT8        _PADDING0_[0x2];
 	ULONG32      NonDedicatedListLength;
-	VOID*        BlocksIndex;
+	struct _HEAP_LIST_LOOKUP* BlocksIndex;
 	VOID*        UCRIndex;
 	struct _HEAP_PSEUDO_TAG_ENTRY* PseudoTagEntries;
 	struct _LIST_ENTRY FreeLists;

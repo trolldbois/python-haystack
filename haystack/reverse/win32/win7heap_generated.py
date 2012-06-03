@@ -71,7 +71,7 @@ N11_HEAP_ENTRY3DOT_13DOT_5E._fields_ = [
 ]
 __uint64_t = c_ulonglong
 N11_HEAP_ENTRY3DOT_1E._pack_ = 4
-N11_HEAP_ENTRY3DOT_1E._anonymous_ = ['_1', '_2', '_0']
+N11_HEAP_ENTRY3DOT_1E._anonymous_ = ['_1', '_0', '_2']
 N11_HEAP_ENTRY3DOT_1E._fields_ = [
     ('_0', N11_HEAP_ENTRY3DOT_13DOT_2E),
     ('_1', N11_HEAP_ENTRY3DOT_13DOT_3E),
@@ -82,8 +82,8 @@ _HEAP_ENTRY._anonymous_ = ['_0']
 _HEAP_ENTRY._fields_ = [
     ('_0', N11_HEAP_ENTRY3DOT_1E),
 ]
-PHEAP_ENTRY = POINTER(_HEAP_ENTRY)
 HEAP_ENTRY = _HEAP_ENTRY
+PHEAP_ENTRY = POINTER(_HEAP_ENTRY)
 class _HEAP_COUNTERS(Structure):
     pass
 _HEAP_COUNTERS._fields_ = [
@@ -141,6 +141,8 @@ HEAP_SEGMENT = _HEAP_SEGMENT
 PHEAP_SEGMENT = POINTER(_HEAP_SEGMENT)
 class _HEAP_TAG_ENTRY(Structure):
     pass
+class _HEAP_LIST_LOOKUP(Structure):
+    pass
 class _HEAP_PSEUDO_TAG_ENTRY(Structure):
     pass
 class _HEAP_LOCK(Structure):
@@ -176,7 +178,7 @@ _HEAP._fields_ = [
     ('AllocatorBackTraceIndex', __uint16_t),
     ('_PADDING0_', __uint8_t * 2),
     ('NonDedicatedListLength', __uint32_t),
-    ('BlocksIndex', POINTER(VOID)),
+    ('BlocksIndex', POINTER(_HEAP_LIST_LOOKUP)),
     ('UCRIndex', POINTER(VOID)),
     ('PseudoTagEntries', POINTER(_HEAP_PSEUDO_TAG_ENTRY)),
     ('FreeLists', _LIST_ENTRY),
@@ -189,8 +191,8 @@ _HEAP._fields_ = [
     ('Counters', _HEAP_COUNTERS),
     ('TuningParameters', _HEAP_TUNING_PARAMETERS),
 ]
-PHEAP = POINTER(_HEAP)
 HEAP = _HEAP
+PHEAP = POINTER(_HEAP)
 class _HEAP_ENTRY_EXTRA(Structure):
     pass
 class N17_HEAP_ENTRY_EXTRA3DOT_6E(Union):
@@ -222,8 +224,6 @@ _HEAP_FREE_ENTRY._fields_ = [
 ]
 PHEAP_FREE_ENTRY = POINTER(_HEAP_FREE_ENTRY)
 HEAP_FREE_ENTRY = _HEAP_FREE_ENTRY
-class _HEAP_LIST_LOOKUP(Structure):
-    pass
 _HEAP_LIST_LOOKUP._fields_ = [
     ('ExtendedLookup', POINTER(_HEAP_LIST_LOOKUP)),
     ('ArraySize', __uint32_t),
@@ -235,8 +235,8 @@ _HEAP_LIST_LOOKUP._fields_ = [
     ('ListsInUseUlong', POINTER(__uint32_t)),
     ('ListHints', POINTER(POINTER(_LIST_ENTRY))),
 ]
-PHEAP_LIST_LOOKUP = POINTER(_HEAP_LIST_LOOKUP)
 HEAP_LIST_LOOKUP = _HEAP_LIST_LOOKUP
+PHEAP_LIST_LOOKUP = POINTER(_HEAP_LIST_LOOKUP)
 class _HEAP_LOOKASIDE(Structure):
     pass
 _HEAP_LOOKASIDE._fields_ = [
@@ -273,7 +273,7 @@ N14_INTERLOCK_SEQ3DOT_84DOT_10E._fields_ = [
 ]
 __int64_t = c_longlong
 N14_INTERLOCK_SEQ3DOT_8E._pack_ = 4
-N14_INTERLOCK_SEQ3DOT_8E._anonymous_ = ['_0', '_1']
+N14_INTERLOCK_SEQ3DOT_8E._anonymous_ = ['_1', '_0']
 N14_INTERLOCK_SEQ3DOT_8E._fields_ = [
     ('_0', N14_INTERLOCK_SEQ3DOT_83DOT_9E),
     ('_1', N14_INTERLOCK_SEQ3DOT_84DOT_10E),
@@ -293,8 +293,8 @@ _HEAP_TAG_ENTRY._fields_ = [
     ('CreatorBackTraceIndex', __uint16_t),
     ('TagName', __uint16_t * 24),
 ]
-HEAP_TAG_ENTRY = _HEAP_TAG_ENTRY
 PHEAP_TAG_ENTRY = POINTER(_HEAP_TAG_ENTRY)
+HEAP_TAG_ENTRY = _HEAP_TAG_ENTRY
 class _HEAP_UCR_DESCRIPTOR(Structure):
     pass
 _HEAP_UCR_DESCRIPTOR._fields_ = [
@@ -303,8 +303,8 @@ _HEAP_UCR_DESCRIPTOR._fields_ = [
     ('Address', POINTER(VOID)),
     ('Size', __uint32_t),
 ]
-HEAP_UCR_DESCRIPTOR = _HEAP_UCR_DESCRIPTOR
 PHEAP_UCR_DESCRIPTOR = POINTER(_HEAP_UCR_DESCRIPTOR)
+HEAP_UCR_DESCRIPTOR = _HEAP_UCR_DESCRIPTOR
 class _HEAP_USERDATA_HEADER(Structure):
     pass
 class N21_HEAP_USERDATA_HEADER4DOT_11E(Union):
@@ -366,8 +366,8 @@ _HEAP_LOCAL_SEGMENT_INFO._fields_ = [
     ('LastUsed', __uint16_t),
     ('Pad', __uint32_t),
 ]
-HEAP_LOCAL_SEGMENT_INFO = _HEAP_LOCAL_SEGMENT_INFO
 PHEAP_LOCAL_SEGMENT_INFO = POINTER(_HEAP_LOCAL_SEGMENT_INFO)
+HEAP_LOCAL_SEGMENT_INFO = _HEAP_LOCAL_SEGMENT_INFO
 class _LFH_BLOCK_ZONE(Structure):
     pass
 class _LFH_HEAP(Structure):
@@ -392,8 +392,8 @@ _HEAP_SUBSEGMENT._fields_ = [
     ('SFreeListEntry', _SINGLE_LIST_ENTRY),
     ('Lock', __uint32_t),
 ]
-HEAP_SUBSEGMENT = _HEAP_SUBSEGMENT
 PHEAP_SUBSEGMENT = POINTER(_HEAP_SUBSEGMENT)
+HEAP_SUBSEGMENT = _HEAP_SUBSEGMENT
 _LFH_HEAP._fields_ = [
     ('Lock', __uint32_t * 6),
     ('SubSegmentZones', _LIST_ENTRY),
