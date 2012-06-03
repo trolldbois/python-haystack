@@ -26,6 +26,9 @@ class Win7HeapWalker(heapwalker.HeapWalker):
       raise TypeError('HEAP.loadMembers returned False')
 
     log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
+    print '+ Heap @%x size:%d FTH_Type:%x maskFlag:%x index:%x'%(self._mapping.start+self._offset, 
+                  len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex) 
+    return
 
   def getUserAllocations(self):
     ''' returns all User allocations (addr,size) '''
@@ -47,8 +50,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     allocated = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
     # DEBUG : delete replace by iterator
     log.debug( '\t+ %d vallocated blocks'%( len(allocated) ) )
-    for block in allocated:
-      log.debug( '\t\t- vallocated commit %x reserve %x'%(block.CommitSize, block.ReserveSize))
+    for block in allocated: #### BAD should return (vaddr,size)
+      log.debug( '\t\t- vallocated commit %x reserve %x @%0.8x'%(block.CommitSize, block.ReserveSize, ctypes.addressof(block)))
     #
     return allocated
   
@@ -58,6 +61,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     allocsize = sum( [c[1] for c in chunks ])
     log.debug('\t+ %d chunks, for %d bytes'%( len(chunks), allocsize ) )
     #
+    for chunk in chunks:
+      log.debug( '\t\t- chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
     return chunks
   
   def _getFrontendChunks(self):
@@ -66,6 +71,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     fth_allocsize = sum( [c[1] for c in fth_chunks ])
     log.debug('\t+ %d frontend chunks, for %d bytes'%( len(fth_chunks), fth_allocsize ) )
     #
+    for chunk in fth_chunks:
+      log.debug( '\t\t- fth_chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
     return fth_chunks
 
 
@@ -100,12 +107,17 @@ def getUserAllocations(mappings, heap, filterInUse=False,p1=1,p2=0):
 
 def isHeap(mappings, mapping):
   """test if a mapping is a heap"""
+  # todo check _heap.ProcessHeapsListIndex
   addr = mapping.start
   heap = mapping.readStruct( addr, win7heap.HEAP )
   load = heap.loadMembers(mappings, -1)
   return load
 
-#  return True
+def readHeap(mappings, mapping):
+  """ return a heap struct mapped on the mapping"""
+  addr = mapping.start
+  heap = mapping.readStruct( addr, win7heap.HEAP )
+  return heap
 
 
 

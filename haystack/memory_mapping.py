@@ -601,6 +601,8 @@ class Mappings:
       if win7heapwalker.isHeap(self, mapping):
         self.heaps.append(mapping)
         log.debug('%s is a Heap'%(mapping))
+    # order by ProcessHeapsListIndex
+    self.heaps.sort(key=lambda m: win7heapwalker.readHeap(self.mappings, m).ProcessHeapsListIndex)
     return
   
   def get_target_system(self):

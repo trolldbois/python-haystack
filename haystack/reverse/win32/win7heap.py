@@ -136,6 +136,7 @@ _HEAP_SEGMENT._loadMember = _HEAP_SEGMENT_loadMember
 
 _HEAP.expectedValues = {
   'Signature':[0xeeffeeff],
+  'FrontEndHeapType': [0,1,2]
 }
 _HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
                       ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
