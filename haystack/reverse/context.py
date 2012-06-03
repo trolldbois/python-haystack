@@ -37,6 +37,7 @@ class ReverserContext():
     # force reload JIT
     self._reversedTypes = dict()
     self._structures = None
+    ructures = None
 
     log.info('[+] Fetching cached structures addresses list')
     #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
@@ -49,9 +50,10 @@ class ReverserContext():
     self._pointers_values = all_values
     self._pointers_offsets = all_offsets
     
-    log.info('[+] Reversing function pointers names')
-    from haystack.reverse.libc import libdl
-    self._function_names = dict(libdl.reverseLocalFonctionPointerNames(self) )
+    if self.mappings._target_system != 'win32':
+      log.info('[+] Reversing function pointers names')
+      from haystack.reverse.libc import libdl
+      self._function_names = dict(libdl.reverseLocalFonctionPointerNames(self) )
     
     log.info('[+] Fetching cached malloc chunks list')
     # malloc_size is the structures_sizes, 
