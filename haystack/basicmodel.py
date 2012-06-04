@@ -35,11 +35,17 @@ class LoadableMembers(object):
   '''
   classRef=dict()
   expectedValues=dict() # contraints on values TODO rename _expectedValues_
-  ''' 
-    Iterate over the fields and types of this structure, including inherited ones.
-  '''
   def getFields(self):
+    '''     Iterate over the fields and types of this structure, including inherited ones.'''
     return type(self).getFields()
+  
+  @classmethod
+  def getFieldType(cls, fieldname):
+    ''' return a members type'''
+    ret= [(n,fieldtype) for n, fieldtype in cls.getFields() if n == fieldname]
+    if len(ret) != 1:
+      raise TypeError('No such field name %s in %s'%(fieldname, cls))
+    return ret[0][1]
   
   @classmethod
   def getFields(cls):
@@ -336,10 +342,12 @@ class LoadableMembers(object):
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### Read the struct in memory and make a copy to play with.
+      #### DO NOT COPY THE STRUCT, we have a working readStruct for that...
       ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
       contents=memoryMap.readStruct(attr_obj_address, _attrType )
       # save that validated and loaded ref and original addr so we dont need to recopy it later
       keepRef( contents, _attrType, attr_obj_address)
+      log.debug("keepRef %s.%s @%x"%(_attrType, attrname, attr_obj_address  ))
       log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (getaddress(attr))   ))
       # recursive validation checks on new struct
       if not bool(attr):
@@ -509,23 +517,39 @@ class LoadableMembers(object):
       for i in range(0,len(attr)):
         obj.append(self._attrToPyObject( attr[i], i, eltyp) )
     elif isPointerType(attrtype):
-      if not bool(attr) :
+      if isVoidPointerType(attrtype):
+        obj='Void Pointer'
+      elif isBasicTypeArray(attr):
+        obj='BasicType array'
+      elif not bool(attr) :
         obj=(None,None)
-      elif not is_address_local(attr) :
-        obj=(None,getaddress(attr) )
+      #elif not is_address_local(attr) :
+      #  obj=(None,getaddress(attr) )
       else:
-        contents=attr.contents
-        if isStructType(type(contents)) :
-          attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
-          cache = getRef(attr_py_class, getaddress(attr) )
-          if cache:
-            return cache
-          obj=contents.toPyObject()
-        elif isPointerType(type(contents)):
-          obj=self._attrToPyObject(contents,None,None)
-        else: # pointer vers autre chose, le repr() est le seul choix.
-          #obj=repr(contents)
-          obj=contents
+        # get the cached Value of the LP.
+        cache = getRef(self.classRef[attrtype], getaddress(attr) )
+        if cache:
+          return cache
+        else:
+          log.error('LP structure for %s not in cache %s,%x'%(field, self.classRef[attrtype], getaddress(attr) ) )
+          #raise ValueError('LP structure for %s not in cache %s,%x'%(field, self.classRef[attrtype], getaddress(attr) ) )
+          return (None,None)
+    #    ####### any pointer should be in cache
+    #    contents=attr.contents
+    #    if isStructType(type(contents)) :
+    #      attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
+    #      cache = getRef(attr_py_class, getaddress(attr) )
+    #      if cache:
+    #        return cache
+    #      #else:
+    #      #  log.error('any LP struct should be in cache.')
+    #      #  raise ValueError('LP structure not in cache %s'%(attr_py_class))
+    #      obj=contents.toPyObject()
+    #    elif isPointerType(type(contents)):
+    #      obj=self._attrToPyObject(contents,None,None)
+    #    else: # pointer vers autre chose, le repr() est le seul choix.
+    #      #obj=repr(contents)
+    #      obj=contents
     elif isCStringPointer(attrtype):
       obj=attr.string
     elif isFunctionType(attrtype):

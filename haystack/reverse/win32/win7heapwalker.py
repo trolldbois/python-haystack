@@ -75,6 +75,17 @@ class Win7HeapWalker(heapwalker.HeapWalker):
       log.debug( '\t\t- fth_chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
     return fth_chunks
 
+  def _getFreeLists(self):
+    free_lists = [  ]
+    last = 0
+    for free in self._heap.getFreeLists(self._mappings):
+      size = free-last
+      free_lists.append( (free, size) )
+      last = free
+    print free_lists
+    free_lists.sort()
+    return free_lists
+
 
 def getUserAllocations(mappings, heap, filterInUse=False,p1=1,p2=0):
   ''' list user allocations '''

@@ -17,7 +17,7 @@ import os
 import sys
 
 from haystack import argparse_utils
-from haystack import abouchet
+from haystack import abouchet, watch
 
 log = logging.getLogger('haystack')
 
@@ -57,8 +57,10 @@ def argparser():
   refresh_parser.set_defaults(func=abouchet.refresh)
   #
   watch_parser = subparsers.add_parser('watch', help='watch a structure in a live process')
-  watch_parser.add_argument('addr', type=str, help='Structure memory address')
-  watch_parser.set_defaults(func=abouchet.refresh)
+  watch_parser.add_argument('addr', type=argparse_utils.int16, help='Structure memory address')
+  watch_parser.add_argument('refresh_rate', type=int, action='store', default=0, help='Seconds between refresh')
+  watch_parser.add_argument('varname', type=str, action='store', default=None, help='structure member name (eg. pointername.valuename)')
+  watch_parser.set_defaults(func=watch.watch)
   return rootparser
 
 

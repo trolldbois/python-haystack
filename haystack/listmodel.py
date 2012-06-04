@@ -62,6 +62,7 @@ class ListModel(object):
                   structType.__name__, link+ctypes.sizeof(structType)) )
         st = memoryMap.readStruct( link, structType) # point at the right offset
         model.keepRef(st, structType, link)
+        log.debug("keepRef %s.%s @%x"%(structType, fieldname, link  ))
         # load the list entry structure members
         if not st.loadMembers(mappings, maxDepth-1):
           log.error('Error while loading members on %s'%(self.__class__.__name__))
@@ -176,6 +177,8 @@ def declare_double_linked_list_type( structType, forward, backward):
   if not utils.isPointerType(blinkType):
     raise TypeError('The %s field is not a pointer.'%(backward))
 
+  #XXX 
+  from haystack import model
   def iterateList(self, mappings):
     ''' iterate forward, then backward, until null or duplicate '''    
     done = [0]
@@ -191,6 +194,8 @@ def declare_double_linked_list_type( structType, forward, backward):
         if memoryMap == False:
           raise ValueError('the link of this linked list has a bad value')
         st = memoryMap.readStruct( addr, structType)
+        model.keepRef(st, structType, addr)
+        log.debug("keepRefx2 %s.%s @%x"%(structType, fieldname, addr  ))
         yield addr
         # next
         link = getattr(st, fieldname)
