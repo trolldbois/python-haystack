@@ -439,7 +439,7 @@ def search(args):
     if model.findCtypesInPyObj(ret):
       log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
     if args.json: #jsoned
-      print json.dumps(ret, default=model.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+      print json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
     else: #pickled
       print pickle.dumps(ret)
   return outs
@@ -479,7 +479,7 @@ def refresh(args):
       if basicmodel.findCtypesInPyObj(d[0]):
         log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
       if args.json: #jsoned
-        print json.dumps(d)
+        print json.dumps(d, default=basicmodel.json_encode_pyobj )
       else: #pickled
         print pickle.dumps(d)
   else:
@@ -489,7 +489,7 @@ def refresh(args):
     else:
       d=None
       if args.json: #jsoned
-        print json.dumps(ret)
+        print json.dumps(d, default=basicmodel.json_encode_pyobj )
       else: #pickled
         print pickle.dumps(d)
   return instance,validated
