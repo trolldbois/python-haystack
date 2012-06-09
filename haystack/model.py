@@ -158,7 +158,9 @@ class _book(object):
   def addModule(self, mod):
     self.modules.add(mod)
   def addClass(self,cls):
-    self.classes[ctypes.POINTER(cls)] = cls
+    # ctypes._pointer_type_cache is sufficient
+    #self.classes[ctypes.POINTER(cls)] = cls
+    ctypes.POINTER(cls)
   def addRef(self,obj, typ, addr):
     self.refs[(typ,addr)]=obj
   def getModules(self):
@@ -218,12 +220,18 @@ def delRef(typ,origAddr):
     __book.delRef(typ,origAddr)
   return
 
-def register(klass):
-  #klass.classRef = __register
-  #__register[ctypes.POINTER(klass)] = klass
-  __book.addClass(klass)
-  klass.classRef = __book.classes
-  return klass
+def getSubType(cls):
+  return cls._type_  
+
+
+#def register(klass):
+#  #klass.classRef = __register
+#  #__register[ctypes.POINTER(klass)] = klass
+#  __book.addClass(klass)
+#  #klass.classRef = __book.classes
+#  #klass.classRef = ctypes._pointer_type_cache
+#  # p_st._type_
+#  return klass
 
 def registeredModules():
   return sys.modules[__name__].__book.getModules()
@@ -343,7 +351,7 @@ def registerModule( targetmodule ):
   _registered = 0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
     if typ.__module__.startswith(targetmodule.__name__) and issubclass(typ, ctypes.Structure):
-      register( typ )
+      #register( typ )
       _registered += 1
   # create POPO's
   createPOPOClasses( targetmodule )
@@ -361,7 +369,7 @@ def isRegistered(cls):
 LoadableMembersStructure_py = type('%s.%s_py'%(__name__, LoadableMembersStructure),( basicmodel.pyObj ,),{})
 LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( basicmodel.pyObj ,),{})
 # register LoadableMembers 
-register(LoadableMembersStructure)
+#### FIXME DELETE register(LoadableMembersStructure)
 
 
 # replace c_char_p - it can handle memory parsing without reading it 

@@ -235,23 +235,51 @@ def isCTypes(obj):
     
 def isBasicType(objtype):
   ''' Checks if an object is a ctypes basic type, or a python basic type.'''
+  if not isinstance(objtype, type):  return False
   return (isinstance(objtype, type) and not isPointerType(objtype) and not isFunctionType(objtype) 
           and (objtype.__module__ in ['ctypes','_ctypes','__builtin__']) )
   #return not isPointerType(obj) and not isFunctionType(obj) and (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
 
 def isStructType(objtype):
   ''' Checks if an object is a ctypes Structure.'''
+  if not isinstance(objtype, type):  return False
   return issubclass(objtype, ctypes.Structure)
-  #return isinstance(obj, ctypes.Structure)
 
-__ptrt = type(ctypes.POINTER(Config.WORDTYPE))
+def isUnionType(objtype):
+  ''' Checks if an object is a ctypes Union.'''
+  if not isinstance(objtype, type):  return False
+  return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
+
+
+__ptrt = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  if not isinstance(objtype, type):  return False
   return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
   #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)
 
+def isPointerBasicType(objtype):
+  ''' Checks if an object is a pointer to a BasicType'''
+  if not isinstance(objtype, type):  return False
+  if not hasattr(objtype, '_type_'):  
+    return False
+  return isBasicType(objtype._type_)
+
+def isPointerStructType(objtype):
+  ''' Checks if an object is a pointer to a Structure'''
+  if not isinstance(objtype, type):  return False
+  if hasattr(objtype, '_type_') and isStructType(objtype._type_):
+    return True
+  return False
+
+def isPointerUnionType(objtype):
+  ''' Checks if an object is a pointer to a Union'''
+  if not isinstance(objtype, type):  return False
+  return hasattr(objtype, '_type_') and isUnionType(objtype._type_)
+
 def isVoidPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  if not isinstance(objtype, type):  return False
   return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
 
 def isBasicTypeArray(obj):
@@ -271,23 +299,23 @@ def isBasicTypeArray(obj):
 __arrayt = type(Config.WORDTYPE*1)
 def isArrayType(objtype):
   ''' Checks if an object is a ctype array.'''
+  if not isinstance(objtype, type):  return False
   return __arrayt == type(objtype)
 
 __cfuncptrt = type(type(ctypes.memmove))
 def isFunctionType(objtype):
   ''' Checks if an object is a function pointer.'''
+  if not isinstance(objtype, type):  return False
   return __cfuncptrt == type(objtype)
 
 def isCStringPointer(objtype):
   ''' Checks if an object is our CString.'''
   #return isinstance(obj, haystack.model.CString) 
   #return obj.__class__.__name__ == 'CString'
+  if not isinstance(objtype, type):  return False
   import haystack
   return issubclass(objtype, haystack.model.CString) 
   
-def isUnionType(objtype):
-  ''' Checks if an object is a Union type.'''
-  return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
 
 
 class IgnoreMember:

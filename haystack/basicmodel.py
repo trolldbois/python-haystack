@@ -15,7 +15,7 @@ import logging
 import sys
 
 from haystack.utils import *
-from haystack.model import hasRef, getRef, keepRef, delRef, CString
+from haystack.model import hasRef, getRef, keepRef, delRef, getSubType, CString
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -33,7 +33,6 @@ class LoadableMembers(object):
   and on more complex constraint on members values.
     
   '''
-  classRef=dict()
   expectedValues=dict() # contraints on values TODO rename _expectedValues_
   def getFields(self):
     '''     Iterate over the fields and types of this structure, including inherited ones.'''
@@ -186,17 +185,14 @@ class LoadableMembers(object):
           return True
       # all case, 
       _attrType=None
-      if isVoidPointerType(attrtype):
+      if isVoidPointerType(attrtype) or isFunctionType(attrtype):
         log.debug('Its a simple type. Checking mappings only.')
         if getaddress(attr) != 0 and not is_valid_address_value( attr, mappings): # NULL can be accepted
           log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
-      elif attrtype not in self.classRef:
-        log.debug("I can't know the size of the basic type behind the %s pointer, it's not a pointer to known registered struct type"%(attrname))
-        _attrType=None
       else:
         # test valid address mapping
-        _attrType=self.classRef[attrtype]
+        _attrType = getSubType(attrtype)
       #log.debug(" ihave decided on pointed attrType to be %s"%(_attrType))
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
         log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
@@ -217,7 +213,9 @@ class LoadableMembers(object):
       A c_void_p cannot be load generically, You have to take care of that.
     '''
     #attrtype=type(attr)
-    return ( (isPointerType(attrtype) and ( attrtype in self.classRef) and bool(attr) and not isFunctionType(attrtype) ) or
+    #and ( attrtype in self.classRef) 
+    return ( (bool(attr) and (isPointerStructType(attrtype) or isPointerUnionType(attrtype) ) ) or
+            #not isFunctionType(attrtype) and not ) or
               isStructType(attrtype)  or isCStringPointer(attrtype) or
               (isArrayType(attrtype) and not isBasicTypeArray(attr) ) ) # should we iterate on Basictypes ? no
 
@@ -328,10 +326,9 @@ class LoadableMembers(object):
       log.debug('kept CString ref for "%s" at @%x'%(txt, attr_obj_address))
       return True
     elif isPointerType(attrtype): # not functionType, it's not loadable
-      _attrname='_'+attrname
-      _attrType=self.classRef[attrtype]
+      _attrType = getSubType(attrtype)
       attr_obj_address=getaddress(attr)
-      setattr(self,'__'+attrname,attr_obj_address)
+      #setattr(self,'__'+attrname,attr_obj_address)
       ####
       # memcpy and save objet ref + pointer in attr
       # we know the field is considered valid, so if it's not in memory_space, we can ignore it
@@ -416,7 +413,7 @@ class LoadableMembers(object):
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         #contents=attr.contents
-        _attrType=self.classRef[attrtype]        
+        _attrType = getSubType(attrtype)        
         contents = getRef(_attrType, getaddress(attr))
         if type(self) == type(contents):
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, 
@@ -476,7 +473,7 @@ class LoadableMembers(object):
         elif not is_address_local(attr) :
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
         else:
-          _attrType=self.classRef[attrtype]        
+          _attrType=getSubType(attrtype)
           contents = getRef(_attrType, getaddress(attr))
           if type(self) == type(contents): # do not recurse in lists
             s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(contents) ) # use struct printer
@@ -538,12 +535,12 @@ class LoadableMembers(object):
       #  obj=(None,getaddress(attr) )
       else:
         # get the cached Value of the LP.
-        cache = getRef(self.classRef[attrtype], getaddress(attr) )
+        cache = getRef(getSubType(attrtype), getaddress(attr) )
         if cache:
           return cache
         else:
-          log.error('LP structure for %s not in cache %s,%x'%(field, self.classRef[attrtype], getaddress(attr) ) )
-          #raise ValueError('LP structure for %s not in cache %s,%x'%(field, self.classRef[attrtype], getaddress(attr) ) )
+          log.error('LP structure for %s not in cache %s,%x'%(field, getSubType(attrtype), getaddress(attr) ) )
+          #raise ValueError('LP structure for %s not in cache %s,%x'%(field, getSubType(attrtype), getaddress(attr) ) )
           return (None,None)
     #    ####### any pointer should be in cache
     #    contents=attr.contents  # will SEGFAULT
@@ -626,7 +623,7 @@ class pyObj(object):
         continue
       typ = type(attr)
       attr = getattr(self, attrname)
-      print attrname
+      log.debug('findCtypes on attr %s'% attrname)
       if self._attrFindCtypes(attr, attrname,typ ):
         log.warning('Found a ctypes in %s'%(attrname))
         ret = True

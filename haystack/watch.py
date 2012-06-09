@@ -37,7 +37,7 @@ def check_varname_for_type(varname, structType):
       return False
     st = st.getFieldType(v)
     if model.isPointerType(st): # accept pointers
-      st = structType.classRef[st]
+      st = model.getSubType(st)
     done.append(v)
   return True
 
