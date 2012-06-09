@@ -190,7 +190,12 @@ def array2bytes(array):
   # BEURK
   #log.info(type(array).__name__.split('_'))
   #typ='_'.join(type(array).__name__.split('_')[:2])
-  return array2bytes_(array,array._type_)
+  #return array2bytes_(array, array._type_)
+  sb = b''
+  for el in array:
+    sb+=pack(array._type_._type_, el)
+  return sb
+
 
 def bytes2array(bytes, typ):
   ''' Converts a bytestring in a ctypes array of typ() elements.'''
