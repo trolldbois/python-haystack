@@ -479,7 +479,7 @@ def refresh(args):
       if basicmodel.findCtypesInPyObj(d[0]):
         log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
       if args.json: #jsoned
-        print json.dumps(ret)
+        print json.dumps(d)
       else: #pickled
         print pickle.dumps(d)
   else:

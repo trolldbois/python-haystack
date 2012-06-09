@@ -136,6 +136,7 @@ def offsetof(typ, membername):
 d 	double 	float 	8 	(4)
 p 	char[] 	string 	  	 
 '''
+# TODO DELETE ans use obj._type_
 bytestr_fmt={ # XXX probable bug here on x64...
   'c_bool': '?',
   'c_char': 'c',
@@ -167,7 +168,8 @@ def array2bytes_(array, typ):
     return None
   if typ  == 'c_void':
     return b'' # void array cant be extracted
-  fmt=bytestr_fmt[typ]
+  fmt = bytestr_fmt[typ]
+  # TODO fmt = typ._type_
   sb=b''
   try:
     for el in array:
@@ -187,8 +189,8 @@ def array2bytes(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
   #log.info(type(array).__name__.split('_'))
-  typ='_'.join(type(array).__name__.split('_')[:2])
-  return array2bytes_(array,typ)
+  #typ='_'.join(type(array).__name__.split('_')[:2])
+  return array2bytes_(array,array._type_)
 
 def bytes2array(bytes, typ):
   ''' Converts a bytestring in a ctypes array of typ() elements.'''

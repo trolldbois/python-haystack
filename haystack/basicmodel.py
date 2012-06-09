@@ -12,6 +12,7 @@ This specific plugin handles badics types.
 
 import ctypes
 import logging
+import numbers
 import sys
 
 from haystack.utils import *
@@ -524,10 +525,17 @@ class LoadableMembers(object):
       eltyp=type(attr[0])
       for i in range(0,len(attr)):
         obj.append(self._attrToPyObject( attr[i], i, eltyp) )
+    elif isFunctionType(attrtype):
+      obj = repr(attr)
+    elif isCStringPointer(attrtype):
+      #obj = getRef(CString, getaddress(attr)).toString()
+      obj = attr.toString()
     elif isPointerType(attrtype):
       if isVoidPointerType(attrtype):
+        log.error('Void pointer - %s'%(field))
         obj='Void Pointer'
       elif isBasicTypeArray(attr):
+        log.error('basic Type array - %s'%(field))
         obj='BasicType array'
       elif not bool(attr) :
         obj=(None,None)
@@ -535,11 +543,15 @@ class LoadableMembers(object):
       #  obj=(None,getaddress(attr) )
       else:
         # get the cached Value of the LP.
-        cache = getRef(getSubType(attrtype), getaddress(attr) )
-        if cache:
-          return cache
+        _subtype = getSubType(attrtype)
+        cache = getRef(_subtype, getaddress(attr) )
+        if cache is not None:
+          obj = self._attrToPyObject(cache, field, _subtype )
+        elif isPointerBasicType(attrtype):
+          log.error('Pointer to Basic type - %s'%(field))
+          obj = 'Pointer to Basic type'
         else:
-          log.error('LP structure for %s not in cache %s,%x'%(field, getSubType(attrtype), getaddress(attr) ) )
+          log.error('LP structure for field:%s %s/%s not in cache %x'%(field, attrtype, getSubType(attrtype), getaddress(attr) ) )
           #raise ValueError('LP structure for %s not in cache %s,%x'%(field, getSubType(attrtype), getaddress(attr) ) )
           return (None,None)
     #    ####### any pointer should be in cache
@@ -558,13 +570,12 @@ class LoadableMembers(object):
     #    else: # pointer vers autre chose, le repr() est le seul choix.
     #      #obj=repr(contents)
     #      obj=contents
-    elif isCStringPointer(attrtype):
-      obj = getRef(CString, getaddress(attr))
-    elif isFunctionType(attrtype):
-      obj = repr(attr)
     elif isBasicType(attrtype) and isCTypes(attr):
       obj = attr.value
+    elif isinstance(attr, numbers.Number):
+      obj = attr
     else:
+      log.error('toPyObj default to return attr %s'%( type(attr) ))
       obj = attr
     return obj
 
@@ -639,7 +650,7 @@ class pyObj(object):
           log.warning('Found a ctypes in array/tuple')
           return True
     elif isCTypes(attr):
-      log.warning('Found a ctypes in self  %s'%(attr))
+      log.warning('Found a ctypes in self %s'%(attr))
       return True
     else: # int, long, str ...
       ret = False
