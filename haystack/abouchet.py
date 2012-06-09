@@ -27,7 +27,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-log=logging.getLogger('haystack')
+log = logging.getLogger('abouchet')
 
 if not sys.platform.startswith('win'):
   environSep = ':'

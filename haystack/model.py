@@ -244,6 +244,9 @@ class CString(ctypes.Union):
   def toString(self):
     if not bool(self.ptr):
       return "<NULLPTR>"
+    if hasRef(CString, getaddress(self.ptr)):
+      return getRef(CString, getaddress(self.ptr) )
+    log.debug('This CString was not in cache - calling toString was not a good idea')
     return self.string
   pass
 

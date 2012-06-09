@@ -83,7 +83,7 @@ def main(argv):
     logging.basicConfig(level=level)
 
   sh=logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
-  logging.getLogger('abouchet').addHandler( sh )
+  #logging.getLogger('abouchet').addHandler( sh )
   logging.getLogger('haystack').addHandler( sh )
 
   if opts.json:

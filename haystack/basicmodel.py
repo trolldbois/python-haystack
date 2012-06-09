@@ -15,7 +15,7 @@ import logging
 import sys
 
 from haystack.utils import *
-from haystack.model import hasRef, getRef, keepRef
+from haystack.model import hasRef, getRef, keepRef, delRef, CString
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -303,7 +303,7 @@ class LoadableMembers(object):
     if isCStringPointer(attrtype) : 
       # can't use basic c_char_p because we can't load in foreign memory
       attr_obj_address = getaddress(attr.ptr)
-      setattr(self,'__'+attrname,attr_obj_address)
+      #setattr(self,'__'+attrname,attr_obj_address)
       if not bool(attr_obj_address):
         log.debug('%s %s is a CString, the pointer is null (validation must have occurred earlier) '%(attrname, attr))
         return True
@@ -312,12 +312,20 @@ class LoadableMembers(object):
         log.warning('Error on addr while fetching a CString. should not happen')
         return False
       MAX_SIZE=255
+      
+      ref = getRef(CString,attr_obj_address)
+      if ref:
+        log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,CString,attr_obj_address ))
+        return True
       log.debug("%s %s is defined as a CString, loading from 0x%lx is_valid_address %s"%(
                       attrname,attr,attr_obj_address, is_valid_address(attr,mappings) ))
       txt,full = memoryMap.readCString(attr_obj_address, MAX_SIZE )
       if not full:
         log.warning('buffer size was too small for this CString')
-      attr.string = txt
+
+      # that will SEGFAULT attr.string = txt - instead keepRef to String
+      keepRef( txt, CString, attr_obj_address)
+      log.debug('kept CString ref for "%s" at @%x'%(txt, attr_obj_address))
       return True
     elif isPointerType(attrtype): # not functionType, it's not loadable
       _attrname='_'+attrname
@@ -333,12 +341,10 @@ class LoadableMembers(object):
         log.warning("%s %s not loadable 0x%lx but VALID "%(attrname, attr,attr_obj_address ))
         return True
 
-      from haystack.model import getRef, keepRef, delRef # TODO CLEAN
-
       ref=getRef(_attrType,attr_obj_address)
       if ref:
         log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
-        #DO NOT CHANGE STUFF SOUPID attr.contents = ref
+        #DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents will SEGFAULT
         return True
       log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
       ##### Read the struct in memory and make a copy to play with.
@@ -409,21 +415,23 @@ class LoadableMembers(object):
         s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
-        contents=attr.contents
+        #contents=attr.contents
+        _attrType=self.classRef[attrtype]        
+        contents = getRef(_attrType, getaddress(attr))
         if type(self) == type(contents):
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, 
-                          getaddress(attr), type(attr.contents), prefix) # use struct printer
+                          getaddress(attr), _attrType, prefix) # use struct printer
         elif isStructType(type(contents)): # do not enter in lists
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), 
-                          attr.contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
+                          contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
         elif isPointerType(type(contents)):
           s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, getaddress(attr), 
-                          self._attrToString(attr.contents, None, None, prefix+'\t'), prefix ) # use struct printer
+                          self._attrToString(contents, None, None, prefix+'\t'), prefix ) # use struct printer
         else:
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, getaddress(attr), 
-                          attr.contents, prefix) # use struct printer
+                          contents, prefix) # use struct printer
     elif isCStringPointer(attrtype):
-      s=prefix+'"%s": "%s" , #(CString)\n'%(field, attr.string)  
+      s=prefix+'"%s": "%s" , #(CString)\n'%(field, getRef(CString, getaddress(attr.ptr)) )  
     elif isBasicType(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
       s=prefix+'"%s": %s, \n'%(field, repr(attr) )  
     elif isUnionType(attrtype): # UNION
@@ -457,20 +465,23 @@ class LoadableMembers(object):
         continue
       elif isCStringPointer(attrtype):
         if not bool(attr) :
-          s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address/null
-        elif not is_address_local(attr) :
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+          s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   # only print address/null
+        elif not is_address_local(attr) : # only print address in target space
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   
         else:
-          s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), attr.string)  
+          s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, getaddress(attr.ptr)))  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
           s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
-        elif type(self) == type(attr.contents): # do not recurse in lists
-          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(attr.contents) ) # use struct printer
         else:
-          s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), attr.contents) # use struct printer
+          _attrType=self.classRef[attrtype]        
+          contents = getRef(_attrType, getaddress(attr))
+          if type(self) == type(contents): # do not recurse in lists
+            s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(contents) ) # use struct printer
+          else:
+            s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), contents) # use struct printer
       elif type(attr) is long or type(attr) is int:
         s+='%s : %s\n'%(field, hex(attr) )  
       else:
@@ -535,7 +546,7 @@ class LoadableMembers(object):
           #raise ValueError('LP structure for %s not in cache %s,%x'%(field, self.classRef[attrtype], getaddress(attr) ) )
           return (None,None)
     #    ####### any pointer should be in cache
-    #    contents=attr.contents
+    #    contents=attr.contents  # will SEGFAULT
     #    if isStructType(type(contents)) :
     #      attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
     #      cache = getRef(attr_py_class, getaddress(attr) )
@@ -551,7 +562,7 @@ class LoadableMembers(object):
     #      #obj=repr(contents)
     #      obj=contents
     elif isCStringPointer(attrtype):
-      obj=attr.string
+      obj = getRef(CString, getaddress(attr))
     elif isFunctionType(attrtype):
       obj = repr(attr)
     elif isBasicType(attrtype) and isCTypes(attr):
