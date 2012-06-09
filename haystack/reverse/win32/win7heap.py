@@ -93,10 +93,8 @@ def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
   if attrname == 'LastValidEntry':
     # isPointerType code.
     log.debug('try pointer, ignore it if bad pointer.')
-    _attrname='_'+attrname
-    _attrType=self.classRef[attrtype]
+    _attrType = model.getSubType(attrtype)
     attr_obj_address = utils.getaddress(attr)
-    setattr(self,'__'+attrname,attr_obj_address)
     ####
     memoryMap = utils.is_valid_address( attr, mappings, _attrType)
     if(not memoryMap):
