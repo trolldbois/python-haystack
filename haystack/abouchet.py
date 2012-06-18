@@ -196,7 +196,8 @@ def _callFinder(cmd_line):
   return instance
 
 def getMainFile():
-  return os.path.abspath(sys.modules[__name__].__file__)
+  #return os.path.abspath(sys.modules[__name__].__file__)
+  return 'haystack'
 
 
 def checkModulePath(typ):
@@ -246,7 +247,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
   structName = checkModulePath(structType) # add to sys.path
-  cmd_line=[sys.executable, getMainFile(), "%s"%structName]
+  cmd_line=[getMainFile(), "%s"%structName]
   if quiet:
     cmd_line.insert(2,"--quiet")
   elif debug:
@@ -315,7 +316,7 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
   structName = checkModulePath(structType) # add to sys.path
-  cmd_line=[sys.executable, getMainFile(),  '%s'%structName]
+  cmd_line=[getMainFile(),  '%s'%structName]
   if debug:
     cmd_line.insert(2,"--debug")
   if nommap:
@@ -494,37 +495,5 @@ def refresh(args):
         print pickle.dumps(d)
   return instance,validated
 
-
-def main(argv):
-  
-  parser = argparser()
-  opts = parser.parse_args(argv)
-  if opts.debug:
-    logging.basicConfig(level=logging.DEBUG)
-  elif opts.quiet:
-    logging.basicConfig(level=logging.ERROR)    
-  else:
-    logging.basicConfig(level=logging.INFO)
-
-  if opts.json:
-    log.warning('the JSON feature is experimental and probably wont work.')
-  try:
-    opts.func(opts)
-  except ImportError,e:
-    log.error('Structure type does not exists.')
-    log.error('sys.path is %s'%sys.path)
-    print e
-
-  if opts.pid:  
-    log.debug("done for pid %d"%opts.pid)
-  elif opts.memfile:
-    log.debug("done for file %s"%opts.memfile.name)
-  elif opts.dumpname:
-    log.debug("done for file %s"%opts.dumpname)
-  return 0
-
-
-if __name__ == "__main__":
-  main(sys.argv[1:])
 
 
