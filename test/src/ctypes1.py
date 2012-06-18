@@ -3,28 +3,15 @@ from ctypes import *
 STRING = c_char_p
 
 
-class entry(Structure):
+class rtld_global(Structure):
     pass
-Entry = entry
-entry._fields_ = [
-    ('flink', POINTER(Entry)),
-    ('blink', POINTER(Entry)),
-]
-class usual(Structure):
+class rtld_global_ro(Structure):
     pass
-usual._fields_ = [
-    ('val1', c_uint),
-    ('val2', c_uint),
-    ('root', Entry),
-    ('val2b', c_uint),
-    ('val1b', c_uint),
-]
 class Node(Structure):
     pass
 Node._fields_ = [
     ('val1', c_uint),
-    ('list', Entry),
-    ('val2', c_uint),
+    ('ptr2', c_void_p),
 ]
 class _G_fpos_t(Structure):
     pass
@@ -58,6 +45,29 @@ _G_int16_t = c_short
 _G_int32_t = c_int
 _G_uint16_t = c_ushort
 _G_uint32_t = c_uint
+Lmid_t = c_long
+class Dl_info(Structure):
+    pass
+Dl_info._fields_ = [
+    ('dli_fname', STRING),
+    ('dli_fbase', c_void_p),
+    ('dli_sname', STRING),
+    ('dli_saddr', c_void_p),
+]
+class Dl_serpath(Structure):
+    pass
+Dl_serpath._fields_ = [
+    ('dls_name', STRING),
+    ('dls_flags', c_uint),
+]
+class Dl_serinfo(Structure):
+    pass
+size_t = c_uint
+Dl_serinfo._fields_ = [
+    ('dls_size', size_t),
+    ('dls_cnt', c_uint),
+    ('dls_serpath', Dl_serpath * 1),
+]
 pthread_t = c_ulong
 class __pthread_internal_slist(Structure):
     pass
@@ -252,7 +262,6 @@ _IO_marker._fields_ = [
     ('_sbuf', POINTER(_IO_FILE)),
     ('_pos', c_int),
 ]
-size_t = c_uint
 _IO_FILE._pack_ = 4
 _IO_FILE._fields_ = [
     ('_flags', c_int),
@@ -390,31 +399,32 @@ __all__ = ['__uint16_t', '__pthread_mutex_s', '__int16_t',
            'mode_t', '__off64_t', 'size_t', 'random_data',
            '__uint32_t', 'fpos_t', 'fd_set', 'blkcnt_t', '__ino64_t',
            'fsblkcnt64_t', '_G_int16_t', '__FILE', 'int32_t',
-           '__loff_t', 'intptr_t', 'off64_t',
+           '__loff_t', 'intptr_t', 'rtld_global_ro',
            'N14pthread_cond_t4DOT_18E', 'daddr_t', '_G_uint32_t',
            'cookie_seek_function_t', 'u_char', 'fpos64_t', 'uid_t',
            'cookie_write_function_t', 'u_int64_t', 'u_int16_t',
            '__time_t', 'sigset_t', '_G_fpos64_t', 'blksize_t',
            'va_list', '_IO_jump_t', '__int32_t', 'fd_mask',
-           '__nlink_t', '__compar_fn_t', '__fsid_t',
+           '__nlink_t', '__compar_fn_t', '__swblk_t',
            'cookie_close_function_t', '__uint64_t', 'FILE',
            '__ssize_t', '__io_close_fn', 'comparison_fn_t',
            '__fd_mask', 'int16_t', 'clock_t', '__id_t',
            'cookie_io_functions_t', '__sigset_t', '__clockid_t',
            '__useconds_t', 'div_t', 'id_t', 'ldiv_t', '_G_fpos_t',
            '__gid_t', 'u_int32_t', '_G_uint16_t',
-           '_IO_cookie_io_functions_t', '__gnuc_va_list',
+           '_IO_cookie_io_functions_t', '__gnuc_va_list', 'Dl_info',
            '__intptr_t', '__u_long', '_IO_FILE_plus', 'key_t',
            'ushort', '__blkcnt_t', 'pthread_t', 'clockid_t',
-           'caddr_t', 'uint', '__rlim64_t', 'ino_t',
+           'Dl_serinfo', 'caddr_t', 'uint', '__rlim64_t', 'ino_t',
            'N15pthread_mutex_t17__pthread_mutex_s4DOT_15E',
-           '__io_read_fn', 'fsfilcnt64_t', '__mode_t', 'useconds_t',
-           '__blksize_t', 'pthread_spinlock_t', '__off_t',
-           '__pthread_slist_t', 'N4wait3DOT_7E', 'fsblkcnt_t', 'Node',
-           'u_quad_t', 'timespec', 'register_t', '__compar_d_fn_t',
-           'obstack', 'N11__mbstate_t3DOT_2E', '__locale_struct',
-           '__daddr_t', 'ino64_t', '_IO_cookie_file', '__caddr_t',
-           '__mbstate_t', 'N4wait3DOT_6E', '__io_seek_fn', '__u_char',
+           '__io_read_fn', 'fsfilcnt64_t', '__mode_t', 'off64_t',
+           '__blksize_t', 'rtld_global', 'pthread_spinlock_t',
+           '__off_t', '__pthread_slist_t', 'N4wait3DOT_7E',
+           'fsblkcnt_t', 'Node', 'u_quad_t', 'timespec', 'register_t',
+           '__compar_d_fn_t', 'Lmid_t', 'obstack',
+           'N11__mbstate_t3DOT_2E', '__locale_struct', '__daddr_t',
+           'ino64_t', '_IO_cookie_file', '__caddr_t', '__mbstate_t',
+           'N4wait3DOT_6E', '__io_seek_fn', '__u_char',
            '__fsblkcnt64_t', '__locale_data', 'u_int',
            '__sig_atomic_t', '__blkcnt64_t', '__dev_t', 'gid_t',
            '__qaddr_t', '__suseconds_t', 'pid_t', 'timer_t', 'quad_t',
@@ -422,12 +432,12 @@ __all__ = ['__uint16_t', '__pthread_mutex_s', '__int16_t',
            'cookie_read_function_t', 'pthread_key_t', 'blkcnt64_t',
            'u_int8_t', 'loff_t', 'off_t', 'int64_t', '__fsblkcnt_t',
            '__rlim_t', 'time_t', 'u_short', '__locale_t', 'nlink_t',
-           '__uint8_t', 'lldiv_t', 'timeval', '_IO_marker',
-           '__u_quad_t', '__u_short', '__int8_t', 'fsid_t', '__pid_t',
-           'ssize_t', 'ulong', '__io_write_fn', '_G_int32_t',
-           '__ino_t', 'int8_t', 'dev_t', '_IO_lock_t', 'Entry',
-           '__swblk_t', 'locale_t', '__socklen_t', 'drand48_data',
-           '__pthread_internal_slist', '__u_int', '__quad_t',
-           '__int64_t', '__key_t', 'N16pthread_rwlock_t4DOT_21E',
-           '__clock_t', 'entry', '__uid_t', '__fsfilcnt_t',
-           'suseconds_t', 'usual']
+           '__uint8_t', 'lldiv_t', '__fsid_t', 'timeval',
+           '_IO_marker', '__u_quad_t', '__u_short', '__int8_t',
+           'fsid_t', '__pid_t', 'ssize_t', 'ulong', '__io_write_fn',
+           '_G_int32_t', '__ino_t', 'int8_t', 'useconds_t',
+           '_IO_lock_t', 'drand48_data', 'locale_t', '__socklen_t',
+           '__pthread_internal_slist', '__u_int', 'Dl_serpath',
+           '__quad_t', '__int64_t', '__key_t',
+           'N16pthread_rwlock_t4DOT_21E', '__clock_t', 'dev_t',
+           '__uid_t', '__fsfilcnt_t', 'suseconds_t']

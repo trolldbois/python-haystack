@@ -1,13 +1,12 @@
 #!/usr/bin/make -f
 
-CFLAGS = -O2 -g -Wall
-CPPFLAGS = -O2 -g -Wall
 LDFLAGS = -ldl
 INCLS = 
 
 EXTRA =
 
-FLAGS= ${INCLS} ${EXTRA}
+CFLAGS = -O2 -g -Wall $(INCLS) $(EXTRA)
+CPPFLAGS = -O2 -g -Wall
 
 pid=
 
@@ -29,12 +28,18 @@ all: py binaries dumps
 
 binaries: $(OBJS)
 
+test-ctypes6: test-ctypes6.cpp
+	$(CC) $(CFLAGS) `pkg-config --cflags QtGui` $<  $(LDFLAGS)  -o $@
+
+
 %: %.c
 	$(CC) $(CFLAGS) $<  $(LDFLAGS)  -o $@
 	
 %: %.cpp
 	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
+%: %.cpp
+	$(CXX) `pkg-config --libs --cflags QtGui` $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
 
 py: $(PY)
 
@@ -42,7 +47,7 @@ py: $(PY)
 	$(H2XML) -I. $< -o $@
 
 %.xml: test-%.cpp
-	$(H2XML) -I. $< -o $@
+	$(H2XML) -I. `pkg-config --cflags QtGui` $< -o $@
 
 %.py: %.xml
 	$(XML2PY) -kdst $< -o $@
