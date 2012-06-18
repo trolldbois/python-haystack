@@ -437,7 +437,7 @@ def search(args):
     ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
     if len(ret) >0:
       log.debug("%s %s"%(ret[0], type(ret[0]) )   )
-    if model.findCtypesInPyObj(ret):
+    if basicmodel.findCtypesInPyObj(ret):
       log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
     if args.json: #jsoned
       print json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
