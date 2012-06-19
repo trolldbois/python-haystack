@@ -553,7 +553,7 @@ class Mappings:
   def __init__(self, lst, filename):
     self.heaps = None
     if type(lst) != list:
-      raise TypeError('Please feed me a list')
+      raise TypeError('Please feed me a list instead of %s'%(type(lst)))
     self.mappings = lst
     self.name = filename
     self._target_system = None
@@ -610,6 +610,7 @@ class Mappings:
       return self._target_system
     self._target_system = 'linux'
     for l in [m.pathname for m in self.mappings]:
+      if l is None:  continue
       if '\\System32\\' in l:
         log.debug('Found a windows executable dump')
         self._target_system = 'win32'

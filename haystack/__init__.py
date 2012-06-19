@@ -23,7 +23,9 @@ __all__ = [
   'findStruct',
   'findStructInFile',
   'refreshStruct',
-  'search',
+  'search_process',
+  'search_memfile',
+  'search_dumpname',
   'refresh'
 ]
 
@@ -33,7 +35,9 @@ import abouchet
 findStruct = abouchet.findStruct
 findStructInFile = abouchet.findStructInFile
 refreshStruct = abouchet.refreshStruct
-search = abouchet.search
+search_process = abouchet.search_process
+search_memfile = abouchet.search_memfile
+search_dumpname = abouchet.search_dumpname
 refresh = abouchet.refresh
 
 
