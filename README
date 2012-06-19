@@ -46,12 +46,21 @@ Command line example:
 
 For example, this will dump the session_state structures + pointed 
 children structures as an python object that we can play with.
-Lets assume we have an ssh client or server as pid 4042.
+Lets assume we have an ssh client or server as pid 4042::
 
-$ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state search > instance.pickled
-$ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
-$ sudo haystack --pid xxxx <your ctypes Structure> search > instance.pickled
+  $ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state search > instance.pickled
+  $ sudo haystack --pid 4042 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+  $ sudo haystack --pid xxxx <your ctypes Structure> search > instance.pickled
 
+or (as root)::
+
+  >>> import haystack
+  >>> state_it = haystack.search_process('sslsnoop.ctypes_openssh.session_state', 4042, hint=0)
+  >>> state = state_it.next()[0][0]
+  >>> state.receive_context.evp.app_data.aes_ctx.rd_key
+  '\xcc\xeaM#\xbd# \xc1\x89\xf5\xaa\xb7\xc6f!\x91\xfe\x17\xcc\x97C4\xecV\xca\xc1F\xe1\x0c\xa7gp\xa0\x92\x9di\xe3\xa6q?)g7\xde%\xc0P\xae\x1e\xc1yV\xfdg\x08i\xd4\x00?\xb7\xf1\xc0o\x19\xaci\xad\xf7Q\x0e\xa5\x9e\x85\x0e\x9a)t\xce\xf507\x8f\xa9ef\x81\x0c\xfb\xe3\x8f\x96\xd2\x97Ac\xe2\x94t1\xed\xf2\xf5=\x16\x11z\xab\xc4\x86;\xc8&6\x9c\xc6\xa9\xc4i\xfb\xbf\xd5\x13P{S(\x98]\x82\xda\x8aDF\xb3q\xfb\x93\xa0!\x80\xc0\x88\xb9\xdd]\x8cK\xfe\x1b?:\x05\x88\x9f\x1b\x85H\x17\xa2X\x9b\xb6!\xac\x80\x89\x1b\xa9\x08\x16\x00,@\x01\xa2t\xd5LC\x7f\xdc\xa3\xfc5\xc3\xc1\xa8\xb3\xdcul\xfca\xfaG\xd7\x85r\xf1\x92\x93\xd5cn\xefa\xa5\x88l\xd0#\xfb2\x00H\xdc%\xed^\xdf\xa1\x86yFK\xaf\xcd\xe7)\xb2\xdd\xcb\xd1\xa8\xad\xb0\xdf\xb1\xb8E'
+
+and that was the session key of the receive stream.
 
 Graphic example :
 -----------------
