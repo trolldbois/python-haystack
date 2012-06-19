@@ -225,8 +225,8 @@ class LoadableMembers(object):
     The validity of the memebrs will be assessed.
     Each members that can be ( structures, pointers), will be evaluated for validity and loaded recursively.
     
-    @param mappings: list of memoryMappings for the process.
-    @param maxDepth: limitation of depth after which the loading/validation will stop and return results.
+    :param mappings: list of memoryMappings for the process.
+    :param maxDepth: limitation of depth after which the loading/validation will stop and return results.
 
     @returns True if everything has been loaded, False if something went wrong. 
     '''
@@ -595,7 +595,7 @@ class pyObj(object):
   
   Operations :
     - toString(self, prefix):  print a nicely formatted data structure
-        @param prefix: str to insert before each line (\t after that)
+        :param prefix: str to insert before each line (\t after that)
     - findCtypes(self) : checks if a ctypes is to be found somewhere is the object.
                       Useful to check if the object can be pickled.
   '''

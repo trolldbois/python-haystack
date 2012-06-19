@@ -43,8 +43,8 @@ class StructFinder:
   Target memory perimeter is defined by targetMappings.
   targetMappings is included in mappings.
   
-  @param mappings: address space
-  @param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+  :param mappings: address space
+  :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
   '''
   def __init__(self, mappings, targetMappings=None, updateCb=None):
     self.mappings = mappings
@@ -155,9 +155,9 @@ class VerboseStructFinder(StructFinder):
   Target memory perimeter is defined by targetMappings.
   targetMappings is included in mappings.
   
-  @param mappings: address space
-  @param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
-  @param updateCb: callback func. for periodic status update
+  :param mappings: address space
+  :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+  :param updateCb: callback func. for periodic status update
   '''
   def __init__(self,mappings, targetMappings=None, updateCb=None):
     StructFinder.__init__(self,mappings, targetMappings)
@@ -236,13 +236,13 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
 
     Call a subprocess to ptrace a process. That way, self.process is not attached to the target PID by any means.
     
-    @param pid is the process PID.
-    @param memfile the file containing a direct dump of the memory mapping ( optionnal)
-    @param memdump the file containing a memory dump 
-    @param structType the structure type.
-    @param offset the offset from which the structure must be loaded.
-    @param debug if True, activate debug logs.
-    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+    :param pid is the process PID.
+    :param memfile the file containing a direct dump of the memory mapping ( optionnal)
+    :param memdump the file containing a memory dump 
+    :param structType the structure type.
+    :param offset the offset from which the structure must be loaded.
+    :param debug if True, activate debug logs.
+    :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
   '''
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
@@ -280,12 +280,12 @@ def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=Fa
   ''' 
     Find all occurences of a specific structure from a process memory.
     
-    @param pid is the process PID.
-    @param structType the structure type.
-    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
-    @param fullScan obselete
-    @param nommap if True, do not use mmap while searching.
-    @param debug if True, activate debug logs.
+    :param pid is the process PID.
+    :param structType the structure type.
+    :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+    :param fullScan obselete
+    :param nommap if True, do not use mmap while searching.
+    :param debug if True, activate debug logs.
   '''
   return _findStruct(pid=pid, structType=structType, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug, quiet=quiet)
   
@@ -293,12 +293,12 @@ def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, 
   ''' 
     Find all occurences of a specific structure from a process memory in a file.
     
-    @param filename is the file containing the memory mapping content.
-    @param structType the structure type.
-    @param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
-    @param hint obselete
-    @param fullScan obselete
-    @param debug if True, activate debug logs.
+    :param filename is the file containing the memory mapping content.
+    :param structType the structure type.
+    :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
+    :param hint obselete
+    :param fullScan obselete
+    :param debug if True, activate debug logs.
   '''
   return _findStruct(memfile=filename, structType=structType, maxNum=maxNum, fullScan=fullScan, debug=debug, quiet=quiet)
 
@@ -307,11 +307,11 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   ''' 
     returns the pickled or text representation of a structure, from a given offset in a process memory.
     
-    @param pid is the process PID.
-    @param structType the structure Type.
-    @param offset the offset from which the structure must be loaded.
-    @param debug if True, activate debug logs.
-    @param nommap if True, do not use mmap when mapping the memory
+    :param pid is the process PID.
+    :param structType the structure Type.
+    :param offset the offset from which the structure must be loaded.
+    :param debug if True, activate debug logs.
+    :param nommap if True, do not use mmap when mapping the memory
   '''
   if type(structType) != type(ctypes.Structure):
     raise TypeError('structType arg must be a ctypes.Structure')
@@ -344,7 +344,7 @@ def getKlass(name):
     Returns the class type from a structure name.
     The class' module is dynamically loaded.
     
-    @param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
+    :param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
   '''
   module,sep,kname=name.rpartition('.')
   mod = __import__(module, globals(), locals(), [kname])
@@ -363,10 +363,10 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
     if targetMappings is not specified, the search will occur in each memory mappings
      in mappings.
     
-    @param structName the structure name.
-    @param mappings the memory mappings list.
-    @param targetMappings the list of specific mapping to look into.
-    @param maxNum the maximum number of results expected. -1 for infinite.
+    :param structName the structure name.
+    :param mappings the memory mappings list.
+    :param targetMappings the list of specific mapping to look into.
+    :param maxNum the maximum number of results expected. -1 for infinite.
   """
   log.debug('searchIn: %s - %s'%(structName,mappings))
   structType = getKlass(structName)

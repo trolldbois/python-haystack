@@ -39,9 +39,9 @@ def unpackWord(bytes, endianess='@'):
 
 def is_valid_address(obj, mappings, structType=None):
   ''' 
-  @param obj: the obj to evaluate.
-  @param mappings: the memory mappings in a list.
-  @param structType: the object's type, so the size could be taken in consideration.
+  :param obj: the obj to evaluate.
+  :param mappings: the memory mappings in a list.
+  :param structType: the object's type, so the size could be taken in consideration.
   
   Returns False if the object address is NULL.
   Returns False if the object address is not in a mapping.
@@ -57,9 +57,9 @@ def is_valid_address(obj, mappings, structType=None):
 
 def is_valid_address_value(addr, mappings, structType=None):
   ''' 
-  @param addr: the address to evaluate.
-  @param mappings: the memory mappings in a list.
-  @param structType: the object's type, so the size could be taken in consideration.
+  :param addr: the address to evaluate.
+  :param mappings: the memory mappings in a list.
+  :param structType: the object's type, so the size could be taken in consideration.
   
   Returns False if the object address is NULL.
   Returns False if the object address is not in a mapping.
@@ -96,7 +96,7 @@ def getaddress(obj):
   ''' 
   Returns the address of the struct pointed by the obj, or null if invalid.
 
-  @param obj: a pointer.
+  :param obj: a pointer.
   '''
   # check for null pointers
   if bool(obj):
@@ -110,9 +110,9 @@ def container_of(memberaddr, typ, membername):
   '''
   Returns the instance of typ(), in which the member "membername' is really.
   
-  @param memberadd: the address of membername.
-  @param typ: the type of the containing structure.
-  @param membername: the membername.
+  :param memberadd: the address of membername.
+  :param typ: the type of the containing structure.
+  :param membername: the membername.
   
   Stolen from linux kernel headers.
          const typeof( ((typ *)0)->member ) *__mptr = (ptr);    
@@ -124,8 +124,8 @@ def offsetof(typ, membername):
   '''
   Returns the offset of a member in a structure.
   
-  @param typ: the structure type.
-  @param membername: the membername in that structure.
+  :param typ: the structure type.
+  :param membername: the membername in that structure.
   '''
   #T=typ()
   #return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
@@ -225,8 +225,8 @@ def pointer2bytes(attr,nbElement):
   ''' 
   Returns an array from a ctypes POINTER, geiven the number of elements.
   
-  @param attr: the structure member.
-  @param nbElement: the number of element in the array.
+  :param attr: the structure member.
+  :param nbElement: the number of element in the array.
   '''
   # attr is a pointer and we want to read elementSize of type(attr.contents))
   if not is_address_local(attr):

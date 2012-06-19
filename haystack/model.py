@@ -289,8 +289,8 @@ def copyGeneratedClasses(src, dst):
     generated: ctypes_libraryname_generated.py
     classic  : ctypes_libraryname.py
     
-  @param me : dst module
-  @param src : src module, generated
+  :param me : dst module
+  :param src : src module, generated
   '''
   __root_module_name,__dot,__module_name = dst.__name__.rpartition('.')
   _loaded=0

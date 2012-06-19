@@ -328,8 +328,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   A memoryMapping wrapper around a memory file dump.
   A lazy loading is done for that file, to quick load MM, withouth copying content
   
-  @param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
-  @param preload mmap the memory dump at init ( default)
+  :param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
+  :param preload mmap the memory dump at init ( default)
   """
   def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
     MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
