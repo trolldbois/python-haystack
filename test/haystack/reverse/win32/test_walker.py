@@ -51,7 +51,8 @@ class TestAllocator(unittest.TestCase):
     heap = self._mappings.getHeap()
     walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
     for x in walker._getFreeLists():
-      print x
+      #print x
+      pass
     
     return
 
