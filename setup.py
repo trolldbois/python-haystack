@@ -15,7 +15,7 @@ __status__ = "Production"
 setup(name="haystack",
     version="0.17",
     description="Search C Structures in a process' memory",
-    long_description=open("README").read(),
+    long_description=open("README.rst").read(),
 
     url="http://packages.python.org/haystack/",
     download_url="http://github.com/trolldbois/python-haystack/tree/master",
