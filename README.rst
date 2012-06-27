@@ -22,6 +22,7 @@ $ sudo haystack-dump dump <pid> dumps/myssh.dump
 
 You can easily reproduce the format of the dump, its a folder/archive 
 containing each memory map in a separate file :
+
 - content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
 - 'mappings' file containing memory mappings metadata.  ( mappings )
 
