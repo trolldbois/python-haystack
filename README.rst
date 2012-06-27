@@ -16,14 +16,14 @@ How to get a memory dump:
 
 While technically you could use a third party tool, haystack actually 
 need memory mapping information to work with. 
-So there is a dumping tool included :
+So there is a dumping tool included::
 
 $ sudo haystack-dump dump <pid> dumps/myssh.dump
 
 You can easily reproduce the format of the dump, its a folder/archive 
 containing each memory map in a separate file :
-* content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
-* 'mappings' file containing memory mappings metadata.  ( mappings )
+- content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
+- 'mappings' file containing memory mappings metadata.  ( mappings )
 
 
 Search for known structures:
@@ -34,8 +34,9 @@ structures.
 An example would be sslsnoop, which provide python ctypes structures for
 openssl and openssh structures.
 
-Quick info: This demonstrate the ability to brute-force the search 
-of a known structure, based on fields types assumptions or constraints. 
+Quick info:
+ This demonstrate the ability to brute-force the search 
+ of a known structure, based on fields types assumptions or constraints. 
 
 The magic is performed in the model.py module.
 The constraints are applied on the python ctypes structures by the 
@@ -66,7 +67,7 @@ Graphic example :
 -----------------
 
 There is also an attempt at a Graphical GUI ( Qt4 )
-Dump the process, then you can open it in the GUI :
+Dump the process, then you can open it in the GUI::
 
 $ haystack-gui # ( and Ctrl-O , click click)
 $ haystack-gui --dumpname dumps/myssh.dump
@@ -76,12 +77,16 @@ You have to import your extensions before that to have them listed in
 the search dialog.
 ( try sslsnoop.ctypes_openssh ) 
 
-Tip: As this is a beta version, sslsnoop is hard-imported in the GUI. 
-You should have it installed.
+Tip:
+ As this is a beta version, sslsnoop is hard-imported in the GUI. 
+ You should have it installed.
 
 
 python script interpreter example:
 ----------------------------------
+
+::
+
 >>> import haystack
 >>> pid = 4042
 >>> haystack.findStruct( pid , sslsnoop.ctypes_openssh.session_state)
@@ -94,84 +99,84 @@ Extensibility:
 It's easy to add new structures. Its basically the ctypes definition of 
 C structures that should be done following the next 4 steps :
 
-a) Your class must extend haystack.model.LoadableMembersStructure.
-b) You must give your class a completed _fields_ (with one _ ), like 
+#) Your class must extend haystack.model.LoadableMembersStructure.
+#) You must give your class a completed _fields_ (with one _ ), like 
    all ctypes.Structure 
-b bis) Optional - You can add an expectedValues dict() to your ctype 
+#) Optional - You can add an expectedValues dict() to your ctype 
        classes to add some constraints.
-b ter) Optional - You can override isValid and loadMembers to implement
+#) Optional - You can override isValid and loadMembers to implement
        advanced constraints validation.
-d) call model.registerModule(sys.modules[__name__])
+#) call model.registerModule(sys.modules[__name__])
 
-Easy 'creation' : 
+Easy 'creation':
   use h2xml and xml2py from ctypeslib to generate a python module from
   a C header.
 
-Advanced use : 
+Advanced use:
   You can override methods isValid and loadMembers to implements 
   advanced data loading and constraints validation.
   ( see sslsnoop for loading cipher structures from void pointers )
 
 The global algorithm :
-
-a) The ctypes structure is mapped at the first offset of the memory 
-   mapping.
-b) The method loadMembers is called.
-c) The method isValid is called on self.
-d) A validation test is done for each members, constraints and 
-   memory space validity (pointers) are tested.
-   The validation does not recurse.
-e) Each members is then 'loaded' to local space. 
-   If the value is a pointer or a model.LoadableMembersStructure type, it's 
-   recursively Loaded. ( and validated).
-   If the recursive loading fails, the calls fails. bye-bye.
-f) If all contraints are respected, we have a match.
-g) Move to see next offset, goto a)
+  #) The ctypes structure is mapped at the first offset of the memory 
+     mapping.
+  #) The method loadMembers is called.
+  #) The method isValid is called on self.
+  #) A validation test is done for each members, constraints and 
+     memory space validity (pointers) are tested.
+     The validation does not recurse.
+  #) Each members is then 'loaded' to local space. 
+     If the value is a pointer or a model.LoadableMembersStructure type, it's 
+     recursively Loaded. ( and validated).
+     If the recursive loading fails, the calls fails. bye-bye.
+  #) If all contraints are respected, we have a match.
+  #) Move to see next offset, goto 1)
 
 
 Heap analysis / Memory Reverser / Memory forensics:
 ===================================================
 
-Quick info: This tool parse the heap for allocator structures, pointers
-values, small integers and text (ascii/utf).
-Given all the previous information, it can extract instances 
-and helps you in classifying and defining structures types.
+Quick info: 
+ This tool parse the heap for allocator structures, pointers
+ values, small integers and text (ascii/utf).
+ Given all the previous information, it can extract instances 
+ and helps you in classifying and defining structures types.
 
-TODO: implement feedback
+::
 
-    usage: haystack-reverser [-h] [--debug]
-                             dumpname
-                             {instances,typemap,group,parent,graph,show,makesig,clean}
-                             ...
-
-    Several tools to reverse engineer structures on the heap.
-
-    positional arguments:
-      dumpname              Source memory dump by haystack.
-      {instances,typemap,group,parent,graph,show,makesig,clean}
-                            sub-command help
-        instances           List all structures instances with virtual address,
-                            member types guess and info.
-        typemap             Try to reverse generic types from instances'
-                            similarities.
-        group               Show structure instances groups by size and signature.
-        parent              Print the parent structures pointing to the structure
-                            located at this address.
-        graph               DISABLED - Show sorted structure instances groups by
-                            size and signature in a graph.
-        show                Show one structure instance.
-        makesig             Create a simple signature file of the heap - NULL,
-                            POINTERS, OTHER VALUES.
-        clean               Clean the memory dump from cached info.
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --debug               Debug mode on.
+|    usage: haystack-reverser [-h] [--debug]
+|                             dumpname
+|                             {instances,typemap,group,parent,graph,show,makesig,clean}
+|                             ...
+|
+|    Several tools to reverse engineer structures on the heap.
+|
+|    positional arguments:
+|      dumpname              Source memory dump by haystack.
+|      {instances,typemap,group,parent,graph,show,makesig,clean}
+|                            sub-command help
+|        instances           List all structures instances with virtual address,
+|                            member types guess and info.
+|        typemap             Try to reverse generic types from instances'
+|                            similarities.
+|        group               Show structure instances groups by size and signature.
+|        parent              Print the parent structures pointing to the structure
+|                            located at this address.
+|        graph               DISABLED - Show sorted structure instances groups by
+|                            size and signature in a graph.
+|        show                Show one structure instance.
+|        makesig             Create a simple signature file of the heap - NULL,
+|                            POINTERS, OTHER VALUES.
+|        clean               Clean the memory dump from cached info.
+|
+|    optional arguments:
+|      -h, --help            show this help message and exit
+|      --debug               Debug mode on.
 
 
 Command line example:
 --------------------
-This will create several files in the folder containing <yourdumpname>.
+This will create several files in the folder containing <yourdumpname>::
 
 $ python haystack-reverse instances <yourdumpname>
 
@@ -183,16 +188,16 @@ $ python haystack-reverse instances <yourdumpname>
   instances links. It gets messy for any kind of serious application.
 
 
-Show ordered list of structures, by similarities :
+Show ordered list of structures, by similarities::
 
 $ python haystack-reverse show <yourdumpname>
 
-Show only structures of size 324:
+Show only structures of size 324::
 
 $ python haystack-reverse show --size 324 <yourdumpname>
 
 
-Write to file an attempt to reversed the original types hierachy :
+Write to file an attempt to reversed the original types hierachy::
 
 $ python haystack-reverse typemap <yourdumpname>
 
@@ -200,69 +205,70 @@ $ python haystack-reverse typemap <yourdumpname>
 Extension examples :
 ====================
 @ see sslsnoop in the Pypi repo. openssl and nss structures are generated.
+
 @ see ctypes-kernel on my github. Linux kernel structure are generated from a build kernel tree. (VMM is abitch)
 
 
 Pseudo Example for extension :
 ==============================
-from haystack.model import LoadableMembersStructure, RangeValue, NotNull
-
-class OpenSSLStruct(LoadableMembersStructure):
-  pass
-
-class RSA(OpenSSLStruct):
-  ''' rsa/rsa.h '''
-  _fields_ = [
-  ("pad",  ctypes.c_int), 
-  ("version",  ctypes.c_long),
-  ("meth",ctypes.POINTER(BIGNUM)),#const RSA_METHOD *meth;
-  ("engine",ctypes.POINTER(ENGINE)),#ENGINE *engine;
-  ('n', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-  ('e', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-  ('d', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-  ('p', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-  ('q', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-  ('dmp1', ctypes.POINTER(BIGNUM) ),
-  ('dmq1', ctypes.POINTER(BIGNUM) ),
-  ('iqmp', ctypes.POINTER(BIGNUM) ),
-  ("ex_data", CRYPTO_EX_DATA ),
-  ("references", ctypes.c_int),
-  ("flags", ctypes.c_int),
-  ("_method_mod_n", ctypes.POINTER(BN_MONT_CTX) ),
-  ("_method_mod_p", ctypes.POINTER(BN_MONT_CTX) ),
-  ("_method_mod_q", ctypes.POINTER(BN_MONT_CTX) ),
-  ("bignum_data",ctypes.POINTER(ctypes.c_ubyte)), ## moue c_char_p ou POINTER(c_char) ?
-  ("blinding",ctypes.POINTER(BIGNUM)),#BN_BLINDING *blinding;
-  ("mt_blinding",ctypes.POINTER(BIGNUM))#BN_BLINDING *mt_blinding;
-  ]
-  expectedValues={
-    "pad": [0], 
-    "version": [0], 
-    "references": RangeValue(0,0xfff),
-    "n": [NotNull],
-    "e": [NotNull],
-    "d": [NotNull],
-    "p": [NotNull],
-    "q": [NotNull],
-    "dmp1": [NotNull],
-    "dmq1": [NotNull],
-    "iqmp": [NotNull]
-  }
-  def loadMembers(self, mappings, maxDepth):
-    print 'example'
-    if not LoadableMembersStructure.loadMembers(self, mappings, maxDepth):
-      log.debug('RSA not loaded')
-      return False
-    return True
-
-# register to haystack
-model.registerModule(sys.modules[__name__])
-
-#EOF
+|from haystack.model import LoadableMembersStructure, RangeValue, NotNull
+|
+|class OpenSSLStruct(LoadableMembersStructure):
+|  pass
+|
+|class RSA(OpenSSLStruct):
+|  ''' rsa/rsa.h '''
+|  _fields_ = [
+|  ("pad",  ctypes.c_int), 
+|  ("version",  ctypes.c_long),
+|  ("meth",ctypes.POINTER(BIGNUM)),#const RSA_METHOD *meth;
+|  ("engine",ctypes.POINTER(ENGINE)),#ENGINE *engine;
+|  ('n', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+|  ('e', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+|  ('d', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+|  ('p', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+|  ('q', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
+|  ('dmp1', ctypes.POINTER(BIGNUM) ),
+|  ('dmq1', ctypes.POINTER(BIGNUM) ),
+|  ('iqmp', ctypes.POINTER(BIGNUM) ),
+|  ("ex_data", CRYPTO_EX_DATA ),
+|  ("references", ctypes.c_int),
+|  ("flags", ctypes.c_int),
+|  ("_method_mod_n", ctypes.POINTER(BN_MONT_CTX) ),
+|  ("_method_mod_p", ctypes.POINTER(BN_MONT_CTX) ),
+|  ("_method_mod_q", ctypes.POINTER(BN_MONT_CTX) ),
+|  ("bignum_data",ctypes.POINTER(ctypes.c_ubyte)), ## moue c_char_p ou POINTER(c_char) ?
+|  ("blinding",ctypes.POINTER(BIGNUM)),#BN_BLINDING *blinding;
+|  ("mt_blinding",ctypes.POINTER(BIGNUM))#BN_BLINDING *mt_blinding;
+|  ]
+|  expectedValues={
+|    "pad": [0], 
+|    "version": [0], 
+|    "references": RangeValue(0,0xfff),
+|    "n": [NotNull],
+|    "e": [NotNull],
+|    "d": [NotNull],
+|    "p": [NotNull],
+|    "q": [NotNull],
+|    "dmp1": [NotNull],
+|    "dmq1": [NotNull],
+|    "iqmp": [NotNull]
+|  }
+|  def loadMembers(self, mappings, maxDepth):
+|    print 'example'
+|    if not LoadableMembersStructure.loadMembers(self, mappings, maxDepth):
+|      log.debug('RSA not loaded')
+|      return False
+|    return True
+|
+|# register to haystack
+|model.registerModule(sys.modules[__name__])
+|
+|#EOF
 
 
 not so FAQ :
-============
+------------
 
 What does it do ?:
 ------------------
