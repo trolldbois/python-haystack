@@ -36,4 +36,7 @@ refreshStruct = abouchet.refreshStruct
 search = abouchet.search
 refresh = abouchet.refresh
 
+# real API
+show = abouchet.show
+
 

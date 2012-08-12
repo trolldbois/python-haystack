@@ -496,4 +496,35 @@ def refresh(args):
   return instance,validated
 
 
+class HaystackError(Exception):
+  pass
+
+def show(memdump, classname, address ):
+  """ shows the values for klass at @address in memdump.
+  
+  @param memdump: the memdump filename
+  @param classname: the class name (string)
+  @param address: the address
+  
+  @returns (instance, validated): instance the loaded ctypes and validated a boolean flag 
+      if validated is True, all constraints were OK in instance.
+  """
+  from haystack import dump_loader
+  log.debug('haystack show %s %s %x'%(memdump, classname, address ))
+  
+  structType = getKlass(classname)
+  mappings = dump_loader.load(memdump)
+  finder = StructFinder(mappings)
+  # validate the input address.
+  memoryMap = model.is_valid_address_value(address, finder.mappings)
+  if not memoryMap:
+    log.error("the address is not accessible in the memoryMap")
+    raise ValueError("the address is not accessible in the memoryMap")
+  
+  instance,validated = finder.loadAt( memoryMap, address, structType)
+  pyObj = instance.toPyObject()
+  if basicmodel.findCtypesInPyObj(pyObj):
+    raise HaystackError(' transformation to python object failed. Ctypes were still present after transform.')
+  
+  return pyObj,validated
 
