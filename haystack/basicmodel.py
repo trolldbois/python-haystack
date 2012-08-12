@@ -16,7 +16,7 @@ import numbers
 import sys
 
 from haystack.utils import *
-from haystack.model import hasRef, getRef, keepRef, delRef, getSubType, CString
+from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, CString
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -193,7 +193,7 @@ class LoadableMembers(object):
           return False
       else:
         # test valid address mapping
-        _attrType = getSubType(attrtype)
+        _attrType = get_subtype(attrtype)
       #log.debug(" ihave decided on pointed attrType to be %s"%(_attrType))
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
         log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
@@ -327,7 +327,7 @@ class LoadableMembers(object):
       log.debug('kept CString ref for "%s" at @%x'%(txt, attr_obj_address))
       return True
     elif isPointerType(attrtype): # not functionType, it's not loadable
-      _attrType = getSubType(attrtype)
+      _attrType = get_subtype(attrtype)
       attr_obj_address=getaddress(attr)
       #setattr(self,'__'+attrname,attr_obj_address)
       ####
@@ -412,7 +412,7 @@ class LoadableMembers(object):
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         #contents=attr.contents
-        _attrType = getSubType(attrtype)        
+        _attrType = get_subtype(attrtype)        
         contents = getRef(_attrType, getaddress(attr))
         if type(self) == type(contents):
           s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, 
@@ -468,7 +468,7 @@ class LoadableMembers(object):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
         else:
-          _attrType=getSubType(attrtype)
+          _attrType=get_subtype(attrtype)
           contents = getRef(_attrType, getaddress(attr))
           if type(self) == type(contents): # do not recurse in lists
             s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), getaddress(attr), repr(contents) ) # use struct printer
@@ -535,7 +535,7 @@ class LoadableMembers(object):
         obj=(None,None)
       else:
         # get the cached Value of the LP.
-        _subtype = getSubType(attrtype)
+        _subtype = get_subtype(attrtype)
         cache = getRef(_subtype, getaddress(attr) )
         if cache is not None:
           obj = self._attrToPyObject(cache, field, _subtype )
@@ -543,8 +543,8 @@ class LoadableMembers(object):
           log.error('Pointer to Basic type - %s'%(field))
           obj = 'Pointer to Basic type'
         else:
-          log.error('LP structure for field:%s %s/%s not in cache %x'%(field, attrtype, getSubType(attrtype), getaddress(attr) ) )
-          #raise ValueError('LP structure for %s not in cache %s,%x'%(field, getSubType(attrtype), getaddress(attr) ) )
+          log.error('LP structure for field:%s %s/%s not in cache %x'%(field, attrtype, get_subtype(attrtype), getaddress(attr) ) )
+          #raise ValueError('LP structure for %s not in cache %s,%x'%(field, get_subtype(attrtype), getaddress(attr) ) )
           return (None,None)
     #    ####### any pointer should be in cache
     #    contents=attr.contents  # will SEGFAULT

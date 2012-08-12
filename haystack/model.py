@@ -235,7 +235,7 @@ def delRef(typ,origAddr):
     __book.delRef(typ,origAddr)
   return
 
-def getSubType(cls):
+def get_subtype(cls):
   return cls._type_  
 
 
