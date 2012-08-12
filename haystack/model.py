@@ -186,6 +186,9 @@ def reset():
   global __book
   __book.refs = dict()
 
+def getRefs():
+  return __book.refs.items()
+
 def printRefs():
   l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]
   for i in l:
