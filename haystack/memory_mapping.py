@@ -587,7 +587,7 @@ class Mappings:
       if self.get_target_system() == 'linux':
         self.heaps = self.getMmap('[heap]')
       else:
-        self.search_win_heaps()
+        self.heaps = self.search_win_heaps()
     return self.heaps
 
   def getStack(self):
@@ -596,14 +596,14 @@ class Mappings:
 
   def search_win_heaps(self):
     from haystack.reverse.win32 import win7heapwalker
-    self.heaps = list()
+    heaps = list()
     for mapping in self.mappings:
       if win7heapwalker.isHeap(self, mapping):
-        self.heaps.append(mapping)
+        heaps.append(mapping)
         log.debug('%s is a Heap'%(mapping))
     # order by ProcessHeapsListIndex
-    self.heaps.sort(key=lambda m: win7heapwalker.readHeap(self.mappings, m).ProcessHeapsListIndex)
-    return
+    heaps.sort(key=lambda m: win7heapwalker.readHeap(self.mappings, m).ProcessHeapsListIndex)
+    return heaps
   
   def get_target_system(self):
     if self._target_system is not None:
