@@ -81,8 +81,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     for free in self._heap.getFreeLists(self._mappings):
       size = free-last
       free_lists.append( (free, size) )
+      print (free, size)
       last = free
-    print free_lists
     free_lists.sort()
     return free_lists
 

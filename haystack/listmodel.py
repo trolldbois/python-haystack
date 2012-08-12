@@ -183,13 +183,15 @@ def declare_double_linked_list_type( structType, forward, backward):
     ''' iterate forward, then backward, until null or duplicate '''    
     done = [0]
     obj = self
+    #print 'going forward '
     for fieldname in [forward, backward]:
       link = getattr(obj, fieldname)
       addr = utils.getaddress(link)
       log.debug('iterateList got a <%s>/0x%x'%(link.__class__.__name__,addr))
+      nb=0
       while addr not in done:
+        #print '%x %s'%(addr, addr in done)
         done.append(addr)
-        #print '\n%x '%(addr)
         memoryMap = utils.is_valid_address_value( addr, mappings, structType)
         if memoryMap == False:
           raise ValueError('the link of this linked list has a bad value')
@@ -200,6 +202,7 @@ def declare_double_linked_list_type( structType, forward, backward):
         # next
         link = getattr(st, fieldname)
         addr = utils.getaddress(link)
+      #print 'going backward after %x'%(addr)
     raise StopIteration
   
   def loadMembers(self, mappings, depth):
