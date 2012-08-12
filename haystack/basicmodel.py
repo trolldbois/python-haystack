@@ -409,8 +409,6 @@ class LoadableMembers(object):
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif isVoidPointerType(attrtype) :
         s=prefix+'"%s": 0x%lx, #(FELD NOT LOADED: void pointer) \n'%(field, attr )   # only print address/null
-      elif not is_address_local(attr) :
-        s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED: address not local)\n'%(field, getaddress(attr) )   # only print address in target space
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         #contents=attr.contents
@@ -464,15 +462,11 @@ class LoadableMembers(object):
       elif isCStringPointer(attrtype):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   # only print address/null
-        elif not is_address_local(attr) : # only print address in target space
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: str address not local)\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, getaddress(attr.ptr)))  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
-        elif not is_address_local(attr) :
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: ptr address not local)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
         else:
           _attrType=getSubType(attrtype)
           contents = getRef(_attrType, getaddress(attr))
@@ -539,8 +533,6 @@ class LoadableMembers(object):
         obj='BasicType array'
       elif not bool(attr) :
         obj=(None,None)
-      #elif not is_address_local(attr) :
-      #  obj=(None,getaddress(attr) )
       else:
         # get the cached Value of the LP.
         _subtype = getSubType(attrtype)
