@@ -391,7 +391,7 @@ class LoadableMembers(object):
       s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )  
       #print field, attrtype, s
     elif isFunctionType(attrtype):
-      s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
+      s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED: function type)\n'%(field, getaddress(attr) )   # only print address in target space
     elif isBasicTypeArray(attr): ## array of something else than int      
       #log.warning(field)
       s=prefix+'"%s": b%s,\n'%(field, repr(array2bytes(attr)) )  
@@ -408,9 +408,9 @@ class LoadableMembers(object):
       if not bool(attr) :
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif isVoidPointerType(attrtype) :
-        s=prefix+'"%s": 0x%lx, #Void pointer NOT LOADED \n'%(field, attr )   # only print address/null
+        s=prefix+'"%s": 0x%lx, #(FELD NOT LOADED: void pointer) \n'%(field, attr )   # only print address/null
       elif not is_address_local(attr) :
-        s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
+        s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED: address not local)\n'%(field, getaddress(attr) )   # only print address in target space
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         #contents=attr.contents
@@ -451,7 +451,7 @@ class LoadableMembers(object):
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
         #s+='%s (@0x%lx) : {\t%s}\n'%(field, attr._orig_address_, attr )  
       elif isFunctionType(attrtype):
-        s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+        s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: function type)\n'%(field,ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
       elif isBasicTypeArray(attr):
         try:
           s+='%s (@0x%lx) : %s\n'%(field,ctypes.addressof(attr), repr(array2bytes(attr)) )  
@@ -465,14 +465,14 @@ class LoadableMembers(object):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   # only print address/null
         elif not is_address_local(attr) : # only print address in target space
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: str address not local)\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, getaddress(attr.ptr)))  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
         elif not is_address_local(attr) :
-          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: ptr address not local)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
         else:
           _attrType=getSubType(attrtype)
           contents = getRef(_attrType, getaddress(attr))
