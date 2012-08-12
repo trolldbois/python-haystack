@@ -338,6 +338,9 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
   return instance,offset
 
 
+class HaystackError(Exception):
+  pass
+
 
 def getKlass(name):
   '''
@@ -505,8 +508,7 @@ def _output(outs, rtype ):
   ret = [ (ss.toPyObject(), addr) for ss, addr in outs]
   # last check to clean the structure from any ctypes Structure
   if basicmodel.findCtypesInPyObj(ret):
-    log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
-    raise RuntimeError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
+    raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
   # finally 
   if rtype == 'python': # pyobj
     yield ret
@@ -514,6 +516,37 @@ def _output(outs, rtype ):
     yield json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
   elif rtype == 'pickled': #pickled
     yield pickle.dumps(ret)
+  raise StopIteration
+
+def _show_output(instance, validated, rtype ):
+  """ Return results in the rtype format"""
+  if not validated :
+    str_fn = lambda x: str(x)
+  else:
+    str_fn = lambda x: x.toString
+
+  print 'hi'  
+
+  if rtype == 'string':
+    yield "(%s\n, %s)"% ( str_fn(instance), validated )
+    raise StopIteration    
+  #else {'json', 'pickled', 'python'} : # cast in pyObject
+
+  print 'my name is'  
+
+  pyObj = instance.toPyObject()
+  # last check to clean the structure from any ctypes Structure
+  print 'BoOoOoya'  
+
+  if basicmodel.findCtypesInPyObj(pyObj):
+    raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
+  # finally 
+  if rtype == 'python': # pyobj
+    yield (pyObj, validated)
+  elif rtype == 'json': #jsoned
+    yield json.dumps( (pyObj, validated), default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+  elif rtype == 'pickled': #pickled
+    yield pickle.dumps((pyObj, validated))
   raise StopIteration
 
 
@@ -543,48 +576,28 @@ def refresh(args):
   if args.interactive:
     import code
     code.interact(local=locals())
-  if validated:
-    if args.human:
-       print '( %s, %s )'%(instance.toString(),validated)
-    else:
-      d=(instance.toPyObject(),validated)
-      if basicmodel.findCtypesInPyObj(d[0]):
-        log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
-      if args.json: #jsoned
-        print json.dumps(d, default=basicmodel.json_encode_pyobj )
-      else: #pickled
-        print pickle.dumps(d)
-  else:
-    if args.human:
-      #Unloaded datastruct, printing safe __str__
-      print '( %s, %s )'%(instance,validated)
-    else:
-      d=None
-      if args.json: #jsoned
-        print json.dumps(d, default=basicmodel.json_encode_pyobj )
-      else: #pickled
-        print pickle.dumps(d)
-  return instance,validated
+
+  return _show_output(instance, validated, rtype)
 
 
-class HaystackError(Exception):
-  pass
-
-def show(memdump, classname, address ):
+def show_dumpname(structname, dumpname, address, rtype='python'):
   """ shows the values for klass at @address in memdump.
   
-  @param memdump: the memdump filename
-  @param classname: the class name (string)
-  @param address: the address
+  :param structname the ctypes structure name (string)
+  :type structName string
+  :param dumpname the memdump filename
+  :param address the address from where to read the structure
+  :param rtype the return type format ( string, pickle, json )
+  :type rtype ['string', 'pickle', 'json', 'python']
   
-  @returns (instance, validated): instance the loaded ctypes and validated a boolean flag 
+  :returns (instance, validated) instance the loaded ctypes and validated a boolean flag 
       if validated is True, all constraints were OK in instance.
   """
   from haystack import dump_loader
-  log.debug('haystack show %s %s %x'%(memdump, classname, address ))
+  log.debug('haystack show %s %s %x'%(dumpname, structname, address ))
   
-  structType = getKlass(classname)
-  mappings = dump_loader.load(memdump)
+  structType = getKlass(structname)
+  mappings = dump_loader.load(dumpname)
   finder = StructFinder(mappings)
   # validate the input address.
   memoryMap = model.is_valid_address_value(address, finder.mappings)
@@ -593,9 +606,11 @@ def show(memdump, classname, address ):
     raise ValueError("the address is not accessible in the memoryMap")
   
   instance,validated = finder.loadAt( memoryMap, address, structType)
+  # TODO DEBUG WHY this coredumps
+  #out = _show_output(instance, validated, rtype)
+  #return out
   pyObj = instance.toPyObject()
   if basicmodel.findCtypesInPyObj(pyObj):
     raise HaystackError(' transformation to python object failed. Ctypes were still present after transform.')
-  
   return pyObj,validated
 

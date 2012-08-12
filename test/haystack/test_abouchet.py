@@ -29,14 +29,14 @@ class TestApi(unittest.TestCase):
 
   def test_show(self):
     ''' tests valid structure show and invalid structure show.'''
-    instance, validated = haystack.show( self.memdumpname, self.classname, self.known_heaps[0][0])
+    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
     self.assertEquals( instance.Signature, 0xeeffeeff)
     self.assertEquals( instance.VirtualMemoryThreshold, 0xfe00)
     self.assertEquals( instance.FrontEndHeapType, 0)
     
-    instance, validated = haystack.show( self.memdumpname, self.classname, self.known_heaps[0][0]+1)
+    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0]+1)
     self.assertFalse(validated)
     self.assertIsInstance(instance, object)
     self.assertNotEquals( instance.Signature, 0xeeffeeff)

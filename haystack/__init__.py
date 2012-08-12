@@ -40,7 +40,7 @@ search_process = abouchet.search_process
 search_memfile = abouchet.search_memfile
 search_dumpname = abouchet.search_dumpname
 refresh = abouchet.refresh
-show = abouchet.show
+show_dumpname = abouchet.show_dumpname
 
 
 
