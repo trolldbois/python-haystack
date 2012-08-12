@@ -26,8 +26,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
       raise TypeError('HEAP.loadMembers returned False')
 
     log.debug('+ Heap @%0.8x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
-    print '+ Heap @%0.8x size:%d FTH_Type:%x maskFlag:%x index:%x'%(self._mapping.start+self._offset, 
-                  len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex) 
+    #print '+ Heap @%0.8x size:%d FTH_Type:0x%x maskFlag:0x%x index:0x%x'%(self._mapping.start+self._offset, 
+    #              len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex) 
     return
 
   def getUserAllocations(self):
