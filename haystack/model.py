@@ -191,6 +191,11 @@ def printRefs():
   for i in l:
     print l
 
+def printRefsLite():
+  l=[(typ,addr) for ((typ,addr),obj) in __book.refs.items()]
+  for i in l:
+    print l
+
 def hasRef(typ,origAddr):
   return (typ,origAddr) in __book.refs
 
@@ -198,6 +203,13 @@ def getRef(typ,origAddr):
   if (typ,origAddr) in __book.refs:
     return __book.getRef(typ,origAddr)
   return None
+
+def getRefByAddr(addr):
+  ret=[]
+  for (typ,origAddr) in __book.refs.keys():
+    if origAddr == addr:
+      ret.append( (typ, origAddr, __book.refs[(typ, origAddr)] ) )
+  return ret
 
 def keepRef(obj,typ=None,origAddr=None):
   ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
