@@ -50,7 +50,7 @@ def argparser():
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
   search_parser.add_argument('--maxnum', type=int, action='store', default=1, help='Limit to maxnum numbers of results')
   search_parser.add_argument('--hint', type=argparse_utils.int16, action='store', default=0, help='hintOffset to start at in hex')
-  search_parser.set_defaults(func=abouchet.search)
+  search_parser.set_defaults(func=abouchet._search_cmdline)
   #
   refresh_parser = subparsers.add_parser('refresh', help='refresh help')
   refresh_parser.add_argument('addr', type=str, help='Structure memory address')

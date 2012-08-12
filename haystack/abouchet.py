@@ -381,69 +381,140 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
     log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
   return ret
 
-def search(args):
-  """
-  Default function for the search command line option.
-  Search a process's memory for a specific Structure.
-  Returns findings in pickled or text format.
+def search_process(structName, pid, mmap=True, **kwargs):
+  """Search a structure in the memory of a live process.
   
-  See the command line --help .
+  :param structName the ctypes Structure
+  :type structName string
+  :param pid the process PID
+  :param mmap flag to enable mmap syscalls (default)
+  
+  :param fullscan flag to extend search outside the heap
+  :param hint an address hint to use as baseaddress for the search
+        if given, the search will be limited to the mmap containing the hint adress
+  :param rtype the return type format ( string, pickle, json )
+  :type rtype ['string, pickle, json']
+  
+  :rtype either string, pickle object or json string or ( False, None )
   """
-  log.debug('args: %s'%args)
+  structType = getKlass(structName)
+  mappings = MemoryMapper(pid=pid, mmap=mmap).getMappings()
+  return _search(mappings, structType, **kwargs)
+
+def search_memfile(structName, memfile, baseOffset, **kwargs):
+  """Search a structure in a raw memory file.
+  
+  :param structName the ctypes Structure
+  :type structName string
+  :param memfile the raw file memory dump
+  :param baseOffset the baseOffset of the raw file memory dump
+  
+  :param fullscan flag to extend search outside the heap
+  :param hint an address hint to use as baseaddress for the search
+        if given, the search will be limited to the mmap containing the hint adress
+  :param rtype the return type format ( string, pickle, json )
+  :type rtype ['string, pickle, json']
+  
+  :rtype either string, pickle object or json string or ( False, None )
+  """
+  structType = getKlass(structName)
+  mappings = MemoryMapper(memfile=memfile, baseOffset=baseOffset).getMappings()
+  return _search(mappings, structType, **kwargs)
+
+def search_dumpname(structName, dumpname, **kwargs):
+  """Search a structure in the memory dump of a process.
+  
+  :param structName the ctypes Structure
+  :type structName string
+  :param dumpname the dump file 
+  
+  :param fullscan flag to extend search outside the heap
+  :param hint an address hint to use as baseaddress for the search
+        if given, the search will be limited to the mmap containing the hint adress
+  :param rtype the return type format ( string, pickle, json )
+  :type rtype ['string, pickle, json']
+  :rtype either string, pickle object or json string or ( False, None )
+  """
+  structType = getKlass(structName)
+  mappings = MemoryMapper(dumpname=dumpname).getMappings()
+  return _search(mappings, structType, **kwargs)
+
+def _search_cmdline(args):
+  """ Internal cmdline mojo. """
   structType = getKlass(args.structName)
-  if args.baseOffset:
-    args.baseOffset=int(args.baseOffset,16)
-  mappings = MemoryMapper(args).getMappings()
-  if args.fullscan:
-    targetMapping = mappings
+  if args.pid is not None:
+    mappings = MemoryMapper(pid=args.pid, mmap=args.mmap).getMappings()
+  elif args.dumpname is not None:
+    mappings = MemoryMapper(dumpname=args.dumpname).getMappings()
+  elif args.memfile is not None:
+    mappings = MemoryMapper(memfile=args.memfile, baseOffset=args.baseOffset).getMappings()
   else:
-    if args.hint:
+    log.error('Nor PID, not memfile, not dumpname. What do you expect ?')
+    raise RuntimeError('Please validate the argparser. I couldnt find any useful information in your args.')
+  # print output on stdout
+  if args.human:  rtype = 'string' 
+  elif args.json:  rtype = 'json' 
+  elif args.pickled:  rtype = 'pickled' 
+  d = {'fullscan': args.fullscan, 'hint': args.hint, 'interactive': args.interactive, 'maxnum': args.maxnum}
+  for out in _search(mappings, structType, rtype=rtype, **d):
+    print out
+  return
+
+def _search(mappings, structType, fullscan=False, hint=None, rtype='python', interactive=False, maxnum=1):
+  """ make the search for structType  """
+  # choose the search space
+  if fullscan:
+    targetMappings = mappings
+  else:
+    if hint:
       log.debug('Looking for the mmap containing the hint addr.')
-      m = mappings.getMmapForAddr(args.hint)
+      m = mappings.getMmapForAddr(hint)
       if not m:
-        log.error('This hint is not a valid addr (0x%x)'%(args.hint))
-        return
-      targetMapping = [m]
+        log.error('This hint is not a valid addr (0x%x)'%(hint))
+        raise ValueError('This hint is not a valid addr (0x%x)'%(hint))
+      targetMappings = [m]
     else:
-      targetMapping = [m for m in mappings if m.pathname == '[heap]']
-    targetMapping = memory_mapping.Mappings(targetMapping, mappings.name)
-    if len(targetMapping) == 0:
+      targetMappings = [mappings.getHeap()]
+    targetMappings = memory_mapping.Mappings(targetMappings, mappings.name)
+    if len(targetMappings) == 0:
       log.warning('No memorymapping found. Searching everywhere.')
-      targetMapping = mappings
-  finder = StructFinder(mappings, targetMapping)
-  try:
-    outs=finder.find_struct( structType, hintOffset=args.hint ,maxNum=args.maxnum)
-  except KeyboardInterrupt,e:
-    from meliae import scanner
-    scanner.dump_all_objects('haystack-search.dump')
-    if not args.debug:
-      raise e
+      targetMappings = mappings
+  # find the structure
+  finder = StructFinder(mappings, targetMappings)
+  outs = finder.find_struct( structType, hintOffset=hint, maxNum=maxnum)
+  # DEBUG
+  if interactive:
     import code
     code.interact(local=locals())
-    return None
-  #return
-  ## debug
-  if args.interactive:
-    import code
-    code.interact(local=locals())
-  ##
-  if args.human:
-    print '[',
+  # output genereration
+  return _output(outs, rtype)
+
+def _output(outs, rtype ):
+  """ Return results in the rtype format"""
+  if len(outs) == 0:
+    log.info('Found no occurence.')
+    raise StopIteration
+  if rtype == 'string':
+    yield '['
     for ss, addr in outs:
-      print "# --------------- 0x%lx \n"% addr, ss.toString()
+      yield "# --------------- 0x%lx \n%s"% (addr, ss.toString() )
       pass
-    print ']'
-  else:
-    ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
-    if len(ret) >0:
-      log.debug("%s %s"%(ret[0], type(ret[0]) )   )
-    if basicmodel.findCtypesInPyObj(ret):
-      log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
-    if args.json: #jsoned
-      print json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
-    else: #pickled
-      print pickle.dumps(ret)
-  return outs
+    yield ']'
+    raise StopIteration    
+  #else {'json', 'pickled'} : # cast in pyObject
+  ret = [ (ss.toPyObject(), addr) for ss, addr in outs]
+  # last check to clean the structure from any ctypes Structure
+  if basicmodel.findCtypesInPyObj(ret):
+    log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
+    raise RuntimeError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
+  # finally 
+  if rtype == 'python': # pyobj
+    yield ret
+  elif rtype == 'json': #jsoned
+    yield json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+  elif rtype == 'pickled': #pickled
+    yield pickle.dumps(ret)
+  raise StopIteration
 
 
 def refresh(args):
