@@ -618,27 +618,31 @@ class pyObj(object):
   def __len__(self):
     return self._len_
     
-  def findCtypes(self):
+  def findCtypes(self, cache=set()):
+    ''' recurse on members to check for ctypes object. '''
     ret = False
     for attrname,attr in self.__dict__.items():
-      # ignore _ctype_, it's a ctype class type, we know that.
-      if attrname == '_ctype_' :
+      if id(attr) in cache: # do not recurse in already parsed
+        continue
+      if attrname == '_ctype_' : # ignore _ctype_, it's a ctype class type, we know that.
+        cache.add(id(attr))
         continue
       typ = type(attr)
       attr = getattr(self, attrname)
       log.debug('findCtypes on attr %s'% attrname)
-      if self._attrFindCtypes(attr, attrname,typ ):
+      if self._attrFindCtypes(attr, attrname, typ, cache ):
         log.warning('Found a ctypes in %s'%(attrname))
         ret = True
     return ret
 
-  def _attrFindCtypes(self, attr, attrname, typ):
+  def _attrFindCtypes(self, attr, attrname, typ, cache):
     ret = False
+    cache.add(id(attr))
     if hasattr(attr, '_ctype_'): # a pyobj
-      return attr.findCtypes()
+      return attr.findCtypes(cache)
     elif type(attr) is tuple or type(attr) is list:
       for el in attr:
-        if self._attrFindCtypes(el, 'element', None):
+        if self._attrFindCtypes(el, 'element', None, cache):
           log.warning('Found a ctypes in array/tuple')
           return True
     elif isCTypes(attr):
