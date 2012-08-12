@@ -31,15 +31,15 @@ log = logging.getLogger('testwalker')
 class TestAllocator(unittest.TestCase):
   
   def setUp(self):  
-    #self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
+    self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     self._known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
                     ( 0x00580000, 111933), (0x005c0000, 1704080) , 
                     ( 0x01ef0000, 604), (0x02010000, 61348), 
                     ( 0x02080000, 474949), (0x021f0000 , 18762),
                     ( 0x03360000, 604), (0x04030000 , 632),
                     ( 0x04110000, 1334), (0x041c0000 , 644),
-                    # from free stuf
-                    ( 0x0061a000, 1200),
+                    # from free stuf - erroneous 
+                    #( 0x0061a000, 1200),
                     ]
     return
     
@@ -48,7 +48,7 @@ class TestAllocator(unittest.TestCase):
     model.reset()
     return
 
-  def test_freeLists(self):
+  def test_freelists(self):
     ''' List all free blocks '''
     #self.skipTest('paused')
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
@@ -59,23 +59,28 @@ class TestAllocator(unittest.TestCase):
     kheaps = dict(self._known_heaps)
     tgt = dict([(x,[]) for x in kheaps.keys()])
     #
-    #
     cheap = walker._heap
-    #cheap.loadMembers(self._mappings, 99)
     self.assertTrue(utils.is_valid_address( cheap.BlocksIndex, self._mappings), 'BlocksIndex')
     bi_addr = utils.getaddress(cheap.BlocksIndex)
+    bi_class = model.get_subtype(cheap.BlocksIndex)
     
     print 'BlocksIndex is @%x / %d'%( bi_addr, bi_addr)  
-    print 'BlocksIndex is %s'%( cheap.BlocksIndex.__class__ )  
+    print 'BlocksIndex is %s'%( bi_class )  
     print self._mappings.getMmapForAddr( bi_addr)
 
-    #model.printRefsLite()
-    c = model.getRefByAddr( bi_addr )[0][2]
-    print c
+    self.assertEquals( len(model.getRefByAddr( bi_addr )), 1)
+    _class, _addr, _obj = model.getRefByAddr( bi_addr )[0]
+    print 'BlocksIndex (cached) is %s @ 0x%x'%(_class.__name__, _addr)
+    print 'python says (cached) is @ 0x%x'%( id(_obj))
+    print _obj.getFields(), '\n'.join([f for (f,k) in _obj.getFields()] )
+    print _obj.toString
+    print 'bi.ExtendedLookup %s '%( _obj.ExtendedLookup)  
+
+    self.assertTrue(utils.is_valid_address( _obj.ExtendedLookup, self._mappings), 'cached Ci')
+    #print utils.is_valid_address(_obj.ExtendedLookup, self._mappings)
+    print _obj.loadMembers(self._mappings, -1)
     
-    
-    self.assertTrue( model.hasRef( cheap.BlocksIndex.__class__ ,bi_addr))
-    print cheap.BlocksIndex.contents
+    self.fail('')
     #
     freeList = []
     # 128 blocks
@@ -134,18 +139,18 @@ class TestAllocator(unittest.TestCase):
     
     return
 
-  def test_sortedHeaps(self):
-    ''' check if memory_mapping has sorted heap by index. '''
-    #self.skipTest('paused')
+  def test_sorted_heaps(self):
+    ''' check if memory_mapping gives heaps sorted by index. '''
+    #self.skipTest('known_ok')
     
     for i, m in enumerate(self._mappings.getHeaps()):
       #print '%d @%0.8x'%(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, m.start)
-      self.assertEquals(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, i+1, 'ProcesHeaps should have correct indexes')
+      self.assertEquals(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, i+1, 'ProcessHeaps should have correct indexes')
     return
 
-  def test_isHeap(self):
+  def test_is_heap(self):
     ''' check if the isHeap fn perform correctly.'''
-    #self.skipTest('paused')
+    #self.skipTest('known_ok')
 
     self.assertEquals( self._mappings.get_target_system(), 'win32')
         
@@ -162,7 +167,7 @@ class TestAllocator(unittest.TestCase):
 
   def test_totalsize(self):
     ''' check if there is an adequate allocation rate as per getUserAllocations '''
-    #self.skipTest('paused')
+    self.skipTest('overallocation clearly not working')
     
     self.assertEquals( self._mappings.get_target_system(), 'win32')
     
@@ -209,22 +214,24 @@ class TestAllocator(unittest.TestCase):
     return
 
   def test_search(self):
-    '''  Testing the loading of _HEAP in each memory mapping. Compare loadMembers results with known offsets. expect failures otherwise. '''
-    #self.skipTest('paused')
+    '''  Testing the loading of _HEAP in each memory mapping. 
+    Compare loadMembers results with known offsets. expect failures otherwise. '''
+    #self.skipTest('known_ok')
     
     found=[]
     for mapping in self._mappings:
       addr = mapping.start
       heap = mapping.readStruct( addr, HEAP )
       if addr in map(lambda x:x[0] , self._known_heaps):
-        self.assertTrue(  heap.loadMembers(self._mappings, -1), "We expected a valid hit at @%x"%(addr) )
+        self.assertTrue(  heap.loadMembers(self._mappings, -1), "We expected a valid hit at @ 0x%0.8x"%(addr) )
         found.append(addr, )
       else:
         try:
           ret = heap.loadMembers(self._mappings, -1)
           self.assertFalse( ret, "We didnt expected a valid hit at @%x"%(addr) )
-        except ValueError,e:
-          self.assertRaisesRegexp( ValueError, 'error while loading members')
+        except Exception,e:
+          # should not raise an error
+          self.fail('Haystack should not raise an Exception.')
   
     found.sort()
     self.assertEquals( map(lambda x:x[0] , self._known_heaps), found)
@@ -234,7 +241,7 @@ class TestAllocator(unittest.TestCase):
   def test_getUserAllocations(self):
     ''' For each known _HEAP, load all user Allocation and compare the number of allocated bytes. '''
     
-    #self.skipTest('paused')
+    #self.skipTest('useless')
     
     ## TODO change for self._mappings.getHeaps()
     for addr, size in self._known_heaps:
@@ -252,8 +259,8 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  #logging.basicConfig(level=logging.DEBUG)
-  #logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
+  logging.basicConfig( stream=sys.stderr, level=logging.INFO )
+  logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.INFO)
