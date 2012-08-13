@@ -45,14 +45,14 @@ class TestReferenceBook(unittest.TestCase):
         continue
       self.assertTrue( utils.is_valid_address_value(attr_addr, self.mappings), '%s: 0x%x is not valid'%(fname, attr_addr))
       # the book should register struct type, not pointer to strut type
-      attr_type = model.getSubType(ftype)
+      attr_type = model.get_subtype(ftype)
       # look in the books
       saved = model.getRefByAddr( attr_addr )
       _class, _addr, _obj = saved[0]
 
       self.assertEquals( attr_addr, _addr)
       self.assertEquals( attr_type, _class, '%s != %s' %(type(ftype), type(_class)))
-      self.assertTrue( model.hasRef( model.getSubType(ftype), attr_addr))
+      self.assertTrue( model.hasRef( model.get_subtype(ftype), attr_addr))
     
     return      
 
@@ -101,15 +101,19 @@ class TestReferenceBook(unittest.TestCase):
     self.assertTrue( model.hasRef(int,0xcafecafe))
     self.assertTrue( model.hasRef(float,0xcafecafe))
     self.assertTrue( model.hasRef(str,0xcafecafe))
+    self.assertFalse( model.hasRef(unicode,0xcafecafe))
+    self.assertFalse( model.hasRef(int,0xdeadbeef))
     
   def test_getRef(self):
     model.keepRef(1, int, 0xcafecafe)
     model.keepRef(2, float, 0xcafecafe)
-    model.keepRef(3, str, 0xcafecafe)
 
     self.assertEquals( model.getRef(int,0xcafecafe), 1)
     self.assertEquals( model.getRef(float,0xcafecafe), 2)
-    self.assertEquals( model.getRef(str,0xcafecafe), 3)
+    self.assertIsNone( model.getRef(str,0xcafecafe))
+    self.assertIsNone( model.getRef(str,0xdeadbeef))
+    self.assertIsNone( model.getRef(int,0xdeadbeef))
+
     
   def test_delRef(self):
     model.keepRef(1, int, 0xcafecafe)
