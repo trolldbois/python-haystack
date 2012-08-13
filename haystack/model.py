@@ -311,7 +311,7 @@ def copyGeneratedClasses(src, dst):
   _loaded=0
   _registered=0
   for (name, klass) in inspect.getmembers(src, inspect.isclass):
-    if type(klass) == type(ctypes.Structure):
+    if issubclass(klass, LoadableMembers): 
       if klass.__module__.endswith('%s_generated'%(__module_name) ) :
         setattr(dst, name, klass)
         _loaded+=1
@@ -334,7 +334,8 @@ def createPOPOClasses( targetmodule ):
       kpy = type('%s.%s_py'%(targetmodule.__name__, klass),( basicmodel.pyObj ,),{})
       # add the structure size to the class
       #if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
-      if type(typ) == type(LoadableMembersStructure) or type(typ) == type( ctypes.Union) :
+#      if type(typ) == type(LoadableMembersStructure) or type(typ) == type( ctypes.Union) :
+      if issubclass(typ, LoadableMembers ) :
         setattr(kpy, '_len_',ctypes.sizeof(typ) )
       else:
         setattr(kpy, '_len_', None )
