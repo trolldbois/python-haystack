@@ -129,7 +129,7 @@ class LoadableMembers(object):
       log.debug('basicType: %s %s %s ok'%(attrname,attrtype,repr(attr) ))
       return True
     # b)
-    if isStructType(attrtype):
+    elif isStructType(attrtype) or isUnionType(attrtype):
       ### do i need to load it first ? becaus it should be memcopied with the super()..
       if not attr.isValid(mappings):
         log.debug('structType: %s %s %s isValid FALSE'%(attrname,attrtype,repr(attr) ))
@@ -137,14 +137,14 @@ class LoadableMembers(object):
       log.debug('structType: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
       return True
     # c)
-    if isBasicTypeArray(attr):
+    elif isBasicTypeArray(attr):
       if attrname in self.expectedValues:
         if attr not in self.expectedValues[attrname]:
           log.debug('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
           return False
       log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
       return True
-    if isArrayType(attrtype):
+    elif isArrayType(attrtype):
       log.debug('array: %s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
       attrLen=len(attr)
       if attrLen == 0:
@@ -156,7 +156,7 @@ class LoadableMembers(object):
           return False
       return True
     # d)
-    if isCStringPointer(attrtype):
+    elif isCStringPointer(attrtype):
       myaddress=getaddress(attr.ptr)
       if attrname in self.expectedValues:
         # test if NULL is an option
@@ -173,7 +173,7 @@ class LoadableMembers(object):
       log.debug('str: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
       return True
     # e) 
-    if isPointerType(attrtype):
+    elif isPointerType(attrtype):
       if attrname in self.expectedValues:
         # test if NULL is an option
         log.debug('isPointerType: bool(attr):%s attr:%s'%(bool(attr), attr))
@@ -202,9 +202,9 @@ class LoadableMembers(object):
       log.debug('ptr: name:%s repr:%s getaddress:0x%lx OK'%(attrname,repr(attr) ,getaddress(attr)))
       return True
     # ?
-    if isUnionType(attrtype):
-      #log.warning('Union are not validated , yet ')
-      return True
+    #if isUnionType(attrtype):
+    #  #log.warning('Union are not validated , yet ')
+    #  return True
     log.error('What type are You ?: %s/%s'%(attrname,attrtype))
     return True
 
@@ -266,7 +266,7 @@ class LoadableMembers(object):
       log.debug("%s %s not loadable  bool(attr) = %s"%(attrname,attrtype, bool(attr)) )
       return True
     # load it, fields are valid
-    if isStructType(attrtype):
+    elif isStructType(attrtype) or isUnionType(attrtype): # DEBUG TEST
       offset = offsetof(type(self),attrname)
       log.debug('st: %s %s is STRUCT at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
       # TODO pydoc for impl.
@@ -276,14 +276,14 @@ class LoadableMembers(object):
         return False
       log.debug("st: %s %s inner struct LOADED "%(attrname,attrtype) )
       return True
-    #if isUnionType(attrtype):
+    #elif isUnionType(attrtype):
     #  offset = offsetof(type(self),attrname)
     #  log.debug('st: %s %s is UNION at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
     #  # TODO pydoc for impl.
     #  attr._orig_address_ = self._orig_address_ + offset
     #  return True
     # maybe an array
-    if isBasicTypeArray(attr):
+    elif isBasicTypeArray(attr):
       return True
     if isArrayType(attrtype):
       log.debug('a: %s is arraytype %s recurse load'%(attrname,repr(attr)) )#
@@ -339,7 +339,7 @@ class LoadableMembers(object):
         log.warning("%s %s not loadable 0x%lx but VALID "%(attrname, attr,attr_obj_address ))
         return True
 
-      ref=getRef(_attrType,attr_obj_address)
+      ref = getRef(_attrType,attr_obj_address) 
       if ref:
         log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
         #DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents will SEGFAULT
@@ -409,6 +409,8 @@ class LoadableMembers(object):
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif isVoidPointerType(attrtype) :
         s=prefix+'"%s": 0x%lx, #(FELD NOT LOADED: void pointer) \n'%(field, attr )   # only print address/null
+      elif not is_address_local(attr) :
+        s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
       else:
         # we can read the pointers contents # if isBasicType(attr.contents): ?  # if isArrayType(attr.contents): ?
         #contents=attr.contents
@@ -445,7 +447,7 @@ class LoadableMembers(object):
       s="# <%s at @???>\n"%(self.__class__.__name__)
     for field,attrtype in self.getFields():
       attr=getattr(self,field)
-      if isStructType(attrtype):
+      if isStructType(attrtype) or isUnionType(attrtype): # DEBUG TEST
         s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )  
         #s+='%s (@0x%lx) : {\t%s}\n'%(field, attr._orig_address_, attr )  
       elif isFunctionType(attrtype):
@@ -462,11 +464,15 @@ class LoadableMembers(object):
       elif isCStringPointer(attrtype):
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), getaddress(attr.ptr) )   # only print address/null
+        elif not is_address_local(attr) :
+          s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
         else:
           s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, getaddress(attr.ptr)))  
       elif isPointerType(attrtype) and not isVoidPointerType(attrtype): # bug with CString
         if not bool(attr) :
           s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),   getaddress(attr) )   # only print address/null
+        elif not is_address_local(attr) :
+          s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), getaddress(attr) )   # only print address in target space
         else:
           _attrType=get_subtype(attrtype)
           contents = getRef(_attrType, getaddress(attr))
@@ -494,24 +500,40 @@ class LoadableMembers(object):
     '''
     # get self class.
     #log.debug("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
-    my_class=getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
-    my_self=my_class()
+    my_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
+    my_self = my_class()
     #keep ref
     if hasRef(my_class, ctypes.addressof(self) ):
       return getRef(my_class, ctypes.addressof(self) )
     # we are saving us in a partially resolved state, to keep from loops.
     keepRef(my_self, my_class, ctypes.addressof(self) )
+    log.debug('toPyObject before getFields %s'%(my_self))
     for field,typ in self.getFields():
-      attr=getattr(self,field)
-      member=self._attrToPyObject(attr,field,typ)
+      log.debug('attr = getattr(self,field) %s,%s'%(field, typ))
+
+      attr = getattr(self,field)
+      log.debug('self._attrToPyObject(attr,field,typ) %s'%(typ))
+
+      member = self._attrToPyObject(attr,field,typ)
+      log.debug('setattr(my_self, field, member) %s,%s'%(field, typ))
+
       setattr(my_self, field, member)
+      log.debug('loop %s'%(typ))
     # save the original type (me) and the field
+    log.debug('setattr(my_self, _ctype_, type(self))  start %s'%(typ))
     setattr(my_self, '_ctype_', type(self))
+    log.debug('setattr(my_self, _ctype_, type(self)) stop %s'%(typ))
     return my_self
     
   def _attrToPyObject(self,attr,field,attrtype):
     if isStructType(attrtype):
+      log.debug('isStructType start %s'%(attrtype))
       obj=attr.toPyObject()
+      log.debug('isStructType stop %s'%(attrtype))
+    elif isUnionType(attrtype):
+      log.debug('isUnionType start %s'%(attrtype))
+      obj=attr.toPyObject()
+      log.debug('isUnionType stop %s'%(attrtype))
     elif isBasicTypeArray(attr): ## array of basic types
       obj=array2bytes(attr)
     elif isArrayType(attrtype): ## array of something else than int/byte

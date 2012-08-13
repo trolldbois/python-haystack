@@ -607,8 +607,8 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
   
   instance,validated = finder.loadAt( memoryMap, address, structType)
   # TODO DEBUG WHY this coredumps
-  #out = _show_output(instance, validated, rtype)
-  #return out
+  out = _show_output(instance, validated, rtype)
+  return out
   pyObj = instance.toPyObject()
   if basicmodel.findCtypesInPyObj(pyObj):
     raise HaystackError(' transformation to python object failed. Ctypes were still present after transform.')
