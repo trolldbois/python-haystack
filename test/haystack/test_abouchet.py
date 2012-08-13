@@ -49,6 +49,10 @@ class TestApi(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(verbosity=0)
+  import sys
+  logging.basicConfig( stream=sys.stderr, level=logging.INFO )
+  logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
+  logging.getLogger('model').setLevel(level=logging.DEBUG)
+  unittest.main(verbosity=0)
 
 
