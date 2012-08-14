@@ -523,7 +523,7 @@ def _show_output(instance, validated, rtype ):
   if not validated :
     str_fn = lambda x: str(x)
   else:
-    str_fn = lambda x: x.toString
+    str_fn = lambda x: x.toString()
 
   print 'hi'  
 
@@ -563,7 +563,7 @@ def refresh(args):
   addr=int(args.addr,16)
   structType=getKlass(args.structName)
 
-  mappings = MemoryMapper(args).getMappings()
+  mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
   finder = StructFinder(mappings)
   
   memoryMap = model.is_valid_address_value(addr, finder.mappings)
@@ -577,7 +577,12 @@ def refresh(args):
     import code
     code.interact(local=locals())
 
-  return _show_output(instance, validated, rtype)
+  if args.human:  rtype = 'string' 
+  elif args.json:  rtype = 'json' 
+  elif args.pickled:  rtype = 'pickled' 
+
+  print _show_output(instance, validated, rtype).next()
+  return
 
 
 def show_dumpname(structname, dumpname, address, rtype='python'):
