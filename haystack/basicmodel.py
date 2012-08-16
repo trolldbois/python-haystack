@@ -16,7 +16,7 @@ import numbers
 import sys
 
 from haystack.utils import *
-from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, CString
+from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, CString, getRefByAddr
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -507,7 +507,24 @@ class LoadableMembers(object):
       return getRef(my_class, ctypes.addressof(self) )
     # we are saving us in a partially resolved state, to keep from loops.
     keepRef(my_self, my_class, ctypes.addressof(self) )
-    log.debug('toPyObject before getFields %s'%(my_self))
+    log.debug('toPyObject before getFields %s 0x%x %d bytes'%(my_self, ctypes.addressof(self), ctypes.sizeof(self) ))
+    
+    log.debug('read from %x'%(ctypes.addressof(self)))
+    data = (ctypes.c_ubyte*ctypes.sizeof(self)).from_address(ctypes.addressof(self))
+    if not is_address_local(ctypes.pointer(data)):
+      log.debug('addres is not local')
+    #refs = getRefByAddr(ctypes.addressof(self))
+    # TODO memoryleak here.
+    #if len(refs) == 0:
+    #  log.debug('No refs for self')
+    #else:
+    #  log.debug('%s'%( '\n'.join([ str(x) for x in refs]) ) )
+    log.debug('concat to str')
+    s = ''.join([ chr(data[i]) for i in range(0, ctypes.sizeof(self)) ])
+    #log.debug('read %s '%( s ))
+    
+    
+    
     for field,typ in self.getFields():
       log.debug('attr = getattr(self,field) %s,%s'%(field, typ))
 

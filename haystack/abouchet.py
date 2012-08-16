@@ -528,11 +528,17 @@ def _show_output(instance, validated, rtype ):
   print 'hi'  
 
   if rtype == 'string':
-    yield "(%s\n, %s)"% ( str_fn(instance), validated )
-    raise StopIteration    
+    return "(%s\n, %s)"% ( str_fn(instance), validated )
   #else {'json', 'pickled', 'python'} : # cast in pyObject
 
-  print 'my name is'  
+  print 'my name is' 
+  #print ctypes.addressof(instance.Segment)
+  #print instance.Segment.Entry
+  #print instance.Segment.Entry._0
+  #print instance.Segment.Entry._0._0
+  #print instance.Segment.Entry._0._0.Size
+  
+  #print 'probably'  
 
   pyObj = instance.toPyObject()
   # last check to clean the structure from any ctypes Structure
@@ -542,12 +548,13 @@ def _show_output(instance, validated, rtype ):
     raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
   # finally 
   if rtype == 'python': # pyobj
-    yield (pyObj, validated)
+    return (pyObj, validated)
   elif rtype == 'json': #jsoned
-    yield json.dumps( (pyObj, validated), default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+    return json.dumps( (pyObj, validated), default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
   elif rtype == 'pickled': #pickled
-    yield pickle.dumps((pyObj, validated))
-  raise StopIteration
+    return pickle.dumps((pyObj, validated))
+  
+  raise ValueError('rtype should have a valid value')
 
 
 def refresh(args):
@@ -611,8 +618,20 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     raise ValueError("the address is not accessible in the memoryMap")
   
   instance,validated = finder.loadAt( memoryMap, address, structType)
+  
+  print model.getRefByAddr(address)
+  print 'instance is at %x'%( ctypes.addressof(instance))
+  log.debug('read from %x'%(ctypes.addressof(instance)))
+  data = (ctypes.c_ubyte*ctypes.sizeof(instance)).from_address(ctypes.addressof(instance))
+  s = ''.join([ chr(data[i]) for i in range(0, ctypes.sizeof(instance)) ])
+  print s
+  #return
   # TODO DEBUG WHY this coredumps
+  # Response : having a generator return the results does not work.
+  # isntance is desallocated aat some point before the generator generates.
   out = _show_output(instance, validated, rtype)
+  log.debug('post output %x'% instance._orig_address_)
+  data = (ctypes.c_ubyte*ctypes.sizeof(instance)).from_address(ctypes.addressof(instance))
   return out
   pyObj = instance.toPyObject()
   if basicmodel.findCtypesInPyObj(pyObj):
