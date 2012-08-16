@@ -530,20 +530,8 @@ def _show_output(instance, validated, rtype ):
   if rtype == 'string':
     return "(%s\n, %s)"% ( str_fn(instance), validated )
   #else {'json', 'pickled', 'python'} : # cast in pyObject
-
-  print 'my name is' 
-  #print ctypes.addressof(instance.Segment)
-  #print instance.Segment.Entry
-  #print instance.Segment.Entry._0
-  #print instance.Segment.Entry._0._0
-  #print instance.Segment.Entry._0._0.Size
-  
-  #print 'probably'  
-
   pyObj = instance.toPyObject()
   # last check to clean the structure from any ctypes Structure
-  print 'BoOoOoya'  
-
   if basicmodel.findCtypesInPyObj(pyObj):
     raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
   # finally 
@@ -619,22 +607,6 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
   
   instance,validated = finder.loadAt( memoryMap, address, structType)
   
-  print model.getRefByAddr(address)
-  print 'instance is at %x'%( ctypes.addressof(instance))
-  log.debug('read from %x'%(ctypes.addressof(instance)))
-  data = (ctypes.c_ubyte*ctypes.sizeof(instance)).from_address(ctypes.addressof(instance))
-  s = ''.join([ chr(data[i]) for i in range(0, ctypes.sizeof(instance)) ])
-  print s
-  #return
-  # TODO DEBUG WHY this coredumps
-  # Response : having a generator return the results does not work.
-  # isntance is desallocated aat some point before the generator generates.
   out = _show_output(instance, validated, rtype)
-  log.debug('post output %x'% instance._orig_address_)
-  data = (ctypes.c_ubyte*ctypes.sizeof(instance)).from_address(ctypes.addressof(instance))
   return out
-  pyObj = instance.toPyObject()
-  if basicmodel.findCtypesInPyObj(pyObj):
-    raise HaystackError(' transformation to python object failed. Ctypes were still present after transform.')
-  return pyObj,validated
 
