@@ -57,8 +57,9 @@ class TestAllocator(unittest.TestCase):
     heap_sums = dict([(heap,list()) for heap in self._mappings.getHeaps()])
     #heap = self._mappings.getMmapForAddr(0x5c0000)
     for heap in self._mappings.getHeaps():
-      print 'walking %s'%(heap)
+      print 'walking heap num: %0.2d %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start)
       walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+      walker.HEAP().
       free_size = 0
       for x,s in walker._getFreeLists():
         m = self._mappings.getMmapForAddr(x)
@@ -93,8 +94,8 @@ class TestAllocator(unittest.TestCase):
     #self.skipTest('known_ok')
     
     for i, m in enumerate(self._mappings.getHeaps()):
-      #print '%d @%0.8x'%(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, m.start)
-      self.assertEquals(win7heapwalker.readHeap(self._mappings, m).ProcessHeapsListIndex, i+1, 'ProcessHeaps should have correct indexes')
+      #print '%d @%0.8x'%(win7heapwalker.readHeap(m).ProcessHeapsListIndex, m.start)
+      self.assertEquals(win7heapwalker.readHeap(m).ProcessHeapsListIndex, i+1, 'ProcessHeaps should have correct indexes')
     return
 
   def test_is_heap(self):

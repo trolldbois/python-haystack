@@ -127,8 +127,8 @@ def isHeap(mappings, mapping):
   load = heap.loadMembers(mappings, -1)
   return load
 
-def readHeap(mappings, mapping):
-  """ return a heap struct mapped on the mapping"""
+def readHeap(mapping):
+  """ return a ctypes heap struct mapped at address on the mapping"""
   addr = mapping.start
   heap = mapping.readStruct( addr, win7heap.HEAP )
   return heap
