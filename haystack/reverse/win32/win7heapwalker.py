@@ -78,13 +78,13 @@ class Win7HeapWalker(heapwalker.HeapWalker):
   def _getFreeLists(self):
     free_lists = [  ]
     last = 0
-    for free in self._heap.getFreeLists(self._mappings):
-      size = free-last
-      free_lists.append( (free, size) )
-      print (free, size)
-      last = free
+    free_lists = [ (freeblock_addr, size) for freeblock_addr, size in self._heap.getFreeLists(self._mappings)]
     free_lists.sort()
     return free_lists
+  
+  def _get_BlocksIndex(self):
+    pass 
+    
 
 
 def getUserAllocations(mappings, heap, filterInUse=False,p1=1,p2=0):

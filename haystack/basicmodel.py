@@ -52,17 +52,20 @@ class LoadableMembers(object):
     mro = cls.mro()[:-3] # cut Structure, _CData and object
     mro.reverse()
     me = mro.pop(-1)
+    #ret = list()
     for typ in mro: # firsts are first, cls is in here in [-1]
       if not hasattr(typ, '_fields_'):
         continue
       for name,vtyp in typ.getFields():
-        #yield ('%s_%s'%(typ.__name__, name), vtyp)
         yield (name, vtyp)
+        #ret.append((name, vtyp))
     # print mines.
     for f in me._fields_:
       yield (f[0],f[1])
+      #ret.append((f[0],f[1]))
     
     raise StopIteration
+    #return ret
 
   def isValid(self,mappings):
     ''' 

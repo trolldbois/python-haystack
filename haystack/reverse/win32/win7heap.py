@@ -270,7 +270,83 @@ def _HEAP_getFrontendChunks(self, mappings):
 _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
 
 
+def _HEAP_getFreeLists_by_blocksindex(self, mappings):
+  ''' Understanding_the_LFH.pdf page 17 '''
+  freeList = []
+  # 128 blocks
+  start = ctypes.addressof(self.BlocksIndex) 
+  bi_addr = utils.getaddress(self.BlocksIndex)
+  # enumerate BlocksIndex recursively on ExtendedLookup param
+  while bi_addr != 0:
+    log.debug('BLocksIndex is at %x'%(bi_addr))
+    m = mappings.getMmapForAddr(bi_addr)
+    bi = m.readStruct( bi_addr, _HEAP_LIST_LOOKUP)
+    '''
+      ('ExtendedLookup', POINTER(_HEAP_LIST_LOOKUP)),
+      ('ArraySize', __uint32_t),
+      ('ExtraItem', __uint32_t),
+      ('ItemCount', __uint32_t),
+      ('OutOfRangeItems', __uint32_t),
+      ('BaseIndex', __uint32_t),
+      ('ListHead', POINTER(_LIST_ENTRY)),
+      ('ListsInUseUlong', POINTER(__uint32_t)),
+      ('ListHints', POINTER(POINTER(_LIST_ENTRY))),
+    '''
+    log.debug('ArraySize is %d'%(bi.ArraySize))    
+    log.debug('BlocksIndex: %s'%(bi.toString()))    
+    hints_addr = utils.getaddress(bi.ListHints)
+    log.debug('ListHints is pointing to %x'%(hints_addr))
+    extlookup_addr = utils.getaddress(bi.ExtendedLookup)
+    log.debug('ExtendedLookup is pointing to %x'%(extlookup_addr))
+    if extlookup_addr == 0:
+      ''' all chunks of size greater than or equal to BlocksIndex->ArraySize - 1 will 
+      be stored in ascending order in FreeList[ArraySize-BaseIndex – 1] '''
+      log.debug('Free chunks >= %d stored at FreeList[ArraySize(%d)-BaseIndex(%d) – 1]'%(bi.ArraySize-1, bi.ArraySize, bi.BaseIndex))
+      #raise NotImplementedError()
+    log.debug('-'*80)
+    bi_addr = extlookup_addr
+  # 
+  raise NotImplementedError('NOT FINISHED')
+  raise StopIteration
+
+
+def _HEAP_CHUNK_decode(chunk_header, heap):
+  '''returns a decoded copy '''
+  if not heap.EncodeFlagMask:
+    return chunk_header
+  log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
+  #N11_HEAP_ENTRY3DOT_13DOT_2E()
+  chunk_len = ctypes.sizeof(N11_HEAP_ENTRY3DOT_13DOT_2E)
+  chunk_header_decoded = (N11_HEAP_ENTRY3DOT_13DOT_2E).from_buffer_copy(chunk_header)
+  working_array = (ctypes.c_ubyte*chunk_len).from_buffer(chunk_header_decoded)
+  encoding_array = (ctypes.c_ubyte*chunk_len).from_buffer_copy(heap.Encoding)
+  for i in range(chunk_len):
+    working_array[i] ^= encoding_array[i]
+  return chunk_header_decoded
+
+
 def _HEAP_getFreeLists(self, mappings):
+  ''' Understanding_the_LFH.pdf page 17 '''
+  for freeblock_addr in self.FreeLists._iterateList( mappings):
+    m = mappings.getMmapForAddr(freeblock_addr)
+    freeblock = m.readStruct( freeblock_addr, _LIST_ENTRY)
+    blink_value = utils.getaddress(freeblock.BLink)
+    if ( blink_value & 1): # points to _HEAP_BUCKET +1
+      log.debug('This freeblock BLink point to _HEAP_BUCKET at %x'%(blink_value))
+    # its then a HEAP_ENTRY.. 
+    #chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, _HEAP_ENTRY)
+    chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
+    if self.EncodeFlagMask:
+      log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
+      chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
+    log.debug('chunk_header: %s'%(chunk_header.toString()))
+    yield freeblock_addr, chunk_header.Size
+  raise StopIteration
+  
+
+_HEAP.getFreeLists = _HEAP_getFreeLists
+
+def _HEAP_getFreeListsWinXP(self, mappings):
   ''' Understanding_the_LFH.pdf page 17 '''
   freeList = []
   # 128 blocks
@@ -289,9 +365,8 @@ def _HEAP_getFreeLists(self, mappings):
   logging.getLogger('listmodel').setLevel(level=logging.INFO)
 
   raise StopIteration
-  
 
-_HEAP.getFreeLists = _HEAP_getFreeLists
+
 
 def scan_lfh_ss(subseg):
   ####

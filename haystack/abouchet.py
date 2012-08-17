@@ -525,8 +525,6 @@ def _show_output(instance, validated, rtype ):
   else:
     str_fn = lambda x: x.toString()
 
-  print 'hi'  
-
   if rtype == 'string':
     return "(%s\n, %s)"% ( str_fn(instance), validated )
   #else {'json', 'pickled', 'python'} : # cast in pyObject
@@ -576,7 +574,7 @@ def refresh(args):
   elif args.json:  rtype = 'json' 
   elif args.pickled:  rtype = 'pickled' 
 
-  print _show_output(instance, validated, rtype).next()
+  print _show_output(instance, validated, rtype)
   return
 
 
