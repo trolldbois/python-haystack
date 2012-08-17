@@ -45,6 +45,9 @@ class Win7HeapWalker(heapwalker.HeapWalker):
       # found targetted mappings...
       #print set([ self._mappings.getMmapForAddr(a[0]) for a in self._allocs if a[0] not in self._mapping])
     return self._allocs
+
+  def HEAP(self):
+    return self._heap
   
   def _getVirtualAllocations(self):
     allocated = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]

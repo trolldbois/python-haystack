@@ -312,14 +312,18 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
 
 def _HEAP_CHUNK_decode(chunk_header, heap):
   '''returns a decoded copy '''
-  if not heap.EncodeFlagMask:
-    return chunk_header
-  log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
   #N11_HEAP_ENTRY3DOT_13DOT_2E()
   chunk_len = ctypes.sizeof(N11_HEAP_ENTRY3DOT_13DOT_2E)
   chunk_header_decoded = (N11_HEAP_ENTRY3DOT_13DOT_2E).from_buffer_copy(chunk_header)
   working_array = (ctypes.c_ubyte*chunk_len).from_buffer(chunk_header_decoded)
   encoding_array = (ctypes.c_ubyte*chunk_len).from_buffer_copy(heap.Encoding)
+  # check if (heap.Encoding & working_array)
+  s = 0
+  for i in range(chunk_len):
+    s += working_array[i] & encoding_array[i]
+  #if s == 0: #DEBUG TODO
+  #  print 'NOT ENCODED !!!',hex(ctypes.addressof(heap))
+  #  return chunk_header
   for i in range(chunk_len):
     working_array[i] ^= encoding_array[i]
   return chunk_header_decoded
@@ -332,7 +336,7 @@ def _HEAP_getFreeLists(self, mappings):
     freeblock = m.readStruct( freeblock_addr, _LIST_ENTRY)
     blink_value = utils.getaddress(freeblock.BLink)
     if ( blink_value & 1): # points to _HEAP_BUCKET +1
-      log.debug('This freeblock BLink point to _HEAP_BUCKET at %x'%(blink_value))
+      log.warning('This freeblock BLink point to _HEAP_BUCKET at %x'%(blink_value))
     # its then a HEAP_ENTRY.. 
     #chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, _HEAP_ENTRY)
     chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
@@ -340,7 +344,7 @@ def _HEAP_getFreeLists(self, mappings):
       log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
       chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
     log.debug('chunk_header: %s'%(chunk_header.toString()))
-    yield freeblock_addr, chunk_header.Size
+    yield freeblock_addr, chunk_header.Size # size = header + freespace
   raise StopIteration
   
 

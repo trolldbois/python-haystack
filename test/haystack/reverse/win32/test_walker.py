@@ -53,111 +53,38 @@ class TestAllocator(unittest.TestCase):
     #self.skipTest('paused')
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     self.assertNotEqual( self._mappings, None )
-      
-    #heap = self._mappings.getHeap()
-    heap = self._mappings.getMmapForAddr(0x5c0000)
-    walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
-    kheaps = dict(self._known_heaps)
-    tgt = dict([(x,[]) for x in kheaps.keys()])
     
-    if False:
-      #
-      cheap = walker._heap
-      
-      print 'flags',cheap.Flags
+    heap_sums = dict([(heap,list()) for heap in self._mappings.getHeaps()])
+    #heap = self._mappings.getMmapForAddr(0x5c0000)
+    for heap in self._mappings.getHeaps():
+      print 'walking %s'%(heap)
+      walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+      free_size = 0
+      for x,s in walker._getFreeLists():
+        m = self._mappings.getMmapForAddr(x)
+        ## DEBUG ignore for now
+        if m != heap:
+          print 'ignored %x for %d blocks'%(x, s)
+          continue
+        free_size+= s
+        
+        #Found new mmap outside of heaps mmaps
+        if m not in heap_sums:
+          heap_sums[m] = []
+        heap_sums[m].append( (x,s) )
 
-      self.assertTrue(utils.is_valid_address( cheap.BlocksIndex, self._mappings), 'BlocksIndex')
-      bi_addr = utils.getaddress(cheap.BlocksIndex)
-      bi_class = model.get_subtype(cheap.BlocksIndex)
+      #self.assertEquals( free_size, walker.HEAP().TotalFreeSize)
 
-      print 'BlocksIndex is @%x / %d'%( bi_addr, bi_addr)  
-      print 'BlocksIndex is class %s'%( bi_class.__name__ )  
-      print 'mmap was ',self._mappings.getMmapForAddr( bi_addr)
+      # calcul cumulates
+    for heap, lists in heap_sums.items():
+      #print lists
+      blocks = map(lambda x: x[0], lists)
+      self.assertEquals( len(blocks), len(set(blocks)))
+      free_size = sum(map(lambda x: x[1], lists))
 
-      self.assertEquals( len(model.getRefByAddr( bi_addr )), 1)
-      _obj = model.getRef(bi_class, bi_addr)
-
-      print 'cached BlocksIndex is class %s '%( type(_obj).__name__ )
-      print 'cached BLocksIndex says is python id 0x%x'%( id(_obj))
-      c_addr = ctypes.addressof(_obj)
-      print 'cached BLocksIndex says is @ 0x%x'%( c_addr)
-      self.assertFalse( self._mappings.getMmapForAddr( c_addr), 'mmap cached should not be ok ')
-
-      print 'bi.ArraySize',_obj.ArraySize
-
-      #print 'BlocksIndex (cached) is %s '%(_obj)
-      print _obj.getFields(), '\n'.join([f for (f,k) in _obj.getFields()] )
-      print _obj.toString
-      print 'bi.ExtendedLookup %s '%( _obj.ExtendedLookup)  
-      print 'bi.ExtendedLookup %s '%( _obj.ExtendedLookup.__dict__ )  
-      #print 'bi.ExtendedLookup @%x '%( utils.getaddress(_obj.ExtendedLookup) )  
-      print '-'*15
-
-      pyobj = cheap.toPyObject()
-
-      print pyobj.BlocksIndex.ExtendedLookup
-      
-      #self.assertTrue(utils.is_valid_address( _obj.ExtendedLookup, self._mappings), 'cached Ci')
-      print '--$'*9
-      #utils.is_valid_address(_obj.ExtendedLookup, self._mappings)
-      print _obj.loadMembers(self._mappings, -1)
-      
-      self.fail('')
-      #
-      freeList = []
-      # 128 blocks
-      start = ctypes.addressof(cheap.FreeLists) # sentinel value
-      print 'sentinel is : %x'%(start)
-      #
-      f = getattr(cheap.FreeLists, 'FLink')
-      b = getattr(cheap.FreeLists, 'BLink')
-      print 'flink is : 0x%x @ %x'%( utils.getaddress(f), ctypes.addressof(f) ) 
-      print 'blink is : 0x%x @ %x'%( utils.getaddress(b), ctypes.addressof(b) ) 
-      self.assertTrue(utils.is_valid_address( f, self._mappings))
-      self.assertTrue(utils.is_valid_address( b, self._mappings))
-      #
-      for i in range(100):
-        print i, 
-      return
-      # 
-      logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-      for freeBlock in cheap.FreeLists._iterateList( self._mappings):
-        # try to get the size
-        sizeaddr = freeBlock - Config.WORDSIZE
-        memoryMap = utils.is_valid_address_value( sizeaddr, self._mappings)
-        if memoryMap == False:
-          raise ValueError('the link of this linked list has a bad value')
-        val = memoryMap.readWord( sizeaddr)
-        log.debug('\t - freeblock @%0.8x size:%d'%(freeBlock, val))
-        print freeBlock
-      #free_chain = [freeBlock for freeBlock in self.iterateListField( mappings, 'FreeLists')]
-      logging.getLogger('listmodel').setLevel(level=logging.INFO)
-      
-    # tu peux pas test
-    #self.skipTest('tu peux pas test')
-    #
-    for x,s in walker._getFreeLists():
-      #print hex(x),s
-      #if s < 0:
-      #  print '%x is not free'%(x)
-      #  continue
-      m = self._mappings.getMmapForAddr(x)
-      if m.start in kheaps:
-        #print 'ok',hex(m.start)
-        pass
-      else:
-        #print 'NOT ',hex(m.start)
-        tgt[m.start] = []
-      tgt[m.start].append(s)
-      pass
-    # calcul cumulates
-    for start,l in tgt.items():
-      if len(l) == 0:  continue
-      somme = sum(l)
-      maxlen = len(self._mappings.getMmapForAddr(start))
-      print hex(start), l
-      #print 'start:%x free:%d when len is:%d'%(start,somme, )
-      #self.assertGreater(maxlen, somme)
+      maxlen = len(heap)
+      #self.assertGreater(maxlen, free_size)
+      print 'heap:%x free:%d when mmap len is:%d'%(heap.start,free_size, maxlen )
     
     return
 
@@ -284,7 +211,7 @@ if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
   logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-  logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.INFO)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
