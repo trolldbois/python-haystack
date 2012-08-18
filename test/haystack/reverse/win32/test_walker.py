@@ -122,7 +122,7 @@ class TestAllocator(unittest.TestCase):
 
   def test_totalsize(self):
     ''' check if there is an adequate allocation rate as per getUserAllocations '''
-    self.skipTest('overallocation clearly not working')
+    #self.skipTest('overallocation clearly not working')
     
     self.assertEquals( self._mappings.get_target_system(), 'win32')
     
@@ -148,7 +148,7 @@ class TestAllocator(unittest.TestCase):
     # calculate allocated size
     for m,allocs in where.items():
       totalsize = sum([s for addr,s in allocs])
-      log.info('@%0.8x size: %d allocated: %d = %0.2f %%'%(m.start,len(m), totalsize, 100*totalsize/len(m)) )
+      log.debug('@%0.8x size: %0.5x allocated: %0.5x = %0.2f %%'%(m.start,len(m), totalsize, 100*totalsize/len(m)) )
       allocs.sort()
       lastend = 0
       lasts = 0
@@ -215,9 +215,9 @@ class TestAllocator(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
-  #logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
+  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.INFO)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

@@ -229,7 +229,7 @@ def _HEAP_getFrontendChunks(self, mappings):
       log.debug('finding lookaside %d at @%x'%(x, ptr))
       m = mappings.getMmapForAddr(ptr)
       st = m.readStruct( ptr, _HEAP_LOOKASIDE)
-      # TODO loadmembers on frontendHeapType car c'est un void *
+      # load members on self.FrontEndHeap car c'est un void *
       for free in st.iterateList('ListHead'): # single link list.
         ## TODO delete this free from the heap-segment entries chunks
         log.debug('free')
@@ -248,6 +248,7 @@ def _HEAP_getFrontendChunks(self, mappings):
     #
     #
     #
+    # load members on self.FrontEndHeap car c'est un void *
     if not st.loadMembers(mappings, 10):
       log.error('Error on loading frontend')
       raise model.NotValid('Frontend load at @%x is not valid'%(ptr))
