@@ -50,42 +50,47 @@ class TestAllocator(unittest.TestCase):
 
   def test_freelists(self):
     ''' List all free blocks '''
-    #self.skipTest('paused')
-    self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
+    #self.skipTest('known ok')
     self.assertNotEqual( self._mappings, None )
     
     heap_sums = dict([(heap,list()) for heap in self._mappings.getHeaps()])
-    #heap = self._mappings.getMmapForAddr(0x5c0000)
+    child_heaps = dict()
+    # append addr and size to each mmaps
     for heap in self._mappings.getHeaps():
-      print 'walking heap num: %0.2d %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start)
+      log.debug( '==== walking heap num: %0.2d @ %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start))
       walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
-      walker.HEAP().
-      free_size = 0
       for x,s in walker._getFreeLists():
         m = self._mappings.getMmapForAddr(x)
-        ## DEBUG ignore for now
-        if m != heap:
-          print 'ignored %x for %d blocks'%(x, s)
-          continue
-        free_size+= s
-        
         #Found new mmap outside of heaps mmaps
         if m not in heap_sums:
           heap_sums[m] = []
         heap_sums[m].append( (x,s) )
-
       #self.assertEquals( free_size, walker.HEAP().TotalFreeSize)
+      # save mmap hierarchy
+      child_heaps[heap] = walker.get_heap_children_mmaps()
 
-      # calcul cumulates
-    for heap, lists in heap_sums.items():
-      #print lists
-      blocks = map(lambda x: x[0], lists)
-      self.assertEquals( len(blocks), len(set(blocks)))
-      free_size = sum(map(lambda x: x[1], lists))
-
+    # calcul cumulates
+    for heap, children in child_heaps.items():
+      # for each heap, look at all children
+      freeblocks = map(lambda x: x[0], heap_sums[heap])
+      free_size = sum(map(lambda x: x[1], heap_sums[heap]))
+      cheap = win7heapwalker.readHeap(heap)
+      log.debug('-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x'%(heap.start, free_size, cheap.TotalFreeSize))
+      total = free_size
+      for child in children:
+        freeblocks = map(lambda x: x[0], heap_sums[child])
+        self.assertEquals( len(freeblocks), len(set(freeblocks)))
+        #print heap_sums[child]
+        free_size = sum(map(lambda x: x[1], heap_sums[child]))
+        log.debug('   \_ mmap 0x%0.8x\t free:%0.5x '%(child.start, free_size))
+        self.assertEquals( len(freeblocks), len(set(freeblocks)))
+        total += free_size
+      log.debug('   \= total: \t\t free:%0.5x '%(total) )
+      
       maxlen = len(heap)
-      #self.assertGreater(maxlen, free_size)
-      print 'heap:%x free:%d when mmap len is:%d'%(heap.start,free_size, maxlen )
+      cheap = win7heapwalker.readHeap(heap)      
+      self.assertEquals(cheap.TotalFreeSize, total)
+      log.debug( 'heap: 0x%0.8x free: %0.5x  \texpected: %0.5x  \tmmap len:%0.5x'%(heap.start, total, cheap.TotalFreeSize, maxlen ) )
     
     return
 
@@ -210,7 +215,7 @@ class TestAllocator(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
-  logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.INFO)

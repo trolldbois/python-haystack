@@ -331,7 +331,10 @@ def _HEAP_CHUNK_decode(chunk_header, heap):
 
 def _HEAP_getFreeLists(self, mappings):
   ''' Understanding_the_LFH.pdf page 17 '''
+  sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
   for freeblock_addr in self.FreeLists._iterateList( mappings):
+    if freeblock_addr == sentinel:
+      continue
     m = mappings.getMmapForAddr(freeblock_addr)
     freeblock = m.readStruct( freeblock_addr, _LIST_ENTRY)
     blink_value = utils.getaddress(freeblock.BLink)

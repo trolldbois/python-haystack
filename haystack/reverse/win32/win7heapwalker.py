@@ -46,8 +46,17 @@ class Win7HeapWalker(heapwalker.HeapWalker):
       #print set([ self._mappings.getMmapForAddr(a[0]) for a in self._allocs if a[0] not in self._mapping])
     return self._allocs
 
-  def HEAP(self):
-    return self._heap
+  def get_heap_children_mmaps(self):
+    ''' use free lists to establish the hierarchy between mmaps'''
+    child_heaps = set()
+    for x,s in self._getFreeLists():
+      m = self._mappings.getMmapForAddr(x)
+      if (m != self._mapping) and ( m not in child_heaps):
+        log.debug( 'mmap 0x%0.8x is extended heap space from 0x%0.8x'%(m.start, self._mapping.start) )
+        child_heaps.add(m)
+        pass
+    # TODO: add information from used user chunks
+    return child_heaps
   
   def _getVirtualAllocations(self):
     allocated = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
