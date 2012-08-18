@@ -330,7 +330,12 @@ def _HEAP_CHUNK_decode(chunk_header, heap):
 
 
 def _HEAP_getFreeLists(self, mappings):
-  ''' Understanding_the_LFH.pdf page 17 '''
+  ''' Understanding_the_LFH.pdf page 18 ++
+  We iterate on _HEAP.FreeLists to get ALL free blocks.
+  
+  @returns freeblock_addr : the address of the _HEAP_ENTRY (chunk header)
+           size           : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
+  '''
   sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
   for freeblock_addr in self.FreeLists._iterateList( mappings):
     if freeblock_addr == sentinel:
