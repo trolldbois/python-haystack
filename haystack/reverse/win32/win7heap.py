@@ -146,6 +146,7 @@ _HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
 
 def _HEAP_getSegmentList(self, mappings):
   ''' list all heap entries attached to one Heap structure. '''
+  res = list()
   for segment in self.iterateListField( mappings, 'SegmentList'):
     log.debug( 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry)) )
     skiplist = []
@@ -164,13 +165,14 @@ def _HEAP_getSegmentList(self, mappings):
     for entry_addr, entry_size in skiplist:
       log.debug('Entry: @%x Size:%x'%(ptr, entry_addr-ptr) )
       entry = _HEAP_ENTRY.from_address(ptr) # XX DEBUG readStruct ?
-      yield (ptr, entry_addr-ptr)
+      res.append( (ptr, entry_addr-ptr) )
       ptr = entry_addr + entry_size
-  raise StopIteration
+  return res
 
 _HEAP.getSegmentList = _HEAP_getSegmentList
 
 def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
+  res = list()
   off = 0
   encsize, flags, unused = self.getChunkInfo()
   chunks = 0
@@ -187,13 +189,13 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
       #chunks[entry_addr+off+ _HEAP_SEGMENT.Entry.size] = sz - (he.UnusedBytes ^ unused)
       chunks+=1
       log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
-      yield ( (entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) )
+      res.append( ((entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) ) )
     else:
       log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) ) # HEAP_ENTRY_BUSY = 0x1
       bad+=1
     off += sz
   log.debug('Found %d allocated chunks and %d with bad flags'%(chunks, bad) )
-  raise StopIteration
+  return res
 
 def _HEAP_getChunkInfo(self):
 	if self.EncodeFlagMask != 0:
@@ -206,10 +208,10 @@ _HEAP.getChunkInfo = _HEAP_getChunkInfo
 
 
 def _HEAP_getChunks(self, mappings):
+  res = list()
   for entry_addr,size in self.getSegmentList(mappings):
-    for chunk in self.scan_heap_segment( mappings, entry_addr, size):
-      yield chunk
-  raise StopIteration
+    res.extend([ chunk for chunk in self.scan_heap_segment( mappings, entry_addr, size)])
+  return res
 
 _HEAP.getChunks = _HEAP_getChunks
 
@@ -218,6 +220,7 @@ def _HEAP_getFrontendChunks(self, mappings):
   ''' windows xp ?
     the list of chunks from the frontend are deleted from the segment chunk list. 
   '''
+  res = list()
   log.debug('_HEAP_getFrontendChunks')
   if self.FrontEndHeapType == 1: # windows XP per default
     ptr = self.FrontEndHeap
@@ -230,7 +233,7 @@ def _HEAP_getFrontendChunks(self, mappings):
       for free in st.iterateList('ListHead'): # single link list.
         ## TODO delete this free from the heap-segment entries chunks
         log.debug('free')
-        yield( free ) #???
+        res.append( free ) #???
         pass
       ptr += ctypes.sizeof(_HEAP_LOOKASIDE)
   elif self.FrontEndHeapType == 2: # win7 per default
@@ -260,18 +263,20 @@ def _HEAP_getFrontendChunks(self, mappings):
         subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
         ## TODO current subsegment.SFreeListEntry is on error at some depth.
         ## bad pointer value on the second subsegment
-        for b in scan_lfh_ss(subsegment):
-          yield b
+        res.extend([ b for b in scan_lfh_ss(subsegment)] )
   else:
     #print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
-    raise StopIteration
-
+    #raise StopIteration
+    pass
+  return res
   
 _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
 
 
 def _HEAP_getFreeLists_by_blocksindex(self, mappings):
-  ''' Understanding_the_LFH.pdf page 17 '''
+  ''' Understanding_the_LFH.pdf page 21 
+  Not Implemented yet
+  '''
   freeList = []
   # 128 blocks
   start = ctypes.addressof(self.BlocksIndex) 
@@ -336,6 +341,7 @@ def _HEAP_getFreeLists(self, mappings):
   @returns freeblock_addr : the address of the _HEAP_ENTRY (chunk header)
            size           : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
   '''
+  res = list()
   sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
   for freeblock_addr in self.FreeLists._iterateList( mappings):
     if freeblock_addr == sentinel:
@@ -352,8 +358,8 @@ def _HEAP_getFreeLists(self, mappings):
       log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
       chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
     log.debug('chunk_header: %s'%(chunk_header.toString()))
-    yield freeblock_addr, chunk_header.Size # size = header + freespace
-  raise StopIteration
+    res.append( (freeblock_addr, chunk_header.Size ))# size = header + freespace
+  return res
   
 
 _HEAP.getFreeLists = _HEAP_getFreeLists
