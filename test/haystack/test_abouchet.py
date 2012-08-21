@@ -22,6 +22,10 @@ class TestApi(unittest.TestCase):
                     # from free stuf
                     ( 0x0061a000, 1200),
                     ]
+
+  def tearDown(self):
+    self.mappings = None
+
   #_HEAP.expectedValues = {
   #  'Signature':[0xeeffeeff],
   #  'FrontEndHeapType': [0,1,2]

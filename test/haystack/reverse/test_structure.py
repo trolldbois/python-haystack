@@ -37,6 +37,9 @@ class TestStructure(unittest.TestCase):
   def setUp(self):  
     self.context = reversers.getContext('test/src/test-ctypes3.dump')
 
+  def tearDown(self):
+    self.context = None
+
   def test_init(self):
     for s in self.context.listStructures():
       if len(s) == 12 : #Node + padding, 1 pointer on create

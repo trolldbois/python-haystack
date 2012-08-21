@@ -46,6 +46,7 @@ class TestAllocator(unittest.TestCase):
   def tearDown(self):
     from haystack import model
     model.reset()
+    self._mappings = None    
     return
 
   def test_freelists(self):

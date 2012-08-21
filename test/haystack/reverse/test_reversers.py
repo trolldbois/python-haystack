@@ -40,6 +40,9 @@ class TestStructureSizes(unittest.TestCase):
     #os.chdir()
     self.context = reversers.getContext('test/src/test-ctypes3.dump')
 
+  def tearDown(self):
+    self.context = None
+
   def test_sizes(self):
     structs = self.context.listStructures()
     sizes = list(set([ len(s) for s in structs]))

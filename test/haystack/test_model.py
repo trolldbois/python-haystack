@@ -27,6 +27,8 @@ class TestReferenceBook(unittest.TestCase):
   
   def tearDown(self):
     model.reset()
+    self.mappings = None
+    self.heap_obj = None
     pass
   
   def test_keepRef(self):
@@ -94,6 +96,7 @@ class TestReferenceBook(unittest.TestCase):
 
 
   def test_hasRef(self):
+
     model.keepRef(1, int, 0xcafecafe)
     model.keepRef(2, float, 0xcafecafe)
     model.keepRef(3, str, 0xcafecafe)

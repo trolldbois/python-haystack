@@ -32,6 +32,7 @@ class TestAllocator(unittest.TestCase):
   def tearDown(self):  
     from haystack import model
     model.reset()
+    self.mappings = None
     return
     
   def test_search(self):

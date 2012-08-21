@@ -33,6 +33,7 @@ class TestListStruct(unittest.TestCase):
   
   def tearDown(self):
     model.reset()
+    self.mappings = None
     pass
   
   def test_iter(self):
