@@ -121,8 +121,35 @@ class TestAllocator(unittest.TestCase):
         log.debug('0x%x is not heap'%(m.start))
     return  
 
+  def test_getChunks(self):
+    allocs=list()
+    heap = self._mappings.getMmapForAddr(0x00390000)
+    walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+    for chunk in walker._getChunks():
+      allocs.append( (chunk[0], chunk[1]) )
+
+    where = dict()
+
+    for addr,s in allocs:
+      m = self._mappings.getMmapForAddr(addr)
+      if addr+s > m.end:
+        log.debug('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
+      if m in where:
+        where[m].append( (addr,s) )
+      else:
+        where[m] = [ (addr,s) ]
+  
+
   def test_totalsize(self):
     ''' check if there is an adequate allocation rate as per getUserAllocations '''
+    
+    #
+    # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
+    # all memory management that is greater than 0x800 blocks is handled by the back-end; 
+    # along with any memory that cannot be serviced by the front-end.
+
+    #
+    
     #self.skipTest('overallocation clearly not working')
     
     self.assertEquals( self._mappings.get_target_system(), 'win32')
@@ -199,9 +226,7 @@ class TestAllocator(unittest.TestCase):
     
     #self.skipTest('useless')
     
-    ## TODO change for self._mappings.getHeaps()
-    for addr, size in self._known_heaps:
-      m = self._mappings.getMmapForAddr(addr)
+    for m in self._mappings.getHeaps():
       #
       total = 0
       for chunk_addr, chunk_size in win7heapwalker.getUserAllocations(self._mappings, m, False):
@@ -217,9 +242,9 @@ class TestAllocator(unittest.TestCase):
 if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
   logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-  #logging.getLogger('listmodel').setLevel(level=logging.INFO)
+  #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
   unittest.main(verbosity=2)

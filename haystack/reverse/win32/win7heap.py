@@ -80,7 +80,7 @@ _HEAP_SEGMENT._listHead_ = [  ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntr
 # Cannot just ignore it... need to load it.
 
 def _HEAP_SEGMENT_isValidAttr(self,attr,attrname,attrtype,mappings):
-  log.debug('_isValidAttr attrname : %s'%(attrname))
+  #log.debug('_isValidAttr attrname : %s'%(attrname))
   if attrname == 'LastValidEntry':
     return True # ignore
   else:
@@ -89,10 +89,9 @@ def _HEAP_SEGMENT_isValidAttr(self,attr,attrname,attrtype,mappings):
 _HEAP_SEGMENT._isValidAttr = _HEAP_SEGMENT_isValidAttr
 
 def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
-  log.debug('_loadMember attrname : %s'%(attrname))
+  #log.debug('_loadMember attrname : %s'%(attrname))
   if attrname == 'LastValidEntry':
     # isPointerType code.
-    log.debug('try pointer, ignore it if bad pointer.')
     _attrType = model.get_subtype(attrtype)
     attr_obj_address = utils.getaddress(attr)
     ####
@@ -145,29 +144,90 @@ _HEAP._listHead_ = [  ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
 
 
 def _HEAP_getSegmentList(self, mappings):
-  ''' list all heap entries attached to one Heap structure. '''
-  res = list()
+  ''' list all heap entries attached to one Heap structure. 
+  
+  Heap.SegmentList points to the _LIST_ENTRY of Heap.Segment. +0x10
+  Iteration on SegmentList should return Segment.
+  Offset is needed and provided through _listHead_.
+  FIXME: offset could/should be automated by declaring child _LIST_ENTRY fieldname (SegmentListEntry)
+    listmodel.py:164
+  
+  BUT iteration should stop on sentinel values.
+    Internal algoritm of iterateListField will not use the root LIST_Entry address as a valid object.
+    It will use it as a sentinel.
+    If there is another sentinel... bad luck....
+  
+  Heap.Segment.Entry is a valid Heap_entry, addr+size*8 should point to FirstValidEntry.
+  '''
+  allocated = list()
+  free = list()
+  #log.debug('%s'%(self))
   for segment in self.iterateListField( mappings, 'SegmentList'):
-    log.debug( 'FirstEntry:@%x LastValidEntry:@%x'%( utils.getaddress(segment.FirstEntry), utils.getaddress(segment.LastValidEntry)) )
-    skiplist = []
-    for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
-      skiplist.append( (ucr.Address, ucr.Size) )
-      log.debug("UCR address:@%x size:%x"%(ucr.Address, ucr.Size))
+    #for segment_addr in self.SegmentList._iterateList( mappings):
+    segment_addr = segment._orig_addr_
+    first_addr = utils.getaddress(segment.FirstEntry)
+    last_addr = utils.getaddress(segment.LastValidEntry)
 
-    ptr = utils.getaddress(segment.FirstEntry)
-    ptrend = utils.getaddress(segment.LastValidEntry) + _HEAP_SEGMENT.Entry.size
-    skiplist = [ (ucr.Address, ucr.Size) for ucr in 
-            segment.iterateListField(mappings, 'UCRSegmentList') 
-              if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
-    skiplist.append( (ptrend, 1) )
-    log.debug( 'skiplist = %s'%( ["@%x %x"%(a,s) for a,s in skiplist]) )
-    skiplist.sort()
-    for entry_addr, entry_size in skiplist:
-      log.debug('Entry: @%x Size:%x'%(ptr, entry_addr-ptr) )
-      entry = _HEAP_ENTRY.from_address(ptr) # XX DEBUG readStruct ?
-      res.append( (ptr, entry_addr-ptr) )
-      ptr = entry_addr + entry_size
-  return res
+    log.debug( 'Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x'%( segment_addr, first_addr, last_addr) )
+
+    skiplist = dict()
+    for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
+      ucr_addr = ucr._orig_addr_
+      seg_addr = utils.getaddress( ucr.SegmentEntry.FLink)
+      log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size))
+      #log.debug("%s"%(ucr.SegmentEntry)) # TODO - CHECK FOR CONSISTENCY ? more heapdebug than haystack debug
+      skiplist[ucr.Address] = ucr.Size
+
+    # # obviously not usable, first entry sits on heap header.
+    #chunk_header = segment.Entry
+    #if self.EncodeFlagMask: #heap.EncodeFlagMask
+    #  log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
+    #  chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
+    #chunk_addr = segment._orig_addr_ + utils.offsetof(_HEAP_SEGMENT, 'Entry')
+    #log.debug('Heap.Segment.Entry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+
+    from haystack.model import getRef# TODO CLEAN
+    chunk_addr = first_addr
+    while (chunk_addr < last_addr):
+      if chunk_addr in skiplist:
+        size = skiplist[chunk_addr]
+        log.debug('Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x'%(chunk_addr, size, chunk_addr+size))
+        chunk_addr += size
+        continue
+      chunk_header = getRef(_HEAP_ENTRY, chunk_addr)
+      if chunk_header is None: # force read it
+        chunk_header = _get_chunk(mappings, self, chunk_addr)
+      if self.EncodeFlagMask: #heap.EncodeFlagMask
+        chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
+      #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+      
+      if ((chunk_header.Flags & 1) == 1):
+        log.debug('Chunk 0x%0.8x is in use size: %0.5x'%(chunk_addr, chunk_header.Size))
+        allocated.append( (chunk_addr, chunk_header.Size) )
+      else:
+        log.debug('Chunk 0x%0.8x is FREE'%(chunk_addr))
+        free.append( (chunk_addr, chunk_header.Size) )        
+        pass
+      chunk_addr += chunk_header.Size*8
+      
+    continue
+    
+    # now, go through Segment.Entry
+    # FIXME, should be in HEAP_SEGMENT.
+    #ptr = utils.getaddress(segment.FirstEntry)
+    #ptrend = utils.getaddress(segment.LastValidEntry) + _HEAP_SEGMENT.Entry.size
+    #skiplist = [ (ucr.Address, ucr.Size) for ucr in 
+    #        segment.iterateListField(mappings, 'UCRSegmentList') 
+    #          if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
+    #skiplist.append( (ptrend, 1) )
+    #log.debug( 'skiplist = %s'%( ["(0x%x,%x)"%(a,s) for a,s in skiplist]) )
+    #skiplist.sort()
+    #for entry_addr, entry_size in skiplist:
+    #  log.debug('Entry: @%x Size:%x'%(ptr, entry_addr-ptr) )
+    #  entry = _HEAP_ENTRY.from_address(ptr-8) # XX DEBUG readStruct ?
+    #  res.append( (ptr, entry_addr-ptr) )
+    #  ptr = entry_addr + entry_size
+  return allocated
 
 _HEAP.getSegmentList = _HEAP_getSegmentList
 
@@ -188,7 +248,7 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
     if (he.Flags ^ flags) & 1 == 1: # allocated or not ?
       #chunks[entry_addr+off+ _HEAP_SEGMENT.Entry.size] = sz - (he.UnusedBytes ^ unused)
       chunks+=1
-      log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
+      #log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
       res.append( ((entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) ) )
     else:
       log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) ) # HEAP_ENTRY_BUSY = 0x1
@@ -196,6 +256,7 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
     off += sz
   log.debug('Found %d allocated chunks and %d with bad flags'%(chunks, bad) )
   return res
+
 
 def _HEAP_getChunkInfo(self):
 	if self.EncodeFlagMask != 0:
@@ -206,7 +267,14 @@ def _HEAP_getChunkInfo(self):
 _HEAP.scan_heap_segment = _HEAP_scan_heap_segment
 _HEAP.getChunkInfo = _HEAP_getChunkInfo
 
-
+'''//position 0x7 in the header denotes
+//whether the chunk was allocated via
+//the front-end or the back-end (non-encoded ;) )
+if(ChunkHeader->UnusedBytes & 0x80)
+  RtlpLowFragHeapFree
+else
+  BackEndHeapFree
+'''
 def _HEAP_getChunks(self, mappings):
   res = list()
   for entry_addr,size in self.getSegmentList(mappings):
@@ -335,6 +403,14 @@ def _HEAP_CHUNK_decode(chunk_header, heap):
   return chunk_header_decoded
 
 
+def _get_chunk(mappings, heap, entry_addr):
+  from haystack.model import keepRef
+  m = mappings.getMmapForAddr(entry_addr)
+  chunk_header = m.readStruct( entry_addr, _HEAP_ENTRY)
+  keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
+  chunk_header._orig_addr_ = entry_addr
+  return chunk_header
+
 def _HEAP_getFreeLists(self, mappings):
   ''' Understanding_the_LFH.pdf page 18 ++
   We iterate on _HEAP.FreeLists to get ALL free blocks.
@@ -344,6 +420,8 @@ def _HEAP_getFreeLists(self, mappings):
   '''
   res = list()
   sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
+  # FIXME - should be 
+  ## for freeblock in self.iterateListField( mappings, 'FreeLists'):
   for freeblock_addr in self.FreeLists._iterateList( mappings):
     if freeblock_addr == sentinel:
       continue

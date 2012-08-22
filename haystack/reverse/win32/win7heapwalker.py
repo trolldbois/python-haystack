@@ -18,7 +18,11 @@ log=logging.getLogger('win7heapwalker')
 
 
 class Win7HeapWalker(heapwalker.HeapWalker):
-  ''' '''
+  '''   
+  # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
+  # all memory management that is greater than 0x800 blocks is handled by the back-end; 
+  # along with any memory that cannot be serviced by the front-end.
+  '''
   def _initHeap(self):
     self._allocs = None
     self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
@@ -57,7 +61,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         pass
     # TODO: add information from used user chunks
     return child_heaps
-  
+
+
   def _getVirtualAllocations(self):
     allocated = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
     # DEBUG : delete replace by iterator

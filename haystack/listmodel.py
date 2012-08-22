@@ -22,6 +22,9 @@ import logging
 log = logging.getLogger('listmodel')
 
 class ListModel(object):
+  '''
+  
+  '''
   _listMember_=[] # members that are the 2xpointer of same type linl
   _listHead_=[] # head structure of a linkedlist
 
@@ -29,6 +32,9 @@ class ListModel(object):
     ''' 
     we need to load the pointed entry as a valid struct at the right offset, 
     and parse it.
+    
+    When does it stop following FLink/BLink ?
+      sentinel is headAddr only
     '''
     
     structType, offset = self._getListFieldInfo(fieldname)
@@ -61,6 +67,7 @@ class ListModel(object):
           raise ValueError('error while validating address 0x%x type:%s @end:0x%x'%(link, 
                   structType.__name__, link+ctypes.sizeof(structType)) )
         st = memoryMap.readStruct( link, structType) # point at the right offset
+        st._orig_addr_ = link
         model.keepRef(st, structType, link)
         log.debug("keepRef %s.%s @%x"%(structType, fieldname, link  ))
         # load the list entry structure members
@@ -112,7 +119,7 @@ class ListModel(object):
     return True
 
 
-  def iterateListField(self, mappings, fieldname):
+  def iterateListField(self, mappings, fieldname, sentinels=[]):
     ''' 
     start from the field  and iterate a list. 
     does not return self.'''
@@ -121,23 +128,26 @@ class ListModel(object):
 
     # @ of the field
     headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
+    log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
     head = getattr(self, fieldname)
 
     if not hasattr(head, '_iterateList'):
       raise ValueError('Not an iterable field. Probably not declared as a list.')
 
-    from haystack import model
-    done = [headAddr]
+    from haystack import model # need my cache
+    done = [s for s in sentinels]+[headAddr]
     for entry in head._iterateList(mappings):
-      # DO NOT think HEAD is a valid entry
+      # DO NOT think HEAD is a valid entry - FIXME
       if entry in done:
         continue
       # save it
       done.append(entry)
       # @ of the struct, entry is not null, head._iterateList garantizes it.
       link = entry + offset
+      log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
       # use cache if possible, avoid loops.
       st = model.getRef( structType, link)
+      #st._orig_addr_ = link
       if st: 
         yield st
       else:
@@ -148,13 +158,13 @@ class ListModel(object):
   def _getListFieldInfo(self, fieldname):
     ''' 
     if fieldname is in listmember, return offset of fieldname.
-    if fieldname id in listhead, return offset of target field.
+    if fieldname is in listhead, return offset of target field.
     '''
     if fieldname in self._listMember_:
       return type(self), utils.offsetof( type(self), fieldname)
     for fname,typ,typFieldname,offset in self._listHead_:
       if fieldname == fname:
-        return typ, offset
+        return typ, offset # FIXME: offset is also == utils.offsetof( typ, typFieldname)
     raise TypeError('This field %s is not a list.'%(fieldname))    
 
   #def getListFieldIterator(self):
