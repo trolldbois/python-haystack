@@ -25,6 +25,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
   '''
   def _initHeap(self):
     self._allocs = None
+    self._child_heaps = None
     self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
     if not self._heap.loadMembers(self._mappings, -1):
       raise TypeError('HEAP.loadMembers returned False')
@@ -38,7 +39,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     ''' returns all User allocations (addr,size) '''
     if self._allocs is None:
       vallocs = self._getVirtualAllocations()
-      chunks = self._getChunks()
+      chunks, free_chunks = self._getChunks()
       fth_chunks = self._getFrontendChunks()
       # DEBUG : delete replace by iterator on the 3 iterator
       lst = vallocs+chunks+fth_chunks
@@ -52,35 +53,37 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
   def get_heap_children_mmaps(self):
     ''' use free lists to establish the hierarchy between mmaps'''
-    child_heaps = set()
-    for x,s in self._getFreeLists():
-      m = self._mappings.getMmapForAddr(x)
-      if (m != self._mapping) and ( m not in child_heaps):
-        log.debug( 'mmap 0x%0.8x is extended heap space from 0x%0.8x'%(m.start, self._mapping.start) )
-        child_heaps.add(m)
-        pass
+    if self._child_heaps is None:
+      child_heaps = set()
+      for x,s in self._getFreeLists():
+        m = self._mappings.getMmapForAddr(x)
+        if (m != self._mapping) and ( m not in child_heaps):
+          log.debug( 'mmap 0x%0.8x is extended heap space from 0x%0.8x'%(m.start, self._mapping.start) )
+          child_heaps.add(m)
+          pass
+      self._child_heaps = child_heaps
     # TODO: add information from used user chunks
-    return child_heaps
+    return self._child_heaps
 
 
   def _getVirtualAllocations(self):
     allocated = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
     # DEBUG : delete replace by iterator
     log.debug( '\t+ %d vallocated blocks'%( len(allocated) ) )
-    for block in allocated: #### BAD should return (vaddr,size)
-      log.debug( '\t\t- vallocated commit %x reserve %x @%0.8x'%(block.CommitSize, block.ReserveSize, ctypes.addressof(block)))
+    #for block in allocated: #### BAD should return (vaddr,size)
+    #  log.debug( '\t\t- vallocated commit %x reserve %x @%0.8x'%(block.CommitSize, block.ReserveSize, ctypes.addressof(block)))
     #
     return allocated
   
   def _getChunks(self):
-    chunks = [ chunk for chunk in self._heap.getChunks(self._mappings)]
-    # DEBUG : delete replace by iterator
-    allocsize = sum( [c[1] for c in chunks ])
-    log.debug('\t+ %d chunks, for %d bytes'%( len(chunks), allocsize ) )
+    allocated, free = self._heap.getChunks(self._mappings)
+    allocsize = sum( [c[1] for c in allocated ])
+    freesize = sum( [c[1] for c in free ])
+    log.debug('\t+ Segment Chunks: alloc: %0.4d [%0.5d B] free: %0.4d [%0.5d B]'%( len(allocated), allocsize, len(free), freesize ) )
     #
-    for chunk in chunks:
-      log.debug( '\t\t- chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
-    return chunks
+    #for chunk in allocated:
+    #  log.debug( '\t\t- chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
+    return allocated, free
   
   def _getFrontendChunks(self):
     fth_chunks = [ chunk for chunk in self._heap.getFrontendChunks(self._mappings)]
@@ -88,15 +91,14 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     fth_allocsize = sum( [c[1] for c in fth_chunks ])
     log.debug('\t+ %d frontend chunks, for %d bytes'%( len(fth_chunks), fth_allocsize ) )
     #
-    for chunk in fth_chunks:
-      log.debug( '\t\t- fth_chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
+    #for chunk in fth_chunks:
+    #  log.debug( '\t\t- fth_chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
     return fth_chunks
 
   def _getFreeLists(self):
-    free_lists = [  ]
-    last = 0
     free_lists = [ (freeblock_addr, size) for freeblock_addr, size in self._heap.getFreeLists(self._mappings)]
-    free_lists.sort()
+    freesize = sum( [c[1] for c in free_lists ])
+    log.debug('\t+ freeLists: free: %0.4d [%0.5d B]'%( len(free_lists), freesize ) )
     return free_lists
   
   def _get_BlocksIndex(self):

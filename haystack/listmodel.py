@@ -128,7 +128,7 @@ class ListModel(object):
 
     # @ of the field
     headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
-    log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
+    #log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
     head = getattr(self, fieldname)
 
     if not hasattr(head, '_iterateList'):
@@ -144,7 +144,7 @@ class ListModel(object):
       done.append(entry)
       # @ of the struct, entry is not null, head._iterateList garantizes it.
       link = entry + offset
-      log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
+      #log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
       # use cache if possible, avoid loops.
       st = model.getRef( structType, link)
       #st._orig_addr_ = link

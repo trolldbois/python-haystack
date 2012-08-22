@@ -51,6 +51,10 @@ class TestAllocator(unittest.TestCase):
 
   def test_freelists(self):
     ''' List all free blocks '''
+
+    # TODO test 0x0061a000 for overflow
+    
+    
     #self.skipTest('known ok')
     self.assertNotEqual( self._mappings, None )
     
@@ -122,24 +126,32 @@ class TestAllocator(unittest.TestCase):
     return  
 
   def test_getChunks(self):
-    allocs=list()
-    heap = self._mappings.getMmapForAddr(0x00390000)
-    walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
-    for chunk in walker._getChunks():
-      allocs.append( (chunk[0], chunk[1]) )
+    #heap = self._mappings.getMmapForAddr(0x00390000)
+    #for heap in self._mappings.getHeaps():
+    for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
+      allocs=list()
+      walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+      allocated, free = walker._getChunks()
+      for chunk_addr, chunk_size in allocated:
+        #self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
+        allocs.append( (chunk_addr, chunk_size) ) # with header
 
-    where = dict()
+      for addr,s in allocs:
+        m = self._mappings.getMmapForAddr(addr)
+        if addr+s > m.end:
+          self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )  
+    return 
 
-    for addr,s in allocs:
+  def _chunks_in_mapping(self, lst, walker):
+    for addr,s in lst:
       m = self._mappings.getMmapForAddr(addr)
       if addr+s > m.end:
-        log.debug('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
-      if m in where:
-        where[m].append( (addr,s) )
-      else:
-        where[m] = [ (addr,s) ]
-  
-
+        self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
+      ##self.assertEquals(mapping, m)
+      ## actually valid, if m is a children of mapping
+      if m != walker._mapping:
+        self.assertIn(m, walker.get_heap_children_mmaps())
+    
   def test_totalsize(self):
     ''' check if there is an adequate allocation rate as per getUserAllocations '''
     
@@ -154,25 +166,63 @@ class TestAllocator(unittest.TestCase):
     
     self.assertEquals( self._mappings.get_target_system(), 'win32')
     
-    allocs=list()
-    for m in self._mappings.getHeaps():
-      gen = self._mappings.getUserAllocations(self._mappings, m)
-      allocs.extend( [(addr,s) for addr,s in gen])
+    full = list()
+    for heap in self._mappings.getHeaps():
+      walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+      my_chunks = list()
+
+      vallocs = walker._getVirtualAllocations()
+      self._chunks_in_mapping( vallocs, walker)
+      vallocsize = sum( [c[1] for c in vallocs ])
+
+      chunks, free_chunks = walker._getChunks()
+      self._chunks_in_mapping( chunks, walker)
+      # Free chunks CAN be OVERFLOWING
+      # self._chunks_in_mapping( free_chunks, walker)
+      allocsize = sum( [c[1] for c in chunks ])
+      freesize = sum( [c[1] for c in free_chunks ])
+
+      fth_chunks = walker._getFrontendChunks()
+      self._chunks_in_mapping( fth_chunks, walker)
+      fth_allocsize = sum( [c[1] for c in fth_chunks ])
+
+      free_lists = walker._getFreeLists()
+      # Free chunks CAN be OVERFLOWING
+      #self._chunks_in_mapping( free_lists, walker)
+      free_listssize = sum( [c[1] for c in free_lists ])
+
+      my_chunks.extend( vallocs )
+      my_chunks.extend( chunks )
+      my_chunks.extend( free_chunks )
+      my_chunks.extend( fth_chunks )
+      my_chunks.extend( free_lists )
+
+      myset = set(my_chunks)
+      self.assertEquals(len(myset), len(my_chunks), 'NON unique referenced chunks found.')
+      
+      full.extend(my_chunks)
     
-    self.assertEquals( len(allocs), len(set(allocs)) , 'duplicates allocs found')
+    self.assertEquals( len(full), len(set(full)) , 'duplicates allocs found')
     
-    addrs = [addr for addr,s in allocs]
+    addrs = [addr for addr,s in full]
     self.assertEquals( len(addrs), len(set(addrs)) , 'duplicates allocs found but different sizes')
 
     where = dict()
-    for addr,s in allocs:
+    for addr,s in full:
       m = self._mappings.getMmapForAddr(addr)
+      self.assertTrue( m, '0x%0.8x is not a valid address!'%(addr))
+      if m not in where:
+        where[m] = []
       if addr+s > m.end:
-        log.debug('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
-      if m in where:
-        where[m].append( (addr,s) )
-      else:
-        where[m] = [ (addr,s) ]
+        log.debug('OVERFLOW 0x%0.8x-0x%0.8x, 0x%0.8x size: %d end: 0x%0.8x'%(m.start,m.end, addr, s, addr+s) )
+        m2 = self._mappings.getMmapForAddr(addr+s)
+        self.assertTrue( m2, '0x%0.8x is not a valid address 0x%0.8x + 0x%0.8x!'%(addr+s, addr, s))
+        if m2 not in where:
+          where[m2] = []
+        where[m2].append( (m2.start, s-m.end-addr) ) # save second part
+        s = m.end-addr # save first part
+      where[m].append( (addr,s) )
+
     # calculate allocated size
     for m,allocs in where.items():
       totalsize = sum([s for addr,s in allocs])
@@ -242,8 +292,8 @@ class TestAllocator(unittest.TestCase):
 if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
   logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-  logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

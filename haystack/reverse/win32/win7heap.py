@@ -210,27 +210,12 @@ def _HEAP_getSegmentList(self, mappings):
         pass
       chunk_addr += chunk_header.Size*8
       
-    continue
     
-    # now, go through Segment.Entry
-    # FIXME, should be in HEAP_SEGMENT.
-    #ptr = utils.getaddress(segment.FirstEntry)
-    #ptrend = utils.getaddress(segment.LastValidEntry) + _HEAP_SEGMENT.Entry.size
-    #skiplist = [ (ucr.Address, ucr.Size) for ucr in 
-    #        segment.iterateListField(mappings, 'UCRSegmentList') 
-    #          if (ucr.Address > ptr) and ( ucr.Address + ucr.Size < ptrend) ]
-    #skiplist.append( (ptrend, 1) )
-    #log.debug( 'skiplist = %s'%( ["(0x%x,%x)"%(a,s) for a,s in skiplist]) )
-    #skiplist.sort()
-    #for entry_addr, entry_size in skiplist:
-    #  log.debug('Entry: @%x Size:%x'%(ptr, entry_addr-ptr) )
-    #  entry = _HEAP_ENTRY.from_address(ptr-8) # XX DEBUG readStruct ?
-    #  res.append( (ptr, entry_addr-ptr) )
-    #  ptr = entry_addr + entry_size
-  return allocated
+  return (allocated, free)
 
 _HEAP.getSegmentList = _HEAP_getSegmentList
 
+#@deprecated
 def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
   res = list()
   off = 0
@@ -258,14 +243,15 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
   return res
 
 
+#@deprecated
 def _HEAP_getChunkInfo(self):
 	if self.EncodeFlagMask != 0:
 		return (self.Encoding.Size, self.Encoding.Flags, self.Encoding.UnusedBytes)
 	else:
 	  return (0,0,0)
 
-_HEAP.scan_heap_segment = _HEAP_scan_heap_segment
-_HEAP.getChunkInfo = _HEAP_getChunkInfo
+#_HEAP.scan_heap_segment = _HEAP_scan_heap_segment
+#_HEAP.getChunkInfo = _HEAP_getChunkInfo
 
 '''//position 0x7 in the header denotes
 //whether the chunk was allocated via
@@ -276,10 +262,9 @@ else
   BackEndHeapFree
 '''
 def _HEAP_getChunks(self, mappings):
-  res = list()
-  for entry_addr,size in self.getSegmentList(mappings):
-    res.extend([ chunk for chunk in self.scan_heap_segment( mappings, entry_addr, size)])
-  return res
+  #for entry_addr,size in self.getSegmentList(mappings):
+  #  yield (entry_addr,size)
+  return self.getSegmentList(mappings)
 
 _HEAP.getChunks = _HEAP_getChunks
 
