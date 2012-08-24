@@ -174,9 +174,9 @@ def _HEAP_getSegmentList(self, mappings):
     for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
       ucr_addr = ucr._orig_addr_
       seg_addr = utils.getaddress( ucr.SegmentEntry.FLink)
-      log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size))
+      log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size*8))
       #log.debug("%s"%(ucr.SegmentEntry)) # TODO - CHECK FOR CONSISTENCY ? more heapdebug than haystack debug
-      skiplist[ucr.Address] = ucr.Size
+      skiplist[ucr.Address] = ucr.Size*8
 
     # # obviously not usable, first entry sits on heap header.
     #chunk_header = segment.Entry
@@ -204,11 +204,11 @@ def _HEAP_getSegmentList(self, mappings):
       #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
       
       if ((chunk_header.Flags & 1) == 1):
-        log.debug('Chunk 0x%0.8x is in use size: %0.5x'%(chunk_addr, chunk_header.Size))
-        allocated.append( (chunk_addr, chunk_header.Size) )
+        log.debug('Chunk 0x%0.8x is in use size: %0.5x'%(chunk_addr, chunk_header.Size*8))
+        allocated.append( (chunk_addr, chunk_header.Size*8) )
       else:
         log.debug('Chunk 0x%0.8x is FREE'%(chunk_addr))
-        free.append( (chunk_addr, chunk_header.Size) )        
+        free.append( (chunk_addr, chunk_header.Size*8) )        
         pass
       chunk_addr += chunk_header.Size*8
       

@@ -14,6 +14,8 @@ from haystack import model
 from haystack.reverse import heapwalker
 from haystack.reverse.win32 import win7heap
 
+import ctypes
+
 log=logging.getLogger('win7heapwalker')
 
 
@@ -43,16 +45,20 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     return
 
   def get_user_allocations(self):
-    ''' returns all User allocations (addr,size) '''
+    ''' returns all User allocations (addr,size) and only the user writeable part.
+    addr and size EXCLUDES the HHEAP_ENTRY header.
+    '''
     if self._allocs is None:
       vallocs, va_free = self._get_virtualallocations()
       chunks, free_chunks = self._get_chunks()
       fth_chunks, fth_free = self._get_frontend_chunks()
       # DEBUG : delete replace by iterator on the 3 iterator
       lst = vallocs+chunks+fth_chunks
-      myset = set(lst)
+      sublen = ctypes.sizeof( win7heap.HEAP_ENTRY)
+      myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
       if len(lst) != len(myset):
         log.warning('NON unique referenced chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
+      # need to cut sizeof(HEAP_ENTRY) from address and size
       self._allocs = numpy.asarray(sorted(myset))
       # found targetted mappings...
       #print set([ self._mappings.getMmapForAddr(a[0]) for a in self._allocs if a[0] not in self._mapping])
@@ -74,6 +80,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
 
   def _get_virtualallocations(self):
+    ''' returns addr,size of committed,free vallocs heap entries'''
     if (self._valloc_committed, self._valloc_free) == (None, None):
       self._valloc_committed = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
       # DEBUG : delete replace by iterator
@@ -84,6 +91,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     return self._valloc_committed, self._valloc_free
   
   def _get_chunks(self):
+    ''' returns addr,size of committed,free heap entries in blocksindex'''
     if (self._backend_committed, self._backend_free) == (None, None):
       self._backend_committed, self._backend_free = self._heap.getChunks(self._mappings)
       allocsize = sum( [c[1] for c in self._backend_committed ])
@@ -96,6 +104,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     return self._backend_committed, self._backend_free
   
   def _get_frontend_chunks(self):
+    ''' returns addr,size of committed,free heap entries in fth heap'''
     if (self._fth_committed, self._fth_free) == (None, None):
       self._fth_committed, self._fth_free = self._heap.getFrontendChunks(self._mappings)
       fth_commitsize = sum( [c[1] for c in self._fth_committed ])

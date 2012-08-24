@@ -272,6 +272,7 @@ class AnonymousStructInstance():
       os.mkdir(sdir)
     fname = makeFilename(self._context, self)
     try:
+      # FIXME : loops create pickle loops
       pickle.dump(self, file(fname,'w'))
     except KeyboardInterrupt, e:
       # clean it, its stale

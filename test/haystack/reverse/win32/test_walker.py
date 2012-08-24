@@ -146,6 +146,8 @@ class TestAllocator(unittest.TestCase):
       # commited frontend chunks should have a flag at 0x5
       # previous chunk is at - 8*Chunk.SegmentOffset
       for chunk_addr, chunk_size in committed:
+        self.assertGreater( chunk_size, 0x8, 'too small chunk_addr == 0x%0.8x'%(chunk_addr))
+
         m = self._mappings.getMmapForAddr(chunk_addr)
         if m != heap:
           self.assertIn(m, heap_children)
@@ -200,6 +202,7 @@ class TestAllocator(unittest.TestCase):
       allocated, free = walker._get_chunks()
       for chunk_addr, chunk_size in allocated:
         #self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
+        self.assertGreater( chunk_size, 0x8, 'too small chunk_addr == 0x%0.8x size: %d'%(chunk_addr, chunk_size))
         allocs.append( (chunk_addr, chunk_size) ) # with header
 
       for addr,s in allocs:
@@ -351,6 +354,7 @@ class TestAllocator(unittest.TestCase):
       total = 0
       for chunk_addr, chunk_size in win7heapwalker.get_user_allocations(self._mappings, m, False):
         self.assertTrue( chunk_addr in self._mappings)
+        self.assertGreater( chunk_size, 0, 'chunk_addr == 0x%0.8x'%(chunk_addr))
         total+=chunk_size
       
     return  
