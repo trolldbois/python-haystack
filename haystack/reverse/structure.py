@@ -723,7 +723,8 @@ class AnonymousStructInstance():
 
   @property # TODO add a cache property ?
   def bytes(self):
-    return self._heap.readBytes(self._vaddr, self._size) # TODO Shared bytes
+    m = self._mappings.getMmapForAddr(self._vaddr)
+    return m.readBytes(self._vaddr, self._size) # TODO Shared bytes
 
   def isResolved(self):
     return self._resolved
