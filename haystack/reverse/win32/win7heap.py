@@ -102,16 +102,16 @@ def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
     from haystack.model import getRef, keepRef, delRef # TODO CLEAN
     ref=getRef(_attrType,attr_obj_address)
     if ref:
-      log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
+      #log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
       #DO NOT CHANGE STUFF SOUPID attr.contents = ref
       return True
-    log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
+    #log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
     ##### Read the struct in memory and make a copy to play with.
     ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
     contents=memoryMap.readStruct(attr_obj_address, _attrType )
     # save that validated and loaded ref and original addr so we dont need to recopy it later
     keepRef( contents, _attrType, attr_obj_address)
-    log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))   ))
+    #log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))   ))
     # recursive validation checks on new struct
     if not bool(attr):
       log.warning('Member %s is null after copy: %s'%(attrname,attr))
@@ -182,9 +182,11 @@ def _HEAP_getSegmentList(self, mappings):
     #chunk_header = segment.Entry
     #if self.EncodeFlagMask: #heap.EncodeFlagMask
     #  log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
-    #  chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
+    #  chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
     #chunk_addr = segment._orig_addr_ + utils.offsetof(_HEAP_SEGMENT, 'Entry')
     #log.debug('Heap.Segment.Entry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+
+    print segment
 
     from haystack.model import getRef# TODO CLEAN
     chunk_addr = first_addr
@@ -198,7 +200,7 @@ def _HEAP_getSegmentList(self, mappings):
       if chunk_header is None: # force read it
         chunk_header = _get_chunk(mappings, self, chunk_addr)
       if self.EncodeFlagMask: #heap.EncodeFlagMask
-        chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
+        chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
       #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
       
       if ((chunk_header.Flags & 1) == 1):
@@ -272,8 +274,13 @@ _HEAP.getChunks = _HEAP_getChunks
 def _HEAP_getFrontendChunks(self, mappings):
   ''' windows xp ?
     the list of chunks from the frontend are deleted from the segment chunk list. 
+    
+    Functionnaly, (page 28) LFH_HEAP should be fetched by HEAP_BUCKET calcul
+    
   '''
   res = list()
+  all_free = list()
+  all_committed = list()
   log.debug('_HEAP_getFrontendChunks')
   if self.FrontEndHeapType == 1: # windows XP per default
     ptr = self.FrontEndHeap
@@ -294,37 +301,134 @@ def _HEAP_getFrontendChunks(self, mappings):
     log.debug('finding frontend at @%x'%(ptr))
     m = mappings.getMmapForAddr(ptr)
     st = m.readStruct( ptr, _LFH_HEAP)
-    #print st
-    # _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
-    # Probably, we should not try to load segments ...
-    #
-    #
+    # LFH is a big chunk allocated by the backend allocator, called subsegment
+    # but rechopped as small chunks of a heapbin.
+    # Active subsegment hold that big chunk.
     #
     #
     # load members on self.FrontEndHeap car c'est un void *
     if not st.loadMembers(mappings, 10):
       log.error('Error on loading frontend')
       raise model.NotValid('Frontend load at @%x is not valid'%(ptr))
+    
+    #log.debug(st.LocalData[0].toString())
     #
-    for sinfo in st.LocalData[0].SegmentInfo: #### ?????
-      for items_ptr in sinfo.CachedItems: # make getCachedItems()
+    for sinfo in st.LocalData[0].SegmentInfo: #### 128 _HEAP_LOCAL_SEGMENT_INFO
+      for items_ptr in sinfo.CachedItems: # 16 caches items max
         items_addr = utils.getaddress(items_ptr)
         if not bool(items_addr):
-          log.debug('NULL pointer items')
+          #log.debug('NULL pointer items')
           continue
-        log.debug('finding ITEMS at @%x'%(items_addr))
         m = mappings.getMmapForAddr(items_addr)
         subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
+        #log.debug(subsegment)
         ## TODO current subsegment.SFreeListEntry is on error at some depth.
         ## bad pointer value on the second subsegment
-        res.extend([ b for b in scan_lfh_ss(subsegment)] )
+        chunks = subsegment.get_userblocks()
+        free = subsegment.get_freeblocks()
+        committed = set(chunks) - set(free)
+        all_free.extend(free)
+        all_committed.extend( committed ) 
+        log.debug('subseg: 0x%0.8x, commit: %d chunks free: %d chunks'%(items_addr, len(committed), len(free) ))
   else:
     #print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
     #raise StopIteration
     pass
-  return res
+  return all_committed, all_free
   
 _HEAP.getFrontendChunks = _HEAP_getFrontendChunks
+
+
+def _HEAP_SUBSEGMENT_get_userblocks(self):
+  '''
+  AggregateExchg contains info on userblocks, number left, depth
+  
+  '''
+  userblocks_addr = utils.getaddress(self.UserBlocks)
+  if not bool(userblocks_addr):
+    log.debug('Userblocks is null')
+    return []
+  # its basically an array of self.BlockCount blocks of self.BlockSie*8 bytes.
+  log.debug('fetching %d blocks of %d bytes'%(self.BlockCount, self.BlockSize*8))
+  # UserBlocks points to _HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( _HEAP_USERDATA_HEADER ) = 0x10
+  # each chunk starts with a 8 byte header + n user-writeable data
+  # user writable chunk starts with 2 bytes for next offset
+  # basically, first committed block is first.
+  # ( page 38 ) 
+  userblocks = [ (userblocks_addr + 0x10 + self.BlockSize*8*i, self.BlockSize*8) for i in range(self.BlockCount)]
+  #
+  ## we need to substract non allocated blocks
+  # self.AggregateExchg.Depth counts how many blocks are remaining free
+  # if self.AggregateExchg.FreeEntryOffset == 0x2, there a are no commited blocks
+  return userblocks 
+
+
+def _HEAP_SUBSEGMENT_get_freeblocks(self):
+  '''
+  see AggregateExchg
+  and SFreeListEntry
+  '''
+  userblocks_addr = utils.getaddress(self.UserBlocks)
+  if not bool(userblocks_addr):
+    return []
+  if self.AggregateExchg.FreeEntryOffset == 0x2 :
+    log.debug(' * FirstFreeOffset==0x2 Depth==%d'%(self.AggregateExchg.Depth))
+  # self.AggregateExchg.Depth the size of UserBlock divided by the HeapBucket size
+  # self.AggregateExchg.FreeEntryOffset starts at 0x2 (blocks), which means 0x10 bytes after UserBlocks
+  # see Understanding LFH page 14
+  # nextoffset of user data is at current + offset*8 + len(HEAP_ENTRY)
+  freeblocks = [ (userblocks_addr + (self.AggregateExchg.FreeEntryOffset*8) + self.BlockSize*8*i, self.BlockSize*8) for i in range(self.AggregateExchg.Depth)]
+  return freeblocks
+  ptr = utils.getaddress(self.AggregateExchg.FreeEntryOffset)
+  for i in range(self.AggregateExchg.Depth):
+    free.append( userBlocks+ 8*ptr)
+    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
+  return blocks 
+  
+  
+  #free = []
+  #ptr = subseg.FreeEntryOffset
+  #subseg.depth.times { 
+  #  free << (up + 8*ptr)
+  #  ptr = @dbg.memory[up + 8*ptr + 8, 2].unpack('v')[0]
+  #}
+  #@foo ||= 0
+  #@foo += 1
+  #p @foo if @foo % 10 == 0#
+  #
+  #up += 0x10
+  #list -= free
+  #list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('_HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
+  #end
+
+_HEAP_SUBSEGMENT.get_userblocks = _HEAP_SUBSEGMENT_get_userblocks
+_HEAP_SUBSEGMENT.get_freeblocks = _HEAP_SUBSEGMENT_get_freeblocks
+
+#### HEAP_UCR_DESCRIPTOR
+#_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
+#_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),  ]
+
+
+#### _HEAP_LOCAL_SEGMENT_INFO
+# _HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
+# _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
+_HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
+  'LocalData': utils.IgnoreMember,
+}
+
+
+
+## TODO current subsegment.SFreeListEntry is on error at some depth.
+## bad pointer value on the second subsegment
+_HEAP_SUBSEGMENT.expectedValues = {
+  'SFreeListEntry': utils.IgnoreMember,
+}
+
+
+
+
+
+
 
 
 def _HEAP_getFreeLists_by_blocksindex(self, mappings):
@@ -369,7 +473,7 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
   raise StopIteration
 
 
-def _HEAP_CHUNK_decode(chunk_header, heap):
+def _HEAP_ENTRY_decode(chunk_header, heap):
   '''returns a decoded copy '''
   #N11_HEAP_ENTRY3DOT_13DOT_2E()
   chunk_len = ctypes.sizeof(N11_HEAP_ENTRY3DOT_13DOT_2E)
@@ -387,7 +491,7 @@ def _HEAP_CHUNK_decode(chunk_header, heap):
     working_array[i] ^= encoding_array[i]
   return chunk_header_decoded
 
-
+_HEAP_ENTRY.decode = _HEAP_ENTRY_decode
 def _get_chunk(mappings, heap, entry_addr):
   from haystack.model import keepRef
   m = mappings.getMmapForAddr(entry_addr)
@@ -420,8 +524,8 @@ def _HEAP_getFreeLists(self, mappings):
     chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
     if self.EncodeFlagMask:
       log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
-      chunk_header = _HEAP_CHUNK_decode(chunk_header, self)
-    log.debug('chunk_header: %s'%(chunk_header.toString()))
+      chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
+    #log.debug('chunk_header: %s'%(chunk_header.toString()))
     res.append( (freeblock_addr, chunk_header.Size ))# size = header + freespace
   return res
   
@@ -449,61 +553,6 @@ def _HEAP_getFreeListsWinXP(self, mappings):
   raise StopIteration
 
 
-
-def scan_lfh_ss(subseg):
-  ####
-  #### TODO
-  ####
-  userBlocks = utils.getaddress(subseg.UserBlocks)
-  if not bool(userBlocks):
-    return []
-  blocks = [ (userBlocks + 0x10 + subseg.BlockSize*8*i,subseg.BlockSize*8) for i in range(subseg.BlockCount)]
-  #
-  ## TODO me DELETE, i need size with each block
-  return blocks 
-  free = []
-  ptr = utils.getaddress(subseg.AggregateExchg.FreeEntryOffset)
-  for i in range(subseg.AggregateExchg.Depth):
-    free.append( userBlocks+ 8*ptr)
-    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
-  return blocks 
-  
-  
-  #free = []
-  #ptr = subseg.FreeEntryOffset
-  #subseg.depth.times { 
-  #  free << (up + 8*ptr)
-  #  ptr = @dbg.memory[up + 8*ptr + 8, 2].unpack('v')[0]
-  #}
-  #@foo ||= 0
-  #@foo += 1
-  #p @foo if @foo % 10 == 0#
-  #
-  #up += 0x10
-  #list -= free
-  #list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('_HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
-  #end
-
-
-#### HEAP_UCR_DESCRIPTOR
-#_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
-#_HEAP_UCR_DESCRIPTOR._listHead_ = [  ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),  ]
-
-
-#### _HEAP_LOCAL_SEGMENT_INFO
-# _HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
-# _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
-_HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
-  'LocalData': utils.IgnoreMember,
-}
-
-
-
-## TODO current subsegment.SFreeListEntry is on error at some depth.
-## bad pointer value on the second subsegment
-_HEAP_SUBSEGMENT.expectedValues = {
-  'SFreeListEntry': utils.IgnoreMember,
-}
 
 
 ########## _LIST_ENTRY

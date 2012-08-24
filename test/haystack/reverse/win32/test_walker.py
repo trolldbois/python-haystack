@@ -13,8 +13,8 @@ import sys
 
 from haystack.config import Config
 from haystack import utils, model
-from haystack.reverse.win32 import win7heapwalker
-from haystack.reverse.win32.win7heap import HEAP
+from haystack.reverse.win32 import win7heapwalker, win7heap
+from haystack.reverse.win32.win7heap import HEAP, HEAP_ENTRY
 from haystack import dump_loader
 
 __author__ = "Loic Jaquemet"
@@ -29,6 +29,7 @@ import ctypes
 log = logging.getLogger('testwalker')
 
 class TestAllocator(unittest.TestCase):
+  
   
   def setUp(self):  
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
@@ -64,7 +65,7 @@ class TestAllocator(unittest.TestCase):
     for heap in self._mappings.getHeaps():
       log.debug( '==== walking heap num: %0.2d @ %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start))
       walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
-      for x,s in walker._getFreeLists():
+      for x,s in walker._get_freelists():
         m = self._mappings.getMmapForAddr(x)
         #Found new mmap outside of heaps mmaps
         if m not in heap_sums:
@@ -115,7 +116,7 @@ class TestAllocator(unittest.TestCase):
     self.assertEquals( self._mappings.get_target_system(), 'win32')
         
     for m in self._mappings.getHeaps():
-      gen = self._mappings.getUserAllocations(self._mappings, m)
+      gen = self._mappings.get_user_allocations(self._mappings, m)
       try:
         for addr,s in gen:
           #print '(0x%x,0x%x)'%(addr,s) 
@@ -125,13 +126,67 @@ class TestAllocator(unittest.TestCase):
         log.debug('0x%x is not heap'%(m.start))
     return  
 
-  def test_getChunks(self):
+  def test_get_frontendheap(self):
     #heap = self._mappings.getMmapForAddr(0x00390000)
     #for heap in self._mappings.getHeaps():
     for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
       allocs=list()
       walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
-      allocated, free = walker._getChunks()
+      heap_children = walker.get_heap_children_mmaps()
+      committed, free = walker._get_frontend_chunks()
+      # page 37
+      # each UserBlock contain a 8 byte header ( first 4 encoded )
+      #                and then n-bytes of user data
+      #
+      # (in a free chunk)
+      # the user data's first two bytes hold the next free chunk offset
+      # UserBlocks + 8*NextOffset
+      #   Its basically a forward pointer, offset.
+      #
+      # commited frontend chunks should have a flag at 0x5
+      # previous chunk is at - 8*Chunk.SegmentOffset
+      for chunk_addr, chunk_size in committed:
+        m = self._mappings.getMmapForAddr(chunk_addr)
+        if m != heap:
+          self.assertIn(m, heap_children)
+
+        # should be aligned
+        self.assertEquals( chunk_addr & 7, 0 ) # page 40 
+        st = m.readStruct( chunk_addr, win7heap.HEAP_ENTRY)
+        # st.UnusedBytes == 0x5  ?
+        if st._0._1.UnusedBytes == 0x05:
+          prev_header_addr -= 8*st._0._1._0.SegmentOffset
+          log.debug('UnusedBytes == 0x5, SegmentOffset == %d'%(st._0._1._0.SegmentOffset))
+
+        self.assertTrue(st._0._1.UnusedBytes & 0x80,'UnusedBytes said this is a BACKEND chunk , Flags | 2')
+        #log.debug(st) 
+        
+        ### THIS is not working. FIXME
+        st = m.readStruct( chunk_addr, win7heap.N11_HEAP_ENTRY3DOT_13DOT_2E) #HEAP_ENTRY)
+        # decode chunk ? SHOULD check if encoded 
+        
+        #st = m.readStruct( chunk_addr, HEAP_ENTRY)
+        #st = st.decode(walker._heap) # returns sub Union struct
+
+        #log.debug(st)
+        #self.assertEquals(chunk_size, st.Size)
+
+        allocs.append( (chunk_addr, chunk_size) ) # with header
+
+      for addr,s in allocs:
+        m = self._mappings.getMmapForAddr(addr)
+        if addr+s > m.end:
+          self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )  
+    return 
+
+
+  def test_get_chunks(self):
+    #heap = self._mappings.getMmapForAddr(0x00390000)
+    #for heap in self._mappings.getHeaps():
+    for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
+      allocs=list()
+      walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
+      allocated, free = walker._get_chunks()
       for chunk_addr, chunk_size in allocated:
         #self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
         allocs.append( (chunk_addr, chunk_size) ) # with header
@@ -151,7 +206,11 @@ class TestAllocator(unittest.TestCase):
       ## actually valid, if m is a children of mapping
       if m != walker._mapping:
         self.assertIn(m, walker.get_heap_children_mmaps())
-    
+  
+  def assertMappingHierarchy(self, child, parent, comment=None):
+    self.assertIn(m, self._heapChildren[parent], comment)
+  
+  
   def test_totalsize(self):
     ''' check if there is an adequate allocation rate as per getUserAllocations '''
     
@@ -175,18 +234,18 @@ class TestAllocator(unittest.TestCase):
       self._chunks_in_mapping( vallocs, walker)
       vallocsize = sum( [c[1] for c in vallocs ])
 
-      chunks, free_chunks = walker._getChunks()
+      chunks, free_chunks = walker._get_chunks()
       self._chunks_in_mapping( chunks, walker)
       # Free chunks CAN be OVERFLOWING
       # self._chunks_in_mapping( free_chunks, walker)
       allocsize = sum( [c[1] for c in chunks ])
       freesize = sum( [c[1] for c in free_chunks ])
 
-      fth_chunks = walker._getFrontendChunks()
+      fth_chunks = walker._get_frontend_chunks()
       self._chunks_in_mapping( fth_chunks, walker)
       fth_allocsize = sum( [c[1] for c in fth_chunks ])
 
-      free_lists = walker._getFreeLists()
+      free_lists = walker._get_freelists()
       # Free chunks CAN be OVERFLOWING
       #self._chunks_in_mapping( free_lists, walker)
       free_listssize = sum( [c[1] for c in free_lists ])
@@ -271,7 +330,7 @@ class TestAllocator(unittest.TestCase):
   
     return  
 
-  def test_getUserAllocations(self):
+  def test_get_user_allocations(self):
     ''' For each known _HEAP, load all user Allocation and compare the number of allocated bytes. '''
     
     #self.skipTest('useless')
@@ -279,7 +338,7 @@ class TestAllocator(unittest.TestCase):
     for m in self._mappings.getHeaps():
       #
       total = 0
-      for chunk_addr, chunk_size in win7heapwalker.getUserAllocations(self._mappings, m, False):
+      for chunk_addr, chunk_size in win7heapwalker.get_user_allocations(self._mappings, m, False):
         self.assertTrue( chunk_addr in self._mappings)
         total+=chunk_size
       
@@ -293,7 +352,7 @@ if __name__ == '__main__':
   logging.basicConfig( stream=sys.stderr, level=logging.INFO )
   logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
   logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

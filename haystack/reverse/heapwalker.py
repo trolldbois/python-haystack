@@ -11,12 +11,12 @@ class HeapWalker(object):
     self._mappings = mappings
     self._mapping = mapping
     self._offset = offset
-    self._initHeap()
+    self._init_heap()
   
-  def _initHeap(self):
+  def _init_heap(self):
     raise NotImplementedError('Please implement all methods')
 
-  def getUserAllocations(self):
+  def get_user_allocations(self):
     ''' returns all User allocations (addr,size) '''
     raise NotImplementedError('Please implement all methods')
   
