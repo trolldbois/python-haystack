@@ -314,6 +314,7 @@ def _HEAP_getFrontendChunks(self, mappings):
     #log.debug(st.LocalData[0].toString())
     #
     for sinfo in st.LocalData[0].SegmentInfo: #### 128 _HEAP_LOCAL_SEGMENT_INFO
+      # TODO , what about ActiveSubsegment ?
       for items_ptr in sinfo.CachedItems: # 16 caches items max
         items_addr = utils.getaddress(items_ptr)
         if not bool(items_addr):
@@ -365,8 +366,7 @@ def _HEAP_SUBSEGMENT_get_userblocks(self):
 
 def _HEAP_SUBSEGMENT_get_freeblocks(self):
   '''
-  see AggregateExchg
-  and SFreeListEntry
+  Use AggregateExchg.Depth and NextFreeoffset to fetch the head, then traverse the links
   '''
   userblocks_addr = utils.getaddress(self.UserBlocks)
   if not bool(userblocks_addr):
@@ -379,11 +379,13 @@ def _HEAP_SUBSEGMENT_get_freeblocks(self):
   # nextoffset of user data is at current + offset*8 + len(HEAP_ENTRY)
   freeblocks = [ (userblocks_addr + (self.AggregateExchg.FreeEntryOffset*8) + self.BlockSize*8*i, self.BlockSize*8) for i in range(self.AggregateExchg.Depth)]
   return freeblocks
-  ptr = utils.getaddress(self.AggregateExchg.FreeEntryOffset)
-  for i in range(self.AggregateExchg.Depth):
-    free.append( userBlocks+ 8*ptr)
-    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
-  return blocks 
+  ###
+    
+  #ptr = utils.getaddress(self.AggregateExchg.FreeEntryOffset)
+  #for i in range(self.AggregateExchg.Depth):
+  #  free.append( userBlocks+ 8*ptr)
+  #  ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
+  #return blocks 
   
   
   #free = []

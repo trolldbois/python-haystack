@@ -116,7 +116,7 @@ class TestAllocator(unittest.TestCase):
     self.assertEquals( self._mappings.get_target_system(), 'win32')
         
     for m in self._mappings.getHeaps():
-      gen = self._mappings.get_user_allocations(self._mappings, m)
+      gen = self._mappings.getUserAllocations(self._mappings, m)
       try:
         for addr,s in gen:
           #print '(0x%x,0x%x)'%(addr,s) 
@@ -172,6 +172,17 @@ class TestAllocator(unittest.TestCase):
         #self.assertEquals(chunk_size, st.Size)
 
         allocs.append( (chunk_addr, chunk_size) ) # with header
+
+      ### FIXME - UNITTEST- you need to validate that NextOffset in userblock gives same answer
+      oracle = committed[0] # TODO
+      for chunk_addr, chunk_size in committed:
+        m = self._mappings.getMmapForAddr(chunk_addr)
+        if m != heap:
+          self.assertIn(m, heap_children)
+        # should be aligned
+        self.assertEquals( chunk_addr & 7, 0 ) # page 40 
+        st = m.readStruct( chunk_addr, win7heap.HEAP_ENTRY)
+        #NextOffset in userblock gives same answer
 
       for addr,s in allocs:
         m = self._mappings.getMmapForAddr(addr)
@@ -230,7 +241,7 @@ class TestAllocator(unittest.TestCase):
       walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)    
       my_chunks = list()
 
-      vallocs = walker._getVirtualAllocations()
+      vallocs, va_free = walker._get_virtualallocations()
       self._chunks_in_mapping( vallocs, walker)
       vallocsize = sum( [c[1] for c in vallocs ])
 
@@ -241,7 +252,7 @@ class TestAllocator(unittest.TestCase):
       allocsize = sum( [c[1] for c in chunks ])
       freesize = sum( [c[1] for c in free_chunks ])
 
-      fth_chunks = walker._get_frontend_chunks()
+      fth_chunks, fth_free = walker._get_frontend_chunks()
       self._chunks_in_mapping( fth_chunks, walker)
       fth_allocsize = sum( [c[1] for c in fth_chunks ])
 
@@ -342,8 +353,6 @@ class TestAllocator(unittest.TestCase):
         self.assertTrue( chunk_addr in self._mappings)
         total+=chunk_size
       
-      self.assertEquals( total, size )
-    
     return  
 
 

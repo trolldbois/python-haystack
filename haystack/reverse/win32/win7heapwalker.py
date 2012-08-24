@@ -19,9 +19,9 @@ log=logging.getLogger('win7heapwalker')
 
 class Win7HeapWalker(heapwalker.HeapWalker):
   '''   
-  # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
-  # all memory management that is greater than 0x800 blocks is handled by the back-end; 
-  # along with any memory that cannot be serviced by the front-end.
+  Backend allocation in BlocksIndex
+  FTH allocation in Heap.LocalData[n].SegmentInfo.CachedItems
+  Virtual allocation
   '''
   def _init_heap(self):
     self._allocs = None
@@ -45,9 +45,9 @@ class Win7HeapWalker(heapwalker.HeapWalker):
   def get_user_allocations(self):
     ''' returns all User allocations (addr,size) '''
     if self._allocs is None:
-      vallocs = self._get_virtualallocations()
+      vallocs, va_free = self._get_virtualallocations()
       chunks, free_chunks = self._get_chunks()
-      fth_chunks = self._get_frontend_chunks()
+      fth_chunks, fth_free = self._get_frontend_chunks()
       # DEBUG : delete replace by iterator on the 3 iterator
       lst = vallocs+chunks+fth_chunks
       myset = set(lst)
