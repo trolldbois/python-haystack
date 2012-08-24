@@ -29,6 +29,7 @@ class ReverserContext():
     self.dumpname = mappings.name
     self.heap = heap
     self.parsed = set()
+    self._function_names = dict()
     # refresh heap pointers list and allocators chunks
     self._init2()
     return
@@ -201,6 +202,7 @@ class ReverserContext():
     self.dumpname = d['dumpname']
     self.parsed = d['parsed']
     self._structures = None
+    self._function_names = dict()
     return
   
 
