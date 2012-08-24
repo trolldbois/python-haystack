@@ -258,7 +258,7 @@ class LocalMemoryMapping(MemoryMapping):
   def vtop(self, vaddr):
     ret = vaddr - self.start + self._address 
     if ret<self._address or ret>(self._address+len(self)):
-      raise ValueError('%x/%x is not a valid vaddr for me'%(vaddr,ret))
+      raise ValueError('0x%0.8x/0x%0.8x is not a valid vaddr for me'%(vaddr,ret))
     return ret
 
   def mmap(self):
