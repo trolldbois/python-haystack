@@ -476,7 +476,7 @@ class Field:
     elif self.isZeroes():
       comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
     elif self.isString():
-      comment = '#  %s %s %s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) ) 
+      comment = '#  %s %s %s:%s'%( self.comment, self.usercomment, self.encoding, self.getValue(Config.commentMaxSize) ) 
     else:
       #unknown
       comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 

@@ -41,7 +41,7 @@ def try_decode_string(bytesarray, longerThan=1):
   i = bytesarray.find('\x00')
   if i == -1:
     # find longuest readable
-    for i,c in enumerate(chars):
+    for i,c in enumerate(bytesarray):
           if c not in string.printable:
             break
     if i < longerThan:
@@ -55,28 +55,32 @@ def try_decode_string(bytesarray, longerThan=1):
   if len(ustrings) == 0 : # 
     return False
   else: # len(ustrings) > 5 : # probably an ascii string 
-    notPrintableBool = True
-    ustring = [[]]
+    valid_strings = []
     i=0
-    for ustring in ustrings :
-      #ustring = [(l,enc,s) for l,enc,s in ustrings if enc == 'ascii' ]
-      # test ascii repr
-      #if len(ustring) != 1:
-      #  asciis = ustrings # only printable chars even in utf
-      size = ustring[0]
-      codec = ustring[1]
-      chars = ustring[2]
+    for size, codec, chars in ustrings :
       log.debug('%s %s'%(codec, repr(chars)) )
-      # check not printable
-      notPrintable = []
+      # check not printable chars ( us ascii... )
+      skip = False
       for i,c in enumerate(chars):
+        if (i == (len(chars)-1)) and (chars[-1] =='\x00'): # last , NULL terminated
+          break
         if c not in string.printable:
-          notPrintable.append( (i,c) )
-      if (len(notPrintable)/float(len(chars)) ) > 0.5:
-        log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+          skip = True
+          if i < longerThan:
+            log.debug('Too short/Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+            break
+          #else: valid string
+          log.debug('shorten at %d - %s'%(i, chars[:i+1]))
+          valid_strings.append( (i+1, codec, chars[:i+1] ) )
+          break
+      if skip:
         continue
-      else:
-        return ustring
+      #else
+      log.debug('valid entry %s'%(chars))
+      valid_strings.append( (size, codec, chars) )
+    if len(valid_strings) > 0:
+      valid_strings.sort(reverse=True)
+      return valid_strings[0]
     return False
 
 
