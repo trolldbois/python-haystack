@@ -35,6 +35,7 @@ class TestReString(unittest.TestCase):
     self.test5 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
     self.test6 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
     self.test7 = '\x1e\x1c\x8c\xd8\xcc\x01\x00' # pure crap
+    self.test8 = 'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00'
 
   def setUp(self):  
     pass
@@ -70,6 +71,9 @@ class TestReString(unittest.TestCase):
     
     ret = re_string.try_decode_string(self.test7)
     self.assertFalse(ret )
+
+    size, codec, txt = re_string.try_decode_string(self.test8)
+    self.assertEquals(size, len(self.test8) )
     
     pass
 

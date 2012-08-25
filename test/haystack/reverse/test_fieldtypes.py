@@ -96,8 +96,8 @@ class TestField(unittest.TestCase):
   def test_big_block(self):
     ''' null terminated '''
     # in putty.7124.dump
-    vaddr = 0x63d4c8
-    size = 4088
+    vaddr = 0x63d4c8 #+ 1968
+    size = 4088 #128
     st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
     log.debug(st.toString())

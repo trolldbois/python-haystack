@@ -176,7 +176,8 @@ def testEncoding(bytesarray, encoding):
   try:
     ustr = bytesarray.decode(encoding)
   except UnicodeDecodeError:
-    log.debug('UnicodeDecodeError: %s did not decode that'%(encoding))
+    log.debug('UnicodeDecodeError: %s did not decode that len: %d'%(encoding, len(bytesarray)))
+    #print repr(bytesarray)
     return -1, None
   except Exception, e:
     log.error('Error using encoding %s'%(encoding))

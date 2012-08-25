@@ -147,7 +147,7 @@ class Field:
     ''' if there is no \x00 termination, its not a string
     that means that if we have a bad pointer in the middle of a string, 
     the first part will not be understood as a string'''
-    bytes = self.struct.bytes[self.offset:]
+    bytes = self.struct.bytes[self.offset:self.offset+self.size]
     ret = re_string.try_decode_string(bytes)
     if not ret:
       self.typesTested.append(FieldType.STRING)
@@ -350,7 +350,7 @@ class Field:
     return ret
         
   def decodeType(self):
-    log.debug('decodeType: offset: %d'%(self.offset))
+    log.debug('decodeType: offset: %d size: %d'%(self.offset, self.size))
     if self.decoded:
       log.debug('decodeType: Already decoded')
       return self.typename

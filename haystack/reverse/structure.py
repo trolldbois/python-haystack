@@ -320,9 +320,10 @@ class AnonymousStructInstance():
           ## at field+len(field), there is ( most of the time) a field to be decoded.
           ## no need to fix gaps for that
           fieldType = field.decodeType()
-          if fieldType is None: # we could not decode. mark it as unknown 
+          if fieldType is None: # we could not decode. mark it as unknown AND size to word align
             field.padding = False
             field.decoded = True
+            field.size = Config.WORDSIZE - (field.offset%Config.WORDSIZE)
             break
           # is there a gap ?
           nextsize = presize - len(field)
