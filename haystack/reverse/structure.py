@@ -332,10 +332,16 @@ class AnonymousStructInstance():
           # lets try next field after
           if field.offset == preoffset: # field in head
             nextOffset = field.offset+len(field)
-            field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head
+            if (nextOffset%Config.WORDSIZE) != 0:
+              field = self._addField( field.offset+len(field), FieldType.UNKNOWN, nextOffset%Config.WORDSIZE, True) # insert padding
+              nextOffset = nextOffset + (nextOffset%Config.WORDSIZE) # align next offset. there was padding before
+            if nextOffset < len(self):
+              field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head
           elif preoffset+presize == field.offset+len(field): # field in tail
+            # should be padded //zerroes
             field = self._addField( preoffset, FieldType.UNKNOWN, presize-len(field), True) # insert new field in head
           else : # field ( zeroes ) somewhere in the middle, lets let _fixGaps handle the head
+            # should be padded //zerroes
             nextOffset = field.offset+len(field)
             nextsize = presize - (nextOffset - preoffset)
             field = self._addField( nextOffset, FieldType.UNKNOWN, nextsize, True) # insert new field in head

@@ -358,9 +358,7 @@ class Field:
       raise TypeError('I wont coherce this Field if you think its another type')
     # try all possible things
     # in order, pointer, small integer (two nul bytes doesnt make a string ), zeroes, string
-    if self.checkPointer():
-      log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
-    elif self.checkZeroes():
+    if self.checkZeroes():
       # ok, inlined in checkZeroes
       pass
     elif self.checkInteger():
@@ -369,6 +367,8 @@ class Field:
       pass
     #elif self.checkIntegerArray():
     #  self.typename = FieldType.ARRAY
+    elif self.checkPointer():
+      log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
     else:
       # check other types
       self.decoded = False
@@ -472,7 +472,7 @@ class Field:
     #    %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
   
     if self.isPointer():
-      comment = '# @ %lx %s %s'%( self.value, self.comment, self.usercomment ) 
+      comment = '# @ %0.8x %s %s'%( self.value, self.comment, self.usercomment ) 
     elif self.isInteger():
       comment = '#  %s %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
     elif self.isZeroes():

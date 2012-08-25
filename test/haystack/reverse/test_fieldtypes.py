@@ -48,7 +48,7 @@ class TestField(unittest.TestCase):
     st.decodeFields()
     log.debug(st.toString())
     fields = st.getFields()
-    self.assertEquals( len(fields), 6)
+    self.assertEquals( len(fields), 5)
     self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
     self.assertTrue( fields[3].isString())
     #  print f
@@ -80,7 +80,7 @@ class TestField(unittest.TestCase):
     self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
     self.assertTrue( fields[3].isString())
 
-  def test_utf_16_le_null_terminated_2(self):
+  def test_utf_16_le_null_terminated_3(self):
     ''' null terminated '''
     # in putty.7124.dump
     vaddr = 0x657488
@@ -90,7 +90,7 @@ class TestField(unittest.TestCase):
     log.debug(st.toString())
     fields = st.getFields()
     self.assertEquals( len(fields), 2)
-    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRING)
     self.assertTrue( fields[0].isString())
 
   def test_big_block(self):
@@ -102,11 +102,11 @@ class TestField(unittest.TestCase):
     st.decodeFields()
     log.debug(st.toString())
     fields = st.getFields()
-    self.assertEquals( len(fields), 2)
-    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
-    self.assertTrue( fields[0].isString())
+    self.assertLess( len(fields), 879)
+    #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
+    #self.assertTrue( fields[35].isString())
 
-  def test_todo(self):
+  def test_uuid(self):
     ''' null terminated '''
     # in putty.7124.dump
     vaddr = 0x63aa68
@@ -115,9 +115,9 @@ class TestField(unittest.TestCase):
     st.decodeFields()
     log.debug(st.toString())
     fields = st.getFields()
-    self.assertEquals( len(fields), 2)
-    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
-    self.assertTrue( fields[0].isString())
+    self.assertEquals( len(fields), 3)
+    self.assertEquals( fields[2].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[2].isString())
 
     # TODO, check 0x63aa68 also
     # txt field should start at [2:] , but is crunched by fake pointer value

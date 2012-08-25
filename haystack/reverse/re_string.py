@@ -55,17 +55,19 @@ _py_encodings.remove('quopri_codec')
 _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
 
-def try_decode_string(bytesarray, longerThan=1):
+def try_decode_string(bytesarray, longerThan=3):
   ''' try to read string. Null terminated or not
   TODO , maybe check for \x00 in index 0 for utf16 and utf32.
   '''
+  if len(bytesarray) <= longerThan:
+    return False
   i = bytesarray.find('\x00')
   if i == -1:
     # find longuest readable
     for i,c in enumerate(bytesarray):
       if not is_printable(c):
         break
-    if i < longerThan:
+    if i <= longerThan:
       return False
     readable = bytesarray[:i+1]
     ustrings = testAllEncodings(bytesarray[:i+1])
@@ -88,10 +90,11 @@ def try_decode_string(bytesarray, longerThan=1):
           break
         if not is_printable(c):
           skip = True
-          if i < longerThan:
+          if i <= longerThan:
             break
           log.debug('Not a full string, %s/%d is non printable characters "%s..."'%( repr(c), i, chars[:25] ))
           #else: valid string, but shorter, non null terminated
+          ## FIXME this is BUGGY, utf-16 can also considers single bytes.
           sizemultiplier = len('\x20'.encode(codec))
           slen = sizemultiplier*i
           log.debug('shorten at %d - %s'%(slen, chars[:i]))
@@ -112,7 +115,7 @@ def try_decode_string(bytesarray, longerThan=1):
     return False
 
 
-def startsWithNulTerminatedString(bytesarray, longerThan=1):
+def startsWithNulTerminatedString(bytesarray, longerThan=3):
   ''' if there is no \x00 termination, its not a string
   that means that if we have a bad pointer in the middle of a string, 
   the first part will not be understood as a string'''
