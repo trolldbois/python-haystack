@@ -67,6 +67,12 @@ class LoadableMembers(object):
     raise StopIteration
     #return ret
 
+  def get_orig_addr(self, mappings):
+    ''' returns the vaddr of this instance.'''
+    haystack_addr = ctypes.addressof(self)
+    m = mappings._get_mmap_for_haystack_addr(haystack_addr)
+    return m.ptov(haystack_addr)
+
   def isValid(self,mappings):
     ''' 
     Checks if each members has coherent data 

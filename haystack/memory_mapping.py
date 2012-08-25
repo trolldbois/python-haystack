@@ -166,6 +166,11 @@ class MemoryMapping:
     if ret<0 or ret>len(self):
       raise ValueError('%x/%x is not a valid vaddr for me'%(vaddr,ret))
     return ret
+
+  def ptov(self, paddr):
+    pstart = self.vtop(self.start)
+    vaddr = paddr-pstart
+    return vaddr
   
   # ---- to implement if needed
   def readWord(self, address):
@@ -622,6 +627,14 @@ class Mappings:
         self._target_system = 'win32'
         break
     return self._target_system
+  
+  def _get_mmap_for_haystack_addr(self, haddr):
+    ''' FIXME should replace utils.is_local_addr ?'''
+    for m in self.mappings:
+      pstart, pstop = m.vtop(m.start), m.vtop(m.stop)
+      if pstart <= haddr < pstop:
+        return m
+    raise ValueError('addr is not a local addr')
     
   def __contains__(self, vaddr):
     for m in self.mappings:
