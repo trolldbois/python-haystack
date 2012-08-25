@@ -17,6 +17,8 @@ import string
 
 log = logging.getLogger('re_string')
 
+nonprintable=u'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f'
+
 _py_encodings = set(encodings.aliases.aliases.values())
 #  except IOError: # TODO delete bz2 and gzip
 #  except TypeError: # TODO delete hex_codec
@@ -42,8 +44,8 @@ def try_decode_string(bytesarray, longerThan=1):
   if i == -1:
     # find longuest readable
     for i,c in enumerate(bytesarray):
-          if c not in string.printable:
-            break
+      if c in nonprintable:
+        break
     if i < longerThan:
       return False
     readable = bytesarray[:i+1]
@@ -54,24 +56,25 @@ def try_decode_string(bytesarray, longerThan=1):
   ustrings = [ (l,enc,ustr) for l,enc,ustr in ustrings if l > longerThan]
   if len(ustrings) == 0 : # 
     return False
-  else: # len(ustrings) > 5 : # probably an ascii string 
+  else: # if len(ustrings) > 5 : # probably an ascii string 
     valid_strings = []
     i=0
     for size, codec, chars in ustrings :
       log.debug('%s %s'%(codec, repr(chars)) )
       # check not printable chars ( us ascii... )
       skip = False
+      first = None
       for i,c in enumerate(chars):
-        if (i == (len(chars)-1)) and (chars[-1] =='\x00'): # last , NULL terminated
+        if (c =='\x00'): # last , NULL terminated. Last because testEncodings should cut at '\x00'
           break
-        if c not in string.printable:
+        if c in nonprintable:
           skip = True
-          if i < longerThan:
-            log.debug('Too short/Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
-            break
-          #else: valid string
-          log.debug('shorten at %d - %s'%(i, chars[:i+1]))
-          valid_strings.append( (i+1, codec, chars[:i+1] ) )
+          log.debug('Not a full string, %s/%d is non printable characters "%s..."'%( repr(c), i, chars[:25] ))
+          #else: valid string, but shorter, non null terminated
+          sizemultiplier = len('\x20'.encode(codec))
+          slen = sizemultiplier*i
+          log.debug('shorten at %d - %s'%(slen, chars[:i+1]))
+          valid_strings.append( (slen, codec, chars[:i+1] ) )
           break
       if skip:
         continue
