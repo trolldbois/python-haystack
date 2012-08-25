@@ -94,6 +94,13 @@ class TestStructure(unittest.TestCase):
           self.assertIn( value, [None, False], name+' not resetted' )
 
 
+  def test_string_overlap(self):
+    context = reversers.getContext('test/src/test-ctypes6.dump')
+    for s in self.context.listStructures():
+      s.resolvePointers()
+    self.assertTrue(True) # test no error
+
+
 
 
 if __name__ == '__main__':

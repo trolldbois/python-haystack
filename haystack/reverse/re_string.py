@@ -32,8 +32,8 @@ _py_encodings.remove('rot_13')
 _py_encodings.remove('quopri_codec')
 
 # perf test, string.printable is limited to ascii anyway
-# utf-16 do not work, NULL is encoded on four bytes, be versions works
-_py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16_be','utf_32_be',])
+# ...
+_py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
 
 def startsWithNulTerminatedString(bytesarray, longerThan=1):
@@ -58,13 +58,14 @@ def startsWithNulTerminatedString(bytesarray, longerThan=1):
         #if len(ustring) != 1:
         #  asciis = ustrings # only printable chars even in utf
         size = ustring[0]
+        codec = ustring[1]
         chars = ustring[2]
         # check not printable
         notPrintable = []
         for i,c in enumerate(chars):
           if c not in string.printable:
             notPrintable.append( (i,c) )
-        if len(notPrintable)>0:
+        if (len(notPrintable)/float(len(chars)) ) > 0.5:
           #log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
           continue
         else:
@@ -84,15 +85,16 @@ def testAllEncodings(bytesarray):
 def testUTF8(bytesarray):
   return testEncoding(bytesarray, 'UTF-8')
 def testUTF16(bytesarray):
-  return testEncoding(bytesarray, 'UTF-16be')
+  return testEncoding(bytesarray, 'UTF-16le')
 def testUTF32(bytesarray):
-  return testEncoding(bytesarray, 'UTF-32be')
+  return testEncoding(bytesarray, 'UTF-32le')
 
 def testEncoding(bytesarray, encoding):
   ''' test for null bytes on even bytes
   this works only for western txt in utf-16
   '''
-  sizemultiplier = len('\x00'.encode(encoding))
+  sizemultiplier = len('\x20'.encode(encoding))
+  #print sizemultiplier, encoding
   try:
     ustr = bytesarray.decode(encoding)
   except UnicodeDecodeError:
@@ -105,7 +107,8 @@ def testEncoding(bytesarray, encoding):
     return -1, None
   else:
     # include NULL 
-    return (sizemultiplier*(i+1)), ustr[:i*sizemultiplier]
+    slen = sizemultiplier*(i+1)
+    return (slen, ustr[:i+1] )
     
 
   

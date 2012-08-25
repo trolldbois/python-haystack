@@ -85,7 +85,7 @@ class ReverserContext():
                       (len(self._structures) ,len(self._malloc_addresses)))
       if ( len(self._malloc_addresses) - len(self._structures) ) < 10 :
         log.warning('close numbers to check %s'%(set( self._malloc_addresses ) - set( self._structures ) ))
-      # TODO use GenericHeapAllocationReverser
+      # use GenericHeapAllocationReverser to get user blocks
       mallocRev = reversers.GenericHeapAllocationReverser()
       context = mallocRev.reverse(self)
       #mallocRev.check_inuse(self)

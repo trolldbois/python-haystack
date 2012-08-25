@@ -47,8 +47,13 @@ class TestField(unittest.TestCase):
     #me = Field(st, offset, typename, size, isPadding)
     
     st.decodeFields()
-    for f in  st.getFields():
-      print f
+    print st.toString()
+    fields = st.getFields()
+    
+    self.assertEquals( len(fields), 6)
+    
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRING)
+    #  print f
     
     pass
 

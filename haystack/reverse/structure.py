@@ -412,7 +412,9 @@ class AnonymousStructInstance():
   
 
   def _fixOverlaps(self):
-    ''' fix overlapping string fields '''
+    ''' fix overlapping string fields 
+    FIXME, definitively a bug here. struct_682638 in putty.7124.dump
+    '''
     self._dirty=True
     fields = sorted([ f for f in self._fields if f.padding != True ]) # clean paddings to check new fields
     for f1, f2 in self._getOverlapping():

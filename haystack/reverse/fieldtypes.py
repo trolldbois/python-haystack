@@ -154,8 +154,7 @@ class Field:
       return False
     else:
       self.size, self.encoding, self.value = ret 
-      self.value += '\x00' # null terminated
-      self.size += 1 # null terminated
+      self.typename = FieldType.STRING
       log.debug('STRING: Found a string "%s"/%d for encoding %s, field %s'%( repr(self.value), self.size, self.encoding, self))
       return True
 
