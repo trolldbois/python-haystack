@@ -24,11 +24,14 @@ __status__ = "Production"
 
 import ctypes 
 
+log = logging.getLogger('test_fieldtypes')
+
 class TestField(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
     self.context = None #reversers.getContext('test/src/test-ctypes3.dump')
+    self.putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
 
   def setUp(self):  
     pass
@@ -36,52 +39,85 @@ class TestField(unittest.TestCase):
   def tearDown(self):
     pass
 
-  def a_test_utf_16_le_null_terminated(self):
-    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
+  def test_utf_16_le_null_terminated(self):
 
     # struct_682638 in putty.7124.dump
     vaddr = 0x682638
     size = 184
-    st = structure.makeStructure(ctx, vaddr, size)    
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
-    #print st.toString()
+    log.debug(st.toString())
     fields = st.getFields()
     self.assertEquals( len(fields), 6)
     self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
     self.assertTrue( fields[3].isString())
     #  print f
     
-  def a_test_utf_16_le_non_null_terminated(self):
+  def test_utf_16_le_non_null_terminated(self):
     ''' non-null terminated '''
-    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
     # struct_691ed8 in putty.7124.dump
     vaddr = 0x691ed8
     size = 256
-    st = structure.makeStructure(ctx, vaddr, size)    
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
-    #print st.toString()
+    log.debug(st.toString())
     fields = st.getFields()
     self.assertEquals( len(fields), 2)
     self.assertEquals( fields[1].typename, fieldtypes.FieldType.STRING)
     self.assertTrue( fields[1].isString())
 
-    # TODO, check 0x63aa68 also
-    # txt field should start at [2:] , but is crunched by fake pointer value
-    pass
 
   def test_utf_16_le_null_terminated_2(self):
     ''' null terminated '''
-    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
     # struct_64f328 in putty.7124.dump
     vaddr = 0x64f328
     size = 72
-    st = structure.makeStructure(ctx, vaddr, size)    
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
-    print st.toString()
+    log.debug(st.toString())
     fields = st.getFields()
-    self.assertEquals( len(fields), 2)
+    self.assertEquals( len(fields), 5)
     self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
     self.assertTrue( fields[3].isString())
+
+  def test_utf_16_le_null_terminated_2(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x657488
+    size = 88
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[0].isString())
+
+  def test_big_block(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x63d4c8
+    size = 4088
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[0].isString())
+
+  def test_todo(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x63aa68
+    size = 120
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[0].isString())
 
     # TODO, check 0x63aa68 also
     # txt field should start at [2:] , but is crunched by fake pointer value
@@ -90,6 +126,7 @@ class TestField(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
+  logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)
   logging.getLogger("re_string").setLevel(level=logging.DEBUG)

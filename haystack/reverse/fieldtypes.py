@@ -350,7 +350,9 @@ class Field:
     return ret
         
   def decodeType(self):
+    log.debug('decodeType: offset: %d'%(self.offset))
     if self.decoded:
+      log.debug('decodeType: Already decoded')
       return self.typename
     if self.typename != FieldType.UNKNOWN:
       raise TypeError('I wont coherce this Field if you think its another type')
