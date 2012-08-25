@@ -36,25 +36,37 @@ class TestField(unittest.TestCase):
   def tearDown(self):
     pass
 
-  def test_init(self):
+  def test_utf_16_le_null_terminated(self):
+    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
+
     # struct_682638 in putty.7124.dump
     vaddr = 0x682638
     size = 184
-    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
-    st = structure.makeStructure(ctx, vaddr, size)
-    # try it
-    offset = 12
-    #me = Field(st, offset, typename, size, isPadding)
-    
+    st = structure.makeStructure(ctx, vaddr, size)    
     st.decodeFields()
-    print st.toString()
+    #print st.toString()
     fields = st.getFields()
-    
     self.assertEquals( len(fields), 6)
-    
-    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRING)
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[3].isString())
     #  print f
     
+  def test_utf_16_le_non_null_terminated(self):
+    ''' non-null terminated '''
+    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
+    # struct_691ed8 in putty.7124.dump
+    vaddr = 0x691ed8
+    size = 256
+    st = structure.makeStructure(ctx, vaddr, size)    
+    st.decodeFields()
+    #print st.toString()
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[1].typename, fieldtypes.FieldType.STRING)
+    self.assertTrue( fields[1].isString())
+
+    # TODO, check 0x63aa68 also
+    # txt field should start at [2:] , but is crunched by fake pointer value
     pass
 
 

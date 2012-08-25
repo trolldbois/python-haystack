@@ -292,7 +292,10 @@ class AnonymousStructInstance():
         try to decode their type
             if no  pass, do not populate
             if yes add a new field
-        compare the size of the gap and the size of the fiel
+        compare the size of the gap and the size of the field
+        
+        FIXME include rules for first field == sizeof struct-4
+        
     '''
     if self.isResolved():
       return

@@ -75,7 +75,7 @@ class FieldType(object):
 
 class FieldTypeStruct(FieldType):
   def __init__(self, name, fields):
-    FieldType.__init__(self, 0x3, 'struct', name, 'K', isPtr=False)
+    FieldType.__init__(self, 0x1, 'struct', name, 'K', isPtr=False)
     self.size = sum([len(f) for f in fields])
     self.elements = fields
     #TODO s2[0].elements[0].typename.elements[0] is no good
@@ -91,22 +91,23 @@ class FieldTypeStruct(FieldType):
   
 class FieldTypeArray(FieldType):
   def __init__(self, basicTypeName):
-    FieldType.__init__(self, 0x8, 'array_%s'%basicTypeName, None, 'a', isPtr=False)
+    FieldType.__init__(self, 0x60, 'array_%s'%basicTypeName, None, 'a', isPtr=False)
 
 
 FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte', ctypes.c_ubyte,   'u')
-FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p', ctypes.c_void_p, 'P', True)
+FieldType.STRUCT   = FieldType(0x1, 'struct',      'Structure', None,   'K')
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte', ctypes.c_ubyte,  'z')
-FieldType.STRUCT   = FieldType(0x3, 'struct',      'Structure', None,   'K')
 FieldType.STRING   = FieldType(0x4, 'text',      'ctypes.c_char', ctypes.c_char,   'T')
-FieldType.STRING_POINTER   = FieldType(0xb, 'text_ptr',      'ctypes.c_char_p', ctypes.c_char_p, 's', True)
-FieldType.INTEGER  = FieldType(0x5, 'int',       'ctypes.c_uint', ctypes.c_uint,   'I')
-FieldType.SMALLINT = FieldType(0x6, 'small_int', 'ctypes.c_uint', ctypes.c_uint,   'i')
-FieldType.SIGNED_SMALLINT = FieldType(0x7, 'signed_small_int', 'ctypes.c_int', ctypes.c_uint,   'i')
-FieldType.ARRAY    = FieldType(0x8, 'array',     'Array',  None,  'a')
-FieldType.BYTEARRAY    = FieldType(0x9, 'array',     'ctypes.c_ubyte', ctypes.c_ubyte,  'a')
+FieldType.STRINGNULL   = FieldType(0x6, 'text0',      'ctypes.c_char', ctypes.c_char,   'T')
+FieldType.STRING_POINTER   = FieldType(0x4+0xa, 'text_ptr',      'ctypes.c_char_p', ctypes.c_char_p, 's', True)
+FieldType.INTEGER  = FieldType(0x18, 'int',       'ctypes.c_uint', ctypes.c_uint,   'I')
+FieldType.SMALLINT = FieldType(0x8, 'small_int', 'ctypes.c_uint', ctypes.c_uint,   'i')
+FieldType.SIGNED_SMALLINT = FieldType(0x28, 'signed_small_int', 'ctypes.c_int', ctypes.c_uint,   'i')
+FieldType.ARRAY    = FieldType(0x40, 'array',     'Array',  None,  'a')
+FieldType.BYTEARRAY    = FieldType(0x50, 'array',     'ctypes.c_ubyte', ctypes.c_ubyte,  'a')
 #FieldType.ARRAY_CHAR_P = FieldType(0x9, 'array_char_p',     'ctypes.c_char_p',   'Sp')
-FieldType.PADDING  = FieldType(0xf, 'pad',       'ctypes.c_ubyte', ctypes.c_ubyte,  'X')
+FieldType.POINTER  = FieldType(0xa,  'ptr',       'ctypes.c_void_p', ctypes.c_void_p, 'P', True)
+FieldType.PADDING  = FieldType(0xff, 'pad',       'ctypes.c_ubyte', ctypes.c_ubyte,  'X')
 
   
 class Field:
@@ -132,7 +133,7 @@ class Field:
     return self.usercomment
     
   def isString(self): # null terminated
-    return self.typename == FieldType.STRING
+    return self.typename in [ FieldType.STRING, FieldType.STRINGNULL, FieldType.STRING_POINTER]
   def isPointer(self): # 
     return self.typename.isPtr
   def isZeroes(self): # 
@@ -147,14 +148,17 @@ class Field:
     that means that if we have a bad pointer in the middle of a string, 
     the first part will not be understood as a string'''
     bytes = self.struct.bytes[self.offset:]
-    ret = re_string.startsWithNulTerminatedString(bytes)
+    ret = re_string.try_decode_string(bytes)
     if not ret:
       self.typesTested.append(FieldType.STRING)
       #log.warning('STRING: This is not a string %s'%(self))
       return False
     else:
       self.size, self.encoding, self.value = ret 
+      # FieldType.STRING or NULLTERMINATEDSTRING
       self.typename = FieldType.STRING
+      if self.value[-1] == '\x00':
+        self.typename = FieldType.STRINGNULL
       log.debug('STRING: Found a string "%s"/%d for encoding %s, field %s'%( repr(self.value), self.size, self.encoding, self))
       return True
 
@@ -360,7 +364,7 @@ class Field:
     elif self.checkInteger():
       log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
     elif self.checkString(): # Found a new string...
-      self.typename = FieldType.STRING
+      pass
     #elif self.checkIntegerArray():
     #  self.typename = FieldType.ARRAY
     else:

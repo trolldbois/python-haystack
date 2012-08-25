@@ -36,6 +36,50 @@ _py_encodings.remove('quopri_codec')
 _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
 
+def try_decode_string(bytesarray, longerThan=1):
+  ''' try to read string. Null terminated or not'''
+  i = bytesarray.find('\x00')
+  if i == -1:
+    # find longuest readable
+    for i,c in enumerate(chars):
+          if c not in string.printable:
+            break
+    if i < longerThan:
+      return False
+    readable = bytesarray[:i+1]
+    ustrings = testAllEncodings(bytesarray[:i+1])
+  else:
+    ustrings = testAllEncodings(bytesarray)
+  #all cases
+  ustrings = [ (l,enc,ustr) for l,enc,ustr in ustrings if l > longerThan]
+  if len(ustrings) == 0 : # 
+    return False
+  else: # len(ustrings) > 5 : # probably an ascii string 
+    notPrintableBool = True
+    ustring = [[]]
+    i=0
+    for ustring in ustrings :
+      #ustring = [(l,enc,s) for l,enc,s in ustrings if enc == 'ascii' ]
+      # test ascii repr
+      #if len(ustring) != 1:
+      #  asciis = ustrings # only printable chars even in utf
+      size = ustring[0]
+      codec = ustring[1]
+      chars = ustring[2]
+      log.debug('%s %s'%(codec, repr(chars)) )
+      # check not printable
+      notPrintable = []
+      for i,c in enumerate(chars):
+        if c not in string.printable:
+          notPrintable.append( (i,c) )
+      if (len(notPrintable)/float(len(chars)) ) > 0.5:
+        log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+        continue
+      else:
+        return ustring
+    return False
+
+
 def startsWithNulTerminatedString(bytesarray, longerThan=1):
   ''' if there is no \x00 termination, its not a string
   that means that if we have a bad pointer in the middle of a string, 
@@ -60,13 +104,14 @@ def startsWithNulTerminatedString(bytesarray, longerThan=1):
         size = ustring[0]
         codec = ustring[1]
         chars = ustring[2]
+        log.debug('%s %s'%(codec,repr(chars)) )
         # check not printable
         notPrintable = []
         for i,c in enumerate(chars):
           if c not in string.printable:
             notPrintable.append( (i,c) )
         if (len(notPrintable)/float(len(chars)) ) > 0.5:
-          #log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
+          log.debug('Not a string, %d/%d non printable characters "%s..."'%( len(notPrintable), i, chars[:25] ))
           continue
         else:
           return ustring
@@ -80,6 +125,7 @@ def testAllEncodings(bytesarray):
     if length != -1:
       res.append( (length, codec, my_str) )
   res.sort(reverse=True)
+  log.debug('%d valid decodes: \n%s'%(len(res), str(res)))
   return res
   
 def testUTF8(bytesarray):
@@ -94,21 +140,27 @@ def testEncoding(bytesarray, encoding):
   this works only for western txt in utf-16
   '''
   sizemultiplier = len('\x20'.encode(encoding))
-  #print sizemultiplier, encoding
+  #log.debug('size: %d encoding: %s'%(sizemultiplier, encoding))
   try:
     ustr = bytesarray.decode(encoding)
   except UnicodeDecodeError:
+    log.debug('UnicodeDecodeError: %s did not decode that'%(encoding))
     return -1, None
   except Exception, e:
     log.error('Error using encoding %s'%(encoding))
     raise e
   i = ustr.find('\x00')
   if i == -1:
-    return -1, None
+    log.debug('%s was ok - but no NULL'%(encoding))
+    end = len(ustr)
+    #return -1, None
   else:
     # include NULL 
-    slen = sizemultiplier*(i+1)
-    return (slen, ustr[:i+1] )
+    end = i+1
+
+  slen = sizemultiplier*end
+  log.debug('%s is ok - with len %d'%(encoding, slen))
+  return (slen, ustr[:end] )
     
 
   
