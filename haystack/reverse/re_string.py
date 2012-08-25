@@ -54,6 +54,19 @@ _py_encodings.remove('quopri_codec')
 # ...
 _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
+def rfind_utf16(bytesarray, longerThan=3):
+  i = len(bytesarray)-1
+  while i>0 and ( bytesarray[i] == '\x00' and bytesarray[i-1] != '\x00'):
+    i-=2
+  if i == len(bytesarray)-1:
+    return -1
+  uni = bytesarray[i-1:]
+  size = len(uni)
+  if size > longerThan:
+    return i-1
+  return -1
+    
+
 
 def try_decode_string(bytesarray, longerThan=3):
   ''' try to read string. Null terminated or not

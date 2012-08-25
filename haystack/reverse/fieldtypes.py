@@ -363,10 +363,35 @@ class Field:
       pass
     elif self.checkInteger():
       log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
-    elif self.checkString(): # Found a new string...
+    elif self.checkString():
       pass
-    #elif self.checkIntegerArray():
-    #  self.typename = FieldType.ARRAY
+      '''else:
+      # FIXME you need to split('\x00\x00') before
+      # then try utf-32 (or not) 
+      # then try utf-16
+      # then split('\x00')
+      # then fall back to utf8
+      double = self.struct.bytes[self.offset:self.offset+self.size].split('\x00\x00')
+      tryString = False
+      if len(double) > 1: # and double[1] != '':
+        i = re_string.rfind_utf16(double[0])
+      else : # 
+        i = re_string.rfind_utf16(self.struct.bytes[self.offset:self.offset+self.size])
+      if i > -1 : # DEBUG - test me
+        tryString = True
+        self.size -= i 
+        self.offset += i
+      if tryString and self.checkString(): # Found a new string...
+          pass
+        #elif self.checkIntegerArray():
+        #  self.typename = FieldType.ARRAY
+      elif self.checkPointer():
+        log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
+      else:
+        # check other types
+        self.decoded = False
+        return None
+    '''
     elif self.checkPointer():
       log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
     else:

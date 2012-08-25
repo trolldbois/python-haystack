@@ -100,11 +100,14 @@ class TestField(unittest.TestCase):
     size = 4088 #128
     st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
-    log.debug(st.toString())
+    #log.debug(st.toString())
     fields = st.getFields()
     self.assertLess( len(fields), 879)
     #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
     #self.assertTrue( fields[35].isString())
+    fields = [f for f in st.getFields() if f.isString()]
+    for f in fields:
+      print f.toString(),
 
   def test_uuid(self):
     ''' null terminated '''
