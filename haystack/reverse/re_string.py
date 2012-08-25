@@ -31,8 +31,9 @@ _py_encodings.remove('tactis')
 _py_encodings.remove('rot_13')
 _py_encodings.remove('quopri_codec')
 
-# XXX : perf test, string.printable is limited to ascii anyway
-_py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16','utf_32',])
+# perf test, string.printable is limited to ascii anyway
+# utf-16 do not work, NULL is encoded on four bytes, be versions works
+_py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16_be','utf_32_be',])
 
 
 def startsWithNulTerminatedString(bytesarray, longerThan=1):
@@ -83,12 +84,15 @@ def testAllEncodings(bytesarray):
 def testUTF8(bytesarray):
   return testEncoding(bytesarray, 'UTF-8')
 def testUTF16(bytesarray):
-  return testEncoding(bytesarray, 'UTF-16')
+  return testEncoding(bytesarray, 'UTF-16be')
 def testUTF32(bytesarray):
-  return testEncoding(bytesarray, 'UTF-32')
+  return testEncoding(bytesarray, 'UTF-32be')
 
 def testEncoding(bytesarray, encoding):
-  ''' test for null bytes on even bytes'''
+  ''' test for null bytes on even bytes
+  this works only for western txt in utf-16
+  '''
+  sizemultiplier = len('\x00'.encode(encoding))
   try:
     ustr = bytesarray.decode(encoding)
   except UnicodeDecodeError:
@@ -100,7 +104,8 @@ def testEncoding(bytesarray, encoding):
   if i == -1:
     return -1, None
   else:
-    return i, ustr[:i]
+    # include NULL 
+    return (sizemultiplier*(i+1)), ustr[:i*sizemultiplier]
     
 
   
