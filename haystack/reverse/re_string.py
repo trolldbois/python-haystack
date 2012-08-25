@@ -17,7 +17,9 @@ import string
 
 log = logging.getLogger('re_string')
 
-nonprintable=u'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f'
+nonprintable=[c for c in '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f']
+
+utf_valid_cc=['\x00']
 
 _py_encodings = set(encodings.aliases.aliases.values())
 #  except IOError: # TODO delete bz2 and gzip
@@ -39,7 +41,9 @@ _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32l
 
 
 def try_decode_string(bytesarray, longerThan=1):
-  ''' try to read string. Null terminated or not'''
+  ''' try to read string. Null terminated or not
+  TODO , maybe check for \x00 in index 0 for utf16 and utf32.
+  '''
   i = bytesarray.find('\x00')
   if i == -1:
     # find longuest readable
@@ -69,16 +73,22 @@ def try_decode_string(bytesarray, longerThan=1):
           break
         if c in nonprintable:
           skip = True
+          if i < longerThan:
+            break
           log.debug('Not a full string, %s/%d is non printable characters "%s..."'%( repr(c), i, chars[:25] ))
           #else: valid string, but shorter, non null terminated
           sizemultiplier = len('\x20'.encode(codec))
           slen = sizemultiplier*i
-          log.debug('shorten at %d - %s'%(slen, chars[:i+1]))
-          valid_strings.append( (slen, codec, chars[:i+1] ) )
+          log.debug('shorten at %d - %s'%(slen, chars[:i]))
+          valid_strings.append( (slen, codec, chars[:i] ) )
           break
       if skip:
         continue
       #else
+      if codec in ['utf_16le','utf_32le']:
+        if chars[0] not in utf_valid_cc:
+          log.debug('That %s value, with cc %s - not valid '%(codec, repr(chars[0])))
+          continue
       log.debug('valid entry %s'%(chars))
       valid_strings.append( (size, codec, chars) )
     if len(valid_strings) > 0:

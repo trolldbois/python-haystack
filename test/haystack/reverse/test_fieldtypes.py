@@ -36,7 +36,7 @@ class TestField(unittest.TestCase):
   def tearDown(self):
     pass
 
-  def test_utf_16_le_null_terminated(self):
+  def a_test_utf_16_le_null_terminated(self):
     ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
 
     # struct_682638 in putty.7124.dump
@@ -51,7 +51,7 @@ class TestField(unittest.TestCase):
     self.assertTrue( fields[3].isString())
     #  print f
     
-  def test_utf_16_le_non_null_terminated(self):
+  def a_test_utf_16_le_non_null_terminated(self):
     ''' non-null terminated '''
     ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
     # struct_691ed8 in putty.7124.dump
@@ -69,12 +69,30 @@ class TestField(unittest.TestCase):
     # txt field should start at [2:] , but is crunched by fake pointer value
     pass
 
+  def test_utf_16_le_null_terminated_2(self):
+    ''' null terminated '''
+    ctx = reversers.getContext('test/dumps/putty/putty.7124.dump')
+    # struct_64f328 in putty.7124.dump
+    vaddr = 0x64f328
+    size = 72
+    st = structure.makeStructure(ctx, vaddr, size)    
+    st.decodeFields()
+    print st.toString()
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[3].isString())
+
+    # TODO, check 0x63aa68 also
+    # txt field should start at [2:] , but is crunched by fake pointer value
+    pass
 
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)
+  logging.getLogger("re_string").setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)

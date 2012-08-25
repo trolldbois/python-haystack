@@ -32,6 +32,9 @@ class TestReString(unittest.TestCase):
     self.test2 = '''\x4C\x00\x6F\x00\xEF\x00\x63\x00\x20\x00\x4A\x00\x61\x00\x71\x00\x75\x00\x65\x00\x6D\x00\x65\x00\x74\x00\x00\x00'''
     self.test3 = '''\\\x00R\x00E\x00G\x00I\x00S\x00T\x00R\x00Y\x00\\\x00U\x00S\x00E\x00R\x00\\\x00S\x00-\x001\x00-\x005\x00-\x002\x001\x00-\x002\x008\x008\x004\x000\x006\x003\x000\x007\x003\x00-\x003\x003\x002\x009\x001\x001\x007\x003\x002\x000\x00-\x003\x008\x001\x008\x000\x003\x009\x001\x009\x009\x00-\x001\x000\x000\x000\x00_\x00C\x00L\x00A\x00S\x00S\x00E\x00S\x00\\\x00W\x00o\x00w\x006\x004\x003\x002\x00N\x00o\x00d\x00e\x00\\\x00C\x00L\x00S\x00I\x00D\x00\\\x00{\x007\x006\x007\x006\x005\x00B\x001\x001\x00-\x003\x00F\x009\x005\x00-\x004\x00A\x00F\x002\x00-\x00A\x00C\x009\x00D\x00-\x00E\x00A\x005\x005\x00D\x008\x009\x009\x004\x00F\x001\x00A\x00}\x00'''
     self.test4 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\x07\x08\x09\x00'''
+    self.test5 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
+    self.test6 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
+    self.test7 = '\x1e\x1c\x8c\xd8\xcc\x01\x00' # pure crap
 
   def setUp(self):  
     pass
@@ -62,6 +65,12 @@ class TestReString(unittest.TestCase):
     size, codec, txt = re_string.try_decode_string(self.test4)
     self.assertEquals(size, len(self.test4)-4 )
     
+    size, codec, txt = re_string.try_decode_string(self.test5)
+    self.assertEquals(size, len(self.test5)-5 )
+    
+    ret = re_string.try_decode_string(self.test7)
+    self.assertFalse(ret )
+    
     pass
 
   def test_testEncoding(self):
@@ -77,6 +86,7 @@ class TestReString(unittest.TestCase):
 
     size, encoded = re_string.testEncoding(self.test4, 'utf-16le')
     self.assertEquals(size, -1 )
+
     size, encoded = re_string.testEncoding(self.test4, 'utf-8')
     self.assertEquals(size, len(self.test4) )
 
