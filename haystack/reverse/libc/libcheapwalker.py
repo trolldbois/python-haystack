@@ -22,16 +22,16 @@ class LibcHeapWalker(heapwalker.HeapWalker):
   def _initHeap(self):
     log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
 
-  def getUserAllocations(self):
+  def get_user_allocations(self):
     ''' returns all User allocations (addr,size) '''
     for x in ctypes_malloc.getUserAllocations(self._mappings, self._mapping):
       yield x
 
 
-def getUserAllocations(mappings, heap, filterInUse=False):
+def get_user_allocations(mappings, heap, filterInUse=False):
   ''' list user allocations '''
   walker = LibcHeapWalker(mappings, heap, 0)
-  for chunk_addr, chunk_size in walker.getUserAllocations():
+  for chunk_addr, chunk_size in walker.get_user_allocations():
     yield (chunk_addr, chunk_size)
   raise StopIteration
 

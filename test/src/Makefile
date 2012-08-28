@@ -28,8 +28,8 @@ all: py binaries dumps
 
 binaries: $(OBJS)
 
-test-ctypes6: test-ctypes6.cpp
-	$(CC) $(CFLAGS) `pkg-config --cflags QtGui` $<  $(LDFLAGS)  -o $@
+#test-ctypes6: test-ctypes6.cpp
+#	$(CC) $(CFLAGS) `pkg-config --cflags QtGui` $<  $(LDFLAGS)  -o $@
 
 
 %: %.c
