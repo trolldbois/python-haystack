@@ -227,7 +227,7 @@ class AnonymousStructInstance():
         return None
     elif not field.check():
       return None
-    if field.size == -1:
+    if field.size < 0:
       raise ValueError('error here %s %s'%(field, field.typename))
     # field has been typed
     self._fields.append(field)
@@ -314,6 +314,7 @@ class AnonymousStructInstance():
           continue
         #
         while True: # if same size, we are finished
+          #print field.offset, field.size
           presize = len(field)
           preoffset = field.offset
           #TODO check
@@ -323,7 +324,9 @@ class AnonymousStructInstance():
           if fieldType is None: # we could not decode. mark it as unknown AND size to word align
             field.padding = False
             field.decoded = True
-            field.size = Config.WORDSIZE - (field.offset%Config.WORDSIZE)
+            field.size = Config.WORDSIZE
+            if field.offset%Config.WORDSIZE:
+              field.size = Config.WORDSIZE - (field.offset%Config.WORDSIZE)
             break
           # is there a size difference ?
           nextsize = presize - len(field)
@@ -332,7 +335,7 @@ class AnonymousStructInstance():
           # lets try next field after
           if field.offset == preoffset: # field in head
             nextOffset = field.offset+len(field)
-            if (nextOffset%Config.WORDSIZE) != 0: # next is non aligned - add padding field
+            if (nextOffset%Config.WORDSIZE) != 0 and nextsize > Config.WORDSIZE: # next is non aligned - add padding field
               field = self._addField( field.offset+len(field), FieldType.UNKNOWN, nextOffset%Config.WORDSIZE, True) 
               nextOffset = nextOffset + (nextOffset%Config.WORDSIZE) # align next offset. 
               nextsize -= nextOffset%Config.WORDSIZE
