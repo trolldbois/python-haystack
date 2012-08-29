@@ -186,7 +186,7 @@ def _HEAP_getSegmentList(self, mappings):
     #chunk_addr = segment._orig_addr_ + utils.offsetof(_HEAP_SEGMENT, 'Entry')
     #log.debug('Heap.Segment.Entry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
 
-    print segment
+    #print segment
 
     from haystack.model import getRef# TODO CLEAN
     chunk_addr = first_addr
