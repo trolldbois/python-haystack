@@ -19,7 +19,7 @@ log=logging.getLogger('libcheapwalker')
 
 class LibcHeapWalker(heapwalker.HeapWalker):
   ''' '''
-  def _initHeap(self):
+  def _init_heap(self):
     log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
 
   def get_user_allocations(self):

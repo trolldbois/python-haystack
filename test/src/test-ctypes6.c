@@ -35,7 +35,7 @@ int test1(){
   struct usual * usual;
   usual = (struct usual *) malloc(sizeof(struct usual));
   strcpy(usual->txt, "This a string with a test this is a test string");
-  usual->val1 = 0xdeadbead;
+  usual->val1 = 0xaaaaaaa;
   usual->val2 = 0xffffff0;
 
   struct Node * node1;
@@ -57,6 +57,8 @@ int test1(){
   usual->root.blink = &node1->list;
 
   printf("test1 0x%x\n",(unsigned int )usual);
+  printf("test2 0x%x\n",(unsigned int )node1);
+  printf("test3 0x%x\n",(unsigned int )node2);
   
   return 0;
 }

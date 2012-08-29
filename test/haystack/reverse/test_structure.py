@@ -22,23 +22,23 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-#sys.path.append('test/src/')
-#import ctypes3
-
+log = logging.getLogger("test_structure")
 import ctypes 
 
 class TestStructure(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    context = reversers.getContext('test/src/test-ctypes3.dump')
-    context.reset()      
+    self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    #context.reset()      
 
   def setUp(self):  
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    #self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    pass
 
   def tearDown(self):
-    self.context = None
+    #self.context = None
+    pass
 
   def test_init(self):
     for s in self.context.listStructures():
@@ -57,6 +57,7 @@ class TestStructure(unittest.TestCase):
       elif len(s) == 20 : #test3, 1 pointer on create
         # fields, no heuristic to detect medium sized int
         # TODO untyped of size < 8 == int * x
+        print s.toString()
         self.assertEqual( len(s.getFields()), 3 )
         self.assertEqual( len(s.getPointerFields()), 1)
     return  
@@ -95,15 +96,22 @@ class TestStructure(unittest.TestCase):
 
 
   def test_string_overlap(self):
-    context = reversers.getContext('test/src/test-ctypes6.dump')
+    self.context = reversers.getContext('test/src/test-ctypes6.dump')
     for s in self.context.listStructures():
-      s.resolvePointers()
+      #s.resolvePointers()
+      s.decodeFields()
+      log.debug(s.toString())
     self.assertTrue(True) # test no error
 
 
 
 
 if __name__ == '__main__':
-  unittest.main(verbosity=0)
+  logging.basicConfig(level=logging.INFO)
+  logging.getLogger("test_structure").setLevel(logging.DEBUG)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
+  unittest.main(verbosity=2)
+  
+  
+  
