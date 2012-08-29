@@ -31,14 +31,21 @@ class TestField(unittest.TestCase):
   @classmethod
   def setUpClass(self):
     self.context = None #reversers.getContext('test/src/test-ctypes3.dump')
-    self.putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
-
+    self._putty7124 = None
+    
   def setUp(self):  
     pass
 
   def tearDown(self):
     pass
-
+  
+  @property
+  def putty7124(self):
+    if self._putty7124 is None:
+      self._putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
+    return self._putty7124
+  
+  
   def test_utf_16_le_null_terminated(self):
 
     # struct_682638 in putty.7124.dump
@@ -122,13 +129,53 @@ class TestField(unittest.TestCase):
     self.assertEquals( fields[2].typename, fieldtypes.FieldType.STRINGNULL)
     self.assertTrue( fields[2].isString())
 
-    # TODO, check 0x63aa68 also
-    # txt field should start at [2:] , but is crunched by fake pointer value
     pass
 
+  def test_big_block_2(self):
+    # in putty.7124.dump
+    vaddr = 0x675b30
+    size = 8184
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    #log.debug(st.toString())
+    fields = st.getFields()
+    self.assertLess( len(fields), 879)
+    #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
+    #self.assertTrue( fields[35].isString())
+    fields = [f for f in st.getFields() if f.isString()]
+    for f in fields:
+      print f.toString(),
+      
+  def test_check_int(self):
+    ''' we default to WORDSIZE == 4 '''
+    smallints = [  '\xff\xff\xff\xff', '\x02\xff\xff\xff',  ]
+    for bytes in smallints:
+      st = FakeStructure(bytes)
+      me = fieldtypes.Field(st, 0, fieldtypes.FieldType.UNKNOWN, 4, False)
+      self.assertTrue(me.checkSmallInt(), '%s is not considered a small int little endian'%( repr(bytes) ))
+
+    smallints = [  '\xff\xff\xff\xff', '\xff\xff\xff\x03', '\x00\x00\x00\x42',
+                   '\x00\x00\x00\x01', '\x00\x00\x01\xaa', ]
+    for bytes in smallints:
+      st = FakeStructure(bytes)
+      me = fieldtypes.Field(st, 0, fieldtypes.FieldType.UNKNOWN, 4, False)
+      self.assertTrue(me.checkSmallInt('>'), '%s is not considered a small int Big Endian'%( repr(bytes) ))
+
+    not_smallints = [  '\xfa\xff\xfb\xff', '\x01\xff\xff\x03', '\x02\xff\x42\xff', 
+                   '\x01\x00\x00\x01', '\x00\x12\x01\xaa', '\x00\xad\x00\x42', 
+                   '\x00\x41\x00\x41', '\x41\x00\x41\x00']
+    for bytes in not_smallints:
+      st = FakeStructure(bytes)
+      me = fieldtypes.Field(st, 0, fieldtypes.FieldType.UNKNOWN, 4, False)
+      self.assertFalse(me.checkSmallInt(), '%s is considered a small int'%( repr(bytes) ))
+
+class FakeStructure:
+  def __init__(self, bytes, vaddr=0):
+    self.bytes = bytes
+    self._vaddr = vaddr
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG)
   logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)

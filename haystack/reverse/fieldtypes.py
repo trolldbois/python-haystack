@@ -324,15 +324,12 @@ class Field:
       self.typename = FieldType.SMALLINT
       self.endianess = endianess
       return True
-    else: # check signed int
-      val = unpackWord(bytes[:Config.WORDSIZE], endianess)[0] 
-      if -0xffff <= val <= 0xffff:
-        self.value = val
-        self.size = Config.WORDSIZE
-        self.typename = FieldType.SIGNED_SMALLINT
-        self.endianess = endianess
-        return True
-      return False
+    elif ( (2**(Config.WORDSIZE*8) - 0xffff) < val): # check signed int
+      self.value = val
+      self.size = Config.WORDSIZE
+      self.typename = FieldType.SIGNED_SMALLINT
+      self.endianess = endianess
+      return True
     return False
 
     
@@ -497,9 +494,9 @@ class Field:
     #    %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
   
     if self.isPointer():
-      comment = '# @ %0.8x %s %s'%( self.value, self.comment, self.usercomment ) 
+      comment = '# @ 0x%0.8x %s %s'%( self.value, self.comment, self.usercomment ) 
     elif self.isInteger():
-      comment = '#  %s %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
+      comment = '#  0x%x %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
     elif self.isZeroes():
       comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
     elif self.isString():
