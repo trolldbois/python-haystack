@@ -352,7 +352,7 @@ class TestAllocator(unittest.TestCase):
     for m in self._mappings.getHeaps():
       #
       total = 0
-      for chunk_addr, chunk_size in win7heapwalker.get_user_allocations(self._mappings, m, False):
+      for chunk_addr, chunk_size in win7heapwalker.get_user_allocations(self._mappings, m):
         self.assertTrue( chunk_addr in self._mappings)
         self.assertGreater( chunk_size, 0, 'chunk_addr == 0x%0.8x'%(chunk_addr))
         total+=chunk_size

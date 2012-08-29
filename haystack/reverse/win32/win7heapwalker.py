@@ -77,7 +77,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     # need to cut sizeof(HEAP_ENTRY) from address and size
     self._allocs = numpy.asarray(sorted(myset))
 
-    lst = va_free+free_chunks+fth_free
+    free_lists = self._get_freelists()
+    lst = va_free+free_chunks+fth_free+free_lists
     myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
     if len(lst) != len(myset):
       log.warning('NON unique referenced free chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
@@ -104,7 +105,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     ''' returns addr,size of committed,free vallocs heap entries'''
     if (self._valloc_committed, self._valloc_free) == (None, None):
       self._valloc_committed = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
-      # DEBUG : delete replace by iterator
+      self._valloc_free = [] # FIXME TODO
       log.debug( '\t+ %d vallocated blocks'%( len(self._valloc_committed) ) )
       #for block in allocated: #### BAD should return (vaddr,size)
       #  log.debug( '\t\t- vallocated commit %x reserve %x @%0.8x'%(block.CommitSize, block.ReserveSize, ctypes.addressof(block)))
