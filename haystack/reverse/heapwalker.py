@@ -19,6 +19,10 @@ class HeapWalker(object):
   def get_user_allocations(self):
     ''' returns all User allocations (addr,size) '''
     raise NotImplementedError('Please implement all methods')
+
+  def get_free_chunks(self):
+    ''' returns all free chunks in the heap (addr,size) '''
+    raise NotImplementedError('Please implement all methods')
   
   
 # TODO make a virtual function that plays libc or win32 ?

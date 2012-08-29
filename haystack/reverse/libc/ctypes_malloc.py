@@ -43,7 +43,7 @@ if Config.WORDSIZE == 4:
 elif Config.WORDSIZE == 8:
   UINT = ctypes.c_uint64
 
-def getUserAllocations(mappings, heap, filterInuse=False):
+def iter_user_allocations(mappings, heap, filterInuse=False):
   ''' 
   Lists all (addr, size) of allocated space by malloc_chunks.
   '''
@@ -87,13 +87,47 @@ def getUserAllocations(mappings, heap, filterInuse=False):
 
   raise StopIteration
 
+def get_user_allocations(mappings, heap):
+  ''' 
+  Lists all (addr, size) of allocated space by malloc_chunks.
+  '''
+  allocs = [] # index, size
+  free = []
 
-def isMallocHeap(mappings, mapping):
+  orig_addr = heap.start
+  chunk = heap.readStruct(orig_addr, malloc_chunk)
+  ret = chunk.loadMembers(mappings, 10, orig_addr)
+  if not ret:
+    raise ValueError('heap does not start with an malloc_chunk')
+  if chunk.check_inuse(mappings, orig_addr):
+    allocs.append( (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) )
+  else:
+    free.append( (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) )
+
+  while True:
+    next, next_addr = chunk.getNextChunk(mappings, orig_addr)
+    if next_addr is None:
+      break
+    ret = next.loadMembers(mappings, 10, next_addr)
+    if not ret:
+      raise ValueError
+    if next.check_inuse(mappings, next_addr):
+      allocs.append(  (next.get_mem_addr(next_addr), next.get_mem_size()) )
+    else:
+      free.append( (next.get_mem_addr(next_addr), next.get_mem_size()) )
+    # next loop
+    orig_addr = next_addr
+    chunk = next
+
+  return allocs, free
+
+def is_malloc_heap(mappings, mapping):
   """test if a mapping is a malloc generated heap"""
   try:
-    sizes = [size for addr,size in getUserAllocations(mappings, mapping ) ]
+    sizes = [size for addr,size in iter_user_allocations(mappings, mapping ) ]
     size = sum(sizes)
   except ValueError, e:
+    log.error(e)
     return False
   
   if size != ( len(mapping) - Config.WORDSIZE*len(sizes) ):

@@ -21,14 +21,30 @@ class LibcHeapWalker(heapwalker.HeapWalker):
   ''' '''
   def _init_heap(self):
     log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
+    self._allocs = None
+    self._free_chunks = None
 
   def get_user_allocations(self):
-    ''' returns all User allocations (addr,size) '''
-    for x in ctypes_malloc.getUserAllocations(self._mappings, self._mapping):
-      yield x
+    ''' returns all User allocations (addr,size) and only the user writeable part.
+    addr and size EXCLUDES the HEAP_ENTRY header.
+    '''
+    if self._allocs is None:
+      self._set_chunk_lists()
+    return self._allocs
+
+  def get_free_chunks(self):
+    ''' returns all free chunks that are not allocated (addr,size) .
+        addr and size EXCLUDES the HEAP_ENTRY header.
+    '''
+    if self._free_chunks is None:
+      self._set_chunk_lists()
+    return self._free_chunks
+
+  def _set_chunk_lists(self):
+    self._allocs, self._free_chunks = ctypes_malloc.get_user_allocations(self._mappings, self._mapping)
 
 
-def get_user_allocations(mappings, heap, filterInUse=False):
+def get_user_allocations(mappings, heap):
   ''' list user allocations '''
   walker = LibcHeapWalker(mappings, heap, 0)
   for chunk_addr, chunk_size in walker.get_user_allocations():

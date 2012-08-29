@@ -27,6 +27,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
   '''
   def _init_heap(self):
     self._allocs = None
+    self._free_chunks = None
     self._child_heaps = None
     self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
     if not self._heap.loadMembers(self._mappings, -1):
@@ -46,24 +47,44 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
   def get_user_allocations(self):
     ''' returns all User allocations (addr,size) and only the user writeable part.
-    addr and size EXCLUDES the HHEAP_ENTRY header.
+    addr and size EXCLUDES the HEAP_ENTRY header.
     '''
     if self._allocs is None:
-      vallocs, va_free = self._get_virtualallocations()
-      chunks, free_chunks = self._get_chunks()
-      fth_chunks, fth_free = self._get_frontend_chunks()
-      # DEBUG : delete replace by iterator on the 3 iterator
-      lst = vallocs+chunks+fth_chunks
-      sublen = ctypes.sizeof( win7heap.HEAP_ENTRY)
-      myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
-      if len(lst) != len(myset):
-        log.warning('NON unique referenced chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
-      # need to cut sizeof(HEAP_ENTRY) from address and size
-      self._allocs = numpy.asarray(sorted(myset))
-      # found targetted mappings...
-      #print set([ self._mappings.getMmapForAddr(a[0]) for a in self._allocs if a[0] not in self._mapping])
+      self._set_chunk_lists()
     return self._allocs
 
+  def get_free_chunks(self):
+    ''' returns all free chunks that are not allocated (addr,size) .
+        addr and size EXCLUDES the HEAP_ENTRY header.
+    '''
+    if self._free_chunks is None:
+      self._set_chunk_lists()
+    return self._free_chunks
+
+
+  def _set_chunk_lists(self):
+    sublen = ctypes.sizeof( win7heap.HEAP_ENTRY)
+    # get all chunks
+    vallocs, va_free = self._get_virtualallocations()
+    chunks, free_chunks = self._get_chunks()
+    fth_chunks, fth_free = self._get_frontend_chunks()
+    
+    # make the user allocated list
+    lst = vallocs+chunks+fth_chunks
+    myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
+    if len(lst) != len(myset):
+      log.warning('NON unique referenced user chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
+    # need to cut sizeof(HEAP_ENTRY) from address and size
+    self._allocs = numpy.asarray(sorted(myset))
+
+    lst = va_free+free_chunks+fth_free
+    myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
+    if len(lst) != len(myset):
+      log.warning('NON unique referenced free chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
+    # need to cut sizeof(HEAP_ENTRY) from address and size
+    self._free_chunks = numpy.asarray(sorted(myset))
+    return
+    
   def get_heap_children_mmaps(self):
     ''' use free lists to establish the hierarchy between mmaps'''
     if self._child_heaps is None:
@@ -128,7 +149,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     
 
 
-def get_user_allocations(mappings, heap, filterInUse=False,p1=1,p2=0):
+def get_user_allocations(mappings, heap):
   ''' list user allocations '''
   walker = Win7HeapWalker(mappings, heap, 0)
   for chunk_addr, chunk_size in walker.get_user_allocations():
