@@ -23,8 +23,8 @@ log = logging.getLogger('re_string')
 def is_printable(c):
   x = ord(c)
   if 126 < x:
-    if 159 < x:
-      return True
+    #if 159 < x: # ascii 8 bits... lets put it aside...
+    #  return True
     return False
   #else
   if 31 < x :  
@@ -52,6 +52,10 @@ _py_encodings.remove('quopri_codec')
 
 # perf test, string.printable is limited to ascii anyway
 # ...
+#
+# TODO you are probably better of accepting only NULL terminated string
+# or string terminated by the end of the structure.
+
 _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
 def rfind_utf16(bytesarray, longerThan=3):
