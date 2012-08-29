@@ -112,9 +112,10 @@ class TestField(unittest.TestCase):
     self.assertLess( len(fields), 879)
     #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
     #self.assertTrue( fields[35].isString())
-    fields = [f for f in st.getFields() if f.isString()]
-    for f in fields:
-      print f.toString(),
+    strfields = [f for f in st.getFields() if f.isString()]
+    #for f in strfields:
+    #  print f.toString(),
+    self.assertGreater( len(strfields), 30 )
 
   def test_uuid(self):
     ''' null terminated '''
@@ -145,7 +146,9 @@ class TestField(unittest.TestCase):
     fields = [f for f in st.getFields() if f.isString()]
     for f in fields:
       print f.toString(),
-      
+    
+    
+    
   def test_check_int(self):
     ''' we default to WORDSIZE == 4 '''
     smallints = [  '\xff\xff\xff\xff', '\x02\xff\xff\xff',  ]

@@ -176,7 +176,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
   if addrs is None or sizes is None:
     log.info('[+] Making new cache - getting malloc_chunks from heap ')
     ### TODO : HeapWalker + order addresses ASC ...
-    # allocations = sorted(heapwalker.getUserAllocations(mappings, heap))
+    # allocations = sorted(heapwalker.get_user_allocations(mappings, heap))
     ## TODO 2 , allocations should be triaged by mmapping ( heap.start ) before write2disk.
     ## Or the heap.start should be removed from the cache name.. it has no impact.
     ## heapwalker.getuserAllocations should parse ALL mmappings to get all user allocations.
@@ -184,7 +184,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
     ### in case of a pointer ( bad allocation ) out of a mmapping space.
     ### But that is not possible, because we are reporting factual reference to existing address space.
     ### OK. heap.start should be deleted from the cache name.
-    allocations = mappings.getUserAllocations(mappings, heap, filterInUse=True)
+    allocations = mappings.get_user_allocations(mappings, heap)
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
     int_array_save(f_sizes, sizes)

@@ -6,6 +6,7 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import logging
 import os
 import sys
 import unittest
@@ -46,14 +47,18 @@ class TestStructureSizes(unittest.TestCase):
   def test_sizes(self):
     structs = self.context.listStructures()
     sizes = list(set([ len(s) for s in structs]))
-    sizes.sort()
+    sizes.sort() # Node and test3
     import ctypes3
-    self.assertEqual( len(sizes), 2)
     for st in structs: #[1:2]:
       st.decodeFields()
       #print st.toString()
       #print repr(self.context.heap.readBytes(st._vaddr, len(st)))
 
+    # there are only two struct types
+    # the free chunks is not listed
+    self.assertEqual( len(sizes), 2) 
+    self.assertEqual( len(structs), 6) 
+    
     #st = ctypes3.Node()
     #print st.toString(), st._expectedValues_
 
@@ -75,5 +80,6 @@ class TestStructureSizes(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+  logging.basicConfig(level=logging.INFO)
+  unittest.main()
 

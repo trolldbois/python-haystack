@@ -570,8 +570,9 @@ class Mappings:
     self.name = filename
     self._target_system = None
 
-  def getUserAllocations(self, heap, filterInUse=True):
+  def get_user_allocations(self, heap, filterInUse=True):
     """changed when the dump is loaded"""
+    # set by dump_loader
     raise NotImplementedError
 
   def getMmap(self, pathname):
