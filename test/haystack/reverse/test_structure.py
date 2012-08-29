@@ -27,17 +27,18 @@ import ctypes
 
 class TestStructure(unittest.TestCase):
 
-  @classmethod
-  def setUpClass(self):
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
-    #context.reset()      
+  #@classmethod
+  #def setUpClass(self):
+  #  #self.context = reversers.getContext('test/src/test-ctypes3.dump')
+  #  pass
 
   def setUp(self):  
-    #self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    self.context = reversers.getContext('test/src/test-ctypes3.dump')
     pass
 
   def tearDown(self):
     #self.context = None
+    self.context.reset()      
     pass
 
   def test_init(self):
@@ -58,7 +59,7 @@ class TestStructure(unittest.TestCase):
         # fields, no heuristic to detect medium sized int
         # TODO untyped of size < 8 == int * x
         print s.toString()
-        self.assertEqual( len(s.getFields()), 3 )
+        self.assertEqual( len(s.getFields()), 5 )
         self.assertEqual( len(s.getPointerFields()), 1)
     return  
 
@@ -96,8 +97,8 @@ class TestStructure(unittest.TestCase):
 
 
   def test_string_overlap(self):
-    self.context = reversers.getContext('test/src/test-ctypes6.dump')
-    for s in self.context.listStructures():
+    context6 = reversers.getContext('test/src/test-ctypes6.dump')
+    for s in context6.listStructures():
       #s.resolvePointers()
       s.decodeFields()
       log.debug(s.toString())
@@ -108,7 +109,7 @@ class TestStructure(unittest.TestCase):
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
-  logging.getLogger("test_structure").setLevel(logging.DEBUG)
+  #logging.getLogger("test_structure").setLevel(logging.DEBUG)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)
   unittest.main(verbosity=2)
