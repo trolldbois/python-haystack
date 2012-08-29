@@ -177,6 +177,8 @@ class ReverserContext():
     except OSError,e:
       pass
     try:
+      if not os.access(Config.CACHE_STRUCT_DIR, os.F_OK):
+        return
       for r,d,files in os.walk( Config.getCacheFilename(Config.CACHE_STRUCT_DIR, self.dumpname)):
         for f in files:
           os.remove(os.path.join(r,f) )
