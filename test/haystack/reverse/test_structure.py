@@ -58,7 +58,6 @@ class TestStructure(unittest.TestCase):
       elif len(s) == 20 : #test3, 1 pointer on create
         # fields, no heuristic to detect medium sized int
         # TODO untyped of size < 8 == int * x
-        print s.toString()
         self.assertEqual( len(s.getFields()), 5 )
         self.assertEqual( len(s.getPointerFields()), 1)
     return  
