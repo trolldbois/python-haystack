@@ -138,14 +138,14 @@ class TestField(unittest.TestCase):
     size = 8184
     st = structure.makeStructure(self.putty7124, vaddr, size)    
     st.decodeFields()
-    #log.debug(st.toString())
+    log.debug(st.toString())
     fields = st.getFields()
     self.assertLess( len(fields), 879)
     #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
     #self.assertTrue( fields[35].isString())
     fields = [f for f in st.getFields() if f.isString()]
-    for f in fields:
-      print f.toString(),
+    #for f in fields:
+    #  print f.toString(),
     
     
     
@@ -178,7 +178,7 @@ class FakeStructure:
     self._vaddr = vaddr
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)

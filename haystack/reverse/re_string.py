@@ -17,6 +17,14 @@ import string
 
 log = logging.getLogger('re_string')
 
+#
+# TODO: need a rfind-style function (rfind_utf16). otherwise O(n2) is laughing on you in struct/fields evaluation.
+# TODO: put heuristics of fields determination and structures algos in subpackages. 
+# Field and structures should be POPOs - not controllers.
+#
+#
+
+
 #nonprintable=[c for c in '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f']
 #control_chars = ''.join(map(unichr, range(0,32) + range(127,160)))
 

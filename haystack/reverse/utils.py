@@ -102,7 +102,7 @@ def getHeapPointers(dumpfilename, mappings):
   #stack_addrs = int_array_cache(F_STACK_O)
   #stack_values = int_array_cache(F_STACK_V)
   if heap_addrs is None or heap_values is None:
-    log.info('[+] Making new cache ') #- getting pointers values from stack')
+    log.info('[+] Making new cache - heap pointers') #- getting pointers values from stack')
     #stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
     #stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
     #stack_enum = stack_enumerator.search()
@@ -144,7 +144,7 @@ def getAllPointers(dumpfilename, mappings):
   heap_addrs = int_array_cache(F_HEAP_O)
   heap_values = int_array_cache(F_HEAP_V)
   if heap_addrs is None or heap_values is None:
-    log.info('[+] Making new cache ') 
+    log.info('[+] Making new cache - all pointers') 
     heap_enumerator = pointerfinder.PointerEnumerator(mappings.getHeap())
     heap_enumerator.setTargetMapping(mappings) # all pointers
     heap_enum = heap_enumerator.search()
