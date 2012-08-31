@@ -133,6 +133,17 @@ class TestReString(unittest.TestCase):
     self.assertEquals(val, '56')
     self.assertEquals(val, x[2:4])
 
+    self.assertEquals(re_string.Nocopy(s,9,10), s[9:10])
+    self.assertEquals(re_string.Nocopy(s,9,10), '0')
+    self.assertEquals(re_string.Nocopy(s,-2,-1), '9')
+  
+    #self.assertRaises(re_string.Nocopy(s,9,11))
+
+  def test_rfind_utf16(self):
+    print len(self.test1)
+    self.assertEquals( 0 , re_string.rfind_utf16(self.test1, 0, len(self.test1) ))
+  
+
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
   logging.getLogger("re_string").setLevel(level=logging.DEBUG)

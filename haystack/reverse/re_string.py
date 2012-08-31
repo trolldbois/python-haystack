@@ -69,18 +69,23 @@ _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32l
 class Nocopy():
   def __init__(self, bytes, start, end):
     self.bytes = bytes
-    assert(end<len(bytes)) # -1
+    if start <0:
+      start = len(bytes)+start
+    if end <0:
+      end = len(bytes)+end
+    #print '%s <= %s'%(end, len(bytes))
+    assert(end<=len(bytes) )
     assert(start<end)
     assert(start>=0)
     self.start = start
     self.end = end
+    #print 'got',self.bytes[self.start:self.end]
   def __getitem__(self, i):
     if i>=0:
       return self.bytes[self.start+i]
     else:
       return self.bytes[self.end+i]
   def __getslice__(self, start, stop , step =1):
-    print start, stop, step
     if step == 1:
       if start >= 0 and stop >=0:
         return Nocopy(self.bytes, self.start+start, self.start+stop)
@@ -90,6 +95,7 @@ class Nocopy():
       return self.bytes[start:stop:step]
   def __eq__(self, o):
     to = type(o)
+    #print self.bytes[self.start:self.end], '==',o
     if issubclass(to, str) and self.bytes == o:
       return self.start == 0 and self.end == len(o)
     elif issubclass(to, Nocopy):
