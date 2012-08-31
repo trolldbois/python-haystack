@@ -73,29 +73,31 @@ class Nocopy():
       start = len(bytes)+start
     if end <0:
       end = len(bytes)+end
-    #print '%s <= %s'%(end, len(bytes))
+    print '%s <= %s'%(end, len(bytes))
     assert(end<=len(bytes) )
     assert(start<end)
     assert(start>=0)
     self.start = start
     self.end = end
-    #print 'got',self.bytes[self.start:self.end]
+    print 'got',self.bytes[self.start:self.end]
   def __getitem__(self, i):
     if i>=0:
       return self.bytes[self.start+i]
     else:
       return self.bytes[self.end+i]
-  def __getslice__(self, start, stop , step =1):
+  def __getslice__(self, start=0, end=-1 , step =1):
+    if end > self.end-self.start:
+      end = self.end
     if step == 1:
-      if start >= 0 and stop >=0:
-        return Nocopy(self.bytes, self.start+start, self.start+stop)
-      elif start < 0 and stop < 0:
-        return Nocopy(self.bytes, self.stop+start, self.stop+stop)
+      if start >= 0 and end >=0:
+        return Nocopy(self.bytes, self.start+start, self.start+end)
+      elif start < 0 and end < 0:
+        return Nocopy(self.bytes, self.end+start, self.end+end)
     else : #screw you
-      return self.bytes[start:stop:step]
+      return self.bytes[start:end:step]
   def __eq__(self, o):
     to = type(o)
-    #print self.bytes[self.start:self.end], '==',o
+    print self.bytes[self.start:self.end], '==',o
     if issubclass(to, str) and self.bytes == o:
       return self.start == 0 and self.end == len(o)
     elif issubclass(to, Nocopy):

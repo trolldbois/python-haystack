@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+# Copyright (C) 2012 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
 import logging
@@ -80,11 +80,16 @@ class ZeroFields(FieldAnalyzer):
     return fields
 
 class StringFields(FieldAnalyzer):
+  ''' rfinds utf-16-ascii and ascii 7bit
   
-  def make_fields(self, bytes, offset, size):
+  '''
+  def make_fields(self, structure, offset, size):
     ''' if there is no \x00 termination, its not a string
     that means that if we have a bad pointer in the middle of a string, 
     the first part will not be understood as a string'''
+    bytes = structure.bytes()
+    re_string.rfind_utf16(bytes):
+    
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
     ret = re_string.try_decode_string(bytes)
     if not ret:
@@ -100,10 +105,12 @@ class StringFields(FieldAnalyzer):
       log.debug('STRING: Found a string "%s"/%d for encoding %s, field %s'%( repr(self.value), self.size, self.encoding, self))
       return True
 
+  def _utf16(self, )
+
 
 class PointerFields(FieldAnalyzer):
   
-  def make_fields(self, bytes, offset, size):
+  def make_fields(self, structure, offset, size):
     if (self.offset%Config.WORDSIZE != 0):
       return False
     bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
@@ -127,7 +134,8 @@ class PointerFields(FieldAnalyzer):
       return False
 
 
-  def checkIntegerArray(self):
+class IntegerArrayFields(FieldAnalyzer):
+  def make_fields(self, structure, offset, size):
     # this should be last resort
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
     size = len(bytes)
@@ -145,10 +153,9 @@ class PointerFields(FieldAnalyzer):
     self.comment = '10%% var in values: %s'%(','.join([ repr(v) for v,nb in commons]))
     return True
         
-  def checkArrayCharP(self):
-    pass
-    
-  def checkInteger(self):
+
+class IntegerFields(FieldAnalyzer):
+  def make_fields(self, structure, offset, size):
     log.debug('checking Integer')
     if (self.struct._vaddr+self.offset) % Config.WORDSIZE != 0:
       # TODO  txt[:11] + 0 + int for alignement
