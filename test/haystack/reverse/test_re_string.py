@@ -120,7 +120,18 @@ class TestReString(unittest.TestCase):
 
     pass
 
-
+  def test_nocopy_class(self):
+    #self.skipTest('')
+    s = '1234567890'
+    x = re_string.Nocopy(s,2,9)
+    x1 = s[2:9]
+    self.assertEquals(len(x), len(x1))
+    for i in range(len(x)):
+      self.assertEquals( x[i], x1[i])
+    #
+    val = x[2:4]
+    self.assertEquals(val, '56')
+    self.assertEquals(val, x[2:4])
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)

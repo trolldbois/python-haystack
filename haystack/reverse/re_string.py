@@ -66,8 +66,46 @@ _py_encodings.remove('quopri_codec')
 
 _py_encodings = set(['ascii', 'latin_1','iso8859_15','utf_8','utf_16le','utf_32le',])
 
-def rfind_utf16(bytesarray, longerThan=3):
+class Nocopy():
+  def __init__(self, bytes, start, end):
+    self.bytes = bytes
+    assert(end<len(bytes)) # -1
+    assert(start<end)
+    assert(start>=0)
+    self.start = start
+    self.end = end
+  def __getitem__(self, i):
+    if i>=0:
+      return self.bytes[self.start+i]
+    else:
+      return self.bytes[self.end+i]
+  def __getslice__(self, start, stop , step =1):
+    print start, stop, step
+    if step == 1:
+      if start >= 0 and stop >=0:
+        return Nocopy(self.bytes, self.start+start, self.start+stop)
+      elif start < 0 and stop < 0:
+        return Nocopy(self.bytes, self.stop+start, self.stop+stop)
+    else : #screw you
+      return self.bytes[start:stop:step]
+  def __eq__(self, o):
+    to = type(o)
+    if issubclass(to, str) and self.bytes == o:
+      return self.start == 0 and self.end == len(o)
+    elif issubclass(to, Nocopy):
+      return self.bytes[self.start:self.end] == o.bytes[o.start:o.end]
+    #else:
+    return self.bytes[self.start:self.end] == o
+  def __len__(self):
+    return self.end-self.start
+
+
+def _rfind_utf16(bytesarray, longerThan=3):
+  if len(bytesarray) < 4:
+    return -1
   i = len(bytesarray)-1
+  if ( bytesarray[i] == '\x00' and bytesarray[i-1] == '\x00'): # give one shot 'x000'
+    i -= 2
   while i>0 and ( bytesarray[i] == '\x00' and bytesarray[i-1] != '\x00'):
     i-=2
   if i == len(bytesarray)-1:
@@ -77,7 +115,11 @@ def rfind_utf16(bytesarray, longerThan=3):
   if size > longerThan:
     return i-1
   return -1
-    
+
+def rfind_utf16(bytes, offset, size):
+  bytes_nocp = Nocopy(bytes, offset, offset+size)
+  index = _rfind_utf16(bytes_nocp)
+  return index
 
 
 def try_decode_string(bytesarray, longerThan=3):
