@@ -132,6 +132,9 @@ class TestReString(unittest.TestCase):
     val = x[2:4]
     self.assertEquals(val, '56')
     self.assertEquals(val, x[2:4])
+    self.assertEquals(s[4:-1], x[2:])
+    self.assertEquals(s[2:-1], x[:16])
+    
 
     self.assertEquals(re_string.Nocopy(s,9,10), s[9:10])
     self.assertEquals(re_string.Nocopy(s,9,10), '0')
@@ -140,8 +143,20 @@ class TestReString(unittest.TestCase):
     #self.assertRaises(re_string.Nocopy(s,9,11))
 
   def test_rfind_utf16(self):
-    print len(self.test1)
+    #print len(self.test1)
     self.assertEquals( 0 , re_string.rfind_utf16(self.test1, 0, len(self.test1) ))
+    self.assertEquals( 0 , re_string.rfind_utf16(self.test2, 0, len(self.test2) ))
+    self.assertEquals( 0 , re_string.rfind_utf16(self.test3, 0, len(self.test3) ))
+    self.assertEquals( -1 , re_string.rfind_utf16(self.test4, 0, len(self.test4) ))
+    self.assertEquals( -1 , re_string.rfind_utf16(self.test5, 0, len(self.test5) ))
+    self.assertEquals( -1 , re_string.rfind_utf16(self.test6, 0, len(self.test6) ))
+    self.assertEquals( -1 , re_string.rfind_utf16(self.test7, 0, len(self.test7) ))
+    # truncated last field
+    self.assertEquals( 122 , re_string.rfind_utf16(self.test8, 0, len(self.test8) ))
+    # find start with limited size
+    self.assertEquals( 0 , re_string.rfind_utf16(self.test8, 0, 64 ))
+    # middle field
+    self.assertEquals( 0 , re_string.rfind_utf16(self.test8, 64, 58 ))
   
 
 if __name__ == '__main__':

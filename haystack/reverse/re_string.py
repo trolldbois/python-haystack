@@ -73,21 +73,21 @@ class Nocopy():
       start = len(bytes)+start
     if end <0:
       end = len(bytes)+end
-    print '%s <= %s'%(end, len(bytes))
+    #print '%s <= %s'%(end, len(bytes))
     assert(end<=len(bytes) )
     assert(start<end)
     assert(start>=0)
     self.start = start
     self.end = end
-    print 'got',self.bytes[self.start:self.end]
+    #print 'got',self.bytes[self.start:self.end]
   def __getitem__(self, i):
     if i>=0:
       return self.bytes[self.start+i]
     else:
       return self.bytes[self.end+i]
-  def __getslice__(self, start=0, end=-1 , step =1):
-    if end > self.end-self.start:
-      end = self.end
+  def __getslice__(self, start=0, end=-1 , step=1): # end defaults to int.max, not -1
+    if (end > self.end-self.start): #len(self)
+      end = self.end-self.start
     if step == 1:
       if start >= 0 and end >=0:
         return Nocopy(self.bytes, self.start+start, self.start+end)
@@ -97,7 +97,7 @@ class Nocopy():
       return self.bytes[start:end:step]
   def __eq__(self, o):
     to = type(o)
-    print self.bytes[self.start:self.end], '==',o
+    #print self.bytes[self.start:self.end], '==',o
     if issubclass(to, str) and self.bytes == o:
       return self.start == 0 and self.end == len(o)
     elif issubclass(to, Nocopy):
@@ -109,22 +109,28 @@ class Nocopy():
 
 
 def _rfind_utf16(bytesarray, longerThan=3):
+  '''@returns index of start string'''
   if len(bytesarray) < 4:
     return -1
-  i = len(bytesarray)-1
-  if ( bytesarray[i] == '\x00' and bytesarray[i-1] == '\x00'): # give one shot 'x000'
+  i = len(bytesarray)-2
+  if ( bytesarray[i+1] == '\x00' and bytesarray[i] == '\x00'): # give one shot 'x000'
+    #print 'first', bytesarray[i]
     i -= 2
-  while i>0 and ( bytesarray[i] == '\x00' and bytesarray[i-1] != '\x00'):
+  while i>=0 and ( bytesarray[i+1] == '\x00' and bytesarray[i] != '\x00'):
+    #print 'then %s and \\x00 '%bytesarray[i]
     i-=2
-  if i == len(bytesarray)-1:
+  # fix last row
+  i+=2
+  if i == len(bytesarray)-2:
     return -1
-  uni = bytesarray[i-1:]
+  uni = bytesarray[i:]
   size = len(uni)
   if size > longerThan:
-    return i-1
+    return i
   return -1
 
 def rfind_utf16(bytes, offset, size):
+  print offset, offset+size
   bytes_nocp = Nocopy(bytes, offset, offset+size)
   index = _rfind_utf16(bytes_nocp)
   return index
