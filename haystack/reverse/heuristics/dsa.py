@@ -149,9 +149,11 @@ class IntegerFields(FieldAnalyser):
     bytes = structure.bytes
     fields = []
     while size >= Config.WORDSIZE:
+      #print 'checking >'
       field = self.checkSmallInt(structure, bytes, offset)
       if field is None:
-        field = self.checkSmallInt(structure, bytes, offset, '<')
+        #print 'checking <'
+        field = self.checkSmallInt(structure, bytes, offset, '>')
       # we have a field smallint
       if field is not None:
         fields.append(field)      
@@ -162,7 +164,7 @@ class IntegerFields(FieldAnalyser):
   def checkSmallInt(self, structure, bytes, offset, endianess='<'):
     ''' check for small value in signed and unsigned forms '''
     val = unpackWord(bytes[offset:offset+Config.WORDSIZE], endianess)
-    print endianess, val
+    #print endianess, val
     if val < 0xffff:
       field = Field(structure, offset, FieldType.SMALLINT, Config.WORDSIZE, False)
       field.value = val
