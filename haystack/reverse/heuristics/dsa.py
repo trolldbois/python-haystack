@@ -6,14 +6,15 @@
 
 import logging
 import os
-import collections
+import array
 import struct
 import itertools
 
 from haystack.config import Config
 from haystack.utils import unpackWord
 from haystack.reverse import re_string, fieldtypes
-from haystack.reverse.heuristics.model import FieldAnalyzer, StructureAnalyzer
+from haystack.reverse.fieldtypes import FieldType, Field
+from haystack.reverse.heuristics.model import FieldAnalyser, StructureAnalyser
 
 import ctypes
 
@@ -21,12 +22,12 @@ log = logging.getLogger('dsa')
 
 ## Field analysis related functions and classes
 
-class ZeroFields(FieldAnalyzer):
+class ZeroFields(FieldAnalyser):
   ''' checks for possible fields, aligned, with WORDSIZE zeros.'''
   def make_fields(self, structure, offset, size):
     self._typename = FieldType.ZEROES
     self._zeroes = '\x00'*Config.WORDSIZE
-    
+
     ret = self._find_zeroes(structure, offset, size)
     
     # TODO if its just a word, we should say its a small int.
@@ -36,12 +37,13 @@ class ZeroFields(FieldAnalyzer):
     ''' iterate over the bytes until a byte if not \x00 
     '''
     vaddr = structure._vaddr
-    bytes = structure.bytes()
-    aligned_off = (vaddr+offset)%Config.WORDSIZE 
-    start = (vaddr+offset)
-    if aligned_off != 0: # align to next
-      start += (Config.WORDSIZE - aligned_off)
-      size  -= (Config.WORDSIZE - aligned_off)
+    bytes = structure.bytes
+    assert( (vaddr+offset)%Config.WORDSIZE == 0 )
+    #aligned_off = (vaddr+offset)%Config.WORDSIZE 
+    #start = (vaddr+offset)
+    #if aligned_off != 0: # align to next
+    #  start += (Config.WORDSIZE - aligned_off)
+    #  size  -= (Config.WORDSIZE - aligned_off)
     # iterate
     matches = array.array('i')
     for i in range(start, start+size, Config.WORDSIZE ):
@@ -54,7 +56,7 @@ class ZeroFields(FieldAnalyzer):
     # lets try to get fields
     fields = []
     # first we need to collate neighbors
-    collates = set()
+    collates = list()
     prev = matches[0]-1
     x = []
     # PERF TODO: whats is algo here
@@ -62,53 +64,41 @@ class ZeroFields(FieldAnalyzer):
       if i-1 == prev:
         x.append(i)
       else:
-        collates.add(x)
+        collates.append(x)
         x = []
-    collates.add(x)
+    collates.append(x)
     # we now have collated, lets create fields
     for field in collates:
       flen = len(field)
       if flen > 1:
         size = Config.WORDSIZE * flen
       elif flen == 1:
-        size = 1
+        size = Config.WORDSIZE
       else:
         continue
       # make a field
-      fields.append( Field(structure, start+field, self._typename, size, False) ) 
+      start = field[0]
+      fields.append( Field(structure, start, self._typename, size, False) ) 
     # we have all fields
     return fields
 
-class StringFields(FieldAnalyzer):
+class StringFields(FieldAnalyser):
   ''' rfinds utf-16-ascii and ascii 7bit
   
   '''
   def make_fields(self, structure, offset, size):
-    ''' if there is no \x00 termination, its not a string
-    that means that if we have a bad pointer in the middle of a string, 
-    the first part will not be understood as a string'''
-    bytes = structure.bytes()
-    re_string.rfind_utf16(bytes):
-    
-    bytes = self.struct.bytes[self.offset:self.offset+self.size]
-    ret = re_string.try_decode_string(bytes)
-    if not ret:
-      self.typesTested.append(FieldType.STRING)
-      #log.warning('STRING: This is not a string %s'%(self))
-      return False
-    else:
-      self.size, self.encoding, self.value = ret 
-      # FieldType.STRING or NULLTERMINATEDSTRING
-      self.typename = FieldType.STRING
-      if self.value[-1] == '\x00':
-        self.typename = FieldType.STRINGNULL
-      log.debug('STRING: Found a string "%s"/%d for encoding %s, field %s'%( repr(self.value), self.size, self.encoding, self))
-      return True
+    ''' try to find a utf-16 string starting from end.'''
+    bytes = structure.bytes
+    index = re_string.rfind_utf16(bytes, offset, size)
+    if index > -1:
+      f = Field(structure, offset+index, FieldType.STRING, size-index, False)  
+      return f
+    return False
 
-  def _utf16(self, )
+  #def _utf16(self, )
 
 
-class PointerFields(FieldAnalyzer):
+class PointerFields(FieldAnalyser):
   
   def make_fields(self, structure, offset, size):
     if (self.offset%Config.WORDSIZE != 0):
@@ -134,7 +124,7 @@ class PointerFields(FieldAnalyzer):
       return False
 
 
-class IntegerArrayFields(FieldAnalyzer):
+class IntegerArrayFields(FieldAnalyser):
   def make_fields(self, structure, offset, size):
     # this should be last resort
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
@@ -154,7 +144,7 @@ class IntegerArrayFields(FieldAnalyzer):
     return True
         
 
-class IntegerFields(FieldAnalyzer):
+class IntegerFields(FieldAnalyser):
   def make_fields(self, structure, offset, size):
     log.debug('checking Integer')
     if (self.struct._vaddr+self.offset) % Config.WORDSIZE != 0:

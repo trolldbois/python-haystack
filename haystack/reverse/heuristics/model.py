@@ -30,7 +30,7 @@ class FieldAnalyser(object):
     '''
     raise NotImplementedError('This should be implemented.')
 
-class StructuredAnalyser(object):
+class StructureAnalyser(object):
   ''' StructureAnalyzer should apply heuristics on the structure, all fields included, 
   and try to determine specific field types that are identifiable with a 
   full structure-view.
