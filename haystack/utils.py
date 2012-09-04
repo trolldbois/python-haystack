@@ -25,7 +25,7 @@ from haystack.config import Config
 
 log = logging.getLogger('utils')
 
-def formatAddress(addr): #TODO move to utils
+def formatAddress(addr): 
   if Config.WORDSIZE == 4:
     return u"0x%08x" % addr
   else:
@@ -33,9 +33,9 @@ def formatAddress(addr): #TODO move to utils
 
 def unpackWord(bytes, endianess='@'):
   if Config.WORDSIZE == 8:
-    return struct.unpack('%sQ'%endianess, bytes)
+    return struct.unpack('%sQ'%endianess, bytes)[0]
   else:
-    return struct.unpack('%sI'%endianess, bytes)
+    return struct.unpack('%sI'%endianess, bytes)[0]
 
 def is_valid_address(obj, mappings, structType=None):
   ''' 

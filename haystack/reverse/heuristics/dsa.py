@@ -25,6 +25,7 @@ log = logging.getLogger('dsa')
 class ZeroFields(FieldAnalyser):
   ''' checks for possible fields, aligned, with WORDSIZE zeros.'''
   def make_fields(self, structure, offset, size):
+    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
     self._typename = FieldType.ZEROES
     self._zeroes = '\x00'*Config.WORDSIZE
 
@@ -90,6 +91,7 @@ class StringFields(FieldAnalyser):
   
   '''
   def make_fields(self, structure, offset, size):
+    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
     fields = []
     bytes = structure.bytes
     while size > Config.WORDSIZE:
@@ -105,45 +107,75 @@ class StringFields(FieldAnalyser):
     # look in head
     return fields
   
-  def _rfind_utf16(self, structure, offset, size):
-    ''' try to find a utf-16 string starting from end.'''
-    bytes = structure.bytes
-    index = re_string.rfind_utf16(bytes, offset, size)
-    if index > -1:
-      f = Field(structure, offset+index, FieldType.STRING, size-index, False)  
-      return f
-    return None
-
-  #def _utf16(self, )
 
 
 class PointerFields(FieldAnalyser):
-  
+  ''' looks at a word for a pointer value'''
   def make_fields(self, structure, offset, size):
-    if (self.offset%Config.WORDSIZE != 0):
-      return False
-    bytes = self.struct.bytes[self.offset:self.offset+Config.WORDSIZE]
-    if len(bytes) != Config.WORDSIZE:
-      return False      
-    value = unpackWord(bytes)[0] #TODO biteorder
-    # TODO check if pointer value is in range of mappings and set self.comment to pathname value of pointer
-    if value in self.struct._mappings:
-      log.debug('checkPointer offset:%s value:%s'%(self.offset, hex(value)))
-      self.value = value
-      self.size = Config.WORDSIZE
+    # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
+    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    bytes = structure.bytes
+    fields = []
+    while size >= Config.WORDSIZE:
+      value = unpackWord(bytes[offset:offset+Config.WORDSIZE])
+      # check if pointer value is in range of mappings and set self.comment to pathname value of pointer
+      # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
+      if value not in self._mappings:
+        size -= Config.WORDSIZE
+        offset += Config.WORDSIZE
+        continue
+      # we have a pointer
+      log.debug('checkPointer offset:%s value:%s'%(offset, hex(value)))
+      field = Field(structure, offset, FieldType.POINTER, Config.WORDSIZE, False)  
       # TODO: leverage the context._function_names 
-      if self.value in self.struct._context._function_names :
-        self.comment = ' %s::%s'%(os.path.basename(self.struct._mappings.getMmapForAddr(self.value).pathname), 
-                    self.struct._context._function_names[self.value])
+      if value in structure._context._function_names :
+        field.comment = ' %s::%s'%(os.path.basename(structure._mappings.getMmapForAddr(value).pathname), 
+                    structure._context._function_names[value])
       else:
-        self.comment = self.struct._mappings.getMmapForAddr(self.value).pathname 
-      self.typename = FieldType.POINTER
-      return True
-    else:
-      return False
+        field.comment = structure._mappings.getMmapForAddr(value).pathname 
+      fields.append(field)
+      size -= Config.WORDSIZE
+      offset += Config.WORDSIZE
+    return fields
 
 
-class IntegerArrayFields(FieldAnalyser):
+
+class IntegerFields(FieldAnalyser):
+  ''' looks at a word for a small int value'''
+  def make_fields(self, structure, offset, size):
+    # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
+    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    log.debug('checking Integer')
+    bytes = structure.bytes
+    fields = []
+    while size >= Config.WORDSIZE:
+      field = self.checkSmallInt(structure, bytes, offset)
+      if field is None:
+        field = self.checkSmallInt(structure, bytes, offset, '<')
+      # we have a field smallint
+      if field is not None:
+        fields.append(field)      
+      size -= Config.WORDSIZE
+      offset += Config.WORDSIZE
+    return fields
+
+  def checkSmallInt(self, structure, bytes, offset, endianess='<'):
+    ''' check for small value in signed and unsigned forms '''
+    val = unpackWord(bytes[offset:offset+Config.WORDSIZE], endianess)
+    print endianess, val
+    if val < 0xffff:
+      field = Field(structure, offset, FieldType.SMALLINT, Config.WORDSIZE, False)
+      field.value = val
+      field.endianess = endianess
+      return field
+    elif ( (2**(Config.WORDSIZE*8) - 0xffff) < val): # check signed int
+      field = Field(structure, offset, FieldType.SIGNED_SMALLINT, Config.WORDSIZE, False)
+      field.value = val
+      field.endianess = endianess
+      return field
+    return None
+
+class IntegerArrayFields(StructureAnalyser):
   def make_fields(self, structure, offset, size):
     # this should be last resort
     bytes = self.struct.bytes[self.offset:self.offset+self.size]
@@ -162,47 +194,5 @@ class IntegerArrayFields(FieldAnalyser):
     self.comment = '10%% var in values: %s'%(','.join([ repr(v) for v,nb in commons]))
     return True
         
-
-class IntegerFields(FieldAnalyser):
-  def make_fields(self, structure, offset, size):
-    log.debug('checking Integer')
-    if (self.struct._vaddr+self.offset) % Config.WORDSIZE != 0:
-      # TODO  txt[:11] + 0 + int for alignement
-      # non aligned int is not an int
-      #print 'OUT noon aligned'
-      return False
-    if self.checkSmallInt():
-      return True
-    elif self.checkSmallInt(endianess='>'):
-      return True
-    elif self.size == Config.WORDSIZE:
-      bytes = self.struct.bytes[self.offset:self.offset+self.size]
-      self.value = unpackWord(bytes[:Config.WORDSIZE], '@')[0] 
-      self.typename = FieldType.INTEGER
-      self.endianess = '@' # unknown
-      return True
-    return False
-
-  def checkSmallInt(self, endianess='<'):
-    # TODO
-    bytes = self.struct.bytes[self.offset:self.offset+self.size]
-    size = len(bytes)
-    if size < Config.WORDSIZE:
-      return False
-    val = unpackWord(bytes[:Config.WORDSIZE], endianess)[0] 
-    if val < 0xffff:
-      self.value = val
-      self.size = Config.WORDSIZE
-      self.typename = FieldType.SMALLINT
-      self.endianess = endianess
-      return True
-    elif ( (2**(Config.WORDSIZE*8) - 0xffff) < val): # check signed int
-      self.value = val
-      self.size = Config.WORDSIZE
-      self.typename = FieldType.SIGNED_SMALLINT
-      self.endianess = endianess
-      return True
-    return False
-
     
 

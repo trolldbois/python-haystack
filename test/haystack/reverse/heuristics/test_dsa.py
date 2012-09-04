@@ -41,6 +41,7 @@ class TestFieldAnalyzer(unittest.TestCase):
     self.test8 = FS('C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00')
     self.zeroes = ZeroFields()
     self.strings = StringFields()
+    self.ints = IntegerFields()
     pass    
   def setUp(self):  
     pass
@@ -89,6 +90,28 @@ class TestFieldAnalyzer(unittest.TestCase):
     
     fields = self.strings.make_fields(self.test6, 0, len(self.test6))
     self.assertEquals(len(fields), 0) 
+
+  def test_small_int(self):
+    ''' we default to WORDSIZE == 4 '''
+    smallints = [  '\xff\xff\xff\xff', '\x02\xff\xff\xff',  ]
+    for bytes in smallints:
+      fields = self.ints.make_fields( FS(bytes), 0, 4 )
+      self.assertEquals( len(fields), 1)
+      self.assertEquals( fields[0].endianess , '<')
+
+    smallints = [  '\xff\xff\xff\x03', '\x00\x00\x00\x42',
+                   '\x00\x00\x00\x01', '\x00\x00\x01\xaa', ]
+    for bytes in smallints:
+      fields = self.ints.make_fields( FS(bytes), 0, 4 )
+      self.assertEquals( len(fields), 1, repr(bytes))
+      self.assertEquals( fields[0].endianess , '>')
+
+    not_smallints = [  '\xfa\xff\xfb\xff', '\x01\xff\xff\x03', '\x02\xff\x42\xff', 
+                   '\x01\x00\x00\x01', '\x00\x12\x01\xaa', '\x00\xad\x00\x42', 
+                   '\x00\x41\x00\x41', '\x41\x00\x41\x00']
+    for bytes in not_smallints:
+      fields = self.ints.make_fields( FS(bytes), 0, 4 )
+      self.assertEquals( len(fields), 0)
     
 
 
