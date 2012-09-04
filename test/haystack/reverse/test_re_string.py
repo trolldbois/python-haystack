@@ -155,8 +155,9 @@ class TestReString(unittest.TestCase):
     self.assertEquals( 122 , re_string.rfind_utf16(self.test8, 0, len(self.test8) ))
     # find start with limited size
     self.assertEquals( 0 , re_string.rfind_utf16(self.test8, 0, 64 ))
-    # middle field
-    self.assertEquals( 0 , re_string.rfind_utf16(self.test8, 64, 58 ))
+    # middle field ( 12+64 )
+    self.assertEquals( 12 , re_string.rfind_utf16(self.test8, 64, 58 ))
+    
   
 
 if __name__ == '__main__':
