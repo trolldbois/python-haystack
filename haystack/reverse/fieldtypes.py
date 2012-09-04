@@ -122,10 +122,7 @@ class Field:
     self.value = None
     self.comment = ''
     self.usercomment = ''  
-    self.decoded = False
-    if typename != FieldType.UNKNOWN:
-      self.decoded = True
-      self._check()
+    self.decoded = True
     
   def setComment(self, txt):
     self.usercomment = '# %s'%txt
@@ -143,73 +140,6 @@ class Field:
   def isInteger(self): # 
     return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
   
-  def _check(self):
-    if self.typename == FieldType.UNKNOWN:
-      raise TypeError('Please call decodeType on unknown tyep fields')
-    # try all possible things
-    ret = True
-    if self.isString():
-      ret = self.checkString()
-    elif self.isPointer():
-      ret = self.checkPointer()
-    elif self.isInteger():
-      ret = self.checkInteger()
-    return ret
-        
-  def decodeType(self):
-    log.debug('decodeType: offset: %d size: %d'%(self.offset, self.size))
-    if self.decoded:
-      log.debug('decodeType: Already decoded')
-      return self.typename
-    if self.typename != FieldType.UNKNOWN:
-      raise TypeError('I wont coherce this Field if you think its another type')
-    # try all possible things
-    # in order, pointer, small integer (two nul bytes doesnt make a string ), zeroes, string
-    if self.checkZeroes():
-      # ok, inlined in checkZeroes
-      pass
-    elif self.checkInteger():
-      log.debug ('INTEGER: decoded an int from offset %d:%d'%(self.offset,self.offset+self.size))
-    elif self.checkString():
-      pass
-      '''else:
-      # FIXME you need to split('\x00\x00') before
-      # then try utf-32 (or not) 
-      # then try utf-16
-      # then split('\x00')
-      # then fall back to utf8
-      double = self.struct.bytes[self.offset:self.offset+self.size].split('\x00\x00')
-      tryString = False
-      if len(double) > 1: # and double[1] != '':
-        i = re_string.rfind_utf16(double[0])
-      else : # 
-        i = re_string.rfind_utf16(self.struct.bytes[self.offset:self.offset+self.size])
-      if i > -1 : # DEBUG - test me
-        tryString = True
-        self.size -= i 
-        self.offset += i
-      if tryString and self.checkString(): # Found a new string...
-          pass
-        #elif self.checkIntegerArray():
-        #  self.typename = FieldType.ARRAY
-      elif self.checkPointer():
-        log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
-      else:
-        # check other types
-        self.decoded = False
-        return None
-    '''
-    elif self.checkPointer():
-      log.debug ('POINTER: decoded a pointer to %s from offset %d:%d'%(self.comment, self.offset,self.offset+self.size))
-    else:
-      # check other types
-      self.decoded = False
-      return None
-    # typename is good
-    self.decoded = True
-    self.padding = False
-    self.setName('%s_%d'%(self.typename.basename, self.offset))
-    return self.typename
   
   def setCtype(self, name):
     self._ctype = name

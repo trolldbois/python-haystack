@@ -134,6 +134,9 @@ class TestReString(unittest.TestCase):
     self.assertEquals(val, x[2:4])
     self.assertEquals(s[4:-1], x[2:])
     self.assertEquals(s[2:-1], x[:16])
+    self.assertEquals(s[2:-1], x[:])
+    self.assertEquals(s[2:-1], x[0:])
+    self.assertEquals(s[2:-1], x)
     
 
     self.assertEquals(re_string.Nocopy(s,9,10), s[9:10])

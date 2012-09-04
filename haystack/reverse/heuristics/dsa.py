@@ -38,9 +38,10 @@ class ZeroFields(FieldAnalyser):
     '''
     vaddr = structure._vaddr
     bytes = structure.bytes
+    #print vaddr, offset
     assert( (vaddr+offset)%Config.WORDSIZE == 0 )
     #aligned_off = (vaddr+offset)%Config.WORDSIZE 
-    #start = (vaddr+offset)
+    start = (vaddr+offset)
     #if aligned_off != 0: # align to next
     #  start += (Config.WORDSIZE - aligned_off)
     #  size  -= (Config.WORDSIZE - aligned_off)
@@ -48,25 +49,28 @@ class ZeroFields(FieldAnalyser):
     matches = array.array('i')
     for i in range(start, start+size, Config.WORDSIZE ):
       # PERF TODO: bytes or struct test ?
-      if bytes[start:start+Config.WORDSIZE] == self._zeroes:
-        matches.append(start)
+      if bytes[start+i:start+i+Config.WORDSIZE] == self._zeroes:
+        matches.append(start+i)
+        #print matches
     # collate
     if len(matches) == 0:
-      return False
+      return []
     # lets try to get fields
     fields = []
     # first we need to collate neighbors
     collates = list()
-    prev = matches[0]-1
+    prev = matches[0]-Config.WORDSIZE
     x = []
     # PERF TODO: whats is algo here
     for i in matches:
-      if i-1 == prev:
+      if i-Config.WORDSIZE == prev:
         x.append(i)
       else:
         collates.append(x)
-        x = []
+        x = [i]
+      prev = i
     collates.append(x)
+    #print collates
     # we now have collated, lets create fields
     for field in collates:
       flen = len(field)
@@ -77,8 +81,7 @@ class ZeroFields(FieldAnalyser):
       else:
         continue
       # make a field
-      start = field[0]
-      fields.append( Field(structure, start, self._typename, size, False) ) 
+      fields.append( Field(structure, start+field[0], self._typename, size, False) ) 
     # we have all fields
     return fields
 
@@ -87,13 +90,29 @@ class StringFields(FieldAnalyser):
   
   '''
   def make_fields(self, structure, offset, size):
+    fields = []
+    bytes = structure.bytes
+    while size > Config.WORDSIZE:
+      #print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
+      index = re_string.rfind_utf16(bytes, offset, size)
+      if index > -1:
+        f = Field(structure, offset+index, FieldType.STRING, size-index, False)  
+        #print repr(structure.bytes[f.offset:f.offset+f.size])
+        fields.append(f)
+        size = index # reduce unknown field in prefix
+      else:
+        size -= Config.WORDSIZE # reduce unkown field
+    # look in head
+    return fields
+  
+  def _rfind_utf16(self, structure, offset, size):
     ''' try to find a utf-16 string starting from end.'''
     bytes = structure.bytes
     index = re_string.rfind_utf16(bytes, offset, size)
     if index > -1:
       f = Field(structure, offset+index, FieldType.STRING, size-index, False)  
       return f
-    return False
+    return None
 
   #def _utf16(self, )
 

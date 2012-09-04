@@ -73,7 +73,7 @@ class Nocopy():
       start = len(bytes)+start
     if end <0:
       end = len(bytes)+end
-    #print '%s <= %s'%(end, len(bytes))
+    #print '%s < %s <= %s'%(start, end, len(bytes))
     assert(end<=len(bytes) )
     assert(start<end)
     assert(start>=0)
@@ -108,7 +108,7 @@ class Nocopy():
     return self.end-self.start
 
 
-def _rfind_utf16(bytesarray, longerThan=3):
+def _rfind_utf16(bytesarray, longerThan=4):
   '''@returns index of start string'''
   if len(bytesarray) < 4:
     return -1
@@ -121,8 +121,9 @@ def _rfind_utf16(bytesarray, longerThan=3):
     i-=2
   # fix last row
   i+=2
-  if i == len(bytesarray)-2:
+  if i == len(bytesarray):
     return -1
+  #print 'bytearray i ',i, len(bytesarray)
   uni = bytesarray[i:]
   size = len(uni)
   if size > longerThan:
@@ -130,7 +131,7 @@ def _rfind_utf16(bytesarray, longerThan=3):
   return -1
 
 def rfind_utf16(bytes, offset, size):
-  print offset, offset+size
+  #print offset, offset+size
   bytes_nocp = Nocopy(bytes, offset, offset+size)
   index = _rfind_utf16(bytes_nocp)
   return index
