@@ -37,12 +37,12 @@ class ZeroFields(FieldAnalyser):
   def _find_zeroes(self, structure, offset, size):
     ''' iterate over the bytes until a byte if not \x00 
     '''
-    vaddr = structure._vaddr
     bytes = structure.bytes
-    #print vaddr, offset
-    assert( (vaddr+offset)%Config.WORDSIZE == 0 )
-    #aligned_off = (vaddr+offset)%Config.WORDSIZE 
-    start = (vaddr+offset)
+    print 'offset:%x blen:%d'%(offset, len(bytes))
+    print repr(bytes)
+    assert( (offset)%Config.WORDSIZE == 0 )
+    #aligned_off = (offset)%Config.WORDSIZE 
+    start = offset
     #if aligned_off != 0: # align to next
     #  start += (Config.WORDSIZE - aligned_off)
     #  size  -= (Config.WORDSIZE - aligned_off)
@@ -50,9 +50,10 @@ class ZeroFields(FieldAnalyser):
     matches = array.array('i')
     for i in range(start, start+size, Config.WORDSIZE ):
       # PERF TODO: bytes or struct test ?
+      print repr(bytes[start+i:start+i+Config.WORDSIZE])
       if bytes[start+i:start+i+Config.WORDSIZE] == self._zeroes:
         matches.append(start+i)
-        #print matches
+        print matches
     # collate
     if len(matches) == 0:
       return []
@@ -71,7 +72,7 @@ class ZeroFields(FieldAnalyser):
         x = [i]
       prev = i
     collates.append(x)
-    #print collates
+    log.debug(collates)
     # we now have collated, lets create fields
     for field in collates:
       flen = len(field)
@@ -98,7 +99,7 @@ class StringFields(FieldAnalyser):
       #print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
       index = re_string.rfind_utf16(bytes, offset, size)
       if index > -1:
-        f = Field(structure, offset+index, FieldType.STRING, size-index, False)  
+        f = Field(structure, offset+index, FieldType.STRING16, size-index, False)  
         #print repr(structure.bytes[f.offset:f.offset+f.size])
         fields.append(f)
         size = index # reduce unknown field in prefix
@@ -199,6 +200,7 @@ class DSASimple(StructureAnalyser):
     fields = []
     # find zeroes
     fields = self.zero_a.make_fields(structure, offset, slen)
+    log.debug('zero fields %s'%(fields))
     # find strings
     gaps = self._make_gaps(structure, fields)
     if len(gaps) == 0:
