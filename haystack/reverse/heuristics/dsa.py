@@ -260,24 +260,13 @@ class DSASimple(StructureAnalyser):
     nextoffset = 0
     for i, f in enumerate(fields):
       if f.offset > nextoffset : # add temp padding field
-        if nextoffset%Config.WORDSIZE == 0:
-          gap = Field( structure, nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, False)
-          log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
-          gaps.append(gap)
-        else:   # unaligned field should be splitted
-          s1 = Config.WORDSIZE - nextoffset%Config.WORDSIZE
-          gap1 = Field( structure, nextoffset, FieldType.UNKNOWN, s1, True)
-          gap2 = Field( structure, nextoffset+s1, FieldType.UNKNOWN, f.offset-nextoffset-s1, False)
-          log.debug('_make_gaps: Unaligned field at offset %d:%d'%(gap1.offset, gap1.offset+len(gap1) ))
-          log.debug('_make_gaps: adding field at offset %d:%d'%(gap2.offset, gap2.offset+len(gap2) ))
-          gaps.append(gap1)
-          gaps.append(gap2)
+        self._aligned_gaps(structure, f.offset, nextoffset, gaps)
       elif f.offset < nextoffset :
-        log.debug(structure)
-        log.debug(f)
-        log.debug('%s < %s '%(f.offset, nextoffset) )
-        for f1 in fields:
-          log.debug(f1)
+        #log.debug(structure)
+        #log.debug(f)
+        #log.debug('%s < %s '%(f.offset, nextoffset) )
+        #for f1 in fields:
+        #  log.debug(f1)
         assert(False) # f.offset < nextoffset # No overlaps authorised
       # do next field
       nextoffset = f.offset + len(f)
@@ -286,12 +275,31 @@ class DSASimple(StructureAnalyser):
     if lastfield_size > 0 :
       if lastfield_size < Config.WORDSIZE:
         gap = Field( structure, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
+        log.debug('_make_gaps: adding last field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
+        gaps.append(gap)
       else:
-        gap = Field( structure, nextoffset, FieldType.UNKNOWN, lastfield_size, False)
-      log.debug('_make_gaps: adding last field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
-      gaps.append(gap)
+        self._aligned_gaps(structure, len(structure), nextoffset, gaps)
     return gaps
   
+  def _aligned_gaps(self, structure, endoffset, nextoffset, gaps):
+    ''' if nextoffset is aligned
+          add a gap to gaps, or 
+        if nextoffset is not aligned
+          add (padding + gap) to gaps 
+         '''
+    if nextoffset%Config.WORDSIZE == 0:
+      gap = Field( structure, nextoffset, FieldType.UNKNOWN, endoffset-nextoffset, False)
+      log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
+      gaps.append(gap)
+    else:   # unaligned field should be splitted
+      s1 = Config.WORDSIZE - nextoffset%Config.WORDSIZE
+      gap1 = Field( structure, nextoffset, FieldType.UNKNOWN, s1, True)
+      gap2 = Field( structure, nextoffset+s1, FieldType.UNKNOWN, endoffset-nextoffset-s1, False)
+      log.debug('_make_gaps: Unaligned field at offset %d:%d'%(gap1.offset, gap1.offset+len(gap1) ))
+      log.debug('_make_gaps: adding field at offset %d:%d'%(gap2.offset, gap2.offset+len(gap2) ))
+      gaps.append(gap1)
+      gaps.append(gap2)
+    return
 
 class IntegerArrayFields(StructureAnalyser):
   ''' TODO '''
