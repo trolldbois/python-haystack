@@ -117,6 +117,11 @@ class TestFieldAnalyser(unittest.TestCase):
     for bytes in not_smallints:
       fields = self.ints.make_fields( FS(bytes), 0, 4 )
       self.assertEquals( len(fields), 0)
+
+  def test_ascii(self):
+    # TODO - not tested
+    fields = self.ascii.make_fields(self.test1, 0, len(self.test1))
+    self.assertEquals(len(fields), 0) # no ascii
     
 
 class TestDSA(unittest.TestCase):
