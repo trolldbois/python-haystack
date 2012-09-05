@@ -202,6 +202,7 @@ class AnonymousStructInstance():
     self._pointerResolved = False
     self._dirty = True
     self._ctype = None
+    self._bytes = None
     return    
   
   def guessField(self, vaddr, typename=None, size=-1, padding=False ):
@@ -233,7 +234,10 @@ class AnonymousStructInstance():
     self._fields.append(field)
     self._fields.sort()
     return field
-
+  
+  def add_fields(self, fields):
+    self._fields.extend(fields)
+  
   def addFields(self, vaddrList, typename, size, padding ):
     vaddrList.sort()
     if min(vaddrList) < self._vaddr or max(vaddrList) > self._vaddr+len(self):
@@ -297,7 +301,7 @@ class AnonymousStructInstance():
         FIXME include rules for first field == sizeof struct-4
         
     '''
-    if self.isResolved():
+    if self.resolved:
       return
     self._dirty=True
     # should be done by 
@@ -740,20 +744,24 @@ class AnonymousStructInstance():
 
   @property # TODO add a cache property ?
   def bytes(self):
-    m = self._mappings.getMmapForAddr(self._vaddr)
-    return m.readBytes(self._vaddr, self._size) # TODO Shared bytes
+    if self._bytes is None:
+      m = self._mappings.getMmapForAddr(self._vaddr)
+      self._bytes = m.readBytes(self._vaddr, self._size) # TODO re_string.Nocopy
+    return self._bytes
 
-  def isResolved(self):
+  @property
+  def resolved(self):
     return self._resolved
 
-  def isPointerResolved(self):
+  @property
+  def pointerResolved(self):
     return self._pointerResolved
 
   def toString(self):
     #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
-    info = 'resolved:%s SIG:%s size:%d'%(self.isResolved(), self.getSignature(text=True), len(self))
+    info = 'resolved:%s SIG:%s size:%d'%(self.resolved, self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
       info += ' pointerResolved:%s'%(self.isPointerResolved())
     ctypes_def = '''
@@ -791,6 +799,7 @@ class %s(LoadableMembersStructure):  # %s
       #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
       d['dumpname'] = None
     d['_context'] = None
+    d['_bytes'] = None
     return d
 
   def __setstate__(self, d):

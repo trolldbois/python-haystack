@@ -110,6 +110,7 @@ class StringFields(FieldAnalyser):
 
 
 class PointerFields(FieldAnalyser):
+  ''' TODO tests '''
   ''' looks at a word for a pointer value'''
   def make_fields(self, structure, offset, size):
     # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
@@ -177,7 +178,67 @@ class IntegerFields(FieldAnalyser):
       return field
     return None
 
+
+class DSASimple(StructureAnalyser):
+  zero_a = ZeroFields()
+  str_a = StringFields()
+  int_a = IntegerFields()
+
+  def analyze_fields(self, structure):
+    structure.reset()
+    fields, gaps = self._analyze(structure)
+    structure.add_fields(fields)
+    structure.add_fields(gaps) #, FieldType.UNKNOWN
+    structure.resolved = True
+    return structure
+    
+  def _analyze(self, structure):
+    slen = len(structure)
+    offset = 0
+    # call on analyzers
+    fields = []
+    # find zeroes
+    fields = self.zero_a.make_fields(structure, offset, slen)
+    # find strings
+    gaps = self._make_gaps(structure, fields)
+    if len(gaps) == 0:
+      return fields, gaps
+    for field in gaps:
+      fields.extend( self.str_a.make_fields(structure, field.offset, len(field)) )
+    # find smallints
+    gaps = self._make_gaps(structure, fields)
+    if len(gaps) == 0:
+      return fields, gaps
+    for field in gaps:
+      fields.extend( self.int_a.make_fields(structure, field.offset, len(field)) )
+    # escape from hell    
+    gaps = self._make_gaps(structure, fields)
+    return fields, gaps
+
+  def _make_gaps(self, structure, fields):
+    fields.sort()
+    gaps = []
+    nextoffset = 0
+    for i, f in enumerate(fields):
+      if f.offset > nextoffset : # add temp padding field
+        gap = Field( structure, nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, False)
+        log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
+        gaps.append(gap)
+      elif f.offset < nextoffset :
+        assert(f.offset >= nextoffset) # No overlaps authorised
+      # do next field
+      nextoffset = f.offset + len(f)
+    # conclude on QUEUE insertion
+    if nextoffset < len(structure):
+      gap = Field( structure, nextoffset, FieldType.UNKNOWN, len(structure)-nextoffset, False)
+      log.debug('_make_gaps: adding last field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
+      gaps.append(gap)
+    return gaps
+  
+
+
 class IntegerArrayFields(StructureAnalyser):
+  ''' TODO '''
   def make_fields(self, structure, offset, size):
     # this should be last resort
     bytes = self.struct.bytes[self.offset:self.offset+self.size]

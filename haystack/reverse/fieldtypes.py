@@ -98,6 +98,7 @@ FieldType.UNKNOWN  = FieldType(0x0,  'untyped',   'ctypes.c_ubyte', ctypes.c_uby
 FieldType.STRUCT   = FieldType(0x1, 'struct',      'Structure', None,   'K')
 FieldType.ZEROES   = FieldType(0x2,  'zerroes',   'ctypes.c_ubyte', ctypes.c_ubyte,  'z')
 FieldType.STRING   = FieldType(0x4, 'text',      'ctypes.c_char', ctypes.c_char,   'T')
+FieldType.STRING16   = FieldType(0x14, 'utf16',      'ctypes.c_char', ctypes.c_char,   'T')
 FieldType.STRINGNULL   = FieldType(0x6, 'text0',      'ctypes.c_char', ctypes.c_char,   'T')
 FieldType.STRING_POINTER   = FieldType(0x4+0xa, 'text_ptr',      'ctypes.c_char_p', ctypes.c_char_p, 's', True)
 FieldType.INTEGER  = FieldType(0x18, 'int',       'ctypes.c_uint', ctypes.c_uint,   'I')
@@ -122,6 +123,7 @@ class Field:
     self.value = None
     self.comment = ''
     self.usercomment = ''  
+    self.encoding = None
     self.decoded = True
     
   def setComment(self, txt):
@@ -240,7 +242,7 @@ class Field:
     elif self.isZeroes():
       comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
     elif self.isString():
-      comment = '#  %s %s %s:%s'%( self.comment, self.usercomment, self.encoding, self.getValue(Config.commentMaxSize) ) 
+      comment = '#  %s %s %s:%s'%( self.comment, self.usercomment, self.typename.basename, self.getValue(Config.commentMaxSize) ) 
     else:
       #unknown
       comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 

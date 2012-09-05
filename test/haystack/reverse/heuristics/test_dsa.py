@@ -12,7 +12,7 @@ import pickle
 import sys
 
 from haystack.config import Config
-from haystack.reverse import fieldtypes
+from haystack.reverse import fieldtypes, structure, reversers
 from haystack.reverse.fieldtypes import FieldType
 from haystack.reverse.heuristics.dsa import *
 
@@ -114,6 +114,129 @@ class TestFieldAnalyzer(unittest.TestCase):
       self.assertEquals( len(fields), 0)
     
 
+class TestDSA(unittest.TestCase):
+
+  @classmethod
+  def setUpClass(self):
+    self.context = None #reversers.getContext('test/src/test-ctypes3.dump')
+    self._putty7124 = None
+    self.dsa = DSASimple()
+    
+  def setUp(self):  
+    pass
+
+  def tearDown(self):
+    pass
+  
+  @property
+  def putty7124(self):
+    if self._putty7124 is None:
+      self._putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
+    return self._putty7124
+  
+  
+  def test_utf_16_le_null_terminated(self):
+
+    # struct_682638 in putty.7124.dump
+    vaddr = 0x682638
+    size = 184
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    self.dsa.analyze_fields(st)
+    print repr(st.bytes)
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 5)
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[3].isString())
+    #  print f
+    
+  def test_utf_16_le_non_null_terminated(self):
+    ''' non-null terminated '''
+    # struct_691ed8 in putty.7124.dump
+    vaddr = 0x691ed8
+    size = 256
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[1].typename, fieldtypes.FieldType.STRING)
+    self.assertTrue( fields[1].isString())
+
+
+  def test_utf_16_le_null_terminated_2(self):
+    ''' null terminated '''
+    # struct_64f328 in putty.7124.dump
+    vaddr = 0x64f328
+    size = 72
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 5)
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[3].isString())
+
+  def test_utf_16_le_null_terminated_3(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x657488
+    size = 88
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 2)
+    self.assertEquals( fields[0].typename, fieldtypes.FieldType.STRING)
+    self.assertTrue( fields[0].isString())
+
+  def test_big_block(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x63d4c8 #+ 1968
+    size = 4088 #128
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    #log.debug(st.toString())
+    fields = st.getFields()
+    self.assertLess( len(fields), 879)
+    #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
+    #self.assertTrue( fields[35].isString())
+    strfields = [f for f in st.getFields() if f.isString()]
+    #for f in strfields:
+    #  print f.toString(),
+    self.assertGreater( len(strfields), 30 )
+
+  def test_uuid(self):
+    ''' null terminated '''
+    # in putty.7124.dump
+    vaddr = 0x63aa68
+    size = 120
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertEquals( len(fields), 3)
+    self.assertEquals( fields[2].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertTrue( fields[2].isString())
+
+    pass
+
+  def test_big_block_2(self):
+    # in putty.7124.dump
+    vaddr = 0x675b30
+    size = 8184
+    st = structure.makeStructure(self.putty7124, vaddr, size)    
+    st.decodeFields()
+    log.debug(st.toString())
+    fields = st.getFields()
+    self.assertLess( len(fields), 879)
+    #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
+    #self.assertTrue( fields[35].isString())
+    fields = [f for f in st.getFields() if f.isString()]
+    #for f in fields:
+    #  print f.toString(),
+
 
 class FS:
   def __init__(self, bytes, vaddr=0):
@@ -127,6 +250,7 @@ class FS:
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
+  logging.getLogger('test_field_analyzer').setLevel(level=logging.DEBUG)
   logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)

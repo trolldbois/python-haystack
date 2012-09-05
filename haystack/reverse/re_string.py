@@ -15,6 +15,8 @@ import encodings
 import logging
 import string
 
+from haystack.config import Config
+
 log = logging.getLogger('re_string')
 
 #
@@ -124,16 +126,24 @@ def _rfind_utf16(bytesarray, longerThan=4):
   if i == len(bytesarray):
     return -1
   #print 'bytearray i ',i, len(bytesarray)
-  uni = bytesarray[i:]
-  size = len(uni)
+  size = len(bytesarray)-i
+  #uni = bytesarray[i:]
+  #size = len(uni)
   if size > longerThan:
     return i
   return -1
 
-def rfind_utf16(bytes, offset, size):
+def rfind_utf16(bytes, offset, size, aligned=False):
+  '''@returns index from offset where utf16 was found'''
   #print offset, offset+size
   bytes_nocp = Nocopy(bytes, offset, offset+size)
   index = _rfind_utf16(bytes_nocp)
+  if aligned and index > -1:
+    # align results 
+    if index%Config.WORDSIZE :
+      index += index%Config.WORDSIZE
+    if index > offset+size-Config.WORDSIZE:
+      return -1
   return index
 
 
