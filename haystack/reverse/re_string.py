@@ -110,7 +110,7 @@ class Nocopy():
     return self.end-self.start
 
 
-def _rfind_utf16(bytesarray, longerThan=4):
+def _rfind_utf16(bytesarray, longerThan=7):
   '''@returns index of start string'''
   if len(bytesarray) < 4:
     return -1

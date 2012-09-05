@@ -204,6 +204,8 @@ class Field:
         i = self.struct._fields.index(self)
     except ValueError, e:
       log.warning('self in struct.fields but not found by index()')
+    except AttributeError, e:
+      pass
     return '<Field %s offset:%d size:%s t:%s'%(i, self.offset, self.size, self.typename)
     
   def getValue(self, maxLen):

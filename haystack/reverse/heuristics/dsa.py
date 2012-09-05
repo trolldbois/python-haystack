@@ -237,9 +237,12 @@ class DSASimple(StructureAnalyser):
     # find pointers
     for analyser in [ self.zero_a, self.utf16_a, self.ascii_a, self.int_a, self.ptr_a]:
       for field in gaps:
+        if field.padding:
+          fields.append(field)
+          continue
         log.debug('Using %s on %d:%d'%(analyser.__class__.__name__, field.offset, field.offset+len(field)))
         fields.extend( analyser.make_fields(structure, field.offset, len(field)) )
-        print fields
+        #print fields
       if len(fields) != nb: # no change in fields, keep gaps
         nb = len(fields)
         gaps = self._make_gaps(structure, fields)
@@ -253,21 +256,33 @@ class DSASimple(StructureAnalyser):
     nextoffset = 0
     for i, f in enumerate(fields):
       if f.offset > nextoffset : # add temp padding field
-        gap = Field( structure, nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, False)
-        log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
-        gaps.append(gap)
+        if nextoffset%Config.WORDSIZE == 0:
+          gap = Field( structure, nextoffset, FieldType.UNKNOWN, f.offset-nextoffset, False)
+          log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
+          gaps.append(gap)
+        else:   # unaligned field should be splitted
+          s1 = Config.WORDSIZE - nextoffset%Config.WORDSIZE
+          gap1 = Field( structure, nextoffset, FieldType.UNKNOWN, s1, True)
+          gap2 = Field( structure, nextoffset+s1, FieldType.UNKNOWN, f.offset-nextoffset-s1, False)
+          log.debug('_make_gaps: Unaligned field at offset %d:%d'%(gap1.offset, gap1.offset+len(gap1) ))
+          log.debug('_make_gaps: adding field at offset %d:%d'%(gap2.offset, gap2.offset+len(gap2) ))
+          gaps.append(gap1)
+          gaps.append(gap2)
       elif f.offset < nextoffset :
         assert(f.offset >= nextoffset) # No overlaps authorised
       # do next field
       nextoffset = f.offset + len(f)
     # conclude on QUEUE insertion
-    if nextoffset < len(structure):
-      gap = Field( structure, nextoffset, FieldType.UNKNOWN, len(structure)-nextoffset, False)
+    lastfield_size = len(structure)-nextoffset
+    if lastfield_size > 0 :
+      if lastfield_size < Config.WORDSIZE:
+        gap = Field( structure, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
+      else:
+        gap = Field( structure, nextoffset, FieldType.UNKNOWN, lastfield_size, False)
       log.debug('_make_gaps: adding last field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
       gaps.append(gap)
     return gaps
   
-
 
 class IntegerArrayFields(StructureAnalyser):
   ''' TODO '''
