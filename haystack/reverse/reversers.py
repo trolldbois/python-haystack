@@ -261,7 +261,7 @@ class PointerFieldReverser(StructureOrientedReverser):
     fromcache = 0
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
       anon = context.getStructureForAddr(ptr_value)
-      if anon.isPointerResolved():
+      if anon.resolvedPointers:
         fromcache+=1
       else:
         decoded+=1
