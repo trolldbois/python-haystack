@@ -228,7 +228,7 @@ class FieldReverser(StructureOrientedReverser):
     #for ptr_value,anon in context.structures.items():
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
       anon = context.getStructureForAddr(ptr_value)
-      if anon.isResolved(): # TODO this is a performance hit, unproxying...
+      if anon.resolved: # TODO this is a performance hit, unproxying...
         fromcache+=1
       else:
         decoded+=1
