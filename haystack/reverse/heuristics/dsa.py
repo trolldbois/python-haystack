@@ -128,9 +128,11 @@ class PrintableAsciiFields(FieldAnalyser):
           f = Field(structure, offset+index, FieldType.STRING, ssize, False)  
         #print repr(structure.bytes[f.offset:f.offset+f.size])
         fields.append(f)
-        size -= ssize # reduce unknown field 
+        size -= ssize # reduce unknown field
+        offset += ssize
       else:
         size -= Config.WORDSIZE # reduce unkown field
+        offset += Config.WORDSIZE
     # look in head
     return fields
   
@@ -242,6 +244,8 @@ class DSASimple(StructureAnalyser):
           continue
         log.debug('Using %s on %d:%d'%(analyser.__class__.__name__, field.offset, field.offset+len(field)))
         fields.extend( analyser.make_fields(structure, field.offset, len(field)) )
+        #for f1 in fields:
+        #  log.debug('after %s'%f1)
         #print fields
       if len(fields) != nb: # no change in fields, keep gaps
         nb = len(fields)
@@ -269,7 +273,12 @@ class DSASimple(StructureAnalyser):
           gaps.append(gap1)
           gaps.append(gap2)
       elif f.offset < nextoffset :
-        assert(f.offset >= nextoffset) # No overlaps authorised
+        log.debug(structure)
+        log.debug(f)
+        log.debug('%s < %s '%(f.offset, nextoffset) )
+        for f1 in fields:
+          log.debug(f1)
+        assert(False) # f.offset < nextoffset # No overlaps authorised
       # do next field
       nextoffset = f.offset + len(f)
     # conclude on QUEUE insertion
