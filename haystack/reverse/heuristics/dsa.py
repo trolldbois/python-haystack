@@ -26,6 +26,7 @@ class ZeroFields(FieldAnalyser):
   ''' checks for possible fields, aligned, with WORDSIZE zeros.'''
   def make_fields(self, structure, offset, size):
     assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    #log.debug('checking Zeroes')
     self._typename = FieldType.ZEROES
     self._zeroes = '\x00'*Config.WORDSIZE
 
@@ -38,8 +39,8 @@ class ZeroFields(FieldAnalyser):
     ''' iterate over the bytes until a byte if not \x00 
     '''
     bytes = structure.bytes
-    print 'offset:%x blen:%d'%(offset, len(bytes))
-    print repr(bytes)
+    #print 'offset:%x blen:%d'%(offset, len(bytes))
+    #print repr(bytes)
     assert( (offset)%Config.WORDSIZE == 0 )
     #aligned_off = (offset)%Config.WORDSIZE 
     start = offset
@@ -50,10 +51,10 @@ class ZeroFields(FieldAnalyser):
     matches = array.array('i')
     for i in range(start, start+size, Config.WORDSIZE ):
       # PERF TODO: bytes or struct test ?
-      print repr(bytes[start+i:start+i+Config.WORDSIZE])
+      #print repr(bytes[start+i:start+i+Config.WORDSIZE])
       if bytes[start+i:start+i+Config.WORDSIZE] == self._zeroes:
         matches.append(start+i)
-        print matches
+        #print matches
     # collate
     if len(matches) == 0:
       return []
@@ -72,7 +73,7 @@ class ZeroFields(FieldAnalyser):
         x = [i]
       prev = i
     collates.append(x)
-    log.debug(collates)
+    #log.debug(collates)
     # we now have collated, lets create fields
     for field in collates:
       flen = len(field)
@@ -87,12 +88,13 @@ class ZeroFields(FieldAnalyser):
     # we have all fields
     return fields
 
-class StringFields(FieldAnalyser):
+class UTF16Fields(FieldAnalyser):
   ''' rfinds utf-16-ascii and ascii 7bit
   
   '''
   def make_fields(self, structure, offset, size):
     assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    #log.debug('checking String')
     fields = []
     bytes = structure.bytes
     while size > Config.WORDSIZE:
@@ -108,6 +110,30 @@ class StringFields(FieldAnalyser):
     # look in head
     return fields
   
+class PrintableAsciiFields(FieldAnalyser):
+  ''' finds printable ascii fields '''
+  def make_fields(self, structure, offset, size):
+    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    #log.debug('checking String')
+    fields = []
+    bytes = structure.bytes
+    while size > Config.WORDSIZE:
+      #print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
+      index, ssize = re_string.find_ascii(bytes, offset, size)
+      if index == 0:
+        if (ssize < size) and bytes[offset+index+ssize]=='\x00': # space for a \x00
+          ssize +=1
+          f = Field(structure, offset+index, FieldType.STRINGNULL, ssize, False)  
+        else:
+          f = Field(structure, offset+index, FieldType.STRING, ssize, False)  
+        #print repr(structure.bytes[f.offset:f.offset+f.size])
+        fields.append(f)
+        size -= ssize # reduce unknown field 
+      else:
+        size -= Config.WORDSIZE # reduce unkown field
+    # look in head
+    return fields
+  
 
 
 class PointerFields(FieldAnalyser):
@@ -116,19 +142,21 @@ class PointerFields(FieldAnalyser):
   def make_fields(self, structure, offset, size):
     # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
     assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    log.debug('checking Pointer')
     bytes = structure.bytes
     fields = []
     while size >= Config.WORDSIZE:
       value = unpackWord(bytes[offset:offset+Config.WORDSIZE])
       # check if pointer value is in range of mappings and set self.comment to pathname value of pointer
       # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
-      if value not in self._mappings:
+      if value not in structure._mappings:
         size -= Config.WORDSIZE
         offset += Config.WORDSIZE
         continue
       # we have a pointer
       log.debug('checkPointer offset:%s value:%s'%(offset, hex(value)))
       field = Field(structure, offset, FieldType.POINTER, Config.WORDSIZE, False)  
+      field.value = value
       # TODO: leverage the context._function_names 
       if value in structure._context._function_names :
         field.comment = ' %s::%s'%(os.path.basename(structure._mappings.getMmapForAddr(value).pathname), 
@@ -147,7 +175,7 @@ class IntegerFields(FieldAnalyser):
   def make_fields(self, structure, offset, size):
     # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
     assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
-    log.debug('checking Integer')
+    #log.debug('checking Integer')
     bytes = structure.bytes
     fields = []
     while size >= Config.WORDSIZE:
@@ -182,8 +210,10 @@ class IntegerFields(FieldAnalyser):
 
 class DSASimple(StructureAnalyser):
   zero_a = ZeroFields()
-  str_a = StringFields()
+  ascii_a = PrintableAsciiFields()
+  utf16_a = UTF16Fields()
   int_a = IntegerFields()
+  ptr_a = PointerFields()
 
   def analyze_fields(self, structure):
     structure.reset()
@@ -198,23 +228,23 @@ class DSASimple(StructureAnalyser):
     offset = 0
     # call on analyzers
     fields = []
+    nb = -1
+    gaps = [Field( structure, 0, FieldType.UNKNOWN, len(structure), False)]
+    
     # find zeroes
-    fields = self.zero_a.make_fields(structure, offset, slen)
-    log.debug('zero fields %s'%(fields))
     # find strings
-    gaps = self._make_gaps(structure, fields)
-    if len(gaps) == 0:
-      return fields, gaps
-    for field in gaps:
-      fields.extend( self.str_a.make_fields(structure, field.offset, len(field)) )
     # find smallints
-    gaps = self._make_gaps(structure, fields)
-    if len(gaps) == 0:
-      return fields, gaps
-    for field in gaps:
-      fields.extend( self.int_a.make_fields(structure, field.offset, len(field)) )
-    # escape from hell    
-    gaps = self._make_gaps(structure, fields)
+    # find pointers
+    for analyser in [ self.zero_a, self.utf16_a, self.ascii_a, self.int_a, self.ptr_a]:
+      for field in gaps:
+        log.debug('Using %s on %d:%d'%(analyser.__class__.__name__, field.offset, field.offset+len(field)))
+        fields.extend( analyser.make_fields(structure, field.offset, len(field)) )
+        print fields
+      if len(fields) != nb: # no change in fields, keep gaps
+        nb = len(fields)
+        gaps = self._make_gaps(structure, fields)
+      if len(gaps) == 0:
+        return fields, gaps
     return fields, gaps
 
   def _make_gaps(self, structure, fields):

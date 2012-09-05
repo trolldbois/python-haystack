@@ -32,11 +32,12 @@ class TestReString(unittest.TestCase):
     self.test2 = '''\x4C\x00\x6F\x00\xEF\x00\x63\x00\x20\x00\x4A\x00\x61\x00\x71\x00\x75\x00\x65\x00\x6D\x00\x65\x00\x74\x00\x00\x00'''
     self.test3 = '''\\\x00R\x00E\x00G\x00I\x00S\x00T\x00R\x00Y\x00\\\x00U\x00S\x00E\x00R\x00\\\x00S\x00-\x001\x00-\x005\x00-\x002\x001\x00-\x002\x008\x008\x004\x000\x006\x003\x000\x007\x003\x00-\x003\x003\x002\x009\x001\x001\x007\x003\x002\x000\x00-\x003\x008\x001\x008\x000\x003\x009\x001\x009\x009\x00-\x001\x000\x000\x000\x00_\x00C\x00L\x00A\x00S\x00S\x00E\x00S\x00\\\x00W\x00o\x00w\x006\x004\x003\x002\x00N\x00o\x00d\x00e\x00\\\x00C\x00L\x00S\x00I\x00D\x00\\\x00{\x007\x006\x007\x006\x005\x00B\x001\x001\x00-\x003\x00F\x009\x005\x00-\x004\x00A\x00F\x002\x00-\x00A\x00C\x009\x00D\x00-\x00E\x00A\x005\x005\x00D\x008\x009\x009\x004\x00F\x001\x00A\x00}\x00'''
     self.test4 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\x07\x08\x09\x00'''
-    self.test5 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
-    self.test6 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
+    self.test5 = '''edrt\x00fguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
+    self.test6 = '''\xf3drtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
     self.test7 = '\x1e\x1c\x8c\xd8\xcc\x01\x00' # pure crap
     self.test8 = 'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00'
     self.test9 = '\x01\x01@\x00C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00'
+    self.test10 = '''\x4C\x6F\xEF\x63\x20\x4A\x61\x71\x75\x65\x6D\x65\x74'''
     
   def setUp(self):  
     pass
@@ -166,6 +167,15 @@ class TestReString(unittest.TestCase):
     # non aligned middle field ?
     #TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0, len(self.test9) ))
     
+  def test_find_ascii(self):
+    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test1, 0, len(self.test1) ))
+    self.assertEquals( (0, 43) , re_string.find_ascii(self.test4, 0, len(self.test4) ))
+    self.assertEquals( (0, 4) , re_string.find_ascii(self.test5, 0, len(self.test5) ))
+    self.assertEquals( (0, 39) , re_string.find_ascii(self.test5, 5, len(self.test5)-5 ))
+    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test6, 0, len(self.test6) ))
+    self.assertEquals( (0,42) , re_string.find_ascii(self.test6, 1, len(self.test6)-1 ))
+    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test10, 0, len(self.test10) )) # too small
+    self.assertEquals( (0, 10) , re_string.find_ascii(self.test10, 3, len(self.test10)-3 )) 
   
 
 if __name__ == '__main__':

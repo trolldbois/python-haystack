@@ -35,12 +35,13 @@ class TestFieldAnalyzer(unittest.TestCase):
     self.test2 = FS('''....\x00\x00\x00\x00....\x00\x00\x00\x00\x00\x00\x00\x00....\x00...\x00\x00\x00.\x00\x00\x00\x00''')
     self.test3 = FS('''....1234aaaa.....''')
     self.test4 = FS('''\x00\x00\x00\x00h\x00i\x00 \x00m\x00y\x00 \x00n\x00a\x00m\x00e\x00\x00\x00\xef\x00\x00\x00\x00\x00....''')
-    #
+    self.test5 = FS('\xd8\xf2d\x00P\xf3d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00CryptDllVerifyEncodedSignature\x00\x00')
     self.test6 = FS('''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00''')
     #
     self.test8 = FS('C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00')
     self.zeroes = ZeroFields()
-    self.strings = StringFields()
+    self.utf16 = UTF16Fields()
+    self.ascii = PrintableAsciiFields()
     self.ints = IntegerFields()
     pass    
   def setUp(self):  
@@ -80,15 +81,18 @@ class TestFieldAnalyzer(unittest.TestCase):
     fields = self.zeroes.make_fields(self.test4, 4, len(self.test4))
     self.assertEquals( len(fields) , 1)
 
+    fields = self.zeroes.make_fields(self.test5, 0, len(self.test5))
+    self.assertEquals( len(fields) , 13)
 
-  def test_strings(self):
-    fields = self.strings.make_fields(self.test1, 0, len(self.test1))
+
+  def test_utf16(self):
+    fields = self.utf16.make_fields(self.test1, 0, len(self.test1))
     self.assertEquals(len(fields), 0) # no utf16
 
-    fields = self.strings.make_fields(self.test8, 0, len(self.test8))
+    fields = self.utf16.make_fields(self.test8, 0, len(self.test8))
     self.assertEquals(len(fields), 3) # 3 utf-16
     
-    fields = self.strings.make_fields(self.test6, 0, len(self.test6))
+    fields = self.utf16.make_fields(self.test6, 0, len(self.test6))
     self.assertEquals(len(fields), 0) 
 
   def test_small_int(self):
@@ -142,11 +146,13 @@ class TestDSA(unittest.TestCase):
     size = 184
     st = structure.makeStructure(self.putty7124, vaddr, size)    
     self.dsa.analyze_fields(st)
-    print repr(st.bytes)
+    #print repr(st.bytes)
     log.debug(st.toString())
     fields = st.getFields()
-    self.assertEquals( len(fields), 5)
-    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRINGNULL)
+    self.assertEquals( len(fields), 5) # TODO should be 6 fields lllttp
+    self.assertEquals( fields[2].typename, fieldtypes.FieldType.STRING16)
+    self.assertTrue( fields[2].isString())
+    self.assertEquals( fields[3].typename, fieldtypes.FieldType.STRING16)
     self.assertTrue( fields[3].isString())
     #  print f
     
@@ -156,11 +162,12 @@ class TestDSA(unittest.TestCase):
     vaddr = 0x691ed8
     size = 256
     st = structure.makeStructure(self.putty7124, vaddr, size)    
-    st.decodeFields()
+    self.dsa.analyze_fields(st)
+    #print repr(st.bytes)
     log.debug(st.toString())
     fields = st.getFields()
     self.assertEquals( len(fields), 2)
-    self.assertEquals( fields[1].typename, fieldtypes.FieldType.STRING)
+    self.assertEquals( fields[1].typename, fieldtypes.FieldType.STRING16)
     self.assertTrue( fields[1].isString())
 
 
@@ -170,7 +177,8 @@ class TestDSA(unittest.TestCase):
     vaddr = 0x64f328
     size = 72
     st = structure.makeStructure(self.putty7124, vaddr, size)    
-    st.decodeFields()
+    self.dsa.analyze_fields(st)
+    print repr(st.bytes)
     log.debug(st.toString())
     fields = st.getFields()
     self.assertEquals( len(fields), 5)
@@ -254,6 +262,7 @@ if __name__ == '__main__':
   logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
   logging.getLogger("structure").setLevel(level=logging.DEBUG)
   logging.getLogger("field").setLevel(level=logging.DEBUG)
+  logging.getLogger("dsa").setLevel(level=logging.DEBUG)
   logging.getLogger("re_string").setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)

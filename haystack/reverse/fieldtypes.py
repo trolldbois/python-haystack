@@ -132,7 +132,7 @@ class Field:
     return self.usercomment
     
   def isString(self): # null terminated
-    return self.typename in [ FieldType.STRING, FieldType.STRINGNULL, FieldType.STRING_POINTER]
+    return self.typename in [ FieldType.STRING, FieldType.STRING16, FieldType.STRINGNULL, FieldType.STRING_POINTER]
   def isPointer(self): # 
     return self.typename.isPtr
   def isZeroes(self): # 
@@ -194,6 +194,9 @@ class Field:
   def __len__(self):
     return int(self.size) ## some long come and goes
 
+  def __repr__(self):
+    return str(self)
+
   def __str__(self):
     i = 'new'
     try:
@@ -214,7 +217,7 @@ class Field:
     if len(self) == 0:
       return '<-haystack no pattern found->'
     if self.isString():
-      bytes = repr(self.value)
+      bytes = "'%s'"%(self.struct.bytes[self.offset:self.offset+self.size])
     elif self.isInteger():
       return self.value 
     elif self.isZeroes():
@@ -240,9 +243,9 @@ class Field:
     elif self.isInteger():
       comment = '#  0x%x %s %s'%( self.getValue(Config.commentMaxSize), self.comment, self.usercomment ) 
     elif self.isZeroes():
-      comment = '# %s %s zeroes:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize)  ) 
+      comment = '''# %s %s zeroes: '\\x00'*%d'''%( self.comment, self.usercomment, len(self)  ) 
     elif self.isString():
-      comment = '#  %s %s %s:%s'%( self.comment, self.usercomment, self.typename.basename, self.getValue(Config.commentMaxSize) ) 
+      comment = '#  %s %s %s: %s'%( self.comment, self.usercomment, self.typename.basename, self.getValue(Config.commentMaxSize) ) 
     else:
       #unknown
       comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 

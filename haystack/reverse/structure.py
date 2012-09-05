@@ -199,7 +199,7 @@ class AnonymousStructInstance():
   def reset(self):
     self._fields = []
     self._resolved = False
-    self._pointerResolved = False
+    self._resolvedPointers = False
     self._dirty = True
     self._ctype = None
     self._bytes = None
@@ -471,7 +471,7 @@ class AnonymousStructInstance():
     return
   
   def resolvePointers(self):
-    if self.isPointerResolved():
+    if self.resolvedPointers:
       return
     structs_addrs, structCache = None, None
     self._dirty=True
@@ -536,9 +536,9 @@ class AnonymousStructInstance():
     if len(pointerFields) == (resolved+fromcache):
       if resolved != 0 :
         log.debug('%s pointers are fully resolved'%(self))
-      self._pointerResolved = True
+      self._resolvedPointers = True
     else:
-      self._pointerResolved = False
+      self._resolvedPointers = False
     return
   
   def _resolvePointerToStructField(self, field): #, structs_addrs, structCache):
@@ -567,7 +567,7 @@ class AnonymousStructInstance():
     return tgt_st, None
   
   def _aggregateFields(self):
-    #if not self.pointerResolved:
+    #if not self.resolvedPointers:
     #  raise ValueError('I should be resolved')
     self._dirty=True
     
@@ -624,7 +624,7 @@ class AnonymousStructInstance():
   # XX TODO DEBUG, this is not a substructure.
   '''
   def _findSubStructures(self):
-    if not self.isPointerResolved():
+    if not self.resolvedPointers:
       raise ValueError('I should be resolved')
     self._dirty=True
     
@@ -754,16 +754,16 @@ class AnonymousStructInstance():
     return self._resolved
 
   @property
-  def pointerResolved(self):
-    return self._pointerResolved
+  def resolvedPointers(self):
+    return self._resolvedPointers
 
   def toString(self):
-    #FIXME : self._fixGaps() ## need to TODO overlaps
     #print self.fields
+    self._fields.sort()  
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
     info = 'resolved:%s SIG:%s size:%d'%(self.resolved, self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
-      info += ' pointerResolved:%s'%(self.isPointerResolved())
+      info += ' resolvedPointers:%s'%(self.resolvedPointers)
     ctypes_def = '''
 class %s(LoadableMembersStructure):  # %s
   _fields_ = %s

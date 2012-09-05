@@ -147,6 +147,18 @@ def rfind_utf16(bytes, offset, size, aligned=False):
   return index
 
 
+def find_ascii(bytes, offset, size):
+  '''@returns index from offset where printable ascii was found'''
+  bytes_nocp = Nocopy(bytes, offset, offset+size)
+  i = offset
+  end = offset+size
+  while i< end and is_printable(bytes[i]) :
+    i+=1
+  size = i-offset
+  if size > 3:
+    return 0, size
+  return -1,-1
+
 def try_decode_string(bytesarray, longerThan=3):
   ''' try to read string. Null terminated or not
   TODO , maybe check for \x00 in index 0 for utf16 and utf32.
