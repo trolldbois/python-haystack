@@ -159,6 +159,8 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
     
 '''
   Looks at pointers values to build basic structures boundaries.
+  
+  @obselete PointerFieldsAnalyser is now doing that on the go...
 '''
 class PointerReverser(StructureOrientedReverser):
   ''' 
@@ -539,7 +541,7 @@ def reverseInstances(dumpname):
 
     #save to file 
     save_headers(context)
-    fr._saveStructures(context)
+    #fr._saveStructures(context)
     ##libRev = KnowStructReverser('libQt')
     ##context = libRev.reverse(context)
     # we have more enriched context

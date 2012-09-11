@@ -212,18 +212,21 @@ class Field:
     bytes = self._getValue(maxLen)
     bl = len(str(bytes))
     if bl >= maxLen:
-      bytes = str(bytes[:maxLen/2])+'...'+str(bytes[-(maxLen/2):]) # idlike to see the end
+      bytes = bytes[:maxLen/2]+'...'+bytes[-(maxLen/2):] # idlike to see the end
     return bytes
         
   def _getValue(self, maxLen):
     if len(self) == 0:
       return '<-haystack no pattern found->'
     if self.isString():
-      bytes = "'%s'"%(self.struct.bytes[self.offset:self.offset+self.size])
+      if self.typename == FieldType.STRING16:
+        bytes = "'%s'"%(repr(self.struct.bytes[self.offset:self.offset+self.size].decode('utf-16')))
+      else:
+        bytes = "'%s'"%(self.struct.bytes[self.offset:self.offset+self.size])
     elif self.isInteger():
       return self.value 
     elif self.isZeroes():
-      bytes=repr(self.value)#'\\x00'*len(self)
+      bytes = repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
       log.warning('ARRAY in Field type, %s'%self.typename)
       bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])

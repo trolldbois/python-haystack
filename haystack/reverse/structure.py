@@ -135,7 +135,7 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     except EOFError,e:
       log.error('Could not load %s - removing it '%(self._fname))
       os.remove(self._fname)
-      raise e
+      raise e # bad file removed
     if not isinstance(p, AnonymousStructInstance):
       raise EOFError('not a AnonymousStructInstance in cache. %s'%(p.__class__))
     p.setContext(self._context)
@@ -277,6 +277,7 @@ class AnonymousStructInstance():
     fname = makeFilename(self._context, self)
     try:
       # FIXME : loops create pickle loops
+      print self.__dict__.keys()
       pickle.dump(self, file(fname,'w'))
     except KeyboardInterrupt, e:
       # clean it, its stale
@@ -295,6 +296,7 @@ class AnonymousStructInstance():
   def decodeFields(self):
     ''' call analyser    '''
     from haystack.reverse.heuristics.dsa import DSASimple
+    print ''' ******** PLEASE DELETE ME : structure.decodeFields() ***** '''
     dsa = DSASimple()
     dsa.analyze_fields(self)
     return
