@@ -42,14 +42,16 @@ class ReverserContext():
 
     log.info('[+] Fetching cached structures addresses list')
     #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
-    heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
-    self._pointers_values_heap = heap_values
-    self._pointers_offsets_heap = heap_offsets
+    
+    ## FIXME: no use I think
+    ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
+    ##self._pointers_values_heap = heap_values
+    ##self._pointers_offsets_heap = heap_offsets
 
     # test with all mmap in target
-    all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings) 
-    self._pointers_values = all_values
-    self._pointers_offsets = all_offsets
+    ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings) 
+    ##self._pointers_values = all_values
+    ##self._pointers_offsets = all_offsets
     
     if self.mappings._target_system != 'win32':
       log.info('[+] Reversing function pointers names')
@@ -85,6 +87,7 @@ class ReverserContext():
                       (len(self._structures) ,len(self._malloc_addresses)))
       if ( len(self._malloc_addresses) - len(self._structures) ) < 10 :
         log.warning('close numbers to check %s'%(set( self._malloc_addresses ) - set( self._structures ) ))
+        self.parsed = set()
       # use GenericHeapAllocationReverser to get user blocks
       mallocRev = reversers.GenericHeapAllocationReverser()
       context = mallocRev.reverse(self)

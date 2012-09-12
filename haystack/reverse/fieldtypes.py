@@ -220,7 +220,11 @@ class Field:
       return '<-haystack no pattern found->'
     if self.isString():
       if self.typename == FieldType.STRING16:
-        bytes = "'%s'"%(repr(self.struct.bytes[self.offset:self.offset+self.size].decode('utf-16')))
+        try:
+          bytes = "%s"%(repr(self.struct.bytes[self.offset:self.offset+self.size].decode('utf-16')))
+        except UnicodeDecodeError,e:
+          print 'ERROR ON :', repr(self.struct.bytes[self.offset:self.offset+self.size])
+          bytes = self.struct.bytes[self.offset:self.offset+self.size]
       else:
         bytes = "'%s'"%(self.struct.bytes[self.offset:self.offset+self.size])
     elif self.isInteger():
@@ -229,6 +233,7 @@ class Field:
       bytes = repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
       log.warning('ARRAY in Field type, %s'%self.typename)
+      print 'error in 0x%x offset 0x%x'%(self.struct._vaddr, self.offset)
       bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])
     elif self.padding or self.typename == FieldType.UNKNOWN:
       bytes = self.struct.bytes[self.offset:self.offset+len(self)]
@@ -257,6 +262,11 @@ class Field:
           
     fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getTypename(), comment) 
     return fstr
+  
+  def __getstate__(self):
+    d = self.__dict__.copy()
+    #print d.keys()
+    return d
     
 
 class ArrayField(Field):

@@ -277,8 +277,11 @@ class AnonymousStructInstance():
     fname = makeFilename(self._context, self)
     try:
       # FIXME : loops create pickle loops
-      print self.__dict__.keys()
+      #print self.__dict__.keys()
       pickle.dump(self, file(fname,'w'))
+    except RuntimeError,e:
+      log.error(e)
+      print self.toString()
     except KeyboardInterrupt, e:
       # clean it, its stale
       os.remove(fname)
@@ -295,13 +298,12 @@ class AnonymousStructInstance():
   #@deprecated
   def decodeFields(self):
     ''' call analyser    '''
-    from haystack.reverse.heuristics.dsa import DSASimple
-    print ''' ******** PLEASE DELETE ME : structure.decodeFields() ***** '''
-    dsa = DSASimple()
-    dsa.analyze_fields(self)
-    return
+    raise NotImplementedError('Please use haystack.reverse.heuristics.dsa.DSASimple')
     
   def resolvePointers(self):
+    
+    raise NotImplementedError('Please use haystack.reverse.heuristics.dsa.EnrichedPointerFields')
+    
     if self.resolvedPointers:
       return
     structs_addrs, structCache = None, None

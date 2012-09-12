@@ -171,6 +171,7 @@ def main(argv):
     logging.getLogger('haystack-reverse').setLevel(logging.INFO)
     logging.getLogger('signature').setLevel(logging.INFO)
     logging.getLogger('reversers').setLevel(logging.INFO)
+    logging.getLogger('context').setLevel(logging.INFO)
   sh=logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
   logging.getLogger('signature').addHandler( sh )
   logging.getLogger('reversers').addHandler( sh )

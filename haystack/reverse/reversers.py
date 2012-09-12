@@ -14,6 +14,7 @@ import time
 from haystack.config import Config
 from haystack import dump_loader
 from haystack import argparse_utils
+from haystack.reverse.heuristics.dsa import DSASimple, EnrichedPointerFields
 
 import structure
 import fieldtypes
@@ -79,7 +80,7 @@ class StructureOrientedReverser():
     if str(self) in ctx.parsed :
       return ctx, True
     return ctx, False
-
+    
   def _putCache(self, ctx):
     ''' define cache write on your output data '''
     t0 = time.time()
@@ -227,6 +228,8 @@ class FieldReverser(StructureOrientedReverser):
     ## writing to file
     fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
+    #
+    dsa = DSASimple()
     #for ptr_value,anon in context.structures.items():
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
       anon = context.getStructureForAddr(ptr_value)
@@ -234,7 +237,7 @@ class FieldReverser(StructureOrientedReverser):
         fromcache+=1
       else:
         decoded+=1
-        anon.decodeFields()
+        dsa.analyze_fields(anon)
         anon.saveme()
       ## output headers
       towrite.append(anon.toString())
@@ -261,6 +264,7 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
+    pfa = EnrichedPointerFields()
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
       anon = context.getStructureForAddr(ptr_value)
       if anon.resolvedPointers:
@@ -270,7 +274,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         #if not hasattr(anon, 'mappings'):
         #  log.error('damned, no mappings in %x'%(ptr_value))
         #  anon.mappings = context.mappings
-        anon.resolvePointers()
+        pfa.analyze_fields(anon)
         anon.saveme()
       if time.time()-tl > 30: 
         tl = time.time()
