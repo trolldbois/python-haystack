@@ -569,7 +569,12 @@ class Mappings:
     self.mappings = lst
     self.name = filename
     self._target_system = None
-
+  
+  def get_context(self, addr):
+    from haystack.reverse import reversers
+    # TODO FIXME should give a context per mmap or mmap heap group
+    return reversers.getContext(self.name)
+  
   def get_user_allocations(self, heap, filterInUse=True):
     """changed when the dump is loaded"""
     # set by dump_loader

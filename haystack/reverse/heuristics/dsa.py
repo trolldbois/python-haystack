@@ -360,7 +360,7 @@ class EnrichedPointerFields(StructureAnalyser):
         # TODO:
         # do not complexify code by handling target field type,
         # lets start with simple structure type pointer,
-        field.set_child_ctype('ctypes.POINTER(%s)'%(tgt.getName()) 
+        field.set_child_ctype('ctypes.POINTER(%s)'%(tgt.getName()) )
       except KeyError, e: # there is no child structure/member at pointed value.
         field.set_child_addr(value)
         field.set_child_desc('Memory management space')

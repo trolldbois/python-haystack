@@ -203,8 +203,8 @@ class ReverserContext():
 
     del d['_structures']
     del d['_structures_addresses']
-    del d['_pointers_values']
-    del d['_pointers_offsets']
+    #del d['_pointers_values']
+    #del d['_pointers_offsets']
     del d['_malloc_addresses']
     del d['_malloc_sizes']
     #print d
