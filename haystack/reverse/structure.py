@@ -295,6 +295,21 @@ class AnonymousStructInstance():
     # TODO check against other fields
     return field.check()
   
+  def get_field_at_offset(self, offset):
+    '''@ returns the field at a specific offset.'''
+    ret = [f for f in self.fields if f.offset == offset]
+    if len(ret) == 0: # then check for closest match
+      ret = [f for f in self.fields if f.offset < offset]
+      ret.sort()
+      if len(ret) == 0:
+        return None
+      ret = ret[-1] # last field standing is the one ( ordered fields)
+      if offset < ret.offset+len(ret):
+        return ret
+      return None # in between fields. Can happens on un-analyzed structure.
+    ret.sort()
+    return ret[0]
+  
   #@deprecated
   def decodeFields(self):
     ''' call analyser    '''

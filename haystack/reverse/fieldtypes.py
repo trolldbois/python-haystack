@@ -125,6 +125,7 @@ class Field:
     self.usercomment = ''  
     self.encoding = None
     self.decoded = True
+    self._uncertainty = None
     
   def setComment(self, txt):
     self.usercomment = '# %s'%txt
@@ -169,7 +170,11 @@ class Field:
       return self.name
     else:
       return '%s_%s'%(self.typename.basename, self.offset)
-    
+  
+  def set_uncertainty(self, desc=None):
+    self._uncertainty = True
+    self._uncertainty_desc = desc
+  
   def __hash__(self):
     return hash( (self.offset, self.size, self.typename) )
       
@@ -267,6 +272,18 @@ class Field:
     d = self.__dict__.copy()
     #print d.keys()
     return d
+
+
+class PointerField(Field):
+  ''' represent a pointer field'''
+  def set_child_ctype(self, name):
+    self.set_ctype('ctypes.POINTER(%s)'%name)
+
+  def set_child_addr(self, addr):
+    self._child_addr = addr
+
+  def set_child_desc(self, desc):
+    self._child_desc = desc
     
 
 class ArrayField(Field):

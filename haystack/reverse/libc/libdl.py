@@ -32,6 +32,7 @@ def getMappings():
   me.pid = os.getpid()
   return memory_mapping.readProcessMappings(me)
 
+# TODO FIXME: make a non-batch version
 def reverseLocalFonctionPointerNames(context):
   ''' reverse fn pointer names by trying to rebase the ptr value to a local ld_open.
   

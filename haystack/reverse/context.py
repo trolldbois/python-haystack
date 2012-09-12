@@ -67,6 +67,10 @@ class ReverserContext():
     self._user_alloc_sizes = self._malloc_sizes
 
     return 
+
+  def has_allocations(self):
+    ''' allocation based mmap '''
+    return True
   
   def getStructureForAddr(self, addr):
     ''' return the structure.AnonymousStructInstance associated with this addr'''
@@ -112,9 +116,12 @@ class ReverserContext():
       raise ValueError('address not in heap')
     return utils.closestFloorValue(offset, self._structures_addresses)[0] # [1] is the index of [0]
 
-  def getStructureForOffset(self, offset):
+  def getStructureForOffset(self, ptr_value):
     '''Returns the structure containing this address'''
-    return self.getStructureForAddr(self.getStructureAddrForOffset(offset))
+    st = self.getStructureForAddr(self.getStructureAddrForOffset(ptr_value))
+    if st._vaddr <= ptr_value < (st._vaddr + len(st)):
+      return st
+    raise KeyError('No known structure covers that ptr_value') 
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
