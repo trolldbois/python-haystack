@@ -14,9 +14,7 @@ import unittest
 from haystack import model
 from haystack.config import Config
 from haystack.reverse import reversers
-
-#sys.path.append('test/src/')
-#import ctypes3
+from haystack.reverse.heuristics.dsa import *
 
 import ctypes 
 
@@ -36,6 +34,8 @@ class TestStructureSizes(unittest.TestCase):
       ('val2', [0x10101010]),
       ('val2b', [0x10101010]),
       ('me',[model.NotNull]) ])
+    cls.dsa = DSASimple()
+
 
   def setUp(self):    
     #os.chdir()
@@ -50,7 +50,7 @@ class TestStructureSizes(unittest.TestCase):
     sizes.sort() # Node and test3
     import ctypes3
     for st in structs: #[1:2]:
-      st.decodeFields()
+      self.dsa.analyze_fields(st)
       #print st.toString()
       #print repr(self.context.heap.readBytes(st._vaddr, len(st)))
 

@@ -117,7 +117,7 @@ class PrintableAsciiFields(FieldAnalyser):
     #log.debug('checking String')
     fields = []
     bytes = structure.bytes
-    while size > Config.WORDSIZE:
+    while size >= Config.WORDSIZE:
       #print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
       index, ssize = re_string.find_ascii(bytes, offset, size)
       if index == 0:
@@ -130,6 +130,10 @@ class PrintableAsciiFields(FieldAnalyser):
         fields.append(f)
         size -= ssize # reduce unknown field
         offset += ssize
+        if ssize%Config.WORDSIZE:
+          rest = Config.WORDSIZE - ssize%Config.WORDSIZE
+          size -= rest # goto next aligned
+          offset += rest
       else:
         size -= Config.WORDSIZE # reduce unkown field
         offset += Config.WORDSIZE

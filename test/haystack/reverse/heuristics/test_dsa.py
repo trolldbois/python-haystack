@@ -119,9 +119,33 @@ class TestFieldAnalyser(unittest.TestCase):
       self.assertEquals( len(fields), 0)
 
   def test_ascii(self):
-    # TODO - not tested
     fields = self.ascii.make_fields(self.test1, 0, len(self.test1))
-    self.assertEquals(len(fields), 0) # no ascii
+    self.assertEquals(len(fields), 3) # 
+
+    fields = self.ascii.make_fields(self.test1, 8, len(self.test1)-8)
+    self.assertEquals(len(fields), 2) # 
+    
+    fields = self.ascii.make_fields(self.test2, 0, len(self.test2))
+    self.assertEquals(len(fields), 3) #
+     
+    fields = self.ascii.make_fields(self.test3, 0, len(self.test3))
+    self.assertEquals(len(fields), 1) # 
+    
+    fields = self.ascii.make_fields(self.test4, 0, len(self.test4))
+    self.assertEquals(len(fields), 1) # 
+
+    fields = self.ascii.make_fields(self.test3, 4, 12)
+    self.assertEquals(len(fields), 1) # 
+
+
+    fields = self.ascii.make_fields(self.test5, 0, len(self.test5))
+    self.assertEquals(len(fields), 1) # 
+    
+    fields = self.ascii.make_fields(self.test6, 0, len(self.test6))
+    self.assertEquals(len(fields), 1) # 
+    
+    fields = self.ascii.make_fields(self.test8, 0, len(self.test8))
+    self.assertEquals(len(fields), 0) # 
     
 
 class TestDSA(unittest.TestCase):
