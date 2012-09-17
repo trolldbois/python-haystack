@@ -260,6 +260,7 @@ class TestDSA(unittest.TestCase):
 
   def test_big_block_2(self):
     # in putty.7124.dump
+    # its garbage anyway
     vaddr = 0x675b30
     size = 8184
     st = structure.makeStructure(self.putty7124, vaddr, size)    
@@ -267,7 +268,7 @@ class TestDSA(unittest.TestCase):
     #print repr(st.bytes)
     log.debug(st.toString())
     fields = st.getFields()
-    self.assertLess( len(fields), 879)
+    self.assertLess( len(fields), 890)
     #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
     #self.assertTrue( fields[35].isString())
     fields = [f for f in st.getFields() if f.isString()]
