@@ -102,10 +102,8 @@ class TestStructure(unittest.TestCase):
     self.assertTrue(True) # test no error
 
 
-
-
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG)
   #logging.getLogger("test_structure").setLevel(logging.DEBUG)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
   #unittest.TextTestRunner(verbosity=2).run(suite)

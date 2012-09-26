@@ -351,6 +351,7 @@ class EnrichedPointerFields(StructureAnalyser):
         field.set_uncertainty('Unaligned pointer value')
       # + ask mappings for the context for that value
       ctx = mappings.get_context(value) # no error expected.
+      log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
       #print '** ST id', id(structure), hex(structure._vaddr)
       # + ask context for the target structure or code info
       if not ctx.has_allocations():

@@ -127,7 +127,7 @@ def is_malloc_heap(mappings, mapping):
     sizes = [size for addr,size in iter_user_allocations(mappings, mapping ) ]
     size = sum(sizes)
   except ValueError, e:
-    log.error(e)
+    log.debug(e)
     return False
   
   if size != ( len(mapping) - Config.WORDSIZE*len(sizes) ):

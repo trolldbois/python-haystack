@@ -77,6 +77,14 @@ class TestStructureSizes(unittest.TestCase):
     #  print 'MOD'
 
 
+class TestFullReverse(unittest.TestCase):
+    
+  def test_reverseInstances(self):
+    #context = reversers.getContext('test/dumps/ssh/ssh.1')
+    dumpname = 'test/dumps/ssh/ssh.1'
+    context = Config.cleanCache(dumpname)
+    context = reversers.reverseInstances(dumpname)
+
 
 
 if __name__ == '__main__':

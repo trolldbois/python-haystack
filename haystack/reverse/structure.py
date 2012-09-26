@@ -612,8 +612,7 @@ class AnonymousStructInstance():
   def set_resolved(self):
     self._resolved = True
 
-  @property
-  def resolvedPointers(self):
+  def is_resolvedPointers(self):
     return self._resolvedPointers
 
   def toString(self):
@@ -622,7 +621,7 @@ class AnonymousStructInstance():
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
     info = 'resolved:%s SIG:%s size:%d'%(self.is_resolved(), self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
-      info += ' resolvedPointers:%s'%(self.resolvedPointers)
+      info += ' resolvedPointers:%s'%(self.is_resolvedPointers())
     ctypes_def = '''
 class %s(LoadableMembersStructure):  # %s
   _fields_ = %s

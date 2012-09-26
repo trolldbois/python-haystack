@@ -32,6 +32,7 @@ class ReverserContext():
     self.mappings = mappings
     self.dumpname = mappings.name
     self.heap = heap
+    self._heap_start = heap.start
     self.parsed = set()
     self._function_names = dict()
     # refresh heap pointers list and allocators chunks
@@ -117,7 +118,7 @@ class ReverserContext():
   def getStructureAddrForOffset(self, offset):
     '''Returns the closest containing structure address for this offset in this heap.'''
     if offset not in self.heap:
-      raise ValueError('address not in heap')
+      raise ValueError('address 0x%0.8x not in heap 0x%0.8x'%(offset, self.heap.start))
     return utils.closestFloorValue(offset, self._structures_addresses)[0] # [1] is the index of [0]
 
   def getStructureForOffset(self, ptr_value):
@@ -174,7 +175,7 @@ class ReverserContext():
       raise e
     log.debug('\t[-] loaded my context from cache')
     context.mappings = mappings
-    context.heap = context.mappings.getHeap() # FIXME BAD BAD BAD
+    context.heap = context.mappings.getMmapForAddr(context._heap_start) 
     
     context._init2()
     return context
@@ -217,6 +218,7 @@ class ReverserContext():
   def __setstate__(self, d):
     self.dumpname = d['dumpname']
     self.parsed = d['parsed']
+    self._heap_start = d['_heap_start']
     self._structures = None
     self._function_names = dict()
     return

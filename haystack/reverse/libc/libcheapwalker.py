@@ -51,6 +51,12 @@ def get_user_allocations(mappings, heap):
     yield (chunk_addr, chunk_size)
   raise StopIteration
 
+def is_heap(mappings, mapping):
+  """test if a mapping is a heap"""
+  if not ctypes_malloc.is_malloc_heap(mappings, mapping):
+    return False
+  # could implement other allocators
+  return True
 
 
 

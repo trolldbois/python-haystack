@@ -575,12 +575,27 @@ class Mappings:
     if not mmap:
       raise ValueError
     if hasattr(mmap, '_context'):
-      return mmap._context
+      print '** _context exists'
+      return mmap._context    
+    if mmap not in self.getHeaps(): # addr is not a heap addr, 
+      found = False
+      # or its in a child heap ( win7)
+      for h in self.getHeaps():
+        if hasattr(h, '_children'):
+          if mmap in h._children:
+            found = True
+            mmap = h
+            break
+      if not found:
+        raise ValueError
+    # we found the heap mmap or its parent
     from haystack.reverse import context
     try:
       ctx = context.ReverserContext.cacheLoad(self)
+      #print '** CACHELOADED'
     except IOError,e:
       ctx = context.ReverserContext(self, mmap)  
+      #print '** newly loaded '
     # cache it
     mmap._context = ctx
     return ctx
@@ -613,7 +628,7 @@ class Mappings:
     # this fn is used onlly in reverse/*
     if self.heaps is None:
       if self.get_target_system() == 'linux':
-        self.heaps = self.getMmap('[heap]')
+        self.heaps = self.search_nux_heaps()
       else:
         self.heaps = self.search_win_heaps()
     return self.heaps
@@ -622,13 +637,29 @@ class Mappings:
     stack = self.getMmap('[stack]')[0] 
     return stack
 
-  def search_win_heaps(self):
-    from haystack.reverse.win32 import win7heapwalker
-    heaps = list()
-    for mapping in self.mappings:
-      if win7heapwalker.isHeap(self, mapping):
+  def search_nux_heaps(self):
+    # TODO move in haystack.reverse.heapwalker
+    from haystack.reverse.libc import libcheapwalker 
+    heaps = self.getMmap('[heap]')
+    for mapping in self.getMmap('None'):
+      if libcheapwalker.is_heap(self, mapping):
         heaps.append(mapping)
         log.debug('%s is a Heap'%(mapping))
+      else:
+        log.debug('%s is NOT'%(mapping))
+    # order by ProcessHeapsListIndex
+    #heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
+    return heaps
+
+  def search_win_heaps(self):
+    # TODO move in haystack.reverse.heapwalker
+    from haystack.reverse.win32 import win7heapwalker # FIXME win7, winxp...
+    heaps = list()
+    for mapping in self.mappings:
+      if win7heapwalker.is_heap(self, mapping):
+        heaps.append(mapping)
+        log.debug('%s is a Heap'%(mapping))
+        mapping._children = win7heapwalker.Win7HeapWalker(self, mapping, 0).get_heap_children_mmaps()
     # order by ProcessHeapsListIndex
     heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
     return heaps

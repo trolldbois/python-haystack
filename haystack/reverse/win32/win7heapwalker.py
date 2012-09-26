@@ -179,7 +179,7 @@ def get_user_allocations(mappings, heap):
 # TODO : change the mappings file ?
 #
 
-def isHeap(mappings, mapping):
+def is_heap(mappings, mapping):
   """test if a mapping is a heap"""
   # todo check _heap.ProcessHeapsListIndex
   addr = mapping.start

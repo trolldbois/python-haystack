@@ -12,6 +12,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+
 if __name__ == '__main__':
   unittest.main(verbosity=0)
   #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
