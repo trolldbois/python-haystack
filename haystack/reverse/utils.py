@@ -57,7 +57,7 @@ def closestFloorValueNumpy(val, lst):
   if long(lst[ind]) == val:
     return long(lst[ind]), ind
   if ind == 0:
-    raise ValueError('Value is under minimum')
+    raise ValueError('Value %0x is under minimum'%(val))
   i = ind-1
   return long(lst[i]), i
 

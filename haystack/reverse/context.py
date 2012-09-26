@@ -117,8 +117,8 @@ class ReverserContext():
 
   def getStructureAddrForOffset(self, offset):
     '''Returns the closest containing structure address for this offset in this heap.'''
-    if offset not in self.heap:
-      raise ValueError('address 0x%0.8x not in heap 0x%0.8x'%(offset, self.heap.start))
+    #if offset not in self.heap:
+    #  raise ValueError('address 0x%0.8x not in heap 0x%0.8x'%(offset, self.heap.start))
     return utils.closestFloorValue(offset, self._structures_addresses)[0] # [1] is the index of [0]
 
   def getStructureForOffset(self, ptr_value):

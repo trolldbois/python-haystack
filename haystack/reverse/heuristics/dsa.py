@@ -366,7 +366,7 @@ class EnrichedPointerFields(StructureAnalyser):
       tgt = None
       try:
         tgt = ctx.getStructureForOffset(value) # get enclosing structure @throws KeyError
-      except IndexError, e: # there is no child structure member at pointed value.
+      except (IndexError,ValueError), e: # there is no child structure member at pointed value.
         log.debug('there is no child structure enclosing pointed value %0.8x - %s'%(value, e))
         field.set_child_desc('Memory management space')
         field.set_child_ctype('void') 
