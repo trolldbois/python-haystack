@@ -438,7 +438,8 @@ class PointerGraphReverser(StructureOrientedReverser):
     tl = t0
     for i, ptr_value in enumerate(context.listStructuresAddresses()) :
       struct = context.getStructureForAddr(ptr_value)
-      targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr ) for child in struct.getPointerFields()) #target_struct_addr
+      #targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr ) for child in struct.getPointerFields()) #target_struct_addr
+      targets = set(( '%x'%ptr_value, '%x'%child._child_addr ) for child in struct.getPointerFields()) #target_struct_addr
       ## DEBUG
       if len(struct.getPointerFields()) >0:
         if len(targets) == 0:

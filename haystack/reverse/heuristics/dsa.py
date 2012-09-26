@@ -344,7 +344,7 @@ class EnrichedPointerFields(StructureAnalyser):
     log.debug('got %d pointerfields'%(len(pointerFields)))
     for field in pointerFields:      
       value = field.value
-      field.set_child_addr(value)
+      field.set_child_addr(value) # default
       ## FIXME field.set_resolved() # What ?
       # + if value is unaligned, mark it as cheesy
       if value%Config.WORDSIZE:
@@ -373,7 +373,7 @@ class EnrichedPointerFields(StructureAnalyser):
         field.set_name('ptr_void')
         continue
       # structure found
-      field.set_child_addr(tgt._vaddr)
+      field.set_child_addr(tgt._vaddr) # we always point on structure, not field
       offset = value - tgt._vaddr
       try:
         tgt_field = tgt.get_field_at_offset(offset) # @throws IndexError
