@@ -602,7 +602,7 @@ class Mappings:
   
   def get_user_allocations(self, heap, filterInUse=True):
     """changed when the dump is loaded"""
-    # set by dump_loader
+    # set by dump_loader. DO NOT FIX
     raise NotImplementedError
 
   def getMmap(self, pathname):

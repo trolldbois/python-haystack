@@ -41,7 +41,7 @@ class TestMappings(unittest.TestCase):
     self.assertEquals(mappings.get_context(0xb84e02d3).heap, mappings.getMmapForAddr(0xb84e02d3))
 
     mappings = self.putty.mappings
-    print ''.join(['%s\n'%(m) for m in mappings])    
+    #print ''.join(['%s\n'%(m) for m in mappings])    
     with self.assertRaises(ValueError):
       mappings.get_context(0x0)
     with self.assertRaises(ValueError):
@@ -52,7 +52,13 @@ class TestMappings(unittest.TestCase):
 
   
   def test_get_user_allocations(self):
-    self.skipTest('')
+    mappings = self.ssh.mappings
+    allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+    self.assertEquals( len(allocs), 2568)
+
+    mappings = self.putty.mappings
+    allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+    self.assertEquals( len(allocs), 2273)
 
   def test_getMmap(self):
     self.skipTest('')
