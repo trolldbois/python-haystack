@@ -571,9 +571,19 @@ class Mappings:
     self._target_system = None
   
   def get_context(self, addr):
-    from haystack.reverse import reversers
-    # TODO FIXME should give a context per mmap or mmap heap group
-    return reversers.getContext(self.name)
+    mmap = self.getMmapForAddr(addr)
+    if not mmap:
+      raise ValueError
+    if hasattr(mmap, '_context'):
+      return mmap._context
+    from haystack.reverse import context
+    try:
+      ctx = context.ReverserContext.cacheLoad(self)
+    except IOError,e:
+      ctx = context.ReverserContext(self, mmap)  
+    # cache it
+    mmap._context = ctx
+    return ctx
   
   def get_user_allocations(self, heap, filterInUse=True):
     """changed when the dump is loaded"""

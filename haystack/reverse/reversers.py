@@ -377,7 +377,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     if (f2 == head_addr):
       log.debug('f2 is head_addr too')
       context.getStructureForAddr(head_addr).setName('struct')
-      print context.getStructureForAddr(head_addr).toString()
+      log.debug('%s'%( context.getStructureForAddr(head_addr).toString()))
       
     current = head_addr
     while (f1 in context._structures_addresses ):
@@ -506,13 +506,15 @@ def getContext(fname):
     context = ReverserContext.cacheLoad(mappings)
   except IOError,e:
     context = ReverserContext(mappings, mappings.getHeap())  
+  # cache it
+  context.heap._context = context
   return context
 
 def reverseInstances(dumpname):
 
   log.debug ('[+] Loading the memory dump ')
+  context = getContext(dumpname)
   try:
-    context = getContext(dumpname)
     if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
       os.mkdir(Config.getStructsCacheDir(context.dumpname))
     
