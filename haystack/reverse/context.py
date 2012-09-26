@@ -23,7 +23,11 @@ __status__ = "Production"
 log = logging.getLogger('context')
 
 
-class ReverserContext():
+class ReverserContext(): 
+  ''' TODO: Change Name to MmapReverserContext
+  add methods for chained mmap
+  Add check for context, only on valid heaps ( getHeaps)
+  '''
   def __init__(self, mappings, heap):
     self.mappings = mappings
     self.dumpname = mappings.name
@@ -121,7 +125,7 @@ class ReverserContext():
     st = self.getStructureForAddr(self.getStructureAddrForOffset(ptr_value))
     if st._vaddr <= ptr_value < (st._vaddr + len(st)):
       return st
-    raise KeyError('No known structure covers that ptr_value') 
+    raise IndexError('No known structure covers that ptr_value') 
 
   def listOffsetsForPointerValue(self, ptr_value):
     '''Returns the list of offsets where this value has been found'''
@@ -170,7 +174,7 @@ class ReverserContext():
       raise e
     log.debug('\t[-] loaded my context from cache')
     context.mappings = mappings
-    context.heap = context.mappings.getHeap()
+    context.heap = context.mappings.getHeap() # FIXME BAD BAD BAD
     
     context._init2()
     return context
