@@ -13,7 +13,7 @@ import itertools
 from haystack.config import Config
 from haystack.utils import unpackWord
 from haystack.reverse import re_string, fieldtypes
-from haystack.reverse.fieldtypes import FieldType, Field
+from haystack.reverse.fieldtypes import FieldType, Field, PointerField
 from haystack.reverse.heuristics.model import FieldAnalyser, StructureAnalyser
 
 import ctypes
@@ -161,7 +161,7 @@ class PointerFields(FieldAnalyser):
         continue
       # we have a pointer
       log.debug('checkPointer offset:%s value:%s'%(offset, hex(value)))
-      field = Field(structure, offset, FieldType.POINTER, Config.WORDSIZE, False)  
+      field = PointerField(structure, offset, FieldType.POINTER, Config.WORDSIZE, False)  
       field.value = value
       # TODO: leverage the context._function_names 
       if value in structure._context._function_names :
@@ -239,7 +239,7 @@ class DSASimple(StructureAnalyser):
     fields, gaps = self._analyze(structure)
     structure.add_fields(fields)
     structure.add_fields(gaps) #, FieldType.UNKNOWN
-    structure.resolved = True
+    structure.set_resolved()
     return structure
     
   def _analyze(self, structure):
@@ -342,100 +342,55 @@ class EnrichedPointerFields(StructureAnalyser):
     pointerFields = structure.getPointerFields()
     mappings = structure._context.mappings
     log.debug('got %d pointerfields'%(len(pointerFields)))
-    for field in pointerFields:
+    for field in pointerFields:      
       value = field.value
+      field.set_child_addr(value)
+      ## FIXME field.set_resolved() # What ?
       # + if value is unaligned, mark it as cheesy
       if value%Config.WORDSIZE:
         field.set_uncertainty('Unaligned pointer value')
       # + ask mappings for the context for that value
       ctx = mappings.get_context(value) # no error expected.
+      #print '** ST id', id(structure), hex(structure._vaddr)
       # + ask context for the target structure or code info
       if not ctx.has_allocations():
         log.debug('target to non heap mmaps is not implemented')
+        field.set_child_desc('ext_lib @%0.8x %s'%(ctx.heap.start, ctx.heap.pathname))
+        field._ptr_to_ext_lib = True
+        field.set_child_ctype('void') # TODO: Function pointer ?
+        field.set_name('%s_%s'%(field.typename.basename, tgt))
         continue
       tgt = None
       try:
-        tgt = ctx.getStructureForOffset(value) # get enclosing structure
-        field.set_child_addr(tgt._vaddr)
-        offset = value - tgt._vaddr
-        tgt_field = tgt.get_field_at_offset(offset) 
-        # do not put exception for field 0. structure name should appears anyway.
-        field.set_child_desc('%s.%s'%(tgt.getName(), tgt_field.getName()) )
-        # TODO:
-        # do not complexify code by handling target field type,
-        # lets start with simple structure type pointer,
-        field.set_child_ctype('ctypes.POINTER(%s)'%(tgt.getName()) )
-      except KeyError, e: # there is no child structure/member at pointed value.
-        field.set_child_addr(value)
+        tgt = ctx.getStructureForOffset(value) # get enclosing structure @throws KeyError
+      except IndexError, e: # there is no child structure member at pointed value.
+        log.debug('there is no child structure enclosing pointed value %0.8x - %s'%(value, e))
         field.set_child_desc('Memory management space')
         field.set_child_ctype('void') 
-        ''' here TODO'''
-        field.ctypes = 'ctypes.POINTER(%s)'%(tgt) # change the basic ctypes
-      except KeyError, e:
-        if field.value in structure._heap:
-          # elif target is a STRING in the HEAP
-          # set pointer type to char_p
-          inHeap+=1
-          # TODO use context's helpers
-          tgt_struct, tgt_field = structure._resolvePointerToStructField(field) 
-          field.target_struct_addr = tgt_struct._vaddr
-          if tgt_field is not None:
-            ### field.ctypes = str(tgt_struct) # no
-            field.typename = FieldType.makePOINTER(tgt_field.typename)
-            field._target_field = tgt_field
-            tgt = '%s_field_%s'%(tgt_field.struct, tgt_field.getName())
-          else:
-            undecoded+=1
-            #log.debug('target %x is unresolvable in a field'%(field.value))        
-          pass
-        elif field.value in structure._mappings: # other mappings
-          inMappings+=1
-          tgt = 'ext_lib_%d'%(field.offset)
-          field._ptr_to_ext_lib = True
-          field.target_struct_addr = structure._mappings.getMmapForAddr(field.value).start
-          pass
-      #
-      if tgt is not None:
-        resolved+=1
-        field.setName('%s_%s'%(field.typename.basename, tgt))
-        field._ptr_resolved = True
-        #log.debug('resolved %s %s (%d)'%(field.getName(), field, resolved))
-    log.debug('resolvePointers on t:%d,c:%d,r:%d, k:%d,h:%d,m:%d,u:%d'%(len(pointerFields), 
-              fromcache, resolved, known, inHeap, inMappings, undecoded))
-    #
-    if len(pointerFields) == (resolved+fromcache):
-      if resolved != 0 :
-        log.debug('%s pointers are fully resolved'%(self))
-      structure._resolvedPointers = True
-    else:
-      structure._resolvedPointers = False
+        field.set_name('ptr_void')
+        continue
+      # structure found
+      field.set_child_addr(tgt._vaddr)
+      offset = value - tgt._vaddr
+      try:
+        tgt_field = tgt.get_field_at_offset(offset) # @throws IndexError
+      except IndexError, e: # there is no field right there
+        log.debug('there is no field at pointed value %0.8x. May need splitting byte field - %s'%(value, e))
+        field.set_child_desc('Badly reversed field')
+        field.set_child_ctype('void') 
+        field.set_name('ptr_void')
+        continue
+      # do not put exception for field 0. structure name should appears anyway.
+      field.set_child_desc('%s.%s'%(tgt.get_name(), tgt_field.get_name()) )
+      # TODO:
+      # do not complexify code by handling target field type,
+      # lets start with simple structure type pointer,
+      # later we would need to use tgt_field.ctypes depending on field offset
+      field.set_child_ctype(tgt.get_name())        
+      field.set_name('%s_%s'%(tgt.get_name(), tgt_field.get_name()) )
+      # all
     return
   
-  def _resolvePointerToStructField(self, field): #, structs_addrs, structCache):
-    ## TODO DEBUG, i got gaps in my memory mappings structures
-    #  struct_add16e8 -> struct_add173c
-    #if len(structs_addrs) == 0:
-    if len(structure._context._malloc_addresses) == 0:
-      raise TypeError
-      #return None
-    # TODO use context's helpers
-    nearest_addr, ind = utils.closestFloorValue(field.value, structure._context._malloc_addresses)
-    log.debug('nearest_addr:%x ind:%d'%(nearest_addr, ind))
-    tgt_st = structure._context.getStructureForAddr(nearest_addr)
-    if field.value%Config.WORDSIZE != 0:
-      # non aligned, nothing could match
-      return tgt_st, None
-    log.debug('tgt_st %s'%tgt_st)
-    if field.value in tgt_st:
-      offset = field.value - nearest_addr
-      for f in tgt_st._fields:
-        if f.offset == offset:
-          tgt_field = f
-          log.debug('Found %s'%f)
-          return tgt_st, tgt_field
-    log.debug('no field found')
-    return tgt_st, None
-
   def get_unresolved_children(self, structure):
     ''' returns all children that are not fully analyzed yet.'''
     pointerFields = structure.getPointerFields()
@@ -443,7 +398,7 @@ class EnrichedPointerFields(StructureAnalyser):
     for field in pointerFields:
       try:
         tgt = structure._context.getStructureForAddr(field.value)
-        if not tgt.resolved: # fields have not been decoded yet
+        if not tgt.is_resolved(): # fields have not been decoded yet
           children.append(tgt)
       except KeyError,e:
         pass

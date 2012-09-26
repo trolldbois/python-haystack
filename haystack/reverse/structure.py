@@ -165,6 +165,8 @@ class CacheWrapper: # this is kind of a weakref proxy, but hashable
     return 'struct_%x'%(self._vaddr )
     
 
+class StructureNotResolvedError(Exception):
+  pass
 
 class AnonymousStructInstance():
   '''
@@ -185,7 +187,7 @@ class AnonymousStructInstance():
     else:
       self._name = '%s_%x'%(name, self._vaddr)
   
-  def getName(self):
+  def get_name(self):
     return self._name
 
   def setCtype(self, t):
@@ -297,16 +299,22 @@ class AnonymousStructInstance():
   
   def get_field_at_offset(self, offset):
     '''@ returns the field at a specific offset.'''
-    ret = [f for f in self.fields if f.offset == offset]
+    log.debug('Looking at child %s %s'%(  self.toString(), self.is_resolved()))
+    log.debug('Looking at child structure ID %d'%id(self))
+    if not self.is_resolved():
+      raise StructureNotResolvedError()
+    ret = [f for f in self._fields if f.offset == offset]
     if len(ret) == 0: # then check for closest match
-      ret = [f for f in self.fields if f.offset < offset]
+      ret = [f for f in self._fields if f.offset < offset]
       ret.sort()
       if len(ret) == 0:
-        return None
+        raise ValueError('Offset 0x%x is not in structure?!'%(offset)) # not possible
       ret = ret[-1] # last field standing is the one ( ordered fields)
       if offset < ret.offset+len(ret):
         return ret
-      return None # in between fields. Can happens on un-analyzed structure.
+      # in between fields. Can happens on un-analyzed structure.
+      # or byte field
+      raise IndexError('Offset 0x%x is in middle of field at offset 0x%x'%(offset, ret.offset))
     ret.sort()
     return ret[0]
   
@@ -390,6 +398,7 @@ class AnonymousStructInstance():
     return
   
   def _resolvePointerToStructField(self, field): #, structs_addrs, structCache):
+    raise NotImplementedError('Obselete')
     ## TODO DEBUG, i got gaps in my memory mappings structures
     #  struct_add16e8 -> struct_add173c
     #if len(structs_addrs) == 0:
@@ -597,9 +606,11 @@ class AnonymousStructInstance():
       self._bytes = m.readBytes(self._vaddr, self._size) # TODO re_string.Nocopy
     return self._bytes
 
-  @property
-  def resolved(self):
+  def is_resolved(self):
     return self._resolved
+
+  def set_resolved(self):
+    self._resolved = True
 
   @property
   def resolvedPointers(self):
@@ -609,14 +620,14 @@ class AnonymousStructInstance():
     #print self.fields
     self._fields.sort()  
     fieldsString = '[ \n%s ]'% ( ''.join([ field.toString('\t') for field in self._fields]))
-    info = 'resolved:%s SIG:%s size:%d'%(self.resolved, self.getSignature(text=True), len(self))
+    info = 'resolved:%s SIG:%s size:%d'%(self.is_resolved(), self.getSignature(text=True), len(self))
     if len(self.getPointerFields()) != 0:
       info += ' resolvedPointers:%s'%(self.resolvedPointers)
     ctypes_def = '''
 class %s(LoadableMembersStructure):  # %s
   _fields_ = %s
 
-''' % (self.getName(), info, fieldsString)
+''' % (self.get_name(), info, fieldsString)
     return ctypes_def
 
   def __contains__(self, other):
@@ -689,10 +700,10 @@ class ReversedType(model.LoadableMembersStructure):
     #print '****************** makeFields(%s, context)'%(cls.__name__)
     root = cls.getInstances().values()[0]
     #try:
-    cls._fields_ = [ ( f.getName(), f.getCtype()) for f in root.getFields()]
+    cls._fields_ = [ ( f.get_name(), f.getCtype()) for f in root.getFields()]
     #except AttributeError,e:
     #  for f in root.getFields():
-    #    print 'error', f.getName(), f.getCtype()
+    #    print 'error', f.get_name(), f.getCtype()
 
   @classmethod
   def toString(cls):

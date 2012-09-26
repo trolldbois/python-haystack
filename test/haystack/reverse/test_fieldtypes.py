@@ -31,9 +31,10 @@ class TestField(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context = None #reversers.getContext('test/src/test-ctypes3.dump')
-    self._putty7124 = None
+    #self.context3 = reversers.getContext('test/src/test-ctypes3.dump')
+    self.context6 = reversers.getContext('test/src/test-ctypes6.dump')
     self.dsa = DSASimple()
+    self.st = self.context6.listStructures()[0]
     
   def setUp(self):  
     pass
@@ -41,11 +42,14 @@ class TestField(unittest.TestCase):
   def tearDown(self):
     pass
   
-  @property
-  def putty7124(self):
-    if self._putty7124 is None:
-      self._putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
-    return self._putty7124
+  def test_is_types(self):
+    #def __init__(self, astruct, offset, typename, size, isPadding):
+    ptr = fieldtypes.PointerField(self.st,8, fieldtypes.FieldType.POINTER, 4, False)
+    self.assertFalse(ptr.isString())
+    self.assertTrue(ptr.isPointer())
+    self.assertFalse(ptr.isZeroes())
+    self.assertFalse(ptr.isArray())
+    self.assertFalse(ptr.isInteger())
   
   
 

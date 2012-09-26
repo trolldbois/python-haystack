@@ -135,7 +135,7 @@ class Field:
   def isString(self): # null terminated
     return self.typename in [ FieldType.STRING, FieldType.STRING16, FieldType.STRINGNULL, FieldType.STRING_POINTER]
   def isPointer(self): # 
-    return self.typename.isPtr
+    return issubclass(self.__class__, PointerField)
   def isZeroes(self): # 
     return self.typename == FieldType.ZEROES
   def isArray(self): # will be overloaded
@@ -144,10 +144,10 @@ class Field:
     return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
   
   
-  def setCtype(self, name):
+  def set_ctype(self, name):
     self._ctype = name
   
-  def getCtype(self):
+  def get_ctype(self):
     if self._ctype is None:
       return self.typename._ctype
     return self._ctype
@@ -162,10 +162,10 @@ class Field:
       return '%s * %d' %(self.typename.ctypes, len(self) )
     return self.typename.ctypes
   
-  def setName(self, name):
+  def set_name(self, name):
     self.name = name
   
-  def getName(self):
+  def get_name(self):
     if hasattr(self, 'name'):
       return self.name
     else:
@@ -228,7 +228,7 @@ class Field:
         try:
           bytes = "%s"%(repr(self.struct.bytes[self.offset:self.offset+self.size].decode('utf-16')))
         except UnicodeDecodeError,e:
-          print 'ERROR ON :', repr(self.struct.bytes[self.offset:self.offset+self.size])
+          log.error('ERROR ON : %s'%( repr(self.struct.bytes[self.offset:self.offset+self.size])))
           bytes = self.struct.bytes[self.offset:self.offset+self.size]
       else:
         bytes = "'%s'"%(self.struct.bytes[self.offset:self.offset+self.size])
@@ -238,7 +238,7 @@ class Field:
       bytes = repr(self.value)#'\\x00'*len(self)
     elif self.isArray():
       log.warning('ARRAY in Field type, %s'%self.typename)
-      print 'error in 0x%x offset 0x%x'%(self.struct._vaddr, self.offset)
+      log.error( 'error in 0x%x offset 0x%x'%(self.struct._vaddr, self.offset))
       bytes= ''.join(['[',','.join([el.toString() for el in self.elements]),']'])
     elif self.padding or self.typename == FieldType.UNKNOWN:
       bytes = self.struct.bytes[self.offset:self.offset+len(self)]
@@ -265,7 +265,7 @@ class Field:
       #unknown
       comment = '# %s %s else bytes:%s'%( self.comment, self.usercomment, repr(self.getValue(Config.commentMaxSize)) ) 
           
-    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getTypename(), comment) 
+    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.get_name(), self.getTypename(), comment) 
     return fstr
   
   def __getstate__(self):
@@ -307,7 +307,7 @@ class ArrayField(Field):
   def isArray(self):
     return True
 
-  def getCtype(self):
+  def get_ctype(self):
     return self._ctype
 
   def getTypename(self):
@@ -326,7 +326,7 @@ class ArrayField(Field):
         %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
     #
     comment = '# %s %s array:%s'%( self.comment, self.usercomment, self.getValue(Config.commentMaxSize) )
-    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.getName(), self.getTypename(), comment) 
+    fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.get_name(), self.getTypename(), comment) 
     return fstr
 
 

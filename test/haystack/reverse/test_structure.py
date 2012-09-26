@@ -14,6 +14,7 @@ import sys
 from haystack.config import Config
 from haystack.reverse import structure
 from haystack.reverse import reversers
+from haystack.reverse.heuristics.dsa import *
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -27,13 +28,14 @@ import ctypes
 
 class TestStructure(unittest.TestCase):
 
-  #@classmethod
-  #def setUpClass(self):
-  #  #self.context = reversers.getContext('test/src/test-ctypes3.dump')
-  #  pass
+  @classmethod
+  def setUpClass(self):
+    self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    self.dsa = DSASimple()
+    self.pta = EnrichedPointerFields()
+    pass
 
   def setUp(self):  
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
     pass
 
   def tearDown(self):
@@ -41,36 +43,32 @@ class TestStructure(unittest.TestCase):
     self.context.reset()      
     pass
 
-  def test_init(self):
-    for s in self.context.listStructures():
-      if len(s) == 12 : #Node + padding, 1 pointer on create
-        self.assertEqual( len(s.getFields()), len(s.getPointerFields()))
-      elif len(s) == 20 : #test3, 1 pointer on create
-        self.assertEqual( len(s.getFields()), len(s.getPointerFields()))
-    return  
-
   def test_decodeFields(self):
     for s in self.context.listStructures():
-      s.decodeFields()
+      self.dsa.analyze_fields(s)
       if len(s) == 12 : #Node + padding, 1 pointer on create
         self.assertEqual( len(s.getFields()), 3 ) # 1, 2 and padding
         self.assertEqual( len(s.getPointerFields()), 1)
       elif len(s) == 20 : #test3, 1 pointer on create
         # fields, no heuristic to detect medium sized int
         # TODO untyped of size < 8 == int * x
-        self.assertEqual( len(s.getFields()), 5 )
+        #print s.toString()
+        self.assertEqual( len(s.getFields()), 3 ) # discutable
         self.assertEqual( len(s.getPointerFields()), 1)
     return  
 
   def test_resolvePointers(self):
     for s in self.context.listStructures():
-      s.resolvePointers()
+      self.pta.analyze_fields(s)
     self.assertTrue(True) # test no error
 
   def test_resolvePointers2(self):
     for s in self.context.listStructures():
-      s.decodeFields()
-      s.resolvePointers()
+      self.dsa.analyze_fields(s)
+      self.assertTrue( s.is_resolved() )
+    for s in self.context.listStructures():
+      log.debug('RESOLVATION: %s'%(s.is_resolved()))
+      self.pta.analyze_fields(s)
       if len(s) == 12 : #Node + padding, 1 pointer on create
         self.assertEqual( len(s.getFields()), 3 ) # 1, 2 and padding
         self.assertEqual( len(s.getPointerFields()), 1)
@@ -99,7 +97,7 @@ class TestStructure(unittest.TestCase):
     context6 = reversers.getContext('test/src/test-ctypes6.dump')
     for s in context6.listStructures():
       #s.resolvePointers()
-      s.decodeFields()
+      self.dsa.analyze_fields(s)
       log.debug(s.toString())
     self.assertTrue(True) # test no error
 
