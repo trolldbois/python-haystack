@@ -170,7 +170,7 @@ class _book(object):
   def getRef(self,typ,addr):
     #print typ,addr
     #print (typ,addr) in self.refs.keys()
-    if len(self.refs) > 3500:
+    if len(self.refs) > 35000:
       log.warning('the book is full, you should haystack.model.reset()')
     return self.refs[(typ,addr)]
   def delRef(self,typ,addr):
