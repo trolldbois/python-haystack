@@ -575,7 +575,7 @@ class Mappings:
     if not mmap:
       raise ValueError
     if hasattr(mmap, '_context'):
-      print '** _context exists'
+      #print '** _context exists'
       return mmap._context    
     if mmap not in self.getHeaps(): # addr is not a heap addr, 
       found = False

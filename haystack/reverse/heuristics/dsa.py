@@ -350,16 +350,18 @@ class EnrichedPointerFields(StructureAnalyser):
       if value%Config.WORDSIZE:
         field.set_uncertainty('Unaligned pointer value')
       # + ask mappings for the context for that value
-      ctx = mappings.get_context(value) # no error expected.
-      log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
-      #print '** ST id', id(structure), hex(structure._vaddr)
-      # + ask context for the target structure or code info
-      if not ctx.has_allocations():
+      try:
+        ctx = mappings.get_context(value) # no error expected.
+        #log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
+        #print '** ST id', id(structure), hex(structure._vaddr)
+        # + ask context for the target structure or code info
+      except ValueError,e:
         log.debug('target to non heap mmaps is not implemented')
-        field.set_child_desc('ext_lib @%0.8x %s'%(ctx.heap.start, ctx.heap.pathname))
+        m = mappings.getMmapForAddr(value)
+        field.set_child_desc('ext_lib @%0.8x %s'%(m.start, m.pathname))
         field._ptr_to_ext_lib = True
         field.set_child_ctype('void') # TODO: Function pointer ?
-        field.set_name('%s_%s'%(field.typename.basename, tgt))
+        field.set_name('ptr_ext_lib_%d'%(field.offset))
         continue
       tgt = None
       try:
