@@ -54,10 +54,10 @@ def closestFloorValueNumpy(val, lst):
     return closestFloorValueOld(val, lst)
   indicetab = numpy.searchsorted(lst, [val]) 
   ind = int(indicetab[0])
-  if ind == 0:
-    raise ValueError()
   if long(lst[ind]) == val:
     return long(lst[ind]), ind
+  if ind == 0:
+    raise ValueError('Value is under minimum')
   i = ind-1
   return long(lst[i]), i
 
