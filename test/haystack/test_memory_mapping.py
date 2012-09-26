@@ -27,7 +27,9 @@ class TestMappings(unittest.TestCase):
 
   def tearDown(self):
     #self.context = None
-    self.context.reset()      
+    self.context.reset()
+    self.ssh.reset()
+    self.putty.reset()
     pass
 
   def test_get_context(self):
@@ -61,7 +63,14 @@ class TestMappings(unittest.TestCase):
     self.assertEquals( len(allocs), 2273)
 
   def test_getMmap(self):
-    self.skipTest('')
+    mappings = self.ssh.mappings
+    self.assertEquals( len(mappings.getMmap('[heap]')), 1)
+    self.assertEquals( len(mappings.getMmap('None')), 9)
+    #really
+    mappings = self.putty.mappings
+    with self.assertRaises(IndexError):
+      self.assertEquals( len(mappings.getMmap('[heap]')), 1)
+    self.assertEquals( len(mappings.getMmap('None')), 71)
 
   def test_getMmapForAddr(self):
     mappings = self.ssh.mappings
@@ -84,8 +93,67 @@ class TestMappings(unittest.TestCase):
     mappings = self.putty.mappings
     self.assertEquals( len(mappings.getHeaps()), 12)
 
+  @unittest.expectedFailure # FIXME
   def test_getStack(self):
-    self.skipTest('')
+    mappings = self.ssh.mappings
+    #print ''.join(['%s\n'%(m) for m in mappings])    
+    self.assertEquals( mappings.getStack().start, 0xbff45000)
+    self.assertEquals( mappings.getStack().pathname, '[stack]')
+    #TODO win32    
+    mappings = self.putty.mappings
+    #print ''.join(['%s\n'%(m) for m in mappings])    
+    #print mappings.getStack() # no [stack]
+    self.assertEquals( mappings.getStack().start, 0x00400000)
+    self.assertEquals( mappings.getStack().pathname, '''C:\Program Files (x86)\PuTTY\putty.exe''')
+    
+  def test_contains(self):
+    mappings = self.ssh.mappings
+    for m in mappings:
+      self.assertTrue( m.start in mappings)
+      self.assertTrue( (m.end-1) in mappings)
+    
+    mappings = self.putty.mappings
+    for m in mappings:
+      self.assertTrue( m.start in mappings)
+      self.assertTrue( (m.end-1) in mappings)
+
+  def test_len(self):
+    mappings = self.ssh.mappings
+    self.assertEquals( len(mappings), 70)
+    mappings = self.putty.mappings
+    self.assertEquals( len(mappings), 403)
+    
+  def test_getitem(self):
+    mappings = self.ssh.mappings
+    self.assertTrue( isinstance(mappings[0], memory_mapping.MemoryMapping))
+    self.assertTrue( isinstance(mappings[len(mappings)-1], memory_mapping.MemoryMapping))
+    with self.assertRaises(IndexError):
+      mappings[0x0005c000]
+    mappings = self.putty.mappings
+    self.assertTrue( isinstance(mappings[0], memory_mapping.MemoryMapping))
+    self.assertTrue( isinstance(mappings[len(mappings)-1], memory_mapping.MemoryMapping))
+    with self.assertRaises(IndexError):
+      mappings[0x0005c000]
+    
+  def test_iter(self):
+    mappings = self.ssh.mappings
+    mps = [m for m in mappings]
+    mps2 = [m for m in mappings.mappings]
+    self.assertEquals(mps, mps2)
+    
+    mappings = self.putty.mappings
+    mps = [m for m in mappings]
+    mps2 = [m for m in mappings.mappings]
+    self.assertEquals(mps, mps2)
+
+  def test_setitem(self):
+    mappings = self.ssh.mappings
+    with self.assertRaises(NotImplementedError):
+      mappings[0x0005c000] = 1
+    
+    mappings = self.putty.mappings
+    with self.assertRaises(NotImplementedError):
+      mappings[0x0005c000]=1
 
   def test_search_win_heaps(self):
     self.skipTest('')
@@ -96,17 +164,6 @@ class TestMappings(unittest.TestCase):
   def test_get_mmap_for_haystack_addr(self):
     self.skipTest('')
     
-  def test_contains(self):
-    self.skipTest('')
-
-  def test_len(self):
-    self.skipTest('')
-  def test_getitem(self):
-    self.skipTest('')
-  def test_setitem(self):
-    self.skipTest('')
-  def test_iter(self):
-    self.skipTest('')
   
  
 
