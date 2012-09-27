@@ -374,7 +374,7 @@ def registerModule( targetmodule ):
   createPOPOClasses( targetmodule )
   __book.addModule(targetmodule)
   log.debug('registered %d types'%( _registered))
-  log.debug('regisered %d module total'%(len(__book.getModules())))
+  log.debug('registered %d module total'%(len(__book.getModules())))
   return
 
 def isRegistered(cls):
