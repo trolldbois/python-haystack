@@ -132,7 +132,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
       self.metalines.append( ( fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:]) )  )
     # test if x32 or x64
     if len(fields[0]) > 10:
-      log.info('x64 arch dump detected')
+      log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
       Config.WORDSIZE = 8
     else:
       Config.WORDSIZE = 4

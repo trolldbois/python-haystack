@@ -298,4 +298,7 @@ What are the dependencies ? :
 
 - python-ptrace on linux
 - winappdbg on win32
+- python-numpy
+- python-networkx
+- python-levenshtein
 - several others...
