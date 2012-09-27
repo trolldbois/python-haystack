@@ -8,7 +8,7 @@ import unittest
 import logging
 import tempfile
 import time
-import mmap
+import mmap, ctypes
 
 from haystack import memory_mapping, utils
 from haystack.config import Config
@@ -22,7 +22,7 @@ class TestMmapHack(unittest.TestCase):
     fin.close()
     fin = None
     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-    heapmap = utils.unpackWord((Config.WORDTYPE).from_address(id(local_mmap_bytebuffer) + 2*Config.WORDSIZE ) )
+    heapmap = utils.unpackWord((ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )
     print 'MMAP HACK: heapmap: 0x%0.8x'%(heapmap)
     class P:
       pid=os.getpid()
