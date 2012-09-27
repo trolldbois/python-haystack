@@ -8,9 +8,29 @@ import unittest
 import logging
 import tempfile
 import time
+import mmap
 
-from haystack import memory_mapping
+from haystack import memory_mapping, utils
+from haystack.config import Config
 from haystack.reverse import reversers
+
+class TestMmapHack(unittest.TestCase):
+  def test_mmap_hack(self):
+    fname = os.path.normpath(os.path.abspath(__file__))
+    fin = file(fname)
+    local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
+    fin.close()
+    fin = None
+    # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
+    heapmap = utils.unpackWord((Config.WORDTYPE).from_address(id(local_mmap_bytebuffer) + 2*Config.WORDSIZE ) )
+    print 'MMAP HACK: heapmap: 0x%0.8x'%(heapmap)
+    class P:
+      pid=os.getpid()
+    maps = memory_mapping.readProcessMappings(P()) # memory_mapping
+    #print '\n'.join([str(m) for m in maps])
+    ret=[m for m in maps if heapmap in m]
+    self.assertEquals( len(ret), 1)
+    self.assertEquals( ret[0].pathname, fname)
 
 
 class TestMappings(unittest.TestCase):
