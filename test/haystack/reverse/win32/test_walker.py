@@ -114,8 +114,10 @@ class TestAllocator(unittest.TestCase):
     #self.skipTest('known_ok')
 
     self.assertEquals( self._mappings.get_target_system(), 'win32')
-        
-    for m in self._mappings.getHeaps():
+    heaps = self._mappings.getHeaps()
+    self.assertEquals( len(heaps), 12)
+    
+    for m in heaps:
       gen = self._mappings.get_user_allocations(self._mappings, m)
       try:
         for addr,s in gen:

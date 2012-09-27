@@ -99,6 +99,8 @@ def getaddress(obj):
   :param obj: a pointer.
   '''
   # check for null pointers
+  if hasattr(obj,'_sub_addr_'):
+    return obj._sub_addr_
   if bool(obj):
     if not hasattr(obj,'contents'):
       return 0
@@ -261,6 +263,8 @@ def isUnionType(objtype):
 __ptrt = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  if hasattr(objtype, '_subtype_'):
+    return True
   if not isinstance(objtype, type):  return False
   return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
   #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)

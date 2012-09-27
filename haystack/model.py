@@ -146,9 +146,22 @@ if ctypes.Structure.__name__ == 'Structure':
 if ctypes.Union.__name__ == 'Union':
   ctypes.original_Union = ctypes.Union
 
+def POINTER(cls):
+  # check cls as ctypes obj
+  if cls is None:
+    cls = ctypes.c_ulong
+  fake_ptr_base_type = Config.WORDTYPE # 4 or 8 len
+  # create object that is a pointer ( see model.isPointer )
+  clsname = cls.__name__
+  klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value})
+  klass._sub_addr_ = property(klass._sub_addr_)
+  return klass
+ctypes.POINTER = POINTER
+
 
 # The book registers all haystack modules, and classes, and can keep 
 # some pointer refs on memory allocated within special cases...
+# see ctypes._pointer_type_cache , _reset_cache()
 class _book(object):
   modules = set()
   classes = dict()
@@ -237,6 +250,8 @@ def delRef(typ,origAddr):
   return
 
 def get_subtype(cls):
+  if hasattr(cls, '_subtype_'):
+    return cls._subtype_  
   return cls._type_  
 
 
