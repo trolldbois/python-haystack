@@ -50,17 +50,6 @@ class TestWin7Heap(unittest.TestCase):
     self._mappings = None    
     return
 
-  # TODO put in model
-  # change get_subtype and getaddress
-  def POINTER(cls):
-    # check cls as ctypes obj
-    fake_ptr_base_type = Config.WORDTYPE # 4 or 8 len
-    # create object that is a pointer ( see model.isPointer )
-    clsname = cls.__name__
-    klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value})
-    klass._sub_addr_ = property(klass._sub_addr_)
-    return klass
- 
   def test_ctypes_sizes(self):
     ''' road to faking POINTER :
       get_subtype(attrtype)  # checks for attrtype._type_
@@ -72,7 +61,7 @@ class TestWin7Heap(unittest.TestCase):
 
 
   def test_heap_read(self):
-    h = self.mappings.getMmapForAddr(0x005c0000)
+    h = self._mappings.getMmapForAddr(0x005c0000)
     self.assertEquals(h.getByteBuffer()[0:10],'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
     addr = h.start
     self.assertEquals( addr , 6029312)
@@ -82,12 +71,17 @@ class TestWin7Heap(unittest.TestCase):
 
     self.assertEquals( heap.Signature , 4009750271L )
     
-    self.assertTrue( win7heapwalker.is_heap(mappings, h) )
+    print addr
+    print hex( ctypes.addressof( heap ) )
+    print heap.Signature
+    print '*'*80
+    
+    self.assertTrue( win7heapwalker.is_heap(self._mappings, h) ) #, '\n'.join([str(m) for m in self._mappings]))
 
 
 
 if __name__ == '__main__':
-  logging.basicConfig( stream=sys.stderr, level=logging.INFO )
+  logging.basicConfig( stream=sys.stderr, level=logging.DEBUG )
   logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
   logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
   logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

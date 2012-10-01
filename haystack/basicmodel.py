@@ -30,7 +30,7 @@ log = logging.getLogger('basicmodel')
 class LoadableMembers(object): 
   ''' 
   This is the main class, to be inherited by all ctypes structure.
-  It adds a generic validaiton framework, based on simple assertion, 
+  It adds a generic validation framework, based on simple assertion, 
   and on more complex constraint on members values.
     
   '''
@@ -196,7 +196,7 @@ class LoadableMembers(object):
       # all case, 
       _attrType=None
       if isVoidPointerType(attrtype) or isFunctionType(attrtype):
-        log.debug('Its a simple type. Checking mappings only.')
+        log.debug('Its a simple type. Checking mappings only. attr=%s'%(attr))
         if getaddress(attr) != 0 and not is_valid_address_value( attr, mappings): # NULL can be accepted
           log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
           return False
@@ -204,6 +204,11 @@ class LoadableMembers(object):
         # test valid address mapping
         _attrType = get_subtype(attrtype)
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
+        # why ?
+        print 'wordsize',Config.WORDSIZE
+        print 'is_valid_address( %s, mappings, %s) = %s'%( attrname, _attrType ,is_valid_address( attr, mappings, _attrType))
+        print 'attr',attr.value
+        print 'attr in mappings', int(attr.value) in mappings
         log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,getaddress(attr)))
         return False
       # null is accepted by default 

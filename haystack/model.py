@@ -148,16 +148,20 @@ if ctypes.Union.__name__ == 'Union':
 
 def POINTER(cls):
   # check cls as ctypes obj
-  if cls is None:
-    cls = ctypes.c_ulong
-  fake_ptr_base_type = Config.WORDTYPE # 4 or 8 len
-  # create object that is a pointer ( see model.isPointer )
-  clsname = cls.__name__
-  klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value})
+  if cls is None: # VOID
+    cls = type(None)# ctypes.c_void_p # ctypes.c_ulong
+    clsname = 'c_void'
+  else:
+    fake_ptr_base_type = Config.WORDTYPE # 4 or 8 len
+    # create object that is a pointer ( see model.isPointer )
+    clsname = cls.__name__
+  import _ctypes
+  klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( _ctypes._SimpleCData,),{'_type_': Config.get_word_type_char(), '_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
+  #klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
   klass._sub_addr_ = property(klass._sub_addr_)
   return klass
 ctypes.POINTER = POINTER
-
+#0xbc32f5c7L
 
 # The book registers all haystack modules, and classes, and can keep 
 # some pointer refs on memory allocated within special cases...

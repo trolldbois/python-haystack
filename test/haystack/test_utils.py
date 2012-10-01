@@ -33,6 +33,7 @@ class SubSt2(LoadableMembersStructure):
 btype = ctypes.c_int
 voidp = ctypes.c_void_p
 stp = ctypes.POINTER(St)
+stpvoid = ctypes.POINTER(None)
 arra1 = (ctypes.c_long *4)
 arra2 = (St *4)
 arra3 = (ctypes.POINTER(St) *4)
@@ -65,13 +66,13 @@ class TestBasicFunctions(unittest.TestCase):
     return 
 
   def test_isPointerType(self):
-    valids = [voidp, stp, fptr]
+    valids = [voidp, stp, stpvoid, fptr]
     invalids = [ v for v in self.tests if v not in valids]
     self._testMe( utils.isPointerType, valids, invalids)
     return 
 
   def test_isVoidPointerType(self):
-    valids = [voidp]
+    valids = [voidp, stpvoid]
     invalids = [ v for v in self.tests if v not in valids]
     self._testMe( utils.isVoidPointerType, valids, invalids)
     return 
@@ -102,6 +103,13 @@ class TestBasicFunctions(unittest.TestCase):
     valids = [string ]
     invalids = [ v for v in self.tests if v not in valids]
     self._testMe( utils.isCStringPointer, valids, invalids)
+    return 
+
+  def test_is_ctypes(self):
+    valids = [St(), St2(), SubSt2()]
+    #valids = [btype, voidp, stp, stpvoid, arra1, arra2, arra3, string, fptr, arra4 ]
+    invalids = [ v for v in self.tests if v not in valids]
+    self._testMe( utils.isCTypes, valids, invalids)
     return 
 
 

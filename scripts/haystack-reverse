@@ -15,19 +15,26 @@ import logging
 import os
 import sys
 
-import haystack
-from haystack import argparse_utils
-from haystack.config import Config
-from haystack.reverse import signature, reversers
-
 log = logging.getLogger('haystack-reverse')
 
+from haystack import argparse_utils
+
+def make_config(opts):
+  #make out wordsize.
+  from haystack import config
+  config.make_config_from_memdump( opts.dumpname )
+
 def reverseInstances(opt):
+  import haystack
+  from haystack.reverse import reversers
   context = reversers.reverseInstances(opt.dumpname)
   return
 
 def writeReversedTypes(opt):
   '''reverse types from a memorydump, and write structure definition to file '''
+  import haystack
+  from haystack.config import Config
+  from haystack.reverse import signature
   context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
   context = signature.makeReversedTypes(context, sizeCache)
   outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILENAME, context.dumpname),'w')
@@ -39,6 +46,8 @@ def writeReversedTypes(opt):
 
 def groupStructures(opt):
   ''' show sorted structure instances groups to stdout '''
+  import haystack
+  from haystack.reverse import signature
   context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
   for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
     signature.printStructureGroups(context, chains, opt.address )
@@ -46,6 +55,9 @@ def groupStructures(opt):
   
 def saveSignatures(opt):
   ''' translate a memdump into a signature based file NULL,POINTERS,OTHERS'''
+  import haystack
+  from haystack.config import Config
+  from haystack.reverse import signature
   context, sig = signature.makeSignatures(opt.dumpname)
   outfile = Config.getCacheFilename(Config.SIGNATURES_FILENAME, context.dumpname)
   file(outfile,'w').write(sig)
@@ -55,6 +67,8 @@ def saveSignatures(opt):
 
 def show(opt):
   ''' Show a structure '''
+  import haystack
+  from haystack.reverse import signature
   log.info('[+] Load context')
   context = reversers.getContext(opt.dumpname)
   log.info('[+] Find Structure at: @%x'%(opt.address))
@@ -69,6 +83,8 @@ def show(opt):
 
 def printParents(opt):
   ''' print the parental structures '''
+  import haystack
+  from haystack.reverse import reversers
   log.info('[+] Load context')
   context = reversers.getContext(opt.dumpname)
   log.info('[+] find offsets of struct_addr:%x'%(opt.address))
@@ -177,6 +193,7 @@ def main(argv):
   logging.getLogger('reversers').addHandler( sh )
   logging.getLogger('haystack-reverse').addHandler( sh )
 
+  make_config(opts)
   opts.func(opts)
   
 

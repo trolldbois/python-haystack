@@ -23,10 +23,11 @@ class ConfigClass():
   def __init__(self):
     #self.cacheDir = os.path.normpath(outputDir)
     #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-    self.__WORDSIZE = None
+    self._WORDSIZE = None
     self.commentMaxSize = 64
     self.mmap_hack = True # bad bad idea...
     #
+    self.DUMPNAME_INDEX_FILENAME = 'mappings'
     self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
     self.CACHE_NAME = 'cache'
     self.CACHE_STRUCT_DIR = 'structs'
@@ -63,14 +64,15 @@ class ConfigClass():
     return   
         
   def set_word_size(self, v):
-    self.__WORDSIZE = v
+    self._WORDSIZE = v
 
   def get_word_size(self):
     ''' default config to local arch. you can change it. '''
-    if self.__WORDSIZE is None:
+    if self._WORDSIZE is None:
+      #raise NotImplementedError('YOu should not default to WORDTYPE')
       import ctypes
-      self.__WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
-    return self.__WORDSIZE
+      self._WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
+    return self._WORDSIZE
   
   def get_word_type(self):
     import ctypes
@@ -79,7 +81,16 @@ class ConfigClass():
     elif self.WORDSIZE == 8:
       return ctypes.c_uint64
     else:
-      raise ValueError('platform not supported for WORDIZE == %d'%(self.WORDSIZE))
+      raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
+    return
+
+  def get_word_type_char(self):
+    if self.WORDSIZE == 4:
+      return 'L'
+    elif self.WORDSIZE == 8:
+      return 'Q'
+    else:
+      raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
     return
     
   WORDSIZE = property(get_word_size, set_word_size)
@@ -120,6 +131,18 @@ class ConfigClass():
     root = os.path.abspath(dumpname)
     return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
+
+def make_config_from_memdump(dumpname):
+  """ Load a memory dump meta data """
+  index = open( os.path.sep.join( [dumpname, Config.DUMPNAME_INDEX_FILENAME] ), 'r' )
+  m1 = index.readline().split(' ')
+  # test if x32 or x64
+  if len(m1[0]) > 10:
+    log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
+    Config.set_word_size(8)
+  else:
+    Config.set_word_size(4)
+  return 
 
 Config = ConfigClass()
 

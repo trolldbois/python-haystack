@@ -10,11 +10,13 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
+from haystack.config import Config
+if Config._WORDSIZE is None:
+  raise ValueError('You should not raise me')
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
 from haystack import utils
-from haystack.config import Config
 
 from haystack.reverse.win32 import win7heap_generated as gen
 

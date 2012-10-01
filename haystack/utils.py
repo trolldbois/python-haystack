@@ -68,6 +68,7 @@ def is_valid_address_value(addr, mappings, structType=None):
   Returns the mapping in which the address stands otherwise.
   '''
   m = mappings.getMmapForAddr(addr)
+  log.debug( 'is_valid_address_value = %x %s'%( addr, m ))
   if m:
     if (structType is not None):
       s = ctypes.sizeof(structType)
@@ -100,10 +101,12 @@ def getaddress(obj):
   '''
   # check for null pointers
   if hasattr(obj,'_sub_addr_'):
+    print 'obj._sub_addr_', hex(obj._sub_addr_)
     return obj._sub_addr_
   if bool(obj):
     if not hasattr(obj,'contents'):
       return 0
+    print '** NOT MY HAYSTACK POINTER'
     return ctypes.addressof(obj.contents)
   else:
     return 0  
@@ -290,6 +293,9 @@ def isPointerUnionType(objtype):
 
 def isVoidPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
+  if hasattr(objtype, '_subtype_'):
+    if objtype._subtype_ == type(None):
+      return True 
   if not isinstance(objtype, type):  return False
   return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
 

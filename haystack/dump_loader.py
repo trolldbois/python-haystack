@@ -133,9 +133,9 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
     # test if x32 or x64
     if len(fields[0]) > 10:
       log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
-      Config.WORDSIZE = 8
+      Config.set_word_size(8)
     else:
-      Config.WORDSIZE = 4
+      Config.set_word_size(4)
     return 
     
   def _load_memory_mappings(self):
