@@ -13,7 +13,6 @@ import ctypes
 import subprocess
 import json
 
-from haystack import model, basicmodel
 from haystack import argparse_utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack import memory_mapping 
@@ -371,6 +370,7 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
     :param targetMappings the list of specific mapping to look into.
     :param maxNum the maximum number of results expected. -1 for infinite.
   """
+  from haystack import basicmodel # TODO replace by instance method
   log.debug('searchIn: %s - %s'%(structName,mappings))
   structType = getKlass(structName)
   finder = StructFinder(mappings, targetMappings)
@@ -505,6 +505,7 @@ def _output(outs, rtype ):
     yield ']'
     raise StopIteration    
   #else {'json', 'pickled'} : # cast in pyObject
+  from haystack import basicmodel # TODO replace by instance method fincCtypesinpyobj
   ret = [ (ss.toPyObject(), addr) for ss, addr in outs]
   # last check to clean the structure from any ctypes Structure
   if basicmodel.findCtypesInPyObj(ret):
@@ -529,6 +530,7 @@ def _show_output(instance, validated, rtype ):
     return "(%s\n, %s)"% ( str_fn(instance), validated )
   #else {'json', 'pickled', 'python'} : # cast in pyObject
   pyObj = instance.toPyObject()
+  from haystack import basicmodel # TODO replace by isntance method finctypesinpyobj
   # last check to clean the structure from any ctypes Structure
   if basicmodel.findCtypesInPyObj(pyObj):
     raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
@@ -559,6 +561,7 @@ def refresh(args):
   mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
   finder = StructFinder(mappings)
   
+  from haystack import model
   memoryMap = model.is_valid_address_value(addr, finder.mappings)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
@@ -598,6 +601,7 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
   mappings = dump_loader.load(dumpname)
   finder = StructFinder(mappings)
   # validate the input address.
+  from haystack import model
   memoryMap = model.is_valid_address_value(address, finder.mappings)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")

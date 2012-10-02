@@ -11,7 +11,7 @@ C structure.
 'Valid' means:
   * a pointer should have a pointer value.
   * a string whould be a string.
-  * a constrainged integer should be in a range of acceptable values.
+  * a constraigned integer should be in a range of acceptable values.
   etc...
 
 You can implement your own structures easily by registering your module 
@@ -136,6 +136,12 @@ __status__ = "Production"
 
 log = logging.getLogger('model')
 
+from haystack.config import Config
+if Config._WORDSIZE is None:
+  print Config.get_word_size()
+  raise ValueError('You should not raise me')
+
+
 # replace c_char_p so we can have our own CString 
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.original_c_char_p = ctypes.c_char_p
@@ -146,7 +152,7 @@ if ctypes.Structure.__name__ == 'Structure':
 if ctypes.Union.__name__ == 'Union':
   ctypes.original_Union = ctypes.Union
 
-def POINTER(cls):
+def HAYSTACK_POINTER(cls):
   # check cls as ctypes obj
   if cls is None: # VOID
     cls = type(None)# ctypes.c_void_p # ctypes.c_ulong
@@ -160,7 +166,7 @@ def POINTER(cls):
   #klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
   klass._sub_addr_ = property(klass._sub_addr_)
   return klass
-ctypes.POINTER = POINTER
+ctypes.POINTER = HAYSTACK_POINTER
 #0xbc32f5c7L
 
 # The book registers all haystack modules, and classes, and can keep 

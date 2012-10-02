@@ -64,12 +64,19 @@ class ConfigClass():
     return   
         
   def set_word_size(self, v):
+    if self._WORDSIZE is not None and v != self._WORDSIZE:
+      raise NotImplementedError('You should not change wordsize')
     self._WORDSIZE = v
+    #raise ValueError('wtf')
+    import ctypes
+    log.warning('Setting WORDTYPE size to %d'%(v))
+    from haystack import model
+    self.PTR_TYPE = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType    
 
   def get_word_size(self):
     ''' default config to local arch. you can change it. '''
     if self._WORDSIZE is None:
-      #raise NotImplementedError('YOu should not default to WORDTYPE')
+      raise NotImplementedError('Please set_word_size(x) before.')
       import ctypes
       self._WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
     return self._WORDSIZE
@@ -86,7 +93,7 @@ class ConfigClass():
 
   def get_word_type_char(self):
     if self.WORDSIZE == 4:
-      return 'L'
+      return 'I'
     elif self.WORDSIZE == 8:
       return 'Q'
     else:

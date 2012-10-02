@@ -262,14 +262,12 @@ def isUnionType(objtype):
   if not isinstance(objtype, type):  return False
   return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
 
-
-__ptrt = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
   if hasattr(objtype, '_subtype_'):
     return True
   if not isinstance(objtype, type):  return False
-  return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
+  return Config.PTR_TYPE == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
   #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)
 
 def isPointerBasicType(objtype):
@@ -313,7 +311,7 @@ def isBasicTypeArray(obj):
       return True
   return False
 
-__arrayt = type(Config.WORDTYPE*1)
+__arrayt = type(ctypes.c_byte*1)
 def isArrayType(objtype):
   ''' Checks if an object is a ctype array.'''
   if not isinstance(objtype, type):  return False

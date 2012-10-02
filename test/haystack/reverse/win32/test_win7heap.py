@@ -12,9 +12,7 @@ import pickle
 import sys
 
 from haystack.config import Config
-from haystack import utils, model
-from haystack.reverse.win32 import win7heapwalker, win7heap
-from haystack.reverse.win32.win7heap import HEAP, HEAP_ENTRY
+from haystack import utils
 from haystack import dump_loader
 
 __author__ = "Loic Jaquemet"
@@ -56,11 +54,26 @@ class TestWin7Heap(unittest.TestCase):
       getaddress(attr)    # check for address of attr.contents being a ctypes.xx.from_address(ptr_value)
       
     '''
-    self.assertEquals( ctypes.sizeof( HEAP ) , 312 )
-    self.assertEquals( utils.offsetof( HEAP , 'Signature') , 100 )
+    from haystack.reverse.win32 import win7heap
+    self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
+    self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
+    self.assertEquals( ctypes.sizeof( ctypes.POINTER(None)), 4 )
+    self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_TAG_ENTRY)), 4 )
+    self.assertEquals( ctypes.sizeof( win7heap._LIST_ENTRY), 8 )
+    self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_LIST_LOOKUP)), 4 )
+    self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_PSEUDO_TAG_ENTRY)), 4 )
+    self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_LOCK)), 4 )
+    self.assertEquals( ctypes.sizeof( ctypes.c_ubyte), 1 )
+    self.assertEquals( ctypes.sizeof( (ctypes.c_ubyte*1)), 1 )
+    self.assertEquals( ctypes.sizeof( win7heap._HEAP_COUNTERS), 84 )
+    self.assertEquals( ctypes.sizeof( win7heap._HEAP_TUNING_PARAMETERS), 8 )
+
+    self.assertEquals( ctypes.sizeof( win7heap.HEAP ) , 312 )
+    self.assertEquals( utils.offsetof( win7heap.HEAP , 'Signature') , 100 )
 
 
   def test_heap_read(self):
+    from haystack.reverse.win32 import win7heapwalker, win7heap
     h = self._mappings.getMmapForAddr(0x005c0000)
     self.assertEquals(h.getByteBuffer()[0:10],'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
     addr = h.start
