@@ -94,10 +94,10 @@ class TestWin7Heap(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  logging.basicConfig( stream=sys.stderr, level=logging.DEBUG )
+  logging.basicConfig( stream=sys.stderr, level=logging.INFO )
   logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
-  logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-  logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+  #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
   #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
   #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
