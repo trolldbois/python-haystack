@@ -12,6 +12,9 @@ import pickle
 import sys
 
 from haystack.config import Config
+
+Config.set_word_size(4) # forcing it on these unittest
+
 from haystack import utils, model
 from haystack.reverse.win32 import win7heapwalker, win7heap
 from haystack.reverse.win32.win7heap import HEAP, HEAP_ENTRY

@@ -7,10 +7,10 @@
 #
 
 def main():
-  from haystack.reverse import reversers
-  context = reversers.getContext('test/dumps/skype/skype.1/skype.1.f')
+  from haystack.reverse import context
+  ctx = context.get_context('test/dumps/skype/skype.1/skype.1.f')
   from haystack.reverse import structure
-  it = structure.cacheLoadAllLazy(context)
+  it = structure.cacheLoadAllLazy(ctx)
 
   structs = []
   for i in range(10000):

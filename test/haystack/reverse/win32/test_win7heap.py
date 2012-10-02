@@ -84,10 +84,10 @@ class TestWin7Heap(unittest.TestCase):
 
     self.assertEquals( heap.Signature , 4009750271L )
     
-    print addr
-    print hex( ctypes.addressof( heap ) )
-    print heap.Signature
-    print '*'*80
+    #print addr
+    #print hex( ctypes.addressof( heap ) )
+    #print heap.Signature
+    #print '*'*80
     
     self.assertTrue( win7heapwalker.is_heap(self._mappings, h) ) #, '\n'.join([str(m) for m in self._mappings]))
 

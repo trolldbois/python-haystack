@@ -12,9 +12,7 @@ import pickle
 import sys
 
 from haystack.config import Config
-from haystack.reverse import structure
-from haystack.reverse import reversers
-from haystack.reverse.heuristics.dsa import *
+from haystack.reverse import context
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -30,9 +28,10 @@ class TestStructure(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
-    self.dsa = DSASimple()
-    self.pta = EnrichedPointerFields()
+    from haystack.reverse.heuristics import dsa
+    self.context = context.get_context('test/src/test-ctypes3.dump')
+    self.dsa = dsa.DSASimple()
+    self.pta = dsa.EnrichedPointerFields()
     pass
 
   def setUp(self):  
@@ -74,6 +73,7 @@ class TestStructure(unittest.TestCase):
         self.assertEqual( len(s.getPointerFields()), 1)
   
   def test_reset(self):
+    from haystack.reverse import structure  
     for s in self.context.listStructures():
       s.reset()
       if isinstance(s, structure.CacheWrapper):
@@ -94,7 +94,7 @@ class TestStructure(unittest.TestCase):
 
 
   def test_string_overlap(self):
-    context6 = reversers.getContext('test/src/test-ctypes6.dump')
+    context6 = context.get_context('test/src/test-ctypes6.dump')
     for s in context6.listStructures():
       #s.resolvePointers()
       self.dsa.analyze_fields(s)

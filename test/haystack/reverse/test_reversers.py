@@ -11,8 +11,11 @@ import os
 import sys
 import unittest
 
-from haystack import model
 from haystack.config import Config
+Config.set_word_size(4) # forcing it on these unittest
+
+from haystack import model
+from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics.dsa import *
 
@@ -39,7 +42,7 @@ class TestStructureSizes(unittest.TestCase):
 
   def setUp(self):    
     #os.chdir()
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
+    self.context = context.get_context('test/src/test-ctypes3.dump')
 
   def tearDown(self):
     self.context = None
@@ -80,7 +83,7 @@ class TestStructureSizes(unittest.TestCase):
 class TestFullReverse(unittest.TestCase):
     
   def test_reverseInstances(self):
-    #context = reversers.getContext('test/dumps/ssh/ssh.1')
+    #context = context.get_context('test/dumps/ssh/ssh.1')
     dumpname = 'test/dumps/ssh/ssh.1'
     context = Config.cleanCache(dumpname)
     context = reversers.reverseInstances(dumpname)

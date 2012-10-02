@@ -138,7 +138,6 @@ log = logging.getLogger('model')
 
 from haystack.config import Config
 if Config._WORDSIZE is None:
-  print Config.get_word_size()
   raise ValueError('You should not raise me')
 
 
@@ -166,7 +165,10 @@ def HAYSTACK_POINTER(cls):
   #klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
   klass._sub_addr_ = property(klass._sub_addr_)
   return klass
-ctypes.POINTER = HAYSTACK_POINTER
+
+if Config.get_word_size() != ctypes.sizeof(ctypes.c_void_p):
+  log.warning('Changing POINTER size to %d bytes'%(Config.get_word_size()))
+  ctypes.POINTER = HAYSTACK_POINTER
 #0xbc32f5c7L
 
 # The book registers all haystack modules, and classes, and can keep 

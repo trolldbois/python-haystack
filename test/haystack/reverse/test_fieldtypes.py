@@ -12,9 +12,7 @@ import pickle
 import sys
 
 from haystack.config import Config
-from haystack.reverse import structure, fieldtypes
-from haystack.reverse import reversers
-from haystack.reverse.heuristics.dsa import *
+from haystack.reverse import context
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -31,9 +29,10 @@ class TestField(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    #self.context3 = reversers.getContext('test/src/test-ctypes3.dump')
-    self.context6 = reversers.getContext('test/src/test-ctypes6.dump')
-    self.dsa = DSASimple()
+    #self.context3 = context.get_context('test/src/test-ctypes3.dump')
+    self.context6 = context.get_context('test/src/test-ctypes6.dump')
+    from haystack.reverse.heuristics import dsa
+    self.dsa = dsa.DSASimple()
     self.st = self.context6.listStructures()[0]
     
   def setUp(self):  
@@ -43,6 +42,7 @@ class TestField(unittest.TestCase):
     pass
   
   def test_is_types(self):
+    from haystack.reverse import fieldtypes
     #def __init__(self, astruct, offset, typename, size, isPadding):
     ptr = fieldtypes.PointerField(self.st,8, fieldtypes.FieldType.POINTER, 4, False)
     self.assertFalse(ptr.isString())

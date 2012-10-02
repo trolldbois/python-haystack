@@ -12,7 +12,10 @@ import pickle
 import sys
 
 from haystack.config import Config
-from haystack.reverse import reversers
+
+Config.set_word_size(4) # forcing it on these unittest
+
+from haystack.reverse import context
 from haystack.reverse.libc import ctypes_malloc as ctypes_alloc
 from haystack.reverse.libc import libcheapwalker
 from haystack import dump_loader
@@ -30,7 +33,7 @@ class TestAllocator(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.ssh1 = reversers.getContext('test/dumps/ssh/ssh.1')
+    self.ssh1 = context.get_context('test/dumps/ssh/ssh.1')
 
   @classmethod
   def tearDownClass(self):  
@@ -76,7 +79,7 @@ class TestAllocatorSimple(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context6 = reversers.getContext('test/src/test-ctypes6.dump')
+    self.context6 = context.get_context('test/src/test-ctypes6.dump')
 
   @classmethod
   def tearDownClass(self):  

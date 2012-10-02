@@ -287,14 +287,14 @@ lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
 
 def makeSizeCaches(dumpname):
   ''' gets all structures instances from the dump, order them by size.'''
-  from haystack.reverse import reversers
+  from haystack.reverse import context
   log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(dumpname)
+  ctx = context.get_context(dumpname)
   log.debug('\t[-] Make the size dictionnaries.')
-  sizeCache = StructureSizeCache(context)
+  sizeCache = StructureSizeCache(ctx)
   sizeCache.cacheSizes()
 
-  return context, sizeCache  
+  return ctx, sizeCache  
   
 def buildStructureGroup(context, sizeCache , optsize=None ):
   ''' Iterate of structure instances grouped by size, find similar signatures, 
@@ -409,15 +409,15 @@ def makeReversedTypes(context, sizeCache):
   return context
   
 def makeSignatures(dumpname):
-  from haystack.reverse import reversers
+  from haystack.reverse import context
   log.debug('\t[-] Loading the context for a dumpname.')
-  context = reversers.getContext(dumpname)
-  heap = context.heap
+  ctx = context.get_context(dumpname)
+  heap = ctx.heap
   
   log.info('[+] Make the signatures.')
   sigMaker = SignatureMaker(heap)
   sig = sigMaker.search()
-  return context, sig  
+  return ctx, sig  
 
 def makeGroupSignature(context, sizeCache): 
   ''' From the structures cache ordered by size, group similar instances together. '''

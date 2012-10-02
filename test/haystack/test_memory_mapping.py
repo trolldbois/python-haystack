@@ -10,9 +10,10 @@ import tempfile
 import time
 import mmap, ctypes
 
-from haystack import memory_mapping, utils
 from haystack.config import Config
-from haystack.reverse import reversers
+from haystack import memory_mapping
+from haystack import utils
+from haystack.reverse import context
 
 class TestMmapHack(unittest.TestCase):
   def test_mmap_hack(self):
@@ -37,9 +38,9 @@ class TestMappings(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context = reversers.getContext('test/src/test-ctypes3.dump')
-    self.ssh = reversers.getContext('test/dumps/ssh/ssh.1')
-    self.putty = reversers.getContext('test/dumps/putty/putty.1.dump')
+    self.context = context.get_context('test/src/test-ctypes3.dump')
+    self.ssh = context.get_context('test/dumps/ssh/ssh.1')
+    self.putty = context.get_context('test/dumps/putty/putty.1.dump')
     pass
 
   def setUp(self):  

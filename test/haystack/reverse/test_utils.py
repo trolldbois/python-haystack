@@ -8,7 +8,8 @@ import os
 import unittest
 
 from haystack.config import Config
-from haystack.reverse import utils, reversers
+from haystack.reverse import utils
+from haystack.reverse import context
 
 
 class TestBasicFunctions(unittest.TestCase):
@@ -23,8 +24,8 @@ class TestBasicFunctions(unittest.TestCase):
     with self.assertRaises(ValueError):
       utils.closestFloorValue(-1, lst)
     
-    context = reversers.getContext('test/src/test-ctypes3.dump')
-    lst = context._structures_addresses
+    ctx = context.get_context('test/src/test-ctypes3.dump')
+    lst = ctx._structures_addresses
     #print ['0x%0.8x'%i for i in lst]
 
 if __name__ == '__main__':

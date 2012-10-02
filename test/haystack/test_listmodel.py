@@ -9,9 +9,7 @@ import sys
 
 from haystack import dump_loader
 from haystack.config import Config
-from haystack import model
 from haystack import utils
-from haystack.reverse.win32 import win7heap
 
 
 __author__ = "Loic Jaquemet"
@@ -32,12 +30,14 @@ class TestListStruct(unittest.TestCase):
     self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
   
   def tearDown(self):
+    from haystack import model
     model.reset()
     self.mappings = None
     pass
   
   def test_iter(self):
     #offset = 0x390000
+    from haystack.reverse.win32 import win7heap
     offset = 0x1ef0000
     self.m = self.mappings.getMmapForAddr(offset)
     self.heap = self.m.readStruct(offset, win7heap.HEAP)
@@ -59,6 +59,7 @@ class TestListStruct(unittest.TestCase):
     return 
 
   def test_getListFieldInfo(self):
+    from haystack.reverse.win32 import win7heap
     
     heap = win7heap.HEAP()
     self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap._HEAP_SEGMENT,-16))
@@ -68,6 +69,7 @@ class TestListStruct(unittest.TestCase):
     
   def test_otherHeap(self):
     #self.skipTest('not ready')
+    from haystack.reverse.win32 import win7heap
     
     heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
     for addr in heaps:

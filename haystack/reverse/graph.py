@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from haystack import config
 from haystack import argparse_utils
 from haystack.reverse import utils
-from haystack.reverse  import reversers
+from haystack.reverse import context
 from haystack.reverse.reversers import *  # by the pickle of my thumb
 
 log = logging.getLogger('graph')
@@ -45,10 +45,10 @@ def depthSubgraph(source, target, nodes, depth):
     depthSubgraph(source, target, neighbors, depth)
   return 
 
-def save_graph_headers(context, graph, fname):
+def save_graph_headers(ctx, graph, fname):
   fout = file( os.path.sep.join([Config.cacheDir, fname])  ,'w')
   towrite = []
-  structs = [context.structures[int(addr,16)] for addr in graph.nodes()]
+  structs = [ctx.structures[int(addr,16)] for addr in graph.nodes()]
   for anon in structs:
     anon.decodeFields()
     anon.resolvePointers()
@@ -74,12 +74,12 @@ def make(opts):
   
   #if __name__ == '__main__':
   #if False:
-  #context = reversers.getContext('../../outputs/skype.1.a')
-  context = reversers.getContext(opts.dumpname)
+  #ctx = context.get_context('../../outputs/skype.1.a')
+  ctx = context.get_context(opts.dumpname)
 
   #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
   digraph=networkx.readwrite.gexf.read_gexf(  opts.gexf.name)
-  heap = context.mappings.getHeap()
+  heap = ctx.mappings.getHeap()
 
   # only add heap structure with links
   edges = [(x,y) for x,y in digraph.edges() if int(x,16) in heap and int(y,16) in heap]
@@ -151,7 +151,7 @@ def clean():
   bigGraph = networkx.DiGraph()
   bigGraph.add_edges_from( digraph.edges( subgraphs[0].nodes() ) )
 
-  stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, context.dumpname)) 
+  stack_addrs = utils.int_array_cache( config.Config.getCacheFilename(config.Config.CACHE_STACK_VALUES, ctx.dumpname)) 
   stack_addrs_txt = set(['%x'%(addr) for addr in stack_addrs]) # new, no long
 
   stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
@@ -168,8 +168,8 @@ def printImportant(ind):
   import structure
   nb, saddr = degreesList[ind]
   addr = int(saddr,16)
-  s1 = context.structures[addr]
-  #s1 = s1._load() #structure.cacheLoad(context, int(saddr,16))
+  s1 = ctx.structures[addr] # TODO FIXME RAISES
+  #s1 = s1._load() #structure.cacheLoad(ctx, int(saddr,16))
   s1.decodeFields()
   print s1.toString()
   # strip the node from its predecessors, they are numerously too numerous
@@ -185,7 +185,7 @@ def printImportant(ind):
   plt.clf()
   # check for children with identical sig
   for node in impDiGraph.successors(saddr):
-    st = context.structures[int(node,16)]
+    st = ctx.structures[int(node,16)]
     st.decodeFields()
     st.resolvePointers()
     #st.pointerResolved=True
@@ -194,12 +194,12 @@ def printImportant(ind):
   # clean and print
   #s1._aggregateFields()
   impDiGraph.remove_node(root)
-  save_graph_headers(context, impDiGraph, '%s.subdigraph.py'%(saddr) )
+  save_graph_headers(ctx, impDiGraph, '%s.subdigraph.py'%(saddr) )
   return s1
 
 def deref(f):
-  context.structures[f.target_struct_addr].decodeFields()
-  return context.structures[f.target_struct_addr]
+  ctx.structures[f.target_struct_addr].decodeFields()
+  return ctx.structures[f.target_struct_addr]
 
 #s1 = printImportant(0) # la structure la plus utilisee.
 
@@ -221,7 +221,7 @@ def deref(f):
 
 #s1._aggregateFields()
 
-#s2 = utils.nextStructure(context, s1)
+#s2 = utils.nextStructure(ctx, s1)
 #s2b should start with \x00's
 
 

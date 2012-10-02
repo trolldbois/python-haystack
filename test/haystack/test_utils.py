@@ -8,9 +8,12 @@ import operator
 import os
 import unittest
 
-from haystack import memory_mapping
 from haystack.config import Config
-from haystack.model import *
+Config.set_word_size(4)
+
+import ctypes
+from haystack import memory_mapping
+from haystack.model import LoadableMembersStructure
 from haystack import utils
 
 __author__ = "Loic Jaquemet"

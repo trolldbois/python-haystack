@@ -500,57 +500,46 @@ def save_headers(context, addrs=None):
   return
 
 
-def getContext(fname):
-  from haystack.reverse.context import ReverserContext
-  mappings = dump_loader.load( fname)  
-  try:
-    context = ReverserContext.cacheLoad(mappings)
-  except IOError,e:
-    context = ReverserContext(mappings, mappings.getHeap())  
-  # cache it
-  context.heap._context = context
-  return context
-
 def reverseInstances(dumpname):
 
   log.debug ('[+] Loading the memory dump ')
-  context = getContext(dumpname)
+  ctx = context.get_context(dumpname)
   try:
-    if not os.access(Config.getStructsCacheDir(context.dumpname), os.F_OK):    
-      os.mkdir(Config.getStructsCacheDir(context.dumpname))
+    if not os.access(Config.getStructsCacheDir(ctx.dumpname), os.F_OK):    
+      os.mkdir(Config.getStructsCacheDir(ctx.dumpname))
     
     # we use common allocators to find structures.
     #log.debug('Reversing malloc')
     #mallocRev = MallocReverser()
-    #context = mallocRev.reverse(context)
-    #mallocRev.check_inuse(context)
+    #ctx = mallocRev.reverse(ctx)
+    #mallocRev.check_inuse(ctx)
 
     # try to find some logical constructs.
     log.debug('Reversing DoubleLinkedListReverser')
     doublelink = DoubleLinkedListReverser()
-    context = doublelink.reverse(context)
+    ctx = doublelink.reverse(ctx)
 
     # decode bytes contents to find basic types.
     log.debug('Reversing Fields')
     fr = FieldReverser()
-    context = fr.reverse(context)
+    ctx = fr.reverse(ctx)
 
     # identify pointer relation between structures
     log.debug('Reversing PointerFields')
     pfr = PointerFieldReverser()
-    context = pfr.reverse(context)
+    ctx = pfr.reverse(ctx)
 
     # graph pointer relations between structures
     log.debug('Reversing PointerGraph')
     ptrgraph = PointerGraphReverser()
-    context = ptrgraph.reverse(context)
-    ptrgraph._saveStructures(context)
+    ctx = ptrgraph.reverse(ctx)
+    ptrgraph._saveStructures(ctx)
 
     #save to file 
-    save_headers(context)
-    #fr._saveStructures(context)
+    save_headers(ctx)
+    #fr._saveStructures(ctx)
     ##libRev = KnowStructReverser('libQt')
-    ##context = libRev.reverse(context)
+    ##ctx = libRev.reverse(ctx)
     # we have more enriched context
     
     

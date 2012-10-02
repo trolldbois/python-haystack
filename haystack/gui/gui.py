@@ -149,8 +149,8 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
       self.nullWords.show()
 
   def _listStructures(self):
-    from haystack.reverse import reversers
-    self.context = reversers.getContext(self.mappings.name)
+    from haystack.reverse import context
+    self.context = context.get_context(self.mappings.name)
     self.show_structures_allocated(self.context)
     return
   

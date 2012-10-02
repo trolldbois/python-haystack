@@ -220,16 +220,16 @@ def merge(opt):
   pass
 
 def reverseLookup(opt):
-  from haystack.reverse import reversers
+  from haystack.reverse import context
   log.info('[+] Load context')
-  context = reversers.getContext(opt.dumpname)
+  ctx = context.get_context(opt.dumpname)
   addr = opt.struct_addr
 
   log.info('[+] find offsets of struct_addr:%x'%(addr))
   i = -1
   structs = set()
   try:
-    structs = context.listStructuresForPointerValue(addr)
+    structs = ctx.listStructuresForPointerValue(addr)
   except ValueError,e:
     log.info('[+] Found no structures.')
     return

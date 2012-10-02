@@ -12,6 +12,9 @@ import pickle
 import sys
 
 from haystack.config import Config
+
+Config.set_word_size(4) # forcing it on these unittest
+
 from haystack.reverse import fieldtypes, structure, reversers
 from haystack.reverse.fieldtypes import FieldType
 from haystack.reverse.heuristics.dsa import *
@@ -152,8 +155,8 @@ class TestDSA(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context = None #reversers.getContext('test/src/test-ctypes3.dump')
-    self.putty7124 = reversers.getContext('test/dumps/putty/putty.7124.dump')
+    self.context = None #context.get_context('test/src/test-ctypes3.dump')
+    self.putty7124 = context.get_context('test/dumps/putty/putty.7124.dump')
     self.dsa = DSASimple()
     
   def setUp(self):  

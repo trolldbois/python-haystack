@@ -15,7 +15,7 @@ from collections import defaultdict
 from haystack import config
 from haystack import argparse_utils
 from haystack.reverse import utils
-from haystack.reverse import reversers
+from haystack.reverse import context, reversers # TODO DELTE reversers
 from haystack.reverse.reversers import *
 
 import code
@@ -33,7 +33,7 @@ log = logging.getLogger('diff')
 
 def make(opts):
   log.info('[+] Loading context of %s'%(opts.dump1))
-  context = reversers.getContext(opts.dump1) #'../../outputs/skype.1.a') # TODO 
+  context = context.get_context(opts.dump1) #'../../outputs/skype.1.a') # TODO 
   # refresh
   if len(context.structures) != len(context.structures_addresses):
     log.info('[+] Refreshing from %d structures cached'%( len(context.structures) ))

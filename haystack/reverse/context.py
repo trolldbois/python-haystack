@@ -7,10 +7,7 @@ import os
 import pickle
 
 from haystack.config import Config
-from haystack.reverse import structure
 from haystack.reverse import utils
-from haystack.reverse import reversers
-
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -87,6 +84,7 @@ class ReverserContext():
     if self._structures is not None and len(self._structures) == len(self._malloc_addresses):
       return self._structures
     # cache Load
+    from haystack.reverse import structure, reversers
     log.info('[+] Fetching cached structures list')
     self._structures = dict([ (long(vaddr),s) for vaddr,s in structure.cacheLoadAllLazy(self) ])
     log.info('[+] Fetched %d cached structures addresses from disk'%( len(self._structures) ))
@@ -223,6 +221,20 @@ class ReverserContext():
     self._function_names = dict()
     return
   
+
+def get_context(fname):
+  ''' Load a dump file, and create a reverser context object.
+  @return context: a ReverserContext
+  '''
+  from haystack import dump_loader
+  mappings = dump_loader.load( fname)  
+  try:
+    context = ReverserContext.cacheLoad(mappings)
+  except IOError,e:
+    context = ReverserContext(mappings, mappings.getHeap())  
+  # cache it
+  context.heap._context = context
+  return context
 
 
 

@@ -129,8 +129,8 @@ def test3():
   dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
   #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
   print '[+] load context', dumpname
-  context = reversers.getContext(dumpname)
-  mappings = context.mappings
+  ctx = context.get_context(dumpname)
+  mappings = ctx.mappings
   ldso = dict()
   for m in mappings:
     if m.pathname not in IGNORES and m.pathname not in ldso:
@@ -142,11 +142,11 @@ def test3():
   
   print '[+] context loaded'
   #mmap_libdl = [ m for m in mappings if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
-  #hptrs = context._pointers_values_heap
+  #hptrs = ctx._pointers_values_heap
   #print '[+] %d pointers in heap to heap '%( len(hptrs) )
   
   # looking in [heap] pointing to elsewhere
-  all_ptrs = context.listPointerValueInHeap()
+  all_ptrs = ctx.listPointerValueInHeap()
   print '[+] %d pointers in heap to elsewhere '%( len(all_ptrs) ) 
 
   localmappings = getMappings()
@@ -210,10 +210,10 @@ def test4():
   dumpname = '/home/jal/outputs/dumps/ssh/ssh.1' #23418'
   #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
   print '[+] load context', dumpname
-  context = reversers.getContext(dumpname)
-  mappings = context.mappings
+  ctx = context.get_context(dumpname)
+  mappings = ctx.mappings
   
-  for ptr,name in context._function_names.items():
+  for ptr,name in ctx._function_names.items():
     print '@%x -> %s::%s'%(ptr, mappings.getMmapForAddr(ptr).pathname, name)
   
 
