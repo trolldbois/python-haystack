@@ -51,7 +51,7 @@ int test1(){
   usual->root.flink = &node1->list;
   usual->root.blink = &node1->list;
 
-  printf("test1 0x%x\n",(unsigned int )usual);
+  printf("test1 0x%lx\n",(unsigned long )usual);
   
   return 0;
 }

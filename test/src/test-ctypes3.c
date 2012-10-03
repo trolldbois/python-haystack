@@ -27,7 +27,7 @@ int test3(){
   t3->val2 = 0x10101010;
   t3->val2b = 0x10101010;
   t3->me = (unsigned int *) t3;
-  printf("test3 0x%x\n",(unsigned int )t3);
+  printf("test3 0x%lx\n",(unsigned long )t3);
   
   return 0;
 }
@@ -37,7 +37,7 @@ int test1(){
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
   node->ptr2 = node;
-  printf("test1 0x%x\n",(unsigned int )node);
+  printf("test1 0x%lx\n",(unsigned long )node);
   
   return 0;
 }

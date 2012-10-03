@@ -8,8 +8,8 @@
 #define SHARED
     struct auditstate
     {
-      unsigned int * cookie;
-      unsigned int bindflags;
+      __uint32_t * cookie;
+      __uint32_t bindflags;
     };
 #endif
 
@@ -48,7 +48,7 @@ int test1(){
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
   node->ptr2 = node;
-  printf("test1 0x%x\n",(unsigned int )node);
+  printf("test1 0x%lx\n",(unsigned long )node);
   
   return 0;
 }
@@ -76,11 +76,11 @@ int main(){
     return -1;  
   }
   
-  printf("_rtld_global 0x%x\n",(unsigned int )&_rtld_global);
+  printf("_rtld_global 0x%lx\n",(unsigned long )&_rtld_global);
   //printf("_rtld_global._dl_initfirst 0x%x\n",(&_rtld_global) + offsetof(struct rtld_global, _dl_initfirst) );
   
   //printf("_rtld_local 0x%x\n",(unsigned int )&_rtld_local);
-  printf("_rtld_global_ro 0x%x\n",(unsigned int )&_rtld_global_ro);
+  printf("_rtld_global_ro 0x%lx\n",(unsigned long )&_rtld_global_ro);
  
   // TEST
   test1();
