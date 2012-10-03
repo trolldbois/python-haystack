@@ -8,23 +8,29 @@ import unittest
 import logging
 import tempfile
 import time
-import mmap, ctypes
+import mmap
+import ctypes
+import struct
 
 from haystack.config import Config
+
 from haystack import memory_mapping
 from haystack import utils
 from haystack.reverse import context
 
+log = logging.getLogger('test_memory_mapping')
+
 class TestMmapHack(unittest.TestCase):
   def test_mmap_hack(self):
+    Config.set_word_size = 4 # couldnt care less
     fname = os.path.normpath(os.path.abspath(__file__))
     fin = file(fname)
     local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
     fin.close()
     fin = None
     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-    heapmap = utils.unpackWord((ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )
-    print 'MMAP HACK: heapmap: 0x%0.8x'%(heapmap)
+    heapmap = struct.unpack('l', (ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
+    log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
     class P:
       pid=os.getpid()
     maps = memory_mapping.readProcessMappings(P()) # memory_mapping
