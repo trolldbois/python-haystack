@@ -14,7 +14,6 @@ import time
 from haystack.config import Config
 from haystack import dump_loader
 from haystack import argparse_utils
-from haystack.reverse.heuristics.dsa import DSASimple, EnrichedPointerFields
 
 import structure
 import fieldtypes
@@ -228,7 +227,7 @@ class FieldReverser(StructureOrientedReverser):
     ## writing to file
     fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
-    #
+    from haystack.reverse.heuristics.dsa import DSASimple
     dsa = DSASimple()
     #for ptr_value,anon in context.structures.items():
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
@@ -264,6 +263,7 @@ class PointerFieldReverser(StructureOrientedReverser):
     tl = t0
     decoded = 0
     fromcache = 0
+    from haystack.reverse.heuristics.dsa import EnrichedPointerFields
     pfa = EnrichedPointerFields()
     for ptr_value in context.listStructuresAddresses(): # lets try reverse
       anon = context.getStructureForAddr(ptr_value)

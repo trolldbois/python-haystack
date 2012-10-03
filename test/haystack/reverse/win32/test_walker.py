@@ -12,7 +12,6 @@ import pickle
 import sys
 
 from haystack.config import Config
-
 Config.set_word_size(4) # forcing it on these unittest
 
 from haystack import utils, model

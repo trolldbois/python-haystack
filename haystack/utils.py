@@ -101,12 +101,12 @@ def getaddress(obj):
   '''
   # check for null pointers
   if hasattr(obj,'_sub_addr_'):
-    print 'obj._sub_addr_', hex(obj._sub_addr_)
+    #print 'obj._sub_addr_', hex(obj._sub_addr_)
     return obj._sub_addr_
   if bool(obj):
     if not hasattr(obj,'contents'):
       return 0
-    print '** NOT MY HAYSTACK POINTER'
+    #print '** NOT MY HAYSTACK POINTER'
     return ctypes.addressof(obj.contents)
   else:
     return 0  

@@ -15,7 +15,10 @@ from haystack.config import Config
 
 Config.set_word_size(4) # forcing it on these unittest
 
-from haystack.reverse import fieldtypes, structure, reversers
+from haystack.reverse import fieldtypes
+from haystack.reverse import structure
+from haystack.reverse import reversers
+from haystack.reverse import context
 from haystack.reverse.fieldtypes import FieldType
 from haystack.reverse.heuristics.dsa import *
 
