@@ -1,7 +1,7 @@
 from ctypes import *
 
-WSTRING = c_wchar_p
 STRING = c_char_p
+WSTRING = c_wchar_p
 
 
 class sA(Structure):
@@ -74,16 +74,20 @@ size_type = size_t
 size_type = size_t
 difference_type = ptrdiff_t
 difference_type = ptrdiff_t
-pointer = WSTRING
 pointer = STRING
+pointer = WSTRING
 const_pointer = STRING
 const_pointer = WSTRING
 reference = STRING
 reference = WSTRING
-const_reference = STRING
 const_reference = WSTRING
+const_reference = STRING
 value_type = c_wchar
 value_type = c_char
+class rebind_char_(Structure):
+    pass
+class rebind_char_(Structure):
+    pass
 class new_allocator_char_(Structure):
     pass
 class allocator_char_(new_allocator_char_):
@@ -96,10 +100,6 @@ class allocator_wchar_t_(new_allocator_wchar_t_):
     pass
 other = allocator_wchar_t_
 class rebind_wchar_t_(Structure):
-    pass
-class rebind_char_(Structure):
-    pass
-class rebind_char_(Structure):
     pass
 char_type = c_char
 char_type = c_wchar
@@ -133,44 +133,44 @@ class __ctype_abstract_base_wchar_t_(facet, ctype_base):
 class ctype_wchar_t_(__ctype_abstract_base_wchar_t_):
     pass
 __ctype_type = ctype_wchar_t_
-class num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
-    pass
-__num_put_type = num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___
 class num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___(facet):
     pass
 __num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
-class num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
+class num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
     pass
-__num_get_type = num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___
+__num_put_type = num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___
 class num_get_charstd__istreambuf_iterator_charstd__char_traits_char___(facet):
     pass
 __num_get_type = num_get_charstd__istreambuf_iterator_charstd__char_traits_char___
-_CharT_alloc_type = allocator_wchar_t_
+class num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
+    pass
+__num_get_type = num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___
 _CharT_alloc_type = allocator_char_
+_CharT_alloc_type = allocator_wchar_t_
 traits_type = char_traits_wchar_t_
 traits_type = char_traits_char_
 value_type = c_char
 value_type = c_wchar
-allocator_type = allocator_wchar_t_
 allocator_type = allocator_char_
+allocator_type = allocator_wchar_t_
 size_type = size_t
 size_type = size_t
 difference_type = ptrdiff_t
 difference_type = ptrdiff_t
-reference = STRING
 reference = WSTRING
+reference = STRING
 const_reference = STRING
 const_reference = WSTRING
 pointer = STRING
 pointer = WSTRING
-const_pointer = STRING
 const_pointer = WSTRING
-class __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___(Structure):
-    pass
-iterator = __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___
+const_pointer = STRING
 class __normal_iterator_char*std__basic_string_charstd__char_traits_char_std__allocator_char___(Structure):
     pass
 iterator = __normal_iterator_char*std__basic_string_charstd__char_traits_char_std__allocator_char___
+class __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___(Structure):
+    pass
+iterator = __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___
 class __normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char___(Structure):
     pass
 const_iterator = __normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char___
@@ -210,15 +210,15 @@ class _Rep(_Rep_base):
     pass
 _Raw_bytes_alloc = allocator_char_
 _Raw_bytes_alloc = allocator_char_
-class _Alloc_hider(allocator_char_):
-    pass
-_Alloc_hider._fields_ = [
-    ('_M_p', STRING),
-]
 class _Alloc_hider(allocator_wchar_t_):
     pass
 _Alloc_hider._fields_ = [
     ('_M_p', WSTRING),
+]
+class _Alloc_hider(allocator_char_):
+    pass
+_Alloc_hider._fields_ = [
+    ('_M_p', STRING),
 ]
 char_type = c_char
 int_type = c_int
@@ -235,9 +235,9 @@ class __true_type(Structure):
     pass
 class __false_type(Structure):
     pass
+__type = __true_type
 class __truth_type_true_(Structure):
     pass
-__type = __true_type
 class __is_void_void_(Structure):
     pass
 __type = __true_type
@@ -456,11 +456,6 @@ _Impl._fields_ = [
     ('_M_caches', POINTER(POINTER(facet))),
     ('_M_names', POINTER(STRING)),
 ]
-class collate_char_(facet):
-    pass
-collate_char_._fields_ = [
-    ('_M_c_locale_collate', __c_locale),
-]
 class collate_wchar_t_(facet):
     pass
 class basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
@@ -469,6 +464,11 @@ basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__._fields_ =
     ('_M_dataplus', _Alloc_hider),
 ]
 collate_wchar_t_._fields_ = [
+    ('_M_c_locale_collate', __c_locale),
+]
+class collate_char_(facet):
+    pass
+collate_char_._fields_ = [
     ('_M_c_locale_collate', __c_locale),
 ]
 char_type = c_char
@@ -484,17 +484,6 @@ char_type = c_char
 string_type = basic_string_charstd__char_traits_char_std__allocator_char__
 string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 char_type = c_wchar
-ctype_char_._fields_ = [
-    ('_M_c_locale_ctype', __c_locale),
-    ('_M_del', c_bool),
-    ('_M_toupper', POINTER(c_int)),
-    ('_M_tolower', POINTER(c_int)),
-    ('_M_table', POINTER(c_ushort)),
-    ('_M_widen_ok', c_char),
-    ('_M_widen', c_char * 256),
-    ('_M_narrow', c_char * 256),
-    ('_M_narrow_ok', c_char),
-]
 class __vmi_class_type_info_pseudo2(Structure):
     pass
 class __type_info_pseudo(Structure):
@@ -507,6 +496,17 @@ __vmi_class_type_info_pseudo2._fields_ = [
     ('', c_int),
     ('', c_int),
     ('', __base_class_type_info_pseudo * 2),
+]
+ctype_char_._fields_ = [
+    ('_M_c_locale_ctype', __c_locale),
+    ('_M_del', c_bool),
+    ('_M_toupper', POINTER(c_int)),
+    ('_M_tolower', POINTER(c_int)),
+    ('_M_table', POINTER(c_ushort)),
+    ('_M_widen_ok', c_char),
+    ('_M_widen', c_char * 256),
+    ('_M_narrow', c_char * 256),
+    ('_M_narrow_ok', c_char),
 ]
 char_type = c_char
 wctype_t = c_ulong
@@ -542,10 +542,10 @@ numpunct_char_._fields_ = [
 ]
 char_type = c_char
 char_type = c_wchar
-string_type = basic_string_charstd__char_traits_char_std__allocator_char__
 string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
-__cache_type = __numpunct_cache_char_
+string_type = basic_string_charstd__char_traits_char_std__allocator_char__
 __cache_type = __numpunct_cache_wchar_t_
+__cache_type = __numpunct_cache_char_
 class numpunct_byname_wchar_t_(numpunct_wchar_t_):
     pass
 class numpunct_byname_char_(numpunct_char_):
@@ -558,8 +558,8 @@ class istreambuf_iterator_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
 class istreambuf_iterator_charstd__char_traits_char__(Structure):
     pass
-char_type = c_wchar
 char_type = c_char
+char_type = c_wchar
 iter_type = istreambuf_iterator_charstd__char_traits_char__
 iter_type = istreambuf_iterator_wchar_tstd__char_traits_wchar_t__
 class ostreambuf_iterator_wchar_tstd__char_traits_wchar_t__(Structure):
@@ -612,60 +612,60 @@ pointer = WSTRING
 pointer = STRING
 const_pointer = WSTRING
 const_pointer = STRING
-reference = STRING
 reference = WSTRING
+reference = STRING
 const_reference = WSTRING
 const_reference = STRING
 value_type = c_wchar
 value_type = c_char
+class __numeric_traits_integer_longunsignedint_(Structure):
+    pass
+class __numeric_traits_integer_int_(Structure):
+    pass
 class __numeric_traits_integer_char_(Structure):
     pass
 class __numeric_traits_integer_shortint_(Structure):
     pass
-class __numeric_traits_integer_int_(Structure):
-    pass
-class __numeric_traits_integer_longunsignedint_(Structure):
-    pass
 __min = -32768 # Variable c_short '-0x000008000'
 __min = -2147483648 # Variable c_int '-0x080000000'
-__max = 2147483647 # Variable c_int '2147483647'
 __max = '\x7f' # Variable c_char "'\\177'"
+__max = 2147483647 # Variable c_int '2147483647'
 __max = 32767 # Variable c_short '32767'
 __digits = 32 # Variable c_int '32'
-class __numeric_traits_floating_longunsignedint_(Structure):
-    pass
 class __numeric_traits_floating_char_(Structure):
     pass
 class __numeric_traits_floating_shortint_(Structure):
     pass
 class __numeric_traits_floating_int_(Structure):
     pass
-class __numeric_traits_int_(__numeric_traits_integer_int_):
-    pass
-class __numeric_traits_longunsignedint_(__numeric_traits_integer_longunsignedint_):
-    pass
-class __numeric_traits_shortint_(__numeric_traits_integer_shortint_):
+class __numeric_traits_floating_longunsignedint_(Structure):
     pass
 class __numeric_traits_char_(__numeric_traits_integer_char_):
     pass
-__type = c_ulong
-class __conditional_type_true__gnu_cxx____numeric_traits_integer_int___gnu_cxx____numeric_traits_floating_int__(Structure):
+class __numeric_traits_int_(__numeric_traits_integer_int_):
     pass
-__type = __numeric_traits_integer_char_
+class __numeric_traits_shortint_(__numeric_traits_integer_shortint_):
+    pass
+class __numeric_traits_longunsignedint_(__numeric_traits_integer_longunsignedint_):
+    pass
 __type = __numeric_traits_integer_shortint_
+__type = __numeric_traits_integer_int_
 class __conditional_type_true__gnu_cxx____numeric_traits_integer_shortint___gnu_cxx____numeric_traits_floating_shortint__(Structure):
     pass
-__type = __numeric_traits_integer_int_
 class __conditional_type_truelongunsignedintlonglongunsignedint_(Structure):
+    pass
+__type = __numeric_traits_integer_char_
+__type = c_ulong
+class __conditional_type_true__gnu_cxx____numeric_traits_integer_longunsignedint___gnu_cxx____numeric_traits_floating_longunsignedint__(Structure):
     pass
 class __conditional_type_true__gnu_cxx____numeric_traits_integer_char___gnu_cxx____numeric_traits_floating_char__(Structure):
     pass
-class __conditional_type_true__gnu_cxx____numeric_traits_integer_longunsignedint___gnu_cxx____numeric_traits_floating_longunsignedint__(Structure):
+class __conditional_type_true__gnu_cxx____numeric_traits_integer_int___gnu_cxx____numeric_traits_floating_int__(Structure):
     pass
 __type = __numeric_traits_integer_longunsignedint_
-class __add_unsigned_bool_(Structure):
-    pass
 class __add_unsigned_wchar_t_(Structure):
+    pass
+class __add_unsigned_bool_(Structure):
     pass
 class __add_unsigned_char_(Structure):
     pass
@@ -673,37 +673,37 @@ __type = c_ubyte
 __type = c_ubyte
 class __add_unsigned_signedchar_(Structure):
     pass
-__type = c_ushort
 class __add_unsigned_shortint_(Structure):
     pass
-__type = c_uint
+__type = c_ushort
 class __add_unsigned_int_(Structure):
     pass
+__type = c_uint
 __type = c_ulong
 class __add_unsigned_longint_(Structure):
     pass
 __type = c_ulonglong
 class __add_unsigned_longlongint_(Structure):
     pass
-class __remove_unsigned_bool_(Structure):
-    pass
 class __remove_unsigned_wchar_t_(Structure):
     pass
-__type = c_byte
+class __remove_unsigned_bool_(Structure):
+    pass
 class __remove_unsigned_char_(Structure):
     pass
 __type = c_byte
 class __remove_unsigned_unsignedchar_(Structure):
     pass
-__type = c_short
+__type = c_byte
 class __remove_unsigned_shortunsignedint_(Structure):
     pass
+__type = c_short
 class __remove_unsigned_unsignedint_(Structure):
     pass
 __type = c_int
-__type = c_long
 class __remove_unsigned_longunsignedint_(Structure):
     pass
+__type = c_long
 class __remove_unsigned_longlongunsignedint_(Structure):
     pass
 __type = c_longlong
@@ -713,9 +713,9 @@ class __promote_longdoublefalse_(Structure):
 __type = c_double
 class __promote_doublefalse_(Structure):
     pass
-__type = c_float
 class __promote_floatfalse_(Structure):
     pass
+__type = c_float
 __to_type = POINTER(c_int)
 mask = c_ushort
 upper = 256 # Variable c_ushort '256u'
@@ -745,21 +745,6 @@ __gthread_cond_t = pthread_cond_t
 class timespec(Structure):
     pass
 __gthread_time_t = timespec
-class basic_ios_charstd__char_traits_char__(ios_base):
-    pass
-class basic_ostream_charstd__char_traits_char__(basic_ios_charstd__char_traits_char__):
-    pass
-class basic_streambuf_charstd__char_traits_char__(Structure):
-    pass
-basic_ios_charstd__char_traits_char__._fields_ = [
-    ('_M_tie', POINTER(basic_ostream_charstd__char_traits_char__)),
-    ('_M_fill', c_char),
-    ('_M_fill_init', c_bool),
-    ('_M_streambuf', POINTER(basic_streambuf_charstd__char_traits_char__)),
-    ('_M_ctype', POINTER(ctype_char_)),
-    ('_M_num_put', POINTER(num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___)),
-    ('_M_num_get', POINTER(num_get_charstd__istreambuf_iterator_charstd__char_traits_char___)),
-]
 class basic_ios_wchar_tstd__char_traits_wchar_t__(ios_base):
     pass
 class basic_ostream_wchar_tstd__char_traits_wchar_t__(basic_ios_wchar_tstd__char_traits_wchar_t__):
@@ -775,14 +760,20 @@ basic_ios_wchar_tstd__char_traits_wchar_t__._fields_ = [
     ('_M_num_put', POINTER(num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
     ('_M_num_get', POINTER(num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
 ]
-basic_streambuf_charstd__char_traits_char__._fields_ = [
-    ('_M_in_beg', STRING),
-    ('_M_in_cur', STRING),
-    ('_M_in_end', STRING),
-    ('_M_out_beg', STRING),
-    ('_M_out_cur', STRING),
-    ('_M_out_end', STRING),
-    ('_M_buf_locale', locale),
+class basic_ios_charstd__char_traits_char__(ios_base):
+    pass
+class basic_ostream_charstd__char_traits_char__(basic_ios_charstd__char_traits_char__):
+    pass
+class basic_streambuf_charstd__char_traits_char__(Structure):
+    pass
+basic_ios_charstd__char_traits_char__._fields_ = [
+    ('_M_tie', POINTER(basic_ostream_charstd__char_traits_char__)),
+    ('_M_fill', c_char),
+    ('_M_fill_init', c_bool),
+    ('_M_streambuf', POINTER(basic_streambuf_charstd__char_traits_char__)),
+    ('_M_ctype', POINTER(ctype_char_)),
+    ('_M_num_put', POINTER(num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___)),
+    ('_M_num_get', POINTER(num_get_charstd__istreambuf_iterator_charstd__char_traits_char___)),
 ]
 basic_streambuf_wchar_tstd__char_traits_wchar_t__._fields_ = [
     ('_M_in_beg', WSTRING),
@@ -791,6 +782,15 @@ basic_streambuf_wchar_tstd__char_traits_wchar_t__._fields_ = [
     ('_M_out_beg', WSTRING),
     ('_M_out_cur', WSTRING),
     ('_M_out_end', WSTRING),
+    ('_M_buf_locale', locale),
+]
+basic_streambuf_charstd__char_traits_char__._fields_ = [
+    ('_M_in_beg', STRING),
+    ('_M_in_cur', STRING),
+    ('_M_in_end', STRING),
+    ('_M_out_beg', STRING),
+    ('_M_out_cur', STRING),
+    ('_M_out_end', STRING),
     ('_M_buf_locale', locale),
 ]
 class basic_istream_wchar_tstd__char_traits_wchar_t__(basic_ios_wchar_tstd__char_traits_wchar_t__):
@@ -812,37 +812,37 @@ __vmi_class_type_info_pseudo1._fields_ = [
     ('', c_int),
     ('', __base_class_type_info_pseudo * 1),
 ]
-class basic_iostream_wchar_tstd__char_traits_wchar_t__(basic_istream_wchar_tstd__char_traits_wchar_t__, basic_ostream_wchar_tstd__char_traits_wchar_t__):
-    pass
 class basic_iostream_charstd__char_traits_char__(basic_istream_charstd__char_traits_char__, basic_ostream_charstd__char_traits_char__):
+    pass
+class basic_iostream_wchar_tstd__char_traits_wchar_t__(basic_istream_wchar_tstd__char_traits_wchar_t__, basic_ostream_wchar_tstd__char_traits_wchar_t__):
     pass
 class basic_stringbuf_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
 class basic_stringbuf_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
-class basic_istringstream_charstd__char_traits_char_std__allocator_char__(Structure):
-    pass
 class basic_istringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
-class basic_ostringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
+class basic_istringstream_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
 class basic_ostringstream_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
-class basic_stringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
+class basic_ostringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
 class basic_stringstream_charstd__char_traits_char_std__allocator_char__(Structure):
+    pass
+class basic_stringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
 class basic_filebuf_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
 class basic_filebuf_charstd__char_traits_char__(Structure):
     pass
-class basic_ifstream_wchar_tstd__char_traits_wchar_t__(Structure):
-    pass
 class basic_ifstream_charstd__char_traits_char__(Structure):
     pass
-class basic_ofstream_wchar_tstd__char_traits_wchar_t__(Structure):
+class basic_ifstream_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
 class basic_ofstream_charstd__char_traits_char__(Structure):
+    pass
+class basic_ofstream_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
 class basic_fstream_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
@@ -878,18 +878,18 @@ char_type = c_wchar
 char_type = c_char
 int_type = c_int
 int_type = wint_t
-pos_type = wstreampos
 pos_type = streampos
+pos_type = wstreampos
 off_type = streamoff
 off_type = streamoff
 traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
-__streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
+__streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
 __ios_type = basic_ios_charstd__char_traits_char__
 __ios_type = basic_ios_wchar_tstd__char_traits_wchar_t__
-__num_get_type = num_get_charstd__istreambuf_iterator_charstd__char_traits_char___
 __num_get_type = num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___
+__num_get_type = num_get_charstd__istreambuf_iterator_charstd__char_traits_char___
 __ctype_type = ctype_wchar_t_
 __ctype_type = ctype_char_
 class sentry(Structure):
@@ -902,73 +902,73 @@ class sentry(Structure):
 sentry._fields_ = [
     ('_M_ok', c_bool),
 ]
-traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
+traits_type = char_traits_char_
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
 __streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
-__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
 __istream_type = basic_istream_charstd__char_traits_char__
-__ctype_type = ctype_char_
+__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
 __ctype_type = ctype_wchar_t_
+__ctype_type = ctype_char_
 __int_type = c_int
 __int_type = wint_t
-char_type = c_char
 char_type = c_wchar
+char_type = c_char
 int_type = c_int
 int_type = wint_t
-pos_type = streampos
 pos_type = wstreampos
+pos_type = streampos
 off_type = streamoff
 off_type = streamoff
-traits_type = char_traits_wchar_t_
 traits_type = char_traits_char_
-__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
+traits_type = char_traits_wchar_t_
 __istream_type = basic_istream_charstd__char_traits_char__
-__ostream_type = basic_ostream_charstd__char_traits_char__
+__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
 __ostream_type = basic_ostream_wchar_tstd__char_traits_wchar_t__
+__ostream_type = basic_ostream_charstd__char_traits_char__
 class bad_alloc(exception):
     pass
 class nothrow_t(Structure):
     pass
 new_handler = CFUNCTYPE(None)
-char_type = c_char
 char_type = c_wchar
+char_type = c_char
 int_type = c_int
 int_type = wint_t
 pos_type = streampos
 pos_type = wstreampos
 off_type = streamoff
 off_type = streamoff
-traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
+traits_type = char_traits_char_
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
 __streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
-__ios_type = basic_ios_wchar_tstd__char_traits_wchar_t__
 __ios_type = basic_ios_charstd__char_traits_char__
-__num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
+__ios_type = basic_ios_wchar_tstd__char_traits_wchar_t__
 __num_put_type = num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___
-__ctype_type = ctype_wchar_t_
+__num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
 __ctype_type = ctype_char_
-class sentry(Structure):
-    pass
-sentry._fields_ = [
-    ('_M_ok', c_bool),
-    ('_M_os', POINTER(basic_ostream_charstd__char_traits_char__)),
-]
+__ctype_type = ctype_wchar_t_
 class sentry(Structure):
     pass
 sentry._fields_ = [
     ('_M_ok', c_bool),
     ('_M_os', POINTER(basic_ostream_wchar_tstd__char_traits_wchar_t__)),
 ]
+class sentry(Structure):
+    pass
+sentry._fields_ = [
+    ('_M_ok', c_bool),
+    ('_M_os', POINTER(basic_ostream_charstd__char_traits_char__)),
+]
 char_type = c_wchar
 char_type = c_char
-traits_type = char_traits_wchar_t_
 traits_type = char_traits_char_
+traits_type = char_traits_wchar_t_
 int_type = c_int
 int_type = wint_t
-pos_type = wstreampos
 pos_type = streampos
+pos_type = wstreampos
 off_type = streamoff
 off_type = streamoff
 Lmid_t = c_long

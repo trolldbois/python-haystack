@@ -53,6 +53,16 @@ difference_type = ptrdiff_t
 pointer = c_void_p
 const_pointer = c_void_p
 value_type = None
+class new_allocator_cA_(Structure):
+    pass
+class allocator_cA_(new_allocator_cA_):
+    pass
+class new_allocator_std___List_node_int__(Structure):
+    pass
+class allocator_std___List_node_int__(new_allocator_std___List_node_int__):
+    pass
+class _List_node_int_(Structure):
+    pass
 class new_allocator_std___List_node_cA__(Structure):
     pass
 class allocator_std___List_node_cA__(new_allocator_std___List_node_cA__):
@@ -62,16 +72,6 @@ class _List_node_cA_(Structure):
 class new_allocator_int_(Structure):
     pass
 class allocator_int_(new_allocator_int_):
-    pass
-class new_allocator_std___List_node_int__(Structure):
-    pass
-class allocator_std___List_node_int__(new_allocator_std___List_node_int__):
-    pass
-class _List_node_int_(Structure):
-    pass
-class new_allocator_cA_(Structure):
-    pass
-class allocator_cA_(new_allocator_cA_):
     pass
 size_type = size_t
 size_type = size_t
@@ -86,84 +86,84 @@ difference_type = ptrdiff_t
 difference_type = ptrdiff_t
 difference_type = ptrdiff_t
 pointer = STRING
-pointer = WSTRING
+pointer = POINTER(c_int)
 pointer = POINTER(_List_node_int_)
 pointer = POINTER(cA)
+pointer = WSTRING
 pointer = POINTER(_List_node_cA_)
-pointer = POINTER(c_int)
 const_pointer = STRING
 const_pointer = WSTRING
-const_pointer = POINTER(_List_node_int_)
 const_pointer = POINTER(cA)
 const_pointer = POINTER(_List_node_cA_)
 const_pointer = POINTER(c_int)
-reference = STRING
-reference = WSTRING
+const_pointer = POINTER(_List_node_int_)
 reference = POINTER(cA)
-reference = POINTER(_List_node_int_)
 reference = POINTER(_List_node_cA_)
+reference = POINTER(_List_node_int_)
+reference = STRING
 reference = POINTER(c_int)
-const_reference = STRING
+reference = WSTRING
 const_reference = POINTER(_List_node_int_)
+const_reference = STRING
 const_reference = WSTRING
+const_reference = POINTER(cA)
 const_reference = POINTER(_List_node_cA_)
 const_reference = POINTER(c_int)
-const_reference = POINTER(cA)
-value_type = cA
-value_type = _List_node_int_
 value_type = c_wchar
-value_type = c_int
-value_type = c_char
 value_type = _List_node_cA_
+value_type = cA
+value_type = c_char
+value_type = _List_node_int_
+value_type = c_int
 class rebind_wchar_t_(Structure):
     pass
 class rebind_char_(Structure):
     pass
-class rebind_std___List_node_int__(Structure):
-    pass
-other = allocator_std___List_node_cA__
-other = allocator_cA_
-class rebind_char_(Structure):
-    pass
-other = allocator_std___List_node_int__
 class new_allocator_wchar_t_(Structure):
     pass
 class allocator_wchar_t_(new_allocator_wchar_t_):
     pass
 other = allocator_wchar_t_
-other = allocator_int_
-class rebind_cA_(Structure):
+class rebind_char_(Structure):
     pass
-class rebind_int_(Structure):
+other = allocator_cA_
+class rebind_std___List_node_int__(Structure):
     pass
-class rebind_std___List_node_cA__(Structure):
-    pass
+other = allocator_std___List_node_int__
 class new_allocator_char_(Structure):
     pass
 class allocator_char_(new_allocator_char_):
     pass
 other = allocator_char_
 other = allocator_char_
-char_type = c_wchar
+other = allocator_std___List_node_cA__
+class rebind_cA_(Structure):
+    pass
+class rebind_int_(Structure):
+    pass
+class rebind_std___List_node_cA__(Structure):
+    pass
+other = allocator_int_
 char_type = c_char
+char_type = c_wchar
 wint_t = c_uint
 int_type = wint_t
 int_type = c_int
 class fpos___mbstate_t_(Structure):
     pass
-streampos = fpos___mbstate_t_
-pos_type = streampos
 wstreampos = fpos___mbstate_t_
 pos_type = wstreampos
+streampos = fpos___mbstate_t_
+pos_type = streampos
 streamoff = c_long
 off_type = streamoff
 off_type = streamoff
-class char_traits_wchar_t_(Structure):
-    pass
-traits_type = char_traits_wchar_t_
 class char_traits_char_(Structure):
     pass
 traits_type = char_traits_char_
+class char_traits_wchar_t_(Structure):
+    pass
+traits_type = char_traits_wchar_t_
 class facet(Structure):
     pass
 class ctype_base(Structure):
@@ -176,12 +176,12 @@ __ctype_type = ctype_wchar_t_
 class ctype_char_(facet, ctype_base):
     pass
 __ctype_type = ctype_char_
-class num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___(facet):
-    pass
-__num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
 class num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
     pass
 __num_put_type = num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___
+class num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___(facet):
+    pass
+__num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
 class num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___(facet):
     pass
 __num_get_type = num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___
@@ -190,8 +190,8 @@ class num_get_charstd__istreambuf_iterator_charstd__char_traits_char___(facet):
 __num_get_type = num_get_charstd__istreambuf_iterator_charstd__char_traits_char___
 _CharT_alloc_type = allocator_wchar_t_
 _CharT_alloc_type = allocator_char_
-traits_type = char_traits_wchar_t_
 traits_type = char_traits_char_
+traits_type = char_traits_wchar_t_
 value_type = c_wchar
 value_type = c_char
 allocator_type = allocator_wchar_t_
@@ -202,30 +202,30 @@ difference_type = ptrdiff_t
 difference_type = ptrdiff_t
 reference = STRING
 reference = WSTRING
-const_reference = WSTRING
 const_reference = STRING
+const_reference = WSTRING
 pointer = WSTRING
 pointer = STRING
-const_pointer = WSTRING
 const_pointer = STRING
-class __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___(Structure):
-    pass
-iterator = __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___
+const_pointer = WSTRING
 class __normal_iterator_char*std__basic_string_charstd__char_traits_char_std__allocator_char___(Structure):
     pass
 iterator = __normal_iterator_char*std__basic_string_charstd__char_traits_char_std__allocator_char___
+class __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___(Structure):
+    pass
+iterator = __normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___
 class __normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char___(Structure):
     pass
 const_iterator = __normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char___
 class __normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___(Structure):
     pass
 const_iterator = __normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t___
-class reverse_iterator___gnu_cxx____normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____(Structure):
-    pass
-const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____
 class reverse_iterator___gnu_cxx____normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char____(Structure):
     pass
 const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constchar*std__basic_string_charstd__char_traits_char_std__allocator_char____
+class reverse_iterator___gnu_cxx____normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____(Structure):
+    pass
+const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constwchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____
 class reverse_iterator___gnu_cxx____normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____(Structure):
     pass
 reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_wchar_t*std__basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t____
@@ -253,15 +253,15 @@ class _Rep(_Rep_base):
     pass
 _Raw_bytes_alloc = allocator_char_
 _Raw_bytes_alloc = allocator_char_
-class _Alloc_hider(allocator_char_):
-    pass
-_Alloc_hider._fields_ = [
-    ('_M_p', STRING),
-]
 class _Alloc_hider(allocator_wchar_t_):
     pass
 _Alloc_hider._fields_ = [
     ('_M_p', WSTRING),
+]
+class _Alloc_hider(allocator_char_):
+    pass
+_Alloc_hider._fields_ = [
+    ('_M_p', STRING),
 ]
 char_type = c_char
 int_type = c_int
@@ -278,17 +278,17 @@ class __true_type(Structure):
     pass
 class __false_type(Structure):
     pass
-__type = __true_type
 class __truth_type_true_(Structure):
     pass
+__type = __true_type
 class __is_void_void_(Structure):
     pass
 __type = __true_type
-class __is_integer_longdouble_(Structure):
+class __is_integer_double_(Structure):
     pass
 class __is_integer_float_(Structure):
     pass
-class __is_integer_double_(Structure):
+class __is_integer_longdouble_(Structure):
     pass
 __type = __false_type
 __type = __false_type
@@ -524,8 +524,8 @@ class collate_byname_char_(collate_char_):
     pass
 char_type = c_char
 char_type = c_wchar
-string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 string_type = basic_string_charstd__char_traits_char_std__allocator_char__
+string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 char_type = c_wchar
 class __vmi_class_type_info_pseudo2(Structure):
     pass
@@ -573,30 +573,30 @@ class __numpunct_cache_wchar_t_(Structure):
     pass
 class __numpunct_cache_char_(Structure):
     pass
-class numpunct_wchar_t_(facet):
-    pass
-numpunct_wchar_t_._fields_ = [
-    ('_M_data', POINTER(__numpunct_cache_wchar_t_)),
-]
 class numpunct_char_(facet):
     pass
 numpunct_char_._fields_ = [
     ('_M_data', POINTER(__numpunct_cache_char_)),
 ]
-char_type = c_char
+class numpunct_wchar_t_(facet):
+    pass
+numpunct_wchar_t_._fields_ = [
+    ('_M_data', POINTER(__numpunct_cache_wchar_t_)),
+]
 char_type = c_wchar
-string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
+char_type = c_char
 string_type = basic_string_charstd__char_traits_char_std__allocator_char__
+string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 __cache_type = __numpunct_cache_wchar_t_
 __cache_type = __numpunct_cache_char_
-class numpunct_byname_char_(numpunct_char_):
-    pass
 class numpunct_byname_wchar_t_(numpunct_wchar_t_):
+    pass
+class numpunct_byname_char_(numpunct_char_):
     pass
 char_type = c_wchar
 char_type = c_char
-string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 string_type = basic_string_charstd__char_traits_char_std__allocator_char__
+string_type = basic_string_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__
 class istreambuf_iterator_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
 class istreambuf_iterator_charstd__char_traits_char__(Structure):
@@ -653,13 +653,12 @@ class _Destroy_aux_false_(Structure):
     pass
 class _Destroy_aux_true_(Structure):
     pass
-class iterator_std__random_access_iterator_tagboolintconstbool*bool_(Structure):
+class reverse_iterator___gnu_cxx____normal_iterator_cA*std__vector_cAstd__allocator_cA____(Structure):
     pass
-class reverse_iterator_std___Bit_const_iterator_(iterator_std__random_access_iterator_tagboolintconstbool*bool_):
+class reverse_iterator___gnu_cxx____normal_iterator_constcA*std__vector_cAstd__allocator_cA____(Structure):
     pass
-reverse_iterator_std___Bit_const_iterator_._fields_ = [
-    ('current', _Bit_const_iterator),
-]
+class reverse_iterator_std___List_const_iterator_cA__(Structure):
+    pass
 class iterator_std__random_access_iterator_tagboolintstd___Bit_reference*std___Bit_reference_(Structure):
     pass
 class reverse_iterator_std___Bit_iterator_(iterator_std__random_access_iterator_tagboolintstd___Bit_reference*std___Bit_reference_):
@@ -667,28 +666,29 @@ class reverse_iterator_std___Bit_iterator_(iterator_std__random_access_iterator_
 reverse_iterator_std___Bit_iterator_._fields_ = [
     ('current', _Bit_iterator),
 ]
-class reverse_iterator_std___List_iterator_int__(Structure):
-    pass
-class reverse_iterator___gnu_cxx____normal_iterator_constcA*std__vector_cAstd__allocator_cA____(Structure):
-    pass
 class reverse_iterator___gnu_cxx____normal_iterator_constint*std__vector_intstd__allocator_int____(Structure):
     pass
 class reverse_iterator___gnu_cxx____normal_iterator_int*std__vector_intstd__allocator_int____(Structure):
     pass
-class reverse_iterator_std___List_const_iterator_cA__(Structure):
+class reverse_iterator_std___List_const_iterator_int__(Structure):
     pass
 class reverse_iterator_std___List_iterator_cA__(Structure):
     pass
-class reverse_iterator_std___List_const_iterator_int__(Structure):
+class reverse_iterator_std___List_iterator_int__(Structure):
     pass
-class reverse_iterator___gnu_cxx____normal_iterator_cA*std__vector_cAstd__allocator_cA____(Structure):
+class iterator_std__random_access_iterator_tagboolintconstbool*bool_(Structure):
     pass
-class iterator_traits_std___Bit_const_iterator_(Structure):
+class reverse_iterator_std___Bit_const_iterator_(iterator_std__random_access_iterator_tagboolintconstbool*bool_):
     pass
-__traits_type = iterator_traits_std___Bit_const_iterator_
+reverse_iterator_std___Bit_const_iterator_._fields_ = [
+    ('current', _Bit_const_iterator),
+]
 class iterator_traits_std___Bit_iterator_(Structure):
     pass
 __traits_type = iterator_traits_std___Bit_iterator_
+class iterator_traits_std___Bit_const_iterator_(Structure):
+    pass
+__traits_type = iterator_traits_std___Bit_const_iterator_
 iterator_type = _Bit_const_iterator
 iterator_type = _Bit_iterator
 difference_type = c_int
@@ -726,25 +726,25 @@ value_type = c_bool
 value_type = None
 value_type = c_bool
 difference_type = c_int
-difference_type = c_int
-difference_type = c_int
 difference_type = None
-pointer = POINTER(c_bool)
-pointer = POINTER(_Bit_reference)
+difference_type = c_int
+difference_type = c_int
 pointer = POINTER(c_bool)
 pointer = None
+pointer = POINTER(_Bit_reference)
+pointer = POINTER(c_bool)
 reference = POINTER(c_bool)
+reference = _Bit_reference
 reference = c_bool
 reference = None
-reference = _Bit_reference
 iterator_category = random_access_iterator_tag
 iterator_category = random_access_iterator_tag
 value_type = c_bool
 value_type = c_bool
 difference_type = c_int
 difference_type = c_int
-pointer = POINTER(c_bool)
 pointer = POINTER(_Bit_reference)
+pointer = POINTER(c_bool)
 reference = c_bool
 reference = _Bit_reference
 class _List_node_base(Structure):
@@ -761,16 +761,6 @@ class _List_const_iterator_int_(Structure):
     pass
 class _List_const_iterator_cA_(Structure):
     pass
-class _List_base_intstd__allocator_int__(Structure):
-    pass
-class _List_impl(allocator_std___List_node_int__):
-    pass
-_List_impl._fields_ = [
-    ('_M_node', _List_node_base),
-]
-_List_base_intstd__allocator_int__._fields_ = [
-    ('_M_impl', _List_impl),
-]
 class _List_base_cAstd__allocator_cA__(Structure):
     pass
 class _List_impl(allocator_std___List_node_cA__):
@@ -781,6 +771,16 @@ _List_impl._fields_ = [
 _List_base_cAstd__allocator_cA__._fields_ = [
     ('_M_impl', _List_impl),
 ]
+class _List_base_intstd__allocator_int__(Structure):
+    pass
+class _List_impl(allocator_std___List_node_int__):
+    pass
+_List_impl._fields_ = [
+    ('_M_node', _List_node_base),
+]
+_List_base_intstd__allocator_int__._fields_ = [
+    ('_M_impl', _List_impl),
+]
 _Node_alloc_type = allocator_std___List_node_cA__
 _Node_alloc_type = allocator_std___List_node_int__
 _Tp_alloc_type = allocator_cA_
@@ -789,36 +789,36 @@ allocator_type = allocator_cA_
 allocator_type = allocator_int_
 _Alloc_value_type = cA
 _Alloc_value_type = c_int
-_Base = _List_base_cAstd__allocator_cA__
 _Base = _List_base_intstd__allocator_int__
+_Base = _List_base_cAstd__allocator_cA__
 _Tp_alloc_type = allocator_cA_
 _Tp_alloc_type = allocator_int_
-value_type = c_int
 value_type = cA
+value_type = c_int
 pointer = POINTER(cA)
 pointer = POINTER(c_int)
-const_pointer = POINTER(c_int)
 const_pointer = POINTER(cA)
+const_pointer = POINTER(c_int)
 reference = POINTER(cA)
 reference = POINTER(c_int)
 const_reference = POINTER(cA)
 const_reference = POINTER(c_int)
 iterator = _List_iterator_cA_
 iterator = _List_iterator_int_
-const_iterator = _List_const_iterator_cA_
 const_iterator = _List_const_iterator_int_
-const_reverse_iterator = reverse_iterator_std___List_const_iterator_cA__
+const_iterator = _List_const_iterator_cA_
 const_reverse_iterator = reverse_iterator_std___List_const_iterator_int__
-reverse_iterator = reverse_iterator_std___List_iterator_cA__
+const_reverse_iterator = reverse_iterator_std___List_const_iterator_cA__
 reverse_iterator = reverse_iterator_std___List_iterator_int__
+reverse_iterator = reverse_iterator_std___List_iterator_cA__
 size_type = size_t
 size_type = size_t
 difference_type = ptrdiff_t
 difference_type = ptrdiff_t
-allocator_type = allocator_int_
 allocator_type = allocator_cA_
-_Node = _List_node_cA_
+allocator_type = allocator_int_
 _Node = _List_node_int_
+_Node = _List_node_cA_
 class __uninitialized_copy_false_(Structure):
     pass
 class __uninitialized_copy_true_(Structure):
@@ -831,18 +831,6 @@ class __uninitialized_fill_n_false_(Structure):
     pass
 class __uninitialized_fill_n_true_(Structure):
     pass
-class _Vector_base_intstd__allocator_int__(Structure):
-    pass
-class _Vector_impl(allocator_int_):
-    pass
-_Vector_impl._fields_ = [
-    ('_M_start', POINTER(c_int)),
-    ('_M_finish', POINTER(c_int)),
-    ('_M_end_of_storage', POINTER(c_int)),
-]
-_Vector_base_intstd__allocator_int__._fields_ = [
-    ('_M_impl', _Vector_impl),
-]
 class _Vector_base_cAstd__allocator_cA__(Structure):
     pass
 class _Vector_impl(allocator_cA_):
@@ -855,34 +843,46 @@ _Vector_impl._fields_ = [
 _Vector_base_cAstd__allocator_cA__._fields_ = [
     ('_M_impl', _Vector_impl),
 ]
+class _Vector_base_intstd__allocator_int__(Structure):
+    pass
+class _Vector_impl(allocator_int_):
+    pass
+_Vector_impl._fields_ = [
+    ('_M_start', POINTER(c_int)),
+    ('_M_finish', POINTER(c_int)),
+    ('_M_end_of_storage', POINTER(c_int)),
+]
+_Vector_base_intstd__allocator_int__._fields_ = [
+    ('_M_impl', _Vector_impl),
+]
 _Tp_alloc_type = allocator_int_
 _Tp_alloc_type = allocator_cA_
-allocator_type = allocator_int_
 allocator_type = allocator_cA_
-_Alloc_value_type = cA
+allocator_type = allocator_int_
 _Alloc_value_type = c_int
+_Alloc_value_type = cA
 _Base = _Vector_base_cAstd__allocator_cA__
 _Base = _Vector_base_intstd__allocator_int__
-_Tp_alloc_type = allocator_cA_
 _Tp_alloc_type = allocator_int_
-value_type = c_int
+_Tp_alloc_type = allocator_cA_
 value_type = cA
+value_type = c_int
 pointer = POINTER(cA)
 pointer = POINTER(c_int)
 const_pointer = POINTER(c_int)
 const_pointer = POINTER(cA)
-reference = POINTER(cA)
 reference = POINTER(c_int)
+reference = POINTER(cA)
 const_reference = POINTER(c_int)
 const_reference = POINTER(cA)
 iterator = __normal_iterator_int*std__vector_intstd__allocator_int___
 iterator = __normal_iterator_cA*std__vector_cAstd__allocator_cA___
 const_iterator = __normal_iterator_constint*std__vector_intstd__allocator_int___
 const_iterator = __normal_iterator_constcA*std__vector_cAstd__allocator_cA___
-const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constcA*std__vector_cAstd__allocator_cA____
 const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constint*std__vector_intstd__allocator_int____
-reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_cA*std__vector_cAstd__allocator_cA____
+const_reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_constcA*std__vector_cAstd__allocator_cA____
 reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_int*std__vector_intstd__allocator_int____
+reverse_iterator = reverse_iterator___gnu_cxx____normal_iterator_cA*std__vector_cAstd__allocator_cA____
 size_type = size_t
 size_type = size_t
 difference_type = ptrdiff_t
@@ -907,58 +907,56 @@ difference_type = ptrdiff_t
 difference_type = ptrdiff_t
 difference_type = ptrdiff_t
 pointer = POINTER(cA)
-pointer = STRING
 pointer = POINTER(_List_node_int_)
+pointer = WSTRING
+pointer = STRING
 pointer = POINTER(c_int)
 pointer = POINTER(_List_node_cA_)
-pointer = WSTRING
+const_pointer = POINTER(c_int)
+const_pointer = POINTER(cA)
+const_pointer = WSTRING
+const_pointer = POINTER(_List_node_cA_)
 const_pointer = STRING
 const_pointer = POINTER(_List_node_int_)
-const_pointer = POINTER(cA)
-const_pointer = POINTER(_List_node_cA_)
-const_pointer = POINTER(c_int)
-const_pointer = WSTRING
-reference = STRING
 reference = POINTER(cA)
-reference = POINTER(c_int)
-reference = POINTER(_List_node_int_)
-reference = POINTER(_List_node_cA_)
 reference = WSTRING
+reference = POINTER(c_int)
+reference = POINTER(_List_node_cA_)
+reference = POINTER(_List_node_int_)
+reference = STRING
 const_reference = POINTER(cA)
+const_reference = STRING
 const_reference = POINTER(c_int)
 const_reference = POINTER(_List_node_cA_)
-const_reference = STRING
 const_reference = WSTRING
 const_reference = POINTER(_List_node_int_)
 value_type = cA
-value_type = c_int
-value_type = _List_node_cA_
-value_type = _List_node_int_
-value_type = c_wchar
 value_type = c_char
+value_type = _List_node_int_
+value_type = c_int
+value_type = c_wchar
+value_type = _List_node_cA_
+class __numeric_traits_integer_shortint_(Structure):
+    pass
+class __numeric_traits_integer_char_(Structure):
+    pass
 class __numeric_traits_integer_longunsignedint_(Structure):
     pass
 class __numeric_traits_integer_int_(Structure):
     pass
-class __numeric_traits_integer_char_(Structure):
-    pass
-class __numeric_traits_integer_shortint_(Structure):
-    pass
-__min = -32768 # Variable c_short '-0x000008000'
 __min = -2147483648 # Variable c_int '-0x080000000'
-__max = 32767 # Variable c_short '32767'
+__min = -32768 # Variable c_short '-0x000008000'
 __max = 2147483647 # Variable c_int '2147483647'
+__max = 32767 # Variable c_short '32767'
 __max = '\x7f' # Variable c_char "'\\177'"
 __digits = 32 # Variable c_int '32'
-class __numeric_traits_floating_int_(Structure):
+class __numeric_traits_floating_longunsignedint_(Structure):
     pass
-class __numeric_traits_floating_shortint_(Structure):
+class __numeric_traits_floating_int_(Structure):
     pass
 class __numeric_traits_floating_char_(Structure):
     pass
-class __numeric_traits_floating_longunsignedint_(Structure):
-    pass
-class __numeric_traits_longunsignedint_(__numeric_traits_integer_longunsignedint_):
+class __numeric_traits_floating_shortint_(Structure):
     pass
 class __numeric_traits_int_(__numeric_traits_integer_int_):
     pass
@@ -966,20 +964,22 @@ class __numeric_traits_shortint_(__numeric_traits_integer_shortint_):
     pass
 class __numeric_traits_char_(__numeric_traits_integer_char_):
     pass
-class __conditional_type_truelongunsignedintlonglongunsignedint_(Structure):
-    pass
-class __conditional_type_true__gnu_cxx____numeric_traits_integer_char___gnu_cxx____numeric_traits_floating_char__(Structure):
+class __numeric_traits_longunsignedint_(__numeric_traits_integer_longunsignedint_):
     pass
 class __conditional_type_true__gnu_cxx____numeric_traits_integer_longunsignedint___gnu_cxx____numeric_traits_floating_longunsignedint__(Structure):
     pass
 class __conditional_type_true__gnu_cxx____numeric_traits_integer_int___gnu_cxx____numeric_traits_floating_int__(Structure):
     pass
+class __conditional_type_truelongunsignedintlonglongunsignedint_(Structure):
+    pass
+class __conditional_type_true__gnu_cxx____numeric_traits_integer_shortint___gnu_cxx____numeric_traits_floating_shortint__(Structure):
+    pass
 __type = __numeric_traits_integer_longunsignedint_
+class __conditional_type_true__gnu_cxx____numeric_traits_integer_char___gnu_cxx____numeric_traits_floating_char__(Structure):
+    pass
 __type = __numeric_traits_integer_shortint_
 __type = c_ulong
 __type = __numeric_traits_integer_char_
-class __conditional_type_true__gnu_cxx____numeric_traits_integer_shortint___gnu_cxx____numeric_traits_floating_shortint__(Structure):
-    pass
 __type = __numeric_traits_integer_int_
 class __add_unsigned_bool_(Structure):
     pass
@@ -991,28 +991,28 @@ __type = c_ubyte
 class __add_unsigned_signedchar_(Structure):
     pass
 __type = c_ubyte
+__type = c_ushort
 class __add_unsigned_shortint_(Structure):
     pass
-__type = c_ushort
 class __add_unsigned_int_(Structure):
     pass
 __type = c_uint
 class __add_unsigned_longint_(Structure):
     pass
 __type = c_ulong
-__type = c_ulonglong
 class __add_unsigned_longlongint_(Structure):
     pass
+__type = c_ulonglong
 class __remove_unsigned_wchar_t_(Structure):
     pass
 class __remove_unsigned_bool_(Structure):
     pass
+__type = c_byte
 class __remove_unsigned_char_(Structure):
     pass
 __type = c_byte
 class __remove_unsigned_unsignedchar_(Structure):
     pass
-__type = c_byte
 __type = c_short
 class __remove_unsigned_shortunsignedint_(Structure):
     pass
@@ -1028,9 +1028,9 @@ class __remove_unsigned_longlongunsignedint_(Structure):
 class __promote_longdoublefalse_(Structure):
     pass
 __type = c_longdouble
-__type = c_double
 class __promote_doublefalse_(Structure):
     pass
+__type = c_double
 __type = c_float
 class __promote_floatfalse_(Structure):
     pass
@@ -1063,21 +1063,6 @@ __gthread_cond_t = pthread_cond_t
 class timespec(Structure):
     pass
 __gthread_time_t = timespec
-class basic_ios_wchar_tstd__char_traits_wchar_t__(ios_base):
-    pass
-class basic_ostream_wchar_tstd__char_traits_wchar_t__(basic_ios_wchar_tstd__char_traits_wchar_t__):
-    pass
-class basic_streambuf_wchar_tstd__char_traits_wchar_t__(Structure):
-    pass
-basic_ios_wchar_tstd__char_traits_wchar_t__._fields_ = [
-    ('_M_tie', POINTER(basic_ostream_wchar_tstd__char_traits_wchar_t__)),
-    ('_M_fill', c_wchar),
-    ('_M_fill_init', c_bool),
-    ('_M_streambuf', POINTER(basic_streambuf_wchar_tstd__char_traits_wchar_t__)),
-    ('_M_ctype', POINTER(ctype_wchar_t_)),
-    ('_M_num_put', POINTER(num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
-    ('_M_num_get', POINTER(num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
-]
 class basic_ios_charstd__char_traits_char__(ios_base):
     pass
 class basic_ostream_charstd__char_traits_char__(basic_ios_charstd__char_traits_char__):
@@ -1093,14 +1078,20 @@ basic_ios_charstd__char_traits_char__._fields_ = [
     ('_M_num_put', POINTER(num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___)),
     ('_M_num_get', POINTER(num_get_charstd__istreambuf_iterator_charstd__char_traits_char___)),
 ]
-basic_streambuf_wchar_tstd__char_traits_wchar_t__._fields_ = [
-    ('_M_in_beg', WSTRING),
-    ('_M_in_cur', WSTRING),
-    ('_M_in_end', WSTRING),
-    ('_M_out_beg', WSTRING),
-    ('_M_out_cur', WSTRING),
-    ('_M_out_end', WSTRING),
-    ('_M_buf_locale', locale),
+class basic_ios_wchar_tstd__char_traits_wchar_t__(ios_base):
+    pass
+class basic_ostream_wchar_tstd__char_traits_wchar_t__(basic_ios_wchar_tstd__char_traits_wchar_t__):
+    pass
+class basic_streambuf_wchar_tstd__char_traits_wchar_t__(Structure):
+    pass
+basic_ios_wchar_tstd__char_traits_wchar_t__._fields_ = [
+    ('_M_tie', POINTER(basic_ostream_wchar_tstd__char_traits_wchar_t__)),
+    ('_M_fill', c_wchar),
+    ('_M_fill_init', c_bool),
+    ('_M_streambuf', POINTER(basic_streambuf_wchar_tstd__char_traits_wchar_t__)),
+    ('_M_ctype', POINTER(ctype_wchar_t_)),
+    ('_M_num_put', POINTER(num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
+    ('_M_num_get', POINTER(num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___)),
 ]
 basic_streambuf_charstd__char_traits_char__._fields_ = [
     ('_M_in_beg', STRING),
@@ -1109,6 +1100,15 @@ basic_streambuf_charstd__char_traits_char__._fields_ = [
     ('_M_out_beg', STRING),
     ('_M_out_cur', STRING),
     ('_M_out_end', STRING),
+    ('_M_buf_locale', locale),
+]
+basic_streambuf_wchar_tstd__char_traits_wchar_t__._fields_ = [
+    ('_M_in_beg', WSTRING),
+    ('_M_in_cur', WSTRING),
+    ('_M_in_end', WSTRING),
+    ('_M_out_beg', WSTRING),
+    ('_M_out_cur', WSTRING),
+    ('_M_out_end', WSTRING),
     ('_M_buf_locale', locale),
 ]
 class basic_istream_wchar_tstd__char_traits_wchar_t__(basic_ios_wchar_tstd__char_traits_wchar_t__):
@@ -1138,17 +1138,17 @@ class basic_stringbuf_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(S
     pass
 class basic_stringbuf_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
-class basic_istringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
-    pass
 class basic_istringstream_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
-class basic_ostringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
+class basic_istringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
 class basic_ostringstream_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
-class basic_stringstream_charstd__char_traits_char_std__allocator_char__(Structure):
+class basic_ostringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
     pass
 class basic_stringstream_wchar_tstd__char_traits_wchar_t_std__allocator_wchar_t__(Structure):
+    pass
+class basic_stringstream_charstd__char_traits_char_std__allocator_char__(Structure):
     pass
 class basic_filebuf_wchar_tstd__char_traits_wchar_t__(Structure):
     pass
@@ -1192,24 +1192,24 @@ wfilebuf = basic_filebuf_wchar_tstd__char_traits_wchar_t__
 wifstream = basic_ifstream_wchar_tstd__char_traits_wchar_t__
 wofstream = basic_ofstream_wchar_tstd__char_traits_wchar_t__
 wfstream = basic_fstream_wchar_tstd__char_traits_wchar_t__
-char_type = c_wchar
 char_type = c_char
+char_type = c_wchar
 int_type = wint_t
 int_type = c_int
-pos_type = wstreampos
 pos_type = streampos
+pos_type = wstreampos
 off_type = streamoff
 off_type = streamoff
-traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
-__streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
+traits_type = char_traits_char_
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
+__streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
 __ios_type = basic_ios_charstd__char_traits_char__
 __ios_type = basic_ios_wchar_tstd__char_traits_wchar_t__
 __num_get_type = num_get_wchar_tstd__istreambuf_iterator_wchar_tstd__char_traits_wchar_t___
 __num_get_type = num_get_charstd__istreambuf_iterator_charstd__char_traits_char___
-__ctype_type = ctype_char_
 __ctype_type = ctype_wchar_t_
+__ctype_type = ctype_char_
 class sentry(Structure):
     pass
 sentry._fields_ = [
@@ -1220,20 +1220,20 @@ class sentry(Structure):
 sentry._fields_ = [
     ('_M_ok', c_bool),
 ]
-traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
+traits_type = char_traits_char_
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
 __streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
-__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
 __istream_type = basic_istream_charstd__char_traits_char__
-__ctype_type = ctype_wchar_t_
+__istream_type = basic_istream_wchar_tstd__char_traits_wchar_t__
 __ctype_type = ctype_char_
-__int_type = wint_t
+__ctype_type = ctype_wchar_t_
 __int_type = c_int
+__int_type = wint_t
 char_type = c_char
 char_type = c_wchar
-int_type = c_int
 int_type = wint_t
+int_type = c_int
 pos_type = wstreampos
 pos_type = streampos
 off_type = streamoff
@@ -1261,8 +1261,8 @@ traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
 __streambuf_type = basic_streambuf_charstd__char_traits_char__
 __streambuf_type = basic_streambuf_wchar_tstd__char_traits_wchar_t__
-__ios_type = basic_ios_charstd__char_traits_char__
 __ios_type = basic_ios_wchar_tstd__char_traits_wchar_t__
+__ios_type = basic_ios_charstd__char_traits_char__
 __num_put_type = num_put_charstd__ostreambuf_iterator_charstd__char_traits_char___
 __num_put_type = num_put_wchar_tstd__ostreambuf_iterator_wchar_tstd__char_traits_wchar_t___
 __ctype_type = ctype_char_
@@ -1279,12 +1279,12 @@ sentry._fields_ = [
     ('_M_ok', c_bool),
     ('_M_os', POINTER(basic_ostream_wchar_tstd__char_traits_wchar_t__)),
 ]
-char_type = c_char
 char_type = c_wchar
+char_type = c_char
 traits_type = char_traits_char_
 traits_type = char_traits_wchar_t_
-int_type = c_int
 int_type = wint_t
+int_type = c_int
 pos_type = streampos
 pos_type = wstreampos
 off_type = streamoff
