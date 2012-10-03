@@ -82,6 +82,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         self._list_names = os.listdir
         self._open_file = lambda archive,name: file( os.path.sep.join([archive,name]),'rb')
         return True
+    else:
+      raise IOError('%s is not a directory'%(self.dumpname))
     return False
 
   def _test_dir(self):

@@ -83,10 +83,10 @@ class TestStructureSizes(unittest.TestCase):
 class TestFullReverse(unittest.TestCase):
     
   def test_reverseInstances(self):
-    #context = context.get_context('test/dumps/ssh/ssh.1')
+    ctx = context.get_context('test/dumps/ssh/ssh.1')
     dumpname = 'test/dumps/ssh/ssh.1'
-    context = Config.cleanCache(dumpname)
-    context = reversers.reverseInstances(dumpname)
+    ctx = Config.cleanCache(dumpname)
+    ctx = reversers.reverseInstances(dumpname)
 
 
 

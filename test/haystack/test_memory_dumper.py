@@ -10,7 +10,6 @@ import tempfile
 import time
 
 from haystack import memory_dumper
-from test.run_src_app import *
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -26,6 +25,22 @@ def get_folder_size(folder):
       filename = os.path.join(path, file)
       folder_size += os.path.getsize(filename)
   return folder_size
+
+TESTS={ "test1": "test-ctypes1",
+  "test2": "test-ctypes2",
+  "test3": "test-ctypes3",
+}
+def run_app_test(testName, stdout=sys.stdout):
+  if testName not in TESTS:
+    raise ValueError("damn, please choose testName in %s"%(TESTS.keys()))
+  appname = TESTS[testName]
+  srcDir = os.path.sep.join([os.getcwd(), 'test', 'src'])
+  tgt = os.path.sep.join([srcDir, appname])
+  if not os.access(tgt, os.F_OK):
+    print '\nCould not find test binaries', tgt
+    print 'HAVE YOU BUILD THEM ?'
+    raise IOError
+  return subprocess.Popen([tgt], stdout=stdout)
 
 class TestMemoryDumper(unittest.TestCase):
   """Tests MemoryDumper with 3 format types.

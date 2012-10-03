@@ -22,7 +22,6 @@ log = logging.getLogger('test_memory_mapping')
 
 class TestMmapHack(unittest.TestCase):
   def test_mmap_hack(self):
-    Config.set_word_size = 4 # couldnt care less
     fname = os.path.normpath(os.path.abspath(__file__))
     fin = file(fname)
     local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
@@ -44,7 +43,6 @@ class TestMappings(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context = context.get_context('test/src/test-ctypes3.dump')
     self.ssh = context.get_context('test/dumps/ssh/ssh.1')
     self.putty = context.get_context('test/dumps/putty/putty.1.dump')
     pass
@@ -53,8 +51,6 @@ class TestMappings(unittest.TestCase):
     pass
 
   def tearDown(self):
-    #self.context = None
-    self.context.reset()
     self.ssh.reset()
     self.putty.reset()
     pass
