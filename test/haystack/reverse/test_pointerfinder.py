@@ -11,8 +11,10 @@ import operator
 import os
 import unittest
 
-from haystack import memory_mapping
 from haystack.config import Config
+Config.set_word_size(4)
+
+from haystack import memory_mapping
 from haystack.reverse import pointerfinder
 
 Config.MMAP_START = 0x0c00000
@@ -38,14 +40,15 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   values = []
   for i in range(0,Config.MMAP_LENGTH, Config.WORDSIZE): 
     if i in indices:
-      dump.append( struct.pack('L',start+i) )
+      dump.append( struct.pack('I',start+i) )
       values.append(start+i)
     else:
-      dump.append( struct.pack('L',0x2e2e2e2e) )
+      dump.append( struct.pack('I',0x2e2e2e2e) )
   
   if len(dump) != Config.MMAP_LENGTH/Config.WORDSIZE :
-    raise ValueError('error on length dump %d '%( len(dump) ) )  
+    raise ValueError('error on length dump %d expected %d'%( len(dump), (Config.MMAP_LENGTH/Config.WORDSIZE) ) )  
   dump2 = ''.join(dump)
+  #print repr(dump2[:16]), Config.WORDSIZE, Config.MMAP_LENGTH
   if len(dump)*Config.WORDSIZE != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
