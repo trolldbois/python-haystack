@@ -54,6 +54,9 @@ class TestMappings(unittest.TestCase):
   def tearDown(self):
     self.ssh.reset()
     self.putty.reset()
+    import haystack
+    from haystack import model
+    haystack.model.reset()
     pass
 
   def test_get_context(self):
