@@ -138,7 +138,9 @@ log = logging.getLogger('model')
 
 from haystack.config import Config
 if Config._WORDSIZE is None:
-  raise ValueError('You should not raise me')
+  # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
+  # raise ValueError('You should not raise me')
+  pass
 
 
 # replace c_char_p so we can have our own CString 

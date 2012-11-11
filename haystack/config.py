@@ -76,7 +76,8 @@ class ConfigClass():
   def get_word_size(self):
     ''' default config to local arch. you can change it. '''
     if self._WORDSIZE is None:
-      raise NotImplementedError('Please set_word_size(x) before.')
+      # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
+      #raise NotImplementedError('Please set_word_size(x) before.')
       import ctypes
       self._WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
     return self._WORDSIZE

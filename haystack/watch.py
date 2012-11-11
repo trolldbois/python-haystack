@@ -9,7 +9,6 @@ import sys
 import time
 
 from haystack import abouchet
-from haystack import model
 from haystack import utils
 from haystack import memory_mapper 
 
@@ -31,6 +30,7 @@ def clear():
 def check_varname_for_type(varname, structType):
   done = []
   st = structType
+  from haystack import model
   for v in varname:
     if not hasattr(st, v):
       fields = ["%s: %s"%(n,t) for n,t in st.getFields()]

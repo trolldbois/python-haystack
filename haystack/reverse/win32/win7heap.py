@@ -175,8 +175,16 @@ def _HEAP_getSegmentList(self, mappings):
     skiplist = dict()
     for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
       ucr_addr = ucr._orig_addr_
+      if ucr_addr is None:
+        log.error('None in _orig_addr_')
       seg_addr = utils.getaddress( ucr.SegmentEntry.FLink)
-      log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size*8))
+      if ucr.Address is None:
+        log.error('None in ucr.Address')
+      try:
+        log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size*8))
+      except TypeError, e:
+        import code
+        code.interact(local=locals())
       #log.debug("%s"%(ucr.SegmentEntry)) # TODO - CHECK FOR CONSISTENCY ? more heapdebug than haystack debug
       skiplist[ucr.Address] = ucr.Size*8
 
