@@ -8,6 +8,7 @@ import unittest
 import shutil
 import tempfile
 import time
+import subprocess
 import sys
 
 from haystack import memory_dumper
