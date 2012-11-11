@@ -10,6 +10,7 @@ import time
 
 from haystack import abouchet
 from haystack import model
+from haystack import utils
 from haystack import memory_mapper 
 
 
@@ -36,7 +37,7 @@ def check_varname_for_type(varname, structType):
       log.error('(%s.)%s does not exists in type %s\n\t%s'%('.'.join(done), v, st, '\n\t'.join(fields)) )
       return False
     st = st.getFieldType(v)
-    if model.isPointerType(st): # accept pointers
+    if utils.isPointerType(st): # accept pointers
       st = model.get_subtype(st)
     done.append(v)
   return True
@@ -65,7 +66,7 @@ def watch(opt):
   mappings = memory_mapper.MemoryMapper(opt).getMappings()
   finder = abouchet.StructFinder(mappings)
   # get the target memory map
-  memoryMap = model.is_valid_address_value(addr, finder.mappings)
+  memoryMap = utils.is_valid_address_value(addr, finder.mappings)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
     raise ValueError("the address is not accessible in the memoryMap")

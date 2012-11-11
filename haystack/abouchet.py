@@ -14,6 +14,7 @@ import subprocess
 import json
 
 from haystack import argparse_utils
+from haystack import utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack import memory_mapping 
 
@@ -561,8 +562,7 @@ def refresh(args):
   mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
   finder = StructFinder(mappings)
   
-  from haystack import model
-  memoryMap = model.is_valid_address_value(addr, finder.mappings)
+  memoryMap = utils.is_valid_address_value(addr, finder.mappings)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
     raise ValueError("the address is not accessible in the memoryMap")
@@ -601,8 +601,7 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
   mappings = dump_loader.load(dumpname)
   finder = StructFinder(mappings)
   # validate the input address.
-  from haystack import model
-  memoryMap = model.is_valid_address_value(address, finder.mappings)
+  memoryMap = utils.is_valid_address_value(address, finder.mappings)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
     raise ValueError("the address is not accessible in the memoryMap")
