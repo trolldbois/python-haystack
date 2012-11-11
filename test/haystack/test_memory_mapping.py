@@ -28,12 +28,13 @@ class TestMmapHack(unittest.TestCase):
     fin.close()
     fin = None
     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-    heapmap = struct.unpack('l', (ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
+    heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
     log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
     class P:
       pid=os.getpid()
     maps = memory_mapping.readProcessMappings(P()) # memory_mapping
     #print '\n'.join([str(m) for m in maps])
+    #print '**',hex(heapmap)
     ret=[m for m in maps if heapmap in m]
     self.assertEquals( len(ret), 1)
     self.assertEquals( ret[0].pathname, fname)
@@ -77,13 +78,27 @@ class TestMappings(unittest.TestCase):
 
   
   def test_get_user_allocations(self):
+    import resource
+    from haystack import model
+    model.reset()
+    print '************ before'
     mappings = self.ssh.mappings
+    print '************ before 2'
+    print resource.getrusage(resource.RUSAGE_SELF)
     allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+    print '************ before 3'
     self.assertEquals( len(allocs), 2568)
+    print '************ before 4'
+    print resource.getrusage(resource.RUSAGE_SELF)
 
     mappings = self.putty.mappings
+    print '************ before 5'
+    print resource.getrusage(resource.RUSAGE_SELF)
     allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+    print '************ before 6'
+    print resource.getrusage(resource.RUSAGE_SELF)
     self.assertEquals( len(allocs), 2273)
+    print '************ before 7'
 
   def test_getMmap(self):
     mappings = self.ssh.mappings
