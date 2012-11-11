@@ -501,7 +501,7 @@ def save_headers(context, addrs=None):
 
 
 def reverseInstances(dumpname):
-
+  from haystack.reverse import context
   log.debug ('[+] Loading the memory dump ')
   ctx = context.get_context(dumpname)
   try:
