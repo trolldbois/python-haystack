@@ -66,10 +66,15 @@ class ConfigClass():
   def set_word_size(self, v):
     if self._WORDSIZE is not None and v != self._WORDSIZE:
       raise NotImplementedError('You should not change wordsize')
-    self._WORDSIZE = v
-    #raise ValueError('wtf')
+    #
+    # TODO
+    #
     import ctypes
-    log.warning('Setting WORDTYPE size to %d'%(v))
+    local = ctypes.sizeof( ctypes.c_void_p)
+    if v != local :
+      raise NotImplementedError('Haystack is not cross-arch. Local word is %d, target dump seems to be %d'%( local,v ))      
+    #log.warning('Setting WORDTYPE size to %d'%(v))
+    self._WORDSIZE = v
     from haystack import model
     self.PTR_TYPE = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType    
 
