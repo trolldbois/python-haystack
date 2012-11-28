@@ -99,7 +99,7 @@ class MemoryMapping:
     self.major_device = major_device
     self.minor_device = minor_device
     self.inode = inode
-    self.pathname = pathname
+    self.pathname = str(pathname) #fix None
 
   def __contains__(self, address):
       return self.start <= address < self.end
@@ -647,7 +647,7 @@ class Mappings:
         heaps.append(mapping)
         log.debug('%s is a Heap'%(mapping))
       else:
-        log.debug('%s is NOT'%(mapping))
+        log.debug('%s is NOT a Heap'%(mapping))
     # order by ProcessHeapsListIndex
     #heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
     return heaps
@@ -670,7 +670,7 @@ class Mappings:
       return self._target_system
     self._target_system = 'linux'
     for l in [m.pathname for m in self.mappings]:
-      if '\\System32\\' in l:
+      if l is not None and '\\System32\\' in l:
         log.debug('Found a windows executable dump')
         self._target_system = 'win32'
         break

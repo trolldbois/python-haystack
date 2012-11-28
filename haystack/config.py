@@ -75,7 +75,8 @@ class ConfigClass():
       raise NotImplementedError('Haystack is not cross-arch. Local word is %d, target dump seems to be %d'%( local,v ))      
     #log.warning('Setting WORDTYPE size to %d'%(v))
     self._WORDSIZE = v
-    from haystack import model
+    # FIXME when multi arch
+    # from haystack import model
     self.PTR_TYPE = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType    
 
   def get_word_size(self):
@@ -84,7 +85,7 @@ class ConfigClass():
       # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
       #raise NotImplementedError('Please set_word_size(x) before.')
       import ctypes
-      self._WORDSIZE = ctypes.sizeof(ctypes.c_void_p)
+      self.set_word_size( ctypes.sizeof(ctypes.c_void_p) )
     return self._WORDSIZE
   
   def get_word_type(self):
@@ -159,4 +160,6 @@ def make_config_from_memdump(dumpname):
 
 Config = ConfigClass()
 
+# FIXME set the word size and ptr_type
+Config.get_word_size()
 
