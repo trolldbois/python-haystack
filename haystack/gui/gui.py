@@ -358,21 +358,21 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
   def openDump(self):
     #self.fileChooser = QtGui.QFileDialog(self)
     #filenames = QtGui.QFileDialog.getOpenFileNames(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
-    filenames = QtGui.QFileDialog.getExistingDirectory(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
-    for filename in filenames:
-      log.info('Opening %s'%(filename))
-      self._openDump(filename)
-      log.info('Dump opened')
+    filename = QtGui.QFileDialog.getExistingDirectory(self, QtGui.QApplication.translate("FileChooser", 'Open memory dump..', None, QtGui.QApplication.UnicodeUTF8))
+    log.info('Opening %s'%(filename))
+    self._openDump(str(filename))
+    log.info('Dump opened')
     return
   
   def _openDump(self, dumpname):
     # load memorymapping
     mappings = dump_loader.load(dumpname)
     # TODO : make a mapping chooser 
-    if len(mappings) > 1:
-      heap = [m for m in mappings if m.pathname == '[heap]'][0]
-    else:
-      heap = mappings[0]
+    heap = mappings.getHeap()
+    #if len(mappings) > 1:
+    #  heap = [m for m in mappings if m.pathname == '[heap]'][0]
+    #else:
+    #  heap = mappings[0]
     return self.make_memory_tab( os.path.sep.join( [os.path.basename(dumpname),heap.pathname]), heap, mappings)
   
   
