@@ -302,3 +302,7 @@ What are the dependencies ? :
 - python-networkx
 - python-levenshtein
 - several others...
+
+Others
+------
+http://ntinfo.biz/ xntsv32

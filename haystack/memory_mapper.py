@@ -56,6 +56,8 @@ class MemoryMapper:
     return mappings
 
   def initPid(self, pid, mmap):
+    if not isinstance(pid, (int, long)):
+      raise TypeError('PID should be a number')
     dbg = PtraceDebugger()
     process = dbg.addProcess(pid, is_attached=False)
     if process is None:

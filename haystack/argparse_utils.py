@@ -12,6 +12,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+
 def readable(f):
   """Validates if the pathname is readable (dir or file)."""
   f = os.path.normpath(f)

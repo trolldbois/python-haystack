@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 # DEFINE the API.
-import abouchet 
+import abouchet
 
 findStruct = abouchet.findStruct
 findStructInFile = abouchet.findStructInFile
