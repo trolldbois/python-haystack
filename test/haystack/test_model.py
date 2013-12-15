@@ -7,9 +7,6 @@ import logging
 import unittest
 import sys
 
-from haystack.config import Config
-Config.set_word_size(4) # force it
-
 from haystack import dump_loader
 from haystack import model
 from haystack import utils

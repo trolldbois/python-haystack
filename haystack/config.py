@@ -17,13 +17,12 @@ __status__ = "Production"
 
 log = logging.getLogger('config')
 
-
 class ConfigClass():
   """Project-wide config class. """
   def __init__(self):
     #self.cacheDir = os.path.normpath(outputDir)
     #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-    self._WORDSIZE = None
+    self.WORDSIZE = None
     self.commentMaxSize = 64
     self.mmap_hack = True # bad bad idea...
     #
@@ -63,30 +62,12 @@ class ConfigClass():
     resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
     return   
         
-  def set_word_size(self, v):
-    if self._WORDSIZE is not None and v != self._WORDSIZE:
-      raise NotImplementedError('You should not change wordsize')
-    #
-    # TODO
-    #
-    import ctypes
-    local = ctypes.sizeof( ctypes.c_void_p)
-    if v != local :
-      raise NotImplementedError('Haystack is not cross-arch. Local word is %d, target dump seems to be %d'%( local,v ))      
-    #log.warning('Setting WORDTYPE size to %d'%(v))
-    self._WORDSIZE = v
-    # FIXME when multi arch
-    # from haystack import model
-    self.PTR_TYPE = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType    
-
-  def get_word_size(self):
-    ''' default config to local arch. you can change it. '''
-    if self._WORDSIZE is None:
-      # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
-      #raise NotImplementedError('Please set_word_size(x) before.')
-      import ctypes
-      self.set_word_size( ctypes.sizeof(ctypes.c_void_p) )
-    return self._WORDSIZE
+  def set_pointer_type(self, ptr_t):
+    # TODO check that it is a pointer type.
+    #if type(ptr_t) != _ctypes.PyCPointerType:
+    #self.PTR_TYPE = 
+    #  
+    self.WORDSIZE = ctypes.sizeof(ptr_t)
   
   def get_word_type(self):
     import ctypes
@@ -107,7 +88,7 @@ class ConfigClass():
       raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
     return
     
-  WORDSIZE = property(get_word_size, set_word_size)
+  #WORDSIZE = property(get_word_size, set_word_size)
   WORDTYPE = property(get_word_type)
   
   def makeCache(self, dumpname):
@@ -138,28 +119,42 @@ class ConfigClass():
     return os.path.sep.join([self.getCacheName(dumpname), typ])
 
   def getStructsCacheDir(self, dumpname):
-    '''Returns a dirname for caching the structures based on the dump filename.
+    """
+    Returns a dirname for caching the structures based on the dump filename.
   
     dumpname: the dump file name.
-    '''
+    """
     root = os.path.abspath(dumpname)
     return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
+  def formatAddress(self, addr):
+    if self.WORDSIZE == 4:
+      return u"0x%08x" % addr
+    else:
+      return u"0x%016x" % addr
+
 
 def make_config_from_memdump(dumpname):
-  """ Load a memory dump meta data """
-  index = open( os.path.sep.join( [dumpname, Config.DUMPNAME_INDEX_FILENAME] ), 'r' )
-  m1 = index.readline().split(' ')
-  # test if x32 or x64
-  if len(m1[0]) > 10:
-    log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
-    Config.set_word_size(8)
-  else:
-    Config.set_word_size(4)
-  return 
+    """ Load a memory dump meta data """
+    cfg = ConfigClass()
+    index = open( os.path.sep.join( [dumpname, cfg.DUMPNAME_INDEX_FILENAME] ), 'r' )
+    m1 = index.readline().split(' ')
+    # test if x32 or x64
+    if len(m1[0]) > 10:
+        log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
+        cfg.WORDSIZE = 8
+    else:
+        cfg.WORDSIZE = 4
+    return cfg
 
-Config = ConfigClass()
-
-# FIXME set the word size and ptr_type
-Config.get_word_size()
+def make_config_from_memory_address_string(address_string):
+    """ Create a configuration base on the size of the address."""
+    cfg = ConfigClass()
+    # test if x32 or x64
+    if len(address_string) > 10:
+        log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
+        cfg.WORDSIZE = 8
+    else:
+        cfg.WORDSIZE = 4
+    return cfg
 

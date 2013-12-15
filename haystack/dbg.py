@@ -33,7 +33,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from haystack.config import Config
 
 log=logging.getLogger("gbd")
 

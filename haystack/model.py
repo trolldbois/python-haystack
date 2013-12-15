@@ -136,13 +136,6 @@ __status__ = "Production"
 
 log = logging.getLogger('model')
 
-from haystack.config import Config
-if Config._WORDSIZE is None:
-  # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
-  # raise ValueError('You should not raise me')
-  pass
-
-
 # replace c_char_p so we can have our own CString 
 if ctypes.c_char_p.__name__ == 'c_char_p':
   ctypes.original_c_char_p = ctypes.c_char_p
@@ -152,26 +145,6 @@ if ctypes.Structure.__name__ == 'Structure':
   ctypes.original_Structure = ctypes.Structure
 if ctypes.Union.__name__ == 'Union':
   ctypes.original_Union = ctypes.Union
-
-def HAYSTACK_POINTER(cls):
-  # check cls as ctypes obj
-  if cls is None: # VOID
-    cls = type(None)# ctypes.c_void_p # ctypes.c_ulong
-    clsname = 'c_void'
-  else:
-    fake_ptr_base_type = Config.WORDTYPE # 4 or 8 len
-    # create object that is a pointer ( see model.isPointer )
-    clsname = cls.__name__
-  import _ctypes
-  klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( _ctypes._SimpleCData,),{'_type_': Config.get_word_type_char(), '_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
-  #klass = type('haystack.model.LP_%d_%s'%(Config.WORDSIZE, clsname),( Config.WORDTYPE,),{'_subtype_': cls, '_sub_addr_': lambda x: x.value, '__repr__': lambda x: '%s(%d)'%(clsname,x.value)}) #, '__str__': lambda x: str(x.value)
-  klass._sub_addr_ = property(klass._sub_addr_)
-  return klass
-
-if Config.get_word_size() != ctypes.sizeof(ctypes.c_void_p):
-  log.warning('Changing POINTER size to %d bytes'%(Config.get_word_size()))
-  ctypes.POINTER = HAYSTACK_POINTER
-#0xbc32f5c7L
 
 # The book registers all haystack modules, and classes, and can keep 
 # some pointer refs on memory allocated within special cases...

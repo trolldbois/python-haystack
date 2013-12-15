@@ -10,7 +10,7 @@ import time
 
 from haystack.dbg import PtraceDebugger
 # local
-from haystack.config import Config
+from haystack import config
 from haystack import memory_mapping
 from haystack import dump_loader
 
@@ -28,6 +28,7 @@ class MemoryMapper:
   """Build MemoryMappings from a PID or a haystack memory dump."""
   def __init__(self, pid=None, mmap=True, memfile=None, baseOffset=None, dumpname=None):
     # args are checked by the parser
+    self.config = config.ConfigClass()
     if not (pid is None):
       mappings = self.initPid(pid, mmap)
     elif not (memfile is None):
@@ -47,7 +48,7 @@ class MemoryMapper:
 
   def initMemfile(self, memfile, baseOffset):
     size = os.fstat(memfile.fileno()).st_size
-    if size > Config.MAX_MAPPING_SIZE_FOR_MMAP:
+    if size > self.config.MAX_MAPPING_SIZE_FOR_MMAP:
       mem = memory_mapping.FileBackedMemoryMapping(memfile, baseOffset, baseOffset+size) ## is that valid ?
       log.warning('Dump file size is big. Using file backend memory mapping. Its gonna be slooow')
     else:

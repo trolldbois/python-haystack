@@ -21,18 +21,16 @@ from struct import unpack
 
 import logging
 
-from haystack.config import Config
-
 log = logging.getLogger('utils')
 
-def formatAddress(addr): 
-  if Config.WORDSIZE == 4:
+def formatAddress(cfg, addr): 
+  if cfg.WORDSIZE == 4:
     return u"0x%08x" % addr
   else:
     return u"0x%016x" % addr
 
-def unpackWord(bytes, endianess='@'):
-  if Config.WORDSIZE == 8:
+def unpackWord(cfg, bytes, endianess='@'):
+  if cfg.WORDSIZE == 8:
     return struct.unpack('%sQ'%endianess, bytes)[0]
   else:
     return struct.unpack('%sI'%endianess, bytes)[0]
@@ -262,13 +260,16 @@ def isUnionType(objtype):
   if not isinstance(objtype, type):  return False
   return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
 
+class _p(ctypes.Structure):
+    pass
+__ptrt = type(ctypes.POINTER(_p))
 def isPointerType(objtype):
   ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
   if hasattr(objtype, '_subtype_'):
     return True
   if not isinstance(objtype, type):  return False
-  return Config.PTR_TYPE == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
-  #return __ptrt == type(type(obj)) or type(type(obj)) == type(ctypes.c_void_p) or isFunctionType(obj)
+  #return Config.PTRTYPE = type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
+  return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
 
 def isPointerBasicType(objtype):
   ''' Checks if an object is a pointer to a BasicType'''

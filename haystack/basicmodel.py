@@ -205,7 +205,6 @@ class LoadableMembers(object):
         _attrType = get_subtype(attrtype)
       if ( not is_valid_address( attr, mappings, _attrType) ) and (getaddress(attr) != 0):
         # why ?
-        print 'wordsize',Config.WORDSIZE
         print 'is_valid_address( %s, mappings, %s) = %s'%( attrname, _attrType ,is_valid_address( attr, mappings, _attrType))
         print 'attr',attr.value
         print 'attr in mappings', int(attr.value) in mappings

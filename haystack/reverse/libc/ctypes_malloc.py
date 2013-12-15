@@ -14,17 +14,16 @@ from haystack import model, memory_mapping
 from haystack.model import is_valid_address,is_valid_address_value,pointer2bytes,array2bytes,bytes2array,getaddress
 from haystack.model import LoadableMembers,LoadableMembersStructure,RangeValue,NotNull,CString, IgnoreMember, PerfectMatch
 
-from haystack.config import Config
 import struct
 
 log=logging.getLogger('ctypes_malloc')
 
 
-SIZE_SZ = Config.WORDSIZE
-MIN_CHUNK_SIZE    = 4 * SIZE_SZ
-MALLOC_ALIGNMENT  = 2 * SIZE_SZ
-MALLOC_ALIGN_MASK = MALLOC_ALIGNMENT - 1
-MINSIZE           = (MIN_CHUNK_SIZE+MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK
+#SIZE_SZ = Config.WORDSIZE
+#MIN_CHUNK_SIZE    = 4 * SIZE_SZ
+#MALLOC_ALIGNMENT  = 2 * SIZE_SZ
+#MALLOC_ALIGN_MASK = MALLOC_ALIGNMENT - 1
+#MINSIZE           = (MIN_CHUNK_SIZE+MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK
 
 PREV_INUSE     = 1
 IS_MMAPPED     = 2
@@ -32,16 +31,6 @@ NON_MAIN_ARENA = 4
 SIZE_BITS      = (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
 
 
-class mallocStruct(LoadableMembersStructure):
-  ''' defines classRef '''
-  pass
-
-
-
-if Config.WORDSIZE == 4:
-  UINT = ctypes.c_uint32
-elif Config.WORDSIZE == 8:
-  UINT = ctypes.c_uint64
 
 def iter_user_allocations(mappings, heap, filterInuse=False):
   ''' 
@@ -123,6 +112,7 @@ def get_user_allocations(mappings, heap):
 
 def is_malloc_heap(mappings, mapping):
   """test if a mapping is a malloc generated heap"""
+  config = mappings.config
   try:
     sizes = [size for addr,size in iter_user_allocations(mappings, mapping ) ]
     size = sum(sizes)
@@ -130,12 +120,16 @@ def is_malloc_heap(mappings, mapping):
     log.debug(e)
     return False
   
-  if size != ( len(mapping) - Config.WORDSIZE*len(sizes) ):
-    log.debug('expected %d/%d bytes, got %d'%(len(mapping), len(mapping) - 2*Config.WORDSIZE*len(sizes), size ) )
+  if size != ( len(mapping) - config.WORDSIZE*len(sizes) ):
+    log.debug('expected %d/%d bytes, got %d'%(len(mapping), len(mapping) - 2*config.WORDSIZE*len(sizes), size ) )
     return False
   return True
 
 
+
+class mallocStruct(LoadableMembersStructure):
+  ''' defines classRef '''
+  pass
 
 
 class malloc_chunk(mallocStruct):
@@ -161,10 +155,10 @@ struct malloc_chunk {
 
   '''
   def get_mem_addr(self, orig_addr):
-    return orig_addr + 2*Config.WORDSIZE
+    return orig_addr + 2*self.config.WORDSIZE
 
   def get_mem_size(self):
-    return self.real_size() - Config.WORDSIZE
+    return self.real_size() - self.config.WORDSIZE
     
   def real_size(self):
     return (self.size & ~SIZE_BITS)
@@ -181,7 +175,7 @@ struct malloc_chunk {
     '''extract p's inuse bit
     doesnt not work on the top one
     '''
-    next_addr = self.next_addr(orig_addr) + Config.WORDSIZE
+    next_addr = self.next_addr(orig_addr) + self.config.WORDSIZE
     mmap = model.is_valid_address_value(next_addr, mappings)
     if not mmap:
       return 0
@@ -205,7 +199,7 @@ struct malloc_chunk {
     inuse = self.check_inuse(mappings, orig_addr) 
     log.debug('is chunk in use ?: %s'% bool(inuse) )
     
-    if real_size % Config.WORDSIZE != 0:
+    if real_size % self.config.WORDSIZE != 0:
       # not a good value
       log.debug('real_size is not a WORDSIZE moduli')
       return False
@@ -213,11 +207,11 @@ struct malloc_chunk {
     return True
 
   def loadMembers(self, mappings, maxDepth, orig_addr):
-
     if maxDepth == 0:
       log.debug('Maximum depth reach. Not loading any deeper members.')
       log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
       return True
+    self.config = mappings.config
     maxDepth-=1
     log.debug('%s loadMembers'%(self.__class__.__name__))
     if not self.isValid(mappings, orig_addr):
@@ -266,6 +260,13 @@ struct malloc_chunk {
     return next_chunk, next_addr
 
 
+# FIXME: need to define UINT base on config.
+# so that means, amclloc_chunk needs to be dynamically created, based on config.
+#if Config.WORDSIZE == 4:
+#  UINT = ctypes.c_uint32
+#elif Config.WORDSIZE == 8:
+#  UINT = ctypes.c_uint64
+UINT = ctypes.c_uint32
 
 malloc_chunk._fields_ = [
     ( 'prev_size' , UINT ), #  INTERNAL_SIZE_T

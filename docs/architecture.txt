@@ -1,0 +1,23 @@
+
+scripts/haystack:
+    Search for struct in memory. Memory can be a file dump or a live process.
+    calls haystack.abouchet
+    
+haytack.abouchet:
+    a) Wraps memory dump using Factory haystack.memory_mapper.MemoryMapper.
+    MemoryMapper outputs haystack.memory_mapping.MemoryMappings, a wrapper
+        around memory mappings.
+
+    b) treatment of other cmd line args
+    
+    c) search for structure with haystack.abouchet.StructFinder
+
+
+haystack.abouchet.StructFinder:
+    a) iterate over mappings in filter
+    b) try to load struct on each aligned offset 
+        MemoryMapping.readStruct -> load x bytes
+    c) validates constraints from structure declaration
+        "struct instance".loadMembers
+    d) iterate.
+

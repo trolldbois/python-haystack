@@ -14,8 +14,6 @@ import struct
 import sys
 
 
-from haystack.config import Config
-
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
 __license__ = "GPL"
@@ -84,7 +82,9 @@ def dequeue(addrs, start, end):
   ret = []
   while len(addrs)> 0  and addrs[0] < start:
     addrs.pop(0)
-  while len(addrs)> 0  and addrs[0] >= start and addrs[0] <= end - Config.WORDSIZE:
+  # FIXME Config.WORDSIZE 
+  WORDSIZE = 4
+  while len(addrs)> 0  and addrs[0] >= start and addrs[0] <= end - WORDSIZE:
     ret.append(addrs.pop(0))
   return addrs, ret
 
@@ -93,12 +93,12 @@ def getHeapPointers(dumpfilename, mappings):
       records values and pointers address in heap.
   '''
   import pointerfinder  
-  
-  #F_VALUES = Config.getCacheFilename(Config.CACHE_HS_POINTERS_VALUES, dumpfilename)
-  F_HEAP_O = Config.getCacheFilename(Config.CACHE_HEAP_ADDRS, dumpfilename)
-  F_HEAP_V = Config.getCacheFilename(Config.CACHE_HEAP_VALUES, dumpfilename)
-  #F_STACK_O = Config.getCacheFilename(Config.CACHE_STACK_ADDRS, dumpfilename)
-  #F_STACK_V = Config.getCacheFilename(Config.CACHE_STACK_VALUES, dumpfilename)
+  config = mappings.config
+  #F_VALUES = config.getCacheFilename(config.CACHE_HS_POINTERS_VALUES, dumpfilename)
+  F_HEAP_O = config.getCacheFilename(config.CACHE_HEAP_ADDRS, dumpfilename)
+  F_HEAP_V = config.getCacheFilename(config.CACHE_HEAP_VALUES, dumpfilename)
+  #F_STACK_O = config.getCacheFilename(config.CACHE_STACK_ADDRS, dumpfilename)
+  #F_STACK_V = config.getCacheFilename(config.CACHE_STACK_VALUES, dumpfilename)
   #log.debug('reading from %s'%(F_VALUES))
   #values = int_array_cache(F_VALUES)
   heap_addrs = int_array_cache(F_HEAP_O)
@@ -143,8 +143,9 @@ def getAllPointers(dumpfilename, mappings):
       records values and pointers address in heap.
   '''
   import pointerfinder  
-  F_HEAP_O = Config.getCacheFilename(Config.CACHE_ALL_PTRS_ADDRS, dumpfilename)
-  F_HEAP_V = Config.getCacheFilename(Config.CACHE_ALL_PTRS_VALUES, dumpfilename)
+  config = mappings.config
+  F_HEAP_O = config.getCacheFilename(config.CACHE_ALL_PTRS_ADDRS, dumpfilename)
+  F_HEAP_V = config.getCacheFilename(config.CACHE_ALL_PTRS_VALUES, dumpfilename)
   heap_addrs = int_array_cache(F_HEAP_O)
   heap_values = int_array_cache(F_HEAP_V)
   if heap_addrs is None or heap_values is None:
@@ -171,9 +172,9 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
   # TODO if linux
   # TODO from haystack.reverse import heapwalker
   import libc.ctypes_malloc
-  
-  f_addrs = Config.getCacheFilename('%x.%s'%(heap.start,Config.CACHE_MALLOC_CHUNKS_ADDRS), dumpfilename)
-  f_sizes = Config.getCacheFilename('%x.%s'%(heap.start,Config.CACHE_MALLOC_CHUNKS_SIZES), dumpfilename)
+  config = mappings.config
+  f_addrs = config.getCacheFilename('%x.%s'%(heap.start,config.CACHE_MALLOC_CHUNKS_ADDRS), dumpfilename)
+  f_sizes = config.getCacheFilename('%x.%s'%(heap.start,config.CACHE_MALLOC_CHUNKS_SIZES), dumpfilename)
   log.debug('reading from %s'%(f_addrs))
   addrs = int_array_cache(f_addrs)
   sizes = int_array_cache(f_sizes)

@@ -8,10 +8,8 @@ import operator
 import os
 import unittest
 
-from haystack.config import Config
-Config.set_word_size(4)
-
 import ctypes
+from haystack import config
 from haystack import memory_mapping
 from haystack.model import LoadableMembersStructure
 from haystack import utils

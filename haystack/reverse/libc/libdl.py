@@ -14,7 +14,6 @@ import ctypes
 log=logging.getLogger('libdl')
 
 from haystack import memory_mapping
-from haystack.config import Config
 
 class Dl_info(ctypes.Structure):
   _fields_ = [
@@ -41,7 +40,7 @@ def reverseLocalFonctionPointerNames(context):
   go through all pointers in librairies
   try to dl_addr the pointers by rebasing.
   '''  
-  fsave = Config.getCacheFilename(Config.CACHE_FUNCTION_NAMES, context.dumpname)
+  fsave = context.config.getCacheFilename(context.config.CACHE_FUNCTION_NAMES, context.dumpname)
   if os.access(fsave, os.F_OK):
     import pickle
     vtable = pickle.load(file(fsave,'rb'))

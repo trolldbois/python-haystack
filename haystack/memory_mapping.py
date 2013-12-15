@@ -36,9 +36,9 @@ import mmap
 from weakref import ref
 
 # haystack
-from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC, formatAddress 
+from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
 from haystack import utils
-from haystack.config import Config
+from haystack import config
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -91,7 +91,8 @@ class MemoryMapping:
      - "repr(mapping)" create a string representation of the mapping,
        useful in list contexts
   """
-  def __init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+  def __init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    self.config = config
     self.start = start
     self.end = end
     self.permissions = permissions
@@ -105,7 +106,7 @@ class MemoryMapping:
       return self.start <= address < self.end
 
   def __str__(self):
-    text = ' '.join([formatAddress(self.start), formatAddress(self.end), self.permissions,
+    text = ' '.join([self.config.formatAddress( self.start), self.config.formatAddress(self.end), self.permissions,
            '0x%0.8x'%(self.offset), '%0.2x:%0.2x'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
     return text
 
@@ -199,8 +200,8 @@ class ProcessMemoryMapping(MemoryMapping):
    - "readArray()": read an array, from local mmap-ed memory if mmap-ed
      useful in list contexts
   """
-  def __init__(self, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+  def __init__(self, config, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._process = ref(process)
     self._local_mmap = None
     self._local_mmap_content = None
@@ -253,8 +254,8 @@ class LocalMemoryMapping(MemoryMapping):
   Local memory mapping.
   The memory space is present in local ctypes space.
   """
-  def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+  def __init__(self, config, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+    MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._local_mmap = (ctypes.c_byte * len(self)).from_address(int(address)) # DEBUG TODO byte or ubyte 
     self._address = ctypes.addressof(self._local_mmap)
     #self._vbase = self.start + self._address # shit, thats wraps up...
@@ -272,7 +273,7 @@ class LocalMemoryMapping(MemoryMapping):
   def readWord(self, vaddr ):
     """Address have to be aligned!"""
     laddr = self.vtop( vaddr )
-    word = Config.WORDTYPE.from_address(long(laddr)).value # is non-aligned a pb ?, indianess is at risk
+    word = self.config.WORDTYPE.from_address(long(laddr)).value # is non-aligned a pb ?, indianess is at risk
     return word
 
   def readBytes1(self, vaddr, size):
@@ -314,7 +315,7 @@ class LocalMemoryMapping(MemoryMapping):
   
   @classmethod
   def fromAddress(cls, memoryMapping, content_address):
-    return cls( content_address, memoryMapping.start, memoryMapping.end, 
+    return cls( memoryMapping.config, content_address, memoryMapping.start, memoryMapping.end, 
             memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
             memoryMapping.inode, memoryMapping.pathname)
 
@@ -322,7 +323,7 @@ class LocalMemoryMapping(MemoryMapping):
   def fromBytebuffer(cls, memoryMapping, content):
     content_array = utils.bytes2array(content, ctypes.c_ubyte)
     content_address = ctypes.addressof(content_array)
-    el = cls( content_address, memoryMapping.start, memoryMapping.end, 
+    el = cls( memoryMapping.config, content_address, memoryMapping.start, memoryMapping.end, 
             memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
             memoryMapping.inode, memoryMapping.pathname)
     el.content_array_save_me_from_gc = content_array
@@ -336,8 +337,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
   :param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
   :param preload mmap the memory dump at init ( default)
   """
-  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
-    MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+  def __init__(self, config, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
+    MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
     self._memdump = memdump
     log.debug('memdump %s'%( memdump))
     self._base = None
@@ -373,7 +374,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
       if hasattr(self._memdump,'fileno'): # normal file. 
-        if Config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+        if self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
           #print 'mmap_hack', self
           #if self.pathname.startswith('/usr/lib'):
           #  raise Exception
@@ -381,7 +382,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
           self._memdump.close()
           self._memdump = None
           # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-          # this is a local memory hack, so Config.WORDTYPE is not involved.
+          # this is a local memory hack, so self.config.WORDTYPE is not involved.
           heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
           self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
         else: # fallback with no creepy hacks
@@ -449,8 +450,8 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   '''
     Don't mmap the memoryMap. use the file on disk to read data.
   '''
-  def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
-    MemoryDumpMemoryMapping.__init__(self, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
+  def __init__(self, config, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+    MemoryDumpMemoryMapping.__init__(self, config, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
     self._local_mmap = LazyMmap(self._memdump)
     log.debug( 'FileBackedMemoryMapping created')
     return
@@ -487,7 +488,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
   def readWord(self, vaddr):
     """Address have to be aligned!"""
     laddr = self.vtop(vaddr)
-    word = Config.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+Config.WORDSIZE], 0).value # is non-aligned a pb ?
+    word = self.config.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+self.config.WORDSIZE], 0).value # is non-aligned a pb ?
     return word
 
   def readArray(self, address, basetype, count):
@@ -513,9 +514,9 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
   '''
     Don't mmap the memoryMap. use the file name on disk to read data.
   '''
-  def __init__(self, memdumpname, start, end, permissions='rwx-', offset=0x0, 
+  def __init__(self, config, memdumpname, start, end, permissions='rwx-', offset=0x0, 
                       major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
-    MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset, 
+    MemoryDumpMemoryMapping.__init__(self, config, None, start, end, permissions, offset, 
                                       major_device, minor_device, inode, pathname, preload=False)
     self._memdumpname = memdumpname
     return 
@@ -563,13 +564,15 @@ class LazyMmap:
 
 
 class Mappings:
-  def __init__(self, lst, filename):
+  def __init__(self, config, lst, filename):
     self.heaps = None
     if type(lst) != list:
       raise TypeError('Please feed me a list')
     self.mappings = lst
     self.name = filename
     self._target_system = None
+    self.config = self.mappings[0].config
+    self.WORDSIZE = self.config.WORDSIZE
   
   def get_context(self, addr):
     mmap = self.getMmapForAddr(addr)
@@ -621,7 +624,13 @@ class Mappings:
     return False
 
   def getHeap(self):
-  	return self.getHeaps()[0]
+    #if len(self.mappings) == 0:
+    #    import code
+    #    code.interact(local=locals())
+    #log.debug('heaps: %s'%(self.heaps))
+    #import code    
+    #code.interact(local=locals())
+    return self.getHeaps()[0]
 
   def getHeaps(self):
     # This does not really exists on win32.
@@ -723,7 +732,10 @@ def readProcessMappings(process):
       match = PROC_MAP_REGEX.match(line)
       if not match:
         raise ProcessError(process, "Unable to parse memory mapping: %r" % line)
+      log.debug('readProcessMappings %s'%( str(match.groups())) )
+      cfg = config.make_config_from_memory_address_string(match.group(1))
       map = ProcessMemoryMapping(
+        cfg,
         process,
         int(match.group(1), 16),
         int(match.group(2), 16),
@@ -737,5 +749,5 @@ def readProcessMappings(process):
   finally:
     if type(mapsfile) is file:
       mapsfile.close()
-  return Mappings(maps, maps[0].pathname)
+  return Mappings(cfg, maps, maps[0].pathname)
 

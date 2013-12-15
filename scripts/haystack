@@ -7,8 +7,11 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __doc__ = '''
-  Structure search and operation on live process.
+Search for struct in memory.
+Memory can be a file dump or a live process.
 
+Output offset and values of possible matches.
+Output type can be txt, json, pickled.
 '''
 
 import argparse

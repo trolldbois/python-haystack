@@ -6,7 +6,6 @@ import numpy
 import os
 import pickle
 
-from haystack.config import Config
 from haystack.reverse import utils
 
 __author__ = "Loic Jaquemet"
@@ -26,6 +25,7 @@ class ReverserContext():
   Add check for context, only on valid heaps ( getHeaps)
   '''
   def __init__(self, mappings, heap):
+    self.config = mappings.config
     self.mappings = mappings
     self.dumpname = mappings.name
     self.heap = heap
@@ -163,8 +163,9 @@ class ReverserContext():
   def cacheLoad(cls, mappings):
     #from haystack.reverse.context import ReverserContext
     dumpname = os.path.normpath(mappings.name)
-    Config.makeCache(dumpname)
-    context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, dumpname)
+    config = mappings.config
+    config.makeCache(dumpname)
+    context_cache = config.getCacheFilename(config.CACHE_CONTEXT, dumpname)
     try:
       context = pickle.load(file(context_cache,'r'))
     except EOFError,e:
@@ -172,6 +173,7 @@ class ReverserContext():
       log.error('Error in the context file. File cleaned. Please restart.')
       raise e
     log.debug('\t[-] loaded my context from cache')
+    context.config = config
     context.mappings = mappings
     context.heap = context.mappings.getMmapForAddr(context._heap_start) 
     
@@ -181,18 +183,18 @@ class ReverserContext():
   
   def save(self):
     # we only need dumpfilename to reload mappings, addresses to reload cached structures
-    context_cache = Config.getCacheFilename(Config.CACHE_CONTEXT, self.dumpname)
+    context_cache = self.config.getCacheFilename(self.config.CACHE_CONTEXT, self.dumpname)
     pickle.dump(self, file(context_cache,'w'))
 
   def reset(self):
     try:
-      os.remove(Config.getCacheFilename(Config.CACHE_CONTEXT, self.dumpname) ) 
+      os.remove(self.config.getCacheFilename(self.config.CACHE_CONTEXT, self.dumpname) ) 
     except OSError,e:
       pass
     try:
-      if not os.access(Config.CACHE_STRUCT_DIR, os.F_OK):
+      if not os.access(self.config.CACHE_STRUCT_DIR, os.F_OK):
         return
-      for r,d,files in os.walk( Config.getCacheFilename(Config.CACHE_STRUCT_DIR, self.dumpname)):
+      for r,d,files in os.walk( self.config.getCacheFilename(self.config.CACHE_STRUCT_DIR, self.dumpname)):
         for f in files:
           os.remove(os.path.join(r,f) )
       os.rmdir(r)
