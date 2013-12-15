@@ -495,7 +495,11 @@ class LoadableMembers(object):
     keepRef(my_self, my_class, ctypes.addressof(self) )
     for field,typ in self.getFields():
       attr = getattr(self,field)
-      member = self._attrToPyObject(attr,field,typ)
+      try:
+        member = self._attrToPyObject(attr,field,typ)
+      except AttributeError as e:
+        log.error('_attrToPyObject AttributeError: %s'%(e))
+        member = None  
       setattr(my_self, field, member)
     # save the original type (me) and the field
     setattr(my_self, '_ctype_', type(self))

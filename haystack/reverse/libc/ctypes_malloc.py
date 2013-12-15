@@ -266,7 +266,7 @@ struct malloc_chunk {
 #  UINT = ctypes.c_uint32
 #elif Config.WORDSIZE == 8:
 #  UINT = ctypes.c_uint64
-UINT = ctypes.c_uint32
+UINT = ctypes.c_uint64
 
 malloc_chunk._fields_ = [
     ( 'prev_size' , UINT ), #  INTERNAL_SIZE_T
