@@ -39,13 +39,12 @@ class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
   ARCHIVE_TYPES = ["dir", "tar","gztar"]
   
-  def __init__(self, _config, pid, dest, archiveType="dir", justStack=False, justHeap=False):
+  def __init__(self, pid, dest, archiveType="dir", justStack=False, justHeap=False):
     self._pid = pid
     self._dest = os.path.normpath(dest)
     self._archive_type = archiveType
     self._just_stack = justStack
     self._just_heap = justHeap
-    self._config = _config
   
   def getMappings(self):
     """Returns the MemoryMappings."""
@@ -146,7 +145,7 @@ class MemoryDumper:
       return
     log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
-    mname = "%s-%s" % (dbg.formatAddress(self._config, m.start), dbg.formatAddress(self._config, m.end))
+    mname = "%s-%s" % (m.config.formatAddress(m.start), m.config.formatAddress(m.end))
     mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
     if self._just_heap or self._just_stack: #dump heap and/or stack
