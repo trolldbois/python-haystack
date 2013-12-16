@@ -39,12 +39,12 @@ class MemoryDumper:
   ''' Dumps a process memory maps to a tgz '''
   ARCHIVE_TYPES = ["dir", "tar","gztar"]
   
-  def __init__(self, pid, dest, archiveType="dir", justStack=False, justHeap=False):
+  def __init__(self, pid, dest, archiveType="dir", stackOnly=False, heapOnly=False):
     self._pid = pid
     self._dest = os.path.normpath(dest)
     self._archive_type = archiveType
-    self._just_stack = justStack
-    self._just_heap = justHeap
+    self._just_stack = stackOnly
+    self._just_heap = heapOnly
     self._config = None
   
   def getMappings(self):
@@ -154,13 +154,18 @@ class MemoryDumper:
     if self._just_heap or self._just_stack: #dump heap and/or stack
       if ( (self._just_heap  and m.pathname == '[heap]') or 
              (self._just_stack and m.pathname == '[stack]') ) :
-        log.debug('Dumping the memorymap content')
+        #import code
+        #code.interact(local=locals())
+        log.debug('Dumping the memorymap content %s'%(m))
         with open(mmap_fname,'wb') as mmap_fout:
           mmap_fout.write(m.mmap().getByteBuffer())
+        log.debug( hex(self.process.readWord( 0x1cd1030 )) )
+        log.debug( repr(m.mmap().getByteBuffer()[:100]) )
     else: #dump all the memory maps
-      log.debug('Dumping the memorymap content')
+      log.debug('Dumping the memorymap content 2')
       with open(mmap_fname,'wb') as mmap_fout:
         mmap_fout.write(m.mmap().getByteBuffer())
+      log.debug( repr(m.mmap().getByteBuffer()[:100]) )
     #dump all the memory maps metadata
     log.debug('Dumping the memorymap metadata')
     self.index.write('%s\n'%(m) )
@@ -179,7 +184,7 @@ class MemoryDumper:
     return
 
 
-def dump(pid, outfile, typ="dir", heapOnly=False, stackOnly=False):
+def dump(pid, outfile, typ="dir", stackOnly=False, heapOnly=False):
   """Dumps a process memory mappings to Haystack dump format."""
   dumper = MemoryDumper(pid, outfile, typ, stackOnly, heapOnly )
   dumper.connectProcess()
@@ -204,7 +209,7 @@ def argparser():
   return dump_parser
 
 def main(argv):
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG)
   parser = argparser()
   opts = parser.parse_args(argv)
   opts.func(opts)

@@ -206,7 +206,8 @@ class ProcessMemoryMapping(MemoryMapping):
     self._local_mmap = None
     self._local_mmap_content = None
     # read from process by default
-    self._base = self._process()
+    #self._base = self._process()
+    self._base = process
   
   def readWord(self, address):
     word = self._base.readWord(address)
@@ -229,11 +230,20 @@ class ProcessMemoryMapping(MemoryMapping):
     
   def mmap(self):
     ''' mmap-ed access gives a 20% perf increase on by tests '''
+    #log.debug('Mmap %s'%(self))
+    #log.debug('start %x'%(self.start))
+    #log.debug( hex(self._process().readWord( 0x1cd1030 )) )
+    #log.debug( self.readWord(0x1cd1030) )
+    #import code    
     if not self.isMmaped():
       self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
       self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+      #self._local_mmap_content = (ctypes.c_ubyte*len(self)).from_buffer_copy(self._process().readArray(self.start, ctypes.c_ubyte, len(self) )) # keep ref
       self._local_mmap = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
       self._base = self._local_mmap
+      #log.debug( self.readWord(0x1cd1030) )
+
+    #code.interact(local=locals())    
     return self._local_mmap
 
   def unmmap(self):
@@ -374,7 +384,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
     if self._base is None:
       if hasattr(self._memdump,'fileno'): # normal file. 
-        if self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+        if False and self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
           #print 'mmap_hack', self
           #if self.pathname.startswith('/usr/lib'):
           #  raise Exception
