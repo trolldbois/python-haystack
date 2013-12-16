@@ -23,11 +23,11 @@ import logging
 
 log = logging.getLogger('utils')
 
-def formatAddress(cfg, addr): 
-  if cfg.WORDSIZE == 4:
-    return u"0x%08x" % addr
-  else:
-    return u"0x%016x" % addr
+#def formatAddress(cfg, addr): 
+#  if cfg.WORDSIZE == 4:
+#    return u"0x%08x" % addr
+#  else:
+#    return u"0x%016x" % addr
 
 def unpackWord(cfg, bytes, endianess='@'):
   if cfg.WORDSIZE == 8:

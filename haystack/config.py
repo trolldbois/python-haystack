@@ -133,6 +133,12 @@ class ConfigClass():
     else:
       return u"0x%016x" % addr
 
+def make_config_wordsize(size):
+    """  """
+    cfg = ConfigClass()
+    cfg.WORDSIZE = size
+    return cfg
+
 
 def make_config_from_memdump(dumpname):
     """ Load a memory dump meta data """

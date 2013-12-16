@@ -45,6 +45,7 @@ class MemoryDumper:
     self._archive_type = archiveType
     self._just_stack = justStack
     self._just_heap = justHeap
+    self._config = None
   
   def getMappings(self):
     """Returns the MemoryMappings."""
@@ -59,6 +60,7 @@ class MemoryDumper:
       raise IOError
       # ptrace exception is raised before that
     self.mappings = memory_mapping.readProcessMappings(self.process)
+    self._config = self.mappings.config
     log.debug('mappings read. Dropping ptrace on pid.')
     return
 
@@ -143,9 +145,10 @@ class MemoryDumper:
     elif m.pathname in ['[vdso]','[vsyscall]']:
       log.debug('Ignoring system mapping')
       return
-    log.debug('Dumping %s to %s'%(m,tmpdir))
+    #log.debug('Dumping %s to %s'%(m,tmpdir))
     # dump files to tempdir
-    mname = "%s-%s" % (m.config.formatAddress(m.start), m.config.formatAddress(m.end))
+    # FIXME, word size is not necessarily same as default host word size 
+    mname = "%s-%s" % (self._config.formatAddress(m.start), self._config.formatAddress(m.end))
     mmap_fname = os.path.join(tmpdir, mname)
     # we are dumping the memorymap content
     if self._just_heap or self._just_stack: #dump heap and/or stack

@@ -727,13 +727,14 @@ def readProcessMappings(process):
     raise ProcessError(process, "Unable to read process maps: %s" % err)
   
   try:
+    # FIXME - wordsize if not necesaarly default arch wordsize
+    cfg = config.make_config_wordsize(ctypes.sizeof(ctypes.c_void_p))
     for line in mapsfile:
       line = line.rstrip()
       match = PROC_MAP_REGEX.match(line)
       if not match:
         raise ProcessError(process, "Unable to parse memory mapping: %r" % line)
       log.debug('readProcessMappings %s'%( str(match.groups())) )
-      cfg = config.make_config_from_memory_address_string(match.group(1))
       map = ProcessMemoryMapping(
         cfg,
         process,

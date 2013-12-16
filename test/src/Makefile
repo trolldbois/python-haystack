@@ -10,8 +10,7 @@ CPPFLAGS = -O2 -g -Wall
 
 pid=
 
-H2XML=h2xml.py
-XML2PY=xml2py.py
+C2PY=clang2py
 
 SRCS := $(wildcard *.c *.cpp) 
 OBJS := $(patsubst %.c,%,$(SRCS))
@@ -49,8 +48,11 @@ py: $(PY)
 %.xml: test-%.cpp
 	$(H2XML) -I. `pkg-config --cflags QtGui` $< -o $@
 
-%.py: %.xml
-	$(XML2PY) -kdst $< -o $@
+%.py: test-%.c 
+	$(C2PY) -k dst $< -o $@
+
+%.py: test-%.cpp 
+	$(C2PY) -k dst $< -o $@
 
 
 dumps: $(SRCS) $(DUMPS) $(OBJS) 

@@ -62,7 +62,7 @@ if platform.system() != 'Windows':
     ProcError = ProcessError
     HAS_PROC=True
 
-  formatAddress = ptrace.ctypes_tools.formatAddress #TODO move to utils
+  #formatAddress = ptrace.ctypes_tools.formatAddress #TODO move to utils
 
 else:
   import ctypes
@@ -254,11 +254,12 @@ else:
     pass
   ProcError=ProcessError
   
-  def formatAddress(addr): #TODO move to utils
-    if ctypes.sizeof(ctypes.c_void_p) == 4:
-      return u"0x%08x" % addr
-    else:
-      return u"0x%016x" % addr
+#def formatAddress(addr): #TODO move to utils
+#    if ctypes.sizeof(ctypes.c_void_p) == 4:
+#        raise IOError('formataddress x32')
+#        return u"0x%08x" % addr
+#    else:
+#        return u"0x%016x" % addr
 
 
 if hasattr(ctypes, '__haystack_c_char_p'):
