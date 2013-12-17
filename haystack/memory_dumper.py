@@ -15,10 +15,13 @@ import tempfile
 import time
 import zipfile
 
+
 from haystack import dbg
 from haystack import memory_mapping
 from haystack import argparse_utils
 from haystack import config
+
+#import code
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -154,18 +157,12 @@ class MemoryDumper:
     if self._just_heap or self._just_stack: #dump heap and/or stack
       if ( (self._just_heap  and m.pathname == '[heap]') or 
              (self._just_stack and m.pathname == '[stack]') ) :
-        #import code
-        #code.interact(local=locals())
-        log.debug('Dumping the memorymap content %s'%(m))
         with open(mmap_fname,'wb') as mmap_fout:
           mmap_fout.write(m.mmap().getByteBuffer())
-        log.debug( hex(self.process.readWord( 0x1cd1030 )) )
-        log.debug( repr(m.mmap().getByteBuffer()[:100]) )
     else: #dump all the memory maps
       log.debug('Dumping the memorymap content 2')
       with open(mmap_fname,'wb') as mmap_fout:
         mmap_fout.write(m.mmap().getByteBuffer())
-      log.debug( repr(m.mmap().getByteBuffer()[:100]) )
     #dump all the memory maps metadata
     log.debug('Dumping the memorymap metadata')
     self.index.write('%s\n'%(m) )

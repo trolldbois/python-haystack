@@ -230,20 +230,17 @@ class ProcessMemoryMapping(MemoryMapping):
     
   def mmap(self):
     ''' mmap-ed access gives a 20% perf increase on by tests '''
-    #log.debug('Mmap %s'%(self))
-    #log.debug('start %x'%(self.start))
-    #log.debug( hex(self._process().readWord( 0x1cd1030 )) )
-    #log.debug( self.readWord(0x1cd1030) )
-    #import code    
+    # DO NOT USE ptrace.process.readArray on 64 bits.
+    # It breaks stuff.
+    # probably a bad cast statement on c_char_p
+    # FIXME: the big perf increase is now gone. Howto cast pointer to bytes into ctypes array ?
     if not self.isMmaped():
-      self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
-      self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
-      #self._local_mmap_content = (ctypes.c_ubyte*len(self)).from_buffer_copy(self._process().readArray(self.start, ctypes.c_ubyte, len(self) )) # keep ref
+      #self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+      #self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+      self._local_mmap_content = utils.bytes2array( self._process().readBytes(self.start, len(self)), ctypes.c_ubyte )
+      log.debug('type array %s'%(type(self._local_mmap_content)))
       self._local_mmap = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
       self._base = self._local_mmap
-      #log.debug( self.readWord(0x1cd1030) )
-
-    #code.interact(local=locals())    
     return self._local_mmap
 
   def unmmap(self):
@@ -266,7 +263,7 @@ class LocalMemoryMapping(MemoryMapping):
   """
   def __init__(self, config, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
     MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-    self._local_mmap = (ctypes.c_byte * len(self)).from_address(int(address)) # DEBUG TODO byte or ubyte 
+    self._local_mmap = (ctypes.c_ubyte * len(self)).from_address(int(address)) # DEBUG TODO byte or ubyte 
     self._address = ctypes.addressof(self._local_mmap)
     #self._vbase = self.start + self._address # shit, thats wraps up...
     self._bytebuffer = None

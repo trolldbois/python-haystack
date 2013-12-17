@@ -137,8 +137,8 @@ __status__ = "Production"
 log = logging.getLogger('model')
 
 # replace c_char_p so we can have our own CString 
-if ctypes.c_char_p.__name__ == 'c_char_p':
-  ctypes.original_c_char_p = ctypes.c_char_p
+#if ctypes.c_char_p.__name__ == 'c_char_p':
+#  ctypes.original_c_char_p = ctypes.c_char_p
 
 # keep orig class and Use our model instead as base Structure class
 if ctypes.Structure.__name__ == 'Structure':
@@ -264,7 +264,8 @@ class CString(ctypes.Union):
   it's basically a Union of a string and a pointer.
   '''
   _fields_=[
-  ("string", ctypes.original_c_char_p),
+  #("string", ctypes.original_c_char_p),
+  ("string", ctypes.c_char_p),
   ("ptr", ctypes.POINTER(ctypes.c_ubyte) )
   ]
   def toString(self):
@@ -392,8 +393,8 @@ LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( bas
 
 
 # replace c_char_p - it can handle memory parsing without reading it 
-if ctypes.c_char_p.__name__ == 'c_char_p':
-  ctypes.c_char_p = CString
+#if ctypes.c_char_p.__name__ == 'c_char_p':
+#  ctypes.c_char_p = CString
 
 # switch class - we need our methods on ctypes.Structures for generated classes to work  
 if ctypes.Structure.__name__ == 'Structure':

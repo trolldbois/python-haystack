@@ -296,7 +296,8 @@ def isVoidPointerType(objtype):
     if objtype._subtype_ == type(None):
       return True 
   if not isinstance(objtype, type):  return False
-  return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
+  #return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
+  return objtype in [ctypes.c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
 
 def isBasicTypeArray(obj):
   ''' Checks if an object is a array of basic types.
