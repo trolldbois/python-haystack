@@ -69,14 +69,15 @@ int main(){
   handle = (void *)1;
   //handle = dlopen ("libQtCore.so", RTLD_NOW|RTLD_GLOBAL);
   //handle = dlopen ("libQtGui.so", RTLD_NOW|RTLD_GLOBAL);
-  handle = dlopen ("libQtNetwork.so", RTLD_NOW|RTLD_GLOBAL);
+  //handle = dlopen ("libQtNetwork.so", RTLD_NOW|RTLD_GLOBAL);
   //handle = dlopen ("libQtSvg.so", RTLD_NOW|RTLD_GLOBAL);
+  handle = dlopen ("libdaemon.so.0", RTLD_NOW|RTLD_GLOBAL);
   if (handle == NULL){
-    fprintf (stderr, "cannot load: lib.so\n");
+    fprintf (stderr, "cannot load: libdaemon.so.0\n");
     return -1;  
   }
   
-  printf("_rtld_global 0x%lx\n",(unsigned long )&_rtld_global);
+  printf("_rtld_global 0x%llx\n",(unsigned long long )&_rtld_global);
   //printf("_rtld_global._dl_initfirst 0x%x\n",(&_rtld_global) + offsetof(struct rtld_global, _dl_initfirst) );
   
   //printf("_rtld_local 0x%x\n",(unsigned int )&_rtld_local);

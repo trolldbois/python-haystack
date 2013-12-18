@@ -28,26 +28,6 @@ def main():
   memory_dumper.dump(pid1.pid, dumpname)
   pid1.kill()
 
-def mainold():
-  fn = file('/dev/null')
-  for n in xrange(1,7):
-    app = './test-ctypes%d'%(n)
-    dumpname = app+'.dump'
-    try:
-      shutil.rmtree(dumpname)
-    except:
-      pass
-    out = file(app+".stdout",'w')
-    #pid1 = subprocess.Popen([app], stdout=fn.fileno())
-    pid1 = subprocess.Popen([app], bufsize=-1, stdout=out.fileno())
-    time.sleep(0.9) # 
-    #print('   **DUMP** ', pid1)
-    memory_dumper.dump(pid1.pid, dumpname)
-    pid1.kill()
-
-#lines=file('/home/jal/Compil/python-haystack/test/src/test-ctypes4.stdout').readlines()
-#offsets = [ (line.split(' ')[1], hex(int(line.split(' ')[2]))) for line in lines[1:]]
-#[('vector_obj', '0x88a1008'), ('list_int', '0x88a1168'), ('list_obj', '0x88a1218'), ('vector_int', '0x88a1378'), ('vector_obj', '0x88a1398')]
 
 if __name__ == '__main__':
   main()
