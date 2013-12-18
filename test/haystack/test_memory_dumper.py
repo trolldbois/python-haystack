@@ -62,41 +62,59 @@ class TestMemoryDumper(unittest.TestCase):
     compare mappings files which should be the same
   """
 
-  def setUp(self):
-    self.devnull = file('/dev/null')
-    self.process = run_app_test('test1', stdout=self.devnull.fileno())
-    time.sleep(0.1)
-    self.tgts = []
+  @classmethod
+  def setUpClass(cls):
+    # run make.py
+    import os, sys
+    if not os.geteuid()==0:
+        raise RuntimeError("Memory dump test can only be run as root. Please sudo")
 
-  def _renew_process(self):
-    self.process.kill()
-    self.process = run_app_test('test1', stdout=self.devnull.fileno())
-    time.sleep(0.1)
+  def setUp(self):
+    self.tgts = []
+    self.process = None
 
   def tearDown(self):
-    self.process.kill()
+    if self.process is not None:
+        try:
+            self.process.kill()
+        except OSError as e:
+            pass
     for f in self.tgts:
       if os.path.isfile(f):
         os.remove(f)
       elif os.path.isdir(f):
         shutil.rmtree(f)
 
+
   def _make_tgt_dir(self):
     tgt = tempfile.mkdtemp()
     self.tgts.append(tgt)
     return tgt
 
-  def _make_tgt_file(self):
-    fd, tgt = tempfile.mkstemp()
-    os.close(fd)
-    self.tgts.append(tgt)
-    return tgt
+  def _renew_process(self):
+    self.process.kill()
+    self.process = run_app_test('test3', stdout=self.devnull.fileno())
+    time.sleep(0.1)
+
+  def test_mappings_file(self):
+    '''Checks if memory_dumper make a mappings index file'''
+    tgt1 = self._make_tgt_dir()
+    self.devnull = file('/dev/null')
+    self.process = run_app_test('test1', stdout=self.devnull.fileno())
+    time.sleep(0.1)
+    out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", False, True)
+    self.assertIsNotNone(file( '%s/mappings'%out1))
+    self.assertGreater(len(file( '%s/mappings'%out1).readlines()), 15, 'the mappings file looks too small')
 
   def test_dumptype_dir(self):
+    '''Checks if dumping to folder works'''
     tgt1 = self._make_tgt_dir()
     tgt2 = self._make_tgt_dir()
     tgt3 = self._make_tgt_dir()
 
+    self.devnull = file('/dev/null')
+    self.process = run_app_test('test3', stdout=self.devnull.fileno())
+    time.sleep(0.1)
     out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", False, True)
     self.assertEquals(out1, tgt1) # same name
 
@@ -133,56 +151,39 @@ class TestMemoryDumper(unittest.TestCase):
     
     return 
 
-  def _test_type_file(self, typ):
-    tgt1 = self._make_tgt_file()
-    tgt2 = self._make_tgt_file()
-    tgt3 = self._make_tgt_file()
+  def _setUp_known_pattern(self):
+    self.devnull = file('/dev/null')
+    self.process = run_app_test('test3', stdout=subprocess.PIPE)
+    time.sleep(0.1)
+    tgt = self._make_tgt_dir()
+    self.out = memory_dumper.dump(self.process.pid, tgt, 'dir', False, True)
+    self.process.kill()
+    return self.process.communicate()
+  
+  def test_known_pattern_python(self):
+    (stdoutdata, stderrdata) = self._setUp_known_pattern()
+    # get offset from test program    
+    offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
+    offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
+    # check offsets in memory dump
+    import haystack.abouchet
+    for offset in offsets_1:
+        instance,found = haystack.abouchet.show_dumpname('test.src.test_ctypes3.struct_Node', self.out, int(offset,16), rtype='python')
+        self.assertTrue(found)
+        self.assertEquals(instance.val1, 0xdeadbeef)
+        self.assertNotEquals(instance.ptr2, 0x0)
+        pass
+        
+    for offset in offsets_3:
+        instance,found = haystack.abouchet.show_dumpname('test.src.test_ctypes3.struct_test3', self.out, int(offset,16), rtype='python')
+        self.assertTrue(found)
+        self.assertEquals(instance.val1, 0xdeadbeef)
+        self.assertEquals(instance.val1b, 0xdeadbeef)
+        self.assertEquals(instance.val2, 0x10101010)
+        self.assertEquals(instance.val2b, 0x10101010)
+        pass
+        
 
-    out1 = memory_dumper.dump(self.process.pid, tgt1, typ, False, True)
-    self.assertEquals(out1, tgt1) # same name
-
-    self._renew_process()
-    out2 = memory_dumper.dump(self.process.pid, tgt2, typ, True, True)
-    self.assertEquals(out2, tgt2) # same name
-
-    self._renew_process()
-    out3 = memory_dumper.dump(self.process.pid, tgt3, typ, False, False)
-    self.assertEquals(out3, tgt3) # same name
-
-    size1 = os.path.getsize(tgt1)
-    size2 = os.path.getsize(tgt2)
-    size3 = os.path.getsize(tgt3)
-
-    self.assertGreater(size1, 500) # not a null archive
-    self.assertGreater(size2, size1) # more mappings
-    self.assertGreater(size3, size2) # more mappings
-
-    # test opening by dump_loader
-    from haystack import dump_loader
-    from haystack import memory_mapping
-    mappings1 = dump_loader.load(out1)
-    self.assertIsInstance( mappings1, memory_mapping.Mappings)
-
-    mappings2 = dump_loader.load(out2)
-    mappings3 = dump_loader.load(out3)
-    
-    pathnames1 = [m.pathname for m in mappings1]
-    pathnames2 = [m.pathname for m in mappings2]
-    pathnames3 = [m.pathname for m in mappings3]
-    self.assertEquals(pathnames1, pathnames2)
-    self.assertEquals(pathnames3, pathnames2)
-
-    return 
-
-  # @deprecated
-  #def test_dumptype_tar(self):
-  #  self._test_type_file("tar")
-  #  return 
-
-  # @deprecated
-  #def test_dumptype_gztar(self):
-  #  self._test_type_file("gztar")
-  #  return 
 
 
 if __name__ == '__main__':
