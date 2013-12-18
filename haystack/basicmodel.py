@@ -485,8 +485,11 @@ class LoadableMembers(object):
     reference should be handled nicely.
     '''
     # get self class.
-    #log.debug("%s %s %s_py"%(self.__class__.__module__, sys.modules[self.__class__.__module__], self.__class__.__name__) )
-    my_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
+    try:
+        my_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
+    except AttributeError as e:
+        log.warning('did you forget to register your python structures ?')
+        raise
     my_self = my_class()
     #keep ref
     if hasRef(my_class, ctypes.addressof(self) ):

@@ -334,27 +334,29 @@ def createPOPOClasses( targetmodule ):
     thoses will be used to translate non pickable ctypes into POPOs.
   '''
   _created=0
-  for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
-    if typ.__module__.startswith(targetmodule.__name__):
-      kpy = type('%s.%s_py'%(targetmodule.__name__, klass),( basicmodel.pyObj ,),{})
+  for name,klass in inspect.getmembers(targetmodule, inspect.isclass):
+    if issubclass(klass, LoadableMembers) and klass is not LoadableMembers: 
+      # Why restrict on module name ?
+      # we only need to register loadablemembers (and basic ctypes ? )
+      #if klass.__module__.startswith(targetmodule.__name__):      
+      kpy = type('%s.%s_py'%(targetmodule.__name__, name),( basicmodel.pyObj ,),{})
       # add the structure size to the class
-      #if type(typ) == type(LoadableMembers) or type(typ) == type( ctypes.Union) :
-#      if type(typ) == type(LoadableMembersStructure) or type(typ) == type( ctypes.Union) :
-      if issubclass(typ, LoadableMembers ) :
-        setattr(kpy, '_len_',ctypes.sizeof(typ) )
+      if issubclass(klass, LoadableMembers ) : # FIXME doh
+        log.debug(klass)
+        setattr(kpy, '_len_',ctypes.sizeof(klass) )
       else:
         setattr(kpy, '_len_', None )
       # we have to keep a local (model) ref because the class is being created here.
       # and we have a targetmodule ref. because it's asked.
       # and another ref on the real module for the basic type, because, that is probably were it's gonna be used.
-      setattr(sys.modules[__name__], '%s.%s_py'%(targetmodule.__name__, klass), kpy )
-      #setattr(sys.modules[__name__], '%s_py'%(klass), kpy )
-      setattr(targetmodule, '%s_py'%(klass), kpy )
+      setattr(sys.modules[__name__], '%s.%s_py'%(targetmodule.__name__, name), kpy )
+      #setattr(sys.modules[__name__], '%s_py'%(name), kpy )
+      setattr(targetmodule, '%s_py'%(name), kpy )
       _created+=1
-      if typ.__module__ != targetmodule.__name__: # copy also to generated
-        setattr(sys.modules[typ.__module__], '%s_py'%(klass), kpy )
+      if klass.__module__ != targetmodule.__name__: # copy also to generated
+        setattr(sys.modules[klass.__module__], '%s_py'%(name), kpy )
         #log.debug("Created %s_py"%klass)
-  log.debug('created %d POPO types'%( _created))
+  log.debug('created %d POPO types in %s'%( _created, targetmodule.__name__))
   return
 
 def registerModule( targetmodule ):
@@ -371,9 +373,9 @@ def registerModule( targetmodule ):
     log.warning('Module %s already registered. Skipping.'%(targetmodule))
     return
   _registered = 0
-  for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
-    if typ.__module__.startswith(targetmodule.__name__) and (
-        issubclass(typ, ctypes.Structure) or issubclass(typ, ctypes.Union)) :
+  for name,klass in inspect.getmembers(targetmodule, inspect.isclass):
+    if klass.__module__.startswith(targetmodule.__name__) and (
+        issubclass(klass, ctypes.Structure) or issubclass(klass, ctypes.Union)) :
       _registered += 1
   if _registered == 0:
     log.warning('No class found. Maybe you need to model.copyGeneratedClasses ?')
