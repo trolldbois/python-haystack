@@ -9,9 +9,9 @@ import sys
 from haystack import model
 from haystack.model import RangeValue,NotNull,CString, IgnoreMember
 
-from test.src import ctypes3
+from test.src import ctypes3_gen
 
-model.copyGeneratedClasses(ctypes3, sys.modules[__name__])
+model.copyGeneratedClasses(ctypes3_gen, sys.modules[__name__])
 # register all classes to haystack
 # create plain old python object from ctypes.Structure's, to pickle them
 model.registerModule(sys.modules[__name__])
