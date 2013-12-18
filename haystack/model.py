@@ -316,8 +316,9 @@ def copyGeneratedClasses(src, dst):
   _registered=0
   for (name, klass) in inspect.getmembers(src, inspect.isclass):
     if issubclass(klass, LoadableMembers): 
-      if klass.__module__.endswith('%s_generated'%(__module_name) ) :
+      #if klass.__module__.endswith('%s_generated'%(__module_name) ) :
         setattr(dst, name, klass)
+        log.debug("setattr(%s,%s,%s)"%(dst.__name__,name, klass))
         _loaded+=1
     else:
       #log.debug("%s - %s"%(name, klass))
@@ -365,14 +366,17 @@ def registerModule( targetmodule ):
   
   Creates POPO's to be able to unpickle ctypes.
   '''
+  log.info('registering module %s'%(targetmodule))
   if targetmodule in registeredModules():
     log.warning('Module %s already registered. Skipping.'%(targetmodule))
     return
   _registered = 0
   for klass,typ in inspect.getmembers(targetmodule, inspect.isclass):
-    if typ.__module__.startswith(targetmodule.__name__) and issubclass(typ, ctypes.Structure):
-      #register( typ )
+    if typ.__module__.startswith(targetmodule.__name__) and (
+        issubclass(typ, ctypes.Structure) or issubclass(typ, ctypes.Union)) :
       _registered += 1
+  if _registered == 0:
+    log.warning('No class found. Maybe you need to model.copyGeneratedClasses ?')
   # create POPO's
   createPOPOClasses( targetmodule )
   __book.addModule(targetmodule)
