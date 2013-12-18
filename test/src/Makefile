@@ -18,7 +18,7 @@ OBJS := $(patsubst %.cpp,%,$(OBJS))
 
 DUMPS := $(patsubst %,%.dump,$(OBJS))
 OUTLOGS := $(patsubst %,%.stdout,$(OBJS))
-PY := $(patsubst test-%,%.py,$(OBJS))
+PY := $(patsubst test-%,%_gen.py,$(OBJS))
 
 .PHONY: 
 	
@@ -48,10 +48,10 @@ py: $(PY)
 %.xml: test-%.cpp
 	$(H2XML) -I. `pkg-config --cflags QtGui` $< -o $@
 
-%.py: test-%.c 
+%_gen.py: test-%.c 
 	$(C2PY) -k dst $< -o $@
 
-%.py: test-%.cpp 
+%_gen.py: test-%.cpp 
 	$(C2PY) -k dst $< -o $@
 
 
