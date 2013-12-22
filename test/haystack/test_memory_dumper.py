@@ -182,6 +182,33 @@ class TestMemoryDumper(unittest.TestCase):
         self.assertEquals(instance.val2, 0x10101010)
         self.assertEquals(instance.val2b, 0x10101010)
         pass
+
+  def test_known_pattern_string(self):
+    (stdoutdata, stderrdata) = self._setUp_known_pattern()
+    # get offset from test program    
+    offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
+    offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
+    # check offsets in memory dump
+    import haystack.abouchet
+    for offset in offsets_3:
+        ret = haystack.abouchet.show_dumpname('test.src.test_ctypes3.struct_test3', self.out, int(offset,16), rtype='string')
+        self.assertIn( '"val1": 3735928559L', ret)
+        self.assertIn( '"val2": 269488144L', ret)
+        self.assertIn( '"val2b": 269488144L', ret)
+        self.assertIn( '"val1b": 3735928559L', ret)
+        self.assertIn( 'True', ret)
+        pass
+
+  def test_known_pattern_json(self):
+    (stdoutdata, stderrdata) = self._setUp_known_pattern()
+    # get offset from test program    
+    offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
+    offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
+    # check offsets in memory dump
+    import haystack.abouchet
+    for offset in offsets_3:
+        self.assertRaises(ValueError, haystack.abouchet.show_dumpname, 'test.src.test_ctypes3.struct_test3', self.out, int(offset,16), rtype='json' )
+        pass
         
 
 
