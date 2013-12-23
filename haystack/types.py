@@ -1,16 +1,22 @@
+import sys
 
+__PROXIES = {}
 
 def reload_ctypes(longsize, pointersize, longdoublesize):
     """Imports a proxy to ctypes modules tunes to return types adapted to a 
     target architecture"""
+    if (longsize, pointersize, longdoublesize) in __PROXIES:
+        instance = __PROXIES[(longsize, pointersize, longdoublesize)]
+        set_ctypes_module(instance)
+        return instance
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
+    __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
 
 def set_ctypes_module(ctypesproxy):
     """Change the global ctypes module to a specific proxy instance"""
     if not isinstance(ctypesproxy, CTypesProxy):
         raise TypeError('CTypesProxy instance expected.')
-    import sys
     sys.modules['ctypes'] = ctypesproxy
     return
 
@@ -28,14 +34,13 @@ class CTypesProxy(object):
 
     By default do not load this in model
     """
-    def __init__(longsize, pointersize, longdoublesize):
+    def __init__(self, longsize, pointersize, longdoublesize):
         """Proxies 'the real' ctypes."""
-        self.__proxy = True
+        self.proxy = True
         self.__longsize = longsize
         self.__pointersize = pointersize
         self.__longdoublesize = longdoublesize
         # remove all refs to the ctypes modules
-        import sys
         if hasattr(sys.modules, 'ctypes'):
             del sys.modules['ctypes']
         # import the real one
@@ -56,6 +61,7 @@ class CTypesProxy(object):
         self.__set_long()
         self.__set_float()
         self.__set_pointer()
+        self.__set_records()
         return
 
     def __set_void(self):
@@ -133,9 +139,64 @@ class CTypesProxy(object):
         self.POINTER = POINTER_T
         return
 
+    def __set_records(self):
+        """Replaces ctypes.Structure and ctypes.Union with their LoadableMembers
+        counterparts. Add a CString type."""
+        class CString(self.__real_ctypes.Union):
+            """
+            This is our own implementation of a string for ctypes.
+            ctypes.c_char_p can not be used for memory parsing, as it tries to load 
+            the string itself without checking for pointer validation.
+
+            it's basically a Union of a string and a pointer.
+            """
+            _fields_=[
+            #("string", self.__real_ctypes.original_c_char_p),
+            ("string", self.c_char_p),
+            ("ptr", self.POINTER(self.c_ubyte) )
+            ]
+            def toString(self):
+                if not bool(self.ptr):
+                    return "<NULLPTR>"
+                if hasRef(CString, getaddress(self.ptr)):
+                    return getRef(CString, getaddress(self.ptr) )
+                log.debug('This CString was not in cache - calling toString was not a good idea')
+                return self.string
+                pass
+        # and there we have it. We can load basicmodel
+        self.CString = CString
+        
+        ## change LoadableMembers structure given the loaded plugins
+        import basicmodel
+        if True:
+            import listmodel
+            heritance = tuple([listmodel.ListModel,basicmodel.LoadableMembers])
+        else:
+            heritance = tuple([basicmodel.LoadableMembers])
+        self.LoadableMembers = type('LoadableMembers', heritance, {})
+
+        class LoadableMembersUnion(self.__real_ctypes.Union, self.LoadableMembers):
+            pass
+        class LoadableMembersStructure(self.__real_ctypes.Structure, self.LoadableMembers):
+            pass
+        # create local POPO ( lodableMembers )
+        #createPOPOClasses(sys.modules[__name__] )
+        self.LoadableMembersStructure_py = type('%s.%s_py'%(__name__, LoadableMembersStructure),( basicmodel.pyObj ,),{})
+        self.LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( basicmodel.pyObj ,),{})
+        # register LoadableMembers 
+
+        # we need model to be initialised.
+        self.Structure = LoadableMembersStructure
+        self.Union = LoadableMembersUnion
+        return
+
+
     #import sys
     #from inspect import getmembers, isclass
     #self = sys.modules[__name__]
     def _p_type(s):
         """CHECKME: Something about self reference in structure fields in ctypeslib"""
         return dict(getmembers(self, isclass))[s]
+
+
+

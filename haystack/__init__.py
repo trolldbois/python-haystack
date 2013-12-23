@@ -29,6 +29,9 @@ __all__ = [
   'refresh'
 ]
 
+# in any haystack import, we need to ensure the model is loaded.
+import model
+
 # DEFINE the API.
 import abouchet
 

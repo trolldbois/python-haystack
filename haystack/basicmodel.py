@@ -16,7 +16,8 @@ import numbers
 import sys
 
 from haystack.utils import *
-from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, CString, getRefByAddr
+from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, getRefByAddr
+from ctypes import CString
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -398,7 +399,7 @@ class LoadableMembers(object):
       if not bool(attr) :
         s=prefix+'"%s": 0x%lx,\n'%(field, getaddress(attr) )   # only print address/null
       elif isVoidPointerType(attrtype) :
-        s=prefix+'"%s": 0x%lx, #(FELD NOT LOADED: void pointer) \n'%(field, attr )   # only print address/null
+        s=prefix+'"%s": 0x%0.16lx, #(FIELD NOT LOADED: void pointer) \n'%(field, attr )   # only print address/null
       elif not is_address_local(attr) :
         s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, getaddress(attr) )   # only print address in target space
       else:

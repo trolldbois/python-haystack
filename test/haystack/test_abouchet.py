@@ -120,7 +120,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+  logging.basicConfig( stream=sys.stdout, level=logging.INFO )
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)

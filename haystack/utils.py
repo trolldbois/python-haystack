@@ -21,6 +21,8 @@ from struct import unpack
 
 import logging
 
+print ctypes.proxy
+
 log = logging.getLogger('utils')
 
 #def formatAddress(cfg, addr): 
@@ -331,7 +333,7 @@ def isCStringPointer(objtype):
   #return obj.__class__.__name__ == 'CString'
   if not isinstance(objtype, type):  return False
   import haystack
-  return issubclass(objtype, haystack.model.CString) 
+  return issubclass(objtype, ctypes.CString) 
   
 
 
