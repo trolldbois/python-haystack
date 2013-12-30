@@ -219,14 +219,14 @@ class TestBasicFunctions(unittest.TestCase):
         self._testMe( ctypes.is_function_type, valids, invalids)
         return 
 
-    def test_is_array_to_basic_instance(self):
+    def test_is_array_of_basic_instance(self):
         valids = [arra1(), arra5()]
         invalids = [ v for v in self.tests if v not in valids]
         invalids.extend([ arra2(), arra3(), arra4(), ] )
         for var in valids:
-            self.assertTrue( ctypes.is_array_to_basic_instance( var ), var)
+            self.assertTrue( ctypes.is_array_of_basic_instance( var ), var)
         for var in invalids:
-            self.assertFalse( ctypes.is_array_to_basic_instance( var ), var )
+            self.assertFalse( ctypes.is_array_of_basic_instance( var ), var )
         return 
 
     def test_is_array_type(self):

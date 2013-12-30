@@ -295,7 +295,7 @@ class CTypesProxy(object):
         # FIXME. is it used for loadablemembers detection or for ctypes VS POPO
         return issubclass(type(obj), self.get_real_ctypes_member('Structure'))
 
-    def is_array_to_basic_instance(self, obj):
+    def is_array_of_basic_instance(self, obj):
         """Checks if an object is a array of basic types.
         It checks the type of the first element.
         The array should not be null :).
