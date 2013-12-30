@@ -36,12 +36,10 @@ import logging
 
 log=logging.getLogger("gbd")
 
-#import ctypes
-#if hasattr(ctypes, 'original_c_char_p'):
-#  #model is already active, ptrace is not loaded, need to go back to original c_char_p before ptrace loads
-#  ctypes.__haystack_c_char_p = ctypes.c_char_p
-#  ctypes.c_char_p = ctypes.original_c_char_p
-#  #print 'dbg before ptrace loading', ctypes.c_char_p
+from haystack import types
+import ctypes
+if hasattr(ctypes, 'proxy'):
+    types.reset_ctypes()
 
 import platform
 if platform.system() != 'Windows':
@@ -253,19 +251,7 @@ else:
   class ProcessError(Exception):
     pass
   ProcError=ProcessError
+
+types.load_ctypes_default()
   
-#def formatAddress(addr): #TODO move to utils
-#    if ctypes.sizeof(ctypes.c_void_p) == 4:
-#        raise IOError('formataddress x32')
-#        return u"0x%08x" % addr
-#    else:
-#        return u"0x%016x" % addr
-
-
-#if hasattr(ctypes, '__haystack_c_char_p'):
-#  #model is already active, ptrace is not loaded, die biatch !
-#  ctypes.c_char_p = ctypes.__haystack_c_char_p
-#  del ctypes.__haystack_c_char_p #= ctypes.c_char_p
-#  #print 'dbg after ptrace loading', ctypes.c_char_p
-
 
