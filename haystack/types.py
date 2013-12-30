@@ -39,6 +39,17 @@ def set_ctypes(ctypesproxy):
     sys.modules['ctypes'] = ctypesproxy
     return sys.modules['ctypes']
 
+def check_arg_is_type(func):
+    def check_arg(self, objtype):
+        if not isinstance(objtype, type):
+            return False
+        return func(self, objtype)
+    check_arg.__name__ = func.__name__
+    check_arg.__doc__ = func.__doc__
+    check_arg.__dict__.update(func.__dict__)
+    return check_arg
+
+
 class CTypesProxy(object):
     """# TODO: set types in config.Types
     # ctypeslib generate python code based on config.Types.*
@@ -83,6 +94,7 @@ class CTypesProxy(object):
         self.__set_float()
         self.__set_pointer()
         self.__set_records()
+        self.__set_utils_types()
         return
 
     def __set_void(self):
@@ -214,6 +226,15 @@ class CTypesProxy(object):
         self.Union = LoadableMembersUnion
         return
 
+    def __set_utils_types(self):
+        """Creates some types to compare to"""
+        self.__arrayt = type(self.c_byte*1)
+        self.__cfuncptrt = type(type(self.memmove))
+        class _p(self.Structure):
+            pass
+        self.__ptrt = type(self.POINTER(_p))
+
+    
 
     #import sys
     #from inspect import getmembers, isclass
@@ -228,8 +249,108 @@ class CTypesProxy(object):
     def call_real_ctypes_method(self, fname, **kv):
         return getattr(self.__real_ctypes, fnname)(**kv)
 
+    ######## migration from utils.
+    def is_ctypes_instance(self, obj):
+        """Checks if an object is a ctypes type object"""
+        # FIXME. is it used for loadablemembers detection or for ctypes VS POPO
+        return issubclass(type(obj), self.get_real_ctypes_type('Structure'))
+
+    def is_array_to_basic_instance(self, obj):
+        """Checks if an object is a array of basic types.
+        It checks the type of the first element.
+        The array should not be null :).
+        """
+        if self.is_array_type(type(obj)):
+            if len(obj) == 0:
+                return False # no len is no BasicType
+            if self.is_pointer_type(type(obj[0])):
+                return False
+            if self.is_basic_type(type(obj[0])):
+                return True
+        return False
+
+    @check_arg_is_type
+    def is_basic_type(self, objtype):
+        """Checks if an object is a ctypes basic type, or a python basic type."""
+        return (isinstance(objtype, type) and not self.is_pointer_type(objtype) 
+                and not self.is_function_type(objtype) 
+                and (objtype.__module__ in ['ctypes','_ctypes','__builtin__']) )
+        #return not isPointerType(obj) and not isFunctionType(obj) 
+        #        and (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
+
+    @check_arg_is_type
+    def is_struct_type(self, objtype):
+        """ Checks if an object is a ctypes Structure."""
+        return issubclass(objtype, self.get_real_ctypes_type('Structure'))
+
+    @check_arg_is_type
+    def is_union_type(self, objtype):
+        """ Checks if an object is a ctypes Union."""
+        return (issubclass(objtype, self.get_real_ctypes_type('Union')) 
+                and not self.is_cstring(objtype))
+
+    @check_arg_is_type
+    def is_pointer_type(self, objtype):
+        """ Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer"""
+        if hasattr(objtype, '_subtype_'):
+            return True
+        #return Config.PTRTYPE = type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
+        return (self.__ptrt == type(objtype) 
+                or self.is_pointer_to_void_type(objtype) 
+                or self.is_function_type(objtype))
+
+    @check_arg_is_type
+    def is_pointer_to_basic_type(self, objtype):
+        """ Checks if an object is a pointer to a BasicType"""
+        if not hasattr(objtype, '_type_'):  
+            return False
+        return self.is_basic_type(objtype._type_)
+
+    @check_arg_is_type
+    def is_pointer_to_struct_type(self, objtype):
+        """ Checks if an object is a pointer to a Structure"""
+        if hasattr(objtype, '_type_') and self.is_struct_type(objtype._type_):
+            return True
+        return False
+
+    @check_arg_is_type
+    def is_pointer_to_union_type(self, objtype):
+        """ Checks if an object is a pointer to a Union"""
+        return hasattr(objtype, '_type_') and self.is_union_type(objtype._type_)
+
+    @check_arg_is_type
+    def is_pointer_to_void_type(self, objtype):
+        """Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer"""
+        # FIXME: DOCME what is that _subtype_ case
+        if hasattr(objtype, '_subtype_'):
+            if objtype._subtype_ == type(None):
+                return True 
+        # FIXME: DOCME what are these cases ? not auto-loading ?
+        return objtype in [self.c_char_p, self.c_wchar_p, self.c_void_p]
+
+    @check_arg_is_type
+    def is_array_type(self, objtype):
+        """Checks if an object is a ctype array."""
+        return self.__arrayt == type(objtype)
+
+    @check_arg_is_type
+    def is_function_type(self, objtype):
+        """Checks if an object is a function pointer."""
+        return self.__cfuncptrt == type(objtype)
+
+    @check_arg_is_type
+    def is_cstring_type(self, objtype):
+        """Checks if an object is our CString."""
+        if not isinstance(objtype, type):
+            return False
+        return issubclass(objtype, self.CString) 
+      
+
     def __str__(self):
         return "<haystack.types.CTypesProxy-%d:%d:%d-%x>"%(self.__longsize,self.__pointersize,self.__longdoublesize,id(self))
 
     # TODO implement haystack.utils.bytestr_fmt here
+
+
+
 

@@ -53,6 +53,7 @@ def is_valid_address(obj, mappings, structType=None):
     return False
   return is_valid_address_value(addr, mappings, structType)
 
+
 def is_valid_address_value(addr, mappings, structType=None):
   ''' 
   :param addr: the address to evaluate.
@@ -239,96 +240,73 @@ def pointer2bytes(attr,nbElement):
   # we have an array type starting at attr.contents[0]
   return array2bytes(array)
 
+
+import warnings
+
+def deprecated(func):
+    '''This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.'''
+    def new_func(*args, **kwargs):
+        warnings.warn("Call to deprecated function {}.".format(func.__name__),
+                      category=DeprecationWarning)
+        return func(*args, **kwargs)
+    new_func.__name__ = func.__name__
+    new_func.__doc__ = func.__doc__
+    new_func.__dict__.update(func.__dict__)
+    return new_func
+
+@deprecated
 def isCTypes(obj):
-  ''' Checks if an object is a ctypes type object'''
-  return  issubclass(type(obj), ctypes.Structure) #or (type(obj).__module__ in ['ctypes','_ctypes']) 
-    
-def isBasicType(objtype):
-  ''' Checks if an object is a ctypes basic type, or a python basic type.'''
-  if not isinstance(objtype, type):  return False
-  return (isinstance(objtype, type) and not isPointerType(objtype) and not isFunctionType(objtype) 
-          and (objtype.__module__ in ['ctypes','_ctypes','__builtin__']) )
-  #return not isPointerType(obj) and not isFunctionType(obj) and (type(obj).__module__ in ['ctypes','_ctypes','__builtin__']) 
+    return ctypes.is_ctypes_instance(obj)
 
-def isStructType(objtype):
-  ''' Checks if an object is a ctypes Structure.'''
-  if not isinstance(objtype, type):  return False
-  return issubclass(objtype, ctypes.Structure)
-
-def isUnionType(objtype):
-  ''' Checks if an object is a ctypes Union.'''
-  if not isinstance(objtype, type):  return False
-  return issubclass(objtype,ctypes.Union) and not isCStringPointer(objtype)
-
-class _p(ctypes.Structure):
-    pass
-__ptrt = type(ctypes.POINTER(_p))
-def isPointerType(objtype):
-  ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
-  if hasattr(objtype, '_subtype_'):
-    return True
-  if not isinstance(objtype, type):  return False
-  #return Config.PTRTYPE = type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
-  return __ptrt == type(objtype) or isVoidPointerType(objtype) or isFunctionType(objtype)
-
-def isPointerBasicType(objtype):
-  ''' Checks if an object is a pointer to a BasicType'''
-  if not isinstance(objtype, type):  return False
-  if not hasattr(objtype, '_type_'):  
-    return False
-  return isBasicType(objtype._type_)
-
-def isPointerStructType(objtype):
-  ''' Checks if an object is a pointer to a Structure'''
-  if not isinstance(objtype, type):  return False
-  if hasattr(objtype, '_type_') and isStructType(objtype._type_):
-    return True
-  return False
-
-def isPointerUnionType(objtype):
-  ''' Checks if an object is a pointer to a Union'''
-  if not isinstance(objtype, type):  return False
-  return hasattr(objtype, '_type_') and isUnionType(objtype._type_)
-
-def isVoidPointerType(objtype):
-  ''' Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer'''
-  if hasattr(objtype, '_subtype_'):
-    if objtype._subtype_ == type(None):
-      return True 
-  if not isinstance(objtype, type):  return False
-  #return objtype in [ctypes.original_c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
-  return objtype in [ctypes.c_char_p, ctypes.c_wchar_p, ctypes.c_void_p]
-
+@deprecated
 def isBasicTypeArray(obj):
-  ''' Checks if an object is a array of basic types.
-  It checks the type of the first element.
-  The array should not be null :).
-  '''
-  if isArrayType(type(obj)):
-    if len(obj) == 0:
-      return False # no len is no BasicType
-    if isPointerType(type(obj[0])):
-      return False
-    if isBasicType(type(obj[0])):
-      return True
-  return False
+    return ctypes.is_array_to_basic_instance(obj)
 
-__arrayt = type(ctypes.c_byte*1)
+@deprecated
+def isBasicType(objtype):
+    return ctypes.is_basic_type(objtype)
+
+@deprecated
+def isStructType(objtype):
+    return ctypes.is_struct_type(objtype)
+
+@deprecated
+def isUnionType(objtype):
+    return ctypes.is_union_type(objtype)
+
+@deprecated
+def isPointerType(objtype):
+    return ctypes.is_pointer_type(objtype)
+
+@deprecated
+def isPointerBasicType(objtype):
+    return ctypes.is_pointer_to_basic_type(objtype)
+
+@deprecated
+def isPointerStructType(objtype):
+    return ctypes.is_pointer_to_struct_type(objtype)
+
+@deprecated
+def isPointerUnionType(objtype):
+    return ctypes.is_pointer_to_union_type(objtype)
+
+@deprecated
+def isVoidPointerType(objtype):
+    return ctypes.is_pointer_to_void_type(objtype)
+
+@deprecated
 def isArrayType(objtype):
-  ''' Checks if an object is a ctype array.'''
-  if not isinstance(objtype, type):  return False
-  return __arrayt == type(objtype)
+    return ctypes.is_array_type(objtype)
 
-__cfuncptrt = type(type(ctypes.memmove))
+@deprecated
 def isFunctionType(objtype):
-  ''' Checks if an object is a function pointer.'''
-  if not isinstance(objtype, type):  return False
-  return __cfuncptrt == type(objtype)
+    return ctypes.is_function_type(objtype)
 
+@deprecated
 def isCStringPointer(objtype):
-  ''' Checks if an object is our CString.'''
-  if not isinstance(objtype, type):  return False
-  return issubclass(objtype, ctypes.CString) 
+    return ctypes.is_cstring_type(objtype)
   
 
 
