@@ -245,13 +245,3 @@ if not hasattr(ctypes,'proxy'): # its not a proxy
     ctypes = types.load_ctypes_default()
 
 
-# replace c_char_p - it can handle memory parsing without reading it 
-#if ctypes.c_char_p.__name__ == 'c_char_p':
-#    ctypes.c_char_p = CString
-
-# switch class - we need our methods on ctypes.Structures for generated classes to work    
-#if ctypes.Structure.__name__ == 'Structure':
-#    ctypes.Structure = LoadableMembersStructure
-#if ctypes.Union.__name__ == 'Union':
-#    ctypes.Union = LoadableMembersUnion
-
