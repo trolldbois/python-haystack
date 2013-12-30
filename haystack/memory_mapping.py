@@ -700,45 +700,45 @@ class Mappings:
                 return m
         raise ValueError('addr is not a local addr')
 
-        def is_valid_address(self, obj, structType=None):
-                """ 
-                :param obj: the obj to evaluate.
-                :param structType: the object's type, so the size could be taken in consideration.
+    def is_valid_address(self, obj, structType=None):
+        """ 
+        :param obj: the obj to evaluate.
+        :param structType: the object's type, so the size could be taken in consideration.
 
-                Returns False if the object address is NULL.
-                Returns False if the object address is not in a mapping.
-                Returns False if the object overflows the mapping.
+        Returns False if the object address is NULL.
+        Returns False if the object address is not in a mapping.
+        Returns False if the object overflows the mapping.
 
-                Returns the mapping in which the object stands otherwise.
-                """
-                # check for null pointers
-                addr = getaddress(obj)
-                if addr == 0:
-                        return False
-                return self.is_valid_address_value(addr, structType)
+        Returns the mapping in which the object stands otherwise.
+        """
+        # check for null pointers
+        addr = utils.getaddress(obj)
+        if addr == 0:
+            return False
+        return self.is_valid_address_value(addr, structType)
 
 
-        def is_valid_address_value(self, addr, structType=None):
-                """ 
-                :param addr: the address to evaluate.
-                :param structType: the object's type, so the size could be taken in consideration.
+    def is_valid_address_value(self, addr, structType=None):
+        """ 
+        :param addr: the address to evaluate.
+        :param structType: the object's type, so the size could be taken in consideration.
 
-                Returns False if the object address is NULL.
-                Returns False if the object address is not in a mapping.
-                Returns False if the object overflows the mapping.
+        Returns False if the object address is NULL.
+        Returns False if the object address is not in a mapping.
+        Returns False if the object overflows the mapping.
 
-                Returns the mapping in which the address stands otherwise.
-                """
-                import ctypes
-                m = self.getMmapForAddr(addr)
-                log.debug('is_valid_address_value = %x %s'%(addr, m))
-                if m:
-                        if (structType is not None):
-                                s = ctypes.sizeof(structType)
-                                if (addr+s) < m.start or (addr+s) > m.end:
-                                        return False
-                        return m
-                return False
+        Returns the mapping in which the address stands otherwise.
+        """
+        import ctypes
+        m = self.getMmapForAddr(addr)
+        log.debug('is_valid_address_value = %x %s'%(addr, m))
+        if m:
+            if (structType is not None):
+                s = ctypes.sizeof(structType)
+                if (addr+s) < m.start or (addr+s) > m.end:
+                    return False
+            return m
+        return False
         
     def __contains__(self, vaddr):
         for m in self.mappings:
