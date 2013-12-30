@@ -41,7 +41,9 @@ haystack.types:
     not alter the host ctypes module functionality.
     When installed with alternative type sizes then specific methods and types 
     are altered to match a specific target architecture.
-    To use this, you need to use "global ctypes" when loading/reseting ctypes
+    To use this, you need to use local ctypes imports.
+    In haystack code, I would recommend NEVER EVER importing ctypes at the 
+    module level.
 
 haystack.utils:
     Functions used in the definitions of haystack ctypes record.
