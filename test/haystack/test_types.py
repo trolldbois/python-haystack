@@ -31,6 +31,7 @@ def make_types():
       _fields_ = [ ('a',ctypes.c_longlong) ]
     #
     btype = ctypes.c_int
+    longt = ctypes.c_long
     voidp = ctypes.c_void_p
     stp = ctypes.POINTER(St)
     stpvoid = ctypes.POINTER(None)
@@ -42,10 +43,11 @@ def make_types():
     fptr = type(ctypes.memmove)
     arra4 = (fptr*256)
     double = ctypes.c_longdouble
+    arra5 = ctypes.c_ubyte*8
     return locals()
 
 
-class TestSizes(unittest.TestCase):
+class TestReload(unittest.TestCase):
     """Tests sizes after ctypes changes."""
 
     def test_reset_ctypes(self):
@@ -76,8 +78,8 @@ class TestSizes(unittest.TestCase):
         for name,value in make_types().items():
             globals()[name] = value
         # default ctypes should be similar to host ctypes.
-        self.assertEquals( ctypes.sizeof(arra1), 4*ctypes.sizeof(ctypes.get_real_ctypes_type('c_long')) )
-        self.assertEquals( ctypes.sizeof(stp), ctypes.sizeof(ctypes.get_real_ctypes_type('c_void_p')) )
+        self.assertEquals( ctypes.sizeof(arra1), 4*ctypes.sizeof(ctypes.get_real_ctypes_member('c_long')) )
+        self.assertEquals( ctypes.sizeof(stp), ctypes.sizeof(ctypes.get_real_ctypes_member('c_void_p')) )
         self.assertEquals( ctypes.sizeof(arra1), 4*ctypes.sizeof(ctypes.c_long) )
         self.assertEquals( ctypes.sizeof(stp), ctypes.sizeof(ctypes.c_void_p) )
         return 
@@ -170,6 +172,150 @@ class TestSizes(unittest.TestCase):
 
         return 
 
+class TestBasicFunctions(unittest.TestCase):
+    """Tests basic haystack.types functions on base types."""
+
+    def setUp(self):
+        global ctypes
+        ctypes = types.load_ctypes_default()
+        for name,value in make_types().items():
+            globals()[name] = value
+        self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+
+    def _testMe(self, fn, valids, invalids):
+        for var in valids:
+            self.assertTrue( fn( var ), var )
+        for var in invalids:
+            self.assertFalse( fn( var ), var )
+
+    def test_is_basic_type(self):
+        valids = [btype, longt, double]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_basic_type, valids, invalids)
+        return 
+
+    def test_is_struct_type(self):
+        valids = [St, St2, SubSt2]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_struct_type, valids, invalids)
+        return 
+
+    def test_is_pointer_type(self):
+        valids = [voidp, stp, stpvoid, fptr, charp, string]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_pointer_type, valids, invalids)
+        return 
+
+    def test_is_pointer_to_void_type(self):
+        valids = [voidp, stpvoid, charp]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_pointer_to_void_type, valids, invalids)
+        return 
+
+    def test_is_function_type(self):
+        valids = [fptr]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_function_type, valids, invalids)
+        return 
+
+    def test_is_array_to_basic_instance(self):
+        valids = [arra1(), arra5()]
+        invalids = [ v for v in self.tests if v not in valids]
+        invalids.extend([ arra2(), arra3(), arra4(), ] )
+        for var in valids:
+            self.assertTrue( ctypes.is_array_to_basic_instance( var ), var)
+        for var in invalids:
+            self.assertFalse( ctypes.is_array_to_basic_instance( var ), var )
+        return 
+
+    def test_is_array_type(self):
+        valids = [arra1, arra2, arra3, arra4, arra5]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_array_type, valids, invalids)
+        return 
+
+    def test_is_cstring_type(self):
+        valids = [string ]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_cstring_type, valids, invalids)
+        return 
+
+    def test_is_ctypes(self):
+        valids = [St(), St2(), SubSt2()]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_ctypes_instance, valids, invalids)
+        return 
+
+
+    def test_import(self):
+        #''' Do not replace c_char_p '''
+        from haystack import basicmodel
+        self.assertEquals( ctypes.c_char_p.__name__ , 'c_char_p', 'c_char_p should not be changed')
+        self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
+        self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
+        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
+
+
+class TestBasicFunctions32(TestBasicFunctions):
+    """Tests basic haystack.utils functions on base types for x32 arch."""
+    def setUp(self):
+        """Have to reload that at every test. classmethod will not work"""
+        # use the host ctypes with modif
+        global ctypes
+        ctypes = types.reload_ctypes(4,4,8)
+        self.assertTrue(ctypes.proxy)
+        for name,value in make_types().items():
+            globals()[name] = value
+        # reload test list after globals have been changed
+        self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+
+    def test_sizes(self):
+        self.assertEquals( ctypes.sizeof(ctypes.c_long), 4)
+        self.assertEquals( ctypes.sizeof(arra1), 4*4)
+        self.assertEquals( ctypes.sizeof(double), 8)
+        return 
+
+class TestBasicFunctionsWin(TestBasicFunctions):
+    """Tests basic haystack.utils functions on base types for x64 arch."""
+    def setUp(self):
+        """Have to reload that at every test. classmethod will not work"""
+        # use the host ctypes with modif
+        global ctypes
+        ctypes = types.reload_ctypes(8,8,8)
+        self.assertTrue(ctypes.proxy)
+        for name,value in make_types().items():
+            globals()[name] = value
+        #
+        self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+        
+    def test_sizes(self):
+        self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
+        self.assertEquals( ctypes.sizeof(arra1), 4*8)
+        self.assertEquals( ctypes.sizeof(double), 8)
+        return 
+
+class TestBasicFunctions64(TestBasicFunctions):
+    """Tests basic haystack.utils functions on base types for x64 arch."""
+    def setUp(self):
+        """Have to reload that at every test. classmethod will not work"""
+        # use the host ctypes with modif
+        global ctypes
+        ctypes = types.reload_ctypes(8,8,16)
+        self.assertTrue(ctypes.proxy)
+        for name,value in make_types().items():
+            globals()[name] = value
+        #
+        self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+        
+    def test_sizes(self):
+        self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
+        self.assertEquals( ctypes.sizeof(arra1), 4*8)
+        self.assertEquals( ctypes.sizeof(double), 16)
+        return 
 
 if __name__ == '__main__':
     unittest.main(verbosity=0)

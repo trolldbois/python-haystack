@@ -157,6 +157,8 @@ bytestr_fmt={ # XXX probable bug here on x64...
   'c_longlong': 'q',
   'c_ulonglong': 'Q',
   'c_float': 'f', ## and double float ?
+  'c_double': 'd', ## and double float ?
+  'c_longdouble': 'g', ## and double float ?
   'c_char_p': 's',
   'c_void_p': 'P',
   'c_void': 'P', ## void in array is void_p ##DEBUG
