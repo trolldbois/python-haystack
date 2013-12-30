@@ -6,7 +6,7 @@
 
 '''
 This module is the main aspect of haystack.
-This specific plugin handles badics types.
+This specific plugin handles basic types.
 
 '''
 
