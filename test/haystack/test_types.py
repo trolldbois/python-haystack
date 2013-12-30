@@ -273,9 +273,18 @@ class TestBasicFunctions32(TestBasicFunctions):
 
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 4)
+        self.assertEquals( ctypes.sizeof(ctypes.c_void_p), 4)
+        self.assertEquals( ctypes.sizeof(ctypes.c_char_p), 4)
+        self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 4)
         self.assertEquals( ctypes.sizeof(arra1), 4*4)
         self.assertEquals( ctypes.sizeof(double), 8)
         return 
+
+    def test_import(self):
+        from haystack import basicmodel
+        self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
+        self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
+        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
 
 class TestBasicFunctionsWin(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x64 arch."""
@@ -293,9 +302,18 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_void_p), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_char_p), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 8)
         self.assertEquals( ctypes.sizeof(arra1), 4*8)
         self.assertEquals( ctypes.sizeof(double), 8)
         return 
+
+    def test_import(self):
+        from haystack import basicmodel
+        self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
+        self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
+        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
 
 class TestBasicFunctions64(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x64 arch."""
@@ -313,9 +331,18 @@ class TestBasicFunctions64(TestBasicFunctions):
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_void_p), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_char_p), 8)
+        self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 8)
         self.assertEquals( ctypes.sizeof(arra1), 4*8)
         self.assertEquals( ctypes.sizeof(double), 16)
         return 
+
+    def test_import(self):
+        from haystack import basicmodel
+        self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
+        self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
+        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
 
 if __name__ == '__main__':
     unittest.main(verbosity=0)

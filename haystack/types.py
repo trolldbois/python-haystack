@@ -182,6 +182,9 @@ class CTypesProxy(object):
             _class = type('LP_%d_%s'%(POINTERSIZE, clsname), (_T,),{}) 
             return _class
         self.POINTER = POINTER_T
+        self.c_void_p = self.POINTER(None)
+        self.c_char_p = self.POINTER(self.c_char)
+        self.c_wchar_p = self.POINTER(self.c_wchar)
         return
 
     def __set_records(self):
