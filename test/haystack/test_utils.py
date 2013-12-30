@@ -21,6 +21,38 @@ import unittest
 class TestHelpers(unittest.TestCase):
     """Tests helpers functions."""
 
+    @unittest.skip('FIXME requires mappings')
+    def test_is_valid_address(self):
+        #utils.is_valid_address(obj, mappings, structType=None):
+        # FIXME requires mappings
+        pass
+
+    @unittest.skip('FIXME requires mappings')
+    def test_is_valid_address_value(self):
+        #utils.is_valid_address_value(addr, mappings, structType=None):
+        # FIXME requires mappings
+        pass
+
+    @unittest.skip('FIXME: requires memory_mapping')
+    def test_is_address_local(self):
+        #utils.is_address_local(obj, structType=None):
+        # FIXME requires memory_mapping
+        pass
+
+    @unittest.skip('FIXME: requires is_address_local')
+    def test_pointer2bytes(self):
+        #utils.pointer2bytes(attr,nbElement)
+        # FIXME: requires is_address_local
+        ctypes = types.load_ctypes_default()
+        class X(ctypes.Structure):
+            _fields_ = [('a',ctypes.c_long)]
+        x = (8*X)()
+        ptr = ctypes.POINTER(X)(x[0])
+        new_x = utils.pointer2bytes(ptr, 8)
+        self.assertEquals(x, new_x)
+        pass
+
+
     def test_formatAddress(self):
         types.reload_ctypes(8,8,16)
         x = utils.formatAddress(0x12345678)
@@ -46,25 +78,6 @@ class TestHelpers(unittest.TestCase):
         two32 = 3*b'\x00'+'\x02'
         x = utils.unpackWord(two32,'>')
         self.assertEquals(x, 2)
-        pass
-
-
-    @unittest.skip('FIXME requires mappings')
-    def test_is_valid_address(self):
-        #utils.is_valid_address(obj, mappings, structType=None):
-        # FIXME requires mappings
-        pass
-
-    @unittest.skip('FIXME requires mappings')
-    def test_is_valid_address_value(self):
-        #utils.is_valid_address_value(addr, mappings, structType=None):
-        # FIXME requires mappings
-        pass
-
-    @unittest.skip('FIXME: requires memory_mapping')
-    def test_is_address_local(self):
-        #utils.is_address_local(obj, structType=None):
-        # FIXME requires memory_mapping
         pass
 
     def test_getaddress(self):
@@ -210,19 +223,6 @@ class TestHelpers(unittest.TestCase):
         self.assertEquals(len(array), 3)
         pass
 
-    @unittest.skip('FIXME: requires is_address_local')
-    def test_pointer2bytes(self):
-        #utils.pointer2bytes(attr,nbElement)
-        # FIXME: requires is_address_local
-        ctypes = types.load_ctypes_default()
-        class X(ctypes.Structure):
-            _fields_ = [('a',ctypes.c_long)]
-        x = (8*X)()
-        ptr = ctypes.POINTER(X)(x[0])
-        new_x = utils.pointer2bytes(ptr, 8)
-        self.assertEquals(x, new_x)
-        pass
-
     def test_xrange(self):
         """tests home made xrange that handles big ints. 
         Not an issue in Py 3"""
@@ -234,7 +234,6 @@ class TestHelpers(unittest.TestCase):
             r2.append(a)
             a+=1
         self.assertEquals(r,r2)
-
 
 
 if __name__ == '__main__':
