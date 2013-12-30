@@ -173,6 +173,7 @@ class CTypesProxy(object):
             class _T(_ctypes._SimpleCData,):
                 _type_ = replacement_type_char
                 _subtype_ = pointee
+                @property
                 def _sub_addr_(self):
                     return self.value
                 def __repr__(self):

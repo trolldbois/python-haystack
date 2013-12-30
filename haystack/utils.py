@@ -4,142 +4,145 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-'''
+"""
 This module holds some basic constraint class for the Haystack model.
 Several useful function validation are also here, like pointer validation.
 
-'''
+"""
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-
-import ctypes
+import logging
 import os
 import struct
 from struct import pack
 from struct import unpack 
 
-import logging
+# never import ctypes globally
 
 log = logging.getLogger('utils')
 
-#def formatAddress(cfg, addr): 
-#  if cfg.WORDSIZE == 4:
-#    return u"0x%08x" % addr
-#  else:
-#    return u"0x%016x" % addr
+def formatAddress(addr):
+    import ctypes
+    if ctypes.sizeof(ctypes.c_void_p) == 8:
+        return b'0x%016x' % addr
+    else:
+        return b'0x%08x' % addr
 
-def unpackWord(cfg, bytes, endianess='@'):
-  if cfg.WORDSIZE == 8:
-    return struct.unpack('%sQ'%endianess, bytes)[0]
-  else:
-    return struct.unpack('%sI'%endianess, bytes)[0]
+def unpackWord(bytes, endianess='@'):
+    import ctypes
+    if ctypes.sizeof(ctypes.c_void_p) == 8:
+        return struct.unpack('%sQ'%endianess, bytes)[0]
+    else:
+        return struct.unpack('%sI'%endianess, bytes)[0]
 
 def is_valid_address(obj, mappings, structType=None):
-  ''' 
-  :param obj: the obj to evaluate.
-  :param mappings: the memory mappings in a list.
-  :param structType: the object's type, so the size could be taken in consideration.
-  
-  Returns False if the object address is NULL.
-  Returns False if the object address is not in a mapping.
-  Returns False if the object overflows the mapping.
-  
-  Returns the mapping in which the object stands otherwise.
-  '''
-  # check for null pointers
-  addr = getaddress(obj)
-  if addr == 0:
-    return False
-  return is_valid_address_value(addr, mappings, structType)
+    """ 
+    :param obj: the obj to evaluate.
+    :param mappings: the memory mappings in a list.
+    :param structType: the object's type, so the size could be taken in consideration.
+
+    Returns False if the object address is NULL.
+    Returns False if the object address is not in a mapping.
+    Returns False if the object overflows the mapping.
+
+    Returns the mapping in which the object stands otherwise.
+    """
+    # check for null pointers
+    addr = getaddress(obj)
+    if addr == 0:
+        return False
+    return is_valid_address_value(addr, mappings, structType)
 
 
 def is_valid_address_value(addr, mappings, structType=None):
-  ''' 
-  :param addr: the address to evaluate.
-  :param mappings: the memory mappings in a list.
-  :param structType: the object's type, so the size could be taken in consideration.
-  
-  Returns False if the object address is NULL.
-  Returns False if the object address is not in a mapping.
-  Returns False if the object overflows the mapping.
-  
-  Returns the mapping in which the address stands otherwise.
-  '''
-  m = mappings.getMmapForAddr(addr)
-  log.debug( 'is_valid_address_value = %x %s'%( addr, m ))
-  if m:
-    if (structType is not None):
-      s = ctypes.sizeof(structType)
-      if (addr+s) < m.start or (addr+s) > m.end:
-        return False
-    return m
-  return False
+    """ 
+    :param addr: the address to evaluate.
+    :param mappings: the memory mappings in a list.
+    :param structType: the object's type, so the size could be taken in consideration.
+
+    Returns False if the object address is NULL.
+    Returns False if the object address is not in a mapping.
+    Returns False if the object overflows the mapping.
+
+    Returns the mapping in which the address stands otherwise.
+    """
+    import ctypes
+    m = mappings.getMmapForAddr(addr)
+    log.debug('is_valid_address_value = %x %s'%(addr, m))
+    if m:
+        if (structType is not None):
+            s = ctypes.sizeof(structType)
+            if (addr+s) < m.start or (addr+s) > m.end:
+                return False
+        return m
+    return False
 
 def is_address_local(obj, structType=None):
-  ''' 
-  Costly , checks if obj is mapped to local memory space.
-
-  Returns the memory mapping if found.
+    """ 
+    Costly , checks if obj is mapped to local memory space.
+    Returns the memory mapping if found.
     False, otherwise.
-  '''
-  addr=getaddress(obj)
-  if addr == 0:
-    return False
-  class P:
-    pid=os.getpid()
-  from memory_mapping import readProcessMappings  # loading dependencies
-  mappings = readProcessMappings(P()) # memory_mapping
-  return is_valid_address(obj, mappings, structType)
+    """
+    addr = getaddress(obj)
+    if addr == 0:
+        return False
+    class P:
+        pid = os.getpid()
+    from memory_mapping import readProcessMappings  # loading dependencies
+    mappings = readProcessMappings(P()) # memory_mapping
+    return is_valid_address(obj, mappings, structType)
 
 def getaddress(obj):
-  ''' 
-  Returns the address of the struct pointed by the obj, or null if invalid.
+    """ 
+    Returns the address of the struct pointed by the obj, or null if invalid.
 
-  :param obj: a pointer.
-  '''
-  # check for null pointers
-  if hasattr(obj,'_sub_addr_'):
-    #print 'obj._sub_addr_', hex(obj._sub_addr_)
-    return obj._sub_addr_
-  if bool(obj):
-    if not hasattr(obj,'contents'):
-      return 0
-    #print '** NOT MY HAYSTACK POINTER'
-    return ctypes.addressof(obj.contents)
-  else:
-    return 0  
+    :param obj: a pointer.
+    """
+    import ctypes
+    # check for homebrew POINTER
+    if hasattr(obj,'_sub_addr_'):
+        #print 'obj._sub_addr_', hex(obj._sub_addr_)
+        return obj._sub_addr_
+    # check for null pointers
+    if bool(obj):
+        if not hasattr(obj,'contents'):
+            return 0
+        #print '** NOT MY HAYSTACK POINTER'
+        return ctypes.addressof(obj.contents)
+    else:
+        return 0  
 
 def container_of(memberaddr, typ, membername):
-  '''
-  Returns the instance of typ(), in which the member "membername' is really.
-  
-  :param memberadd: the address of membername.
-  :param typ: the type of the containing structure.
-  :param membername: the membername.
-  
-  Stolen from linux kernel headers.
+    """
+    Returns the instance of typ(), in which the member "membername' is really.
+
+    :param memberadd: the address of membername.
+    :param typ: the type of the containing structure.
+    :param membername: the membername.
+
+    Stolen from linux kernel headers.
          const typeof( ((typ *)0)->member ) *__mptr = (ptr);    
         (type *)( (char *)__mptr - offsetof(type,member) );}) 
-  '''
-  return typ.from_address( memberaddr - offsetof(typ, membername) )
+    """
+    return typ.from_address( memberaddr - offsetof(typ, membername) )
 
 def offsetof(typ, membername):
-  '''
-  Returns the offset of a member in a structure.
-  
-  :param typ: the structure type.
-  :param membername: the membername in that structure.
-  '''
-  #T=typ()
-  #return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
-  return getattr(typ, membername).offset
+    """
+    Returns the offset of a member in a structure.
+
+    :param typ: the structure type.
+    :param membername: the membername in that structure.
+    """
+    #T=typ()
+    #return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
+    return getattr(typ, membername).offset
 
 
-''' MISSING
+""" MISSING
 d 	double 	float 	8 	(4)
 p 	char[] 	string 	  	 
-'''
+"""
 # TODO DELETE ans use obj._type_
 bytestr_fmt={ # XXX probable bug here on x64...
   'c_bool': '?',
@@ -165,7 +168,7 @@ bytestr_fmt={ # XXX probable bug here on x64...
   }
 
 def array2bytes_(array, typ):
-  ''' Convert an array of typ() to a byte string.'''
+  """ Convert an array of typ() to a byte string."""
   arrayLen = len(array)
   if arrayLen == 0:
     return b''
@@ -186,11 +189,11 @@ def array2bytes_(array, typ):
   return sb
 
 def array2bytes(array):
-  ''' Convert an array of undetermined Basic Ctypes class to a byte string, 
+  """ Convert an array of undetermined Basic Ctypes class to a byte string, 
   by guessing it's type from it's class name.
   
   This is a bad example of introspection.
-  '''
+  """
   if not isBasicTypeArray(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
@@ -204,7 +207,7 @@ def array2bytes(array):
 
 
 def bytes2array(bytes, typ):
-  ''' Converts a bytestring in a ctypes array of typ() elements.'''
+  """ Converts a bytestring in a ctypes array of typ() elements."""
   typLen=ctypes.sizeof(typ)
   if len(bytes)%typLen != 0:
     raise ValueError('thoses bytes are not an array of %s'%(typ))
@@ -228,12 +231,12 @@ def bytes2array(bytes, typ):
 
 
 def pointer2bytes(attr,nbElement):
-  ''' 
+  """ 
   Returns an array from a ctypes POINTER, geiven the number of elements.
   
   :param attr: the structure member.
   :param nbElement: the number of element in the array.
-  '''
+  """
   # attr is a pointer and we want to read elementSize of type(attr.contents))
   if not is_address_local(attr):
     return 'POINTER NOT LOCAL'
@@ -246,9 +249,9 @@ def pointer2bytes(attr,nbElement):
 import warnings
 
 def deprecated(func):
-    '''This is a decorator which can be used to mark functions
+    """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
-    when the function is used.'''
+    when the function is used."""
     def new_func(*args, **kwargs):
         warnings.warn("Call to deprecated function {}.".format(func.__name__),
                       category=DeprecationWarning)
@@ -313,21 +316,21 @@ def isCStringPointer(objtype):
 
 
 class IgnoreMember:
-  ''' 
+  """ 
   Constraint class for the Haystack model.
   If this constraints is applied on a Structure member, 
   the member will be ignored by the validation engine.
-  '''
+  """
   def __contains__(self,obj):
     return True
 
 class RangeValue:
-  ''' 
+  """ 
   Constraint class for the Haystack model.
   If this constraints is applied on a Structure member, 
   the member has to be between 'low' and 'high' values to be
   considered as Valid.
-  '''
+  """
   def __init__(self,low,high):
     self.low=low
     self.high=high
@@ -337,30 +340,30 @@ class RangeValue:
     return self.low <= obj <= self.high
 
 class NotNullComparable:
-  ''' 
+  """ 
   Constraint class for the Haystack model.
   If this constraints is applied on a Structure member, 
   the member should not be null to be considered valid by the validation engine.
-  '''
+  """
   def __contains__(self,obj):
     return bool(obj)
   def __eq__(self,obj):
     return bool(obj)
 
-''' 
+""" 
 Constraint class for the Haystack model.
 If this constraints is applied on a Structure member, 
 the member should not be null to be considered valid by the validation engine.
-'''
+"""
 NotNull=NotNullComparable()
 
 
 class BytesComparable:
-  ''' 
+  """ 
   Constraint class for the Haystack model.
   If this constraints is applied on a Structure member, 
   the member should have the same bytes value and length.
-  '''
+  """
   def __init__(self, seq):
     self.seq = seq
 
@@ -382,13 +385,16 @@ class BytesComparable:
 
 PerfectMatch=BytesComparable
 
-
-py_xrange=xrange
-def xrange(start, end, step=1):
-  ''' stoupid xrange can't handle long ints... '''
-  end=end-start
-  for val in py_xrange(0, end, step):
-    yield start+val
-  return
-
+try:
+    # Python 2
+    py_xrange = xrange
+    def xrange(start, end, step=1):
+        """ stoupid xrange can't handle long ints... """
+        end = end-start
+        for val in py_xrange(0, end, step):
+            yield start+val
+        return
+except NameError as e:
+    # Python 3
+    xrange = range
 
