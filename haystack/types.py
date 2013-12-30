@@ -130,7 +130,7 @@ class CTypesProxy(object):
             """This is our own implementation of a longdouble.
             It could be anywhere from 64(win) to 80 bits, stored as 8, 12, 
             or 16 bytes."""
-            _packed_ = True
+            _pack_ = True
             _fields_ = [
                 ("physical", self.c_ubyte*SIZE )
             ]
@@ -159,15 +159,17 @@ class CTypesProxy(object):
         # The new class should have :
         # ['__module__', 'from_param', '_type_', '__dict__', '__weakref__', '__doc__']
         def POINTER_T(pointee):
-            # a pointer should have the same length as LONG
-            fake_ptr_base_type = replacement_type
             # specific case for c_void_p
             if pointee is None: # VOID pointer type. c_void_p.
                 pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
                 clsname = 'c_void'
             else:
                 clsname = pointee.__name__
-            # make template
+            # template that creates a PointerType to pointee (clsname *)
+            # we have to fake the size of the structure to 
+            # replacement_type_char's size.
+            # so we replace _type_ with the fake type of the expected size.
+            # and we had _subtype_ that will be queried by our helper functions. 
             class _T(_ctypes._SimpleCData,):
                 _type_ = replacement_type_char
                 _subtype_ = pointee

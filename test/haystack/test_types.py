@@ -274,6 +274,7 @@ class TestBasicFunctions32(TestBasicFunctions):
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 4)
         self.assertEquals( ctypes.sizeof(ctypes.c_void_p), 4)
+        self.assertEquals( ctypes.sizeof(ctypes.POINTER(ctypes.c_int)), 4)
         self.assertEquals( ctypes.sizeof(ctypes.c_char_p), 4)
         self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 4)
         self.assertEquals( ctypes.sizeof(arra1), 4*4)
