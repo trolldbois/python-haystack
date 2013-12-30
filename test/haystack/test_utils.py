@@ -13,6 +13,7 @@ __status__ = "Production"
 # init ctypes with a controlled type size
 from haystack import model
 from haystack import utils
+from haystack import types
 
 import unittest
 
@@ -20,7 +21,6 @@ class TestHelpers(unittest.TestCase):
     """Tests helpers functions."""
 
     def test_formatAddress(self):
-        from haystack import types
         types.reload_ctypes(8,8,16)
         x = utils.formatAddress(0x12345678)
         self.assertEquals('0x0000000012345678', x)
@@ -30,7 +30,6 @@ class TestHelpers(unittest.TestCase):
         self.assertEquals('0x12345678', x)
 
     def test_unpackWord(self):
-        from haystack import types
         # 64b
         types.reload_ctypes(8,8,16)
         one = b'\x01'+7*b'\x00'
@@ -64,7 +63,6 @@ class TestHelpers(unittest.TestCase):
 
     def test_getaddress(self):
         """tests getaddress on host ctypes POINTER and haystack POINTER"""
-        from haystack import types
         ctypes = types.reload_ctypes(8,8,16)
         class X(ctypes.Structure):
             _pack_ = True
@@ -109,12 +107,65 @@ class TestHelpers(unittest.TestCase):
 
         pass
 
-    def test_container_of(self):
-        #utils.container_of(memberaddr, typ, membername):
-        pass
     def test_offsetof(self):
-        #utils.offsetof(typ, membername):
+        """returns the offset of a member fields in a record"""
+        ctypes = types.reload_ctypes(4,4,8)
+        class Y(ctypes.Structure):
+            _pack_ = True
+            _fields_ = [('a',ctypes.c_long),
+                ('p',ctypes.POINTER(ctypes.c_int)),
+                ('b', ctypes.c_ubyte)]
+        o = utils.offsetof(Y, 'b')
+        self.assertEquals( o, 8)
+
+        ctypes = types.reload_ctypes(8,8,16)
+        class X(ctypes.Structure):
+            _pack_ = True
+            _fields_ = [('a',ctypes.c_long),
+                ('p',ctypes.POINTER(ctypes.c_int)),
+                ('b', ctypes.c_ubyte)]
+        o = utils.offsetof(X, 'b')
+        self.assertEquals( o, 16)
+
+        class X2(ctypes.Union):
+            _pack_ = True
+            _fields_ = [('a',ctypes.c_long),
+                ('p',ctypes.POINTER(ctypes.c_int)),
+                ('b', ctypes.c_ubyte)]
+        o = utils.offsetof(X2, 'b')
+        self.assertEquals( o, 0)
         pass
+
+    def test_container_of(self):
+        """From a pointer to a member, returns the parent struct"""
+        # depends on offsetof
+        ctypes = types.reload_ctypes(8,8,16)
+        class X(ctypes.Structure):
+            _pack_ = True
+            _fields_ = [('a',ctypes.c_long),
+                ('p',ctypes.POINTER(ctypes.c_int)),
+                ('b', ctypes.c_ubyte)]
+        x = X()
+        x.a = 1
+        x.b = 2
+        addr_b = ctypes.addressof(x) + 16 # a + p
+        o = utils.container_of(addr_b, X, 'b')
+        self.assertEquals( ctypes.addressof(o), ctypes.addressof(x))
+
+        ctypes = types.reload_ctypes(4,4,8)
+        class Y(ctypes.Structure):
+            _pack_ = True
+            _fields_ = [('a',ctypes.c_long),
+                ('p',ctypes.POINTER(ctypes.c_int)),
+                ('b', ctypes.c_ubyte)]
+        y = Y()
+        y.a = 1
+        y.b = 2
+        addr_b = ctypes.addressof(y) + 8 # a + p
+        o = utils.container_of(addr_b, Y, 'b')
+        self.assertEquals( ctypes.addressof(o), ctypes.addressof(y))
+        pass
+
     def test_array2bytes_(self):
         #utils.array2bytes_(array, typ):
         pass

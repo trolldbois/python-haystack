@@ -115,7 +115,9 @@ def getaddress(obj):
 
 def container_of(memberaddr, typ, membername):
     """
+    From a pointer to a member, returns the parent struct.
     Returns the instance of typ(), in which the member "membername' is really.
+    Useful in some Kernel linked list which used members as prec,next pointers.
 
     :param memberadd: the address of membername.
     :param typ: the type of the containing structure.
@@ -134,8 +136,6 @@ def offsetof(typ, membername):
     :param typ: the structure type.
     :param membername: the membername in that structure.
     """
-    #T=typ()
-    #return ctypes.addressof(  getattr(T,membername) ) - ctypes.addressof(T)
     return getattr(typ, membername).offset
 
 
@@ -194,7 +194,8 @@ def array2bytes(array):
   
   This is a bad example of introspection.
   """
-  if not isBasicTypeArray(array):
+  import ctypes
+  if not ctypes.is_array_of_basic_instance(array):
     return b'NOT-AN-BasicType-ARRAY'
   # BEURK
   #log.info(type(array).__name__.split('_'))
@@ -267,7 +268,7 @@ def isCTypes(obj):
 
 @deprecated
 def isBasicTypeArray(obj):
-    return ctypes.is_array_to_basic_instance(obj)
+    return ctypes.is_array_of_basic_instance(obj)
 
 @deprecated
 def isBasicType(objtype):
