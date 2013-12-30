@@ -27,9 +27,9 @@ def make_types():
     class St(ctypes.Structure):
       _fields_ = [ ('a',ctypes.c_int) ]
     class St2(ctypes.Structure):
-      _fields_ = [ ('a',ctypes.c_int) ]
+      _fields_ = [ ('a',ctypes.c_long) ]
     class SubSt2(ctypes.Structure):
-      _fields_ = [ ('a',ctypes.c_int) ]
+      _fields_ = [ ('a',ctypes.c_longlong) ]
     #
     btype = ctypes.c_int
     voidp = ctypes.c_void_p
@@ -46,7 +46,7 @@ def make_types():
 
 
 class TestBasicFunctions(unittest.TestCase):
-
+    """Tests basic haystack.utils functions on base types."""
     @classmethod
     def setUpClass(cls):
         # use the host ctypes without modif (except CString imported in model)
@@ -58,7 +58,7 @@ class TestBasicFunctions(unittest.TestCase):
 
     def _testMe(self, fn, valids, invalids):
         for var in valids:
-            self.assertTrue( fn( var ), var)
+            self.assertTrue( fn( var ), var )
         for var in invalids:
             self.assertFalse( fn( var ), var )
 
@@ -130,6 +130,47 @@ class TestBasicFunctions(unittest.TestCase):
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
         self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
 
+
+class TestBasicFunctions32(TestBasicFunctions):
+    """Tests basic haystack.utils functions on base types for x32 arch."""
+    def setUp(self):
+        """Have to reload that at every test. classmethod will not work"""
+        #self.tests = [btype, voidp, St, stp, arra1, arra2, arra3, charp, string, fptr, arra4, St2, SubSt2]
+        TestBasicFunctions.setUp(self)
+        # use the host ctypes with modif
+        from haystack import types
+        print 'A'
+        ctypes = types.reload_ctypes(longsize=4,pointersize=4,longdoublesize=8)
+        print 'B', self, ctypes
+        import code
+        code.interact(local=locals())
+        for name,value in make_types().items():
+            globals()[name] = value
+        print self, ctypes
+
+    def test_sizes(self):
+        print arra1, ctypes.sizeof(ctypes.c_long)
+        import code
+        code.interact(local=locals())
+        self.assertEquals( ctypes.sizeof(arra1), 4*4)
+        return 
+
+class TestBasicFunctions64(TestBasicFunctions):
+    """Tests basic haystack.utils functions on base types for x64 arch."""
+    def setUp(self):
+        """Have to reload that at every test. classmethod will not work"""
+        TestBasicFunctions.setUp(self)
+        # use the host ctypes with modif
+        from haystack import types
+        ctypes = types.reload_ctypes(longsize=8,pointersize=8,longdoublesize=16)
+        for name,value in make_types().items():
+            globals()[name] = value
+        #
+        print self, ctypes
+        
+    def test_sizes(self):
+        self.assertEquals( ctypes.sizeof(arra1), 4*8)
+        return 
 
 
 if __name__ == '__main__':

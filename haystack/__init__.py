@@ -33,17 +33,17 @@ __all__ = [
 import model
 
 # DEFINE the API.
-import abouchet
+#import abouchet
 
-findStruct = abouchet.findStruct
-findStructInFile = abouchet.findStructInFile
-refreshStruct = abouchet.refreshStruct
+#findStruct = abouchet.findStruct
+#findStructInFile = abouchet.findStructInFile
+#refreshStruct = abouchet.refreshStruct
 
-search_process = abouchet.search_process
-search_memfile = abouchet.search_memfile
-search_dumpname = abouchet.search_dumpname
-refresh = abouchet.refresh
-show_dumpname = abouchet.show_dumpname
+#search_process = abouchet.search_process
+#search_memfile = abouchet.search_memfile
+#search_dumpname = abouchet.search_dumpname
+#refresh = abouchet.refresh
+#show_dumpname = abouchet.show_dumpname
 
 
 

@@ -2,23 +2,42 @@ import sys
 
 __PROXIES = {}
 
+def reset_ctypes():
+    """Reset sys.module to import the host ctypes module."""
+    # remove all refs to the ctypes modules or proxies
+    if 'ctypes' in sys.modules:
+        del sys.modules['ctypes']
+    # import the real one
+    import ctypes
+    return ctypes
+
+def load_ctypes_default():
+    """Load sys.module with a default host-mimicking ctypes module proxy."""
+    reset_ctypes()
+    import ctypes
+    # get the hosts' types
+    longsize = ctypes.sizeof(ctypes.c_long)
+    pointersize = ctypes.sizeof(ctypes.c_void_p)
+    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
+    return reload_ctypes(longsize, pointersize, longdoublesize)
+
+
 def reload_ctypes(longsize, pointersize, longdoublesize):
-    """Imports a proxy to ctypes modules tunes to return types adapted to a 
-    target architecture"""
+    """Load sys.modle with a tuned ctypes module proxy."""
     if (longsize, pointersize, longdoublesize) in __PROXIES:
         instance = __PROXIES[(longsize, pointersize, longdoublesize)]
-        set_ctypes_module(instance)
+        set_ctypes(instance)
         return instance
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
 
-def set_ctypes_module(ctypesproxy):
-    """Change the global ctypes module to a specific proxy instance"""
+def set_ctypes(ctypesproxy):
+    """Load Change the global ctypes module to a specific proxy instance"""
     if not isinstance(ctypesproxy, CTypesProxy):
         raise TypeError('CTypesProxy instance expected.')
     sys.modules['ctypes'] = ctypesproxy
-    return
+    return sys.modules['ctypes']
 
 class CTypesProxy(object):
     """# TODO: set types in config.Types
@@ -40,15 +59,17 @@ class CTypesProxy(object):
         self.__longsize = longsize
         self.__pointersize = pointersize
         self.__longdoublesize = longdoublesize
-        # remove all refs to the ctypes modules
-        if hasattr(sys.modules, 'ctypes'):
-            del sys.modules['ctypes']
+        # remove all refs to the ctypes modules or proxies
+        reset_ctypes()
         # import the real one
         import ctypes
         self.__real_ctypes = ctypes
+        if hasattr(ctypes,'proxy'):
+            raise RuntimeError('base ctype should not be a proxy')
         # copy every members
         for name in dir(ctypes):
-            setattr(self, name, getattr(ctypes, name))
+            if not name.startswith('__'):
+                setattr(self, name, getattr(ctypes, name))
         del ctypes
         # replace it.
         sys.modules['ctypes'] = self
@@ -141,7 +162,10 @@ class CTypesProxy(object):
 
     def __set_records(self):
         """Replaces ctypes.Structure and ctypes.Union with their LoadableMembers
-        counterparts. Add a CString type."""
+        counterparts. Add a CString type.
+        MAYBE FIXME: These root types will only be valid when the ctypes record is 
+        used with the adequate CTypesProxy.
+        """
         class CString(self.__real_ctypes.Union):
             """
             This is our own implementation of a string for ctypes.
@@ -198,5 +222,14 @@ class CTypesProxy(object):
         """CHECKME: Something about self reference in structure fields in ctypeslib"""
         return dict(getmembers(self, isclass))[s]
 
+    def get_real_ctypes_type(self, typename):
+        return getattr(self.__real_ctypes, typename)
 
+    def call_real_ctypes_method(self, fname, **kv):
+        return getattr(self.__real_ctypes, fnname)(**kv)
+
+    def __str__(self):
+        return "<haystack.types.CTypesProxy-%d:%d:%d-%x>"%(self.__longsize,self.__pointersize,self.__longdoublesize,id(self))
+
+    # TODO implement haystack.utils.bytestr_fmt here
 

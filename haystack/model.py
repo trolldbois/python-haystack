@@ -53,8 +53,6 @@ class _book(object):
   def getClasses(self):
     return dict(self.classes)
   def getRef(self,typ,addr):
-    #print typ,addr
-    #print (typ,addr) in self.refs.keys()
     if len(self.refs) > 35000:
       log.warning('the book is full, you should haystack.model.reset()')
     return self.refs[(typ,addr)]
@@ -77,12 +75,12 @@ def getRefs():
 def printRefs():
   l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]
   for i in l:
-    print l
+    print(l)
 
 def printRefsLite():
   l=[(typ,addr) for ((typ,addr),obj) in __book.refs.items()]
   for i in l:
-    print l
+    print(l)
 
 def hasRef(typ,origAddr):
   return (typ,origAddr) in __book.refs
@@ -243,12 +241,9 @@ def isRegistered(cls):
 
 if not hasattr(ctypes,'proxy'): # its not a proxy
     global ctypes
-    # we need to switch to a ctypes proxy
+    # we need to switch to a ctypes proxy (CString, LoadableMembers...)
     from haystack import types
-    longsize = ctypes.sizeof(ctypes.c_long)
-    pointersize = ctypes.sizeof(ctypes.c_void_p)
-    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
-    ctypes = types.reload_ctypes(longsize, pointersize, longdoublesize)
+    ctypes = types.load_ctypes_default()
 
 
 # replace c_char_p - it can handle memory parsing without reading it 

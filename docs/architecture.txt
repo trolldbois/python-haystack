@@ -21,3 +21,28 @@ haystack.abouchet.StructFinder:
         "struct instance".loadMembers
     d) iterate.
 
+
+
+haytack.model:
+    Defines some base classes and API.
+    Invokes haystack.types.CTypesProxy to replace the ctypes modules in 
+    sys.modules.
+    
+    This module should be imported early.
+    It is imported as first import of the haystack package.
+    Any import of ctypes thereafter will effectively import the proxy instance.
+    If a third party code was to use ctypes in a conflicting manner, the caller
+    should switch from and for the original ctypes module by using
+    haystack.types.reload_ctypes,load_ctypes_default,reset_ctypes,load_ctypes
+
+haystack.types:
+    Holds the ctypes proxy class CTypesProxy.
+    If invoked with the host's current size of types, the proxy instance does 
+    not alter the host ctypes module functionality.
+    When installed with alternative type sizes then specific methods and types 
+    are altered to match a specific target architecture.
+    To use this, you need to use "global ctypes" when loading/reseting ctypes
+
+haystack.utils:
+    Functions used in the definitions of haystack ctypes record.
+    Several ways to implement value-based constraints on fields.
