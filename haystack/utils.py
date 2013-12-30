@@ -161,49 +161,11 @@ def deprecated(func):
 
 @deprecated
 def is_valid_address(obj, mappings, structType=None):
-    """ 
-    :param obj: the obj to evaluate.
-    :param mappings: the memory mappings in a list.
-    :param structType: the object's type, so the size could be taken in consideration.
-
-    Returns False if the object address is NULL.
-    Returns False if the object address is not in a mapping.
-    Returns False if the object overflows the mapping.
-
-    Returns the mapping in which the object stands otherwise.
-    """
-    # check for null pointers
-    addr = getaddress(obj)
-    if addr == 0:
-        return False
-    return is_valid_address_value(addr, mappings, structType)
-
+    return mappings.is_valid_address(obj, structType)
 
 @deprecated
 def is_valid_address_value(addr, mappings, structType=None):
-    """ 
-    :param addr: the address to evaluate.
-    :param mappings: the memory mappings in a list.
-    :param structType: the object's type, so the size could be taken in consideration.
-
-    Returns False if the object address is NULL.
-    Returns False if the object address is not in a mapping.
-    Returns False if the object overflows the mapping.
-
-    Returns the mapping in which the address stands otherwise.
-    """
-    import ctypes
-    m = mappings.getMmapForAddr(addr)
-    log.debug('is_valid_address_value = %x %s'%(addr, m))
-    if m:
-        if (structType is not None):
-            s = ctypes.sizeof(structType)
-            if (addr+s) < m.start or (addr+s) > m.end:
-                return False
-        return m
-    return False
-
-
+    return mappings.is_valid_address_value(addr, structType)
 
 @deprecated
 def isCTypes(obj):
