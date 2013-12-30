@@ -138,113 +138,53 @@ def offsetof(typ, membername):
     """
     return getattr(typ, membername).offset
 
-
-""" MISSING
-d 	double 	float 	8 	(4)
-p 	char[] 	string 	  	 
-"""
-# TODO DELETE ans use obj._type_
-bytestr_fmt={ # XXX probable bug here on x64...
-  'c_bool': '?',
-  'c_char': 'c',
-  'c_byte': 'b',
-  'c_ubyte': 'B',
-  'c_short': 'h',
-  'c_ushort': 'H',
-  'c_int': 'i', #c_int is c_long
-  'c_uint': 'I',
-  'int': 'i', 
-  'c_long': 'l', #c_int is c_long
-  'c_ulong': 'L',
-  'long': 'q', 
-  'c_longlong': 'q',
-  'c_ulonglong': 'Q',
-  'c_float': 'f', ## and double float ?
-  'c_double': 'd', ## and double float ?
-  'c_longdouble': 'g', ## and double float ?
-  'c_char_p': 's',
-  'c_void_p': 'P',
-  'c_void': 'P', ## void in array is void_p ##DEBUG
-  }
-
-def array2bytes_(array, typ):
-  """ Convert an array of typ() to a byte string."""
-  arrayLen = len(array)
-  if arrayLen == 0:
-    return b''
-  if typ not in bytestr_fmt:
-    log.warning('Unknown ctypes to pack: %s %s'%(typ,array))
-    return None
-  if typ  == 'c_void':
-    return b'' # void array cant be extracted
-  fmt = bytestr_fmt[typ]
-  # TODO fmt = typ._type_
-  sb=b''
-  try:
-    for el in array:
-      sb+=pack(fmt, el)
-  except Exception ,e:
-    log.warning('%s %s'%(fmt,el))
-    #raise e
-  return sb
-
 def array2bytes(array):
-  """ Convert an array of undetermined Basic Ctypes class to a byte string, 
-  by guessing it's type from it's class name.
-  
-  This is a bad example of introspection.
-  """
-  import ctypes
-  if not ctypes.is_array_of_basic_instance(array):
-    return b'NOT-AN-BasicType-ARRAY'
-  # BEURK
-  #log.info(type(array).__name__.split('_'))
-  #typ='_'.join(type(array).__name__.split('_')[:2])
-  #return array2bytes_(array, array._type_)
-  sb = b''
-  for el in array:
-    sb+=pack(array._type_._type_, el)
-  return sb
+    """Converts an array of undetermined Basic Ctypes class to a byte string, 
+    by guessing it's type from it's class name.
 
+    This is a bad example of introspection.
+    """
+    import ctypes
+    if not ctypes.is_array_of_basic_instance(array):
+        raise TypeError('NOT-AN-Basic-Type-ARRAY')
+    sb = b''.join([pack(array._type_._type_, el) for el in array])
+    return sb
 
 def bytes2array(bytes, typ):
-  """ Converts a bytestring in a ctypes array of typ() elements."""
-  typLen=ctypes.sizeof(typ)
-  if len(bytes)%typLen != 0:
-    raise ValueError('thoses bytes are not an array of %s'%(typ))
-  arrayLen=len(bytes)/typLen
-  array=(typ*arrayLen)()
-  if arrayLen == 0:
+    """Converts a bytestring in a ctypes array of typ() elements."""
+    import ctypes
+    typLen = ctypes.sizeof(typ)
+    if len(bytes)%typLen != 0:
+        raise ValueError('thoses bytes are not an array of %s'%(typ))
+    arrayLen = len(bytes)/typLen
+    array = (typ*arrayLen)()
+    if arrayLen == 0:
+        return array
+    fmt = ctypes.get_pack_format()[typ.__name__]
+    import struct
+    try:
+        for i in range(0,arrayLen):
+            array[i] = struct.unpack(fmt, bytes[typLen*i:typLen*(i+1)])[0]
+    except struct.error,e:
+        log.error('format:%s typLen*i:typLen*(i+1) = %d:%d'%(fmt, typLen*i,typLen*(i+1)))
+        raise e
     return array
-  if typ.__name__ not in bytestr_fmt:
-    log.warning('Unknown ctypes to pack: %s'%(typ))
-    return None
-  fmt=bytestr_fmt[typ.__name__]
-  sb=b''
-  import struct
-  try:
-    for i in range(0,arrayLen):
-      array[i]=struct.unpack(fmt, bytes[typLen*i:typLen*(i+1)])[0]
-  except struct.error,e:
-    log.error('format:%s typLen*i:typLen*(i+1) = %d:%d'%(fmt, typLen*i,typLen*(i+1)))
-    raise e
-  return array
 
 
 def pointer2bytes(attr,nbElement):
-  """ 
-  Returns an array from a ctypes POINTER, geiven the number of elements.
-  
-  :param attr: the structure member.
-  :param nbElement: the number of element in the array.
-  """
-  # attr is a pointer and we want to read elementSize of type(attr.contents))
-  if not is_address_local(attr):
-    return 'POINTER NOT LOCAL'
-  firstElementAddr=getaddress(attr)
-  array=(type(attr.contents)*nbElement).from_address(firstElementAddr)
-  # we have an array type starting at attr.contents[0]
-  return array2bytes(array)
+    """ 
+    Returns an array from a ctypes POINTER, given the number of elements.
+
+    :param attr: the structure member.
+    :param nbElement: the number of element in the array.
+    """
+    # attr is a pointer and we want to read elementSize of type(attr.contents))
+    if not is_address_local(attr):
+        return 'POINTER NOT LOCAL'
+    firstElementAddr = getaddress(attr)
+    array = (type(attr.contents)*nbElement).from_address(firstElementAddr)
+    # we have an array type starting at attr.contents[0]
+    return array2bytes(array)
 
 
 import warnings

@@ -262,9 +262,6 @@ class CTypesProxy(object):
             'c_int': 'i', #c_int is c_long
             'c_uint': 'I',
             'int': 'i', 
-            'c_long': 'l', #c_int is c_long
-            'c_ulong': 'L',
-            'long': 'q', 
             'c_longlong': 'q',
             'c_ulonglong': 'Q',
             'c_float': 'f', 
@@ -274,6 +271,16 @@ class CTypesProxy(object):
             'c_void_p': 'P',
             'c_void': 'P', ## void in array is void_p ##DEBUG
             }
+        if self.__longsize == 4:
+            # long == int
+            self.__basic_types_name.update({'c_long': 'i', 
+                                            'c_ulong': 'I',
+                                            'long': 'i'})
+        elif self.__longsize == 8:
+            # long == longlong
+            self.__basic_types_name.update({'c_long': 'q', 
+                                            'c_ulong': 'Q',
+                                            'long': 'Q'})
         # we need to account for the possible changes in c_longdouble
         self.__basic_types = set([getattr(self,k) for k in self.__basic_types_name.keys() if hasattr(self,k)])
         return
@@ -288,6 +295,10 @@ class CTypesProxy(object):
 
     def get_real_ctypes_member(self, typename):
         return getattr(self.__real_ctypes, typename)
+
+    def get_pack_format(self):
+        """Return the struct.pack/unpack format translation table"""
+        return dict(self.__basic_types_name)
 
     ######## migration from utils.
     def is_ctypes_instance(self, obj):
