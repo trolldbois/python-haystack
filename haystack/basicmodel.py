@@ -274,7 +274,7 @@ class LoadableMembers(object):
             return True
         # load it, fields are valid
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype): # DEBUG TEST
-            offset = offsetof(type(self),attrname)
+            offset = utils.offsetof(type(self),attrname)
             log.debug('st: %s %s is STRUCT at @%x'%(attrname,attrtype, self._orig_address_ + offset) )
             # TODO pydoc for impl.
             attr._orig_address_ = self._orig_address_ + offset
