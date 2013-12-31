@@ -10,6 +10,9 @@ CPPFLAGS = -O2 -g -Wall -stdlib=libstdc++ -x c++
 CC=clang
 CXX=clang++
 
+TGT32=-target linux-i386
+TGT64=-target linux-x86_64
+
 pid=
 
 C2PY=clang2py
@@ -19,8 +22,8 @@ OBJS32 := $(patsubst %.c,%.32,$(SRCS))
 OBJS32 := $(patsubst %.cpp,%.32,$(OBJS32))
 OBJS64 := $(patsubst %.32,%.64,$(OBJS32))
 
-PY := $(patsubst test-%.32,%_gen.py,$(OBJS32))
-#PY64 := $(patsubst %_gen.py,%_gen64.py,$(PY32))
+PY32 := $(patsubst test-%.32,%_gen32.py,$(OBJS32))
+PY64 := $(patsubst test-%.64,%_gen64.py,$(OBJS64))
 
 DUMPS32 := $(patsubst %,%.dump,$(OBJS32))
 OUTLOGS32 := $(patsubst %,%.stdout,$(OBJS32))
@@ -30,38 +33,37 @@ OUTLOGS64 := $(patsubst %,%.stdout,$(OBJS64))
 .PHONY: 
 	
 
-all: py binaries dumps32 dumps64
+all: py binaries dumps
 
 binaries: $(OBJS32) $(OBJS64)
 
-#test-ctypes6: test-ctypes6.cpp
-#	$(CC) $(CFLAGS) `pkg-config --cflags QtGui` $<  $(LDFLAGS)  -o $@
-
+dumps: dumps32 dumps64
 
 %.32: %.c
-	$(CC) $(CFLAGS) -target linux-i386 $<  $(LDFLAGS)  -o $@
+	$(CC) $(CFLAGS) $(TGT32) $<  $(LDFLAGS)  -o $@
 
 %.64: %.c
-	$(CC) $(CFLAGS) -target linux-x86_64 $<  $(LDFLAGS)  -o $@
+	$(CC) $(CFLAGS) $(TGT64) $<  $(LDFLAGS)  -o $@
 	
 %.32: %.cpp
-	$(CXX) $(CPPFLAGS) -target linux-i386 $<  $(LDFLAGS) -L/usr/lib/gcc/i686-linux-gnu/4.8/ -o $@
+	$(CXX) $(CPPFLAGS) $(TGT32) $<  $(LDFLAGS) -L/usr/lib/gcc/i686-linux-gnu/4.8/ -o $@
 
 %.64: %.cpp
-	$(CXX) $(CFLAGS) -target linux-x86_64 $<  $(LDFLAGS)  -o $@
+	$(CXX) $(CFLAGS) $(TGT64) $<  $(LDFLAGS)  -o $@
 
-#%: %.cpp
-#	$(CXX) `pkg-config --libs --cflags QtGui` $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
+py: $(PY32) $(PY64)
 
-py: $(PY)
+%_gen32.py: test-%.c 
+	$(C2PY) -k dst $< -o $@ $(TGT32)
 
-#py64: $(PY64)
+%_gen32.py: test-%.cpp 
+	$(C2PY) -k dst $< -o $@ $(TGT32)
 
-%_gen.py: test-%.c 
-	$(C2PY) -k dst $< -o $@
+%_gen64.py: test-%.c 
+	$(C2PY) -k dst $< -o $@ $(TGT64)
 
-%_gen.py: test-%.cpp 
-	$(C2PY) -k dst $< -o $@
+%_gen64.py: test-%.cpp 
+	$(C2PY) -k dst $< -o $@ $(TGT64)
 
 
 dumps32: $(SRCS) $(DUMPS32) $(OBJS32) 
