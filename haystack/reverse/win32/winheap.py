@@ -13,14 +13,12 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes
 import logging, sys
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
 
-from haystack.model import is_valid_address,is_valid_address_value,getaddress,array2bytes,bytes2array
-from haystack.model import LoadableMembers,RangeValue,NotNull,CString
+import ctypes
 
 from haystack.reverse.win32 import winheap_generated as gen
 
