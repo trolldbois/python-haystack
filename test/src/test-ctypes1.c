@@ -74,7 +74,7 @@ int main(){
   handle = dlopen ("libdaemon.so.0", RTLD_NOW|RTLD_GLOBAL);
   if (handle == NULL){
     fprintf (stderr, "cannot load: libdaemon.so.0\n");
-    return -1;  
+    //return -1;  
   }
   
   printf("_rtld_global 0x%llx\n",(unsigned long long )&_rtld_global);
