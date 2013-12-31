@@ -9,15 +9,16 @@ import sys
 
 from haystack import dump_loader
 from haystack import model
+from haystack import types
 from haystack import utils
 from haystack.reverse.win32 import win7heapwalker 
-from haystack.utils import isCStringPointer, isPointerType, isVoidPointerType, isFunctionType, getaddress
 
 class TestReferenceBook(unittest.TestCase):
     ''' Test the reference book
     '''
 
     def setUp(self):
+        ctypes = types.reload_ctypes(4,4,8)
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
         heap = self.mappings.getHeap()
         # execute a loadMembers
@@ -31,14 +32,15 @@ class TestReferenceBook(unittest.TestCase):
         pass
     
     def test_keepRef(self):
+        import ctypes
         self.assertNotEqual( self.mappings, None )
             
         for fname, ftype in self.heap_obj.getFields():
             attr = getattr(self.heap_obj, fname)
-            if isCStringPointer(ftype):
+            if ctypes.is_cstring_pointer(ftype):
                 # ignore that - attr_addr = getaddress(attr.ptr)
                 continue
-            elif isPointerType(ftype):
+            elif ctypes.is_pointer_type(ftype):
                 attr_addr = getaddress(attr)
             else:
                 continue
