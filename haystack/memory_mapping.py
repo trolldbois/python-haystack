@@ -579,7 +579,6 @@ class Mappings:
         self.name = filename
         self._target_system = None
         self.config = self.mappings[0].config
-        self.get_word_size() = self.config.get_word_size()
     
     def get_context(self, addr):
         mmap = self.getMmapForAddr(addr)
