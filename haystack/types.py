@@ -17,7 +17,7 @@ def reset_ctypes():
     return ctypes
 
 def load_ctypes_default():
-    """Load sys.module with a default host-mimicking ctypes module proxy."""
+    """Load sys.module with a default host-mimicking ctypes module proxy."""    
     reset_ctypes()
     import ctypes
     # get the hosts' types
@@ -29,6 +29,10 @@ def load_ctypes_default():
 
 def reload_ctypes(longsize, pointersize, longdoublesize):
     """Load sys.modle with a tuned ctypes module proxy."""
+    #print 'reload_ctypes', (longsize, pointersize, longdoublesize)
+    #import traceback
+    #traceback.print_stack(limit=3)
+
     if (longsize, pointersize, longdoublesize) in __PROXIES:
         instance = __PROXIES[(longsize, pointersize, longdoublesize)]
         set_ctypes(instance)
@@ -84,6 +88,9 @@ class CTypesProxy(object):
             raise RuntimeError('base ctype should not be a proxy')
         # copy every members
         for name in dir(ctypes):
+            #if name == '_pointer_type_cache':
+            #    setattr(self, name, dict(getattr(ctypes, name)))
+            #el
             if not name.startswith('__'):
                 setattr(self, name, getattr(ctypes, name))
         del ctypes
@@ -164,9 +171,13 @@ class CTypesProxy(object):
         # The new class should have :
         # ['__module__', 'from_param', '_type_', '__dict__', '__weakref__', '__doc__']
         def POINTER_T(pointee):
+            import ctypes
+            if pointee in ctypes._pointer_type_cache:
+                return ctypes._pointer_type_cache[pointee]
             # specific case for c_void_p
+            subtype = pointee
             if pointee is None: # VOID pointer type. c_void_p.
-                pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
+                subtype = type(None) # ctypes.c_void_p # ctypes.c_ulong
                 clsname = 'c_void'
             else:
                 clsname = pointee.__name__
@@ -177,7 +188,7 @@ class CTypesProxy(object):
             # and we had _subtype_ that will be queried by our helper functions. 
             class _T(_ctypes._SimpleCData,):
                 _type_ = replacement_type_char
-                _subtype_ = pointee
+                _subtype_ = subtype
                 @property
                 def _sub_addr_(self):
                     return self.value
@@ -188,8 +199,10 @@ class CTypesProxy(object):
                 def __init__(self, **args):
                     raise TypeError('This is not a ctypes pointer. It is not instanciable.')
             _class = type('LP_%d_%s'%(POINTERSIZE, clsname), (_T,),{}) 
+            ctypes._pointer_type_cache[pointee] = _class
             return _class
         self.POINTER = POINTER_T
+        self._pointer_type_cache.clear()
         self.c_void_p = self.POINTER(None)
         self.c_char_p = self.POINTER(self.c_char)
         self.c_wchar_p = self.POINTER(self.c_wchar)

@@ -19,9 +19,8 @@ import os
 import struct
 import unittest
 
-import ctypes
-
 def make_types():
+    import ctypes    
     # make some structures.
     class St(ctypes.Structure):
       _fields_ = [ ('a',ctypes.c_int) ]
@@ -50,9 +49,86 @@ def make_types():
 class TestReload(unittest.TestCase):
     """Tests sizes after ctypes changes."""
 
+    # test ctypes._pointer_type_cache
+    def test_pointer_type_cache(self):
+        """test the comportment of _pointer_type_cache"""
+        # on reset_ctypes, the unloading destroy the pointer type cache.
+        # we call reset when reloading. so its cool.
+        # what is the use of model book ?
+        import ctypes
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        #print 'first',id(ctypes._pointer_type_cache), ctypes._pointer_type_cache.keys()
+
+        ctypes = types.reset_ctypes()
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_double)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        c4 = ctypes = types.reload_ctypes(4,4,8)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_long)
+        #print ctypes._pointer_type_cache.keys()
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        c8 = ctypes = types.reload_ctypes(8,8,16)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        # relaod existings caches
+        ctypes = types.reset_ctypes()
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes = types.reload_ctypes(8,8,16)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes = types.reload_ctypes(4,4,8)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes = types.reset_ctypes()
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        # set existings caches
+        ctypes = types.set_ctypes(c4)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_double)
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        ctypes = types.set_ctypes(c8)
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_double)
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        ctypes = types.reset_ctypes()
+        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(ctypes.c_double)
+        ctypes.POINTER(ctypes.c_long)
+        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+
+        pass
+
     def test_reset_ctypes(self):
         """Test if reset gives the original types"""
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(4,4,8)
         proxy = ctypes
         for name,value in make_types().items():
@@ -69,7 +145,7 @@ class TestReload(unittest.TestCase):
 
     def test_load_ctypes_default(self):
         """Test if the default proxy works"""
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(4,4,8)
         self.assertTrue(ctypes.proxy)
         # test
@@ -86,7 +162,7 @@ class TestReload(unittest.TestCase):
 
     def test_reload_ctypes(self):
         """Tests loading of specific arch ctypes."""
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(4,4,8)
         for name,value in make_types().items():
             globals()[name] = value
@@ -128,7 +204,7 @@ class TestReload(unittest.TestCase):
 
     def test_set_ctypes(self):
         """Test reloading of previous defined arch-ctypes."""
-        global ctypes
+        import ctypes
         x32 = types.reload_ctypes(4,4,8)
         x64 = types.reload_ctypes(8,8,16)
         win = types.reload_ctypes(8,8,8)
@@ -176,7 +252,7 @@ class TestBasicFunctions(unittest.TestCase):
     """Tests basic haystack.types functions on base types."""
 
     def setUp(self):
-        global ctypes
+        import ctypes
         ctypes = types.load_ctypes_default()
         for name,value in make_types().items():
             globals()[name] = value
@@ -262,7 +338,7 @@ class TestBasicFunctions32(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(4,4,8)
         self.assertTrue(ctypes.proxy)
         for name,value in make_types().items():
@@ -292,7 +368,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(8,8,8)
         self.assertTrue(ctypes.proxy)
         for name,value in make_types().items():
@@ -321,7 +397,7 @@ class TestBasicFunctions64(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        global ctypes
+        import ctypes
         ctypes = types.reload_ctypes(8,8,16)
         self.assertTrue(ctypes.proxy)
         for name,value in make_types().items():
