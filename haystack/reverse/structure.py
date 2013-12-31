@@ -707,12 +707,9 @@ class ReversedType(model.LoadableMembersStructure):
   @classmethod
   def toString(cls):
     import ctypes
-    #fieldsString = '[ \n%s ]'% ( ''.join([ '(%s, %s),\n'%(attrname, attrtyp.__name__) for attrname, attrtyp in cls.getFields() ]))
-    
-    # if attrtyp isPointerType, get pointed type and print ctypes.POINTER( ptype)
     fieldsStrings = []
     for attrname, attrtyp in cls.getFields(): # model
-      if model.isPointerType(attrtyp) and not model.isVoidPointerType(attrtyp):
+      if ctypes.is_pointer_type(attrtyp) and not ctypes.is_pointer_to_void_type(attrtyp):
         fieldsStrings.append('(%s, ctypes.POINTER(%s) ),\n'%(attrname, attrtyp._type_.__name__) )
       else: # pointers not in the heap.
         fieldsStrings.append('(%s, %s ),\n'%(attrname, attrtyp.__name__) )
