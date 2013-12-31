@@ -132,6 +132,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
   def fillTree(self):
     # DEBUG 
     import sslsnoop.ctypes_openssh
+    import ctypes
     # we have to use haystack.model (.. .model) and not only model
     mods = model.registeredModules()
     log.debug('loading %d registered modules'%(len(mods)) )
@@ -143,7 +144,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
       it = None
       for cls,typ in inspect.getmembers(mod, inspect.isclass):
         fullname = '.'.join([mod.__name__,cls])      
-        if typ.__module__.startswith(mod.__name__) and utils.isStructType(typ()):
+        if typ.__module__.startswith(mod.__name__) and ctypes.is_struct_type(typ()):
           it = QtGui.QTreeWidgetItem(root, [cls] )
           it.setFont(0,font)
           self.classes.add(fullname)
