@@ -59,7 +59,7 @@ class ListModel(object):
                 continue # do not reload
             else:
                 #    OFFSET read, specific to a LIST ENTRY model
-                memoryMap = utils.is_valid_address_value( link, mappings, structType)
+                memoryMap = mappings.is_valid_address_value(link, structType)
                 if memoryMap is False:
                     log.error('error while validating address 0x%x type:%s @end:0x%x'%(link, 
                                     structType.__name__, link+ctypes.sizeof(structType)) )
@@ -202,7 +202,7 @@ def declare_double_linked_list_type( structType, forward, backward):
             while addr not in done:
                 #print '%x %s'%(addr, addr in done)
                 done.append(addr)
-                memoryMap = utils.is_valid_address_value( addr, mappings, structType)
+                memoryMap = mappings.is_valid_address_value(addr, structType)
                 if memoryMap == False:
                     raise ValueError('the link of this linked list has a bad value')
                 st = memoryMap.readStruct( addr, structType)
