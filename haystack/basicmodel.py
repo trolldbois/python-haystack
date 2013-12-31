@@ -225,7 +225,7 @@ class LoadableMembers(object):
         import ctypes
         #attrtype=type(attr)
         #and ( attrtype in self.classRef) 
-        return ( (bool(attr) and (isPointerStructType(attrtype) or isPointerUnionType(attrtype) ) ) or
+        return ( (bool(attr) and (ctypes.is_pointer_to_struct_type(attrtype) or ctypes.is_pointer_to_union_type(attrtype) ) ) or
                         #not ctypes.is_function_type(attrtype) and not ) or
                             ctypes.is_struct_type(attrtype)    or ctypes.is_cstring_type(attrtype) or
                             (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_instance(attr) ) ) # should we iterate on Basictypes ? no
@@ -547,7 +547,7 @@ class LoadableMembers(object):
                 cache = getRef(_subtype, utils.getaddress(attr) )
                 if cache is not None:
                     obj = self._attrToPyObject(cache, field, _subtype )
-                elif isPointerBasicType(attrtype):
+                elif ctypes.is_pointer_to_basic_type(attrtype):
                     log.error('Pointer to Basic type - %s'%(field))
                     obj = 'Pointer to Basic type'
                 else:
