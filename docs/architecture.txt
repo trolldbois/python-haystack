@@ -1,4 +1,10 @@
+ctypes:
+    Never import ctypes as a global import.
+    Or you will have to global ctypes = types.reload_ctypes over it.
+    just import ctypes locally in functions.
 
+    beware that _pointer_type_cache is resetted often.
+    
 scripts/haystack:
     Search for struct in memory. Memory can be a file dump or a live process.
     calls haystack.abouchet
@@ -35,6 +41,8 @@ haytack.model:
     should switch from and for the original ctypes module by using
     haystack.types.reload_ctypes,load_ctypes_default,reset_ctypes,load_ctypes
 
+    Book/getRef is used to accelerate loading of structures in foreign memory.
+
 haystack.types:
     Holds the ctypes proxy class CTypesProxy.
     If invoked with the host's current size of types, the proxy instance does 
@@ -44,6 +52,9 @@ haystack.types:
     To use this, you need to use local ctypes imports.
     In haystack code, I would recommend NEVER EVER importing ctypes at the 
     module level.
+
+    _pointer_type_cache is reseted and updated by the POINTER code.
+    because reset() is called, the cache is cleaned between reloads.
 
 haystack.utils:
     Functions used in the definitions of haystack ctypes record.
