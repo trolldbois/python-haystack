@@ -16,23 +16,28 @@ from haystack.reverse.win32 import win7heapwalker
 class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
     
+    def setUp(self):
+        model.reset()
+    
     def test_keepRef(self):
+        # same address, same type
         model.keepRef(1, int, 0xcafecafe)
         model.keepRef(2, int, 0xcafecafe)
         model.keepRef(3, int, 0xcafecafe)
         me = model.getRefByAddr( 0xcafecafe )
-        print 'me', me
+        # only one ref ( the first)
         self.assertEquals( len(me), 1)
 
+        # different type, same address
         model.keepRef('4', str, 0xcafecafe)
         me = model.getRefByAddr( 0xcafecafe )
-        print 'me', me
+        # multiple refs
         self.assertEquals( len(me), 2)
         return
 
 
     def test_hasRef(self):
-
+        # same address, different types
         model.keepRef(1, int, 0xcafecafe)
         model.keepRef(2, float, 0xcafecafe)
         model.keepRef(3, str, 0xcafecafe)
@@ -42,6 +47,9 @@ class TestReferenceBook(unittest.TestCase):
         self.assertTrue( model.hasRef(str,0xcafecafe))
         self.assertFalse( model.hasRef(unicode,0xcafecafe))
         self.assertFalse( model.hasRef(int,0xdeadbeef))
+        me = model.getRefByAddr( 0xcafecafe )
+        # multiple refs
+        self.assertEquals( len(me), 3)
         
     def test_getRef(self):
         model.keepRef(1, int, 0xcafecafe)
@@ -62,12 +70,12 @@ class TestReferenceBook(unittest.TestCase):
         self.assertTrue( model.hasRef(int,0xcafecafe))
         self.assertTrue( model.hasRef(float,0xcafecafe))
         self.assertTrue( model.hasRef(str,0xcafecafe))
-
+        # del one type
         model.delRef(str, 0xcafecafe)
         self.assertTrue( model.hasRef(int,0xcafecafe))
         self.assertTrue( model.hasRef(float,0xcafecafe))
         self.assertFalse( model.hasRef(str,0xcafecafe))
-
+        # try harder, same type, same result
         model.delRef(str, 0xcafecafe)
         self.assertTrue( model.hasRef(int,0xcafecafe))
         self.assertTrue( model.hasRef(float,0xcafecafe))
@@ -83,17 +91,19 @@ class TestReferenceBook(unittest.TestCase):
         self.assertFalse( model.hasRef(float,0xcafecafe))
         self.assertFalse( model.hasRef(str,0xcafecafe))
 
-
+    def test_get_subtype(self):
+        types.reset_ctypes()
+        import ctypes
+        class X(ctypes.Structure):
+            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
+        PX = ctypes.POINTER(X)
+        self.assertEquals(model.get_subtype(PX), X)
         
-    '''
-        def hasRef(typ,origAddr):
-
-        def getRef(typ,origAddr):
-
-        def getRefByAddr(addr):
-
-        def keepRef(obj,typ=None,origAddr=None):
-    '''
+        ctypes = types.reload_ctypes(4,4,8) # different arch
+        class Y(ctypes.Structure):
+            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
+        PY = ctypes.POINTER(Y)
+        self.assertEquals(model.get_subtype(PY), Y)
 
 class TestCopyModule(unittest.TestCase):
     
@@ -155,6 +165,6 @@ if __name__ == '__main__':
     #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)    
     #logging.getLogger("dump_loader").setLevel(level=logging.INFO)    
     #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)    
-    logging.basicConfig(level=logging.DEBUG)    
+    logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)
 

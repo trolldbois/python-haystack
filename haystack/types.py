@@ -188,7 +188,7 @@ class CTypesProxy(object):
             # and we had _subtype_ that will be queried by our helper functions. 
             class _T(_ctypes._SimpleCData,):
                 _type_ = replacement_type_char
-                _subtype_ = subtype
+                _subtype_ = subtype # could use _pointer_type_cache
                 @property
                 def _sub_addr_(self):
                     return self.value

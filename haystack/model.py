@@ -36,9 +36,6 @@ class _book(object):
     modules = set()
     """holds registered modules."""
 
-    classes = dict()
-    """holds nothings (ctypes._pointer_type_cache)."""
-
     refs = dict()
     """holds previous loads of this type at this address. Reduces load time."""
 
@@ -46,25 +43,16 @@ class _book(object):
         pass
     def addModule(self, mod):
         self.modules.add(mod)
-    def addClass(self,cls):
-        import ctypes
-        # ctypes._pointer_type_cache is sufficient
-        #self.classes[ctypes.POINTER(cls)] = cls
-        ctypes.POINTER(cls)
     def addRef(self,obj, typ, addr):
         self.refs[(typ,addr)]=obj
     def getModules(self):
         return set(self.modules)
-    def getClasses(self):
-        return dict(self.classes)
     def getRef(self,typ,addr):
         if len(self.refs) > 35000:
             log.warning('the book is full, you should haystack.model.reset()')
         return self.refs[(typ,addr)]
     def delRef(self,typ,addr):
         del self.refs[(typ,addr)]
-    def isRegisteredType(self, typ):
-        return typ in self.classes.values()
 
         
 # central model book register
@@ -122,8 +110,9 @@ def keepRef(obj,typ=None,origAddr=None):
         else:
             origAddr = hex(origAddr)
         if typ is not None:
-            log.debug('references already in cache %s/%s'%(typ,origAddr))
+            log.debug('ignore keepRef - references already in cache %s/%s'%(typ,origAddr))
         return
+    # there is no pre-existing typ().from_address(origAddr)
     __book.addRef(obj,typ,origAddr)
     return
 
@@ -135,19 +124,10 @@ def delRef(typ,origAddr):
 
 def get_subtype(cls):
     """get the subtype of a pointer, array or basic type with haystack quirks."""
+    # could use _pointer_type_cache
     if hasattr(cls, '_subtype_'):
         return cls._subtype_    
     return cls._type_    
-
-
-#def register(klass):
-#    #klass.classRef = __register
-#    #__register[ctypes.POINTER(klass)] = klass
-#    __book.addClass(klass)
-#    #klass.classRef = __book.classes
-#    #klass.classRef = ctypes._pointer_type_cache
-#    # p_st._type_
-#    return klass
 
 def registeredModules():
     return sys.modules[__name__].__book.getModules()
@@ -245,13 +225,6 @@ def registerModule( targetmodule ):
     __book.addModule(targetmodule)
     log.debug('registered %d module total'%(len(__book.getModules())))
     return
-
-#def isRegistered(cls):
-#    #return cls in sys.modules[__name__].__dict__.values()
-#    x = __book
-#    import code
-#    code.interact(local=locals())
-#    return __book.isRegisteredType(cls)
 
 # only load ctypes at the end.
 import ctypes
