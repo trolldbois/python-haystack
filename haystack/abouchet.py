@@ -564,7 +564,7 @@ def refresh(args):
   mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
   finder = StructFinder(mappings)
   
-  memoryMap = utils.is_valid_address_value(addr, finder.mappings)
+  memoryMap = finder.mappings.is_valid_address_value(addr)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
     raise ValueError("the address is not accessible in the memoryMap")
@@ -603,7 +603,7 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
   mappings = dump_loader.load(dumpname)
   finder = StructFinder(mappings)
   # validate the input address.
-  memoryMap = utils.is_valid_address_value(address, finder.mappings)
+  memoryMap = finder.mappings.is_valid_address_value(address)
   if not memoryMap:
     log.error("the address is not accessible in the memoryMap")
     raise ValueError("the address is not accessible in the memoryMap")
