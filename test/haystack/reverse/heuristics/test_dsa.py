@@ -11,9 +11,8 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
-
-Config.set_word_size(4) # forcing it on these unittest
+from haystack import config
+Config = config.make_config_wordsize(4) # forcing it on these unittest
 
 from haystack.reverse import fieldtypes
 from haystack.reverse import structure
@@ -103,7 +102,7 @@ class TestFieldAnalyser(unittest.TestCase):
     self.assertEquals(len(fields), 0) 
 
   def test_small_int(self):
-    ''' we default to WORDSIZE == 4 '''
+    ''' we default to word_size == 4 '''
     smallints = [  '\xff\xff\xff\xff', '\x02\xff\xff\xff',  ]
     for bytes in smallints:
       fields = self.ints.make_fields( FS(bytes), 0, 4 )

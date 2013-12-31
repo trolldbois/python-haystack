@@ -6,7 +6,6 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import ctypes
 import logging
 import sys
 
@@ -121,9 +120,9 @@ def is_malloc_heap(mappings, mapping):
   except ValueError, e:
     log.debug(e)
     return False
-  
-  if size != ( len(mapping) - config.WORDSIZE*len(sizes) ):
-    log.debug('expected %d/%d bytes, got %d'%(len(mapping), len(mapping) - 2*config.WORDSIZE*len(sizes), size ) )
+  # FIXME: is malloc word size dependent
+  if size != ( len(mapping) - config.get_word_size()*len(sizes) ):
+    log.debug('expected %d/%d bytes, got %d'%(len(mapping), len(mapping) - 2*config.get_word_size()*len(sizes), size ) )
     return False
   return True
 
@@ -157,10 +156,10 @@ struct malloc_chunk {
 
   '''
   def get_mem_addr(self, orig_addr):
-    return orig_addr + 2*self.config.WORDSIZE
+    return orig_addr + 2*self.config.get_word_size()
 
   def get_mem_size(self):
-    return self.real_size() - self.config.WORDSIZE
+    return self.real_size() - self.config.get_word_size()
     
   def real_size(self):
     return (self.size & ~SIZE_BITS)
@@ -177,7 +176,7 @@ struct malloc_chunk {
     '''extract p's inuse bit
     doesnt not work on the top one
     '''
-    next_addr = self.next_addr(orig_addr) + self.config.WORDSIZE
+    next_addr = self.next_addr(orig_addr) + self.config.get_word_size()
     mmap = mappings.is_valid_address_value(next_addr)
     if not mmap:
       return 0
@@ -201,9 +200,9 @@ struct malloc_chunk {
     inuse = self.check_inuse(mappings, orig_addr) 
     log.debug('is chunk in use ?: %s'% bool(inuse) )
     
-    if real_size % self.config.WORDSIZE != 0:
+    if real_size % self.config.get_word_size() != 0:
       # not a good value
-      log.debug('real_size is not a WORDSIZE moduli')
+      log.debug('real_size is not a WORD SIZE moduli')
       return False
     
     return True
@@ -263,12 +262,15 @@ struct malloc_chunk {
 
 
 # FIXME: need to define UINT base on config.
-# so that means, amclloc_chunk needs to be dynamically created, based on config.
-#if Config.WORDSIZE == 4:
+# so that means, malloc_chunk needs to be dynamically created, based on config.
+#if Config.get_word_size() == 4:
 #  UINT = ctypes.c_uint32
-#elif Config.WORDSIZE == 8:
+#elif Config.get_word_size() == 8:
 #  UINT = ctypes.c_uint64
-UINT = ctypes.c_uint64
+#UINT = ctypes.c_uint64
+
+# FIXME ??
+UINT = ctypes.c_uint
 
 malloc_chunk._fields_ = [
     ( 'prev_size' , UINT ), #  INTERNAL_SIZE_T

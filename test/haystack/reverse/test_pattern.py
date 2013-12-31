@@ -12,8 +12,10 @@ import os
 import unittest
 
 from haystack import memory_mapping
-from haystack.config import Config
 from haystack.reverse import pattern
+from haystack import config
+Config = config.make_config_wordsize(4) # forcing it on these unittest
+
 
 Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000
@@ -34,16 +36,16 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   nsig.extend(seq)
   indices = [ i for i in accumulate(nsig)]
   dump = [] #b''
-  for i in range(0,Config.MMAP_LENGTH, Config.WORDSIZE): 
+  for i in range(0,Config.MMAP_LENGTH, Config.get_word_size()): 
     if i in indices:
       dump.append( struct.pack('L',start+i) )
     else:
       dump.append( struct.pack('L',0x2e2e2e2e) )
   
-  if len(dump) != Config.MMAP_LENGTH/Config.WORDSIZE :
+  if len(dump) != Config.MMAP_LENGTH/Config.get_word_size() :
     raise ValueError('error on length dump %d '%( len(dump) ) )  
   dump2 = ''.join(dump)
-  if len(dump)*Config.WORDSIZE != len(dump2):
+  if len(dump)*Config.get_word_size() != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
   mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')

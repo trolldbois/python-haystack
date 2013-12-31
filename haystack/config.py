@@ -22,7 +22,6 @@ class ConfigClass():
     def __init__(self):
         #self.cacheDir = os.path.normpath(outputDir)
         #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-        #self.WORDSIZE = None
         self.commentMaxSize = 64
         self.mmap_hack = True # bad bad idea...
         #
@@ -62,31 +61,23 @@ class ConfigClass():
         resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
         return     
                 
-    def set_pointer_type(self, ptr_t):
-        # TODO check that it is a pointer type.
-        #if type(ptr_t) != _ctypes.PyCPointerType:
-        #self.PTR_TYPE = 
-        #    
-        #self.WORDSIZE = ctypes.sizeof(ptr_t)
-        pass
-    
     def get_word_type(self):
         import ctypes
-        if self.WORDSIZE == 4:
+        if self.get_word_size() == 4:
             return ctypes.c_uint32
-        elif self.WORDSIZE == 8:
+        elif self.get_word_size() == 8:
             return ctypes.c_uint64
         else:
-            raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
+            raise ValueError('platform not supported for word size == %d'%(self.get_word_size()))
         return
 
     def get_word_type_char(self):
-        if self.WORDSIZE == 4:
+        if self.get_word_size() == 4:
             return 'I'
-        elif self.WORDSIZE == 8:
+        elif self.get_word_size() == 8:
             return 'Q'
         else:
-            raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
+            raise ValueError('platform not supported for word size == %d'%(self.get_word_size()))
         return
         
     def get_word_size(self):
@@ -97,11 +88,7 @@ class ConfigClass():
         self.__size = size
         self.ctypes = types.reload_ctypes(self.__size,self.__size,2*self.__size)
         return
-    
-    WORDSIZE = property(get_word_size, set_word_size)
-    WORDTYPE = property(get_word_type)
-    
-    
+        
     def makeCache(self, dumpname):
         root = os.path.abspath(dumpname)
         folder = os.path.sep.join([root, self.CACHE_NAME])
@@ -158,7 +145,7 @@ def make_config_from_memdump(dumpname):
     m1 = index.readline().split(' ')
     # test if x32 or x64
     if len(m1[0]) > 10:
-        log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
+        log.info('[+] WORD SIZE = 8 #x64 arch dump detected')
         cfg.set_word_size(8)
     else:
         cfg.set_word_size(4)
@@ -170,7 +157,7 @@ def make_config_from_memory_address_string(address_string):
     cfg = ConfigClass()
     # test if x32 or x64
     if len(address_string) > 10:
-        log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
+        log.info('[+] WORD SIZE = 8 #x64 arch dump detected')
         cfg.set_word_size(8)
     else:
         cfg.set_word_size(4)

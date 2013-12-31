@@ -11,11 +11,11 @@ import operator
 import os
 import unittest
 
-from haystack.config import Config
-Config.set_word_size(4)
-
 from haystack import memory_mapping
 from haystack.reverse import pointerfinder
+
+from haystack import config
+Config = config.make_config_wordsize(4)
 
 Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000
@@ -38,18 +38,18 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   indices = [ i for i in accumulate(nsig)]
   dump = [] #b''
   values = []
-  for i in range(0,Config.MMAP_LENGTH, Config.WORDSIZE): 
+  for i in range(0,Config.MMAP_LENGTH, Config.get_word_size()): 
     if i in indices:
       dump.append( struct.pack('I',start+i) )
       values.append(start+i)
     else:
       dump.append( struct.pack('I',0x2e2e2e2e) )
   
-  if len(dump) != Config.MMAP_LENGTH/Config.WORDSIZE :
-    raise ValueError('error on length dump %d expected %d'%( len(dump), (Config.MMAP_LENGTH/Config.WORDSIZE) ) )  
+  if len(dump) != Config.MMAP_LENGTH/Config.get_word_size() :
+    raise ValueError('error on length dump %d expected %d'%( len(dump), (Config.MMAP_LENGTH/Config.get_word_size()) ) )  
   dump2 = ''.join(dump)
-  #print repr(dump2[:16]), Config.WORDSIZE, Config.MMAP_LENGTH
-  if len(dump)*Config.WORDSIZE != len(dump2):
+  #print repr(dump2[:16]), Config.get_word_size(), Config.MMAP_LENGTH
+  if len(dump)*Config.get_word_size() != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
   mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')

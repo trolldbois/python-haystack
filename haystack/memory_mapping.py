@@ -280,7 +280,7 @@ class LocalMemoryMapping(MemoryMapping):
     def readWord(self, vaddr ):
         """Address have to be aligned!"""
         laddr = self.vtop( vaddr )
-        word = self.config.WORDTYPE.from_address(long(laddr)).value # is non-aligned a pb ?, indianess is at risk
+        word = self.config.get_word_type().from_address(long(laddr)).value # is non-aligned a pb ?, indianess is at risk
         return word
 
     def readBytes1(self, vaddr, size):
@@ -389,7 +389,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
                     self._memdump.close()
                     self._memdump = None
                     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-                    # this is a local memory hack, so self.config.WORDTYPE is not involved.
+                    # this is a local memory hack, so self.config.get_word_type() is not involved.
                     heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(self._local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
                     self._local_mmap_content = (ctypes.c_ubyte*(self.end-self.start)).from_address(int(heapmap))
                 else: # fallback with no creepy hacks
@@ -495,7 +495,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     def readWord(self, vaddr):
         """Address have to be aligned!"""
         laddr = self.vtop(vaddr)
-        word = self.config.WORDTYPE.from_buffer_copy(self._local_mmap[laddr:laddr+self.config.WORDSIZE], 0).value # is non-aligned a pb ?
+        word = self.config.get_word_type().from_buffer_copy(self._local_mmap[laddr:laddr+self.config.get_word_size()], 0).value # is non-aligned a pb ?
         return word
 
     def readArray(self, address, basetype, count):
@@ -579,7 +579,7 @@ class Mappings:
         self.name = filename
         self._target_system = None
         self.config = self.mappings[0].config
-        self.WORDSIZE = self.config.WORDSIZE
+        self.get_word_size() = self.config.get_word_size()
     
     def get_context(self, addr):
         mmap = self.getMmapForAddr(addr)

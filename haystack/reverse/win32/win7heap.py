@@ -530,7 +530,9 @@ def _HEAP_getFreeLists(self, mappings):
       log.warning('This freeblock BLink point to _HEAP_BUCKET at %x'%(blink_value))
     # its then a HEAP_ENTRY.. 
     #chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, _HEAP_ENTRY)
-    chunk_header = m.readStruct( freeblock_addr - 2*mappings.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
+    #chunk_header = m.readStruct( freeblock_addr - 2*mappings.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
+    _wordsize = 4 # FIXME: are the header arch independent.
+    chunk_header = m.readStruct( freeblock_addr - 2*_wordsize, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
     if self.EncodeFlagMask:
       log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
       chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
@@ -547,9 +549,10 @@ def _HEAP_getFreeListsWinXP(self, mappings):
   # 128 blocks
   start = ctypes.addressof(self.FreeLists) # sentinel value
   logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
+  _wordsize = 4 # FIXME: are the header arch independent.
   for freeBlock in self.FreeLists._iterateList( mappings):
     # try to get the size
-    sizeaddr = freeBlock - mappings.WORDSIZE
+    sizeaddr = freeBlock - _wordsize
     memoryMap = utils.is_valid_address_value( sizeaddr, mappings)
     if memoryMap == False:
       raise ValueError('the link of this linked list has a bad value')

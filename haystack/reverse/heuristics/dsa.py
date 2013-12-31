@@ -10,11 +10,13 @@ import array
 import struct
 import itertools
 
-from haystack.config import Config
 from haystack.utils import unpackWord
 from haystack.reverse import re_string, fieldtypes
 from haystack.reverse.fieldtypes import FieldType, Field, PointerField
 from haystack.reverse.heuristics.model import FieldAnalyser, StructureAnalyser
+
+from haystack import config
+Config = config.make_config_wordsize(4) # FIXME
 
 import ctypes
 
@@ -25,10 +27,10 @@ log = logging.getLogger('dsa')
 class ZeroFields(FieldAnalyser):
   ''' checks for possible fields, aligned, with WORDSIZE zeros.'''
   def make_fields(self, structure, offset, size):
-    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    assert( offset%Config.get_word_size() == 0 ) #vaddr and offset should be aligned
     #log.debug('checking Zeroes')
     self._typename = FieldType.ZEROES
-    self._zeroes = '\x00'*Config.WORDSIZE
+    self._zeroes = '\x00'*Config.get_word_size()
 
     ret = self._find_zeroes(structure, offset, size)
     
@@ -41,18 +43,18 @@ class ZeroFields(FieldAnalyser):
     bytes = structure.bytes
     #print 'offset:%x blen:%d'%(offset, len(bytes))
     #print repr(bytes)
-    assert( (offset)%Config.WORDSIZE == 0 )
-    #aligned_off = (offset)%Config.WORDSIZE 
+    assert( (offset)%Config.get_word_size() == 0 )
+    #aligned_off = (offset)%Config.get_word_size() 
     start = offset
     #if aligned_off != 0: # align to next
-    #  start += (Config.WORDSIZE - aligned_off)
-    #  size  -= (Config.WORDSIZE - aligned_off)
+    #  start += (Config.get_word_size() - aligned_off)
+    #  size  -= (Config.get_word_size() - aligned_off)
     # iterate
     matches = array.array('i')
-    for i in range(start, start+size, Config.WORDSIZE ):
+    for i in range(start, start+size, Config.get_word_size() ):
       # PERF TODO: bytes or struct test ?
-      #print repr(bytes[start+i:start+i+Config.WORDSIZE])
-      if bytes[start+i:start+i+Config.WORDSIZE] == self._zeroes:
+      #print repr(bytes[start+i:start+i+Config.get_word_size()])
+      if bytes[start+i:start+i+Config.get_word_size()] == self._zeroes:
         matches.append(start+i)
         #print matches
     # collate
@@ -62,11 +64,11 @@ class ZeroFields(FieldAnalyser):
     fields = []
     # first we need to collate neighbors
     collates = list()
-    prev = matches[0]-Config.WORDSIZE
+    prev = matches[0]-Config.get_word_size()
     x = []
     # PERF TODO: whats is algo here
     for i in matches:
-      if i-Config.WORDSIZE == prev:
+      if i-Config.get_word_size() == prev:
         x.append(i)
       else:
         collates.append(x)
@@ -78,9 +80,9 @@ class ZeroFields(FieldAnalyser):
     for field in collates:
       flen = len(field)
       if flen > 1:
-        size = Config.WORDSIZE * flen
+        size = Config.get_word_size() * flen
       elif flen == 1:
-        size = Config.WORDSIZE
+        size = Config.get_word_size()
       else:
         continue
       # make a field
@@ -93,11 +95,11 @@ class UTF16Fields(FieldAnalyser):
   
   '''
   def make_fields(self, structure, offset, size):
-    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    assert( offset%Config.get_word_size() == 0 ) #vaddr and offset should be aligned
     #log.debug('checking String')
     fields = []
     bytes = structure.bytes
-    while size > Config.WORDSIZE:
+    while size > Config.get_word_size():
       #print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
       index = re_string.rfind_utf16(bytes, offset, size)
       if index > -1:
@@ -106,18 +108,18 @@ class UTF16Fields(FieldAnalyser):
         fields.append(f)
         size = index # reduce unknown field in prefix
       else:
-        size -= Config.WORDSIZE # reduce unkown field
+        size -= Config.get_word_size() # reduce unkown field
     # look in head
     return fields
   
 class PrintableAsciiFields(FieldAnalyser):
   ''' finds printable ascii fields '''
   def make_fields(self, structure, offset, size):
-    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    assert( offset%Config.get_word_size() == 0 ) #vaddr and offset should be aligned
     #log.debug('checking String')
     fields = []
     bytes = structure.bytes
-    while size >= Config.WORDSIZE:
+    while size >= Config.get_word_size():
       #print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
       index, ssize = re_string.find_ascii(bytes, offset, size)
       if index == 0:
@@ -130,13 +132,13 @@ class PrintableAsciiFields(FieldAnalyser):
         fields.append(f)
         size -= ssize # reduce unknown field
         offset += ssize
-        if ssize%Config.WORDSIZE:
-          rest = Config.WORDSIZE - ssize%Config.WORDSIZE
+        if ssize%Config.get_word_size():
+          rest = Config.get_word_size() - ssize%Config.get_word_size()
           size -= rest # goto next aligned
           offset += rest
       else:
-        size -= Config.WORDSIZE # reduce unkown field
-        offset += Config.WORDSIZE
+        size -= Config.get_word_size() # reduce unkown field
+        offset += Config.get_word_size()
     # look in head
     return fields
   
@@ -146,22 +148,22 @@ class PointerFields(FieldAnalyser):
   ''' TODO tests '''
   ''' looks at a word for a pointer value'''
   def make_fields(self, structure, offset, size):
-    # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
-    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    # iterate on all offsets . NOT assert( size == Config.get_word_size())
+    assert( offset%Config.get_word_size() == 0 ) #vaddr and offset should be aligned
     log.debug('checking Pointer')
     bytes = structure.bytes
     fields = []
-    while size >= Config.WORDSIZE:
-      value = unpackWord(bytes[offset:offset+Config.WORDSIZE])
+    while size >= Config.get_word_size():
+      value = unpackWord(bytes[offset:offset+Config.get_word_size()])
       # check if pointer value is in range of mappings and set self.comment to pathname value of pointer
       # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
       if value not in structure._mappings:
-        size -= Config.WORDSIZE
-        offset += Config.WORDSIZE
+        size -= Config.get_word_size()
+        offset += Config.get_word_size()
         continue
       # we have a pointer
       log.debug('checkPointer offset:%s value:%s'%(offset, hex(value)))
-      field = PointerField(structure, offset, FieldType.POINTER, Config.WORDSIZE, False)  
+      field = PointerField(structure, offset, FieldType.POINTER, Config.get_word_size(), False)  
       field.value = value
       # TODO: leverage the context._function_names 
       if value in structure._context._function_names :
@@ -170,8 +172,8 @@ class PointerFields(FieldAnalyser):
       else:
         field.comment = structure._mappings.getMmapForAddr(value).pathname 
       fields.append(field)
-      size -= Config.WORDSIZE
-      offset += Config.WORDSIZE
+      size -= Config.get_word_size()
+      offset += Config.get_word_size()
     return fields
 
 
@@ -179,12 +181,12 @@ class PointerFields(FieldAnalyser):
 class IntegerFields(FieldAnalyser):
   ''' looks at a word for a small int value'''
   def make_fields(self, structure, offset, size):
-    # iterate on all offsets . NOT assert( size == Config.WORDSIZE)
-    assert( offset%Config.WORDSIZE == 0 ) #vaddr and offset should be aligned
+    # iterate on all offsets . NOT assert( size == Config.get_word_size())
+    assert( offset%Config.get_word_size() == 0 ) #vaddr and offset should be aligned
     #log.debug('checking Integer')
     bytes = structure.bytes
     fields = []
-    while size >= Config.WORDSIZE:
+    while size >= Config.get_word_size():
       #print 'checking >'
       field = self.checkSmallInt(structure, bytes, offset)
       if field is None:
@@ -193,21 +195,21 @@ class IntegerFields(FieldAnalyser):
       # we have a field smallint
       if field is not None:
         fields.append(field)      
-      size -= Config.WORDSIZE
-      offset += Config.WORDSIZE
+      size -= Config.get_word_size()
+      offset += Config.get_word_size()
     return fields
 
   def checkSmallInt(self, structure, bytes, offset, endianess='<'):
     ''' check for small value in signed and unsigned forms '''
-    val = unpackWord(bytes[offset:offset+Config.WORDSIZE], endianess)
+    val = unpackWord(bytes[offset:offset+Config.get_word_size()], endianess)
     #print endianess, val
     if val < 0xffff:
-      field = Field(structure, offset, FieldType.SMALLINT, Config.WORDSIZE, False)
+      field = Field(structure, offset, FieldType.SMALLINT, Config.get_word_size(), False)
       field.value = val
       field.endianess = endianess
       return field
-    elif ( (2**(Config.WORDSIZE*8) - 0xffff) < val): # check signed int
-      field = Field(structure, offset, FieldType.SIGNED_SMALLINT, Config.WORDSIZE, False)
+    elif ( (2**(Config.get_word_size()*8) - 0xffff) < val): # check signed int
+      field = Field(structure, offset, FieldType.SIGNED_SMALLINT, Config.get_word_size(), False)
       field.value = val
       field.endianess = endianess
       return field
@@ -290,7 +292,7 @@ class DSASimple(StructureAnalyser):
     # conclude on QUEUE insertion
     lastfield_size = len(structure)-nextoffset
     if lastfield_size > 0 :
-      if lastfield_size < Config.WORDSIZE:
+      if lastfield_size < Config.get_word_size():
         gap = Field( structure, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
         log.debug('_make_gaps: adding last field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
         gaps.append(gap)
@@ -304,12 +306,12 @@ class DSASimple(StructureAnalyser):
         if nextoffset is not aligned
           add (padding + gap) to gaps 
          '''
-    if nextoffset%Config.WORDSIZE == 0:
+    if nextoffset%Config.get_word_size() == 0:
       gap = Field( structure, nextoffset, FieldType.UNKNOWN, endoffset-nextoffset, False)
       log.debug('_make_gaps: adding field at offset %d:%d'%(gap.offset, gap.offset+len(gap) ))
       gaps.append(gap)
     else:   # unaligned field should be splitted
-      s1 = Config.WORDSIZE - nextoffset%Config.WORDSIZE
+      s1 = Config.get_word_size() - nextoffset%Config.get_word_size()
       gap1 = Field( structure, nextoffset, FieldType.UNKNOWN, s1, True)
       gap2 = Field( structure, nextoffset+s1, FieldType.UNKNOWN, endoffset-nextoffset-s1, False)
       log.debug('_make_gaps: Unaligned field at offset %d:%d'%(gap1.offset, gap1.offset+len(gap1) ))
@@ -347,7 +349,7 @@ class EnrichedPointerFields(StructureAnalyser):
       field.set_child_addr(value) # default
       ## FIXME field.set_resolved() # What ?
       # + if value is unaligned, mark it as cheesy
-      if value%Config.WORDSIZE:
+      if value%Config.get_word_size():
         field.set_uncertainty('Unaligned pointer value')
       # + ask mappings for the context for that value
       try:
@@ -417,7 +419,7 @@ class IntegerArrayFields(StructureAnalyser):
     size = len(bytes)
     if size < 4:
       return False
-    ctr = collections.Counter([ bytes[i:i+Config.WORDSIZE] for i in range(len(bytes)) ] )
+    ctr = collections.Counter([ bytes[i:i+Config.get_word_size()] for i in range(len(bytes)) ] )
     floor = max(1,int(size*.1)) # 10 % variation in values
     #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
     commons = ctr.most_common()

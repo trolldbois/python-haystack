@@ -11,8 +11,8 @@ import os
 import sys
 import unittest
 
-from haystack.config import Config
-Config.set_word_size(4) # forcing it on these unittest
+from haystack import config
+Config = config.make_config_wordsize(4) # forcing it on these unittest
 
 from haystack import model
 from haystack.reverse import context
@@ -68,7 +68,7 @@ class TestStructureSizes(unittest.TestCase):
     #print ctypes3.test3.__dict__
     #print ctypes3.Node.__dict__
     #print 'test3',ctypes.sizeof(ctypes3.test3)
-    #if ctypes.sizeof(ctypes3.test3) % Config.WORDSIZE == 0:
+    #if ctypes.sizeof(ctypes3.test3) % Config.get_word_size() == 0:
     #  print 'MOD'
     self.assertEqual( sizes[1], ctypes.sizeof(ctypes3.test3))
     
@@ -76,7 +76,7 @@ class TestStructureSizes(unittest.TestCase):
     self.assertNotEqual( sizes[0], ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
     self.assertEqual( sizes[0]-4, ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
     #print 'Node', ctypes.sizeof(ctypes3.Node)
-    #if ctypes.sizeof(ctypes3.Node) % Config.WORDSIZE == 0:
+    #if ctypes.sizeof(ctypes3.Node) % Config.get_word_size() == 0:
     #  print 'MOD'
 
 
