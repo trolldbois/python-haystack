@@ -8,6 +8,7 @@ import unittest
 
 import haystack
 
+from haystack import abouchet
 
 
 class TestApiLinuxDumpX64(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 
   def test_show(self):
     ''' tests valid structure show and invalid structure show.'''
-    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, long(self.validAddress,16))
+    instance, validated = abouchet.show_dumpname( self.classname, self.memdumpname, long(self.validAddress,16))
     self.assertIsInstance(instance, object)
     self.assertEquals( instance.connection_in, 3)
     #self.assertEquals( instance.VirtualMemoryThreshold, 0xfe00)
@@ -57,14 +58,14 @@ class TestApiLinuxDump(unittest.TestCase):
 
   def test_show(self):
     ''' tests valid structure show and invalid structure show.'''
-    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0])
+    instance, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
     self.assertEquals( instance.Signature, 0xeeffeeff)
     self.assertEquals( instance.VirtualMemoryThreshold, 0xfe00)
     self.assertEquals( instance.FrontEndHeapType, 0)
     
-    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0]+1)
+    instance, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0]+1)
     self.assertFalse(validated)
     self.assertIsInstance(instance, object)
     self.assertNotEquals( instance.Signature, 0xeeffeeff)
@@ -99,14 +100,14 @@ class TestApiWin32Dump(unittest.TestCase):
 
   def test_show(self):
     ''' tests valid structure show and invalid structure show.'''
-    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0])
+    instance, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
     self.assertEquals( instance.Signature, 0xeeffeeff)
     self.assertEquals( instance.VirtualMemoryThreshold, 0xfe00)
     self.assertEquals( instance.FrontEndHeapType, 0)
     
-    instance, validated = haystack.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0]+1)
+    instance, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.known_heaps[0][0]+1)
     self.assertFalse(validated)
     self.assertIsInstance(instance, object)
     self.assertNotEquals( instance.Signature, 0xeeffeeff)

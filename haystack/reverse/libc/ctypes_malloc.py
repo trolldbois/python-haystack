@@ -128,7 +128,7 @@ def is_malloc_heap(mappings, mapping):
 
 
 
-class mallocStruct(ctypes.LoadableMembersStructure):
+class mallocStruct(ctypes.Structure):
   ''' defines classRef '''
   pass
 
