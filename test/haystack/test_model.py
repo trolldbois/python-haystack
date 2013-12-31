@@ -162,13 +162,19 @@ class TestReferenceBook(unittest.TestCase):
 
 class TestCopyModule(unittest.TestCase):
     
-    def test_bad(self):
+    def test_registerModule(self):
+        from haystack import model
+        model.reset()
         try:
             from test.structures import bad
+            # test if module has members
             self.assertEquals(bad.BLOCK_SIZE, 16)
+            self.assertIn('Struct1', bad.__dict__)
         except ImportError as e:
             self.fail(e)
-
+        # test if register works
+        model.registerModule(bad)
+        self.assertIn('Struct1_py', bad.__dict__)
 
 
 if __name__ == '__main__':
