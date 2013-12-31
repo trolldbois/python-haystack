@@ -3,13 +3,13 @@
 # TARGET arch is: []
 # POINTER_SIZE is: 8
 #
-import ctypes
-import sys
 
 from haystack import model
-from haystack.model import RangeValue,NotNull,CString, IgnoreMember
+from haystack.constraints import RangeValue,NotNull,CString, IgnoreMember
 
 from test.src import ctypes3_gen
+
+import sys
 
 model.copyGeneratedClasses(ctypes3_gen, sys.modules[__name__])
 # register all classes to haystack
