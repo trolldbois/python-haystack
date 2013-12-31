@@ -87,14 +87,15 @@ dumps64: $(SRCS) $(DUMPS64) $(OBJS64)
 	sudo chown -R jal.jal $@
 
 	
+cleanpy: 
+	rm -f $(PY32) $(PY64) 
 	
-cleanall: clean 
-	rm -f $(PY) 
+cleanall: clean cleanpy 
 	rm -f $(OBJS32) $(OBJS64)
+	rm -f $(OUTLOGS32) $(OUTLOGS64)
+	rm -rf $(DUMPS32) $(DUMPS64)
 
 clean: 
 	rm -f *~ *.pyc
-	rm -f $(OUTLOGS32) $(OUTLOGS64)
-	rm -rf $(DUMPS32) $(DUMPS64)
 
 

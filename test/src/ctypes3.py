@@ -1,17 +1,25 @@
 # -*- coding: utf-8 -*-
 #
-# TARGET arch is: []
-# POINTER_SIZE is: 8
-#
 
-from haystack import model
-from haystack.constraints import RangeValue,NotNull,CString, IgnoreMember
-
-from test.src import ctypes3_gen
-
+import importlib
 import sys
 
-model.copyGeneratedClasses(ctypes3_gen, sys.modules[__name__])
+from haystack import model
+from haystack.constraints import RangeValue,NotNull,IgnoreMember
+
+# should now already be subverted to the target arch.
+import ctypes
+longbits = ctypes.sizeof(ctypes.c_long)*8
+
+print '****', longbits, ctypes
+
+# import target arch generated ctypes3 python module.
+gen = importlib.import_module('test.src.ctypes3_gen%d'%(longbits)) 
+
+print '****', longbits, gen
+
+
+model.copyGeneratedClasses(gen, sys.modules[__name__])
 # register all classes to haystack
 # create plain old python object from ctypes.Structure's, to pickle them
 model.registerModule(sys.modules[__name__])
