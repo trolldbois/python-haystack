@@ -773,9 +773,9 @@ def readProcessMappings(process):
         raise ProcessError(process, "Unable to read process maps: %s" % err)
     
     try:
-        # FIXME - wordsize if not necessarly default arch wordsize
+        # wordsize if not necessarly default arch wordsize
         # is fixed by memory_dumper later.
-        cfg = config.make_config_wordsize(ctypes.sizeof(ctypes.c_void_p))
+        cfg = config.make_config()
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)

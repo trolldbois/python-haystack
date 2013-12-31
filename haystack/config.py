@@ -128,6 +128,10 @@ class ConfigClass():
     def formatAddress(self, addr):
         raise NotImplementedError('deprecated')
 
+def make_config():
+    """    """
+    cfg = ConfigClass()
+    return cfg
 
 def make_config_wordsize(size):
     """    """
@@ -135,7 +139,6 @@ def make_config_wordsize(size):
     cfg = ConfigClass()
     cfg.set_word_size(size)
     return cfg
-
 
 def make_config_from_memdump(dumpname):
     """ Load a memory dump meta data """

@@ -25,7 +25,6 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-import ctypes
 import logging
 
 log = logging.getLogger('model')
@@ -35,13 +34,20 @@ log = logging.getLogger('model')
 # see ctypes._pointer_type_cache , _reset_cache()
 class _book(object):
     modules = set()
+    """holds registered modules."""
+
     classes = dict()
+    """holds nothings (ctypes._pointer_type_cache)."""
+
     refs = dict()
+    """holds previous loads of this type at this address. Reduces load time."""
+
     def __init__(self):
         pass
     def addModule(self, mod):
         self.modules.add(mod)
     def addClass(self,cls):
+        import ctypes
         # ctypes._pointer_type_cache is sufficient
         #self.classes[ctypes.POINTER(cls)] = cls
         ctypes.POINTER(cls)
@@ -65,26 +71,32 @@ class _book(object):
 __book = _book()
 
 def reset():
+    """Clean the book"""
     global __book
     __book.refs = dict()
 
 def getRefs():
+    """Lists all references to already loaded structs. Useful for debug"""
     return __book.refs.items()
 
 def printRefs():
+    """Prints all references to already loaded structs. Useful for debug"""
     l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]
     for i in l:
         print(l)
 
 def printRefsLite():
+    """Prints all references to already loaded structs. Useful for debug"""
     l=[(typ,addr) for ((typ,addr),obj) in __book.refs.items()]
     for i in l:
         print(l)
 
 def hasRef(typ,origAddr):
+    """Check if this type has already been loaded at this address"""
     return (typ,origAddr) in __book.refs
 
 def getRef(typ,origAddr):
+    """Returns the reference to the type previously loaded at this address"""
     if (typ,origAddr) in __book.refs:
         return __book.getRef(typ,origAddr)
     return None
@@ -97,15 +109,18 @@ def getRefByAddr(addr):
     return ret
 
 def keepRef(obj,typ=None,origAddr=None):
-    ''' Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
-        they might be transient (if obj == somepointer.contents).'''
+    """Keeps a reference for an object of a specific type loaded from a specific
+    address.
+    
+    Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
+       they might be transient (if obj == somepointer.contents)."""
     # TODO, memory leak for different objects of same size, overlapping struct.
     if (typ,origAddr) in __book.refs:
         # ADDRESS already in refs
         if origAddr is None:
-            origAddr='None'
+            origAddr = 'None'
         else:
-            origAddr=hex(origAddr)
+            origAddr = hex(origAddr)
         if typ is not None:
             log.debug('references already in cache %s/%s'%(typ,origAddr))
         return
@@ -113,12 +128,13 @@ def keepRef(obj,typ=None,origAddr=None):
     return
 
 def delRef(typ,origAddr):
-    ''' Forget about a Ref..'''
+    """Forget about a Ref."""
     if (typ,origAddr) in __book.refs:
         __book.delRef(typ,origAddr)
     return
 
 def get_subtype(cls):
+    """get the subtype of a pointer, array or basic type with haystack quirks."""
     if hasattr(cls, '_subtype_'):
         return cls._subtype_    
     return cls._type_    
@@ -147,37 +163,37 @@ class LoadException(Exception):
 import inspect,sys
 
 def copyGeneratedClasses(src, dst):
-    ''' 
-        Copies the members of a generated module into a classic module.
-        Name convention : 
-        generated: ctypes_libraryname_generated.py
-        classic    : ctypes_libraryname.py
-        
+    """Copies the ctypes Records of a module into another module.
+    Is equivalent to "from src import *" but with less clutter.
+    E.g.: Enum, variable and functions will not be imported.
+
+    Calling this method is facultative.
+    
     :param me : dst module
     :param src : src module, generated
-    '''
-    __root_module_name,__dot,__module_name = dst.__name__.rpartition('.')
-    _loaded=0
-    _registered=0
+    """
+    import ctypes
+    copied = 0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
         if issubclass(klass, ctypes.LoadableMembers): 
-            #if klass.__module__.endswith('%s_generated'%(__module_name) ) :
-                setattr(dst, name, klass)
-                log.debug("setattr(%s,%s,%s)"%(dst.__name__,name, klass))
-                _loaded+=1
+            log.debug("setattr(%s,%s,%s)"%(dst.__name__,name, klass))
+            setattr(dst, name, klass)
+            copied += 1
         else:
             log.debug("drop %s - %s"%(name, klass))
             pass
-    log.debug('loaded %d C structs from %s structs'%( _loaded, src.__name__))
-    log.debug('registered %d Pointers types'%( _registered))
-    log.debug('There is %d members in %s'%(len(src.__dict__), src.__name__))
+    log.debug('Loaded %d C structs from src %s'%( copied, src.__name__))
+    log.debug('There is %d members in src %s'%(len(src.__dict__), src.__name__))
     return 
 
 
-def createPOPOClasses( targetmodule ):
-    ''' Load all model classes and create a similar non-ctypes Python class    
+def __createPOPOClasses(targetmodule):
+    """ Load all model classes and create a similar non-ctypes Python class    
         thoses will be used to translate non pickable ctypes into POPOs.
-    '''
+        
+        Mandatory.
+    """
+    import ctypes
     from haystack import basicmodel
     _created=0
     for name,klass in inspect.getmembers(targetmodule, inspect.isclass):
@@ -187,7 +203,7 @@ def createPOPOClasses( targetmodule ):
             #if klass.__module__.startswith(targetmodule.__name__):            
             kpy = type('%s.%s_py'%(targetmodule.__name__, name),( basicmodel.pyObj ,),{})
             # add the structure size to the class
-            if issubclass(klass, ctypes.LoadableMembers ) : # FIXME doh
+            if issubclass(klass, ctypes.LoadableMembers ) : 
                 log.debug(klass)
                 setattr(kpy, '_len_',ctypes.sizeof(klass) )
             else:
@@ -203,42 +219,42 @@ def createPOPOClasses( targetmodule ):
                 setattr(sys.modules[klass.__module__], '%s_py'%(name), kpy )
                 #log.debug("Created %s_py"%klass)
     log.debug('created %d POPO types in %s'%( _created, targetmodule.__name__))
-    return
+    return _created
 
 def registerModule( targetmodule ):
-    ''' 
-    Registers a ctypes module. To be run by target module.
+    """Registers a module that contains ctypes records.
+
+    Mandatory call that will be done by haystack scripts.
     
-    All members in this module will be registered, against their pointer types,
-    in a lookup table.
+    Ctypes modules are not required to register themselves, as long as haystack
+    framework does it.
     
-    Creates POPO's to be able to unpickle ctypes.
-    '''
+    The only real action is to :
+    - Creates Plain old python object for each ctypes record to be able to 
+    pickle/unpickle them later.
+    """
+    import ctypes
     log.info('registering module %s'%(targetmodule))
     if targetmodule in registeredModules():
         log.warning('Module %s already registered. Skipping.'%(targetmodule))
         return
-    _registered = 0
-    for name,klass in inspect.getmembers(targetmodule, inspect.isclass):
-        if klass.__module__.startswith(targetmodule.__name__) and (
-                issubclass(klass, ctypes.Structure) or issubclass(klass, ctypes.Union)) :
-            _registered += 1
+    _registered = __createPOPOClasses( targetmodule )
     if _registered == 0:
         log.warning('No class found. Maybe you need to model.copyGeneratedClasses ?')
-    # create POPO's
-    createPOPOClasses( targetmodule )
+    # register once per session.
     __book.addModule(targetmodule)
-    log.debug('registered %d types'%( _registered))
     log.debug('registered %d module total'%(len(__book.getModules())))
     return
 
-def isRegistered(cls):
-    #return cls in sys.modules[__name__].__dict__.values()
-    return __book.isRegisteredType(cls)
+#def isRegistered(cls):
+#    #return cls in sys.modules[__name__].__dict__.values()
+#    x = __book
+#    import code
+#    code.interact(local=locals())
+#    return __book.isRegisteredType(cls)
 
-#### FIXME DELETE register(LoadableMembersStructure)
-
-
+# only load ctypes at the end.
+import ctypes
 if not hasattr(ctypes,'proxy'): # its not a proxy
     global ctypes
     # we need to switch to a ctypes proxy (CString, LoadableMembers...)

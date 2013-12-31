@@ -16,7 +16,7 @@ import sys
 
 from haystack import utils
 from haystack import constraints
-from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, getRefByAddr
+from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -207,9 +207,15 @@ class LoadableMembers(object):
                 _attrType = get_subtype(attrtype)
             if ( not mappings.is_valid_address(attr, _attrType) ) and (utils.getaddress(attr) != 0):
                 # why ?
-                print 'is_valid_address( %s, %s) = %s'%( attrname, _attrType, mappings.is_valid_address(attr, _attrType))
-                print 'attr',attr.value
-                print 'attr in mappings', int(attr.value) in mappings
+                #print 'is_valid_address( %s, %s) = %s'%( attrname, _attrType, mappings.is_valid_address(attr, _attrType))
+                #print attrname, attrname in self.expectedValues
+                #if attrname in self.expectedValues:
+                #    print self.expectedValues[attrname]
+                # TODO: make TU instead of fishing.
+                #print ctypes
+                #print 'attr', type(attr), type(type(attr))
+                #print 'attr', hex(utils.getaddress(attr)) , utils.getaddress(attr)
+                #print 'attr in mappings', int(utils.getaddress(attr)) in mappings
                 log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr), utils.getaddress(attr)))
                 return False
             # null is accepted by default 
