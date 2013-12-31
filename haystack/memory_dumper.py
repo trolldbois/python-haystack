@@ -17,6 +17,7 @@ import zipfile
 
 
 from haystack import dbg
+from haystack import utils
 from haystack import memory_mapping
 from haystack import argparse_utils
 from haystack import config
@@ -151,7 +152,7 @@ class MemoryDumper:
         #log.debug('Dumping %s to %s'%(m,tmpdir))
         # dump files to tempdir
         # FIXME, word size is not necessarily same as default host word size 
-        mname = "%s-%s" % (self._config.formatAddress(m.start), self._config.formatAddress(m.end))
+        mname = "%s-%s" % (utils.formatAddress(m.start), utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)
         # we are dumping the memorymap content
         if self._just_heap or self._just_stack: #dump heap and/or stack

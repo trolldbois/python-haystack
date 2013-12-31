@@ -152,7 +152,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             offset = int(offset,16)
             inode = int(inode)
             #rebuild filename
-            mmap_fname = "%s-%s" % (self.config.formatAddress(start), self.config.formatAddress(end))
+            mmap_fname = "%s-%s" % (utils.formatAddress(start), utils.formatAddress(end))
             # get devices nums
             major_device, minor_device = devices.split(':')
             major_device = int(major_device,16)

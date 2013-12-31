@@ -106,7 +106,7 @@ class MemoryMapping:
             return self.start <= address < self.end
 
     def __str__(self):
-        text = ' '.join([self.config.formatAddress( self.start), self.config.formatAddress(self.end), self.permissions,
+        text = ' '.join([utils.formatAddress( self.start), utils.formatAddress(self.end), self.permissions,
                      '0x%0.8x'%(self.offset), '%0.2x:%0.2x'%(self.major_device, self.minor_device), '%0.7d'%(self.inode), str(self.pathname)])
         return text
 

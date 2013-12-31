@@ -128,10 +128,7 @@ class ConfigClass():
         return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
     def formatAddress(self, addr):
-        if self.WORDSIZE == 4:
-            return u"0x%08x" % addr
-        else:
-            return u"0x%016x" % addr
+        raise NotImplementedError('deprecated')
 
 def make_config_wordsize(size):
     """    """
