@@ -160,7 +160,7 @@ def copyGeneratedClasses(src, dst):
     _loaded=0
     _registered=0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
-        if issubclass(klass, LoadableMembers): 
+        if issubclass(klass, ctypes.LoadableMembers): 
             #if klass.__module__.endswith('%s_generated'%(__module_name) ) :
                 setattr(dst, name, klass)
                 log.debug("setattr(%s,%s,%s)"%(dst.__name__,name, klass))
@@ -178,15 +178,16 @@ def createPOPOClasses( targetmodule ):
     ''' Load all model classes and create a similar non-ctypes Python class    
         thoses will be used to translate non pickable ctypes into POPOs.
     '''
+    from haystack import basicmodel
     _created=0
     for name,klass in inspect.getmembers(targetmodule, inspect.isclass):
-        if issubclass(klass, LoadableMembers) and klass is not LoadableMembers: 
+        if issubclass(klass, ctypes.LoadableMembers) and klass is not ctypes.LoadableMembers: 
             # Why restrict on module name ?
             # we only need to register loadablemembers (and basic ctypes ? )
             #if klass.__module__.startswith(targetmodule.__name__):            
             kpy = type('%s.%s_py'%(targetmodule.__name__, name),( basicmodel.pyObj ,),{})
             # add the structure size to the class
-            if issubclass(klass, LoadableMembers ) : # FIXME doh
+            if issubclass(klass, ctypes.LoadableMembers ) : # FIXME doh
                 log.debug(klass)
                 setattr(kpy, '_len_',ctypes.sizeof(klass) )
             else:

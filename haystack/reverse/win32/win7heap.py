@@ -13,6 +13,7 @@ __status__ = "Production"
 ''' insure ctypes basic types are subverted '''
 from haystack import model
 from haystack import utils
+from haystack import constraints
 
 from haystack.reverse.win32 import win7heap_generated as gen
 
@@ -56,7 +57,7 @@ _LFH_BLOCK_ZONE._fields_ = [
 _HEAP_SEGMENT.expectedValues = {
   'SegmentSignature':[0xffeeffee],
 # Cannot just ignore it... need to load it.
-#  'LastValidEntry': utils.IgnoreMember,
+#  'LastValidEntry': constraints.IgnoreMember,
 }
 
 #_HEAP_SEGMENT.UCRSegmentList. points to _HEAP_UCR_DESCRIPTOR.SegmentEntry.
@@ -421,7 +422,7 @@ _HEAP_SUBSEGMENT.get_freeblocks = _HEAP_SUBSEGMENT_get_freeblocks
 # _HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
 # _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
 _HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
-  'LocalData': utils.IgnoreMember,
+  'LocalData': constraints.IgnoreMember,
 }
 
 
@@ -429,7 +430,7 @@ _HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
 ## TODO current subsegment.SFreeListEntry is on error at some depth.
 ## bad pointer value on the second subsegment
 _HEAP_SUBSEGMENT.expectedValues = {
-  'SFreeListEntry': utils.IgnoreMember,
+  'SFreeListEntry': constraints.IgnoreMember,
 }
 
 

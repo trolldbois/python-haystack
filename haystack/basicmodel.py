@@ -15,6 +15,7 @@ import numbers
 import sys
 
 from haystack import utils
+from haystack import constraints
 from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype, getRefByAddr
 
 __author__ = "Loic Jaquemet"
@@ -113,7 +114,7 @@ class LoadableMembers(object):
             log.debug(' +++ %s %s '%(attrname, expected))
             attrtype = myfields[attrname]
             attr=getattr(self,attrname)
-            if expected is IgnoreMember:
+            if expected is constraints.IgnoreMember:
                 continue
             if not self._isValidAttr(attr,attrname,attrtype,mappings):
                 return False
@@ -254,7 +255,7 @@ class LoadableMembers(object):
             # shorcut ignores
             if attrname in self.expectedValues:
                 # shortcut
-                if self.expectedValues[attrname] is IgnoreMember:
+                if self.expectedValues[attrname] is constraints.IgnoreMember:
                     return True            
             try:
                 if not self._loadMember(attr,attrname,attrtype,mappings, maxDepth):

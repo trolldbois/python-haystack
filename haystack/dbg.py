@@ -39,7 +39,7 @@ log=logging.getLogger("gbd")
 from haystack import types
 import ctypes
 if hasattr(ctypes, 'proxy'):
-    types.reset _ctypes()
+    types.reset_ctypes()
 
 import platform
 if platform.system() != 'Windows':
