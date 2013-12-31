@@ -401,7 +401,7 @@ def makeReversedTypes(context, sizeCache):
   # poitners not in the heap
   #for s in context.listStructures():
   #  for f in s.getPointerFields():
-  #    if model.isVoidPointerType(f.getCtype()):
+  #    if ctypes.is_void_pointer_type(f.getCtype()):
   #      print s,'has a c_void_p field', f._getValue(0), 
   #      print context.getStructureForOffset( f._getValue(0) )
 
