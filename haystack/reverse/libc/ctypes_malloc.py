@@ -10,9 +10,10 @@ import ctypes
 import logging
 import sys
 
-from haystack import model, memory_mapping
-from haystack.model import is_valid_address,is_valid_address_value,pointer2bytes,array2bytes,bytes2array,getaddress
-from haystack.model import LoadableMembers,LoadableMembersStructure,RangeValue,NotNull,CString, IgnoreMember, PerfectMatch
+from haystack import model
+from haystack import memory_mapping
+from haystack import utils
+from haystack.model import LoadableMembersStructure
 
 import struct
 
@@ -176,7 +177,7 @@ struct malloc_chunk {
     doesnt not work on the top one
     '''
     next_addr = self.next_addr(orig_addr) + self.config.WORDSIZE
-    mmap = model.is_valid_address_value(next_addr, mappings)
+    mmap = utils.is_valid_address_value(next_addr, mappings)
     if not mmap:
       return 0
       #raise ValueError()
@@ -236,7 +237,7 @@ struct malloc_chunk {
     ## do prev_chunk
     if self.check_prev_inuse():
       raise TypeError('Previous chunk is in use. can read its size.')
-    mmap = model.is_valid_address_value(orig_addr, mappings)
+    mmap = utils.is_valid_address_value(orig_addr, mappings)
     if not mmap:
       raise ValueError
     if self.prev_size > 0 :
@@ -248,12 +249,12 @@ struct malloc_chunk {
       
   def getNextChunk(self, mappings, orig_addr):
     ## do next_chunk
-    mmap = model.is_valid_address_value(orig_addr, mappings)
+    mmap = utils.is_valid_address_value(orig_addr, mappings)
     if not mmap:
       raise ValueError
     next_addr = orig_addr + self.real_size()
     # check if its in mappings
-    if not model.is_valid_address_value(next_addr, mappings):
+    if not utils.is_valid_address_value(next_addr, mappings):
       return None,None
     next_chunk = mmap.readStruct(next_addr, malloc_chunk )
     model.keepRef( next_chunk, malloc_chunk, next_addr)
