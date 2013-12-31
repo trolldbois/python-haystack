@@ -160,6 +160,17 @@ class TestReferenceBook(unittest.TestCase):
         def keepRef(obj,typ=None,origAddr=None):
     '''
 
+class TestCopyModule(unittest.TestCase):
+    
+    def test_bad(self):
+        try:
+            from test.structures import bad
+            self.assertEquals(bad.BLOCK_SIZE, 16)
+        except ImportError as e:
+            self.fail(e)
+
+
+
 if __name__ == '__main__':
     #logging.basicConfig( stream=sys.stderr, level=logging.INFO )
     #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)    
@@ -168,6 +179,6 @@ if __name__ == '__main__':
     #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)    
     #logging.getLogger("dump_loader").setLevel(level=logging.INFO)    
     #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)    
-    #logging.basicConfig(level=logging.INFO)    
+    logging.basicConfig(level=logging.DEBUG)    
     unittest.main(verbosity=2)
 

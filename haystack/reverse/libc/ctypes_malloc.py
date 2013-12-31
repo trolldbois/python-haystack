@@ -12,7 +12,9 @@ import sys
 
 from haystack import model
 from haystack import memory_mapping
-from haystack.model import LoadableMembersStructure
+
+import ctypes
+# FIXME: ctypes = types.reload_ctyps(4,4,8) #?
 
 import struct
 
@@ -127,7 +129,7 @@ def is_malloc_heap(mappings, mapping):
 
 
 
-class mallocStruct(LoadableMembersStructure):
+class mallocStruct(ctypes.LoadableMembersStructure):
   ''' defines classRef '''
   pass
 

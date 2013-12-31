@@ -130,15 +130,21 @@ class ConfigClass():
     def formatAddress(self, addr):
         raise NotImplementedError('deprecated')
 
+
+# TODO reload_ctypes here
 def make_config_wordsize(size):
     """    """
+    from haystack import types
     cfg = ConfigClass()
     cfg.WORDSIZE = size
+    #FIXME this is bad
+    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
     return cfg
 
 
 def make_config_from_memdump(dumpname):
     """ Load a memory dump meta data """
+    from haystack import types
     cfg = ConfigClass()
     index = open( os.path.sep.join( [dumpname, cfg.DUMPNAME_INDEX_FILENAME] ), 'r' )
     m1 = index.readline().split(' ')
@@ -148,10 +154,13 @@ def make_config_from_memdump(dumpname):
         cfg.WORDSIZE = 8
     else:
         cfg.WORDSIZE = 4
+    #FIXME this is bad
+    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
     return cfg
 
 def make_config_from_memory_address_string(address_string):
     """ Create a configuration base on the size of the address."""
+    from haystack import types
     cfg = ConfigClass()
     # test if x32 or x64
     if len(address_string) > 10:
@@ -159,5 +168,7 @@ def make_config_from_memory_address_string(address_string):
         cfg.WORDSIZE = 8
     else:
         cfg.WORDSIZE = 4
+    #FIXME this is bad
+    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
     return cfg
 

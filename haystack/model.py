@@ -166,7 +166,7 @@ def copyGeneratedClasses(src, dst):
                 log.debug("setattr(%s,%s,%s)"%(dst.__name__,name, klass))
                 _loaded+=1
         else:
-            #log.debug("%s - %s"%(name, klass))
+            log.debug("drop %s - %s"%(name, klass))
             pass
     log.debug('loaded %d C structs from %s structs'%( _loaded, src.__name__))
     log.debug('registered %d Pointers types'%( _registered))

@@ -11,7 +11,6 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
 from haystack import utils
 from haystack import dump_loader
 
@@ -22,14 +21,12 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes 
-
 log = logging.getLogger('testwin7heap')
 
 class TestWin7Heap(unittest.TestCase):
   
   
-  def setUp(self):  
+  def setUp(self):
     self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     self._known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
                     ( 0x00580000, 111933), (0x005c0000, 1704080) , 
@@ -54,6 +51,7 @@ class TestWin7Heap(unittest.TestCase):
       getaddress(attr)    # check for address of attr.contents being a ctypes.xx.from_address(ptr_value)
       
     '''
+    import ctypes
     from haystack.reverse.win32 import win7heap
     self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
     self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
