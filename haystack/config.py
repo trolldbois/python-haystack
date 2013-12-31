@@ -22,7 +22,7 @@ class ConfigClass():
     def __init__(self):
         #self.cacheDir = os.path.normpath(outputDir)
         #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-        self.WORDSIZE = None
+        #self.WORDSIZE = None
         self.commentMaxSize = 64
         self.mmap_hack = True # bad bad idea...
         #
@@ -67,7 +67,8 @@ class ConfigClass():
         #if type(ptr_t) != _ctypes.PyCPointerType:
         #self.PTR_TYPE = 
         #    
-        self.WORDSIZE = ctypes.sizeof(ptr_t)
+        #self.WORDSIZE = ctypes.sizeof(ptr_t)
+        pass
     
     def get_word_type(self):
         import ctypes
@@ -88,8 +89,18 @@ class ConfigClass():
             raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
         return
         
-    #WORDSIZE = property(get_word_size, set_word_size)
+    def get_word_size(self):
+        return self.__size
+        
+    def set_word_size(self, size):
+        from haystack import types
+        self.__size = size
+        self.ctypes = types.reload_ctypes(self.__size,self.__size,2*self.__size)
+        return
+    
+    WORDSIZE = property(get_word_size, set_word_size)
     WORDTYPE = property(get_word_type)
+    
     
     def makeCache(self, dumpname):
         root = os.path.abspath(dumpname)
@@ -131,14 +142,11 @@ class ConfigClass():
         raise NotImplementedError('deprecated')
 
 
-# TODO reload_ctypes here
 def make_config_wordsize(size):
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.WORDSIZE = size
-    #FIXME this is bad
-    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
+    cfg.set_word_size(size)
     return cfg
 
 
@@ -151,11 +159,9 @@ def make_config_from_memdump(dumpname):
     # test if x32 or x64
     if len(m1[0]) > 10:
         log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
-        cfg.WORDSIZE = 8
+        cfg.set_word_size(8)
     else:
-        cfg.WORDSIZE = 4
-    #FIXME this is bad
-    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
+        cfg.set_word_size(4)
     return cfg
 
 def make_config_from_memory_address_string(address_string):
@@ -165,10 +171,8 @@ def make_config_from_memory_address_string(address_string):
     # test if x32 or x64
     if len(address_string) > 10:
         log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
-        cfg.WORDSIZE = 8
+        cfg.set_word_size(8)
     else:
-        cfg.WORDSIZE = 4
-    #FIXME this is bad
-    cfg.ctypes = types.reload_ctypes(cfg.WORDSIZE,cfg.WORDSIZE,2*cfg.WORDSIZE)
+        cfg.set_word_size(4)
     return cfg
 

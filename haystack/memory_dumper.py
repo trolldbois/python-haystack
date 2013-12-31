@@ -5,7 +5,6 @@
 
 import logging
 import argparse
-import ctypes
 import os
 import pickle
 import shutil
@@ -64,7 +63,19 @@ class MemoryDumper:
             raise IOError
             # ptrace exception is raised before that
         self.mappings = memory_mapping.readProcessMappings(self.process)
+        from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
+        #FIXME, I guess that is the binary
+        import ctypes
+        head = self.mappings[0].readBytes(self.mappings[0].start, ctypes.sizeof(struct_Elf_Ehdr))
+        x = struct_Elf_Ehdr.from_buffer_copy(head)
+        #print x.e_machine
+        #head = self.mappings[0].readStruct(self.mappings[0].start, struct_Elf_Ehdr)
         self._config = self.mappings.config
+        if x.e_machine == 3:
+            self._config.set_word_size(4)
+        elif x.e_machine == 62:
+            self._config.set_word_size(8)
+        #print self._config.ctypes
         log.debug('mappings read. Dropping ptrace on pid.')
         return
 
