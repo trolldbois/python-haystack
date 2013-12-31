@@ -254,7 +254,7 @@ class TestBasicFunctions(unittest.TestCase):
         self.assertEquals( ctypes.c_char_p.__name__ , 'c_char_p', 'c_char_p should not be changed')
         self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
-        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
+        self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
 
 class TestBasicFunctions32(TestBasicFunctions):
@@ -285,7 +285,7 @@ class TestBasicFunctions32(TestBasicFunctions):
         from haystack import basicmodel
         self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
-        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
+        self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
 class TestBasicFunctionsWin(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x64 arch."""
@@ -314,7 +314,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         from haystack import basicmodel
         self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
-        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
+        self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
 class TestBasicFunctions64(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x64 arch."""
@@ -343,7 +343,7 @@ class TestBasicFunctions64(TestBasicFunctions):
         from haystack import basicmodel
         self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
-        self.assertIn( basicmodel.CString, basicmodel.__dict__.values() )
+        self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
 if __name__ == '__main__':
     unittest.main(verbosity=0)
