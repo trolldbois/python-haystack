@@ -5,16 +5,6 @@
 #
 
 import logging
-import os
-import collections
-import struct
-import itertools
-
-from haystack.config import Config
-from haystack.utils import unpackWord
-from haystack.reverse import re_string, fieldtypes
-
-import ctypes
 
 log = logging.getLogger('heuristics.model')
 
