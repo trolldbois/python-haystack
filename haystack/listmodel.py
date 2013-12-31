@@ -16,7 +16,6 @@ __status__ = "Beta"
 ''' insure ctypes basic types are subverted '''
 from haystack import utils
 
-import ctypes
 import logging
 
 log = logging.getLogger('listmodel')
@@ -36,7 +35,7 @@ class ListModel(object):
         When does it stop following FLink/BLink ?
             sentinel is headAddr only
         '''
-        
+        import ctypes
         structType, offset = self._getListFieldInfo(fieldname)
         
         # DO NOT think HEAD is a valid entry.
@@ -176,15 +175,16 @@ class ListModel(object):
 def declare_double_linked_list_type( structType, forward, backward):
     ''' declare a double linked list type.
     '''
+    import ctypes
     # test existence
     flinkType = getattr(structType, forward) 
     blinkType = getattr(structType, backward)
     d = dict(structType.getFields())
     flinkType = d[forward]
     blinkType = d[backward]
-    if not utils.isPointerType(flinkType):
+    if not ctypes.is_pointer_type(flinkType):
         raise TypeError('The %s field is not a pointer.'%(forward))
-    if not utils.isPointerType(blinkType):
+    if not ctypes.is_pointer_type(blinkType):
         raise TypeError('The %s field is not a pointer.'%(backward))
 
     #XXX 
