@@ -403,7 +403,7 @@ class LoadableMembers(object):
                 s=prefix+'"%s": 0x%lx,\n'%(field, utils.getaddress(attr) )     # only print address/null
             elif ctypes.is_pointer_to_void_type(attrtype) :
                 s=prefix+'"%s": 0x%0.16lx, #(FIELD NOT LOADED: void pointer) \n'%(field, attr )     # only print address/null
-            elif not is_address_local(attr) :
+            elif not utils.is_address_local(attr) :
                 s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, utils.getaddress(attr) )     # only print address in target space
             else:
                 # we can read the pointers contents # if ctypes.is_basic_type(attr.contents): ?    # if ctypes.is_array_type(attr.contents): ?
@@ -455,14 +455,14 @@ class LoadableMembers(object):
             elif ctypes.is_cstring_type(attrtype):
                 if not bool(attr) :
                     s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), utils.getaddress(attr.ptr) )     # only print address/null
-                elif not is_address_local(attr) :
+                elif not utils.is_address_local(attr) :
                     s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, utils.getaddress(attr) )     # only print address in target space
                 else:
                     s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, utils.getaddress(attr.ptr)))    
             elif ctypes.is_pointer_type(attrtype) and not ctypes.is_pointer_to_void_type(attrtype): # bug with CString
                 if not bool(attr) :
                     s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), utils.getaddress(attr) )     # only print address/null
-                elif not is_address_local(attr) :
+                elif not utils.is_address_local(attr) :
                     s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), utils.getaddress(attr) )     # only print address in target space
                 else:
                     _attrType=get_subtype(attrtype)
