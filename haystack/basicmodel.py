@@ -208,6 +208,7 @@ class LoadableMembers(object):
             else:
                 # test valid address mapping
                 _attrType = get_subtype(attrtype)
+            print attr, attrtype, _attrType
             if (myaddress != 0) and (not mappings.is_valid_address(attr, _attrType)):
                 log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr), utils.getaddress(attr)))
                 # e.4) its a pointer, but not valid in our mappings for this pointee type.

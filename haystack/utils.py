@@ -43,9 +43,15 @@ def is_address_local(obj, structType=None):
         return False
     class P:
         pid = os.getpid()
+        # we need that for the machine arch read.
+        def readBytes(self, addr, size):
+            import ctypes
+            return ctypes.string_at(addr, size)
+
     from memory_mapping import readProcessMappings  # loading dependencies
     mappings = readProcessMappings(P()) # memory_mapping
-    return is_valid_address(obj, mappings, structType)
+    ret = mappings.is_valid_address(obj, structType)
+    return ret
 
 def getaddress(obj):
     """ 

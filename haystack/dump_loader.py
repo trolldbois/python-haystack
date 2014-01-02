@@ -131,17 +131,9 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             fields = l.strip().split(' ')
             if '' in fields:
                 fields.remove('')
-            self.metalines.append( ( fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:]) )    )
-        
-        self.config = config.make_config_from_memdump(self.dumpname)
-        #self.config = config.ConfigClass()
-        # test if x32 or x64
-        #if len(fields[0]) > 10:
-        #    log.info('[+] ADDRLEN = 16 #x64 arch dump detected')
-        #    self.config.set_word_size(8)
-        #else:
-        #    log.info('[+] ADDRLEN = 8 #x32 arch dump detected')
-        #    self.config.set_word_size(4)
+            self.metalines.append( (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:])) )
+        # make an empty config
+        self.config = config.make_config()
         return 
         
     def _load_memory_mappings(self):
@@ -151,8 +143,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             start,end = int(_start,16),int(_end,16 )
             offset = int(offset,16)
             inode = int(inode)
-            #rebuild filename
-            mmap_fname = "%s-%s" % (utils.formatAddress(start), utils.formatAddress(end))
+            # rebuild filename
+            mmap_fname = "%s-%s" % (_start, _end)
             # get devices nums
             major_device, minor_device = devices.split(':')
             major_device = int(major_device,16)

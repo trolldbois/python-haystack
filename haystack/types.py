@@ -3,8 +3,10 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import logging
 import sys
 
+log = logging.getLogger('types')
 __PROXIES = {}
 
 def reset_ctypes():
@@ -14,6 +16,7 @@ def reset_ctypes():
         del sys.modules['ctypes']
     # import the real one
     import ctypes
+    log.info('reset: ctypes changed to %s '%(ctypes))
     return ctypes
 
 def load_ctypes_default():
@@ -46,6 +49,7 @@ def set_ctypes(ctypesproxy):
     if not isinstance(ctypesproxy, CTypesProxy):
         raise TypeError('CTypesProxy instance expected.')
     sys.modules['ctypes'] = ctypesproxy
+    log.info('set: ctypes changed to %s'%(ctypesproxy))
     return sys.modules['ctypes']
 
 def check_arg_is_type(func):
@@ -94,8 +98,9 @@ class CTypesProxy(object):
             if not name.startswith('__'):
                 setattr(self, name, getattr(ctypes, name))
         del ctypes
-        # replace it.
+        # replace it. We want ctypes to be self for the rest of init.
         sys.modules['ctypes'] = self
+        log.info('init: ctypes changed to %s'%(self))
         self.__init_types()
         pass        
 
@@ -356,9 +361,10 @@ class CTypesProxy(object):
         if not hasattr(objtype, '_type_'):
             # could be python types
             return objtype in [int, long, float, bool]
-            #return False
         if objtype in [self.c_char_p, self.c_void_p, self.CString]:
             return False
+        # DOC: if <ctypes.c_uint> is not in self.__basic_types, its probably 
+        # because you are using the wrong ctypes Proxy instance
         return objtype in self.__basic_types
 
     @check_arg_is_type

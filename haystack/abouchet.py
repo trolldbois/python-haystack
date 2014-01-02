@@ -9,7 +9,6 @@ import os
 import pickle
 import sys
 import time
-import ctypes
 import subprocess
 import json
 
@@ -87,24 +86,24 @@ class StructFinder:
             
             returns POINTERS to structType instances.
         '''
-
+        import ctypes
         # update process mappings
         log.debug("scanning 0x%lx --> 0x%lx %s"%(memoryMap.start,memoryMap.end,memoryMap.pathname) )
 
         # where do we look    
-        start=memoryMap.start    
-        end=memoryMap.end
-        plen=ctypes.sizeof(ctypes.c_void_p) # use aligned words only
-        structlen=ctypes.sizeof(structType)
+        start = memoryMap.start    
+        end = memoryMap.end
+        plen = ctypes.sizeof(ctypes.c_void_p) # use aligned words only
+        structlen = ctypes.sizeof(structType)
         #ret vals
-        outputs=[]
+        outputs = []
         # alignement
         if hintOffset in memoryMap: # absolute offset
-            align=hintOffset%plen
-            start=hintOffset-align
-        elif hintOffset != 0 and hintOffset    < end-start: # relative offset
-            align=hintOffset%plen
-            start=start+ (hintOffset-align)
+            align = hintOffset%plen
+            start = hintOffset-align
+        elif hintOffset != 0 and hintOffset < end-start: # relative offset
+            align = hintOffset%plen
+            start = start + (hintOffset-align)
          
         # parse for structType on each aligned word
         log.debug("checking 0x%lx-0x%lx by increment of %d"%(start, (end-structlen), plen))
@@ -245,6 +244,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
         :param debug if True, activate debug logs.
         :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
     '''
+    import ctypes
     if type(structType) != type(ctypes.Structure):
         raise TypeError('structType arg must be a ctypes.Structure')
     structName = checkModulePath(structType) # add to sys.path
@@ -314,6 +314,7 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
         :param debug if True, activate debug logs.
         :param nommap if True, do not use mmap when mapping the memory
     '''
+    import ctypes
     if type(structType) != type(ctypes.Structure):
         raise TypeError('structType arg must be a ctypes.Structure')
     structName = checkModulePath(structType) # add to sys.path
@@ -351,6 +352,7 @@ def getKlass(name):
         :param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
     '''
     module,sep,kname=name.rpartition('.')
+    import sys
     mod = __import__(module, globals(), locals(), [kname])
     klass = getattr(mod, kname)    
 

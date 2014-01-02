@@ -62,6 +62,10 @@ def reset():
     """Clean the book"""
     global __book
     __book.refs = dict()
+    # need to clean the registered modules list.
+    # so that we really create POPO object when asked for it.
+    # ex: cross arch loading ( ctypes7 - ctypes7_gen32,64) 
+    __book.modules = set()
 
 def getRefs():
     """Lists all references to already loaded structs. Useful for debug"""
@@ -153,6 +157,7 @@ def copyGeneratedClasses(src, dst):
     :param src : src module, generated
     """
     import ctypes
+    log.info('copy classes %s -> %s'%(src.__name__, dst.__name__))
     copied = 0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
         if issubclass(klass, ctypes.LoadableMembers): 

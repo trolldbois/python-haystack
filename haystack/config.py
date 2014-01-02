@@ -54,6 +54,9 @@ class ConfigClass():
         self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
         #others
         self._set_rlimits()
+        # save current ctypes
+        import ctypes
+        self.ctypes = ctypes
         
     def _set_rlimits(self):
         '''set rlimits to maximum allowed'''
@@ -62,11 +65,10 @@ class ConfigClass():
         return     
                 
     def get_word_type(self):
-        import ctypes
         if self.get_word_size() == 4:
-            return ctypes.c_uint32
+            return self.ctypes.c_uint32
         elif self.get_word_size() == 8:
-            return ctypes.c_uint64
+            return self.ctypes.c_uint64
         else:
             raise ValueError('platform not supported for word size == %d'%(self.get_word_size()))
         return
@@ -138,31 +140,5 @@ def make_config_wordsize(size):
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(size)
-    return cfg
-
-def make_config_from_memdump(dumpname):
-    """ Load a memory dump meta data """
-    from haystack import types
-    cfg = ConfigClass()
-    index = open( os.path.sep.join( [dumpname, cfg.DUMPNAME_INDEX_FILENAME] ), 'r' )
-    m1 = index.readline().split(' ')
-    # test if x32 or x64
-    if len(m1[0]) > 10:
-        log.info('[+] WORD SIZE = 8 #x64 arch dump detected')
-        cfg.set_word_size(8)
-    else:
-        cfg.set_word_size(4)
-    return cfg
-
-def make_config_from_memory_address_string(address_string):
-    """ Create a configuration base on the size of the address."""
-    from haystack import types
-    cfg = ConfigClass()
-    # test if x32 or x64
-    if len(address_string) > 10:
-        log.info('[+] WORD SIZE = 8 #x64 arch dump detected')
-        cfg.set_word_size(8)
-    else:
-        cfg.set_word_size(4)
     return cfg
 

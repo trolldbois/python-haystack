@@ -579,6 +579,8 @@ class Mappings:
         self.name = filename
         self._target_system = None
         self.config = self.mappings[0].config
+        # set the word size in this config.
+        self.process_machine_arch()
     
     def get_context(self, addr):
         mmap = self.getMmapForAddr(addr)
@@ -690,6 +692,18 @@ class Mappings:
                 self._target_system = 'win32'
                 break
         return self._target_system
+
+    def process_machine_arch(self):
+        from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
+        head = self.mappings[0].readBytes(self.mappings[0].start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
+        x = struct_Elf_Ehdr.from_buffer_copy(head)
+        #print x.e_machine
+        #head = self.mappings[0].readStruct(self.mappings[0].start, struct_Elf_Ehdr)
+        if x.e_machine == 3:
+            self.config.set_word_size(4)
+        elif x.e_machine == 62:
+            self.config.set_word_size(8)
+        return self.config.get_word_size()
     
     def _get_mmap_for_haystack_addr(self, haddr):
         ''' FIXME should replace utils.is_local_addr ?'''
@@ -771,7 +785,13 @@ def readProcessMappings(process):
         mapsfile = openProc(process.pid)
     except ProcError, err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
-    
+
+    from haystack import types    
+    before = None
+    # save the current ctypes module.
+    if True:
+        import ctypes
+        before = ctypes
     try:
         # wordsize if not necessarly default arch wordsize
         # is fixed by memory_dumper later.
@@ -797,5 +817,10 @@ def readProcessMappings(process):
     finally:
         if type(mapsfile) is file:
             mapsfile.close()
-    return Mappings(cfg, maps, maps[0].pathname)
+        
+    ret = Mappings(cfg, maps, maps[0].pathname)
+    # reposition the previous ctypes module.
+    if True:
+        ctypes = types.set_ctypes(before)
+    return ret
 
