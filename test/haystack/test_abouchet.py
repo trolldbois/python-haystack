@@ -13,30 +13,46 @@ from haystack import model
 from haystack import types
 
 
-class TestRefreshX32(unittest.TestCase):
-  """Validate refresh API on a linux x32 dump of ctypes7."""
+class SrcTests(unittest.TestCase):
+    def _load_offsets(self, dumpname):
+        """read <dumpname>.stdout to get offsets given by the binary."""
+        offsets = dict()
+        for line in open('%s.stdout'%(dumpname[:-len('.dump')]),'rb').readlines():
+            fields = line.split(' ')
+            k,v = fields[0],int(fields[1].strip(),16)
+            if k not in offsets:
+                offsets[k]=[]
+            offsets[k].append(v)
+        return offsets
+
+class Test7_x32(SrcTests):
+  """Validate abouchet API on a linux x32 dump of ctypes7.
+  Mainly tests cross-arch c_void_p."""
   def setUp(self):
+    model.reset()
     types.reload_ctypes(4,4,8)
-    self.address = 0x8f40008
     self.memdumpname = 'test/src/test-ctypes7.32.dump'
     self.classname = 'test.src.ctypes7.struct_Node'
-
-  def tearDown(self):
-    self.mappings = None
-
-  def test_refresh(self):
-    ''' tests valid structure resfresh.'''
-    # load empty shell with constraints in x64
+    offsets = self._load_offsets(self.memdumpname)
+    self.address = offsets['test1'][0] #0x8f40008
+    # load layout in x32
     from test.src import ctypes7
     from test.src import ctypes7_gen32
     model.copyGeneratedClasses(ctypes7_gen32, ctypes7)
     model.registerModule(ctypes7)
     # apply constraints
     ctypes7.populate()
+
+  def tearDown(self):
+    self.mappings = None
+
+  def test_refresh(self):
+    ''' tests valid structure resfresh.'''
+    from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
     retstr = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='string')
-    self.assertIn("3735928559L,", retstr )
+    self.assertIn("3735928559L,", retstr ) # 0xdeadbeef
     self.assertIn("0x08f40008,", retstr )
     
     #python
@@ -48,13 +64,7 @@ class TestRefreshX32(unittest.TestCase):
 
   def test_search(self):
     ''' tests valid structure show and invalid structure show.'''
-    # load empty shell with constraints in x64
     from test.src import ctypes7
-    from test.src import ctypes7_gen32
-    model.copyGeneratedClasses(ctypes7_gen32, ctypes7)
-    model.registerModule(ctypes7)
-    # apply constraints
-    ctypes7.populate()
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
     retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
@@ -79,26 +89,30 @@ class TestRefreshX32(unittest.TestCase):
     return 
 
 
-class TestRefreshX64(unittest.TestCase):
-  """Validate refresh API on a linux x64 dump of ctypes7."""
+class Test7_x64(SrcTests):
+  """Validate abouchet API on a linux x64 dump of ctypes7.
+  Mainly tests cross-arch c_void_p."""
   def setUp(self):
+    model.reset()
     types.reload_ctypes(8,8,16)
-    self.address = 0x000000001b1e010
     self.memdumpname = 'test/src/test-ctypes7.64.dump'
     self.classname = 'test.src.ctypes7.struct_Node'
-
-  def tearDown(self):
-    self.mappings = None
-
-  def test_refresh(self):
-    ''' tests valid structure resfresh.'''
-    # load empty shell with constraints in x64
+    offsets = self._load_offsets(self.memdumpname)
+    self.address = offsets['test1'][0] # 0x000000001b1e010
+    # load layout in x64
     from test.src import ctypes7
     from test.src import ctypes7_gen64
     model.copyGeneratedClasses(ctypes7_gen64, ctypes7)
     model.registerModule(ctypes7)
     # apply constraints
     ctypes7.populate()
+
+  def tearDown(self):
+    self.mappings = None
+
+  def test_refresh(self):
+    ''' tests valid structure resfresh.'''
+    from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
     retstr = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='string')
@@ -114,13 +128,141 @@ class TestRefreshX64(unittest.TestCase):
 
   def test_search(self):
     ''' tests valid structure show and invalid structure show.'''
-    # load empty shell with constraints in x64
+    from test.src import ctypes7
+    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    
+    retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x0000000001b1e010,", retstr )
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, maxnum=10, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+    return 
+
+
+class Test6_x32(SrcTests):
+  """Validate abouchet API on a linux x32 dump of ctypes6.
+  Mainly tests cross-arch POINTER to structs and c_char_p."""
+  def setUp(self):
+    import sys
+    model.reset()
+    types.reload_ctypes(4,4,8)
+    self.memdumpname = 'test/src/test-ctypes6.32.dump'
+    self.node_structname = 'test.src.ctypes6.struct_Node'
+    self.usual_structname = 'test.src.ctypes6.struct_Node'
+    offsets = self._load_offsets(self.memdumpname)
+    self.address1 = offsets['test1'][0] # struct_usual
+    self.address2 = offsets['test2'][0] # struct_Node
+    self.address3 = offsets['test3'][0] # struct_Node
+    # load layout in x32
+    from test.src import ctypes6
+    from test.src import ctypes6_gen32
+    model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
+    model.registerModule(ctypes6)
+    # apply constraints
+    ctypes6.populate()
+
+  def tearDown(self):
+    self.mappings = None
+
+  def test_refresh(self):
+    ''' tests valid structure resfresh.'''
+    from test.src import ctypes6
+    self.assertEquals( len(ctypes6.struct_Node.expectedValues.keys()), 2)
+    # string
+    retstr = abouchet.show_dumpname( self.usual_structname, self.memdumpname, self.address1 ,rtype='string')
+    print retstr
+    import ctypes
+    self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
+    self.assertIn("0xaaaaaaa,", retstr ) # 0xaaaaaaa
+    self.assertIn("0xffffff0,", retstr )
+    return
+    #python
+    node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
+    self.assertEquals( validated, True)
+    self.assertEquals( node.val1, 0xdeadbeef)
+    self.assertEquals( node.ptr2, self.address)
+
+
+  def test_search(self):
+    ''' tests valid structure show and invalid structure show.'''
+    from test.src import ctypes7
+    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    
+    retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x08f40008,", retstr )
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, maxnum=10, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+    return 
+
+
+class Test6_x64(SrcTests):
+  """Validate abouchet API on a linux x64 dump of ctypes6.
+  Mainly tests cross-arch POINTER to structs and c_char_p."""
+  def setUp(self):
+    model.reset()
+    types.reload_ctypes(8,8,16)
+    self.address = 0x000000001b1e010
+    self.memdumpname = 'test/src/test-ctypes6.64.dump'
+    self.classname = 'test.src.ctypes6.struct_Node'
+    # load layout in x32
     from test.src import ctypes7
     from test.src import ctypes7_gen64
     model.copyGeneratedClasses(ctypes7_gen64, ctypes7)
     model.registerModule(ctypes7)
     # apply constraints
     ctypes7.populate()
+
+  def tearDown(self):
+    self.mappings = None
+
+  def test_refresh(self):
+    ''' tests valid structure resfresh.'''
+    from test.src import ctypes7
+    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    # string
+    retstr = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x0000000001b1e010,", retstr )
+    
+    #python
+    node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
+    self.assertEquals( validated, True)
+    self.assertEquals( node.val1, 0xdeadbeef)
+    self.assertEquals( node.ptr2, self.address)
+
+
+  def test_search(self):
+    ''' tests valid structure show and invalid structure show.'''
+    from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
     retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
@@ -146,7 +288,7 @@ class TestRefreshX64(unittest.TestCase):
 
 
 
-
+@unittest.skip('')
 class TestApiLinuxDumpX64(unittest.TestCase):
   """Validate API on a linux x64 dump of SSH."""
   def setUp(self):
@@ -170,6 +312,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
     return 
 
 
+@unittest.skip('')
 class TestApiLinuxDump(unittest.TestCase):
   ''' test is the python API works. '''
   def setUp(self):
@@ -212,6 +355,7 @@ class TestApiLinuxDump(unittest.TestCase):
     
     return 
 
+@unittest.skip('')
 class TestApiWin32Dump(unittest.TestCase):
   ''' test is the python API works. '''
   def setUp(self):

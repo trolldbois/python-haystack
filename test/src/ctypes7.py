@@ -3,8 +3,6 @@
 from haystack import model
 from haystack.constraints import RangeValue,NotNull,IgnoreMember
 
-import sys
-
 #from test.src.ctypes7_gen64 import *
 #model.registerModule(sys.module[__name__])
 

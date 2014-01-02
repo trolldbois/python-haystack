@@ -266,6 +266,7 @@ class TestBasicFunctions(unittest.TestCase):
             self.assertFalse( fn( var ), var )
 
     def test_is_basic_type(self):
+        self.assertTrue(ctypes.c_uint) # TODO FIXME
         valids = [btype, longt, double]
         invalids = [ v for v in self.tests if v not in valids]
         self._testMe( ctypes.is_basic_type, valids, invalids)
@@ -298,11 +299,21 @@ class TestBasicFunctions(unittest.TestCase):
     def test_is_array_of_basic_instance(self):
         valids = [arra1(), arra5()]
         invalids = [ v for v in self.tests if v not in valids]
+        # we need instances to be invalid
         invalids.extend([ arra2(), arra3(), arra4(), ] )
         for var in valids:
             self.assertTrue( ctypes.is_array_of_basic_instance( var ), var)
         for var in invalids:
             self.assertFalse( ctypes.is_array_of_basic_instance( var ), var )
+        return 
+
+    def test_is_array_of_basic_type(self):
+        valids = [arra1, arra5]
+        invalids = [ v for v in self.tests if v not in valids]
+        for var in valids:
+            self.assertTrue( ctypes.is_array_of_basic_type( var ), var)
+        for var in invalids:
+            self.assertFalse( ctypes.is_array_of_basic_type( var ), var )
         return 
 
     def test_is_array_type(self):

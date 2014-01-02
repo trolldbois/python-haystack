@@ -59,3 +59,16 @@ haystack.types:
 haystack.utils:
     Functions used in the definitions of haystack ctypes record.
     Several ways to implement value-based constraints on fields.
+    
+haystack.basicmodel:
+    Contains the core validation and loading internals.
+    
+    tests are:
+    # a) ctypes.is_basic_type(attrtype)
+    # b) ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype)
+    # c) ctypes.is_array_of_basic_type(attrtype)
+    # d) ctypes.is_array_type(attrtype)
+    # e) ctypes.is_cstring_type(attrtype)
+    # f) ctypes.is_pointer_type(attrtype)
+    # g) error.
+    

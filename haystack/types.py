@@ -339,6 +339,7 @@ class CTypesProxy(object):
         It checks the type of the first element.
         The array should not be null :).
         """
+        # FIXME: deprecated
         if not hasattr(obj, '_type_'):
             return False
         if self.is_array_type(type(obj)):
@@ -353,7 +354,13 @@ class CTypesProxy(object):
     @check_arg_is_type
     def is_array_type(self, objtype):
         """Checks if an object is a ctype array."""
-        return self.__arrayt == type(objtype)
+        return self.__arrayt == type(objtype) # _ctypes.PyCArrayType
+
+    @check_arg_is_type
+    def is_array_of_basic_type(self, objtype):
+        """Checks if an object is a ctype array of basic types."""
+        return (self.is_array_type(objtype) and hasattr(objtype, '_type_')
+                and self.is_basic_type(objtype._type_) )
 
     @check_arg_is_type
     def is_basic_type(self, objtype):

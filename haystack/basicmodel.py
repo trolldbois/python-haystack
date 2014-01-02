@@ -148,13 +148,14 @@ class LoadableMembers(object):
             log.debug('structType: %s %s %s isValid TRUE'%(attrname,attrtype,repr(attr) ))
             return True
         # c)
-        elif ctypes.is_array_of_basic_instance(attr):
+        elif ctypes.is_array_of_basic_type(attrtype):
             if attrname in self.expectedValues:
                 if attr not in self.expectedValues[attrname]:
                     log.debug('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
                     return False
             log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
             return True
+        # d)
         elif ctypes.is_array_type(attrtype):
             log.debug('array: %s is arraytype %s recurse validate'%(attrname,repr(attr)) )#
             attrLen=len(attr)
@@ -166,7 +167,7 @@ class LoadableMembers(object):
                 if not self._isValidAttr(attr[i], "%s[%d]"%(attrname,i), elType, mappings ):
                     return False
             return True
-        # d)
+        # e)
         elif ctypes.is_cstring_type(attrtype):
             myaddress = utils.getaddress(attr.ptr)
             if attrname in self.expectedValues:
@@ -177,13 +178,16 @@ class LoadableMembers(object):
                         log.debug('str: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
                         return False
                     log.debug('str: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+                    # e.1)
                     return True
             if (myaddress != 0) and ( not mappings.is_valid_address_value(myaddress) )     :
                 log.debug('str: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr) ,myaddress))
+                # e.2)
                 return False
             log.debug('str: %s %s %s is at 0x%lx OK'%(attrname,attrtype,repr(attr),myaddress ))
+            # e.3)
             return True
-        # e) 
+        # f) 
         elif ctypes.is_pointer_type(attrtype):
             myaddress = utils.getaddress(attr)
             if attrname in self.expectedValues:
@@ -193,29 +197,29 @@ class LoadableMembers(object):
                     if not ( (None in self.expectedValues[attrname]) or
                                      (0 in self.expectedValues[attrname]) ):
                         log.debug('ptr: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
-                        # e.1) expectedValues specifies NULL to be invalid
+                        # f.1) expectedValues specifies NULL to be invalid
                         return False
                     log.debug('ptr: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
-                    # e.2) expectedValues specifies NULL to be valid
+                    # f.2) expectedValues specifies NULL to be valid
                     return True
             _attrType=None
             if ctypes.is_pointer_to_void_type(attrtype) or ctypes.is_function_type(attrtype):
                 log.debug('Its a simple type. Checking mappings only. attr=%s'%(attr))
                 if (myaddress != 0) and (not mappings.is_valid_address_value(myaddress)): 
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr), myaddress))
-                    # e.3) address must be valid, no type requirement
+                    # f.3) address must be valid, no type requirement
                     return False
             else:
                 # test valid address mapping
                 _attrType = get_subtype(attrtype)
-            print attr, attrtype, _attrType
             if (myaddress != 0) and (not mappings.is_valid_address(attr, _attrType)):
                 log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr), utils.getaddress(attr)))
-                # e.4) its a pointer, but not valid in our mappings for this pointee type.
+                # f.4) its a pointer, but not valid in our mappings for this pointee type.
                 return False
             log.debug('ptr: name:%s repr:%s getaddress:0x%lx OK'%(attrname,repr(attr), utils.getaddress(attr)))
-            # e.5) null is accepted by default 
+            # f.5) null is accepted by default 
             return True
+        # g)
         log.error('What type are You ?: %s/%s'%(attrname,attrtype))
         return True
 
@@ -224,13 +228,16 @@ class LoadableMembers(object):
             Check if the member is loadable.
             A c_void_p cannot be load generically, You have to take care of that.
         '''
+        
+        # TODO remove.
         import ctypes
         #attrtype=type(attr)
         #and ( attrtype in self.classRef) 
         return ( (bool(attr) and (ctypes.is_pointer_to_struct_type(attrtype) or ctypes.is_pointer_to_union_type(attrtype) ) ) or
                         #not ctypes.is_function_type(attrtype) and not ) or
                             ctypes.is_struct_type(attrtype)    or ctypes.is_cstring_type(attrtype) or
-                            (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_instance(attr) ) ) # should we iterate on Basictypes ? no
+                            (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype) ) ) 
+        # should we iterate on Basictypes ? no
 
     def loadMembers(self, mappings, maxDepth):
         ''' 
@@ -285,7 +292,7 @@ class LoadableMembers(object):
                 return False
             log.debug("st: %s %s inner struct LOADED "%(attrname,attrtype) )
             return True
-        elif ctypes.is_array_of_basic_instance(attr):
+        elif ctypes.is_array_of_basic_type(attrtype):
             return True
         if ctypes.is_array_type(attrtype):
             log.debug('a: %s is arraytype %s recurse load'%(attrname,repr(attr)) )#
@@ -393,7 +400,7 @@ class LoadableMembers(object):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
             s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED: function type)\n'%(field, myaddress_fmt) # only print address in target space
-        elif ctypes.is_array_of_basic_instance(attr): ## array of something else than int            
+        elif ctypes.is_array_of_basic_type(attrtype): ## array of something else than int            
             s=prefix+'"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)) )    
         elif ctypes.is_array_type(attrtype): ## array of something else than int/byte
             # go through each elements, we hardly can make a array out of that...
@@ -445,47 +452,81 @@ class LoadableMembers(object):
             s="# <%s at @???>\n"%(self.__class__.__name__)
         for field,attrtype in self.getFields():
             attr=getattr(self,field)
-            if ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype): # DEBUG TEST
-                s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr )    
+            if ctypes.is_basic_type(attrtype):
+                # basic type, ctypes or python
+                s+='%s : %s, \n'%(field, repr(attr) )
+            elif (ctypes.is_struct_type(attrtype) or 
+                  ctypes.is_union_type(attrtype)):
+                # DEBUG TEST
+                s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr)
             elif ctypes.is_function_type(attrtype):
-                s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: function type)\n'%(field,ctypes.addressof(attr), utils.getaddress(attr) )     # only print address in target space
-            elif ctypes.is_array_of_basic_instance(attr):
+                # only print address in target space
+                s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: function type)\n'%(
+                            field, ctypes.addressof(attr), 
+                            utils.getaddress(attr) )     
+            elif ctypes.is_array_of_basic_type(attrtype):
                 try:
-                    s+='%s (@0x%lx) : %s\n'%(field,ctypes.addressof(attr), repr(utils.array2bytes(attr)) )    
+                    s+='%s (@0x%lx) : %s\n'%(field, ctypes.addressof(attr), 
+                                             repr(utils.array2bytes(attr)) )    
                 except IndexError,e:
-                    log.error( 'error while reading %s %s'%(repr(attr),type(attr)) )
-                    
-            elif ctypes.is_array_type(attrtype): ## array of something else than int
-                s+='%s (@0x%lx)    :['%(field, ctypes.addressof(attr),)+','.join(["%s"%(val) for val in attr ])+'],\n'
+                    log.error('error while reading %s %s'%(repr(attr),
+                                                           type(attr)))
+                    # FIXME                    
+            elif ctypes.is_array_type(attrtype): 
+                ## array of something else than int
+                s += '%s (@0x%lx)    :['%(field, ctypes.addressof(attr))
+                s += ','.join(["%s"%(val) for val in attr ])
+                s += '],\n'
                 continue
             elif ctypes.is_cstring_type(attrtype):
-                if not bool(attr) :
-                    s+='%s (@0x%lx) : 0x%lx\n'%(field,ctypes.addressof(attr), utils.getaddress(attr.ptr) )     # only print address/null
-                elif not utils.is_address_local(attr) :
-                    s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, utils.getaddress(attr) )     # only print address in target space
+                if not bool(attr):
+                    # only print address/null
+                    s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
+                                utils.getaddress(attr.ptr) )
+                elif not utils.is_address_local(attr):
+                    # only print address in target space
+                    s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, 
+                                                        utils.getaddress(attr))
                 else:
-                    s+='%s (@0x%lx) : %s (CString) \n'%(field,ctypes.addressof(attr), getRef(CString, utils.getaddress(attr.ptr)))    
-            elif ctypes.is_pointer_type(attrtype) and not ctypes.is_pointer_to_void_type(attrtype): # bug with CString
+                    s += '%s (@0x%lx) : %s (CString) \n'%(field, 
+                                ctypes.addressof(attr), 
+                                getRef(CString, utils.getaddress(attr.ptr)))    
+            elif (ctypes.is_pointer_type(attrtype) and 
+                  not ctypes.is_pointer_to_void_type(attrtype)):
+                # bug with CString
                 if not bool(attr) :
-                    s+='%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), utils.getaddress(attr) )     # only print address/null
-                elif not utils.is_address_local(attr) :
-                    s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, ctypes.addressof(attr), utils.getaddress(attr) )     # only print address in target space
+                    # only print address/null
+                    s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
+                                                  utils.getaddress(attr))
+                elif not utils.is_address_local(attr):
+                    # only print address in target space
+                    s += '%s (@0x%lx) : 0x%lx (FIELD NOT LOADED)\n'%(field, 
+                                        ctypes.addressof(attr), 
+                                        utils.getaddress(attr))
                 else:
-                    _attrType=get_subtype(attrtype)
+                    _attrType = get_subtype(attrtype)
                     contents = getRef(_attrType, utils.getaddress(attr))
-                    if type(self) == type(contents): # do not recurse in lists
-                        s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), utils.getaddress(attr), repr(contents) ) # use struct printer
+                    if type(self) == type(contents): 
+                        # use struct printer
+                        # do not recurse in lists
+                        s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
+                                ctypes.addressof(attr), utils.getaddress(attr), 
+                                repr(contents) ) 
                     else:
-                        s+='%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, ctypes.addressof(attr), utils.getaddress(attr), contents) # use struct printer
-            elif type(attr) is long or type(attr) is int:
-                s+='%s : %s\n'%(field, hex(attr) )    
+                        # use struct printer
+                        s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
+                                ctypes.addressof(attr), utils.getaddress(attr), 
+                                contents) 
+            elif (type(attr) is long) or (type(attr) is int):
+                s += '%s : %s\n'%(field, hex(attr) )    
             else:
-                s+='%s : %s\n'%(field, repr(attr) )    
+                s += '%s : %s\n'%(field, repr(attr) )    
         return s
 
     def __repr__(self):
         if hasattr(self, '_orig_address_'):
-            return "# <%s at @%x>\n"%(self.__class__.__name__, self._orig_address_)
+            return "# <%s at @%x>\n"%(self.__class__.__name__, 
+                                      self._orig_address_)
         else:
             return "# <%s at @???>\n"%(self.__class__.__name__)
         
@@ -526,7 +567,7 @@ class LoadableMembers(object):
             obj=attr.toPyObject()
         elif ctypes.is_union_type(attrtype):
             obj=attr.toPyObject()
-        elif ctypes.is_array_of_basic_instance(attr): ## array of basic types
+        elif ctypes.is_array_of_basic_type(attrtype): ## array of basic types
             obj=utils.array2bytes(attr)
         elif ctypes.is_array_type(attrtype): ## array of something else than int/byte
             obj=[]
@@ -543,7 +584,7 @@ class LoadableMembers(object):
                 #log.error('Void pointer - %s'%(field))
                 #obj='Void Pointer'
                 obj = utils.getaddress(attr)
-            elif ctypes.is_array_of_basic_instance(attr):
+            elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
                 obj='BasicType array'
             elif not bool(attr) :
