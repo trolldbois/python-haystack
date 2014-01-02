@@ -35,8 +35,8 @@ int test1(){
   struct usual * usual;
   usual = (struct usual *) malloc(sizeof(struct usual));
   strcpy(usual->txt, "This a string with a test this is a test string");
-  usual->val1 = 0xaaaaaaa;
-  usual->val2 = 0xffffff0;
+  usual->val1 = 0x0aaaaaaa;
+  usual->val2 = 0x0ffffff0;
 
   struct Node * node1;
   struct Node * node2;

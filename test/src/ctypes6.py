@@ -6,8 +6,8 @@ from haystack.constraints import RangeValue,NotNull,IgnoreMember
 def populate():
     # classes copy from ctypes6_genXX is done from unittest setUp
     struct_usual.expectedValues={
-                "val1": [0xaaaaaaa],
-                "val2": [0xffffff0],
+                "val1": [0x0aaaaaaa],
+                "val2": [0x0ffffff0],
                 "txt": [NotNull] # text there
                 }
 

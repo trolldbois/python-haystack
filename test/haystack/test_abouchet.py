@@ -184,18 +184,21 @@ class Test6_x32(SrcTests):
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
     retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
-                                    self.address1 ,rtype='string')
-    print retstr
+                                    self.address1, rtype='string')
     import ctypes
     self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
-    self.assertIn(str(0xaaaaaaa), retstr ) # 0xaaaaaaa/178956970L
-    self.assertIn(str(0xffffff0), retstr )
-    return
+    self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
+    self.assertIn(str(0x0ffffff0), retstr)
+    self.assertIn('"val2b": 0L,', retstr)
+    self.assertIn('"val1b": 0L,', retstr)
+    
     #python
-    node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
+    usual, validated = abouchet.show_dumpname(self.usual_structname,
+                                              self.memdumpname,
+                                              self.address1, rtype='python')
     self.assertEquals( validated, True)
-    self.assertEquals( node.val1, 0xdeadbeef)
-    self.assertEquals( node.ptr2, self.address)
+    self.assertEquals( usual.val1, 0x0aaaaaaa)
+    self.assertEquals( usual.val2, 0x0ffffff0)
 
 
   def test_search(self):
