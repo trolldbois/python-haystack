@@ -427,12 +427,12 @@ class LoadableMembers(object):
         import ctypes
         s=''
         if ctypes.is_struct_type(attrtype):
-            s = prefix+'"%s": {\t%s%s},\n'%(field,
+            s = prefix + '"%s": {\t%s%s},\n'%(field,
                                             attr.toString(prefix+'\t', depth-1),
                                             prefix)
         elif ctypes.is_union_type(attrtype): 
             # UNION - CString construct is handled in ctypes proxy method.
-            s = prefix+'"%s": { # UNION DEFAULT repr\t%s%s},\n'%(field, 
+            s = prefix + '"%s": { # UNION DEFAULT repr\t%s%s},\n'%(field, 
                                             attr.toString(prefix+'\t', depth-1),
                                             prefix)
         elif ctypes.is_function_type(attrtype):
@@ -443,12 +443,11 @@ class LoadableMembers(object):
                                                            field, myaddress_fmt)
         elif ctypes.is_array_of_basic_type(attrtype):
             # array of int, float ...
-            print field, attrtype
-            s = prefix+'"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)))
+            s = prefix + '"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)))
         elif ctypes.is_array_type(attrtype):
             # array of something else than int/byte
             # go through each elements, we hardly can make a array out of that.
-            s = prefix+'"%s" :{'%(field)
+            s = prefix + '"%s" :{'%(field)
             eltyp = type(attr[0])
             for i in range(0,len(attr)):
                 s += self._attrToString(attr[i], i, eltyp, '')
