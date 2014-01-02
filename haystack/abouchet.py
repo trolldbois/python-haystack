@@ -13,6 +13,7 @@ import ctypes
 import subprocess
 import json
 
+from haystack import model
 from haystack import argparse_utils
 from haystack import utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
@@ -137,6 +138,8 @@ class StructFinder:
         log.debug("Loading %s from 0x%lx "%(structType,offset))
         #instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
         instance=memoryMap.readStruct(offset,structType)
+        # memleak
+        model.keepRef(instance,structType,offset)
         # check if data matches
         if ( instance.loadMembers(self.mappings, depth) ):
             log.info( "found instance %s @ 0x%lx"%(structType,offset) )
@@ -488,6 +491,7 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
     # find the structure
     finder = StructFinder(mappings, targetMappings)
     outs = finder.find_struct( structType, hintOffset=hint, maxNum=maxnum)
+    print hex(outs[0][0].val1)
     # DEBUG
     if interactive:
         import code
@@ -499,14 +503,14 @@ def _output(outs, rtype ):
     """ Return results in the rtype format"""
     if len(outs) == 0:
         log.info('Found no occurence.')
-        raise StopIteration
+        return None
     if rtype == 'string':
-        yield '['
+        ret = '['
         for ss, addr in outs:
-            yield "# --------------- 0x%lx \n%s"% (addr, ss.toString() )
+            ret += "# --------------- 0x%lx \n%s"% (addr, ss.toString() )
             pass
-        yield ']'
-        raise StopIteration        
+        ret += ']'
+        return ret
     #else {'json', 'pickled'} : # cast in pyObject
     from haystack import basicmodel # TODO replace by instance method fincCtypesinpyobj
     ret = [ (ss.toPyObject(), addr) for ss, addr in outs] 
@@ -515,12 +519,12 @@ def _output(outs, rtype ):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     # finally 
     if rtype == 'python': # pyobj
-        yield ret
+        return ret
     elif rtype == 'json': #jsoned
-        yield json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+        return json.dumps(ret, default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
     elif rtype == 'pickled': #pickled
-        yield pickle.dumps(ret)
-    raise StopIteration
+        return pickle.dumps(ret)
+    return None
 
 def _show_output(instance, validated, rtype ):
     """ Return results in the rtype format"""
