@@ -541,8 +541,9 @@ class LoadableMembers(object):
             obj = attr.toString()
         elif ctypes.is_pointer_type(attrtype):
             if ctypes.is_pointer_to_void_type(attrtype):
-                log.error('Void pointer - %s'%(field))
-                obj='Void Pointer'
+                #log.error('Void pointer - %s'%(field))
+                #obj='Void Pointer'
+                obj = attr
             elif ctypes.is_array_of_basic_instance(attr):
                 log.error('basic Type array - %s'%(field))
                 obj='BasicType array'

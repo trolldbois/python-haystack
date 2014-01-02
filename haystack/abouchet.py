@@ -464,7 +464,7 @@ def _search_cmdline(args):
         print out
     return
 
-def _search(mappings, structType, fullscan=False, hint=None, rtype='python', interactive=False, maxnum=1):
+def _search(mappings, structType, fullscan=False, hint=0, rtype='python', interactive=False, maxnum=1):
     """ make the search for structType    """
     # choose the search space
     if fullscan:
@@ -509,7 +509,7 @@ def _output(outs, rtype ):
         raise StopIteration        
     #else {'json', 'pickled'} : # cast in pyObject
     from haystack import basicmodel # TODO replace by instance method fincCtypesinpyobj
-    ret = [ (ss.toPyObject(), addr) for ss, addr in outs]
+    ret = [ (ss.toPyObject(), addr) for ss, addr in outs] 
     # last check to clean the structure from any ctypes Structure
     if basicmodel.findCtypesInPyObj(ret):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
