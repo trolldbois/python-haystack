@@ -181,7 +181,7 @@ class Test6_x32(SrcTests):
   def test_refresh(self):
     ''' tests valid structure refresh.'''
     from test.src import ctypes6
-    self.assertEquals( len(ctypes6.struct_Node.expectedValues.keys()), 2)
+    self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
     retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
                                     self.address1 ,rtype='string')
@@ -403,8 +403,8 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig( stream=sys.stdout, level=logging.INFO )
-  #logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+  #logging.basicConfig( stream=sys.stdout, level=logging.INFO )
+  logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)

@@ -427,20 +427,32 @@ class LoadableMembers(object):
         import ctypes
         s=''
         if ctypes.is_struct_type(attrtype):
-            s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )    
+            s = prefix+'"%s": {\t%s%s},\n'%(field,
+                                            attr.toString(prefix+'\t', depth-1),
+                                            prefix)
+        elif ctypes.is_union_type(attrtype): 
+            # UNION - CString construct is handled in ctypes proxy method.
+            s = prefix+'"%s": { # UNION DEFAULT repr\t%s%s},\n'%(field, 
+                                            attr.toString(prefix+'\t', depth-1),
+                                            prefix)
         elif ctypes.is_function_type(attrtype):
+            # only print address in target space
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
-            s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED: function type)\n'%(field, myaddress_fmt) # only print address in target space
-        elif ctypes.is_array_of_basic_type(attrtype): ## array of something else than int            
-            s=prefix+'"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)) )    
-        elif ctypes.is_array_type(attrtype): ## array of something else than int/byte
-            # go through each elements, we hardly can make a array out of that...
-            s=prefix+'"%s" :{'%(field)
-            eltyp=type(attr[0])
+            s = prefix + '"%s": 0x%s, #(FIELD NOT LOADED: function type)\n'%(
+                                                           field, myaddress_fmt)
+        elif ctypes.is_array_of_basic_type(attrtype):
+            # array of int, float ...
+            print field, attrtype
+            s = prefix+'"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)))
+        elif ctypes.is_array_type(attrtype):
+            # array of something else than int/byte
+            # go through each elements, we hardly can make a array out of that.
+            s = prefix+'"%s" :{'%(field)
+            eltyp = type(attr[0])
             for i in range(0,len(attr)):
-                s+=self._attrToString( attr[i], i, eltyp, '')
-            s+='},\n'
+                s += self._attrToString(attr[i], i, eltyp, '')
+            s += '},\n'
         elif ctypes.is_pointer_type(attrtype):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
@@ -470,8 +482,6 @@ class LoadableMembers(object):
             s=prefix+'"%s": "%s" , #(CString)\n'%(field, getRef(CString, utils.getaddress(attr.ptr)) )
         elif ctypes.is_basic_type(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
             s=prefix+'"%s": %s, \n'%(field, repr(attr))
-        elif ctypes.is_union_type(attrtype): # UNION
-            s=prefix+'"%s": { # UNION DEFAULT repr\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )
         else: # wtf ? 
             s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr\n'%(field, repr(attr))
         return s
