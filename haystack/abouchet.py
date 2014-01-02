@@ -138,8 +138,6 @@ class StructFinder:
         log.debug("Loading %s from 0x%lx "%(structType,offset))
         #instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
         instance=memoryMap.readStruct(offset,structType)
-        # memleak
-        model.keepRef(instance,structType,offset)
         # check if data matches
         if ( instance.loadMembers(self.mappings, depth) ):
             log.info( "found instance %s @ 0x%lx"%(structType,offset) )
@@ -491,7 +489,6 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
     # find the structure
     finder = StructFinder(mappings, targetMappings)
     outs = finder.find_struct( structType, hintOffset=hint, maxNum=maxnum)
-    print hex(outs[0][0].val1)
     # DEBUG
     if interactive:
         import code

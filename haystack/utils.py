@@ -58,6 +58,9 @@ def getaddress(obj):
     if hasattr(obj,'_sub_addr_'):
         #print 'obj._sub_addr_', hex(obj._sub_addr_)
         return obj._sub_addr_
+    elif isinstance(obj, int) or isinstance(obj, long):
+        # basictype pointers are created as int.
+        return obj
     # check for null pointers
     if bool(obj):
         if not hasattr(obj,'contents'):

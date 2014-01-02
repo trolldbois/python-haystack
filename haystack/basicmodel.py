@@ -185,41 +185,35 @@ class LoadableMembers(object):
             return True
         # e) 
         elif ctypes.is_pointer_type(attrtype):
+            myaddress = utils.getaddress(attr)
             if attrname in self.expectedValues:
                 # test if NULL is an option
                 log.debug('ctypes.is_pointer_type: bool(attr):%s attr:%s'%(bool(attr), attr))
-                if not bool(attr):
+                if not bool(myaddress):
                     if not ( (None in self.expectedValues[attrname]) or
                                      (0 in self.expectedValues[attrname]) ):
                         log.debug('ptr: %s %s %s isNULL and that is NOT EXPECTED'%(attrname,attrtype,repr(attr) ))
+                        # e.1) expectedValues specifies NULL to be invalid
                         return False
                     log.debug('ptr: %s %s %s isNULL and that is OK'%(attrname,attrtype,repr(attr) ))
+                    # e.2) expectedValues specifies NULL to be valid
                     return True
-            # all case, 
             _attrType=None
             if ctypes.is_pointer_to_void_type(attrtype) or ctypes.is_function_type(attrtype):
                 log.debug('Its a simple type. Checking mappings only. attr=%s'%(attr))
-                if utils.getaddress(attr) != 0 and not mappings.is_valid_address_value(attr): # NULL can be accepted
-                    log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr), utils.getaddress(attr)))
+                if (myaddress != 0) and (not mappings.is_valid_address_value(myaddress)): 
+                    log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer'%(attrname,attrtype, repr(attr), myaddress))
+                    # e.3) address must be valid, no type requirement
                     return False
             else:
                 # test valid address mapping
                 _attrType = get_subtype(attrtype)
-            if ( not mappings.is_valid_address(attr, _attrType) ) and (utils.getaddress(attr) != 0):
-                # why ?
-                #print 'is_valid_address( %s, %s) = %s'%( attrname, _attrType, mappings.is_valid_address(attr, _attrType))
-                #print attrname, attrname in self.expectedValues
-                #if attrname in self.expectedValues:
-                #    print self.expectedValues[attrname]
-                # TODO: make TU instead of fishing.
-                #print ctypes
-                #print 'attr', type(attr), type(type(attr))
-                #print 'attr', hex(utils.getaddress(attr)) , utils.getaddress(attr)
-                #print 'attr in mappings', int(utils.getaddress(attr)) in mappings
+            if (myaddress != 0) and (not mappings.is_valid_address(attr, _attrType)):
                 log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname,attrtype, repr(attr), utils.getaddress(attr)))
+                # e.4) its a pointer, but not valid in our mappings for this pointee type.
                 return False
-            # null is accepted by default 
             log.debug('ptr: name:%s repr:%s getaddress:0x%lx OK'%(attrname,repr(attr), utils.getaddress(attr)))
+            # e.5) null is accepted by default 
             return True
         log.error('What type are You ?: %s/%s'%(attrname,attrtype))
         return True
@@ -395,7 +389,9 @@ class LoadableMembers(object):
         if ctypes.is_struct_type(attrtype):
             s=prefix+'"%s": {\t%s%s},\n'%(field, attr.toString(prefix+'\t', depth-1),prefix )    
         elif ctypes.is_function_type(attrtype):
-            s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED: function type)\n'%(field, utils.getaddress(attr) )     # only print address in target space
+            myaddress = utils.getaddress(attr)
+            myaddress_fmt = utils.formatAddress(myaddress)
+            s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED: function type)\n'%(field, myaddress_fmt) # only print address in target space
         elif ctypes.is_array_of_basic_instance(attr): ## array of something else than int            
             s=prefix+'"%s": b%s,\n'%(field, repr(utils.array2bytes(attr)) )    
         elif ctypes.is_array_type(attrtype): ## array of something else than int/byte
@@ -406,27 +402,29 @@ class LoadableMembers(object):
                 s+=self._attrToString( attr[i], i, eltyp, '')
             s+='},\n'
         elif ctypes.is_pointer_type(attrtype):
+            myaddress = utils.getaddress(attr)
+            myaddress_fmt = utils.formatAddress(myaddress)
             if not bool(attr) :
-                s=prefix+'"%s": 0x%lx,\n'%(field, utils.getaddress(attr) )     # only print address/null
+                s=prefix+'"%s": 0x%s,\n'%(field, myaddress_fmt) # only print address/null
             elif ctypes.is_pointer_to_void_type(attrtype) :
-                s=prefix+'"%s": 0x%0.16lx, #(FIELD NOT LOADED: void pointer) \n'%(field, attr )     # only print address/null
+                s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED: void pointer) \n'%(field, myaddress_fmt) # only print address/null
             elif not utils.is_address_local(attr) :
-                s=prefix+'"%s": 0x%lx, #(FIELD NOT LOADED)\n'%(field, utils.getaddress(attr) )     # only print address in target space
+                s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED)\n'%(field, myaddress_fmt) # only print address in target space
             else:
                 # we can read the pointers contents # if ctypes.is_basic_type(attr.contents): ?    # if ctypes.is_array_type(attr.contents): ?
                 _attrType = get_subtype(attrtype)                
-                contents = getRef(_attrType, utils.getaddress(attr))
+                contents = getRef(_attrType, myaddress)
                 if type(self) == type(contents):
-                    s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, 
-                                                    utils.getaddress(attr), _attrType, prefix) # use struct printer
+                    s=prefix+'"%s": { #(0x%s) -> %s\n%s},\n'%(field, 
+                                                    myaddress_fmt, _attrType, prefix) # use struct printer
                 elif ctypes.is_struct_type(type(contents)): # do not enter in lists
-                    s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, utils.getaddress(attr), 
+                    s=prefix+'"%s": { #(0x%s) -> %s%s},\n'%(field, myaddress_fmt, 
                                                     contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
                 elif ctypes.is_pointer_type(type(contents)):
-                    s=prefix+'"%s": { #(0x%lx) -> %s%s},\n'%(field, utils.getaddress(attr), 
+                    s=prefix+'"%s": { #(0x%s) -> %s%s},\n'%(field, myaddress_fmt, 
                                                     self._attrToString(contents, None, None, prefix+'\t'), prefix ) # use struct printer
                 else:
-                    s=prefix+'"%s": { #(0x%lx) -> %s\n%s},\n'%(field, utils.getaddress(attr), 
+                    s=prefix+'"%s": { #(0x%s) -> %s\n%s},\n'%(field, myaddress_fmt, 
                                                     contents, prefix) # use struct printer
         elif ctypes.is_cstring_type(attrtype):
             s=prefix+'"%s": "%s" , #(CString)\n'%(field, getRef(CString, utils.getaddress(attr.ptr)) )    
@@ -543,7 +541,7 @@ class LoadableMembers(object):
             if ctypes.is_pointer_to_void_type(attrtype):
                 #log.error('Void pointer - %s'%(field))
                 #obj='Void Pointer'
-                obj = attr
+                obj = utils.getaddress(attr)
             elif ctypes.is_array_of_basic_instance(attr):
                 log.error('basic Type array - %s'%(field))
                 obj='BasicType array'

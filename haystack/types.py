@@ -186,6 +186,7 @@ class CTypesProxy(object):
             # replacement_type_char's size.
             # so we replace _type_ with the fake type of the expected size.
             # and we had _subtype_ that will be queried by our helper functions. 
+            # TODO: inspect _ctypes._SimpleCData to understand what is c_void_p/c_char_p
             class _T(_ctypes._SimpleCData,):
                 _type_ = replacement_type_char
                 _subtype_ = subtype # could use _pointer_type_cache
@@ -289,18 +290,20 @@ class CTypesProxy(object):
             'c_longdouble': 'g', 
             'c_char_p': 's',
             'c_void_p': 'P',
-            'c_void': 'P', ## void in array is void_p ##DEBUG
+            #'c_void': 'P', ## void in array is void_p ##DEBUG
             }
         if self.__longsize == 4:
             # long == int
             self.__basic_types_name.update({'c_long': 'i', 
                                             'c_ulong': 'I',
-                                            'long': 'i'})
+                                            'long': 'i',
+                                            'c_void': 'I'})
         elif self.__longsize == 8:
             # long == longlong
             self.__basic_types_name.update({'c_long': 'q', 
                                             'c_ulong': 'Q',
-                                            'long': 'Q'})
+                                            'long': 'q',
+                                            'c_void': 'Q'})
         # we need to account for the possible changes in c_longdouble
         self.__basic_types = set([getattr(self,k) for k in self.__basic_types_name.keys() if hasattr(self,k)])
         return

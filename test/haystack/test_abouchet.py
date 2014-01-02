@@ -10,15 +10,82 @@ import haystack
 
 from haystack import abouchet
 from haystack import model
+from haystack import types
+
+
+class TestRefreshX32(unittest.TestCase):
+  """Validate refresh API on a linux x32 dump of ctypes7."""
+  def setUp(self):
+    types.reload_ctypes(4,4,8)
+    self.address = 0x8f40008
+    self.memdumpname = 'test/src/test-ctypes7.32.dump'
+    self.classname = 'test.src.ctypes7.struct_Node'
+
+  def tearDown(self):
+    self.mappings = None
+
+  def test_refresh(self):
+    ''' tests valid structure resfresh.'''
+    # load empty shell with constraints in x64
+    from test.src import ctypes7
+    from test.src import ctypes7_gen32
+    model.copyGeneratedClasses(ctypes7_gen32, ctypes7)
+    model.registerModule(ctypes7)
+    # apply constraints
+    ctypes7.populate()
+    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    # string
+    retstr = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x08f40008,", retstr )
+    
+    #python
+    node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
+    self.assertEquals( validated, True)
+    self.assertEquals( node.val1, 0xdeadbeef)
+    self.assertEquals( node.ptr2, self.address)
+
+
+  def test_search(self):
+    ''' tests valid structure show and invalid structure show.'''
+    # load empty shell with constraints in x64
+    from test.src import ctypes7
+    from test.src import ctypes7_gen32
+    model.copyGeneratedClasses(ctypes7_gen32, ctypes7)
+    model.registerModule(ctypes7)
+    # apply constraints
+    ctypes7.populate()
+    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    
+    retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x08f40008,", retstr )
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, maxnum=10, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+    return 
 
 
 class TestRefreshX64(unittest.TestCase):
   """Validate refresh API on a linux x64 dump of ctypes7."""
   def setUp(self):
+    types.reload_ctypes(8,8,16)
     self.address = 0x000000001b1e010
     self.memdumpname = 'test/src/test-ctypes7.64.dump'
     self.classname = 'test.src.ctypes7.struct_Node'
-    self.known_heap = (0x00007f724c905000, 249856)
 
   def tearDown(self):
     self.mappings = None
@@ -56,18 +123,29 @@ class TestRefreshX64(unittest.TestCase):
     ctypes7.populate()
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
-    for res in abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string'):
-        #self.assertEquals(len(res), 1)
-        print res
-        #instance, validated = res[0]
-        #self.assertIsInstance(instance, object)
-        #print hex(instance.val1)
-        #self.assertEquals( instance.val1, 0xdeadbeef)
-        #print instance.__dict__
-        #self.assertEquals( instance.VirtualMemoryThreshold, 0xfe00)
-        #self.assertEquals( instance.FrontEndHeapType, 0)
-        #self.assertTrue(validated)    
+    retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x0000000001b1e010,", retstr )
+    
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
+
+    #python
+    results = abouchet.search_dumpname( self.classname, self.memdumpname, maxnum=10, rtype='python')
+    self.assertEquals( len(results), 1)
+    for node, offset in results:
+        self.assertEquals( offset, self.address)
+        self.assertEquals( node.val1, 0xdeadbeef)
+        self.assertEquals( node.ptr2, self.address)
     return 
+
+
+
 
 class TestApiLinuxDumpX64(unittest.TestCase):
   """Validate API on a linux x64 dump of SSH."""
@@ -180,8 +258,8 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  #logging.basicConfig( stream=sys.stdout, level=logging.INFO )
-  logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+  logging.basicConfig( stream=sys.stdout, level=logging.INFO )
+  #logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)
