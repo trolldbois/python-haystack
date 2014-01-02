@@ -28,6 +28,8 @@ def make_types():
       _fields_ = [ ('a',ctypes.c_long) ]
     class SubSt2(ctypes.Structure):
       _fields_ = [ ('a',ctypes.c_longlong) ]
+    class Union(ctypes.Union):
+      _fields_ = [ ('l',ctypes.c_longlong), ('f',ctypes.c_float)]
     #
     btype = ctypes.c_int
     longt = ctypes.c_long
@@ -44,6 +46,7 @@ def make_types():
     double = ctypes.c_longdouble
     arra5 = ctypes.c_ubyte*8
     arra6 = ctypes.c_char*32
+    ptrUnion = ctypes.POINTER(Union)
     return locals()
 
 
@@ -259,7 +262,7 @@ class TestBasicFunctions(unittest.TestCase):
             globals()[name] = value
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
-                      arra6]
+                      arra6, Union, ptrUnion]
 
     def _testMe(self, fn, valids, invalids):
         for var in valids:
@@ -280,10 +283,28 @@ class TestBasicFunctions(unittest.TestCase):
         self._testMe( ctypes.is_struct_type, valids, invalids)
         return 
 
+    def test_is_union_type(self):
+        valids = [Union]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_union_type, valids, invalids)
+        return 
+
     def test_is_pointer_type(self):
-        valids = [voidp, stp, stpvoid, fptr, charp, string]
+        valids = [voidp, stp, stpvoid, fptr, charp, string, ptrUnion]
         invalids = [ v for v in self.tests if v not in valids]
         self._testMe( ctypes.is_pointer_type, valids, invalids)
+        return 
+
+    def test_is_pointer_to_struct_type(self):
+        valids = [stp]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_pointer_to_struct_type, valids, invalids)
+        return 
+
+    def test_is_pointer_to_union_type(self):
+        valids = [ptrUnion]
+        invalids = [ v for v in self.tests if v not in valids]
+        self._testMe( ctypes.is_pointer_to_union_type, valids, invalids)
         return 
 
     def test_is_pointer_to_void_type(self):
@@ -359,7 +380,7 @@ class TestBasicFunctions32(TestBasicFunctions):
         # reload test list after globals have been changed
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
-                      arra6]
+                      arra6, Union, ptrUnion]
 
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 4)
@@ -390,7 +411,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
-                      arra6]
+                      arra6, Union, ptrUnion]
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
@@ -420,7 +441,7 @@ class TestBasicFunctions64(TestBasicFunctions):
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
-                      arra6]
+                      arra6, Union, ptrUnion]
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)

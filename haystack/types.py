@@ -16,7 +16,7 @@ def reset_ctypes():
         del sys.modules['ctypes']
     # import the real one
     import ctypes
-    log.info('reset: ctypes changed to %s '%(ctypes))
+    log.debug('reset: ctypes changed to %s '%(ctypes))
     return ctypes
 
 def load_ctypes_default():
@@ -49,7 +49,7 @@ def set_ctypes(ctypesproxy):
     if not isinstance(ctypesproxy, CTypesProxy):
         raise TypeError('CTypesProxy instance expected.')
     sys.modules['ctypes'] = ctypesproxy
-    log.info('set: ctypes changed to %s'%(ctypesproxy))
+    log.debug('set: ctypes changed to %s'%(ctypesproxy))
     return sys.modules['ctypes']
 
 def check_arg_is_type(func):
@@ -100,7 +100,7 @@ class CTypesProxy(object):
         del ctypes
         # replace it. We want ctypes to be self for the rest of init.
         sys.modules['ctypes'] = self
-        log.info('init: ctypes changed to %s'%(self))
+        log.debug('init: ctypes changed to %s'%(self))
         self.__init_types()
         pass        
 
@@ -399,17 +399,26 @@ class CTypesProxy(object):
     @check_arg_is_type
     def is_pointer_to_basic_type(self, objtype):
         """Checks if an object is a pointer to a BasicType"""
-        return hasattr(objtype, '_type_') and self.is_basic_type(objtype._type_)
+        if hasattr(objtype, '_subtype_'): # haystack
+            return self.is_basic_type(objtype._subtype_)
+        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
+                and self.is_basic_type(objtype._type_))
 
     @check_arg_is_type
     def is_pointer_to_struct_type(self, objtype):
         """Checks if an object is a pointer to a Structure"""
-        return hasattr(objtype, '_type_') and self.is_struct_type(objtype._type_)
+        if hasattr(objtype, '_subtype_'):
+            return self.is_struct_type(objtype._subtype_)
+        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
+                and self.is_struct_type(objtype._type_))
 
     @check_arg_is_type
     def is_pointer_to_union_type(self, objtype):
         """Checks if an object is a pointer to a Union"""
-        return hasattr(objtype, '_type_') and self.is_union_type(objtype._type_)
+        if hasattr(objtype, '_subtype_'):
+            return self.is_union_type(objtype._subtype_)
+        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
+                and self.is_union_type(objtype._type_))
 
     @check_arg_is_type
     def is_pointer_to_void_type(self, objtype):
