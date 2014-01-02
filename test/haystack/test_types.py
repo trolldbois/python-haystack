@@ -43,6 +43,7 @@ def make_types():
     arra4 = (fptr*256)
     double = ctypes.c_longdouble
     arra5 = ctypes.c_ubyte*8
+    arra6 = ctypes.c_char*32
     return locals()
 
 
@@ -257,7 +258,8 @@ class TestBasicFunctions(unittest.TestCase):
         for name,value in make_types().items():
             globals()[name] = value
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
-                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5,
+                      arra6]
 
     def _testMe(self, fn, valids, invalids):
         for var in valids:
@@ -297,7 +299,7 @@ class TestBasicFunctions(unittest.TestCase):
         return 
 
     def test_is_array_of_basic_instance(self):
-        valids = [arra1(), arra5()]
+        valids = [arra1(), arra5(), arra6()]
         invalids = [ v for v in self.tests if v not in valids]
         # we need instances to be invalid
         invalids.extend([ arra2(), arra3(), arra4(), ] )
@@ -308,7 +310,7 @@ class TestBasicFunctions(unittest.TestCase):
         return 
 
     def test_is_array_of_basic_type(self):
-        valids = [arra1, arra5]
+        valids = [arra1, arra5, arra6]
         invalids = [ v for v in self.tests if v not in valids]
         for var in valids:
             self.assertTrue( ctypes.is_array_of_basic_type( var ), var)
@@ -317,7 +319,7 @@ class TestBasicFunctions(unittest.TestCase):
         return 
 
     def test_is_array_type(self):
-        valids = [arra1, arra2, arra3, arra4, arra5]
+        valids = [arra1, arra2, arra3, arra4, arra5, arra6]
         invalids = [ v for v in self.tests if v not in valids]
         self._testMe( ctypes.is_array_type, valids, invalids)
         return 
@@ -356,7 +358,8 @@ class TestBasicFunctions32(TestBasicFunctions):
             globals()[name] = value
         # reload test list after globals have been changed
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
-                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5,
+                      arra6]
 
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 4)
@@ -386,7 +389,8 @@ class TestBasicFunctionsWin(TestBasicFunctions):
             globals()[name] = value
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
-                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5,
+                      arra6]
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
@@ -415,7 +419,8 @@ class TestBasicFunctions64(TestBasicFunctions):
             globals()[name] = value
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
-                      arra2, arra3, charp, string, fptr, arra4, double, arra5]
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5,
+                      arra6]
         
     def test_sizes(self):
         self.assertEquals( ctypes.sizeof(ctypes.c_long), 8)
