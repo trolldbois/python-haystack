@@ -439,7 +439,7 @@ class LoadableMembers(object):
             # only print address in target space
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
-            s = prefix + '"%s": 0x%s, #(FIELD NOT LOADED: function type)\n'%(
+            s = prefix + '"%s": %s, #(FIELD NOT LOADED: function type)\n'%(
                                                            field, myaddress_fmt)
         elif ctypes.is_array_of_basic_type(attrtype):
             # array of int, float ...
@@ -456,26 +456,26 @@ class LoadableMembers(object):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
             if not bool(attr) :
-                s=prefix+'"%s": 0x%s,\n'%(field, myaddress_fmt) # only print address/null
+                s=prefix+'"%s": %s,\n'%(field, myaddress_fmt) # only print address/null
             elif ctypes.is_pointer_to_void_type(attrtype) :
-                s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED: void pointer) \n'%(field, myaddress_fmt) # only print address/null
+                s=prefix+'"%s": %s, #(FIELD NOT LOADED: void pointer) \n'%(field, myaddress_fmt) # only print address/null
             elif not utils.is_address_local(attr) :
-                s=prefix+'"%s": 0x%s, #(FIELD NOT LOADED)\n'%(field, myaddress_fmt) # only print address in target space
+                s=prefix+'"%s": %s, #(FIELD NOT LOADED)\n'%(field, myaddress_fmt) # only print address in target space
             else:
                 # we can read the pointers contents # if ctypes.is_basic_type(attr.contents): ?    # if ctypes.is_array_type(attr.contents): ?
                 _attrType = get_subtype(attrtype)                
                 contents = getRef(_attrType, myaddress)
                 if type(self) == type(contents):
-                    s=prefix+'"%s": { #(0x%s) -> %s\n%s},\n'%(field, 
+                    s=prefix+'"%s": { #(%s) -> %s\n%s},\n'%(field, 
                                                     myaddress_fmt, _attrType, prefix) # use struct printer
                 elif ctypes.is_struct_type(type(contents)): # do not enter in lists
-                    s=prefix+'"%s": { #(0x%s) -> %s%s},\n'%(field, myaddress_fmt, 
+                    s=prefix+'"%s": { #(%s) -> %s%s},\n'%(field, myaddress_fmt, 
                                                     contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
                 elif ctypes.is_pointer_type(type(contents)):
-                    s=prefix+'"%s": { #(0x%s) -> %s%s},\n'%(field, myaddress_fmt, 
+                    s=prefix+'"%s": { #(%s) -> %s%s},\n'%(field, myaddress_fmt, 
                                                     self._attrToString(contents, None, None, prefix+'\t'), prefix ) # use struct printer
                 else:
-                    s=prefix+'"%s": { #(0x%s) -> %s\n%s},\n'%(field, myaddress_fmt, 
+                    s=prefix+'"%s": { #(%s) -> %s\n%s},\n'%(field, myaddress_fmt, 
                                                     contents, prefix) # use struct printer
         elif ctypes.is_cstring_type(attrtype):
             s=prefix+'"%s": "%s" , #(CString)\n'%(field, getRef(CString, utils.getaddress(attr.ptr)) )
@@ -692,8 +692,14 @@ class pyObj(object):
         if maxDepth < 0:
             return '#(- not printed by Excessive recursion - )'
         s='{\n'
-        for attrname,typ in self.__dict__.items():
+        if hasattr(self, '_ctype_'):
+            items = [n for n,t in self._ctype_.getFields()]
+        else:
+            log.warning('no _ctype_')
+            items = [n for n in self.__dict__.keys() if n != '_ctype_']
+        for attrname in items:
             attr = getattr(self, attrname)
+            typ = type(attr)
             s += "%s%s: %s\n"%( prefix, attrname, self._attrToString(attr, attrname, typ, prefix+'\t', maxDepth=maxDepth-1) )
         s+='}'
         return s
