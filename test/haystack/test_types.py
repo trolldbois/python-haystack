@@ -422,6 +422,6 @@ class TestBasicFunctions64(TestBasicFunctions):
         self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
 if __name__ == '__main__':
-    unittest.main(verbosity=0)
+    unittest.main(verbosity=2)
 
 
