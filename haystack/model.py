@@ -157,7 +157,7 @@ def copyGeneratedClasses(src, dst):
     :param src : src module, generated
     """
     import ctypes
-    log.info('copy classes %s -> %s'%(src.__name__, dst.__name__))
+    log.debug('copy classes %s -> %s'%(src.__name__, dst.__name__))
     copied = 0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
         if issubclass(klass, ctypes.LoadableMembers): 
@@ -219,7 +219,7 @@ def registerModule( targetmodule ):
     pickle/unpickle them later.
     """
     import ctypes
-    log.info('registering module %s'%(targetmodule))
+    log.debug('registering module %s'%(targetmodule))
     if targetmodule in registeredModules():
         log.warning('Module %s already registered. Skipping.'%(targetmodule))
         return
