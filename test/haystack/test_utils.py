@@ -206,6 +206,15 @@ class TestHelpers(unittest.TestCase):
                           b'\x01'+7*b'\x00'+
                           b'\x02'+7*b'\x00'+
                           7*8*'\x00', x)
+
+        a = (ctypes.c_char*12).from_buffer_copy('1234567890AB')
+        x = utils.array2bytes(a)
+        self.assertEquals(b'1234567890AB', x)
+
+        # mimics what ctypes gives us on memory loading.
+        a = b'1234567890AB' 
+        x = utils.array2bytes(a)
+        self.assertEquals(b'1234567890AB', x)
         pass
 
     def test_bytes2array(self):

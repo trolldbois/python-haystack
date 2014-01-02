@@ -108,6 +108,9 @@ def array2bytes(array):
     This is a bad example of introspection.
     """
     import ctypes
+    if isinstance(array, str):
+        # special case for c_char[]
+        return array
     if not ctypes.is_array_of_basic_instance(array):
         raise TypeError('NOT-AN-Basic-Type-ARRAY')
     sb = b''.join([pack(array._type_._type_, el) for el in array])
