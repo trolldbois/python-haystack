@@ -47,7 +47,7 @@ class Test7_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure resfresh.'''
+    ''' tests valid structure refresh.'''
     from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -111,7 +111,7 @@ class Test7_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure resfresh.'''
+    ''' tests valid structure refresh.'''
     from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -162,7 +162,7 @@ class Test6_x32(SrcTests):
     types.reload_ctypes(4,4,8)
     self.memdumpname = 'test/src/test-ctypes6.32.dump'
     self.node_structname = 'test.src.ctypes6.struct_Node'
-    self.usual_structname = 'test.src.ctypes6.struct_Node'
+    self.usual_structname = 'test.src.ctypes6.struct_usual'
     offsets = self._load_offsets(self.memdumpname)
     self.address1 = offsets['test1'][0] # struct_usual
     self.address2 = offsets['test2'][0] # struct_Node
@@ -179,16 +179,17 @@ class Test6_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure resfresh.'''
+    ''' tests valid structure refresh.'''
     from test.src import ctypes6
     self.assertEquals( len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
-    retstr = abouchet.show_dumpname( self.usual_structname, self.memdumpname, self.address1 ,rtype='string')
+    retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
+                                    self.address1 ,rtype='string')
     print retstr
     import ctypes
     self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
-    self.assertIn("0xaaaaaaa,", retstr ) # 0xaaaaaaa
-    self.assertIn("0xffffff0,", retstr )
+    self.assertIn(str(0xaaaaaaa), retstr ) # 0xaaaaaaa/178956970L
+    self.assertIn(str(0xffffff0), retstr )
     return
     #python
     node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
@@ -245,7 +246,7 @@ class Test6_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure resfresh.'''
+    ''' tests valid structure refresh.'''
     from test.src import ctypes7
     self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
