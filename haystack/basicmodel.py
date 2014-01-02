@@ -640,7 +640,13 @@ class LoadableMembers(object):
                     log.error('Pointer to Basic type - %s'%(field))
                     obj = 'Pointer to Basic type'
                 else:
-                    log.error('LP structure for field:%s %s/%s not in cache %x'%(field, attrtype, get_subtype(attrtype), utils.getaddress(attr) ) )
+                    # you got here because your pointer is in the middle of
+                    # a struct ? if that a linked list ?
+                    import code
+                    code.interact(local=locals())
+                    log.error('LP structure for field:%s %s/%s not in cache '
+                              '%x'%(field, attrtype, get_subtype(attrtype), 
+                                    utils.getaddress(attr)))
                     #raise ValueError('LP structure for %s not in cache %s,%x'%(field, get_subtype(attrtype), utils.getaddress(attr) ) )
                     return (None,None)
         #        ####### any pointer should be in cache
