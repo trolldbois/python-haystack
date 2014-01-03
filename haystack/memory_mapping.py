@@ -37,6 +37,7 @@ from weakref import ref
 
 # haystack
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
+from haystack import types
 from haystack import utils
 from haystack import config
 

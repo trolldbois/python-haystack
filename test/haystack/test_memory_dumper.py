@@ -109,7 +109,7 @@ class TestMemoryDumper32(TestMemoryDumper):
         self.process = self.run_app_test('test1', stdout=self.devnull.fileno())
         time.sleep(0.1)
         # FIXME, heaponly is breaking machine detection.
-        out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", False, True)
+        out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
         self.assertIsNotNone(file( '%s/mappings'%out1))
         self.assertGreater(len(file( '%s/mappings'%out1).readlines()), 15, 'the mappings file looks too small')
 
@@ -122,15 +122,15 @@ class TestMemoryDumper32(TestMemoryDumper):
         self.devnull = file('/dev/null')
         self.process = self.run_app_test('test3', stdout=self.devnull.fileno())
         time.sleep(0.1)
-        out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", False, True)
+        out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
         self.assertEquals(out1, tgt1) # same name
 
         self._renew_process()
-        out2 = memory_dumper.dump(self.process.pid, tgt2, "dir", True, True)
+        out2 = memory_dumper.dump(self.process.pid, tgt2, "dir", True)
         self.assertEquals(out2, tgt2) # same name
 
         self._renew_process()
-        out3 = memory_dumper.dump(self.process.pid, tgt3, "dir", False, False)
+        out3 = memory_dumper.dump(self.process.pid, tgt3, "dir", False)
         self.assertEquals(out3, tgt3) # same name
 
         size1 = get_folder_size(tgt1)
@@ -163,7 +163,7 @@ class TestMemoryDumper32(TestMemoryDumper):
         self.process = self.run_app_test('test3', stdout=subprocess.PIPE)
         time.sleep(0.1)
         tgt = self._make_tgt_dir()
-        self.out = memory_dumper.dump(self.process.pid, tgt, 'dir', False, True)
+        self.out = memory_dumper.dump(self.process.pid, tgt, 'dir', True)
         self.process.kill()
         return self.process.communicate()
     
