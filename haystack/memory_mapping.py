@@ -382,7 +382,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
         if self._base is None:
             if hasattr(self._memdump,'fileno'): # normal file. 
-                if False and self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+                if self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
                     #print 'mmap_hack', self
                     #if self.pathname.startswith('/usr/lib'):
                     #    raise Exception
@@ -744,7 +744,8 @@ class Mappings:
 
     def _process_machine_arch_elf(self):
         from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
-        head = self.mappings[0].readBytes(self.mappings[0].start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
+        m = [_m for _m in self.mappings if 'r-xp' in _m.permissions][0]
+        head = m.readBytes(m.start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
         x = struct_Elf_Ehdr.from_buffer_copy(head)
         #print x.e_machine
         #head = self.mappings[0].readStruct(self.mappings[0].start, struct_Elf_Ehdr)
@@ -753,7 +754,7 @@ class Mappings:
         elif x.e_machine == 62:
             self.config.set_word_size(8)
         else:
-            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
+            raise NotImplementedError('MACHINE is %s %s'%(x.e_machine, m.pathname))
         return self.config.get_word_size()
     
     def _get_mmap_for_haystack_addr(self, haddr):

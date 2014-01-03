@@ -482,9 +482,7 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
             targetMappings = [m]
         else:
             targetMappings = [mappings.getHeap()]
-        # FIXME: missing config ?
-        _config = targetMappings[0].config
-        targetMappings = memory_mapping.Mappings(_config, targetMappings, mappings.name)
+        # we don't want a Mappings instance, only a list
         if len(targetMappings) == 0:
             log.warning('No memorymapping found. Searching everywhere.')
             targetMappings = mappings
