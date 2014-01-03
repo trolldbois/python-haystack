@@ -136,7 +136,6 @@ def bytes2array(bytes, typ):
         raise e
     return array
 
-
 def pointer2bytes(attr,nbElement):
     """ 
     Returns an array from a ctypes POINTER, given the number of elements.
@@ -151,6 +150,14 @@ def pointer2bytes(attr,nbElement):
     array = (type(attr.contents)*nbElement).from_address(firstElementAddr)
     # we have an array type starting at attr.contents[0]
     return array2bytes(array)
+
+def get_subtype(cls):
+    """get the subtype of a pointer, array or basic type with haystack quirks."""
+    # could use _pointer_type_cache
+    if hasattr(cls, '_subtype_'):
+        return cls._subtype_    
+    return cls._type_    
+
 
 
 try:

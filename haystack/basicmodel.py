@@ -16,7 +16,7 @@ import sys
 
 from haystack import utils
 from haystack import constraints
-from haystack.model import hasRef, getRef, keepRef, delRef, get_subtype
+from haystack.utils import get_subtype
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

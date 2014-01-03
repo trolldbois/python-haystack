@@ -580,6 +580,9 @@ class Mappings:
         self.name = filename
         self._target_system = None
         self.config = self.mappings[0].config
+        # book register to keep references to ctypes memory buffers
+        self.__book = _book()
+
         # set the word size in this config.
         self.process_machine_arch()
     
@@ -768,7 +771,91 @@ class Mappings:
         raise NotImplementedError()
     def __iter__(self):
         return iter(self.mappings)
+
+            
+    def reset():
+        """Clean the book"""
+        self.__book.refs = dict()
+
+    def getRefs():
+        """Lists all references to already loaded structs. Useful for debug"""
+        return self.__book.refs.items()
+
+    def printRefs():
+        """Prints all references to already loaded structs. Useful for debug"""
+        l=[(typ,obj,addr) for ((typ,addr),obj) in self.__book.refs.items()]
+        for i in l:
+            print(l)
+
+    def printRefsLite():
+        """Prints all references to already loaded structs. Useful for debug"""
+        l=[(typ,addr) for ((typ,addr),obj) in self.__book.refs.items()]
+        for i in l:
+            print(l)
+
+    def hasRef(self, typ,origAddr):
+        """Check if this type has already been loaded at this address"""
+        return (typ,origAddr) in self.__book.refs
+
+    def getRef(self, typ,origAddr):
+        """Returns the reference to the type previously loaded at this address"""
+        if (typ,origAddr) in self.__book.refs:
+            return self.__book.getRef(typ,origAddr)
+        return None
+
+    def getRefByAddr(self, addr):
+        ret=[]
+        for (typ,origAddr) in self.__book.refs.keys():
+            if origAddr == addr:
+                ret.append( (typ, origAddr, self.__book.refs[(typ, origAddr)] ) )
+        return ret
+
+    def keepRef(self, obj,typ=None,origAddr=None):
+        """Keeps a reference for an object of a specific type loaded from a specific
+        address.
+        
+        Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
+           they might be transient (if obj == somepointer.contents)."""
+        # TODO, memory leak for different objects of same size, overlapping struct.
+        if (typ,origAddr) in self.__book.refs:
+            # ADDRESS already in refs
+            if origAddr is None:
+                origAddr = 'None'
+            else:
+                origAddr = hex(origAddr)
+            if typ is not None:
+                log.debug('ignore keepRef - references already in cache %s/%s'%(typ,origAddr))
+            return
+        # there is no pre-existing typ().from_address(origAddr)
+        self.__book.addRef(obj,typ,origAddr)
+        return
+
+    def delRef(self, typ, origAddr):
+        """Forget about a Ref."""
+        if (typ,origAddr) in self.__book.refs:
+            self.__book.delRef(typ,origAddr)
+        return
+
+class _book(object):
+    """The book registers all registered ctypes modules and keeps 
+    some pointer refs to buffers allocated in memory mappings.
     
+    # see also ctypes._pointer_type_cache , _reset_cache()
+    """
+    refs = dict()
+    """holds previous loads of this type at this address. Reduces load time."""
+
+    def __init__(self):
+        pass
+    def addRef(self,obj, typ, addr):
+        self.refs[(typ,addr)]=obj
+    def getRef(self,typ,addr):
+        if len(self.refs) > 35000:
+            log.warning('the book is full, you should haystack.model.reset()')
+        return self.refs[(typ,addr)]
+    def delRef(self,typ,addr):
+        del self.refs[(typ,addr)]
+
 
 def readProcessMappings(process):
     """

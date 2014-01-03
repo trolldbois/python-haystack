@@ -30,110 +30,18 @@ import logging
 log = logging.getLogger('model')
 
 class _book(object):
-    """The book registers all registered ctypes modules and keeps 
-    some pointer refs to buffers allocated in memory mappings.
-    
-    # see also ctypes._pointer_type_cache , _reset_cache()
-    """
+    """The book registers all registered ctypes modules """
     modules = set()
     """holds registered modules."""
-
-    refs = dict()
-    """holds previous loads of this type at this address. Reduces load time."""
-
-    def __init__(self):
-        pass
     def addModule(self, mod):
         self.modules.add(mod)
-    def addRef(self,obj, typ, addr):
-        self.refs[(typ,addr)]=obj
     def getModules(self):
         return set(self.modules)
-    def getRef(self,typ,addr):
-        if len(self.refs) > 35000:
-            log.warning('the book is full, you should haystack.model.reset()')
-        return self.refs[(typ,addr)]
-    def delRef(self,typ,addr):
-        del self.refs[(typ,addr)]
 
-        
-# central model book register
-__book = _book()
 
 def reset():
     """Clean the book"""
-    global __book
     __book.refs = dict()
-    # need to clean the registered modules list.
-    # so that we really create POPO object when asked for it.
-    # ex: cross arch loading ( ctypes7 - ctypes7_gen32,64) 
-    __book.modules = set()
-
-def getRefs():
-    """Lists all references to already loaded structs. Useful for debug"""
-    return __book.refs.items()
-
-def printRefs():
-    """Prints all references to already loaded structs. Useful for debug"""
-    l=[(typ,obj,addr) for ((typ,addr),obj) in __book.refs.items()]
-    for i in l:
-        print(l)
-
-def printRefsLite():
-    """Prints all references to already loaded structs. Useful for debug"""
-    l=[(typ,addr) for ((typ,addr),obj) in __book.refs.items()]
-    for i in l:
-        print(l)
-
-def hasRef(typ,origAddr):
-    """Check if this type has already been loaded at this address"""
-    return (typ,origAddr) in __book.refs
-
-def getRef(typ,origAddr):
-    """Returns the reference to the type previously loaded at this address"""
-    if (typ,origAddr) in __book.refs:
-        return __book.getRef(typ,origAddr)
-    return None
-
-def getRefByAddr(addr):
-    ret=[]
-    for (typ,origAddr) in __book.refs.keys():
-        if origAddr == addr:
-            ret.append( (typ, origAddr, __book.refs[(typ, origAddr)] ) )
-    return ret
-
-def keepRef(obj,typ=None,origAddr=None):
-    """Keeps a reference for an object of a specific type loaded from a specific
-    address.
-    
-    Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object, 
-       they might be transient (if obj == somepointer.contents)."""
-    # TODO, memory leak for different objects of same size, overlapping struct.
-    if (typ,origAddr) in __book.refs:
-        # ADDRESS already in refs
-        if origAddr is None:
-            origAddr = 'None'
-        else:
-            origAddr = hex(origAddr)
-        if typ is not None:
-            log.debug('ignore keepRef - references already in cache %s/%s'%(typ,origAddr))
-        return
-    # there is no pre-existing typ().from_address(origAddr)
-    __book.addRef(obj,typ,origAddr)
-    return
-
-def delRef(typ,origAddr):
-    """Forget about a Ref."""
-    if (typ,origAddr) in __book.refs:
-        __book.delRef(typ,origAddr)
-    return
-
-def get_subtype(cls):
-    """get the subtype of a pointer, array or basic type with haystack quirks."""
-    # could use _pointer_type_cache
-    if hasattr(cls, '_subtype_'):
-        return cls._subtype_    
-    return cls._type_    
 
 def registeredModules():
     return sys.modules[__name__].__book.getModules()
