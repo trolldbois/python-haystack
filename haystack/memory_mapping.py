@@ -297,6 +297,7 @@ class LocalMemoryMapping(MemoryMapping):
     def readStruct(self, vaddr, struct):
         laddr = self.vtop( vaddr )
         struct = struct.from_address(int(laddr))
+        #struct = struct.from_buffer_copy(struct.from_address(int(laddr)))
         struct._orig_address_ = vaddr
         return struct
 

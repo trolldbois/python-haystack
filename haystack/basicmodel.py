@@ -387,7 +387,11 @@ class LoadableMembers(object):
             ##### Read the struct in memory and make a copy to play with.
             #### DO NOT COPY THE STRUCT, we have a working readStruct for that...
             ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-            contents=memoryMap.readStruct(attr_obj_address, _attrType )
+            
+            # TEST
+            contents = memoryMap.readStruct(attr_obj_address, _attrType )
+            #contents = _attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType))
+
             # save that validated and loaded ref and original addr so we dont need to recopy it later
             keepRef( contents, _attrType, attr_obj_address)
             log.debug("keepRef %s.%s @%x"%(_attrType, attrname, attr_obj_address    ))

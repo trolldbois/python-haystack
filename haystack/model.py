@@ -29,10 +29,12 @@ import logging
 
 log = logging.getLogger('model')
 
-# The book registers all haystack modules, and classes, and can keep 
-# some pointer refs on memory allocated within special cases...
-# see ctypes._pointer_type_cache , _reset_cache()
 class _book(object):
+    """The book registers all registered ctypes modules and keeps 
+    some pointer refs to buffers allocated in memory mappings.
+    
+    # see also ctypes._pointer_type_cache , _reset_cache()
+    """
     modules = set()
     """holds registered modules."""
 

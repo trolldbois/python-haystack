@@ -542,7 +542,7 @@ def _show_output(instance, validated, rtype ):
     if basicmodel.findCtypesInPyObj(pyObj):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     # save the day
-    pyObj._mappings = instance._mappings
+    #pyObj._mappings = instance._mappings
     # finally 
     if rtype == 'python': # pyobj
         return (pyObj, validated)
