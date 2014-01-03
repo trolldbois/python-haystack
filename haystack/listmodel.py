@@ -13,7 +13,7 @@ __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Beta"
 
 
-''' insure ctypes basic types are subverted '''
+""" insure ctypes basic types are subverted """
 from haystack import utils
 
 import logging
@@ -21,20 +21,58 @@ import logging
 log = logging.getLogger('listmodel')
 
 class ListModel(object):
-    '''
+    """
+    Helpers to support records with linked list members.
     
-    '''
+    _listMember_:
+
+    If this record type A has a pointer member 'next' that points to the 
+    address of another instance of the record type A (offset 0) then you should 
+    add this member name in the list _listMember_.
+
+        A._listMember_ = ['next']
+
+    C code example:
+    struct A {
+        int a;
+        struct * A next;
+    }
+
+
+
+    _listHead_:
+
+    If this record type A has a pointer member 'flink' that points to a member 
+    of another record type B - or to a non-offset-0 member of another instance
+    of A - then you should add an entry in the list _listHead_ with the tuple:
+        (fieldname,structType,structFieldname,offset)
+
+        struct_Entry._listHead_ = [ ('flink', struct_A, 'list', -4),
+                                    ('blink', struct_A, 'list', -4)]
+
+    C code example:
+    struct Entry {
+        struct * Entry flink;
+        struct * Entry blink;
+    }
+    struct A {
+        int a;
+        struct Entry list;
+    }
+
+    
+    """
     _listMember_=[] # members that are the 2xpointer of same type linl
     _listHead_=[] # head structure of a linkedlist
 
     def _loadListEntries(self, fieldname, mappings, maxDepth):
-        ''' 
+        """ 
         we need to load the pointed entry as a valid struct at the right offset, 
         and parse it.
         
         When does it stop following FLink/BLink ?
             sentinel is headAddr only
-        '''
+        """
         import ctypes
         structType, offset = self._getListFieldInfo(fieldname)
         
@@ -79,10 +117,10 @@ class ListModel(object):
 
 
     def _isLoadableMemberList(self, attr, attrname, attrtype):
-        '''
+        """
             Check if the member is loadable.
             A c_void_p cannot be load generically, You have to take care of that.
-        '''
+        """
         if not super(ListModel, self)._isLoadableMemberList(attr, attrname, attrtype) :
             return False
         if attrname in self._listMember_:
@@ -94,14 +132,15 @@ class ListModel(object):
         return True
         
     def loadMembers(self, mappings, maxDepth):
-        ''' 
+        """ 
         load basic types members, 
         then load list elements members recursively,
         then load list head elements members recursively.
-        '''
+        """
         log.debug('-+ <%s> loadMembers +- @%x'%(self.__class__.__name__, self._orig_address_))
 
         #log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
+        # call basicmodel
         if not super(ListModel, self).loadMembers(mappings, maxDepth):
             return False
 
@@ -119,9 +158,9 @@ class ListModel(object):
 
 
     def iterateListField(self, mappings, fieldname, sentinels=[]):
-        ''' 
+        """ 
         start from the field    and iterate a list. 
-        does not return self.'''
+        does not return self."""
         
         structType, offset = self._getListFieldInfo(fieldname)
 
@@ -155,10 +194,10 @@ class ListModel(object):
         raise StopIteration
 
     def _getListFieldInfo(self, fieldname):
-        ''' 
+        """ 
         if fieldname is in listmember, return offset of fieldname.
         if fieldname is in listhead, return offset of target field.
-        '''
+        """
         if fieldname in self._listMember_:
             return type(self), utils.offsetof( type(self), fieldname)
         for fname,typ,typFieldname,offset in self._listHead_:
@@ -167,14 +206,14 @@ class ListModel(object):
         raise TypeError('This field %s is not a list.'%(fieldname))        
 
     #def getListFieldIterator(self):
-    #    ''' returns [(fieldname, iterator), .. ] '''
+    #    """ returns [(fieldname, iterator), .. ] """
     #    for fieldname in self._listMember_:
     #        yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
     
 
 def declare_double_linked_list_type( structType, forward, backward):
-    ''' declare a double linked list type.
-    '''
+    """ declare a double linked list type.
+    """
     import ctypes
     # test existence
     flinkType = getattr(structType, forward) 
@@ -190,7 +229,7 @@ def declare_double_linked_list_type( structType, forward, backward):
     #XXX 
     from haystack import model
     def iterateList(self, mappings):
-        ''' iterate forward, then backward, until null or duplicate '''        
+        """ iterate forward, then backward, until null or duplicate """        
         done = [0]
         obj = self
         #print 'going forward '
@@ -223,7 +262,7 @@ def declare_double_linked_list_type( structType, forward, backward):
     # set iterator on the list structure
     structType._iterateList = iterateList
     structType.loadMembers = loadMembers
-    log.debug('%s has beed fitted with a list iterator self._iterateList(mappings)'%(structType))
+    log.debug('%s has been fitted with a list iterator self._iterateList(mappings)'%(structType))
     return
         
 

@@ -151,9 +151,9 @@ class LoadableMembers(object):
         elif ctypes.is_array_of_basic_type(attrtype):
             if attrname in self.expectedValues:
                 if attr not in self.expectedValues[attrname]:
-                    log.debug('basicArray: %s %s %s bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,repr(attr) ))
+                    log.debug('basicArray: %s %s %s - bad value not in self.expectedValues[attrname]:'%(attrname,attrtype,type(attr) ))
                     return False
-            log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,repr(attr))#
+            log.debug('basicArray: %s is arraytype %s we decided it was valid',attrname,type(attr))#
             return True
         # d)
         elif ctypes.is_array_type(attrtype):

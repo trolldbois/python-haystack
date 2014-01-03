@@ -71,4 +71,18 @@ haystack.basicmodel:
     # e) ctypes.is_cstring_type(attrtype)
     # f) ctypes.is_pointer_type(attrtype)
     # g) error.
+
+    You can define constraints on members by adding and 'expectedValues' dict()
+    to the ctypes record.
+
+haystack.listmodel:
+    Contains core validation and loading methods to assist with records that
+    have linked list pointers.
     
+    _listHead_:
+    
+    _listMember_:
+    You can define a '_listMember_' list() to the ctypes record.
+    See 
+
+
