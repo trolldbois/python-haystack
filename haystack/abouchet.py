@@ -58,7 +58,7 @@ class StructFinder:
         
     def find_struct(self, structType, hintOffset=0, maxNum = 10, maxDepth=10 ):
         """ Iterate on all targetMappings to find a structure. """
-        log.warning("Restricting search to %d memory mapping."%(len(self.targetMappings)))
+        log.info("Restricting search to %d memory mapping."%(len(self.targetMappings)))
         outputs=[]
         for m in self.targetMappings:
             ##debug, most structures are on head
