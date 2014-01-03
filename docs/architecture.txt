@@ -18,6 +18,12 @@ haytack.abouchet:
     
     c) search for structure with haystack.abouchet.StructFinder
 
+    retype for API:
+    - string: return a string with basic type data information and pointer 
+          values of the target address space.
+    - python,json,pickled: return a python object that contains non ctypes
+          python objects. A non resolved pointer will return None.
+
 
 haystack.abouchet.StructFinder:
     a) iterate over mappings in filter
