@@ -773,21 +773,21 @@ class Mappings:
         return iter(self.mappings)
 
             
-    def reset():
+    def reset(self):
         """Clean the book"""
         self.__book.refs = dict()
 
-    def getRefs():
+    def getRefs(self):
         """Lists all references to already loaded structs. Useful for debug"""
         return self.__book.refs.items()
 
-    def printRefs():
+    def printRefs(self):
         """Prints all references to already loaded structs. Useful for debug"""
         l=[(typ,obj,addr) for ((typ,addr),obj) in self.__book.refs.items()]
         for i in l:
             print(l)
 
-    def printRefsLite():
+    def printRefsLite(self):
         """Prints all references to already loaded structs. Useful for debug"""
         l=[(typ,addr) for ((typ,addr),obj) in self.__book.refs.items()]
         for i in l:
@@ -842,10 +842,9 @@ class _book(object):
     
     # see also ctypes._pointer_type_cache , _reset_cache()
     """
-    refs = dict()
-    """holds previous loads of this type at this address. Reduces load time."""
 
     def __init__(self):
+        self.refs = dict()
         pass
     def addRef(self,obj, typ, addr):
         self.refs[(typ,addr)]=obj
