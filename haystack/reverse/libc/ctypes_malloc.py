@@ -246,7 +246,7 @@ struct malloc_chunk {
         if self.prev_size > 0 :
             prev_addr = orig_addr - self.prev_size
             prev_chunk = mmap.readStruct(prev_addr, malloc_chunk )
-            model.keepRef( prev_chunk, malloc_chunk, prev_addr)
+            mappings.keepRef( prev_chunk, malloc_chunk, prev_addr)
             return prev_chunk, prev_addr
         return None, None
             
@@ -260,7 +260,7 @@ struct malloc_chunk {
         if not mappings.is_valid_address_value(next_addr):
             return None,None
         next_chunk = mmap.readStruct(next_addr, malloc_chunk )
-        model.keepRef( next_chunk, malloc_chunk, next_addr)
+        mappings.keepRef( next_chunk, malloc_chunk, next_addr)
         return next_chunk, next_addr
 
 
