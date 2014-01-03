@@ -133,6 +133,9 @@ class MemoryDumper:
         # test dump only the heap
         err=0
         #print '\n'.join([str(m) for m in self.mappings])
+        self.__required = self.mappings.getHeaps()
+        self.__required.append(self.mappings.getStack())
+        self.__required.extend(self.mappings.get_required_maps())
         for m in self.mappings:
             try:
                 self._dump_mapping(m, destdir)
@@ -155,31 +158,31 @@ class MemoryDumper:
     def _dump_mapping(self, m, tmpdir):
         """Dump one mapping to one file in one tmpdir."""
         if m.permissions[0] != 'r':
-            log.debug('Ignoring read protected mapping')
+            log.debug('Ignore read protected mapping %s'%(m))
             return
         elif m.pathname in ['[vdso]','[vsyscall]']:
-            log.debug('Ignoring system mapping')
+            log.debug('Ignore system mapping %s'%(m))
             return
-        #log.debug('Dumping %s to %s'%(m,tmpdir))
-        # dump files to tempdir
-        # FIXME, word size is not necessarily same as default host word size 
-        mname = "%s-%s" % (utils.formatAddress(m.start),
-                           utils.formatAddress(m.end))
-        print mname
+        # make filename
+        # We don't really care about the filename but we need to be coherent.        
+        mname = b'%s-%s'%(utils.formatAddress(m.start),
+                          utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)
-        # we are dumping the memorymap content
+        # dumping the memorymap content if required.
         if self._compact_dump:
-            if (m.pathname == '[heap]' or 
-                m in self.mappings.get_required_maps()):
-                # only dumps useful ( stack, heap, binary for arch detection
+            # only dumps useful ( stack, heap, binary for arch detection
+            if (m in self.__required):
                 with open(mmap_fname,'wb') as mmap_fout:
                     mmap_fout.write(m.mmap().getByteBuffer())
-        else: #dump all the memory maps
-            log.debug('Dumping the memorymap content 2')
+                log.debug('Dump %s'%(m))
+            else:
+                log.debug('Ignore %s'%(m))
+        else: 
+            # dump all the maps
+            log.debug('Dump %s'%(m))
             with open(mmap_fname,'wb') as mmap_fout:
                 mmap_fout.write(m.mmap().getByteBuffer())
-        #dump all the memory maps metadata
-        log.debug('Dumping the memorymap metadata')
+        # dump all the metadata
         self.index.write('%s\n'%(m) )
         return 
 
@@ -189,7 +192,7 @@ class MemoryDumper:
         tmpdir = tempfile.mkdtemp()
         tmpname = os.path.join(tmpdir, os.path.basename(name))
         log.debug('running shutil.make_archive')
-        archive = shutil.make_archive(tmpname, self._archive_type, srcdir) 
+        archive = shutil.make_archive(tmpname, self._archive_type, srcdir)
         shutil.move(archive, name )
         shutil.rmtree(tmpdir)
         shutil.rmtree(srcdir)
