@@ -16,6 +16,7 @@ from haystack import types
 
 import operator
 import os
+import logging
 import struct
 import unittest
 
