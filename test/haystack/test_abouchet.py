@@ -204,7 +204,7 @@ class Test6_x32(SrcTests):
     
     
     #python
-    (usual, validated), finder1 = abouchet.show_dumpname(self.usual_structname,
+    usual, validated = abouchet.show_dumpname(self.usual_structname,
                                               self.memdumpname,
                                               self.address1, rtype='python')
     self.assertEquals(validated, True)
@@ -221,14 +221,14 @@ class Test6_x32(SrcTests):
     #code.interact(local=locals())
     #return
     #python 2 struct Node
-    (node1, validated), finder2 = abouchet.show_dumpname(self.node_structname,
+    node1, validated = abouchet.show_dumpname(self.node_structname,
                                               self.memdumpname,
                                               self.address2, rtype='python')
     self.assertEquals(validated, True)
     self.assertEquals(node1.val1, 0xdeadbeef)
     self.assertEquals(node1.val2, 0xffffffff)
 
-    (node2, validated), finder3 = abouchet.show_dumpname(self.node_structname,
+    node2, validated = abouchet.show_dumpname(self.node_structname,
                                               self.memdumpname,
                                               self.address3, rtype='python')
     self.assertEquals(validated, True)
@@ -239,14 +239,9 @@ class Test6_x32(SrcTests):
     #FIXME: if you delete the Heap memorymap, 
     # all references in the model are invalided
     
-    #print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
-    print finder1.__dict__
-    finder1.targetMappings = None
-    #finder1.mappings.mappings = None
-    #m = finder1.mappings.mappings[3]
-    del finder1.mappings.mappings[:3]
-    del finder1.mappings.mappings[1:]
     print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
+
+    #x = usual._mappings.getHeap()
 
     #print node1.toString()
     #import code

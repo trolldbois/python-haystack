@@ -541,6 +541,8 @@ def _show_output(instance, validated, rtype ):
     # last check to clean the structure from any ctypes Structure
     if basicmodel.findCtypesInPyObj(pyObj):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
+    # save the day
+    pyObj._mappings = instance._mappings
     # finally 
     if rtype == 'python': # pyobj
         return (pyObj, validated)
@@ -615,9 +617,8 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     # FIXME: if the finder instance is cleaned, the ctypes structure referenced
     # in the model book are cleaned too.
     instance,validated = finder.loadAt( memoryMap, address, structType)
-    #from test.src import ctypes6
-    #print 'X', model.getRef(ctypes6.struct_entry, 0x94470ac)
+    instance._mappings = finder.mappings
     
     out = _show_output(instance, validated, rtype)
-    return out, finder
+    return out
 

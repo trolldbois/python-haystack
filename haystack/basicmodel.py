@@ -382,8 +382,6 @@ class LoadableMembers(object):
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
                 #DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents will SEGFAULT
-                print 'loaded flink',ref.flink
-                print 'loaded blink',ref.blink
                 return True
             log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
             ##### Read the struct in memory and make a copy to play with.
@@ -649,9 +647,6 @@ class LoadableMembers(object):
                 obj = _address
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
-                print 'cache', field, _address, type(_cache)
-                print _cache.flink
-                print _cache.blink
                 obj = _cache.toPyObject()
             elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
