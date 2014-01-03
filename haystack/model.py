@@ -32,7 +32,8 @@ log = logging.getLogger('model')
 
 class _book(object):
     """The book registers all registered ctypes modules """
-    modules = set()
+    def __init__(self):
+        self.modules = set()
     """holds registered modules."""
     def addModule(self, mod):
         self.modules.add(mod)
@@ -44,7 +45,7 @@ __book = _book()
 
 def reset():
     """Clean the book"""
-    __book.refs = dict()
+    __book.modules = set()
 
 def registeredModules():
     return sys.modules[__name__].__book.getModules()
