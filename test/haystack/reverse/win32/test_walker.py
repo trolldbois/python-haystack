@@ -11,10 +11,8 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
-Config.set_word_size(4) # forcing it on these unittest
-
-from haystack import utils, model
+from haystack import types
+from haystack import utils
 from haystack.reverse.win32 import win7heapwalker, win7heap
 from haystack.reverse.win32.win7heap import HEAP, HEAP_ENTRY
 from haystack import dump_loader
@@ -26,7 +24,6 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes 
 
 log = logging.getLogger('testwalker')
 

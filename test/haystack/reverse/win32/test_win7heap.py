@@ -11,6 +11,7 @@ import unittest
 import pickle
 import sys
 
+from haystack import types
 from haystack import utils
 from haystack import dump_loader
 
@@ -51,7 +52,8 @@ class TestWin7Heap(unittest.TestCase):
             getaddress(attr)        # check for address of attr.contents being a ctypes.xx.from_address(ptr_value)
             
         '''
-        import ctypes
+        ctypes = types.reload_ctypes(4,4,8)
+        print ctypes
         from haystack.reverse.win32 import win7heap
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
@@ -80,7 +82,7 @@ class TestWin7Heap(unittest.TestCase):
 
         self.assertEquals( ctypes.addressof( h._local_mmap_content ), ctypes.addressof( heap ) )
 
-        self.assertEquals( heap.Signature , 4009750271L )
+        self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
         
         #print addr
         #print hex( ctypes.addressof( heap ) )
