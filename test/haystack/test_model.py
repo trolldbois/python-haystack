@@ -91,19 +91,6 @@ class TestReferenceBook(unittest.TestCase):
         self.assertFalse( model.hasRef(float,0xcafecafe))
         self.assertFalse( model.hasRef(str,0xcafecafe))
 
-    def test_get_subtype(self):
-        types.reset_ctypes()
-        import ctypes
-        class X(ctypes.Structure):
-            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
-        PX = ctypes.POINTER(X)
-        self.assertEquals(model.get_subtype(PX), X)
-        
-        ctypes = types.reload_ctypes(4,4,8) # different arch
-        class Y(ctypes.Structure):
-            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
-        PY = ctypes.POINTER(Y)
-        self.assertEquals(model.get_subtype(PY), Y)
 
 class TestCopyModule(unittest.TestCase):
     

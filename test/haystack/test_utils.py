@@ -232,6 +232,19 @@ class TestHelpers(unittest.TestCase):
         self.assertEquals(len(array), 3)
         pass
 
+    def test_get_subtype(self):
+        ctypes = types.reset_ctypes()
+        class X(ctypes.Structure):
+            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
+        PX = ctypes.POINTER(X)
+        self.assertEquals(utils.get_subtype(PX), X)
+        
+        ctypes = types.reload_ctypes(4,4,8) # different arch
+        class Y(ctypes.Structure):
+            _fields_ = [('p',ctypes.POINTER(ctypes.c_long))]
+        PY = ctypes.POINTER(Y)
+        self.assertEquals(utils.get_subtype(PY), Y)
+
     def test_xrange(self):
         """tests home made xrange that handles big ints. 
         Not an issue in Py 3"""
