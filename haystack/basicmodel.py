@@ -431,6 +431,9 @@ class LoadableMembers(object):
         s=''
         if ctypes.is_basic_type(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
             s = prefix+'"%s": %s, # %s'%(field, repr(attr), attrtype.__name__)
+            if attrtype in [int, long, ctypes.c_uint, ctypes.c_int, 
+                            ctypes.c_ulong, ctypes.c_long]:
+                s += ' '+hex(attr) 
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             s = prefix + '"%s": %s,'%(field,
                                         attr.toString(prefix+'\t', depth-1))
