@@ -269,6 +269,7 @@ class LoadableMembers(object):
         @returns True if everything has been loaded, False if something went 
         wrong.
         """
+        self._mappings_ = mappings
         if maxDepth == 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug('Struct partially LOADED. %s not loaded'%(
@@ -313,6 +314,7 @@ class LoadableMembers(object):
                                                   self._orig_address_ + offset))
             # TODO pydoc for impl.
             attr._orig_address_ = self._orig_address_ + offset
+            attr._mappings = mappings
             if not attr.loadMembers(mappings, maxDepth+1):
                 log.debug("st: %s %s not valid, error while loading inner struct"%(attrname,attrtype) )
                 return False
@@ -350,7 +352,7 @@ class LoadableMembers(object):
                 return False
             MAX_SIZE=255
             
-            ref = getRef(CString,attr_obj_address)
+            ref = mappings.getRef(CString,attr_obj_address)
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,
                                                attr, CString, attr_obj_address))
@@ -363,7 +365,7 @@ class LoadableMembers(object):
                 log.warning('buffer size was too small for this CString')
 
             # that will SEGFAULT attr.string = txt - instead keepRef to String
-            keepRef( txt, CString, attr_obj_address)
+            mappings.keepRef( txt, CString, attr_obj_address)
             log.debug('kept CString ref for "%s" at @%x'%(txt, attr_obj_address))
             return True
         elif ctypes.is_pointer_type(attrtype): # not functionType, it's not loadable
@@ -378,7 +380,7 @@ class LoadableMembers(object):
                 log.warning("%s %s not loadable 0x%lx but VALID "%(attrname, attr,attr_obj_address ))
                 return True
 
-            ref = getRef(_attrType,attr_obj_address) 
+            ref = mappings.getRef(_attrType,attr_obj_address) 
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
                 #DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents will SEGFAULT
@@ -393,7 +395,7 @@ class LoadableMembers(object):
             #contents = _attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType))
 
             # save that validated and loaded ref and original addr so we dont need to recopy it later
-            keepRef( contents, _attrType, attr_obj_address)
+            mappings.keepRef( contents, _attrType, attr_obj_address)
             log.debug("keepRef %s.%s @%x"%(_attrType, attrname, attr_obj_address    ))
             log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))     ))
             # recursive validation checks on new struct
@@ -416,6 +418,7 @@ class LoadableMembers(object):
         """
         # TODO: use a ref table to stop loops on parsed instance, 
         #             depth kinda sux.
+        print type(self), hasattr(self,'_mappings_')
         if depth == 0 :
             return 'None, # DEPTH LIMIT REACHED'
         if hasattr(self, '_orig_address_'):
@@ -439,6 +442,7 @@ class LoadableMembers(object):
                             ctypes.c_ulong, ctypes.c_long]:
                 s += ' '+hex(attr) 
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
+            attr._mappings_ = self._mappings_
             s = prefix + '"%s": %s,'%(field,
                                         attr.toString(prefix+'\t', depth-1))
         elif ctypes.is_function_type(attrtype):
@@ -462,7 +466,7 @@ class LoadableMembers(object):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
             _attrType = get_subtype(attrtype)                
-            contents = getRef(_attrType, myaddress)
+            contents = self._mappings_.getRef(_attrType, myaddress)
             # TODO: can I just dump this blcok into a recursive call ?
             # probably not if we want to stop LIST types from recursing
             if myaddress == 0:
@@ -501,7 +505,7 @@ class LoadableMembers(object):
                        self._attrToString(contents, '', _attrType, prefix+'\t'))
                 #raise NotImplementedError('what is this %s'%(_attrType))
         elif ctypes.is_cstring_type(attrtype):
-            s = prefix + '"%s": "%s" , #(CString)'%(field, getRef(CString, 
+            s = prefix + '"%s": "%s" , #(CString)'%(field, self._mappings_.getRef(CString, 
                                                     utils.getaddress(attr.ptr)))
         else: # wtf ? 
             s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr'%(field, repr(attr))
@@ -553,7 +557,7 @@ class LoadableMembers(object):
                 else:
                     s += '%s (@0x%lx) : %s #(CString) \n'%(field, 
                                 ctypes.addressof(attr), 
-                                getRef(CString, utils.getaddress(attr.ptr)))    
+                                self._mappings_.getRef(CString, utils.getaddress(attr.ptr)))    
             elif (ctypes.is_pointer_type(attrtype) and 
                   not ctypes.is_pointer_to_void_type(attrtype)):
                 # bug with CString
@@ -568,7 +572,7 @@ class LoadableMembers(object):
                                         utils.getaddress(attr))
                 else:
                     _attrType = get_subtype(attrtype)
-                    contents = getRef(_attrType, utils.getaddress(attr))
+                    contents = self._mappings_.getRef(_attrType, utils.getaddress(attr))
                     if type(self) == type(contents): 
                         # use struct printer
                         # do not recurse in lists
@@ -608,10 +612,10 @@ class LoadableMembers(object):
             raise
         my_self = my_class()
         # keep ref of the POPO too.
-        if hasRef(my_class, ctypes.addressof(self) ):
-            return getRef(my_class, ctypes.addressof(self) )
+        if self._mappings_.hasRef(my_class, ctypes.addressof(self) ):
+            return self._mappings_.getRef(my_class, ctypes.addressof(self) )
         # save our POPO in a partially resolved state, to keep from loops.
-        keepRef(my_self, my_class, ctypes.addressof(self) )
+        self._mappings_.keepRef(my_self, my_class, ctypes.addressof(self) )
         for field,typ in self.getFields():
             attr = getattr(self,field)
             try:
@@ -646,7 +650,7 @@ class LoadableMembers(object):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
             _address = utils.getaddress(attr)
-            _cache = getRef(_subtype, _address)
+            _cache = self._mappings_.getRef(_subtype, _address)
             if ctypes.is_pointer_to_void_type(attrtype):
                 obj = _address
             elif (ctypes.is_pointer_to_struct_type(attrtype)
@@ -662,7 +666,7 @@ class LoadableMembers(object):
             else:
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
-                cache = getRef(_subtype, utils.getaddress(attr) )
+                cache = self._mappings_.getRef(_subtype, utils.getaddress(attr) )
                 if cache is not None:
                     obj = self._attrToPyObject(cache, field, _subtype )
                 elif ctypes.is_pointer_to_basic_type(attrtype):
@@ -680,7 +684,7 @@ class LoadableMembers(object):
         #        contents=attr.contents    # will SEGFAULT
         #        if ctypes.is_struct_type(type(contents)) :
         #            attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
-        #            cache = getRef(attr_py_class, utils.getaddress(attr) )
+        #            cache = self._mappings_.getRef(attr_py_class, utils.getaddress(attr) )
         #            if cache:
         #                return cache
         #            #else:

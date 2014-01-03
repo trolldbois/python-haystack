@@ -29,6 +29,7 @@ import logging
 
 log = logging.getLogger('model')
 
+
 class _book(object):
     """The book registers all registered ctypes modules """
     modules = set()
@@ -37,6 +38,8 @@ class _book(object):
         self.modules.add(mod)
     def getModules(self):
         return set(self.modules)
+
+__book = _book()
 
 
 def reset():

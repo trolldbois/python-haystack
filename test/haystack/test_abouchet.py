@@ -182,12 +182,12 @@ class Test6_x32(SrcTests):
     ''' tests valid structure refresh.'''
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
-    if False:
+    if True:
         # string
         retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
                                         self.address1, rtype='string')
-        print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
-        return
+        #print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
+        #return
         import ctypes
         self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
         self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
@@ -239,14 +239,17 @@ class Test6_x32(SrcTests):
     #FIXME: if you delete the Heap memorymap, 
     # all references in the model are invalided
     
-    print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
+    # real problem: references left over by previous search.
+    # solution: move the book into memory_mappings, 
+    
+    #print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
 
     #x = usual._mappings.getHeap()
 
-    #print node1.toString()
+    print node1.toString()
     #import code
     #code.interact(local=locals())
-    #print node2.toString()
+    print node2.toString()
     # TODO the listmodel test shoudl test if references have been loaded
     # without searching for them.
 
@@ -442,8 +445,8 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  #logging.basicConfig( stream=sys.stdout, level=logging.INFO )
-  #logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+  #logging.basicConfig( stream=sys.stdout, level=logging.INFO)
+  #logging.basicConfig( stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
   logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

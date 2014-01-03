@@ -618,6 +618,8 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     # in the model book are cleaned too.
     instance,validated = finder.loadAt( memoryMap, address, structType)
     instance._mappings = finder.mappings
+    #from test.src import ctypes6
+    #print 'X', finder.mappings.getRef(ctypes6.struct_entry, 0x94470ac)
     
     out = _show_output(instance, validated, rtype)
     return out
