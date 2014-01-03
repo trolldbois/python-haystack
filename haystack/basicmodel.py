@@ -382,6 +382,8 @@ class LoadableMembers(object):
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
                 #DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents will SEGFAULT
+                print 'loaded flink',ref.flink
+                print 'loaded blink',ref.blink
                 return True
             log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
             ##### Read the struct in memory and make a copy to play with.
@@ -608,7 +610,6 @@ class LoadableMembers(object):
             return getRef(my_class, ctypes.addressof(self) )
         # save our POPO in a partially resolved state, to keep from loops.
         keepRef(my_self, my_class, ctypes.addressof(self) )
-        print(my_class)
         for field,typ in self.getFields():
             attr = getattr(self,field)
             try:
@@ -621,34 +622,44 @@ class LoadableMembers(object):
         setattr(my_self, '_ctype_', type(self))
         return my_self
         
-    def _attrToPyObject(self,attr,field,attrtype):
+    def _attrToPyObject(self, attr, field, attrtype):
         import ctypes
-        if ctypes.is_struct_type(attrtype):
+        if ctypes.is_basic_type(attrtype) and ctypes.is_ctypes_instance(attr):
+            obj = attr.value
+        elif isinstance(attr, numbers.Number): # pointers...
+            obj = attr
+        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             obj = attr.toPyObject()
-        elif ctypes.is_union_type(attrtype):
-            obj = attr.toPyObject()
-        elif ctypes.is_array_of_basic_type(attrtype): ## array of basic types
+        elif ctypes.is_array_of_basic_type(attrtype): 
             obj = utils.array2bytes(attr)
-        elif ctypes.is_array_type(attrtype): ## array of something else than int/byte
+        elif ctypes.is_array_type(attrtype): 
+            ## array of something else than int/byte
             obj = []
             eltyp=type(attr[0])
             for i in range(0,len(attr)):
                 obj.append(self._attrToPyObject( attr[i], i, eltyp) )
-        elif ctypes.is_function_type(attrtype):
-            obj = repr(attr)
         elif ctypes.is_cstring_type(attrtype):
-            #obj = getRef(CString, utils.getaddress(attr)).toString()
             obj = attr.toString()
         elif ctypes.is_pointer_type(attrtype):
+            # get the cached Value of the LP.
+            _subtype = get_subtype(attrtype)
+            _address = utils.getaddress(attr)
+            _cache = getRef(_subtype, _address)
             if ctypes.is_pointer_to_void_type(attrtype):
-                #log.error('Void pointer - %s'%(field))
-                #obj='Void Pointer'
-                obj = utils.getaddress(attr)
+                obj = _address
+            elif (ctypes.is_pointer_to_struct_type(attrtype)
+                  or ctypes.is_pointer_to_union_type(attrtype)):
+                print 'cache', field, _address, type(_cache)
+                print _cache.flink
+                print _cache.blink
+                obj = _cache.toPyObject()
             elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
                 obj = 'BasicType array'
             elif not bool(attr):
                 obj = 0 # Null pointer
+            elif ctypes.is_function_type(attrtype):
+                obj = repr(attr)
             else:
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
@@ -682,10 +693,6 @@ class LoadableMembers(object):
         #        else: # pointer vers autre chose, le repr() est le seul choix.
         #            #obj=repr(contents)
         #            obj=contents
-        elif ctypes.is_basic_type(attrtype) and ctypes.is_ctypes_instance(attr):
-            obj = attr.value
-        elif isinstance(attr, numbers.Number):
-            obj = attr
         else:
             log.error('toPyObj default to return attr %s'%( type(attr) ))
             obj = attr

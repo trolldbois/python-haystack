@@ -527,6 +527,7 @@ def _output(outs, rtype ):
 
 def _show_output(instance, validated, rtype ):
     """ Return results in the rtype format"""
+
     if not validated :
         str_fn = lambda x: str(x)
     else:
@@ -611,8 +612,12 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
     
+    # FIXME: if the finder instance is cleaned, the ctypes structure referenced
+    # in the model book are cleaned too.
     instance,validated = finder.loadAt( memoryMap, address, structType)
+    #from test.src import ctypes6
+    #print 'X', model.getRef(ctypes6.struct_entry, 0x94470ac)
     
     out = _show_output(instance, validated, rtype)
-    return out
+    return out, finder
 

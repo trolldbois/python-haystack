@@ -70,6 +70,7 @@ haystack.basicmodel:
     # d) ctypes.is_array_type(attrtype)
     # e) ctypes.is_cstring_type(attrtype)
     # f) ctypes.is_pointer_type(attrtype)
+    #   fs) basic, struct, union, array, cstring, pointer, function
     # g) error.
 
     You can define constraints on members by adding and 'expectedValues' dict()
