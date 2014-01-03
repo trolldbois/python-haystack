@@ -259,7 +259,7 @@ class TestHelpers(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main(verbosity=0)
+    #logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)
 
 
