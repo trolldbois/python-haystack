@@ -530,6 +530,8 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         return 
 
     def _mmap(self):
+        #import code
+        #code.interact(local=locals())
         self._memdump = file(self._memdumpname,'rb')
         return MemoryDumpMemoryMapping._mmap(self)
 
@@ -582,9 +584,10 @@ class Mappings:
         self.config = self.mappings[0].config
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
-
         # set the word size in this config.
-        self.process_machine_arch()
+        self.__wordsize = None
+        self.__required_maps = []
+        self._init_word_size()
     
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
@@ -707,31 +710,30 @@ class Mappings:
                 break
         return self._target_system
 
-    def process_machine_arch(self):
+    def _init_word_size(self):
         if self.get_target_system() == 'win32':
-            return self._process_machine_arch_pe()
+            self.__wordsize = self._process_machine_arch_pe()
         elif self.get_target_system() == 'linux':
-            return self._process_machine_arch_elf()
+            self.__wordsize = self._process_machine_arch_elf()
         else:
             raise NotImplementedError('MACHINE is %s'%(x.e_machine))
-            
+        return self.__wordsize
 
     def _process_machine_arch_pe(self):
         import pefile
         # get the maps with read-only data
         pe = None
+        m = [_m for _m in self.mappings if 'r--' in _m.permissions][0]
         for m in self.mappings:
             if m.permissions != 'r--':
                 continue
-            if 'putty' not in m.pathname:
-                continue
-            print m.permissions, m
             try:
                 pe = pefile.PE(data=m.getByteBuffer(), fast_load=True)
                 # only get the dirst one that works
                 break
             except pefile.PEFormatError as e:
                 pass
+        self.__required_maps.append(m)
         machine = pe.FILE_HEADER.Machine
         arch = pe.OPTIONAL_HEADER.Magic
         if arch == 0x10b:
@@ -747,8 +749,7 @@ class Mappings:
         m = [_m for _m in self.mappings if 'r-xp' in _m.permissions][0]
         head = m.readBytes(m.start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
         x = struct_Elf_Ehdr.from_buffer_copy(head)
-        #print x.e_machine
-        #head = self.mappings[0].readStruct(self.mappings[0].start, struct_Elf_Ehdr)
+        self.__required_maps.append(m)
         if x.e_machine == 3:
             self.config.set_word_size(4)
         elif x.e_machine == 62:
@@ -756,6 +757,9 @@ class Mappings:
         else:
             raise NotImplementedError('MACHINE is %s %s'%(x.e_machine, m.pathname))
         return self.config.get_word_size()
+
+    def get_required_maps(self):
+        return list(self.__required_maps)
     
     def _get_mmap_for_haystack_addr(self, haddr):
         ''' FIXME should replace utils.is_local_addr ?'''

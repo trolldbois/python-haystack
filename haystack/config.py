@@ -127,8 +127,6 @@ class ConfigClass():
         root = os.path.abspath(dumpname)
         return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
-    def formatAddress(self, addr):
-        raise NotImplementedError('deprecated')
 
 def make_config():
     """    """

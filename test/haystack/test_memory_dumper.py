@@ -108,6 +108,7 @@ class TestMemoryDumper32(TestMemoryDumper):
         self.devnull = file('/dev/null')
         self.process = self.run_app_test('test1', stdout=self.devnull.fileno())
         time.sleep(0.1)
+        # FIXME, heaponly is breaking machine detection.
         out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", False, True)
         self.assertIsNotNone(file( '%s/mappings'%out1))
         self.assertGreater(len(file( '%s/mappings'%out1).readlines()), 15, 'the mappings file looks too small')
@@ -222,7 +223,7 @@ class TestMemoryDumper32(TestMemoryDumper):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)
 
 

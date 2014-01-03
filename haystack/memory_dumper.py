@@ -42,12 +42,11 @@ class MemoryDumper:
     ''' Dumps a process memory maps to a tgz '''
     ARCHIVE_TYPES = ["dir", "tar","gztar"]
     
-    def __init__(self, pid, dest, archiveType="dir", stackOnly=False, heapOnly=False):
+    def __init__(self, pid, dest, archiveType="dir", compact=False):
         self._pid = pid
         self._dest = os.path.normpath(dest)
         self._archive_type = archiveType
-        self._just_stack = stackOnly
-        self._just_heap = heapOnly
+        self._compact_dump = compact
         self._config = None
     
     def getMappings(self):
@@ -55,7 +54,8 @@ class MemoryDumper:
         return self.mappings
 
     def connectProcess(self):
-        """Connect the debugguer to the process and gets the memory mappings metadata."""
+        """Connect the debugguer to the process and gets the memory mappings
+        metadata."""
         self.dbg = dbg.PtraceDebugger()
         self.process = self.dbg.addProcess(self._pid, is_attached=False)
         if self.process is None:
@@ -66,16 +66,14 @@ class MemoryDumper:
         from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
         #FIXME, I guess that is the binary
         import ctypes
-        head = self.mappings[0].readBytes(self.mappings[0].start, ctypes.sizeof(struct_Elf_Ehdr))
+        head = self.mappings[0].readBytes(self.mappings[0].start,
+                                          ctypes.sizeof(struct_Elf_Ehdr))
         x = struct_Elf_Ehdr.from_buffer_copy(head)
-        #print x.e_machine
-        #head = self.mappings[0].readStruct(self.mappings[0].start, struct_Elf_Ehdr)
         self._config = self.mappings.config
         if x.e_machine == 3:
             self._config.set_word_size(4)
         elif x.e_machine == 62:
             self._config.set_word_size(8)
-        #print self._config.ctypes
         log.debug('mappings read. Dropping ptrace on pid.')
         return
 
@@ -92,7 +90,8 @@ class MemoryDumper:
     def _dump_to_dir(self):
         """Dump memory mappings to files in a directory."""
         if os.path.isfile(self._dest):
-            raise TypeError('target is a file. You asked for a directory dump. Please delete the file.')
+            raise TypeError('target is a file. You asked for a directory dump. '
+                            'Please delete the file.')
         if not os.access(self._dest, os.X_OK | os.F_OK ):
             os.mkdir(self._dest)
         self._dump_all_mappings(self._dest)
@@ -102,7 +101,8 @@ class MemoryDumper:
     def _dump_to_file(self):
         """Dump memory mappings to an archive."""
         if os.path.isdir(self._dest):
-            raise TypeError('Target is a dir. You asked for a file dump. Please delete the dir.')
+            raise TypeError('Target is a dir. You asked for a file dump. '
+                            'Please delete the dir.')
         tmpdir = tempfile.mkdtemp()
         self._dump_all_mappings(tmpdir)
         self._free_process()
@@ -163,12 +163,15 @@ class MemoryDumper:
         #log.debug('Dumping %s to %s'%(m,tmpdir))
         # dump files to tempdir
         # FIXME, word size is not necessarily same as default host word size 
-        mname = "%s-%s" % (utils.formatAddress(m.start), utils.formatAddress(m.end))
+        mname = "%s-%s" % (utils.formatAddress(m.start),
+                           utils.formatAddress(m.end))
+        print mname
         mmap_fname = os.path.join(tmpdir, mname)
         # we are dumping the memorymap content
-        if self._just_heap or self._just_stack: #dump heap and/or stack
-            if ( (self._just_heap    and m.pathname == '[heap]') or 
-                         (self._just_stack and m.pathname == '[stack]') ) :
+        if self._compact_dump:
+            if (m.pathname == '[heap]' or 
+                m in self.mappings.get_required_maps()):
+                # only dumps useful ( stack, heap, binary for arch detection
                 with open(mmap_fname,'wb') as mmap_fout:
                     mmap_fout.write(m.mmap().getByteBuffer())
         else: #dump all the memory maps
@@ -193,12 +196,13 @@ class MemoryDumper:
         return
 
 
-def dump(pid, outfile, typ="dir", stackOnly=False, heapOnly=False):
+def dump(pid, outfile, typ="dir", compact=False):
     """Dumps a process memory mappings to Haystack dump format."""
-    dumper = MemoryDumper(pid, outfile, typ, stackOnly, heapOnly )
+    dumper = MemoryDumper(pid, outfile, typ, compact)
     dumper.connectProcess()
     destname = dumper.dump()
-    log.info('Process %d memory mappings dumped to file %s'%(dumper._pid, destname))
+    log.info('Process %d memory mappings dumped to file %s'%(dumper._pid,
+                                                             destname))
     return destname
 
 def _dump(opt):
@@ -206,14 +210,20 @@ def _dump(opt):
     return dump(opt.pid, opt.dumpname, opt.type, opt.stack, opt.heap)
 
 def argparser():
-    dump_parser = argparse.ArgumentParser(prog='memory_dumper', description="dump a pid's memory to file.")
-    dump_parser.add_argument('pid', type=int, action='store', help='Target PID.')
-    dump_parser.add_argument('--heap', action='store_const', const=True , help='Restrict dump to the heap.')
-    dump_parser.add_argument('--stack', action='store_const', const=True , help='Restrict dump to the stack.')
-    dump_parser.add_argument('--type',    type=archiveTypes, action='store' , default="dir", 
-                        help='Dump in "gztar","tar" or "dir" format. Defaults to "dir".')
-    dump_parser.add_argument('dumpname', type=argparse_utils.writeable, action='store', help='The dump name.')
-    dump_parser.set_defaults(func=_dump)    
+    dump_parser = argparse.ArgumentParser(prog='memory_dumper',
+                                     description="dump a pid's memory to file.")
+    dump_parser.add_argument('pid', type=int, action='store',
+                             help='Target PID.')
+    dump_parser.add_argument('--compact', action='store_const', const=True,
+                             help='Only dump a small number of maps '
+                                  '(heap,stack,exec).')
+    dump_parser.add_argument('--type', type=archiveTypes, action='store',
+                             default="dir", 
+                             help='Dump in "gztar","tar" or "dir" format. '
+                                  'Defaults to "dir".')
+    dump_parser.add_argument('dumpname', type=argparse_utils.writeable,
+                             action='store', help='The dump name.')
+    dump_parser.set_defaults(func=_dump)
 
     return dump_parser
 
