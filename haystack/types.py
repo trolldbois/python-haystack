@@ -401,6 +401,14 @@ class CTypesProxy(object):
         return (self.is_function_type(objtype))
 
     @check_arg_is_type
+    def is_pointer_to_array_type(self, objtype):
+        """Checks if an object is a pointer to a BasicType"""
+        if hasattr(objtype, '_subtype_'): # haystack
+            return self.is_array_type(objtype._subtype_)
+        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
+                and self.is_array_type(objtype._type_))
+
+    @check_arg_is_type
     def is_pointer_to_basic_type(self, objtype):
         """Checks if an object is a pointer to a BasicType"""
         if hasattr(objtype, '_subtype_'): # haystack

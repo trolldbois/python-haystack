@@ -244,16 +244,26 @@ class LoadableMembers(object):
         """
         Check if the member is loadable.
         A c_void_p cannot be load generically, You have to take care of that.
+        
+        (Pointers with valid address space value
+        AND (pointee is a struct type OR pointee is a union type)
+        ) OR struct type OR union type
         """
         
         # TODO remove.
         import ctypes
         #attrtype=type(attr)
         #and ( attrtype in self.classRef) 
-        return ( (bool(attr) and (ctypes.is_pointer_to_struct_type(attrtype) or ctypes.is_pointer_to_union_type(attrtype) ) ) or
-                        #not ctypes.is_function_type(attrtype) and not ) or
-                            ctypes.is_struct_type(attrtype)    or ctypes.is_cstring_type(attrtype) or
-                            (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype) ) ) 
+        return ( (bool(attr) and 
+            (ctypes.is_pointer_to_struct_type(attrtype) or 
+             ctypes.is_pointer_to_union_type(attrtype) or
+             ctypes.is_pointer_to_basic_type(attrtype) or
+             ctypes.is_pointer_to_array_type(attrtype)
+            )) or
+            ctypes.is_union_type(attrtype) or ctypes.is_struct_type(attrtype) or
+            
+            ctypes.is_cstring_type(attrtype) or
+            (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype))) 
         # should we iterate on Basictypes ? no
 
     def loadMembers(self, mappings, maxDepth):
@@ -322,7 +332,7 @@ class LoadableMembers(object):
             return True
         elif ctypes.is_array_of_basic_type(attrtype):
             return True
-        if ctypes.is_array_type(attrtype):
+        elif ctypes.is_array_type(attrtype):
             log.debug('a: %s is arraytype %s recurse load'%(attrname,
                                                             repr(attr)))
             attrLen=len(attr)
@@ -338,7 +348,7 @@ class LoadableMembers(object):
             return True
         # we have PointerType here . Basic or complex
         # exception cases
-        if ctypes.is_cstring_type(attrtype) : 
+        elif ctypes.is_cstring_type(attrtype) : 
             # can't use basic c_char_p because we can't load in foreign memory
             attr_obj_address = utils.getaddress(attr.ptr)
             if not bool(attr_obj_address):
@@ -389,10 +399,7 @@ class LoadableMembers(object):
             ##### Read the struct in memory and make a copy to play with.
             #### DO NOT COPY THE STRUCT, we have a working readStruct for that...
             ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-            
-            # TEST
-            contents = memoryMap.readStruct(attr_obj_address, _attrType )
-            #contents = _attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType))
+            contents = memoryMap.readStruct(attr_obj_address, _attrType)
 
             # save that validated and loaded ref and original addr so we dont need to recopy it later
             mappings.keepRef( contents, _attrType, attr_obj_address)
@@ -403,6 +410,14 @@ class LoadableMembers(object):
                 log.warning('Member %s is null after copy: %s'%(attrname,attr))
                 return True
             # go and load the pointed struct members recursively
+            subtype = utils.get_subtype(attrtype)
+            if (ctypes.is_basic_type(subtype) or
+                ctypes.is_array_of_basic_type(subtype)):
+                # do nothing
+                return True
+            elif ctypes.is_array_type(subtype):
+                return self._loadMember(self,contents,'pointee',subtype, mappings, maxDepth-1)
+
             if not contents.loadMembers(mappings, maxDepth):
                 log.debug('member %s was not loaded'%(attrname))
                 #invalidate the cache ref.
@@ -437,9 +452,13 @@ class LoadableMembers(object):
         s=''
         if ctypes.is_basic_type(attrtype): 
             s = prefix+'"%s": %s, # %s'%(field, repr(attr), attrtype.__name__)
-            if attrtype in [int, long, ctypes.c_uint, ctypes.c_int, 
-                            ctypes.c_ulong, ctypes.c_long]:
-                s += ' '+hex(attr) 
+            if attr is None:
+                raise ValueError('This field %s has not been loaded'%(field))
+            if type(attr) in [int, long]:
+                s += ' '+hex(attr)
+            elif type(attr) in [ctypes.c_uint, ctypes.c_int, ctypes.c_ulonglong, 
+                            ctypes.c_longlong]:
+                s += ' '+hex(attr.value)
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             s = prefix + '"%s": %s,'%(field,
@@ -501,6 +520,8 @@ class LoadableMembers(object):
             #                                              contents, prefix)
             # TODO STOP CUT HERE
             else:
+                # could be a pointer to basic type, array type, pointer, ...
+                # we recurse.
                 s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
                        self._attrToString(contents, '', _attrType, prefix+'\t'))
                 #raise NotImplementedError('what is this %s'%(_attrType))
