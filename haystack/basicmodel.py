@@ -466,7 +466,7 @@ class LoadableMembers(object):
             myaddress_fmt = utils.formatAddress(myaddress)
             _attrType = get_subtype(attrtype)                
             contents = self._mappings_.getRef(_attrType, myaddress)
-            # TODO: can I just dump this blcok into a recursive call ?
+            # TODO: can I just dump this block into a recursive call ?
             # probably not if we want to stop LIST types from recursing
             if myaddress == 0:
                 # only print address/null
@@ -632,8 +632,6 @@ class LoadableMembers(object):
         import ctypes
         if ctypes.is_basic_type(attrtype) and ctypes.is_ctypes_instance(attr):
             obj = attr.value
-        elif isinstance(attr, numbers.Number): # pointers...
-            obj = attr
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             obj = attr.toPyObject()
@@ -683,22 +681,9 @@ class LoadableMembers(object):
                                     utils.getaddress(attr)))
                     #raise ValueError('LP structure for %s not in cache %s,%x'%(field, get_subtype(attrtype), utils.getaddress(attr) ) )
                     return (None,None)
-        #        ####### any pointer should be in cache
-        #        contents=attr.contents    # will SEGFAULT
-        #        if ctypes.is_struct_type(type(contents)) :
-        #            attr_py_class = getattr(sys.modules[contents.__class__.__module__],"%s_py"%(contents.__class__.__name__) )
-        #            cache = self._mappings_.getRef(attr_py_class, utils.getaddress(attr) )
-        #            if cache:
-        #                return cache
-        #            #else:
-        #            #    log.error('any LP struct should be in cache.')
-        #            #    raise ValueError('LP structure not in cache %s'%(attr_py_class))
-        #            obj=contents.toPyObject()
-        #        elif ctypes.is_pointer_type(type(contents)):
-        #            obj=self._attrToPyObject(contents,None,None)
-        #        else: # pointer vers autre chose, le repr() est le seul choix.
-        #            #obj=repr(contents)
-        #            obj=contents
+        elif isinstance(attr, numbers.Number): 
+            # case for int, long. But needs to be after c_void_p pointers case
+            obj = attr
         else:
             log.error('toPyObj default to return attr %s'%( type(attr) ))
             obj = attr
