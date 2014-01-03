@@ -698,6 +698,41 @@ class Mappings:
         return self._target_system
 
     def process_machine_arch(self):
+        if self.get_target_system() == 'win32':
+            return self._process_machine_arch_pe()
+        elif self.get_target_system() == 'linux':
+            return self._process_machine_arch_elf()
+        else:
+            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
+            
+
+    def _process_machine_arch_pe(self):
+        import pefile
+        # get the maps with read-only data
+        pe = None
+        for m in self.mappings:
+            if m.permissions != 'r--':
+                continue
+            if 'putty' not in m.pathname:
+                continue
+            print m.permissions, m
+            try:
+                pe = pefile.PE(data=m.getByteBuffer(), fast_load=True)
+                # only get the dirst one that works
+                break
+            except pefile.PEFormatError as e:
+                pass
+        machine = pe.FILE_HEADER.Machine
+        arch = pe.OPTIONAL_HEADER.Magic
+        if arch == 0x10b:
+            self.config.set_word_size(4)
+        elif arch == 0x20b:
+            self.config.set_word_size(8)
+        else:
+            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
+        return self.config.get_word_size()
+
+    def _process_machine_arch_elf(self):
         from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
         head = self.mappings[0].readBytes(self.mappings[0].start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
         x = struct_Elf_Ehdr.from_buffer_copy(head)
@@ -707,6 +742,8 @@ class Mappings:
             self.config.set_word_size(4)
         elif x.e_machine == 62:
             self.config.set_word_size(8)
+        else:
+            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
         return self.config.get_word_size()
     
     def _get_mmap_for_haystack_addr(self, haddr):
@@ -910,4 +947,14 @@ def readProcessMappings(process):
     if True:
         ctypes = types.set_ctypes(before)
     return ret
+
+def readLocalProcessMappings():
+    class P:
+        pid = os.getpid()
+        # we need that for the machine arch read.
+        def readBytes(self, addr, size):
+            import ctypes
+            return ctypes.string_at(addr, size)
+
+    return readProcessMappings(P()) # memory_mapping
 
