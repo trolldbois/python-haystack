@@ -191,20 +191,53 @@ class Test6_x32(SrcTests):
     self.assertIn(str(0x0ffffff0), retstr)
     self.assertIn('"val2b": 0L,', retstr)
     self.assertIn('"val1b": 0L,', retstr)
+    print retstr
+    #usual->root.{f,b}link = &node1->list; # offset list is 4 bytes
+    from haystack import utils
+    node1_list_addr = utils.formatAddress(self.address2+4)
+    self.assertIn('"flink": %s'%(node1_list_addr), retstr)
+    self.assertIn('"blink": %s'%(node1_list_addr), retstr)
+    
     
     #python
     usual, validated = abouchet.show_dumpname(self.usual_structname,
                                               self.memdumpname,
                                               self.address1, rtype='python')
-    self.assertEquals( validated, True)
-    self.assertEquals( usual.val1, 0x0aaaaaaa)
-    self.assertEquals( usual.val2, 0x0ffffff0)
+    self.assertEquals(validated, True)
+    self.assertEquals(usual.val1, 0x0aaaaaaa)
+    self.assertEquals(usual.val2, 0x0ffffff0)
+    self.assertEquals(usual.txt, 'This a string with a test this is a test '
+                                 'string')
+
+    print usual.root.toString()
+
+    #python 2 struct Node
+    node1, validated = abouchet.show_dumpname(self.node_structname,
+                                              self.memdumpname,
+                                              self.address2, rtype='python')
+    self.assertEquals(validated, True)
+    self.assertEquals(node1.val1, 0xdeadbeef)
+    self.assertEquals(node1.val2, 0xffffffff)
+    node2, validated = abouchet.show_dumpname(self.node_structname,
+                                              self.memdumpname,
+                                              self.address3, rtype='python')
+    self.assertEquals(validated, True)
+    self.assertEquals(node2.val1, 0xdeadbabe)
+    self.assertEquals(node2.val2, 0xffffffff)
+
+
+    print node1.toString()
+    import code
+    code.interact(local=locals())
+    #print node2.toString()
+    # TODO the listmodel test shoudl test if references have been loaded
+    # without searching for them.
 
 
   def test_search(self):
     ''' tests valid structure show and invalid structure show.'''
-    from test.src import ctypes7
-    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    from test.src import ctypes6
+    self.assertEquals( len(ctypes6.struct_Node.expectedValues.keys()), 2)
     
     retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
@@ -234,61 +267,47 @@ class Test6_x64(SrcTests):
   def setUp(self):
     model.reset()
     types.reload_ctypes(8,8,16)
-    self.address = 0x000000001b1e010
     self.memdumpname = 'test/src/test-ctypes6.64.dump'
-    self.classname = 'test.src.ctypes6.struct_Node'
-    # load layout in x32
-    from test.src import ctypes7
-    from test.src import ctypes7_gen64
-    model.copyGeneratedClasses(ctypes7_gen64, ctypes7)
-    model.registerModule(ctypes7)
+    self.node_structname = 'test.src.ctypes6.struct_Node'
+    self.usual_structname = 'test.src.ctypes6.struct_usual'
+    offsets = self._load_offsets(self.memdumpname)
+    self.address1 = offsets['test1'][0] # struct_usual
+    self.address2 = offsets['test2'][0] # struct_Node
+    self.address3 = offsets['test3'][0] # struct_Node
+    # load layout in x64
+    from test.src import ctypes6
+    from test.src import ctypes6_gen64
+    model.copyGeneratedClasses(ctypes6_gen64, ctypes6)
+    model.registerModule(ctypes6)
     # apply constraints
-    ctypes7.populate()
+    ctypes6.populate()
 
   def tearDown(self):
     self.mappings = None
 
   def test_refresh(self):
     ''' tests valid structure refresh.'''
-    from test.src import ctypes7
-    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
+    from test.src import ctypes6
+    self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
-    retstr = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='string')
-    self.assertIn("3735928559L,", retstr )
-    self.assertIn("0x0000000001b1e010,", retstr )
+    retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
+                                    self.address1, rtype='string')
+    import ctypes
+    self.assertIn('CTypesProxy-8:8:16', '%s'%ctypes)
+    self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
+    self.assertIn(str(0x0ffffff0), retstr)
+    self.assertIn('"val2b": 0L,', retstr)
+    self.assertIn('"val1b": 0L,', retstr)
     
     #python
-    node, validated = abouchet.show_dumpname( self.classname, self.memdumpname, self.address,rtype='python')
+    usual, validated = abouchet.show_dumpname(self.usual_structname,
+                                              self.memdumpname,
+                                              self.address1, rtype='python')
     self.assertEquals( validated, True)
-    self.assertEquals( node.val1, 0xdeadbeef)
-    self.assertEquals( node.ptr2, self.address)
-
-
-  def test_search(self):
-    ''' tests valid structure show and invalid structure show.'''
-    from test.src import ctypes7
-    self.assertEquals( len(ctypes7.struct_Node.expectedValues.keys()), 2)
-    
-    retstr = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='string')
-    self.assertIn("3735928559L,", retstr )
-    self.assertIn("0x0000000001b1e010,", retstr )
-    
-    #python
-    results = abouchet.search_dumpname( self.classname, self.memdumpname, rtype='python')
-    self.assertEquals( len(results), 1)
-    for node, offset in results:
-        self.assertEquals( offset, self.address)
-        self.assertEquals( node.val1, 0xdeadbeef)
-        self.assertEquals( node.ptr2, self.address)
-
-    #python
-    results = abouchet.search_dumpname( self.classname, self.memdumpname, maxnum=10, rtype='python')
-    self.assertEquals( len(results), 1)
-    for node, offset in results:
-        self.assertEquals( offset, self.address)
-        self.assertEquals( node.val1, 0xdeadbeef)
-        self.assertEquals( node.ptr2, self.address)
-    return 
+    self.assertEquals( usual.val1, 0x0aaaaaaa)
+    self.assertEquals( usual.val2, 0x0ffffff0)
+    self.assertEquals(usual.txt, 'This a string with a test this is a test '
+                                 'string')
 
 
 
@@ -406,8 +425,8 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig( stream=sys.stdout, level=logging.INFO )
-  #logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+  #logging.basicConfig( stream=sys.stdout, level=logging.INFO )
+  logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
   unittest.main(verbosity=0)

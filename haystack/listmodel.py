@@ -13,7 +13,14 @@ __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Beta"
 
 
-""" insure ctypes basic types are subverted """
+"""
+You have to use one of the Helpers function:
+
+    declare_double_linked_list_type(structType, forward, backward)
+    
+
+
+"""
 from haystack import utils
 
 import logging
@@ -35,7 +42,7 @@ class ListModel(object):
     C code example:
     struct A {
         int a;
-        struct * A next;
+        struct A * next;
     }
 
 
@@ -52,12 +59,13 @@ class ListModel(object):
 
     C code example:
     struct Entry {
-        struct * Entry flink;
-        struct * Entry blink;
+        struct Entry * flink;
+        struct Entry * blink;
     }
     struct A {
         int a;
         struct Entry list;
+        int b;
     }
 
     
@@ -211,8 +219,22 @@ class ListModel(object):
     #        yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
     
 
-def declare_double_linked_list_type( structType, forward, backward):
-    """ declare a double linked list type.
+def declare_double_linked_list_type(structType, forward, backward):
+    """Declares a list iterator on structType, as used by ListModel.
+
+    declare_double_linked_list_type(struct_A, 'next', 'previous')
+
+    C code example:
+    struct Entry {
+        struct Entry * next;
+        struct Entry * previous;
+    }
+    
+    The effect will be the current structType will NOT be validated, or loaded
+    by basicmodel. No member, pointers members will be loaded.
+    But next and previous elements can be iterated upon with _iterateList, 
+    at what point, address validation of both forward and backward pointer 
+    occurs before loading of pointee.
     """
     import ctypes
     # test existence
@@ -245,6 +267,7 @@ def declare_double_linked_list_type( structType, forward, backward):
                 if memoryMap == False:
                     raise ValueError('the link of this linked list has a bad value')
                 st = memoryMap.readStruct( addr, structType)
+                st._orig_addr_ = addr
                 model.keepRef(st, structType, addr)
                 log.debug("keepRefx2 %s.%s @%x"%(structType, fieldname, addr    ))
                 yield addr
@@ -255,13 +278,27 @@ def declare_double_linked_list_type( structType, forward, backward):
         raise StopIteration
     
     def loadMembers(self, mappings, depth):
-        # should not be called, field typed as non loadable.
+        # voluntary blockade of loadMembers.
+        # we do not want to validate members or pointees of this struct.
         log.debug('- <%s> loadMembers return TRUE'%(structType.__name__))
         return True
-        
+
+    def attrToPyObject(self,attr,field,attrtype):
+        if field in [forward, backward]:
+            # TODO we could maybe put a pointer to parent struct ?
+            # or add a hidden field in list struct representation so that the 
+            # python user can get the parent python object easily. 
+            return '# double_linked_list_type - contents not loaded'
+        else:
+            return self._attrToPyObject2(attr,field,attrtype)
+    
     # set iterator on the list structure
     structType._iterateList = iterateList
-    structType.loadMembers = loadMembers
+    #structType.loadMembers = loadMembers # FIXME DEBUG WHY?
+    # be nicer on printouts
+    structType._attrToPyObject2 = structType._attrToPyObject
+    structType._attrToPyObject = attrToPyObject
+
     log.debug('%s has been fitted with a list iterator self._iterateList(mappings)'%(structType))
     return
         

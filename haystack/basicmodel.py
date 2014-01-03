@@ -307,7 +307,7 @@ class LoadableMembers(object):
             return True
         # load it, fields are valid
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype): 
-            # DEBUG TEST
+            # its an embedded record. Bytes are already loaded.
             offset = utils.offsetof(type(self),attrname)
             log.debug('st: %s %s is STRUCT at @%x'%(attrname, attrtype,
                                                   self._orig_address_ + offset))
@@ -585,11 +585,12 @@ class LoadableMembers(object):
                 log.warning('did you forget to register your python structures ?')
                 raise
         my_self = my_class()
-        #keep ref
+        # keep ref of the POPO too.
         if hasRef(my_class, ctypes.addressof(self) ):
             return getRef(my_class, ctypes.addressof(self) )
-        # we are saving us in a partially resolved state, to keep from loops.
+        # save our POPO in a partially resolved state, to keep from loops.
         keepRef(my_self, my_class, ctypes.addressof(self) )
+        print(my_class)
         for field,typ in self.getFields():
             attr = getattr(self,field)
             try:
@@ -642,8 +643,6 @@ class LoadableMembers(object):
                 else:
                     # you got here because your pointer is in the middle of
                     # a struct ? if that a linked list ?
-                    import code
-                    code.interact(local=locals())
                     log.error('LP structure for field:%s %s/%s not in cache '
                               '%x'%(field, attrtype, get_subtype(attrtype), 
                                     utils.getaddress(attr)))

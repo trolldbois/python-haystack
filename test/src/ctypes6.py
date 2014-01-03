@@ -21,5 +21,12 @@ def populate():
                 #"flink": [0,NotNull],
                 #"blink": [0,NotNull],
                 }
+    
+    # x32 -4.
+    import ctypes
+    struct_Node._listHead_ = [('list', struct_Node, 'wqd', -4),]
+                               #('list', struct_Node, 'qwd', -4)]
+    from haystack import listmodel
+    listmodel.declare_double_linked_list_type(struct_entry, 'flink', 'blink')
 
 
