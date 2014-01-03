@@ -135,9 +135,9 @@ class Test7_x64(SrcTests):
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
-    #retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
-    #self.assertIn("3735928559L,", retstr )
-    #self.assertIn("0x0000000001b1e010,", retstr ) #FIXME hex(self.address)
+    retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
+    self.assertIn("3735928559L,", retstr )
+    self.assertIn("0x0000000001b1e010,", retstr ) #FIXME hex(self.address)
     
     #python
     results = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='python')
@@ -551,11 +551,11 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  #logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+  logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
-  logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+  #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
   unittest.main(verbosity=2)
 
 

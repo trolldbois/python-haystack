@@ -22,102 +22,103 @@ __status__ = "Production"
 
 
 class TestListStruct(unittest.TestCase):
-  '''
-  haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
-  '''
+    '''
+    haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
+    '''
 
-  def setUp(self):
-    self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
-  
-  def tearDown(self):
-    from haystack import model
-    model.reset()
-    self.mappings = None
-    pass
-  
-  def test_iter(self):
-    #offset = 0x390000
-    from haystack.reverse.win32 import win7heap
-    offset = 0x1ef0000
-    self.m = self.mappings.getMmapForAddr(offset)
-    self.heap = self.m.readStruct(offset, win7heap.HEAP)
-    self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
-
-    segments = [segment for segment in self.heap.iterateListField(self.mappings, 'SegmentList')]
-    self.assertEquals( len(segments), 1)
+    def setUp(self):
+        self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     
-    ucrs = [ucr for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList') for segment in segments]
-    self.assertEquals( len(ucrs), 1)
+    def tearDown(self):
+        from haystack import model
+        model.reset()
+        self.mappings = None
+        pass
+    
+    def test_iter(self):
+        #offset = 0x390000
+        from haystack.reverse.win32 import win7heap
+        offset = 0x1ef0000
+        self.m = self.mappings.getMmapForAddr(offset)
+        self.heap = self.m.readStruct(offset, win7heap.HEAP)
+        self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
+
+        segments = [segment for segment in self.heap.iterateListField(self.mappings, 'SegmentList')]
+        self.assertEquals( len(segments), 1)
         
-    logging.getLogger('root').debug('VIRTUAL')
-    allocated = [ block for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
-    self.assertEquals( len(allocated), 0) # 'No vallocated blocks'
+        ucrs = [ucr for ucr in segment.iterateListField(self.mappings, 'UCRSegmentList') for segment in segments]
+        self.assertEquals( len(ucrs), 1)
+                
+        logging.getLogger('root').debug('VIRTUAL')
+        allocated = [ block for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
+        self.assertEquals( len(allocated), 0) # 'No vallocated blocks'
 
-    for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') :
-      print 'commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
-    
-    return 
+        for block in self.heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') :
+            print 'commit %x reserve %x'%(block.CommitSize, block.ReserveSize)
+        
+        return 
 
-  def test_getListFieldInfo(self):
-    from haystack.reverse.win32 import win7heap
-    
-    heap = win7heap.HEAP()
-    self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap._HEAP_SEGMENT,-16))
-    
-    seg = win7heap._HEAP_SEGMENT()
-    self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap._HEAP_UCR_DESCRIPTOR,-8))
-    
-  def test_otherHeap(self):
-    #self.skipTest('not ready')
-    from haystack.reverse.win32 import win7heap
-    
-    heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000  ]
-    for addr in heaps:
-      m = self.mappings.getMmapForAddr(addr)
-      #print '\n+ Heap @%x size: %d'%(addr, len(m))
-      heap = m.readStruct(addr, win7heap.HEAP)
-      self.assertTrue(heap.loadMembers(self.mappings, 10 ))
-      segments = [segment for segment in heap.iterateListField(self.mappings, 'SegmentList')]
-      self.assertEquals( len(segments), 1)
+    def test_getListFieldInfo(self):
+        from haystack.reverse.win32 import win7heap
+        
+        heap = win7heap.HEAP()
+        self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap._HEAP_SEGMENT,-16))
+        
+        seg = win7heap._HEAP_SEGMENT()
+        self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap._HEAP_UCR_DESCRIPTOR,-8))
+        
+    def test_otherHeap(self):
+        #self.skipTest('not ready')
+        from haystack.reverse.win32 import win7heap
+        
+        heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000    ]
+        for addr in heaps:
+            m = self.mappings.getMmapForAddr(addr)
+            #print '\n+ Heap @%x size: %d'%(addr, len(m))
+            heap = m.readStruct(addr, win7heap.HEAP)
+            self.assertTrue(heap.loadMembers(self.mappings, 10 ))
+            segments = [segment for segment in heap.iterateListField(self.mappings, 'SegmentList')]
+            self.assertEquals( len(segments), 1)
 
-      allocated = [ block for block in heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
-      self.assertEquals( len(allocated), 0)
-      
-      
+            allocated = [ block for block in heap.iterateListField(self.mappings, 'VirtualAllocdBlocks') ]
+            self.assertEquals( len(allocated), 0)
+            
+            
 
 class TestListStructTest5:#(unittest.TestCase):
-  '''
-  haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
-  '''
+    '''
+    haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
+    '''
 
-  def setUp(self):
-    offset = 0x08f75008
-    self.mappings = dump_loader.load('test/src/test-ctypes5.dump')
-    sys.path.append('test/src/')
-    import ctypes5
-    self.m = self.mappings.getMmapForAddr(offset)
-    self.usual = self.m.readStruct(offset, ctypes5.usual)
-  
-  def test_iter(self):
+    def setUp(self):
+        offset = 0x08f75008
+        self.mappings = dump_loader.load('test/src/test-ctypes5.dump')
+        sys.path.append('test/src/')
+        import ctypes5
+        self.m = self.mappings.getMmapForAddr(offset)
+        self.usual = self.m.readStruct(offset, ctypes5.usual)
     
-    self.assertTrue(self.usual.loadMembers(self.mappings, 10 ))
+    def test_iter(self):
         
-    nodes_addrs = [el for el in self.usual.root._iterateList(self.mappings)]
+        self.assertTrue(self.usual.loadMembers(self.mappings, 10 ))
+                
+        nodes_addrs = [el for el in self.usual.root._iterateList(self.mappings)]
 
-    self.assertEquals( len(nodes_addrs), 2)
+        self.assertEquals( len(nodes_addrs), 2)
 
-    return 
+        return 
 
 
 
 
 if __name__ == '__main__':
-  #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)  
-  #logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)  
-  #logging.getLogger("root").setLevel(level=logging.DEBUG)  
-  #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)  
-  #logging.getLogger("dump_loader").setLevel(level=logging.INFO)  
-  #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)  
-  #logging.basicConfig(level=logging.INFO)  
-  unittest.main(verbosity=2)
+    logging.basicConfig(level=logging.WARNING)
+    #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)    
+    #logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)    
+    #logging.getLogger("root").setLevel(level=logging.DEBUG)    
+    #logging.getLogger("win7heap").setLevel(level=logging.DEBUG)    
+    #logging.getLogger("dump_loader").setLevel(level=logging.INFO)    
+    #logging.getLogger("memory_mapping").setLevel(level=logging.INFO)    
+    #logging.basicConfig(level=logging.INFO)    
+    unittest.main(verbosity=2)
 

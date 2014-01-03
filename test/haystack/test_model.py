@@ -67,6 +67,7 @@ class TestCopyModule(unittest.TestCase):
         
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.WARNING)
     #logging.basicConfig( stream=sys.stderr, level=logging.INFO )
     #logging.getLogger("listmodel").setLevel(level=logging.DEBUG)    
     #logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)    
