@@ -454,11 +454,10 @@ class LoadableMembers(object):
             s = prefix+'"%s": %s, # %s'%(field, repr(attr), attrtype.__name__)
             if attr is None:
                 raise ValueError('This field %s has not been loaded'%(field))
-            if type(attr) in [int, long]:
-                s += ' '+hex(attr)
-            elif type(attr) in [ctypes.c_uint, ctypes.c_int, ctypes.c_ulonglong, 
-                            ctypes.c_longlong]:
+            if ctypes.is_basic_ctype(type(attr)):
                 s += ' '+hex(attr.value)
+            else:
+                s += ' '+hex(attr)
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             s = prefix + '"%s": %s,'%(field,
@@ -647,8 +646,11 @@ class LoadableMembers(object):
         
     def _attrToPyObject(self, attr, field, attrtype):
         import ctypes
-        if ctypes.is_basic_type(attrtype) and ctypes.is_ctypes_instance(attr):
-            obj = attr.value
+        if ctypes.is_basic_type(attrtype):
+            if ctypes.is_basic_ctype(type(attr)):
+                obj = attr.value
+            else:
+                obj = attr
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             obj = attr.toPyObject()
@@ -705,6 +707,8 @@ class LoadableMembers(object):
             # case for int, long. But needs to be after c_void_p pointers case
             obj = attr
         else:
+            import code
+            code.interact(local=locals())
             log.error('toPyObj default to return attr %s'%( type(attr) ))
             obj = attr
         return obj

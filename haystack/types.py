@@ -372,6 +372,11 @@ class CTypesProxy(object):
         if not hasattr(objtype, '_type_'):
             # could be python types
             return objtype in [int, long, float, bool]
+        return self.is_basic_ctype(objtype)
+
+    @check_arg_is_type
+    def is_basic_ctype(self, objtype):
+        """Checks if an object is a ctypes basic type, or a python basic type."""
         if objtype in [self.c_char_p, self.c_void_p, self.CString]:
             return False
         # DOC: if <ctypes.c_uint> is not in self.__basic_types, its probably 
