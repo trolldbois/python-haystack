@@ -418,7 +418,6 @@ class LoadableMembers(object):
         """
         # TODO: use a ref table to stop loops on parsed instance, 
         #             depth kinda sux.
-        print type(self), hasattr(self,'_mappings_')
         if depth == 0 :
             return 'None, # DEPTH LIMIT REACHED'
         if hasattr(self, '_orig_address_'):
@@ -485,6 +484,7 @@ class LoadableMembers(object):
             # TODO CUT HERE
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
+                contents._mappings_ = self._mappings_
                 s = prefix + '"%s": %s,'%(field,
                                         contents.toString(prefix+'\t', depth-1))
             #elif ctypes.is_pointer_to_basic_type(attrtype):
@@ -635,6 +635,7 @@ class LoadableMembers(object):
         elif isinstance(attr, numbers.Number): # pointers...
             obj = attr
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
+            attr._mappings_ = self._mappings_
             obj = attr.toPyObject()
         elif ctypes.is_array_of_basic_type(attrtype): 
             obj = utils.array2bytes(attr)
@@ -645,12 +646,14 @@ class LoadableMembers(object):
             for i in range(0,len(attr)):
                 obj.append(self._attrToPyObject( attr[i], i, eltyp) )
         elif ctypes.is_cstring_type(attrtype):
+            attr._mappings_ = self._mappings_
             obj = attr.toString()
         elif ctypes.is_pointer_type(attrtype):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
             _address = utils.getaddress(attr)
             _cache = self._mappings_.getRef(_subtype, _address)
+            _cache._mappings_ = self._mappings_
             if ctypes.is_pointer_to_void_type(attrtype):
                 obj = _address
             elif (ctypes.is_pointer_to_struct_type(attrtype)

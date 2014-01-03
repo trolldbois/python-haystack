@@ -155,7 +155,10 @@ class Test7_x64(SrcTests):
 
 class Test6_x32(SrcTests):
   """Validate abouchet API on a linux x32 dump of ctypes6.
-  Mainly tests cross-arch POINTER to structs and c_char_p."""
+  Mainly tests cross-arch POINTER to structs and c_char_p.
+
+  Debugs a lot of bugs with references book.
+  """
   def setUp(self):
     import sys
     model.reset()
@@ -180,27 +183,32 @@ class Test6_x32(SrcTests):
 
   def test_refresh(self):
     ''' tests valid structure refresh.'''
+
+    # if you delete the Heap memorymap, 
+    # all references in the model are invalided
+
+    # real problem: references left over by previous search.
+    # solution: move the book into memory_mappings, 
+
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
-    if True:
-        # string
-        retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
-                                        self.address1, rtype='string')
-        #print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
-        #return
-        import ctypes
-        self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
-        self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
-        self.assertIn(str(0x0ffffff0), retstr)
-        self.assertIn('"val2b": 0L,', retstr)
-        self.assertIn('"val1b": 0L,', retstr)
-        #print retstr
-        #return
-        #usual->root.{f,b}link = &node1->list; # offset list is 4 bytes
-        from haystack import utils
-        node1_list_addr = utils.formatAddress(self.address2+4)
-        self.assertIn('"flink": { #(%s'%(node1_list_addr), retstr)
-        self.assertIn('"blink": { #(%s'%(node1_list_addr), retstr)
+
+    # string
+    retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
+                                    self.address1, rtype='string')
+    import ctypes
+    self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
+    self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
+    self.assertIn(str(0x0ffffff0), retstr)
+    self.assertIn('"val2b": 0L,', retstr)
+    self.assertIn('"val1b": 0L,', retstr)
+    #print retstr
+
+    #usual->root.{f,b}link = &node1->list; # offset list is 4 bytes
+    from haystack import utils
+    node1_list_addr = utils.formatAddress(self.address2+4)
+    self.assertIn('"flink": { #(%s'%(node1_list_addr), retstr)
+    self.assertIn('"blink": { #(%s'%(node1_list_addr), retstr)
     
     
     #python
@@ -213,13 +221,19 @@ class Test6_x32(SrcTests):
     self.assertEquals(usual.txt, 'This a string with a test this is a test '
                                  'string')
 
+    # so now we got python objects
+    # that is node 1
+    self.assertIsNotNone(usual.root.flink)
+    self.assertEquals(usual.root.flink, usual.root.blink)
+    # that is node2
+    self.assertEquals(usual.root.blink.flink, usual.root.flink.flink)
+    # that is None ( root.flink = root.blink)
+    self.assertIsNone(usual.root.blink.blink)
+    self.assertIsNone(usual.root.flink.blink)
+    # that is None per design UT 
+    self.assertIsNone(usual.root.blink.flink.flink)
 
-    #print 'usual.root.flink', usual.root.flink
-    #print 'usual.root.blink', usual.root.blink
-    #print 'usual.root.flink.flink', usual.root.flink.flink
-    #import code
-    #code.interact(local=locals())
-    #return
+
     #python 2 struct Node
     node1, validated = abouchet.show_dumpname(self.node_structname,
                                               self.memdumpname,
@@ -235,21 +249,13 @@ class Test6_x32(SrcTests):
     self.assertEquals(node2.val1, 0xdeadbabe)
     self.assertEquals(node2.val2, 0xffffffff)
 
+    self.assertIsNotNone(usual.root.flink)
     
-    #FIXME: if you delete the Heap memorymap, 
-    # all references in the model are invalided
+    # but we have different instances/references between calls to show_dumpname
+    self.assertNotEquals(usual.root.flink, node1.list)
+    self.assertNotEquals(usual.root.blink.flink, node2.list)
     
-    # real problem: references left over by previous search.
-    # solution: move the book into memory_mappings, 
     
-    #print 'Y', model.getRef(ctypes6.struct_entry, 0x94470ac)
-
-    #x = usual._mappings.getHeap()
-
-    print node1.toString()
-    #import code
-    #code.interact(local=locals())
-    print node2.toString()
     # TODO the listmodel test shoudl test if references have been loaded
     # without searching for them.
 
