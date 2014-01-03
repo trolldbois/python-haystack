@@ -102,6 +102,9 @@ class CTypesProxy(object):
         sys.modules['ctypes'] = self
         log.debug('init: ctypes changed to %s'%(self))
         self.__init_types()
+        self.__name__ = "CTypesProxy-%d:%d:%d"%(self.__longsize,
+                                                self.__pointersize,
+                                                self.__longdoublesize)
         pass        
 
     def __init_types(self):
