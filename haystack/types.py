@@ -11,18 +11,23 @@ __PROXIES = {}
 
 def reset_ctypes():
     """Reset sys.module to import the host ctypes module."""
-    # remove all refs to the ctypes modules or proxies
-    if 'ctypes' in sys.modules:
-        del sys.modules['ctypes']
-    # import the real one
+    # we want to keep a unique ref to a unique instanciation of the real ctypes
+    # Deletion of the real module is bad for the health.
+    # import the current ctypes
     import ctypes
+    if isinstance(ctypes, CTypesProxy):
+        ctypes = set_ctypes(__PROXIES['real'])
+    elif 'real' not in __PROXIES.keys():
+        # do nothing and save it
+        __PROXIES['real'] = ctypes
+    else:
+        ctypes = set_ctypes(__PROXIES['real'])
     log.debug('reset: ctypes changed to %s '%(ctypes))
     return ctypes
 
 def load_ctypes_default():
     """Load sys.module with a default host-mimicking ctypes module proxy."""    
-    reset_ctypes()
-    import ctypes
+    ctypes = reset_ctypes()
     # get the hosts' types
     longsize = ctypes.sizeof(ctypes.c_long)
     pointersize = ctypes.sizeof(ctypes.c_void_p)
@@ -32,24 +37,18 @@ def load_ctypes_default():
 
 def reload_ctypes(longsize, pointersize, longdoublesize):
     """Load sys.modle with a tuned ctypes module proxy."""
-    #print 'reload_ctypes', (longsize, pointersize, longdoublesize)
-    #import traceback
-    #traceback.print_stack(limit=3)
-
     if (longsize, pointersize, longdoublesize) in __PROXIES:
         instance = __PROXIES[(longsize, pointersize, longdoublesize)]
         set_ctypes(instance)
         return instance
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
-    return instance
+    return set_ctypes(instance)
 
-def set_ctypes(ctypesproxy):
+def set_ctypes(_ctypes):
     """Load Change the global ctypes module to a specific proxy instance"""
-    if not isinstance(ctypesproxy, CTypesProxy):
-        raise TypeError('CTypesProxy instance expected.')
-    sys.modules['ctypes'] = ctypesproxy
-    log.debug('set: ctypes changed to %s'%(ctypesproxy))
+    sys.modules['ctypes'] = _ctypes
+    log.debug('set: ctypes changed to %s'%(_ctypes))
     return sys.modules['ctypes']
 
 def check_arg_is_type(func):
@@ -84,19 +83,19 @@ class CTypesProxy(object):
         self.__pointersize = pointersize
         self.__longdoublesize = longdoublesize
         # remove all refs to the ctypes modules or proxies
-        reset_ctypes()
+        ctypes = reset_ctypes()
         # import the real one
-        import ctypes
+        #import ctypes
         self.__real_ctypes = ctypes
         if hasattr(ctypes,'proxy'):
             raise RuntimeError('base ctype should not be a proxy')
         # copy every members
         for name in dir(ctypes):
-            #if name == '_pointer_type_cache':
-            #    setattr(self, name, dict(getattr(ctypes, name)))
-            #el
-            if not name.startswith('__'):
+            if name == '_pointer_type_cache':
+                setattr(self, name, dict())
+            elif not name.startswith('__'):
                 setattr(self, name, getattr(ctypes, name))
+                #print name
         del ctypes
         # replace it. We want ctypes to be self for the rest of init.
         sys.modules['ctypes'] = self
@@ -162,6 +161,8 @@ class CTypesProxy(object):
         # TODO: c_char_p ?
         # if host pointersize is same as target, keep ctypes pointer function.
         if self.sizeof(self.__real_ctypes.c_void_p) == self.__pointersize:
+            # use the same pointer cache
+            self._pointer_type_cache = self.__real_ctypes._pointer_type_cache
             return
         # get the replacement type.
         if self.__pointersize == 4:
@@ -178,10 +179,10 @@ class CTypesProxy(object):
         # Emulate a pointer class using the approriate c_int32/c_int64 type
         # The new class should have :
         # ['__module__', 'from_param', '_type_', '__dict__', '__weakref__', '__doc__']
+        my_ctypes = self
         def POINTER_T(pointee):
-            import ctypes
-            if pointee in ctypes._pointer_type_cache:
-                return ctypes._pointer_type_cache[pointee]
+            if pointee in my_ctypes._pointer_type_cache:
+                return my_ctypes._pointer_type_cache[pointee]
             # specific case for c_void_p
             subtype = pointee
             if pointee is None: # VOID pointer type. c_void_p.
@@ -208,7 +209,7 @@ class CTypesProxy(object):
                 def __init__(self, **args):
                     raise TypeError('This is not a ctypes pointer. It is not instanciable.')
             _class = type('LP_%d_%s'%(POINTERSIZE, clsname), (_T,),{}) 
-            ctypes._pointer_type_cache[pointee] = _class
+            my_ctypes._pointer_type_cache[pointee] = _class
             return _class
         self.POINTER = POINTER_T
         self._pointer_type_cache.clear()

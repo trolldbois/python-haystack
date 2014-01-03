@@ -57,77 +57,49 @@ class TestReload(unittest.TestCase):
     # test ctypes._pointer_type_cache
     def test_pointer_type_cache(self):
         """test the comportment of _pointer_type_cache"""
-        # on reset_ctypes, the unloading destroy the pointer type cache.
-        # we call reset when reloading. so its cool.
-        # what is the use of model book ?
-        import ctypes
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        #print 'first',id(ctypes._pointer_type_cache), ctypes._pointer_type_cache.keys()
+        # between reset(), we keep the reference to the ctypes modules
+        # and we don't the pointer cache, that we only share with the default
+        # ctypes proxy instance
+        ctypes = types.reset_ctypes()
+        class X(ctypes.Structure):
+            pass
+
+        self.assertNotIn(X, ctypes._pointer_type_cache.keys())
+        ctypes.POINTER(X)
+        self.assertIn(X, ctypes._pointer_type_cache.keys())
 
         ctypes = types.reset_ctypes()
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
+        # we keep the cache
+        self.assertIn(X, ctypes._pointer_type_cache.keys())
 
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_double)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        c4 = types.reload_ctypes(4,4,8)
+        c8 = types.reload_ctypes(8,8,16)
+        cd = types.load_ctypes_default()
+        if c4 != cd:
+            newarch = c4
+        elif c8 != cd:
+            newarch = c4
 
-        c4 = ctypes = types.reload_ctypes(4,4,8)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_long)
-        #print ctypes._pointer_type_cache.keys()
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        # cd and ctypes share a cache
+        self.assertIn(X, cd._pointer_type_cache.keys())
+        # and cd.POINTER is actually ctypes.POINTER
+        self.assertEquals(cd.POINTER, ctypes.POINTER)
+        self.assertEquals(cd._pointer_type_cache, ctypes._pointer_type_cache)
 
-        c8 = ctypes = types.reload_ctypes(8,8,16)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        # but not other proxies
+        self.assertNotIn(X, newarch._pointer_type_cache.keys())
 
-        # relaod existings caches
-        ctypes = types.reset_ctypes()
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes = types.reload_ctypes(8,8,16)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes = types.reload_ctypes(4,4,8)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes = types.reset_ctypes()
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
+        class Y(newarch.Structure):
+            pass
+        self.assertNotIn(Y, cd._pointer_type_cache.keys())
+        self.assertNotIn(Y, ctypes._pointer_type_cache.keys())
+        self.assertNotIn(Y, newarch._pointer_type_cache.keys())
+        newarch.POINTER(Y)
+        self.assertNotIn(Y, cd._pointer_type_cache.keys())
+        self.assertNotIn(Y, ctypes._pointer_type_cache.keys())
+        self.assertIn(Y, newarch._pointer_type_cache.keys())
 
-        # set existings caches
-        ctypes = types.set_ctypes(c4)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_double)
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
 
-        ctypes = types.set_ctypes(c8)
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_double)
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-
-        ctypes = types.reset_ctypes()
-        self.assertNotIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertNotIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
-        ctypes.POINTER(ctypes.c_double)
-        ctypes.POINTER(ctypes.c_long)
-        self.assertIn(ctypes.c_long, ctypes._pointer_type_cache.keys())
-        self.assertIn(ctypes.c_double, ctypes._pointer_type_cache.keys())
 
         pass
 
