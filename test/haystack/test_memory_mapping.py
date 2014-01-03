@@ -14,29 +14,56 @@ import struct
 from haystack import dump_loader
 from haystack import memory_mapping
 from haystack import utils
+from haystack import types
 from haystack.reverse import context
 
 log = logging.getLogger('test_memory_mapping')
 
 class TestMmapHack(unittest.TestCase):
-    def test_mmap_hack(self):
-        import ctypes
+    def test_mmap_hack64(self):
+        ctypes = types.reload_ctypes(8,8,16)
+        real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
         fin = file(fname)
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         fin.close()
         fin = None
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-        heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(id(local_mmap_bytebuffer) + 2*(ctypes.sizeof(ctypes.c_ulong)) ) )[0]
+        heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) + 
+                                        2*(ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
-        class P:
-            pid=os.getpid()
-        maps = memory_mapping.readProcessMappings(P()) # memory_mapping
-        #print '\n'.join([str(m) for m in maps])
-        #print '**',hex(heapmap)
+        maps = memory_mapping.readLocalProcessMappings()
         ret=[m for m in maps if heapmap in m]
+        # heapmap is a pointer value in local memory
         self.assertEquals( len(ret), 1)
+        # heapmap is a pointer value to this executable?
         self.assertEquals( ret[0].pathname, fname)
+
+        import ctypes
+        self.assertIn('CTypesProxy-8:8:16', str(ctypes))
+
+
+    def test_mmap_hack32(self):
+        ctypes = types.reload_ctypes(4,4,8)
+        real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
+        fname = os.path.normpath(os.path.abspath(__file__))
+        fin = file(fname)
+        local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
+        fin.close()
+        fin = None
+        # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
+        heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) + 
+                                        2*(ctypes.sizeof(real_ctypes_long))))[0]
+        log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
+        maps = memory_mapping.readLocalProcessMappings()
+        ret=[m for m in maps if heapmap in m]
+        # heapmap is a pointer value in local memory
+        self.assertEquals( len(ret), 1)
+        # heapmap is a pointer value to this executable?
+        self.assertEquals( ret[0].pathname, fname)
+
+        import ctypes
+        self.assertIn('CTypesProxy-4:4:8', str(ctypes))
 
 
 class TestMappingsLinux(unittest.TestCase):
@@ -138,22 +165,16 @@ class TestMappingsLinux(unittest.TestCase):
 
 class TestMappingsWin32(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(self):
-        self.putty = context.get_context('test/dumps/putty/putty.1.dump')
-        pass
-
     def setUp(self):    
+        self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
         pass
 
     def tearDown(self):
-        self.putty.reset()
-        import haystack
-        from haystack import model
-        haystack.model.reset()
         pass
 
+    @unittest.skip('require reverser')
     def test_get_context(self):
+        self.putty = context.get_context('test/dumps/putty/putty.1.dump')
         mappings = self.putty.mappings
         #print ''.join(['%s\n'%(m) for m in mappings])        
         with self.assertRaises(ValueError):
@@ -163,10 +184,14 @@ class TestMappingsWin32(unittest.TestCase):
         #[heap] children
         self.assertEquals(mappings.get_context(0x0062d000).heap, mappings.getMmapForAddr(0x005c0000))
         self.assertEquals(mappings.get_context(0x0063e123).heap, mappings.getMmapForAddr(0x005c0000))
+        self.putty.reset()
+        self.putty = None
 
     
     def test_get_user_allocations(self):
-        mappings = self.putty.mappings
+        """ FIXME: this methods expands a full reversal of all HEAPs.
+        It should probably be in haystack.reverse."""
+        mappings = self.mappings
         allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
         self.assertEquals( len(allocs), 2273)
 
@@ -181,7 +206,7 @@ class TestMappingsWin32(unittest.TestCase):
         pass
 
     def test_getHeap(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         self.assertTrue( isinstance(mappings.getHeap(), memory_mapping.MemoryMapping))
         self.assertEquals( mappings.getHeap().start, 0x005c0000)
         self.assertEquals( mappings.getHeap().pathname, 'None')
@@ -229,6 +254,10 @@ class TestMappingsWin32(unittest.TestCase):
 
     @unittest.skip('')
     def test_search_win_heaps(self):
+        pass
+
+    @unittest.skip('')
+    def test_search_nux_heaps(self):
         pass
     
     @unittest.skip('')

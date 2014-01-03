@@ -587,6 +587,8 @@ class Mappings:
         self.process_machine_arch()
     
     def get_context(self, addr):
+        """Returns the haystack.reverse.context.ReverserContext of this dump.
+        """
         mmap = self.getMmapForAddr(addr)
         if not mmap:
             raise ValueError
@@ -620,6 +622,14 @@ class Mappings:
         """changed when the dump is loaded"""
         # set by dump_loader. DO NOT FIX
         raise NotImplementedError
+        # FIXME why is this in dump_loader
+        #if self.mappings.get_target_system() == 'win32':
+        #    self.mappings.search_win_heaps() # mmmh neeeh...
+        #    from haystack.reverse.win32 import win7heapwalker
+        #    self.mappings.get_user_allocations = win7heapwalker.get_user_allocations
+        #else: # linux/libc
+        #    from haystack.reverse.libc import libcheapwalker
+        #    self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
 
     def getMmap(self, pathname):
         mmap = None
