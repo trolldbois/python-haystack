@@ -425,11 +425,11 @@ class LoadableMembers(object):
         s += '\n'+prefix+'}'
         return s
         
-    def _attrToString(self,attr,field,attrtype,prefix, depth=-1):
+    def _attrToString(self, attr, field, attrtype, prefix, depth=-1):
         """This should produce strings, based on ctypes structures. No pyOBJ"""
         import ctypes
         s=''
-        if ctypes.is_basic_type(attrtype): # basic, ctypes.* !Structure/pointer % CFunctionPointer?
+        if ctypes.is_basic_type(attrtype): 
             s = prefix+'"%s": %s, # %s'%(field, repr(attr), attrtype.__name__)
             if attrtype in [int, long, ctypes.c_uint, ctypes.c_int, 
                             ctypes.c_ulong, ctypes.c_long]:
@@ -457,43 +457,48 @@ class LoadableMembers(object):
         elif ctypes.is_pointer_type(attrtype):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
-            if not bool(attr) :
+            _attrType = get_subtype(attrtype)                
+            contents = getRef(_attrType, myaddress)
+            # TODO: can I just dump this blcok into a recursive call ?
+            # probably not if we want to stop LIST types from recursing
+            if myaddress == 0:
                 # only print address/null
                 s = prefix + '"%s": %s,'%(field, myaddress_fmt) 
             elif ctypes.is_pointer_to_void_type(attrtype) :
                 # c_void_p, c_char_p, can load target
                 s = prefix + '"%s": %s, #(FIELD NOT LOADED: void pointer)'%(
                                                            field, myaddress_fmt)
+            elif type(self) == type(contents):
+                # pointer of self type ? lists ?
+                # TODO: decide if we recurse in lists or not.
+                # if we do, comment this elif/block
+                s = prefix + '"%s": { #(%s) LIST of %s\n%s},'%(field, 
+                                 myaddress_fmt, _attrType.__name__, prefix+'\t')
+            # TODO CUT HERE
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
-                _attrType = get_subtype(attrtype)                
-                contents = getRef(_attrType, myaddress)
-                #print attrtype
-                #print _attrType
-                #print type(contents)
-                # contents is a pyObj.
                 s = prefix + '"%s": %s,'%(field,
-                                contents.toString(prefix+'\t', depth-1)) 
+                                        contents.toString(prefix+'\t', depth-1))
+            #elif ctypes.is_pointer_to_basic_type(attrtype):
+            #    s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
+            #              self._attrToString(contents, None, None, prefix+'\t'))
+            #elif ctypes.is_pointer_type(_attrType):
+            #    # pointer of pointer/function pointer
+            #    s = prefix + '"%s": { #(%s) -> %s%s},'%(field, myaddress_fmt,
+            #           self._attrToString(contents, '', _attrType, prefix+'\t'),
+            #           prefix)
+            #elif ctypes.is_array_type(_attrType):
+            #    # pointer to array
+            #    s = prefix + '"%s": { #(%s) -> %s\n%s},'%(field, myaddress_fmt,
+            #                                              contents, prefix)
+            # TODO STOP CUT HERE
             else:
-                # we can read the pointers contents 
-                # if ctypes.is_basic_type(attr.contents): ?    
-                # if ctypes.is_array_type(attr.contents): ?
-                _attrType = get_subtype(attrtype)                
-                contents = getRef(_attrType, myaddress)
-                if type(self) == type(contents):
-                    s=prefix+'"%s": { #(%s) -> %s\n%s},'%(field, 
-                                                    myaddress_fmt, _attrType, prefix) # use struct printer
-                elif ctypes.is_struct_type(type(contents)): # do not enter in lists
-                    s=prefix+'"%s": { #(%s) -> %s%s},'%(field, myaddress_fmt, 
-                                                    contents.toString(prefix+'\t', depth-1),prefix) # use struct printer
-                elif ctypes.is_pointer_type(type(contents)):
-                    s=prefix+'"%s": { #(%s) -> %s%s},'%(field, myaddress_fmt, 
-                                                    self._attrToString(contents, None, None, prefix+'\t'), prefix ) # use struct printer
-                else:
-                    s=prefix+'"%s": { #(%s) -> %s\n%s},'%(field, myaddress_fmt, 
-                                                    contents, prefix) # use struct printer
+                s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
+                       self._attrToString(contents, '', _attrType, prefix+'\t'))
+                #raise NotImplementedError('what is this %s'%(_attrType))
         elif ctypes.is_cstring_type(attrtype):
-            s=prefix+'"%s": "%s" , #(CString)'%(field, getRef(CString, utils.getaddress(attr.ptr)) )
+            s = prefix + '"%s": "%s" , #(CString)'%(field, getRef(CString, 
+                                                    utils.getaddress(attr.ptr)))
         else: # wtf ? 
             s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr'%(field, repr(attr))
         return s
