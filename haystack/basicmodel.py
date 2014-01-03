@@ -618,11 +618,7 @@ class LoadableMembers(object):
         self._mappings_.keepRef(my_self, my_class, ctypes.addressof(self) )
         for field,typ in self.getFields():
             attr = getattr(self,field)
-            try:
-                member = self._attrToPyObject(attr,field,typ)
-            except AttributeError as e:
-                log.error('_attrToPyObject AttributeError: %s'%(e))
-                member = None    
+            member = self._attrToPyObject(attr,field,typ)
             setattr(my_self, field, member)
         # save the original type (me) and the field
         setattr(my_self, '_ctype_', type(self))
@@ -651,17 +647,20 @@ class LoadableMembers(object):
             _subtype = get_subtype(attrtype)
             _address = utils.getaddress(attr)
             _cache = self._mappings_.getRef(_subtype, _address)
-            _cache._mappings_ = self._mappings_
-            if ctypes.is_pointer_to_void_type(attrtype):
-                obj = _address
+            if _cache is not None:
+                _cache._mappings_ = self._mappings_
+            if _address == 0:
+                # Null pointer
+                obj = None
+            elif ctypes.is_pointer_to_void_type(attrtype):
+                # void types arereturned as None
+                obj = None #_address
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
                 obj = _cache.toPyObject()
             elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
                 obj = 'BasicType array'
-            elif not bool(attr):
-                obj = 0 # Null pointer
             elif ctypes.is_function_type(attrtype):
                 obj = repr(attr)
             else:
