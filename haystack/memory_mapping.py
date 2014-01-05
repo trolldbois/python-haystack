@@ -220,6 +220,7 @@ class ProcessMemoryMapping(MemoryMapping):
 
     def readStruct(self, address, struct):
         struct = self._base.readStruct(address, struct)
+        struct._orig_address_ = address
         return struct
 
     def readArray(self, address, basetype, count):

@@ -47,6 +47,8 @@ class MemoryDumper:
         self._dest = os.path.normpath(dest)
         self._archive_type = archiveType
         self._compact_dump = compact
+        # FIXME: we cant get Heaps currenlty. TEST TODO
+        #self._compact_dump = False
         self._config = None
     
     def getMappings(self):
@@ -133,9 +135,12 @@ class MemoryDumper:
         # test dump only the heap
         err=0
         #print '\n'.join([str(m) for m in self.mappings])
-        self.__required = self.mappings.getHeaps()
-        self.__required.append(self.mappings.getStack())
-        self.__required.extend(self.mappings.get_required_maps())
+        #FIXME TODO test heap walker
+        if not self._compact_dump:
+            #self.__required = self.mappings.mappings
+            self.__required = self.mappings.getHeaps()
+            self.__required.append(self.mappings.getStack())
+            self.__required.extend(self.mappings.get_required_maps())
         for m in self.mappings:
             try:
                 self._dump_mapping(m, destdir)

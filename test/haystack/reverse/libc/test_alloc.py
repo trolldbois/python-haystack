@@ -11,9 +11,6 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
-
-Config.set_word_size(4) # forcing it on these unittest
 
 from haystack.reverse import context
 from haystack.reverse.libc import ctypes_malloc as ctypes_alloc
@@ -26,8 +23,6 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
-
-import ctypes 
 
 class TestAllocator(unittest.TestCase):
 
@@ -56,6 +51,7 @@ class TestAllocator(unittest.TestCase):
     self.assertEquals(len(heaps), 1)
     
     heap = heaps[0]
+    import ctypes
     self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))
 
     walker = libcheapwalker.LibcHeapWalker(mappings, heap, 0)
@@ -79,7 +75,9 @@ class TestAllocatorSimple(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    self.context6 = context.get_context('test/src/test-ctypes6.dump')
+    from haystack import types
+    types.reload_ctypes(4,4,8)
+    self.context6 = context.get_context('test/src/test-ctypes6.32.dump')
 
   @classmethod
   def tearDownClass(self):  
@@ -94,6 +92,7 @@ class TestAllocatorSimple(unittest.TestCase):
     self.assertEquals(len(heaps), 1)
     
     heap = heaps[0]
+    import ctypes
     self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))
 
     walker = libcheapwalker.LibcHeapWalker(mappings, heap, 0)
@@ -104,13 +103,10 @@ class TestAllocatorSimple(unittest.TestCase):
     # the empty chunk
     free = walker.get_free_chunks()
     self.assertEquals( len(free) , 1 )
+    
 
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
-  unittest.main(verbosity=0)
-  #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-  #unittest.TextTestRunner(verbosity=2).run(suite)
-  
-  
-  
+  unittest.main(verbosity=2)
+
