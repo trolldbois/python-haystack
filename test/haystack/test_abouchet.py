@@ -53,7 +53,8 @@ class Test7_x32(SrcTests):
     # string
     retstr = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='string')
     self.assertIn("3735928559L,", retstr ) # 0xdeadbeef
-    self.assertIn("0x08f40008,", retstr )
+    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn('"ptr2": 0x%08x'%(self.address), retstr )
     
     #python
     node, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='python')
@@ -70,7 +71,8 @@ class Test7_x32(SrcTests):
     
     retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("0x08f40008,", retstr )
+    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn('"ptr2": 0x%08x'%(self.address), retstr )
     
     #python
     results = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='python')
@@ -120,7 +122,8 @@ class Test7_x64(SrcTests):
     # string
     retstr = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("0x0000000001b1e010,", retstr )
+    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn('"ptr2": 0x%016x'%(self.address), retstr )
     
     #python
     node, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='python')
@@ -137,7 +140,8 @@ class Test7_x64(SrcTests):
     
     retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("0x0000000001b1e010,", retstr ) #FIXME hex(self.address)
+    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn('"ptr2": 0x%016x'%(self.address), retstr )
     
     #python
     results = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='python')
