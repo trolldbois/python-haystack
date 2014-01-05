@@ -5,7 +5,7 @@
 #
 import ctypes
 
-print 'gen',ctypes
+
 
 
 class struct_test3(ctypes.Structure):
