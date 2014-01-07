@@ -26,6 +26,8 @@ def writeable(f):
     if os.access(f, os.F_OK):
         if not os.access(f, os.W_OK):
             raise ValueError("%s is not writable."%(f))
+    else:
+        raise ValueError("%s is not writable."%(f))
     return f
 
 def int16(s):
