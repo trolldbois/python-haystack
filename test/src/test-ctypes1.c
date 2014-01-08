@@ -1,4 +1,6 @@
-
+/*
+test on dynamic lib C program
+*/
 #ifdef PYTHON_BUILD
 #define __cplusplus
 

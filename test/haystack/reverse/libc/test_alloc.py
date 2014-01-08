@@ -51,17 +51,16 @@ class TestAllocator(unittest.TestCase):
     self.assertEquals(len(heaps), 1)
     
     heap = heaps[0]
-    import ctypes
     self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))
 
     walker = libcheapwalker.LibcHeapWalker(mappings, heap, 0)
-    # we should have 3 structures + 1 empty chunks
+    # 
     allocs = walker.get_user_allocations()
     self.assertEquals( len(allocs) , 2568 )
     size = sum([size for addr,size in allocs])
     self.assertEquals( size, 105616)
     
-    # the empty chunk
+    # 
     free = walker.get_free_chunks()
     self.assertEquals( len(free) , 7 )
     size = sum([size for addr,size in free])
@@ -76,7 +75,7 @@ class TestAllocatorSimple(unittest.TestCase):
   @classmethod
   def setUpClass(self):
     from haystack import types
-    types.reload_ctypes(4,4,8)
+    #types.reload_ctypes(4,4,8)
     self.context6 = context.get_context('test/src/test-ctypes6.32.dump')
 
   @classmethod
@@ -92,7 +91,6 @@ class TestAllocatorSimple(unittest.TestCase):
     self.assertEquals(len(heaps), 1)
     
     heap = heaps[0]
-    import ctypes
     self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))
 
     walker = libcheapwalker.LibcHeapWalker(mappings, heap, 0)

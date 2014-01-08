@@ -1,3 +1,7 @@
+/*
+    Simple test of multiple simple structures allocations.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -270,15 +270,7 @@ struct malloc_chunk {
         return next_chunk, next_addr
 
 
-# FIXME: need to define UINT base on config.
-# so that means, malloc_chunk needs to be dynamically created, based on config.
-#if Config.get_word_size() == 4:
-#    UINT = ctypes.c_uint32
-#elif Config.get_word_size() == 8:
-#    UINT = ctypes.c_uint64
-#UINT = ctypes.c_uint64
-
-# FIXME ??
+# Unint is 32. always.
 UINT = ctypes.c_uint
 
 malloc_chunk._fields_ = [
