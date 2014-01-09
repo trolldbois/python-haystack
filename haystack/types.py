@@ -139,12 +139,16 @@ class CTypesProxy(object):
             raise NotImplementedError('long size of %d is not handled'%(self.__longsize))
 
     def __set_float(self):
-        # use host type if target is the same
-        if self.sizeof(self.__real_ctypes.c_longdouble) == self.__longdoublesize:
-            return
-        #self.c_longdouble = self.c_ubyte*self.__longdoublesize
-        #self.c_longdouble.__name__ = 'c_longdouble'
         SIZE = self.__longdoublesize
+        HOSTSIZE = self.sizeof(self.__real_ctypes.c_longdouble)
+        HOSTDOUBLESIZE = self.sizeof(self.__real_ctypes.c_double)
+        # use host type if target is the same
+        if SIZE == HOSTSIZE:
+            return
+        # does not work
+        #if SIZE == HOSTDOUBLESIZE:
+        #    self.c_longdouble = self.__real_ctypes.c_double
+        #    return
         class c_longdouble(self.__real_ctypes.Union):
             """This is our own implementation of a longdouble.
             It could be anywhere from 64(win) to 80 bits, stored as 8, 12, 
@@ -154,6 +158,13 @@ class CTypesProxy(object):
                 ("physical", self.c_ubyte*SIZE )
             ]
             _type_ = 'g' # fake it
+            # we can cast 8 bytes long double in 16 bytes long double
+            if HOSTSIZE > SIZE:
+                def __eq__(thisself, other):
+                    v = self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)).value
+                    return v == other
+                def __repr__(thisself):
+                    return repr(self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)))
         self.c_longdouble = c_longdouble
         return
 

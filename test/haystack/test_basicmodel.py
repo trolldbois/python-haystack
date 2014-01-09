@@ -65,7 +65,6 @@ class TestLoadMembers(SrcTests):
         ret = a.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
 
-        print self.values
         self.assertEquals(int(self.values['struct_a.a']), a.a)
         self.assertEquals(int(self.values['struct_a.b']), a.b)
         self.assertEquals(int(self.values['struct_a.c']), a.c)
@@ -73,17 +72,17 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.values['struct_a.e']), a.e)
         self.assertEquals(float(self.values['struct_a.f']), a.f)
         self.assertEquals(float(self.values['struct_a.g']), a.g)
-        # FIXME long double
-        #self.assertEquals(float(self.values['struct_a.h']), a.h)
+        self.assertEquals(float(self.values['struct_a.h']), a.h)
 
 
         offset = self.offsets['union_au'][0]
         m = self.mappings.getMmapForAddr(offset)
-        au = m.readStruct(offset, ctypes5_gen32.struct_a)
+        au = m.readStruct(offset, ctypes5_gen32.union_au)
         ret = au.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
-        print au
         self.assertEquals(int(self.values['union_au.d']), au.d)
+        self.assertEquals(float(self.values['union_au.g']), au.g)
+        self.assertEquals(float(self.values['union_au.h']), au.h)
         
         return 
 
