@@ -263,12 +263,8 @@ loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]
 
 def load(dumpname):
     """Loads a haystack dump."""
-    try:
-        memdump = LazyProcessMemoryDumpLoader( os.path.normpath(dumpname) )
-        log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
-    except IndexError,e: 
-        log.warning(e)
-        raise e
+    memdump = LazyProcessMemoryDumpLoader( os.path.normpath(dumpname) )
+    log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
     #excep mmap.error - to much openfile - increase ulimit 
     return memdump.getMappings()
 

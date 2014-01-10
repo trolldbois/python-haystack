@@ -28,6 +28,7 @@ union au {
     long double h;
 };
 
+// basic types
 int test1(){
     {
         struct a * ptr;
@@ -77,30 +78,26 @@ union b {
     signed int c;
     signed long d;
     signed long long e;
-    float f;
-    double g;
-    long double h;
+    unsigned char f;
+    char g;
 };
 
+// signed basic types
 int test2(){
     {
         union b * ptr;
 
         ptr = (union b *) malloc(sizeof(union b));
-        ptr->h = 10.0e-300;
         ptr->a = 'a';
         ptr->b = -98;
         ptr->c = +99;
-        //printf("v: a %d\nv: b %d\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
-        //                        ptr->c, ptr->d, ptr->e);
-        //printf("v: g %lf\n",ptr->g);
-        //printf("v: h %LG\nfix\n",ptr->h);
         ptr->e = -5;
 
         printf("s: union_b\n");
 
-        printf("v: a %d\nv: b %d\v: nc %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
+        printf("v: a %d\nv: b %d\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
                                 ptr->c, ptr->d, ptr->e);
+        printf("v: f %d\nv: g %d\n", ptr->f, ptr->g);
 
 
         printf("o: union_b 0x%lx\n",(unsigned long )ptr);
@@ -122,6 +119,7 @@ struct c {
     int h;
 };
 
+// bitfields
 int test3(){
     {
         struct c * ptr;
@@ -166,6 +164,7 @@ struct d {
     char * j[40];
 };
 
+// pointer types and subtypes
 int test4(){
     {
         int i = 0;

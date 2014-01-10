@@ -54,16 +54,16 @@ dumps: dumps32 dumps64
 py: $(PY32) $(PY64)
 
 %_gen32.py: test-%.c 
-	$(C2PY) -k dst $< -o $@ $(TGT32)
+	$(C2PY) -k dstu $< -o $@ $(TGT32)
 
 %_gen32.py: test-%.cpp 
-	$(C2PY) -k dst $< -o $@ $(TGT32)
+	$(C2PY) -k dstu $< -o $@ $(TGT32)
 
 %_gen64.py: test-%.c 
-	$(C2PY) -k dst $< -o $@ $(TGT64)
+	$(C2PY) -k dstu $< -o $@ $(TGT64)
 
 %_gen64.py: test-%.cpp 
-	$(C2PY) -k dst $< -o $@ $(TGT64)
+	$(C2PY) -k dstu $< -o $@ $(TGT64)
 
 
 dumps32: $(SRCS) $(DUMPS32) $(OBJS32) 

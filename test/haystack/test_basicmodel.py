@@ -66,7 +66,7 @@ class TestLoadMembers(SrcTests):
         self.mappings = None
         pass
     
-    def test_basictypes(self):
+    def test_basic_types(self):
         from test.src import ctypes5_gen32        
         # struct a - basic types
         offset = self.offsets['struct_a'][0]
@@ -96,6 +96,47 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.values['union_au.d']), au.d)
         self.assertEquals(float(self.values['union_au.g']), au.g)
         self.assertEquals(float(self.values['union_au.h']), au.h)
+        
+        return 
+
+    def test_basic_signed_types(self):
+        from test.src import ctypes5_gen32        
+        # struct a - basic types
+        offset = self.offsets['union_b'][0]
+        m = self.mappings.getMmapForAddr(offset)
+        b = m.readStruct(offset, ctypes5_gen32.union_b)
+        ret = b.loadMembers(self.mappings, 10 )
+        self.assertTrue(ret)
+        import ctypes
+        self.assertEquals(int(self.sizes['union_b']), ctypes.sizeof(b))
+        self.assertEquals(int(self.values['union_b.a']), b.a)
+        self.assertEquals(int(self.values['union_b.b']), b.b)
+        self.assertEquals(int(self.values['union_b.c']), b.c)
+        self.assertEquals(int(self.values['union_b.d']), b.d)
+        self.assertEquals(int(self.values['union_b.e']), b.e)
+        
+        return 
+
+    def test_bitfield(self):
+        from test.src import ctypes5_gen32        
+        # struct a - basic types
+        offset = self.offsets['struct_c'][0]
+        m = self.mappings.getMmapForAddr(offset)
+        c = m.readStruct(offset, ctypes5_gen32.struct_c)
+        ret = c.loadMembers(self.mappings, 10 )
+        self.assertTrue(ret)
+        print c
+
+        import ctypes
+        self.assertEquals(int(self.sizes['struct_c']), ctypes.sizeof(c))
+
+        #import code
+        #code.interact(local=locals())
+        self.assertEquals(int(self.values['struct_c.a']), c.a)
+        self.assertEquals(int(self.values['struct_c.b']), c.b)
+        self.assertEquals(int(self.values['struct_c.c']), c.c)
+        self.assertEquals(int(self.values['struct_c.d']), c.d)
+        self.assertEquals(int(self.values['struct_c.e']), c.e)
         
         return 
 
