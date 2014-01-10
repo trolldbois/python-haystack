@@ -209,7 +209,7 @@ class Test6_x32(SrcTests):
                                     self.address1, rtype='string')
     if True:
         import ctypes
-        self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
+        self.assertIn('CTypesProxy-4:4:12', '%s'%ctypes)
         self.assertEquals(ctypes.sizeof(ctypes.c_long), 4)
     self.assertIn(str(0x0aaaaaaa), retstr) # 0xaaaaaaa/178956970L
     self.assertIn(str(0x0ffffff0), retstr)
@@ -273,7 +273,7 @@ class Test6_x32(SrcTests):
     # without searching for them.
     if True:
         import ctypes
-        self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
+        self.assertIn('CTypesProxy-4:4:12', '%s'%ctypes)
         self.assertEquals(ctypes.sizeof(ctypes.c_long), 4)
 
 
@@ -304,7 +304,7 @@ class Test6_x32(SrcTests):
     self.assertEquals(node2.val2, 0xffffffff)
     if True:
         import ctypes
-        self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
+        self.assertIn('CTypesProxy-4:4:12', '%s'%ctypes)
         self.assertEquals(ctypes.sizeof(ctypes.c_long), 4)
     return 
 

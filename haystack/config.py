@@ -17,16 +17,18 @@ __status__ = "Production"
 
 log = logging.getLogger('config')
 
+# bad bad idea...
+MMAP_HACK_ACTIVE = True 
+MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
+
 class ConfigClass():
     """Project-wide config class. """
     def __init__(self):
         #self.cacheDir = os.path.normpath(outputDir)
         #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
         self.commentMaxSize = 64
-        self.mmap_hack = True # bad bad idea...
         #
         self.DUMPNAME_INDEX_FILENAME = 'mappings'
-        self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
         self.CACHE_NAME = 'cache'
         self.CACHE_STRUCT_DIR = 'structs'
         # cache file names
@@ -85,10 +87,14 @@ class ConfigClass():
     def get_word_size(self):
         return self.__size
         
-    def set_word_size(self, size):
+    def set_word_size(self, wordsize, ptrsize, ldsize):
         from haystack import types
-        self.__size = size
-        self.ctypes = types.reload_ctypes(self.__size,self.__size,2*self.__size)
+        self.__size = wordsize
+        # FIXME
+        # win  32 bits, 4,4,8
+        # linux 32 bits, 4,4,12
+        # linux 64 bits, 8,8,16
+        self.ctypes = types.reload_ctypes(wordsize, ptrsize, ldsize)
         return
         
     def makeCache(self, dumpname):
@@ -133,10 +139,31 @@ def make_config():
     cfg = ConfigClass()
     return cfg
 
-def make_config_wordsize(size):
+def make_config_win32():
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.set_word_size(size)
+    cfg.set_word_size(4,4,8)
+    return cfg
+
+def make_config_win32():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(8,8,8)
+    return cfg
+
+def make_config_linux32():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(4,4,12)
+    return cfg
+
+def make_config_linux64():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(8,8,16)
     return cfg
 

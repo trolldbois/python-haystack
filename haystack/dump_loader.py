@@ -52,6 +52,7 @@ class MemoryDumpLoader(object):
     
     isValid and loadMapping should be implemented.
     '''
+
     def __init__(self, dumpname):
         self.dumpname = os.path.normpath(dumpname)
         self.mappings = None
@@ -133,12 +134,13 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 fields.remove('')
             self.metalines.append( (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:])) )
         # make an empty config
-        self.config = config.make_config()
+        #self.config = config.make_config()
         return 
         
     def _load_memory_mappings(self):
         """ make the python objects"""
-        self_mappings = []
+        self.mappings = memory_mapping.Mappings(None, self.dumpname)
+        #self_mappings = []
         for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
             start,end = int(_start,16),int(_end,16 )
             offset = int(offset,16)
@@ -155,38 +157,39 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
             except (IOError, KeyError), e:
                 log.debug('Ignore absent file : %s'%(e))
-                mmap = memory_mapping.MemoryMapping( self.config, start, end, permissions, offset, 
+                mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
-                self_mappings.append(mmap)
+                self.mappings.append(mmap)
                 continue
             #except ValueError,e: # explicit non-loading
             #    log.debug('Ignore useless file : %s'%(e))
             #    mmap = memory_mapping.MemoryMapping(start, end, permissions, offset, 
             #                                                    major_device, minor_device, inode,pathname=mmap_pathname)
-            #    self_mappings.append(mmap)
+            #    self.mappings.append(mmap)
             #    continue
             except LazyLoadingException,e: 
-                mmap = memory_mapping.FilenameBackedMemoryMapping(self.config, e._filename, start, end, permissions, offset, 
+                mmap = memory_mapping.FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
-                self_mappings.append(mmap)
+                self.mappings.append(mmap)
                 continue
             
             if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
                 log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
-                mmap = memory_mapping.MemoryMapping( self.config, start, end, permissions, offset, 
+                mmap = memory_mapping.MemoryMapping(start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
                 mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
-            elif end-start > self.config.MAX_MAPPING_SIZE_FOR_MMAP: # use file mmap when file is too big
+            elif end-start > config.MAX_MAPPING_SIZE_FOR_MMAP: # use file mmap when file is too big
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).'%(mmap_pathname)+
                                         ' Search will fail. Buffer is needed.')
-                mmap = memory_mapping.FileBackedMemoryMapping(self.config, mmap_content_file, start, end, permissions, offset, 
+                mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
             else:
                 log.debug('Using a MemoryDumpMemoryMapping. small size')
-                mmap = memory_mapping.MemoryDumpMemoryMapping(self.config, mmap_content_file, start, end, permissions, offset, 
+                mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
-            self_mappings.append(mmap)
-        self.mappings = memory_mapping.Mappings(self.config, self_mappings, self.dumpname)
+            self.mappings.append(mmap)
+        #self.mappings = memory_mapping.Mappings(self.config, self_mappings, self.dumpname)
+        self.mappings.init_config()
         return        
 
 
@@ -250,7 +253,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
         #start = 0xc0100000
         start = 0xc0000000
         end = 0xc090d000
-        kmap = memory_mapping.MemoryDumpMemoryMapping(self.config, file(self.dumpname), start, end, permissions='rwx-', offset=0x0, 
+        kmap = memory_mapping.MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0, 
                         major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpname)
         self.mappings = memory_mapping.Mappings([kmap], self.dumpname)
 

@@ -92,8 +92,8 @@ class MemoryMapping:
          - "repr(mapping)" create a string representation of the mapping,
              useful in list contexts
     """
-    def __init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-        self.config = config
+    def __init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+        self.config = None
         self.start = start
         self.end = end
         self.permissions = permissions
@@ -102,6 +102,10 @@ class MemoryMapping:
         self.minor_device = minor_device
         self.inode = inode
         self.pathname = str(pathname) #fix None
+
+    def init_config(self, config):
+        self.config = config
+        return
 
     def __contains__(self, address):
             return self.start <= address < self.end
@@ -201,8 +205,8 @@ class ProcessMemoryMapping(MemoryMapping):
      - "readArray()": read an array, from local mmap-ed memory if mmap-ed
          useful in list contexts
     """
-    def __init__(self, config, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    def __init__(self, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+        MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._process = ref(process)
         self._local_mmap = None
         self._local_mmap_content = None
@@ -263,8 +267,8 @@ class LocalMemoryMapping(MemoryMapping):
     Local memory mapping.
     The memory space is present in local ctypes space.
     """
-    def __init__(self, config, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    def __init__(self, address, start, end, permissions, offset, major_device, minor_device, inode, pathname):
+        MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._local_mmap = (ctypes.c_ubyte * len(self)).from_address(int(address)) # DEBUG TODO byte or ubyte 
         self._address = ctypes.addressof(self._local_mmap)
         #self._vbase = self.start + self._address # shit, thats wraps up...
@@ -325,17 +329,20 @@ class LocalMemoryMapping(MemoryMapping):
     
     @classmethod
     def fromAddress(cls, memoryMapping, content_address):
-        return cls( memoryMapping.config, content_address, memoryMapping.start, memoryMapping.end, 
+        el = cls( content_address, memoryMapping.start, memoryMapping.end, 
                         memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                         memoryMapping.inode, memoryMapping.pathname)
+        el.init_config(memoryMapping.config)
+        return el
 
     @classmethod
     def fromBytebuffer(cls, memoryMapping, content):
         content_array = utils.bytes2array(content, ctypes.c_ubyte)
         content_address = ctypes.addressof(content_array)
-        el = cls( memoryMapping.config, content_address, memoryMapping.start, memoryMapping.end, 
+        el = cls( content_address, memoryMapping.start, memoryMapping.end, 
                         memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                         memoryMapping.inode, memoryMapping.pathname)
+        el.init_config(memoryMapping.config)
         el.content_array_save_me_from_gc = content_array
         return el
 
@@ -347,8 +354,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     :param offset the offset in the memory dump file from which the start offset will be mapped for end-start bytes
     :param preload mmap the memory dump at init ( default)
     """
-    def __init__(self, config, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
-        MemoryMapping.__init__(self, config, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
+        MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
         self._memdump = memdump
         log.debug('memdump %s'%( memdump))
         self._base = None
@@ -384,7 +391,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         # we do not keep the bytebuffer in memory, because it's a lost of space in most cases.
         if self._base is None:
             if hasattr(self._memdump,'fileno'): # normal file. 
-                if self.config.mmap_hack: # XXX that is the most fucked up, non-portable fuck I ever wrote.
+                if config.MMAP_HACK_ACTIVE: # XXX that is the most fucked up, non-portable fuck I ever wrote.
                     #print 'mmap_hack', self
                     #if self.pathname.startswith('/usr/lib'):
                     #    raise Exception
@@ -460,8 +467,8 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     '''
         Don't mmap the memoryMap. use the file on disk to read data.
     '''
-    def __init__(self, config, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
-        MemoryDumpMemoryMapping.__init__(self, config, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
+    def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
+        MemoryDumpMemoryMapping.__init__(self, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
         self._local_mmap = LazyMmap(self._memdump)
         log.debug( 'FileBackedMemoryMapping created')
         return
@@ -524,9 +531,9 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
     '''
         Don't mmap the memoryMap. use the file name on disk to read data.
     '''
-    def __init__(self, config, memdumpname, start, end, permissions='rwx-', offset=0x0, 
+    def __init__(self, memdumpname, start, end, permissions='rwx-', offset=0x0, 
                                             major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
-        MemoryDumpMemoryMapping.__init__(self, config, None, start, end, permissions, offset, 
+        MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset, 
                                                                             major_device, minor_device, inode, pathname, preload=False)
         self._memdumpname = memdumpname
         return 
@@ -576,20 +583,23 @@ class LazyMmap:
 
 
 class Mappings:
-    def __init__(self, config, lst, filename):
+    def __init__(self, lst, name='noname'):
         self.heaps = None
-        if type(lst) != list:
+        if lst is None:
+            self.mappings = []
+        elif type(lst) != list:
             raise TypeError('Please feed me a list')
-        self.mappings = lst
-        self.name = filename
+        else:
+            self.mappings = list(lst)
         self._target_system = None
-        self.config = self.mappings[0].config
+        self.config = None #
+        self.name = name
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
         # set the word size in this config.
         self.__wordsize = None
         self.__required_maps = []
-        self._init_word_size()
+        #self._init_word_size()
     
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
@@ -674,6 +684,11 @@ class Mappings:
         stack = self.getMmap('[stack]')[0] 
         return stack
 
+    def append(self, m):
+        self.mappings.append(m)
+        if self.config is not None:
+            m.config = self.config
+
     def search_nux_heaps(self):
         # TODO move in haystack.reverse.heapwalker
         from haystack.reverse.libc import libcheapwalker 
@@ -712,18 +727,29 @@ class Mappings:
                 break
         return self._target_system
 
-    def _init_word_size(self):
-        if self.get_target_system() == 'win32':
-            self.__wordsize = self._process_machine_arch_pe()
+    def init_config(self):
+        if self.__wordsize is not None:
+            return self.__wordsize
+        elif self.get_target_system() == 'win32':
+            self._process_machine_arch_pe()
         elif self.get_target_system() == 'linux':
-            self.__wordsize = self._process_machine_arch_elf()
+            self._process_machine_arch_elf()
         else:
             raise NotImplementedError('MACHINE is %s'%(x.e_machine))
-        return self.__wordsize
-
+        self._reset_config()
+        self.__wordsize = self.config.get_word_size()
+        return
+    
+    def _reset_config(self):
+        # This is where the config is set for all maps.
+        for m in self.mappings:
+            m.config = self.config
+        return
+    
     def _process_machine_arch_pe(self):
         import pefile
         # get the maps with read-only data
+        # find the executable image and get the PE header
         pe = None
         m = [_m for _m in self.mappings if 'r--' in _m.permissions][0]
         for m in self.mappings:
@@ -739,26 +765,28 @@ class Mappings:
         machine = pe.FILE_HEADER.Machine
         arch = pe.OPTIONAL_HEADER.Magic
         if arch == 0x10b:
-            self.config.set_word_size(4)
+            self.config = config.make_config_win32()
         elif arch == 0x20b:
-            self.config.set_word_size(8)
+            self.config = config.make_config_win64()
         else:
             raise NotImplementedError('MACHINE is %s'%(x.e_machine))
-        return self.config.get_word_size()
+        return 
 
     def _process_machine_arch_elf(self):
+        import ctypes
         from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
+        # find an executable image and get the ELF header
         m = [_m for _m in self.mappings if 'r-xp' in _m.permissions][0]
-        head = m.readBytes(m.start, self.config.ctypes.sizeof(struct_Elf_Ehdr))
+        head = m.readBytes(m.start, ctypes.sizeof(struct_Elf_Ehdr))
         x = struct_Elf_Ehdr.from_buffer_copy(head)
         self.__required_maps.append(m)
         if x.e_machine == 3:
-            self.config.set_word_size(4)
+            self.config = config.make_config_linux32()
         elif x.e_machine == 62:
-            self.config.set_word_size(8)
+            self.config = config.make_config_linux64()
         else:
             raise NotImplementedError('MACHINE is %s %s'%(x.e_machine, m.pathname))
-        return self.config.get_word_size()
+        return 
 
     def get_required_maps(self):
         return list(self.__required_maps)
@@ -930,21 +958,19 @@ def readProcessMappings(process):
     from haystack import types    
     before = None
     # save the current ctypes module.
+    mappings = Mappings(None)
     if True:
         import ctypes
         before = ctypes
     try:
-        # wordsize if not necessarly default arch wordsize
-        # is fixed by memory_dumper later.
-        cfg = config.make_config()
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
                 raise ProcessError(process, "Unable to parse memory mapping: %r" % line)
             log.debug('readProcessMappings %s'%( str(match.groups())) )
-            map = ProcessMemoryMapping(
-                cfg,
+            _map = ProcessMemoryMapping(
+                #cfg,
                 process,
                 int(match.group(1), 16),
                 int(match.group(2), 16),
@@ -954,16 +980,16 @@ def readProcessMappings(process):
                 int(match.group(6), 16),
                 int(match.group(7)),
                 match.group(8))
-            maps.append(map)
+            mappings.append(_map)
     finally:
         if type(mapsfile) is file:
             mapsfile.close()
-        
-    ret = Mappings(cfg, maps, maps[0].pathname)
+    # set the target arch        
+    mappings.init_config()
     # reposition the previous ctypes module.
     if True:
         ctypes = types.set_ctypes(before)
-    return ret
+    return mappings
 
 def readLocalProcessMappings():
     class P:
