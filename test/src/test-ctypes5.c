@@ -50,7 +50,9 @@ int test1(){
         printf("v: g %lf\n",ptr->g);
         printf("v: h %LG\n",ptr->h);
 
-        printf("o: struct_a 0x%lx\n\n",(unsigned long )ptr);
+        printf("o: struct_a 0x%lx\n",(unsigned long )ptr);
+        printf("t: sizeof %ld\n\n",sizeof(struct a));
+        printf("t: sizeof ld %ld\n\n",sizeof(long double));
     }    
     {
         union au * ptr;
@@ -64,7 +66,8 @@ int test1(){
         printf("v: g %lf\n",ptr->g);
         printf("v: h %LG\n",ptr->h);
 
-        printf("o: union_au 0x%lx\n\n",(unsigned long )ptr);
+        printf("o: union_au 0x%lx\n",(unsigned long )ptr);
+        printf("t: sizeof %ld\n\n",sizeof(union au));
     }    
     return 0;
 }
@@ -101,7 +104,8 @@ int test2(){
                                 ptr->c, ptr->d, ptr->e);
 
 
-        printf("o: union_b 0x%lx\n\n",(unsigned long )ptr);
+        printf("o: union_b 0x%lx\n",(unsigned long )ptr);
+        printf("t: sizeof %ld\n\n",sizeof(union b));
     }    
     return 0;
 }
@@ -140,7 +144,8 @@ int test3(){
         printf("v: a2 %d\nv: b2 %d\nv: c2 %d\nv: d2 %d\n",ptr->a2, ptr->b2,
                                 ptr->c2, ptr->d2);
 
-        printf("o: struct_c 0x%lx\n\n",(unsigned long )ptr);
+        printf("o: struct_c 0x%lx\n",(unsigned long )ptr);
+        printf("t: sizeof %ld\n\n",sizeof(struct c));
     }    
     return 0;
 }
@@ -209,7 +214,8 @@ int test4(){
         //printf("v: sizeof struct d %ld\n", sizeof(struct d));
         printf("s: struct_d\n");
 
-        printf("o: struct_d 0x%lx\n\n",(unsigned long )ptr);
+        printf("o: struct_d 0x%lx\n",(unsigned long )ptr);
+        printf("t: sizeof %ld\n\n",sizeof(struct d));
     }    
     return 0;
 }
