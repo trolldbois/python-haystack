@@ -92,7 +92,7 @@ class TestLoadMembers(SrcTests):
         au = m.readStruct(offset, ctypes5_gen32.union_au)
         ret = au.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
-        self.assertEquals(int(self.sizes['struct_au']), ctypes.sizeof(au))
+        self.assertEquals(int(self.sizes['union_au']), ctypes.sizeof(au))
         self.assertEquals(int(self.values['union_au.d']), au.d)
         self.assertEquals(float(self.values['union_au.g']), au.g)
         self.assertEquals(float(self.values['union_au.h']), au.h)

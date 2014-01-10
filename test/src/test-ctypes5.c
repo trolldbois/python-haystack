@@ -52,7 +52,6 @@ int test1(){
 
         printf("o: struct_a 0x%lx\n",(unsigned long )ptr);
         printf("t: sizeof %ld\n\n",sizeof(struct a));
-        printf("t: sizeof ld %ld\n\n",sizeof(long double));
     }    
     {
         union au * ptr;
