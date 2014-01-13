@@ -202,6 +202,22 @@ class TestToPyObject(SrcTests):
         return 
 
 
+    @unittest.expectedFailure
+    def test_CString(self):
+        from test.src import ctypes5_gen32
+        model.registerModule(ctypes5_gen32)
+        # struct a - basic types
+        offset = self.offsets['struct_d'][0]
+        m = self.mappings.getMmapForAddr(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(self.mappings, 10 )
+
+        obj = d.toPyObject()
+        # FIXME: how do you exprime a CString with a POINTER(c_char)
+        self.assertEquals(str(self.values['struct_d.h']), obj.h)
+
+        return 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
     #logging.basicConfig(level=logging.INFO)    
