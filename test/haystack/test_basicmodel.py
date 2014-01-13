@@ -188,6 +188,9 @@ class TestToPyObject(SrcTests):
         import code
         #print obj.f.toString()
         #code.interact(local=locals())
+        ## void pointer
+        self.assertEquals(None, obj.a)
+        #
         self.assertEquals(int(self.values['struct_d.b.e']), obj.b.e)
         self.assertEquals(int(self.values['struct_d.b2.e']), obj.b2.e)
         for i in range(9):
