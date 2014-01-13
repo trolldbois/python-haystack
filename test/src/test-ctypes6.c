@@ -59,9 +59,9 @@ int test1(){
   usual->root.flink = &node1->list;
   usual->root.blink = &node1->list;
 
-  printf("test1 0x%lx\n",(unsigned long )usual);
-  printf("test2 0x%lx\n",(unsigned long )node1);
-  printf("test3 0x%lx\n",(unsigned long )node2);
+  printf("test1 %p\n", usual);
+  printf("test2 %p\n", node1);
+  printf("test3 %p\n", node2);
   
   return 0;
 }
@@ -72,7 +72,7 @@ int main(){
 
   test1();
   
-  printf("pid %d\n",getpid());
+  printf("pid %u\n",getpid());
   fflush(stdout);
   sleep(-1);
   

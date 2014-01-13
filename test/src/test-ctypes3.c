@@ -31,7 +31,7 @@ int test3(){
   t3->val2 = 0x10101010;
   t3->val2b = 0x10101010;
   t3->me = (unsigned int *) t3;
-  printf("test3 0x%llx\n",t3);
+  printf("test3 %p\n",t3);
   
   return 0;
 }
@@ -41,7 +41,7 @@ int test1(){
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
   node->ptr2 = node;
-  printf("test1 0x%llx\n",node);
+  printf("test1 %p\n",node);
   
   return 0;
 }
@@ -49,7 +49,6 @@ int test1(){
 
 int main(){
 
-  void *handle;
   // TEST
   test1();
   test3();
@@ -58,7 +57,7 @@ int main(){
   test1();
   test3();
   
-  printf("pid %d\n",getpid());
+  printf("pid %u\n",getpid());
   fflush(stdout);
   sleep(-1);
   

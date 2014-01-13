@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 # TARGET arch is: ['-target', 'linux-i386']
+# WORD_SIZE is: 4
 # POINTER_SIZE is: 4
+# LONGDOUBLE_SIZE is: 12
 #
 import ctypes
 

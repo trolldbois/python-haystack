@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 # TARGET arch is: ['-target', 'linux-x86_64']
+# WORD_SIZE is: 8
 # POINTER_SIZE is: 8
+# LONGDOUBLE_SIZE is: 16
 #
 import ctypes
 
@@ -25,7 +27,7 @@ class struct_usual(ctypes.Structure):
     ('val1', ctypes.c_uint32),
     ('val2', ctypes.c_uint32),
     ('root', Entry),
-    ('txt', ctypes.c_char * 128),
+    ('txt', ctypes.c_byte * 128),
     ('val2b', ctypes.c_uint32),
     ('val1b', ctypes.c_uint32),
      ]

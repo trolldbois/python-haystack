@@ -83,11 +83,11 @@ int test_classes()
   //c->b = 0x33;
   //c->c = 0x0333;
   
-  printf(" a is at 0x%lx size: %ld \n", (unsigned long )a, sizeof(cA));
-  printf(" b is at 0x%lx size: %ld \n", (unsigned long )b, sizeof(cB));
-  printf(" c is at 0x%lx size: %ld \n", (unsigned long )c, sizeof(cC));
-  printf(" d is at 0x%lx size: %ld \n", (unsigned long )d, sizeof(cD));
-  printf(" e is at 0x%lx size: %ld \n", (unsigned long )e, sizeof(cE));
+  printf(" a is at %p size: %zu \n", a, sizeof(cA));
+  printf(" b is at %p size: %zu \n", b, sizeof(cB));
+  printf(" c is at %p size: %zu \n", c, sizeof(cC));
+  printf(" d is at %p size: %zu \n", d, sizeof(cD));
+  printf(" e is at %p size: %zu \n", e, sizeof(cE));
 
   std::cout << " -- end classes --" << std::endl;
   
@@ -103,10 +103,10 @@ int test_structs()
   sC * c = (sC * ) malloc(sizeof(sC));
   sD * d = (sD * ) malloc(sizeof(sD));
 
-  printf(" a is at 0x%lx size: %ld \n", (unsigned long )a, sizeof(sA));
-  printf(" b is at 0x%lx size: %ld \n", (unsigned long )b, sizeof(sB));
-  printf(" c is at 0x%lx size: %ld \n", (unsigned long )c, sizeof(sC));
-  printf(" d is at 0x%lx size: %ld \n", (unsigned long )d, sizeof(sD));
+  printf(" a is at %p size: %zu \n", a, sizeof(sA));
+  printf(" b is at %p size: %zu \n", b, sizeof(sB));
+  printf(" c is at %p size: %zu \n", c, sizeof(sC));
+  printf(" d is at %p size: %zu \n", d, sizeof(sD));
 
   std::cout << " -- end structs --" << std::endl;
   

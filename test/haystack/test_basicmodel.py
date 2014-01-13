@@ -132,11 +132,15 @@ class TestLoadMembers(SrcTests):
 
         #import code
         #code.interact(local=locals())
-        self.assertEquals(int(self.values['struct_c.a']), c.a)
-        self.assertEquals(int(self.values['struct_c.b']), c.b)
-        self.assertEquals(int(self.values['struct_c.c']), c.c)
-        self.assertEquals(int(self.values['struct_c.d']), c.d)
-        self.assertEquals(int(self.values['struct_c.e']), c.e)
+        self.assertEquals(int(self.values['struct_c.a1']), c.a1)
+        self.assertEquals(int(self.values['struct_c.b1']), c.b1)
+        self.assertEquals(int(self.values['struct_c.c1']), c.c1)
+        self.assertEquals(int(self.values['struct_c.d1']), c.d1)
+        self.assertEquals(int(self.values['struct_c.a2']), c.a2)
+        self.assertEquals(int(self.values['struct_c.b2']), c.b2)
+        self.assertEquals(int(self.values['struct_c.c2']), c.c2)
+        self.assertEquals(int(self.values['struct_c.d2']), c.d2)
+        self.assertEquals(int(self.values['struct_c.h']), c.h)
         
         return 
 

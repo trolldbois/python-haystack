@@ -45,14 +45,14 @@ int test1(){
 
         printf("s: struct_a\n");
 
-        printf("v: a %d\nv: b %d\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
+        printf("v: a %hhu\nv: b %hu\nv: c %u\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
                                 ptr->c, ptr->d, ptr->e);
         printf("v: f %lf\n",ptr->f);
         printf("v: g %lf\n",ptr->g);
         printf("v: h %LG\n",ptr->h);
 
-        printf("o: struct_a 0x%lx\n",(unsigned long )ptr);
-        printf("t: sizeof %ld\n\n",sizeof(struct a));
+        printf("o: struct_a %p\n", ptr);
+        printf("t: sizeof %zu\n\n", sizeof(struct a));
     }    
     {
         union au * ptr;
@@ -66,8 +66,8 @@ int test1(){
         printf("v: g %lf\n",ptr->g);
         printf("v: h %LG\n",ptr->h);
 
-        printf("o: union_au 0x%lx\n",(unsigned long )ptr);
-        printf("t: sizeof %ld\n\n",sizeof(union au));
+        printf("o: union_au %p\n", ptr);
+        printf("t: sizeof %zu\n\n", sizeof(union au));
     }    
     return 0;
 }
@@ -95,13 +95,13 @@ int test2(){
 
         printf("s: union_b\n");
 
-        printf("v: a %d\nv: b %d\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
+        printf("v: a %hhd\nv: b %hd\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
                                 ptr->c, ptr->d, ptr->e);
-        printf("v: f %d\nv: g %d\n", ptr->f, ptr->g);
+        printf("v: f %hhu\nv: g %hhd\n", ptr->f, ptr->g);
 
 
-        printf("o: union_b 0x%lx\n",(unsigned long )ptr);
-        printf("t: sizeof %ld\n\n",sizeof(union b));
+        printf("o: union_b %p\n", ptr);
+        printf("t: sizeof %zu\n\n", sizeof(union b));
     }    
     return 0;
 }
@@ -112,12 +112,15 @@ struct c {
     unsigned int b1:4;
     unsigned int c1:10;
     unsigned int d1:2;
-    signed char a2;
+    char a2;
     unsigned int b2:4;
     unsigned int c2:10;
-    unsigned long long d2:3;
+    unsigned long long d2:2;
     int h;
 };
+
+// debug
+#include <stddef.h>
 
 // bitfields
 int test3(){
@@ -133,16 +136,18 @@ int test3(){
         ptr->b2 = 3;
         ptr->c2 = 8;
         ptr->d2 = 1;
+        ptr->h = -1;
 
         printf("s: struct_c\n");
 
-        printf("v: a1 %d\nv: b1 %d\nv: c1 %d\nv: d1 %d\n",ptr->a1, ptr->b1,
+        printf("v: a1 %u\nv: b1 %u\nv: c1 %u\nv: d1 %u\n",ptr->a1, ptr->b1,
                                 ptr->c1, ptr->d1);
-        printf("v: a2 %d\nv: b2 %d\nv: c2 %d\nv: d2 %d\n",ptr->a2, ptr->b2,
+        printf("v: a2 %hhd\nv: b2 %u\nv: c2 %u\nv: d2 %u\n",ptr->a2, ptr->b2,
                                 ptr->c2, ptr->d2);
+        printf("v: h %d\n", ptr->h);
 
-        printf("o: struct_c 0x%lx\n",(unsigned long )ptr);
-        printf("t: sizeof %ld\n\n",sizeof(struct c));
+        printf("o: struct_c %p\n", ptr);
+        printf("t: sizeof %zu\n\n", sizeof(struct c));
     }    
     return 0;
 }
@@ -212,8 +217,8 @@ int test4(){
         //printf("v: sizeof struct d %ld\n", sizeof(struct d));
         printf("s: struct_d\n");
 
-        printf("o: struct_d 0x%lx\n",(unsigned long )ptr);
-        printf("t: sizeof %ld\n\n",sizeof(struct d));
+        printf("o: struct_d %p\n", ptr);
+        printf("t: sizeof %zu\n\n", sizeof(struct d));
     }    
     return 0;
 }
@@ -226,7 +231,7 @@ int main(){
     test3();
     test4();
 
-    printf("pid %d\n",getpid());
+    printf("pid %u\n",getpid());
     fflush(stdout);
     sleep(-1);
 
