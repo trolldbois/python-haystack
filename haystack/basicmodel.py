@@ -651,6 +651,10 @@ class LoadableMembers(object):
         
     def _attrToPyObject(self, attr, field, attrtype):
         import ctypes
+        #print field, attrtype
+        #if field =='h':
+        #    import code
+        #    code.interact(local=locals())
         if ctypes.is_basic_type(attrtype):
             if ctypes.is_basic_ctype(type(attr)):
                 obj = attr.value
@@ -659,8 +663,9 @@ class LoadableMembers(object):
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             obj = attr.toPyObject()
-        elif ctypes.is_array_of_basic_type(attrtype): 
-            obj = utils.array2bytes(attr)
+        elif ctypes.is_array_of_basic_type(attrtype):
+            # return a list of int, float, or a char[] to str
+            obj = utils.ctypes_to_python_array(attr)
         elif ctypes.is_array_type(attrtype): 
             ## array of something else than int/byte
             obj = []

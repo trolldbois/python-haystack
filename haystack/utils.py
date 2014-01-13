@@ -101,6 +101,27 @@ def offsetof(typ, membername):
     """
     return getattr(typ, membername).offset
 
+def ctypes_to_python_array(array):
+    """Converts an array of undetermined Basic Ctypes class to a python array, 
+    by guessing it's type from it's class name.
+
+    This is a bad example of introspection.
+    """
+    import ctypes
+    if isinstance(array, str):
+        # special case for c_char[]
+        return array
+    if not ctypes.is_array_of_basic_instance(array):
+        raise TypeError('NOT-AN-Basic-Type-ARRAY')
+    if array._type_ in [ ctypes.c_int, ctypes.c_uint, ctypes.c_long, 
+                ctypes.c_ulong, ctypes.c_ubyte, ctypes.c_byte]:
+        return [long(el) for el in array]
+    if array._type_ in [ ctypes.c_float, ctypes.c_double, ctypes.c_longdouble]:
+        return [float(el) for el in array]
+    sb = ''.join([pack(array._type_._type_, el) for el in array])
+    return sb
+
+
 def array2bytes(array):
     """Converts an array of undetermined Basic Ctypes class to a byte string, 
     by guessing it's type from it's class name.

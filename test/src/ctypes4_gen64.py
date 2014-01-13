@@ -14,10 +14,10 @@ class class_cA(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
     ('_m1', ctypes.c_int32),
-    ('_x', ctypes.c_byte),
+    ('_x', ctypes.c_char),
     ('PADDING_0', ctypes.c_ubyte * 3),
     ('a', ctypes.c_int32),
-    ('p', ctypes.c_byte * 5),
+    ('p', ctypes.c_char * 5),
     ('PADDING_1', ctypes.c_ubyte * 3),
      ]
 

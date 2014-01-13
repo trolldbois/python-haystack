@@ -44,7 +44,7 @@ int test1(){
         ptr->h = 10.0e-300;
 
         printf("s: struct_a\n");
-
+        // unsigned char is a c_ubyte
         printf("v: a %hhu\nv: b %hu\nv: c %u\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
                                 ptr->c, ptr->d, ptr->e);
         printf("v: f %lf\n",ptr->f);
@@ -97,7 +97,7 @@ int test2(){
 
         printf("v: a %hhd\nv: b %hd\nv: c %d\nv: d %ld\nv: e %lld\n",ptr->a,ptr->b,
                                 ptr->c, ptr->d, ptr->e);
-        printf("v: f %hhu\nv: g %hhd\n", ptr->f, ptr->g);
+        printf("v: f %hhu\nv: g %c\n", ptr->f, ptr->g);
 
 
         printf("o: union_b %p\n", ptr);
@@ -142,7 +142,7 @@ int test3(){
 
         printf("v: a1 %u\nv: b1 %u\nv: c1 %u\nv: d1 %u\n",ptr->a1, ptr->b1,
                                 ptr->c1, ptr->d1);
-        printf("v: a2 %hhd\nv: b2 %u\nv: c2 %u\nv: d2 %u\n",ptr->a2, ptr->b2,
+        printf("v: a2 %c\nv: b2 %u\nv: c2 %u\nv: d2 %u\n",ptr->a2, ptr->b2,
                                 ptr->c2, ptr->d2);
         printf("v: h %d\n", ptr->h);
 
@@ -179,10 +179,18 @@ int test4(){
         union au * ptrau;
         struct d * ptr;
 
+        printf("s: struct_d.b\n");
         ptra = (struct a *) malloc(sizeof(struct a));
         ptra->e = 41;
+        printf("v: e %llu\n", ptra->e);
+        printf("o: struct_d.b %p\n", ptra);
+        
+        printf("s: struct_d.b2\n");
         ptrau = (union au *) malloc(sizeof(union au));
         ptrau->e = 42;
+        printf("v: e %llu\n", ptrau->e);
+        printf("o: struct_d.b2 %p\n", ptrau);
+
         pi = (int *) malloc(sizeof(int));
         (*pi) = 101;
         pi2 = (int *) malloc(sizeof(int));
@@ -192,8 +200,9 @@ int test4(){
         txt2 = (char *) malloc(42);
         strcpy(txt2,"lorem ipsum 2\0");
         
+        printf("s: struct_d\n");
         ptr = (struct d *) malloc(sizeof(struct d));
-        ptr->a = (void *) 0xaaaaaaaa;
+        ptr->a = (void *) ptr; // need to be valid memory addr
         ptr->b = ptra;
         ptr->b2 = ptrau;
         for ( i=0;i<10;i++) {
@@ -203,21 +212,24 @@ int test4(){
             ptr->f[i] = 66;
             ptr->f2[i] = pi;
             ptr->c3[i] = ptrau;
+            printf("v: c[%d].a %hhu\n", i, ptr->c[i].a);
+            printf("v: f[%d] %u\n", i, ptr->f[i]);
         }
         ptr->d = ptr;
         ptr->e = pi;
+        printf("v: e %u\n", (*ptr->e));
         ptr->f2[9] = pi2;
         ptr->g = 'g';
+        printf("v: g %c\n", ptr->g);
         ptr->h = txt;
+        printf("v: h %s\n", ptr->h);
         strcpy(ptr->i, txt2);
+        printf("v: i %s\n", ptr->i);
         for ( i=0;i<40;i+=2)
             ptr->j[i] = txt;
             ptr->j[i+1] = txt2;
-
-        //printf("v: sizeof struct d %ld\n", sizeof(struct d));
-        printf("s: struct_d\n");
-
         printf("o: struct_d %p\n", ptr);
+
         printf("t: sizeof %zu\n\n", sizeof(struct d));
     }    
     return 0;

@@ -7,6 +7,7 @@ import logging
 import unittest
 import sys
 
+from haystack import model
 from haystack import dump_loader
 from haystack import utils
 
@@ -40,7 +41,7 @@ class SrcTests(unittest.TestCase):
             elif line.startswith('v: '):
                 # value of members
                 fields = line[3:].split(' ')
-                k,v = fields[0],fields[1].strip()
+                k,v = fields[0],' '.join(fields[1:]).strip()
                 n = '%s.%s'%(name,k)
                 values[n] = v
             elif line.startswith('t: '): 
@@ -114,6 +115,8 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.values['union_b.c']), b.c)
         self.assertEquals(int(self.values['union_b.d']), b.d)
         self.assertEquals(int(self.values['union_b.e']), b.e)
+        # char 251
+        self.assertEquals((self.values['union_b.g']), b.g)
         
         return 
 
@@ -133,7 +136,7 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.values['struct_c.b1']), c.b1)
         self.assertEquals(int(self.values['struct_c.c1']), c.c1)
         self.assertEquals(int(self.values['struct_c.d1']), c.d1)
-        self.assertEquals(int(self.values['struct_c.a2']), c.a2)
+        self.assertEquals(str(self.values['struct_c.a2']), c.a2)
         self.assertEquals(int(self.values['struct_c.b2']), c.b2)
         self.assertEquals(int(self.values['struct_c.c2']), c.c2)
         self.assertEquals(int(self.values['struct_c.d2']), c.d2)
@@ -152,19 +155,49 @@ class TestLoadMembers(SrcTests):
 
         import ctypes
         self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
+        # other tests are too complex to be done in ctypes.
+        # that is why d.toPyObject() exists.
 
-        print d.toString()
-        #print d
+class TestToPyObject(SrcTests):
+    """Basic types"""
+    def setUp(self):
+        self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+        self._load_offsets_values('test/src/test-ctypes5.32.dump')
+    
+    def tearDown(self):
+        from haystack import model
+        model.reset()
+        self.mappings = None
+        pass
 
-        self.assertEquals(int(self.values['struct_d.a1']), d.a1)
-        self.assertEquals(int(self.values['struct_d.b1']), d.b1)
-        self.assertEquals(int(self.values['struct_d.c1']), d.c1)
-        self.assertEquals(int(self.values['struct_d.d1']), d.d1)
-        self.assertEquals(int(self.values['struct_d.a2']), d.a2)
-        self.assertEquals(int(self.values['struct_d.b2']), d.b2)
-        self.assertEquals(int(self.values['struct_d.c2']), d.c2)
-        self.assertEquals(int(self.values['struct_d.d2']), d.d2)
-        self.assertEquals(int(self.values['struct_d.h']), d.h)
+    def test_complex(self):
+        from test.src import ctypes5_gen32
+        model.registerModule(ctypes5_gen32)
+        # struct a - basic types
+        offset = self.offsets['struct_d'][0]
+        m = self.mappings.getMmapForAddr(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(self.mappings, 10 )
+        self.assertTrue(ret)
+
+        import ctypes
+        self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
+        
+        obj = d.toPyObject()
+        #print obj.toString()
+        import code
+        #print obj.f.toString()
+        #code.interact(local=locals())
+        self.assertEquals(int(self.values['struct_d.b.e']), obj.b.e)
+        self.assertEquals(int(self.values['struct_d.b2.e']), obj.b2.e)
+        for i in range(9):
+            self.assertEquals(int(self.values['struct_d.c[%d].a'%(i)]), obj.c[i].a)
+            self.assertEquals(int(self.values['struct_d.f[%d]'%(i)]), obj.f[i])
+        self.assertEquals(int(self.values['struct_d.e']), obj.e)
+        # FIXME: how do you exprime a CString with a POINTER(c_char)
+        #self.assertEquals(str(self.values['struct_d.h']), obj.h)
+        self.assertEquals(str(self.values['struct_d.i']), obj.i)
+
         
         return 
 

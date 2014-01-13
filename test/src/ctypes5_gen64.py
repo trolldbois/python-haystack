@@ -48,7 +48,7 @@ class union_b(ctypes.Union):
     ('d', ctypes.c_int64),
     ('e', ctypes.c_int64),
     ('f', ctypes.c_ubyte),
-    ('g', ctypes.c_byte),
+    ('g', ctypes.c_char),
     ('PADDING_0', ctypes.c_ubyte * 7),
      ]
 
@@ -59,7 +59,7 @@ class struct_c(ctypes.Structure):
     ('b1', ctypes.c_uint8, 4),
     ('c1', ctypes.c_uint16, 10),
     ('d1', ctypes.c_uint16, 2),
-    ('a2', ctypes.c_byte),
+    ('a2', ctypes.c_char),
     ('b2', ctypes.c_uint8, 4),
     ('PADDING_0', ctypes.c_uint8, 4),
     ('c2', ctypes.c_uint16, 10),
@@ -84,11 +84,11 @@ struct_d._fields_ = [
     ('e', ctypes.POINTER(ctypes.c_int32)),
     ('f', ctypes.c_int32 * 10),
     ('f2', ctypes.POINTER(ctypes.c_int32) * 10),
-    ('g', ctypes.c_byte),
+    ('g', ctypes.c_char),
     ('PADDING_1', ctypes.c_ubyte * 7),
-    ('h', ctypes.POINTER(ctypes.c_byte)),
-    ('i', ctypes.c_byte * 32),
-    ('j', ctypes.POINTER(ctypes.c_byte) * 40),
+    ('h', ctypes.POINTER(ctypes.c_char)),
+    ('i', ctypes.c_char * 32),
+    ('j', ctypes.POINTER(ctypes.c_char) * 40),
     ('PADDING_2', ctypes.c_ubyte * 8),
 ]
 
