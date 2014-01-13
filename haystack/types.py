@@ -165,6 +165,23 @@ class CTypesProxy(object):
                     return v == other
                 def __repr__(thisself):
                     return repr(self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)))
+                @property
+                def value(thisself):
+                    return self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)).value
+            else:
+                # good luck with that.
+                def __eq__(thisself, other):
+                    other2 = (self.c_ubyte*SIZE).from_address(self.addressof(other))
+                    for i in range(SIZE):
+                        if thisself[i] != other2[i]:
+                            return False
+                    return True
+                def __repr__(thisself):
+                    return 'c_longdouble(fake)'
+                @property
+                def value(thisself):
+                    return float(0.0) # FIXME
+                #
         self.c_longdouble = c_longdouble
         return
 

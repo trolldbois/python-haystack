@@ -125,13 +125,10 @@ class TestLoadMembers(SrcTests):
         c = m.readStruct(offset, ctypes5_gen32.struct_c)
         ret = c.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
-        print c
 
         import ctypes
         self.assertEquals(int(self.sizes['struct_c']), ctypes.sizeof(c))
 
-        #import code
-        #code.interact(local=locals())
         self.assertEquals(int(self.values['struct_c.a1']), c.a1)
         self.assertEquals(int(self.values['struct_c.b1']), c.b1)
         self.assertEquals(int(self.values['struct_c.c1']), c.c1)
@@ -141,6 +138,33 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.values['struct_c.c2']), c.c2)
         self.assertEquals(int(self.values['struct_c.d2']), c.d2)
         self.assertEquals(int(self.values['struct_c.h']), c.h)
+        
+        return 
+
+    def test_complex(self):
+        from test.src import ctypes5_gen32        
+        # struct a - basic types
+        offset = self.offsets['struct_d'][0]
+        m = self.mappings.getMmapForAddr(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(self.mappings, 10 )
+        self.assertTrue(ret)
+
+        import ctypes
+        self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
+
+        print d.toString()
+        #print d
+
+        self.assertEquals(int(self.values['struct_d.a1']), d.a1)
+        self.assertEquals(int(self.values['struct_d.b1']), d.b1)
+        self.assertEquals(int(self.values['struct_d.c1']), d.c1)
+        self.assertEquals(int(self.values['struct_d.d1']), d.d1)
+        self.assertEquals(int(self.values['struct_d.a2']), d.a2)
+        self.assertEquals(int(self.values['struct_d.b2']), d.b2)
+        self.assertEquals(int(self.values['struct_d.c2']), d.c2)
+        self.assertEquals(int(self.values['struct_d.d2']), d.d2)
+        self.assertEquals(int(self.values['struct_d.h']), d.h)
         
         return 
 

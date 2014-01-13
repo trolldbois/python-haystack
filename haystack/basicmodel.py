@@ -451,13 +451,18 @@ class LoadableMembers(object):
         import ctypes
         s=''
         if ctypes.is_basic_type(attrtype): 
-            s = prefix+'"%s": %s, # %s'%(field, repr(attr), attrtype.__name__)
+            if ctypes.is_basic_ctype(type(attr)):
+                value = attr.value
+            else:
+                value = repr(attr)
+            s = prefix+'"%s": %s, # %s'%(field, value, attrtype.__name__)
             if attr is None:
                 raise ValueError('This field %s has not been loaded'%(field))
-            if ctypes.is_basic_ctype(type(attr)):
-                s += ' '+hex(attr.value)
-            else:
-                s += ' '+hex(attr)
+            # print a nice hex output on int types
+            try:
+                s += ' '+hex(value)
+            except TypeError as e:
+                pass
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             attr._mappings_ = self._mappings_
             s = prefix + '"%s": %s,'%(field,
