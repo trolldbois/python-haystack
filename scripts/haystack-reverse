@@ -119,7 +119,7 @@ def graph(opt):
 
   
 def argparser():
-  rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
+  rootparser = argparse.ArgumentParser(prog='haystack-reverse',
     description='Several tools to reverse engineer structures on the heap.')
 
   rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')

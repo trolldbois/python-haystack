@@ -118,7 +118,7 @@ class MemoryDumper:
     for m in self.mappings:
       try:
         self._dump_mapping(m, destdir)
-      except IOError,e:
+      except Exception,e:
         err+=1
         log.warning(e)
         pass # no se how to read windows
