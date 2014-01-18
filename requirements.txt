@@ -1,5 +1,4 @@
 python-ptrace
 argparse
 networkx
-python-levenschtein
-#python-networkx
+python-levenshtein
