@@ -146,7 +146,7 @@ def make_config_win32():
     cfg.set_word_size(4,4,8)
     return cfg
 
-def make_config_win32():
+def make_config_win64():
     """    """
     from haystack import types
     cfg = ConfigClass()
