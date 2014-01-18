@@ -138,7 +138,7 @@ Quick info:
 
 ::
 
-|    usage: haystack-reverser [-h] [--debug]
+|    usage: haystack-reverse  [-h] [--debug]
 |                             dumpname
 |                             {instances,typemap,group,parent,graph,show,makesig,clean}
 |                             ...
