@@ -21,9 +21,9 @@ __status__ = "Production"
 
 
 class TestListStruct(unittest.TestCase):
-    '''
+    """
     haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
-    '''
+    """
 
     def setUp(self):
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
@@ -88,9 +88,9 @@ class TestListStruct(unittest.TestCase):
             
 
 class TestListStructTest5:#(unittest.TestCase):
-    '''
+    """
     haystack --dumpname putty.1.dump --string haystack.reverse.win32.win7heap.HEAP refresh 0x390000
-    '''
+    """
 
     def setUp(self):
         offset = 0x08f75008

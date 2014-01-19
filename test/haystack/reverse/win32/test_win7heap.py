@@ -173,7 +173,7 @@ if __name__ == '__main__':
     #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
     #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
     #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
-    #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+    logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     #unittest.TextTestRunner(verbosity=2).run(suite)

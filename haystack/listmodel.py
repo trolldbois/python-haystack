@@ -116,7 +116,7 @@ class ListModel(object):
                 # load the list entry structure members
                 if not st.loadMembers(mappings, maxDepth-1):
                     log.error('Error while loading members on %s'%(self.__class__.__name__))
-                    print st
+                    #print st
                     raise ValueError('error while loading members')
 
         return True
@@ -253,6 +253,7 @@ def declare_double_linked_list_type(structType, forward, backward):
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = utils.getaddress(link)
+            print fieldname,addr,hex(addr)
             log.debug('iterateList got a <%s>/0x%x'%(link.__class__.__name__,addr))
             nb=0
             while addr not in done:

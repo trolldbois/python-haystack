@@ -280,12 +280,12 @@ class LoadableMembers(object):
         wrong.
         """
         self._mappings_ = mappings
-        if maxDepth == 0:
+        if maxDepth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug('Struct partially LOADED. %s not loaded'%(
                                                        self.__class__.__name__))
             return True
-        maxDepth-=1
+        maxDepth -= 1
         if not self.isValid(mappings):
             return False
         log.debug('- <%s> do loadMembers -'%(self.__class__.__name__))
