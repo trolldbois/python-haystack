@@ -266,7 +266,7 @@ def declare_double_linked_list_type(structType, forward, backward):
                 st = memoryMap.readStruct( addr, structType)
                 st._orig_addr_ = addr
                 mappings.keepRef(st, structType, addr)
-                log.debug("keepRefx2 %s.%s @%x"%(structType, fieldname, addr    ))
+                log.debug("keepRefx2 %s.%s: @%x"%(structType.__name__, fieldname, addr))
                 yield addr
                 # next
                 link = getattr(st, fieldname)
