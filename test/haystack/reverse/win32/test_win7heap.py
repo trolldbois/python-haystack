@@ -198,7 +198,7 @@ class TestWin7Heap(unittest.TestCase):
         # LFH bins are in some chunks, at heap.FrontEndHeap
         
 
-    def test_getFreeLists(self):
+    def test_get_freelists(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.reverse.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
@@ -206,11 +206,18 @@ class TestWin7Heap(unittest.TestCase):
         h = self._mappings.getMmapForAddr(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
-        logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
-        logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+
+        allocated, free = heap.get_chunks(self._mappings)
         logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-        logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-        freelists = heap.getFreeLists(self._mappings)
+        freelists = heap.get_freelists(self._mappings)
+        freelists2 = heap.get_freelists2(self._mappings)
+        print len(freelists)
+        print len(freelists2)
+        print freelists == freelists2
+
+        import code
+        code.interact(local=locals())
+
 
     def test_getFrontendChunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )

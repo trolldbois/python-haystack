@@ -705,6 +705,7 @@ class Mappings:
 
     def search_win_heaps(self):
         # TODO move in haystack.reverse.heapwalker
+        # FIXME, why do we keep a ref to children mmapping ?
         from haystack.reverse.win32 import win7heapwalker # FIXME win7, winxp...
         heaps = list()
         for mapping in self.mappings:

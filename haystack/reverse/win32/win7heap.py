@@ -22,9 +22,10 @@ List of chunks allocated by the backend allocators are linked in
 heap.segment.FirstValidEntry to LastValidEntry.
 LFH allocations are in one big chunk of that list at heap.FrontEndHeap.
 
-You can fetch addresses and size of chunks with HEAP.get_chunks .
-You can fetch segments with HEAP.get_segment_list .
-You can fetch UCR segments with HEAP.get_UCR_segment_list .
+You can fetch chunks tuple(address,size) with HEAP.get_chunks .
+
+You can fetch ctypes segments with HEAP.get_segment_list .
+You can fetch ctypes UCR segments with HEAP.get_UCR_segment_list .
 
 """
 
@@ -196,6 +197,8 @@ _HEAP.expectedValues = {
 }
 _HEAP._listHead_ = [('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
                     ('UCRList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', 0 ),
+                    # for get_freelists. offset is sizeof(HEAP_ENTRY)
+                    ('FreeLists', _HEAP_FREE_ENTRY, 'FreeList', -8), 
                     ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
 #HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
@@ -239,8 +242,8 @@ def _HEAP_get_segment_list(self, mappings):
 _HEAP.get_segment_list = _HEAP_get_segment_list
 
 def _HEAP_get_chunks(self, mappings):
-    """Returns a list of tuple (address,size) for all chunks in the 
-    backend allocator."""
+    """Returns a list of tuple(address,size) for all chunks in
+     the backend allocator."""
     allocated = list()
     free = list()
     for segment in self.get_segment_list(mappings):
@@ -271,7 +274,7 @@ def _HEAP_get_chunks(self, mappings):
                 allocated.append( (chunk_addr, chunk_header.Size*8) )
             else:
                 log.debug('Chunk 0x%0.8x is FREE'%(chunk_addr))
-                free.append( (chunk_addr, chunk_header.Size*8) )                
+                free.append( (chunk_addr, chunk_header.Size*8) )
                 pass
             chunk_addr += chunk_header.Size*8
     return (allocated, free)
@@ -556,18 +559,30 @@ def _get_chunk(mappings, heap, entry_addr):
     chunk_header._orig_addr_ = entry_addr
     return chunk_header
 
-def _HEAP_getFreeLists(self, mappings):
-    """ Understanding_the_LFH.pdf page 18 ++
+def _HEAP_get_freelists(self, mappings):
+    """Returns the list of free chunks.
+    
+    This method is very important because its used by memory_mappings to 
+    load mappings that contains subsegment of a heap.
+    
+    Understanding_the_LFH.pdf page 18 ++
     We iterate on _HEAP.FreeLists to get ALL free blocks.
     
     @returns freeblock_addr : the address of the _HEAP_ENTRY (chunk header)
-                     size                     : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
+        size : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
     """
     res = list()
+    for freeblock in self.iterateListField( mappings, 'FreeLists'):
+        if self.EncodeFlagMask:
+            chunk_header = _HEAP_ENTRY_decode(freeblock, self)
+        # size = header + freespace
+        res.append( (freeblock._orig_addr_, chunk_header.Size ))
+    return res
+    
+def _HEAP_get_freelists2(self, mappings):
+    res = list()
     sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
-    # FIXME - should be 
-    ## for freeblock in self.iterateListField( mappings, 'FreeLists'):
-    for freeblock_addr in self.FreeLists._iterateList( mappings):
+    for freeblock_addr in self.FreeLists._iterateList(mappings):
         if freeblock_addr == sentinel:
             continue
         m = mappings.getMmapForAddr(freeblock_addr)
@@ -588,7 +603,8 @@ def _HEAP_getFreeLists(self, mappings):
     return res
     
 
-_HEAP.getFreeLists = _HEAP_getFreeLists
+_HEAP.get_freelists = _HEAP_get_freelists
+_HEAP.get_freelists2 = _HEAP_get_freelists2
 
 def _HEAP_getFreeListsWinXP(self, mappings):
     """ Understanding_the_LFH.pdf page 17 """

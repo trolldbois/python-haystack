@@ -20,7 +20,9 @@ log=logging.getLogger('win7heapwalker')
 
 
 class Win7HeapWalker(heapwalker.HeapWalker):
-    """     
+    """
+    Helpers functions that return pure python lists - no ctypes in here.
+    
     Backend allocation in BlocksIndex
     FTH allocation in Heap.LocalData[n].SegmentInfo.CachedItems
     Virtual allocation
@@ -116,6 +118,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         """ returns addr,size of committed,free heap entries in blocksindex"""
         if (self._backend_committed, self._backend_free) == (None, None):
             self._backend_committed, self._backend_free = self._heap.get_chunks(self._mappings)
+            # HEAP_ENTRY.Size is in chunk size. (8 bytes )
             allocsize = sum( [c[1] for c in self._backend_committed ])
             freesize = sum( [c[1] for c in self._backend_free ])
             log.debug('\t+ Segment Chunks: alloc: %0.4d [%0.5d B] free: %0.4d [%0.5d B]'%( 
@@ -140,7 +143,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
     def _get_freelists(self):
         # FIXME check if freelists and committed backend collides.
-        free_lists = [ (freeblock_addr, size) for freeblock_addr, size in self._heap.getFreeLists(self._mappings)]
+        free_lists = [ (freeblock_addr, size) for freeblock_addr, size in self._heap.get_freelists(self._mappings)]
         freesize = sum( [c[1] for c in free_lists ])
         log.debug('\t+ freeLists: free: %0.4d [%0.5d B]'%( len(free_lists), freesize ) )
         return free_lists
