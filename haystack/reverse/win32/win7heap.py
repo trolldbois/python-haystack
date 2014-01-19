@@ -59,7 +59,7 @@ _LFH_BLOCK_ZONE._fields_ = [
 
 _HEAP_SEGMENT.expectedValues = {
     'SegmentSignature':[0xffeeffee],
-# Cannot just ignore it... need to load it. FIXME
+# Cannot just ignore it. need to load it. FIXME
 #    'LastValidEntry': constraints.IgnoreMember,
 }
 
@@ -226,7 +226,7 @@ def _HEAP_getSegmentList(self, mappings):
                 chunk_header = _get_chunk(mappings, self, chunk_addr)
             if self.EncodeFlagMask: #heap.EncodeFlagMask
                 chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
-            #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+            log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
             
             if ((chunk_header.Flags & 1) == 1):
                 log.debug('Chunk 0x%0.8x is in use size: %0.5x'%(chunk_addr, chunk_header.Size*8))
@@ -307,25 +307,25 @@ def _HEAP_getFrontendChunks(self, mappings):
     all_free = list()
     all_committed = list()
     log.debug('_HEAP_getFrontendChunks')
+    ptr = self.FrontEndHeap
+    addr = utils.getaddress(ptr)
     if self.FrontEndHeapType == 1: # windows XP per default
-        ptr = self.FrontEndHeap
         ## TODO delete this ptr from the heap-segment entries chunks
         for x in range(128):
-            log.debug('finding lookaside %d at @%x'%(x, ptr))
-            m = mappings.getMmapForAddr(ptr)
-            st = m.readStruct( ptr, _HEAP_LOOKASIDE)
+            log.debug('finding lookaside %d at @%x'%(x, addr))
+            m = mappings.getMmapForAddr(addr)
+            st = m.readStruct(addr, _HEAP_LOOKASIDE)
             # load members on self.FrontEndHeap car c'est un void *
             for free in st.iterateList('ListHead'): # single link list.
                 ## TODO delete this free from the heap-segment entries chunks
                 log.debug('free')
                 res.append( free ) #???
                 pass
-            ptr += ctypes.sizeof(_HEAP_LOOKASIDE)
+            addr += ctypes.sizeof(_HEAP_LOOKASIDE)
     elif self.FrontEndHeapType == 2: # win7 per default
-        ptr = self.FrontEndHeap
-        log.debug('finding frontend at @%x'%(ptr))
-        m = mappings.getMmapForAddr(ptr)
-        st = m.readStruct( ptr, _LFH_HEAP)
+        log.debug('finding frontend at @%x'%(addr))
+        m = mappings.getMmapForAddr(addr)
+        st = m.readStruct(addr, _LFH_HEAP)
         # LFH is a big chunk allocated by the backend allocator, called subsegment
         # but rechopped as small chunks of a heapbin.
         # Active subsegment hold that big chunk.
@@ -334,7 +334,7 @@ def _HEAP_getFrontendChunks(self, mappings):
         # load members on self.FrontEndHeap car c'est un void *
         if not st.loadMembers(mappings, 10):
             log.error('Error on loading frontend')
-            raise model.NotValid('Frontend load at @%x is not valid'%(ptr))
+            raise model.NotValid('Frontend load at @%x is not valid'%(addr))
         
         #log.debug(st.LocalData[0].toString())
         #
@@ -551,7 +551,7 @@ def _HEAP_getFreeLists(self, mappings):
         _wordsize = 4 # FIXME: are the header arch independent.
         chunk_header = m.readStruct( freeblock_addr - 2*_wordsize, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
         if self.EncodeFlagMask:
-            log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
+            #log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
             chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
         #log.debug('chunk_header: %s'%(chunk_header.toString()))
         res.append( (freeblock_addr, chunk_header.Size ))# size = header + freespace

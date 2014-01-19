@@ -421,7 +421,7 @@ class LoadableMembers(object):
             if not contents.loadMembers(mappings, maxDepth):
                 log.debug('member %s was not loaded'%(attrname))
                 #invalidate the cache ref.
-                delRef( _attrType, attr_obj_address)
+                mappings.delRef( _attrType, attr_obj_address)
                 return False
             return True
         #TATAFN
