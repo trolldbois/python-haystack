@@ -30,7 +30,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     self._free_chunks = None
     self._child_heaps = None
     self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
-    if not self._heap.loadMembers(self._mappings, -1):
+    if not self._heap.loadMembers(self._mappings, 1):
       raise TypeError('HEAP.loadMembers returned False')
 
     log.debug('+ Heap @%0.8x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
@@ -165,11 +165,11 @@ def get_user_allocations(mappings, heap):
 #    addr = mapping.start
 #    heap = mapping.readStruct( addr, HEAP )
 #    if addr in map(lambda x:x[0] , self._known_heaps):
-#      self.assertTrue(  heap.loadMembers(self._mappings, -1), "We expected a valid hit at @%x"%(addr) )
+#      self.assertTrue(  heap.loadMembers(self._mappings, 1), "We expected a valid hit at @%x"%(addr) )
 #      found.append(addr, )
 #    else:
 #      try:
-#        ret = heap.loadMembers(self._mappings, -1)
+#        ret = heap.loadMembers(self._mappings, 1)
 #        self.assertFalse( ret, "We didnt expected a valid hit at @%x"%(addr) )
 #      except ValueError,e:
 #        self.assertRaisesRegexp( ValueError, 'error while loading members')

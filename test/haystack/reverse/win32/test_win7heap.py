@@ -96,7 +96,7 @@ class TestWin7Heap(unittest.TestCase):
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, -1)
         
-        code.interact(local=locals())
+        #code.interact(local=locals())
         
         self.assertTrue( win7heapwalker.is_heap(self._mappings, h) ) #, '\n'.join([str(m) for m in self._mappings]))
         #import code 
