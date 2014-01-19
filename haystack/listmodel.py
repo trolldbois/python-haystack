@@ -253,7 +253,7 @@ def declare_double_linked_list_type(structType, forward, backward):
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = utils.getaddress(link)
-            print fieldname,addr,hex(addr)
+            #print fieldname,addr,hex(addr)
             log.debug('iterateList got a <%s>/0x%x'%(link.__class__.__name__,addr))
             nb=0
             while addr not in done:
@@ -261,7 +261,8 @@ def declare_double_linked_list_type(structType, forward, backward):
                 done.append(addr)
                 memoryMap = mappings.is_valid_address_value(addr, structType)
                 if memoryMap == False:
-                    raise ValueError('the link of this linked list has a bad value')
+                    log.error("ValueError: 'the link of this linked list has a bad value'")
+                    raise StopIteration
                 st = memoryMap.readStruct( addr, structType)
                 st._orig_addr_ = addr
                 mappings.keepRef(st, structType, addr)

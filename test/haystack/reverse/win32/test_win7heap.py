@@ -11,6 +11,7 @@ import unittest
 import pickle
 import sys
 
+from haystack import model
 from haystack import types
 from haystack import utils
 from haystack import dump_loader
@@ -41,7 +42,6 @@ class TestWin7Heap(unittest.TestCase):
         return
         
     def tearDown(self):
-        from haystack import model
         model.reset()
         self._mappings = None        
         return
@@ -52,8 +52,11 @@ class TestWin7Heap(unittest.TestCase):
             getaddress(attr)        # check for address of attr.contents being a ctypes.xx.from_address(ptr_value)
             
         """
+        # You have to import after ctypes has been tuned ( mapping loader )
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+
         ctypes = self._mappings.config.ctypes
-        from haystack.reverse.win32 import win7heap
+        
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
         self.assertEquals( ctypes.sizeof( ctypes.POINTER(None)), 4 )
@@ -71,41 +74,54 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals( utils.offsetof( win7heap.HEAP , 'Signature') , 100 )
 
 
-    def test_heap_read(self):
+    def test_is_heap(self):
+        # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.reverse.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
-
+        log.debug('after ctypes')
+        print ctypes
         h = self._mappings.getMmapForAddr(0x005c0000)
         self.assertEquals(h.getByteBuffer()[0:10],'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals( addr , 6029312)
         heap = h.readStruct( addr, win7heap.HEAP )
+        log.debug('after read')
         
         # check that haystack memory_mapping works
         self.assertEquals( ctypes.addressof( h._local_mmap_content ), ctypes.addressof( heap ) )
+        log.debug('after address equals')
         # check heap.Signature
+        log.debug('before print')
+        print heap # before loading members.
         self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
-        
-        print addr
-        print hex( ctypes.addressof( heap ) )
-        print heap.Signature, hex(heap.Signature)
-        print '*'*80
-        
-        import code 
-        addr = h.start
-        heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, -1)
-        
-        #code.interact(local=locals())
-        
         self.assertTrue( win7heapwalker.is_heap(self._mappings, h) ) #, '\n'.join([str(m) for m in self._mappings]))
-        #import code 
-        #code.interact(local=locals())
+
         
+    def test_is_heap_all(self):
+        # You have to import after ctypes has been tuned ( mapping loader )
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+        ctypes = self._mappings.config.ctypes
+        for addr, size in self._known_heaps:
+            h = self._mappings.getMmapForAddr(addr)
+            heap = h.readStruct( addr, win7heap.HEAP )
+            # check heap.Signature
+            self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
+            load = heap.loadMembers(self._mappings, 10)
+            
+            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+        
+
+    def test_getChunks(self):
+        # You have to import after ctypes has been tuned ( mapping loader )
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+        heap.getChunks(self._mappings)
 
     
     def test_keepRef(self):
-        heap = self.mappings.getHeap()
+        # You have to import after ctypes has been tuned ( mapping loader )
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+        heap = self._mappings.getHeap()
         # execute a loadMembers
         walker = win7heapwalker.Win7HeapWalker(self.mappings, heap, 0)
         self.heap_obj = walker._heap
@@ -139,6 +155,8 @@ class TestWin7Heap(unittest.TestCase):
     def test_ref_unicity(self):
         """ The book should contains only unique values tuples.    """
 
+        # You have to import after ctypes has been tuned ( mapping loader )
+        from haystack.reverse.win32 import win7heapwalker, win7heap
         heap = self.mappings.getHeap()
         # execute a loadMembers
         walker = win7heapwalker.Win7HeapWalker(self.mappings, heap, 0)
@@ -167,12 +185,13 @@ class TestWin7Heap(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig( stream=sys.stderr, level=logging.DEBUG )
-    #logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
+    logging.basicConfig( stream=sys.stderr, level=logging.INFO)
+    logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
     #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
     #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
     #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
     #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
+    logging.getLogger('types').setLevel(level=logging.DEBUG)
     logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)

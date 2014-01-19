@@ -24,7 +24,7 @@ import sys
 
 import code
 
-log=logging.getLogger('win7heap')
+log = logging.getLogger('win7heap')
 
 # ============== Internal type defs ==============
 
@@ -59,7 +59,7 @@ _LFH_BLOCK_ZONE._fields_ = [
 
 _HEAP_SEGMENT.expectedValues = {
     'SegmentSignature':[0xffeeffee],
-# Cannot just ignore it... need to load it.
+# Cannot just ignore it... need to load it. FIXME
 #    'LastValidEntry': constraints.IgnoreMember,
 }
 
@@ -196,13 +196,13 @@ def _HEAP_getSegmentList(self, mappings):
             seg_addr = utils.getaddress( ucr.SegmentEntry.FLink)
             if ucr.Address is None:
                 log.error('None in ucr.Address')
-            try:
-                log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(ucr_addr, ucr.Address, ucr.Size*8))
-            except TypeError, e:
-                import code
-                code.interact(local=locals())
+            else:
+                log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x "
+                          "size: 0x%0.5x"%(ucr_addr, ucr.Address.value,
+                                           ucr.Size*8))
             #log.debug("%s"%(ucr.SegmentEntry)) # TODO - CHECK FOR CONSISTENCY ? more heapdebug than haystack debug
-            skiplist[ucr.Address] = ucr.Size*8
+            # ucr.Address is a c_void_p. Need to get addres.value
+            skiplist[ucr.Address.value] = ucr.Size*8
 
         # # obviously not usable, first entry sits on heap header.
         #chunk_header = segment.Entry
@@ -520,10 +520,9 @@ def _HEAP_ENTRY_decode(chunk_header, heap):
 
 _HEAP_ENTRY.decode = _HEAP_ENTRY_decode
 def _get_chunk(mappings, heap, entry_addr):
-    from haystack.model import keepRef
     m = mappings.getMmapForAddr(entry_addr)
     chunk_header = m.readStruct( entry_addr, _HEAP_ENTRY)
-    keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
+    mappings.keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
     chunk_header._orig_addr_ = entry_addr
     return chunk_header
 
