@@ -610,17 +610,11 @@ class LoadableMembers(object):
                 else:
                     _attrType = get_subtype(attrtype)
                     contents = self._mappings_.getRef(_attrType, utils.getaddress(attr))
-                    if type(self) == type(contents): 
-                        # use struct printer
-                        # do not recurse in lists
-                        s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
-                                ctypes.addressof(attr), utils.getaddress(attr), 
-                                repr(contents) ) 
-                    else:
-                        # use struct printer
-                        s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
-                                ctypes.addressof(attr), utils.getaddress(attr), 
-                                contents) 
+                    # easy printer, does not recurse onto pointers to avoid 
+                    # loops
+                    s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
+                            ctypes.addressof(attr), utils.getaddress(attr), 
+                            repr(contents) ) 
             elif (type(attr) is long) or (type(attr) is int):
                 s += '%s : %s\n'%(field, hex(attr) )    
             else:
