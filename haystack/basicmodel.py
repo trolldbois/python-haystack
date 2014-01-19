@@ -543,6 +543,7 @@ class LoadableMembers(object):
         return s
 
     def __str__(self):
+        """Print the direct members values. Never tries to recurse."""
         import ctypes
         if hasattr(self, '_orig_address_'):
             s="# <%s at @%x>\n"%(self.__class__.__name__, self._orig_address_)
@@ -551,17 +552,12 @@ class LoadableMembers(object):
         # we need to ensure _mappings_ is defined in all children.
         for field,attrtype in self.getFields():
             attr = getattr(self,field)
-            try:
-                attr._mappings_ = self._mappings_
-            except AttributeError as e:
-                # ignore errors on basic types.
-                pass
             if ctypes.is_basic_type(attrtype):
                 # basic type, ctypes or python
                 s+='%s : %s, \n'%(field, repr(attr) )
             elif (ctypes.is_struct_type(attrtype) or 
                   ctypes.is_union_type(attrtype)):
-                # DEBUG TEST
+                # you can print a inner struct content
                 s+='%s (@0x%lx) : {\t%s}\n'%(field,ctypes.addressof(attr), attr)
             elif ctypes.is_function_type(attrtype):
                 # only print address in target space
@@ -572,7 +568,7 @@ class LoadableMembers(object):
                 try:
                     s+='%s (@0x%lx) : %s\n'%(field, ctypes.addressof(attr), 
                                              repr(utils.array2bytes(attr)) )    
-                except IndexError,e:
+                except IndexError as e:
                     log.error('error while reading %s %s'%(repr(attr),
                                                            type(attr)))
                     # FIXME                    
@@ -581,7 +577,6 @@ class LoadableMembers(object):
                 s += '%s (@0x%lx)    :['%(field, ctypes.addressof(attr))
                 s += ','.join(["%s"%(val) for val in attr ])
                 s += '],\n'
-                continue
             elif ctypes.is_cstring_type(attrtype):
                 if not bool(attr):
                     # only print address/null
@@ -597,24 +592,9 @@ class LoadableMembers(object):
                                 self._mappings_.getRef(CString, utils.getaddress(attr.ptr)))    
             elif (ctypes.is_pointer_type(attrtype) and 
                   not ctypes.is_pointer_to_void_type(attrtype)):
-                # bug with CString
-                if not bool(attr) :
-                    # only print address/null
-                    s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
-                                                  utils.getaddress(attr))
-                elif not utils.is_address_local(attr):
-                    # only print address in target space
-                    s += '%s (@0x%lx) : 0x%lx (ptr not local)\n'%(field, 
-                                        ctypes.addressof(attr), 
-                                        utils.getaddress(attr))
-                else:
-                    _attrType = get_subtype(attrtype)
-                    contents = self._mappings_.getRef(_attrType, utils.getaddress(attr))
-                    # easy printer, does not recurse onto pointers to avoid 
-                    # loops
-                    s += '%s (@0x%lx) : (0x%lx) -> {%s}\n'%(field, 
-                            ctypes.addressof(attr), utils.getaddress(attr), 
-                            repr(contents) ) 
+                # do not recurse.
+                s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),
+                                              utils.getaddress(attr))
             elif (type(attr) is long) or (type(attr) is int):
                 s += '%s : %s\n'%(field, hex(attr) )    
             else:
