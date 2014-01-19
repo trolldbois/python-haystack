@@ -8,7 +8,6 @@ import unittest
 import sys
 
 from haystack import dump_loader
-from haystack.config import Config
 from haystack import utils
 
 
@@ -41,6 +40,9 @@ class TestListStruct(unittest.TestCase):
         offset = 0x1ef0000
         self.m = self.mappings.getMmapForAddr(offset)
         self.heap = self.m.readStruct(offset, win7heap.HEAP)
+        
+        import code
+        
         self.assertTrue(self.heap.loadMembers(self.mappings, 10 ))
 
         segments = [segment for segment in self.heap.iterateListField(self.mappings, 'SegmentList')]

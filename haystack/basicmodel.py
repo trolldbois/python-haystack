@@ -451,6 +451,11 @@ class LoadableMembers(object):
         import ctypes
         s=''
         if ctypes.is_basic_type(attrtype): 
+            try:
+                attr._mappings_ = self._mappings_
+            except AttributeError as e:
+                # ignore errors on basic types.
+                pass
             if ctypes.is_basic_ctype(type(attr)):
                 value = attr.value
             else:
@@ -491,7 +496,8 @@ class LoadableMembers(object):
             contents = self._mappings_.getRef(_attrType, myaddress)
             # TODO: can I just dump this block into a recursive call ?
             # probably not if we want to stop LIST types from recursing
-            if myaddress == 0:
+            # FIXME why contents is None ?
+            if myaddress == 0 or contents is None:
                 # only print address/null
                 s = prefix + '"%s": %s,'%(field, myaddress_fmt) 
             elif ctypes.is_pointer_to_void_type(attrtype) :
@@ -542,8 +548,14 @@ class LoadableMembers(object):
             s="# <%s at @%x>\n"%(self.__class__.__name__, self._orig_address_)
         else:
             s="# <%s at @???>\n"%(self.__class__.__name__)
+        # we need to ensure _mappings_ is defined in all children.
         for field,attrtype in self.getFields():
-            attr=getattr(self,field)
+            attr = getattr(self,field)
+            try:
+                attr._mappings_ = self._mappings_
+            except AttributeError as e:
+                # ignore errors on basic types.
+                pass
             if ctypes.is_basic_type(attrtype):
                 # basic type, ctypes or python
                 s+='%s : %s, \n'%(field, repr(attr) )

@@ -47,13 +47,12 @@ class TestWin7Heap(unittest.TestCase):
         return
 
     def test_ctypes_sizes(self):
-        ''' road to faking POINTER :
+        """ road to faking POINTER :
             get_subtype(attrtype)    # checks for attrtype._type_
             getaddress(attr)        # check for address of attr.contents being a ctypes.xx.from_address(ptr_value)
             
-        '''
-        ctypes = types.reload_ctypes(4,4,8)
-        print ctypes
+        """
+        ctypes = self._mappings.config.ctypes
         from haystack.reverse.win32 import win7heap
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
         self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
@@ -74,22 +73,35 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_heap_read(self):
         from haystack.reverse.win32 import win7heapwalker, win7heap
+        ctypes = self._mappings.config.ctypes
+
         h = self._mappings.getMmapForAddr(0x005c0000)
         self.assertEquals(h.getByteBuffer()[0:10],'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals( addr , 6029312)
         heap = h.readStruct( addr, win7heap.HEAP )
-
+        
+        # check that haystack memory_mapping works
         self.assertEquals( ctypes.addressof( h._local_mmap_content ), ctypes.addressof( heap ) )
-
+        # check heap.Signature
         self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
         
-        #print addr
-        #print hex( ctypes.addressof( heap ) )
-        #print heap.Signature
-        #print '*'*80
+        print addr
+        print hex( ctypes.addressof( heap ) )
+        print heap.Signature, hex(heap.Signature)
+        print '*'*80
+        
+        import code 
+        addr = h.start
+        heap = h.readStruct( addr, win7heap.HEAP )
+        load = heap.loadMembers(self._mappings, -1)
+        
+        code.interact(local=locals())
         
         self.assertTrue( win7heapwalker.is_heap(self._mappings, h) ) #, '\n'.join([str(m) for m in self._mappings]))
+        #import code 
+        #code.interact(local=locals())
+        
 
     
     def test_keepRef(self):
@@ -125,7 +137,7 @@ class TestWin7Heap(unittest.TestCase):
 
     @unittest.expectedFailure #('HEAP, HEAP_SEGMENT and HEAP_ENTRY')
     def test_ref_unicity(self):
-        ''' The book should contains only unique values tuples.    '''
+        """ The book should contains only unique values tuples.    """
 
         heap = self.mappings.getHeap()
         # execute a loadMembers
@@ -155,8 +167,8 @@ class TestWin7Heap(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig( stream=sys.stderr, level=logging.INFO )
-    logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
+    logging.basicConfig( stream=sys.stderr, level=logging.DEBUG )
+    #logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
     #logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
     #logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
     #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)

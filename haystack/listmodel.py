@@ -96,9 +96,7 @@ class ListModel(object):
             link = entry + offset
             log.debug('got a element of list at %s 0x%x/0x%x offset:%d'%(fieldname, entry, link, offset))
             # use cache if possible, avoid loops.
-            #XXX 
-            from haystack import model
-            ref = model.getRef( structType, link)
+            ref = mappings.getRef( structType, link)
             if ref: # struct has already been loaded, bail out
                 log.debug("%s loading from references cache %s/0x%lx"%(fieldname, structType, link ))
                 continue # do not reload
@@ -113,7 +111,7 @@ class ListModel(object):
                                     structType.__name__, link+ctypes.sizeof(structType)) )
                 st = memoryMap.readStruct( link, structType) # point at the right offset
                 st._orig_addr_ = link
-                model.keepRef(st, structType, link)
+                mappings.keepRef(st, structType, link)
                 log.debug("keepRef %s.%s @%x"%(structType, fieldname, link    ))
                 # load the list entry structure members
                 if not st.loadMembers(mappings, maxDepth-1):
@@ -180,7 +178,6 @@ class ListModel(object):
         if not hasattr(head, '_iterateList'):
             raise ValueError('Not an iterable field. Probably not declared as a list.')
 
-        from haystack import model # need my cache
         done = [s for s in sentinels]+[headAddr]
         for entry in head._iterateList(mappings):
             # DO NOT think HEAD is a valid entry - FIXME
@@ -192,7 +189,7 @@ class ListModel(object):
             link = entry + offset
             #log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
             # use cache if possible, avoid loops.
-            st = model.getRef( structType, link)
+            st = mappings.getRef( structType, link)
             #st._orig_addr_ = link
             if st: 
                 yield st
@@ -248,8 +245,6 @@ def declare_double_linked_list_type(structType, forward, backward):
     if not ctypes.is_pointer_type(blinkType):
         raise TypeError('The %s field is not a pointer.'%(backward))
 
-    #XXX 
-    from haystack import model
     def iterateList(self, mappings):
         """ iterate forward, then backward, until null or duplicate """        
         done = [0]
@@ -268,7 +263,7 @@ def declare_double_linked_list_type(structType, forward, backward):
                     raise ValueError('the link of this linked list has a bad value')
                 st = memoryMap.readStruct( addr, structType)
                 st._orig_addr_ = addr
-                model.keepRef(st, structType, addr)
+                mappings.keepRef(st, structType, addr)
                 log.debug("keepRefx2 %s.%s @%x"%(structType, fieldname, addr    ))
                 yield addr
                 # next
