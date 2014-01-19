@@ -115,7 +115,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
   def _get_chunks(self):
     ''' returns addr,size of committed,free heap entries in blocksindex'''
     if (self._backend_committed, self._backend_free) == (None, None):
-      self._backend_committed, self._backend_free = self._heap.getChunks(self._mappings)
+      self._backend_committed, self._backend_free = self._heap.get_chunks(self._mappings)
       allocsize = sum( [c[1] for c in self._backend_committed ])
       freesize = sum( [c[1] for c in self._backend_free ])
       log.debug('\t+ Segment Chunks: alloc: %0.4d [%0.5d B] free: %0.4d [%0.5d B]'%( 

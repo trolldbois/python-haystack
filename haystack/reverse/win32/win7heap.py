@@ -1,7 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-""" Win 7 heap structure - from LGPL metasm"""
+""" Win 7 heap structure - from LGPL metasm.
+See docs/win32_heap for all supporting documentation.
+
+The Heap Manager organizes its virtual memory using heap segments.
+Distinction between reserved and committed memory.
+Committing memory == mapping/backing the virtual memory.
+Uncommitted memory is tracked using UCR entries and segments.
+
+heap_size = heap.Counters.TotalMemoryReserved
+committed_size = heap.Segment.LastValidEntry -  heap.Segment.FirstEntry
+committed_size = heap.Counters.TotalMemoryCommitted
+ucr_size = heap.Counters.TotalMemoryReserved - heap.Counters.TotalMemoryCommitted
+
+Win7 Heap manager uses either Frontend allocator or Backend allocator.
+Default Frontend allocator is Low Fragmentation Heap (LFH).
+
+Chunks are allocated memory.
+List of chunks allocated by the backend allocators are linked in 
+heap.segment.FirstValidEntry to LastValidEntry.
+LFH allocations are in one big chunk of that list at heap.FrontEndHeap.
+
+You can fetch addresses and size of chunks with HEAP.get_chunks .
+You can fetch segments with HEAP.get_segment_list .
+You can fetch UCR segments with HEAP.get_UCR_segment_list .
+
+"""
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -10,7 +35,7 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-""" insure ctypes basic types are subverted """
+"""ensure ctypes basic types are subverted"""
 from haystack import model
 from haystack import utils
 from haystack import constraints
@@ -140,6 +165,22 @@ def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
 
 _HEAP_SEGMENT._loadMember = _HEAP_SEGMENT_loadMember
 
+def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
+    """Returns a list of UCR segments for this segment.
+    HEAP_SEGMENT.UCRSegmentList is a linked list to all UCRSegments
+    """
+    ucrs = list()
+    for ucr in self.iterateListField(mappings, 'UCRSegmentList'):
+        ucr_struct_addr = ucr._orig_addr_
+        ucr_addr = utils.getaddress(ucr.Address)
+        # UCR.Size are not chunks sizes. NOT *8
+        log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
+                   ucr_struct_addr, ucr_addr, ucr.Size))
+        ucrs.append(ucr)
+    return ucrs
+
+_HEAP_SEGMENT.get_UCR_segment_list = _HEAP_SEGMENT_get_UCR_segment_list
+
 ###### HEAP
 
 #HEAP CommitRoutine encoded by a global key
@@ -153,67 +194,64 @@ _HEAP.expectedValues = {
     'FrontEndHeapType': [0,1,2],
     'CommitRoutine': constraints.IgnoreMember,
 }
-_HEAP._listHead_ = [    ('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
-                                            ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
+_HEAP._listHead_ = [('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
+                    ('UCRList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', 0 ),
+                    ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
 #HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
 
 
-
-def _HEAP_getSegmentList(self, mappings):
-    """ list all heap entries attached to one Heap structure. 
+def _HEAP_get_UCR_segment_list(self, mappings):
+    """Returns a list of UCR segments for this heap.
+    HEAP.UCRList is a linked list to all UCRSegments
     
-    Heap.SegmentList points to the _LIST_ENTRY of Heap.Segment. +0x10
-    Iteration on SegmentList should return Segment.
-    Offset is needed and provided through _listHead_.
-    FIXME: offset could/should be automated by declaring child _LIST_ENTRY fieldname (SegmentListEntry)
-        listmodel.py:164
-    
-    BUT iteration should stop on sentinel values.
-        Internal algoritm of iterateListField will not use the root LIST_Entry address as a valid object.
-        It will use it as a sentinel.
-        If there is another sentinel... bad luck....
-    
-    Heap.Segment.Entry is a valid Heap_entry, addr+size*8 should point to FirstValidEntry.
+    TODO: exclude UCR segment from valid pointer values in mappings.
     """
-    allocated = list()
-    free = list()
-    #log.debug('%s'%(self))
-    for segment in self.iterateListField( mappings, 'SegmentList'):
-        #for segment_addr in self.SegmentList._iterateList( mappings):
+    ucrs = list()
+    for ucr in self.iterateListField(mappings, 'UCRList'):
+        ucr_struct_addr = ucr._orig_addr_
+        ucr_addr = utils.getaddress(ucr.Address)
+        # UCR.Size are not chunks sizes. NOT *8
+        log.debug("Heap.UCRList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
+                   ucr_struct_addr, ucr_addr, ucr.Size))
+        ucrs.append(ucr)
+    return ucrs
+
+_HEAP.get_UCR_segment_list = _HEAP_get_UCR_segment_list
+
+
+def _HEAP_get_segment_list(self, mappings):
+    """returns a list of all segment attached to one Heap structure.
+    
+    UCR included ?
+    """
+    segments = list()
+    for segment in self.iterateListField(mappings, 'SegmentList'):
         segment_addr = segment._orig_addr_
         first_addr = utils.getaddress(segment.FirstEntry)
         last_addr = utils.getaddress(segment.LastValidEntry)
-
         log.debug( 'Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x'%( segment_addr, first_addr, last_addr) )
+        segments.append(segment)
+    return segments
+    
 
+_HEAP.get_segment_list = _HEAP_get_segment_list
+
+def _HEAP_get_chunks(self, mappings):
+    """Returns a list of tuple (address,size) for all chunks in the 
+    backend allocator."""
+    allocated = list()
+    free = list()
+    for segment in self.get_segment_list(mappings):
+        first_addr = utils.getaddress(segment.FirstEntry)
+        last_addr = utils.getaddress(segment.LastValidEntry)
+        # create the skip list for each segment.
         skiplist = dict()
-        for ucr in segment.iterateListField( mappings, 'UCRSegmentList'):
-            ucr_addr = ucr._orig_addr_
-            if ucr_addr is None:
-                log.error('None in _orig_addr_')
-            seg_addr = utils.getaddress( ucr.SegmentEntry.FLink)
-            if ucr.Address is None:
-                log.error('None in ucr.Address')
-            else:
-                log.debug("Heap.Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x "
-                          "size: 0x%0.5x"%(ucr_addr, ucr.Address.value,
-                                           ucr.Size*8))
-            #log.debug("%s"%(ucr.SegmentEntry)) # TODO - CHECK FOR CONSISTENCY ? more heapdebug than haystack debug
-            # ucr.Address is a c_void_p. Need to get addres.value
-            skiplist[ucr.Address.value] = ucr.Size*8
-
-        # # obviously not usable, first entry sits on heap header.
-        #chunk_header = segment.Entry
-        #if self.EncodeFlagMask: #heap.EncodeFlagMask
-        #    log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
-        #    chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
-        #chunk_addr = segment._orig_addr_ + utils.offsetof(_HEAP_SEGMENT, 'Entry')
-        #log.debug('Heap.Segment.Entry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
-
-        #print segment
-
+        for ucr in segment.get_UCR_segment_list(mappings):
+            ucr_addr = utils.getaddress(ucr.Address)
+            skiplist[ucr_addr] = ucr.Size # UCR.Size are not chunks sizes. NOT *8
+        #
         chunk_addr = first_addr
         while (chunk_addr < last_addr):
             if chunk_addr in skiplist:
@@ -226,7 +264,7 @@ def _HEAP_getSegmentList(self, mappings):
                 chunk_header = _get_chunk(mappings, self, chunk_addr)
             if self.EncodeFlagMask: #heap.EncodeFlagMask
                 chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
-            log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+            #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
             
             if ((chunk_header.Flags & 1) == 1):
                 log.debug('Chunk 0x%0.8x is in use size: %0.5x'%(chunk_addr, chunk_header.Size*8))
@@ -236,11 +274,9 @@ def _HEAP_getSegmentList(self, mappings):
                 free.append( (chunk_addr, chunk_header.Size*8) )                
                 pass
             chunk_addr += chunk_header.Size*8
-            
-        
     return (allocated, free)
 
-_HEAP.getSegmentList = _HEAP_getSegmentList
+_HEAP.get_chunks = _HEAP_get_chunks
 
 #@deprecated
 def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
@@ -272,28 +308,22 @@ def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
 
 #@deprecated
 def _HEAP_getChunkInfo(self):
-	if self.EncodeFlagMask != 0:
-		return (self.Encoding.Size, self.Encoding.Flags, self.Encoding.UnusedBytes)
-	else:
-	    return (0,0,0)
+    """//position 0x7 in the header denotes
+    //whether the chunk was allocated via
+    //the front-end or the back-end (non-encoded ;) )
+    if(ChunkHeader->UnusedBytes & 0x80)
+        RtlpLowFragHeapFree
+    else
+        BackEndHeapFree
+    """
+    if self.EncodeFlagMask != 0:
+        return (self.Encoding.Size, self.Encoding.Flags, self.Encoding.UnusedBytes)
+    else:
+        return (0,0,0)
 
 #_HEAP.scan_heap_segment = _HEAP_scan_heap_segment
 #_HEAP.getChunkInfo = _HEAP_getChunkInfo
 
-"""//position 0x7 in the header denotes
-//whether the chunk was allocated via
-//the front-end or the back-end (non-encoded ;) )
-if(ChunkHeader->UnusedBytes & 0x80)
-    RtlpLowFragHeapFree
-else
-    BackEndHeapFree
-"""
-def _HEAP_getChunks(self, mappings):
-    #for entry_addr,size in self.getSegmentList(mappings):
-    #    yield (entry_addr,size)
-    return self.getSegmentList(mappings)
-
-_HEAP.getChunks = _HEAP_getChunks
 
 
 def _HEAP_getFrontendChunks(self, mappings):
