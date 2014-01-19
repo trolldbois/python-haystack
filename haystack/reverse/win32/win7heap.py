@@ -579,32 +579,7 @@ def _HEAP_get_freelists(self, mappings):
         res.append( (freeblock._orig_addr_, chunk_header.Size ))
     return res
     
-def _HEAP_get_freelists2(self, mappings):
-    res = list()
-    sentinel = self._orig_address_ + 0xc4 # utils.offsetof(_HEAP, 'FreeLists')
-    for freeblock_addr in self.FreeLists._iterateList(mappings):
-        if freeblock_addr == sentinel:
-            continue
-        m = mappings.getMmapForAddr(freeblock_addr)
-        freeblock = m.readStruct( freeblock_addr, _LIST_ENTRY)
-        blink_value = utils.getaddress(freeblock.BLink)
-        if ( blink_value & 1): # points to _HEAP_BUCKET +1
-            log.warning('This freeblock BLink point to _HEAP_BUCKET at %x'%(blink_value))
-        # its then a HEAP_ENTRY.. 
-        #chunk_header = m.readStruct( freeblock_addr - 2*Config.WORDSIZE, _HEAP_ENTRY)
-        #chunk_header = m.readStruct( freeblock_addr - 2*mappings.WORDSIZE, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
-        _wordsize = 4 # FIXME: are the header arch independent.
-        chunk_header = m.readStruct( freeblock_addr - 2*_wordsize, N11_HEAP_ENTRY3DOT_13DOT_2E) # Union stuff
-        if self.EncodeFlagMask:
-            #log.debug('EncodeFlagMask is set on the HEAP. decoding is needed.')
-            chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
-        #log.debug('chunk_header: %s'%(chunk_header.toString()))
-        res.append( (freeblock_addr, chunk_header.Size ))# size = header + freespace
-    return res
-    
-
 _HEAP.get_freelists = _HEAP_get_freelists
-_HEAP.get_freelists2 = _HEAP_get_freelists2
 
 def _HEAP_getFreeListsWinXP(self, mappings):
     """ Understanding_the_LFH.pdf page 17 """
