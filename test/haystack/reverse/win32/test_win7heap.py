@@ -30,14 +30,12 @@ class TestWin7Heap(unittest.TestCase):
     
     def setUp(self):
         self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
-        self._known_heaps = [ (0x00390000, 8956),   (0x00540000, 868),
-                              (0x00580000, 111933), (0x005c0000, 1704080),
-                              (0x01ef0000, 604),    (0x02010000, 61348),
-                              (0x02080000, 474949), (0x021f0000, 18762),
-                              (0x03360000, 604),    (0x04030000, 632),
-                              (0x04110000, 1334),   (0x041c0000, 644),
-                            # from free stuf - erroneous 
-                            #( 0x0061a000, 1200),
+        self._known_heaps = [(0x390000, 0x3000),  (0x540000, 0x1000),
+                             (0x580000, 0x9000),  (0x5c0000, 0x59000),
+                             (0x1ef0000, 0x1000), (0x2010000, 0x21000),
+                             (0x2080000, 0x10000),(0x21f0000, 0x6000),
+                             (0x3360000, 0x1000), (0x4030000, 0x1000),
+                             (0x4110000, 0x1000), (0x41c0000, 0x1000),
                             ]
         return
         
@@ -99,6 +97,13 @@ class TestWin7Heap(unittest.TestCase):
             load = heap.loadMembers(self._mappings, 10)
             
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+        
+        heaps = [(h.start, len(h)) for h in self._mappings.getHeaps()]
+        heaps.sort()
+        import code
+        code.interact(local=locals())
+        self.assertEquals(heaps, self._known_heaps)
+        
         
 
     def test_get_UCR_segment_list(self):
