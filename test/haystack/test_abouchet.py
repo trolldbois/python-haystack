@@ -47,7 +47,7 @@ class Test7_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure refresh.'''
+    """ tests valid structure refresh."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -65,7 +65,7 @@ class Test7_x32(SrcTests):
 
 
   def test_search(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
@@ -116,7 +116,7 @@ class Test7_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure refresh.'''
+    """ tests valid structure refresh."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -134,7 +134,7 @@ class Test7_x64(SrcTests):
 
 
   def test_search(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
@@ -193,7 +193,7 @@ class Test6_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure refresh.'''
+    """ tests valid structure refresh."""
 
     # if you delete the Heap memorymap, 
     # all references in the model are invalided
@@ -278,7 +278,7 @@ class Test6_x32(SrcTests):
 
 
   def test_search(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     if True:
         import ctypes
         self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
@@ -334,7 +334,7 @@ class Test6_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    ''' tests valid structure refresh.'''
+    """ tests valid structure refresh."""
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
@@ -410,7 +410,7 @@ class Test6_x64(SrcTests):
 
 
   def test_search(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     if True:
         import ctypes
         self.assertIn('CTypesProxy-8:8:16', '%s'%ctypes)
@@ -454,7 +454,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
     self.mappings = None
 
   def test_show(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, long(self.validAddress,16))
     self.assertIsInstance(instance, object)
     self.assertEquals(instance.connection_in, 3)
@@ -467,7 +467,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 
 @unittest.skip('')
 class TestApiLinuxDump(unittest.TestCase):
-  ''' test is the python API works. '''
+  """ test is the python API works. """
   def setUp(self):
     self.memdumpname = 'test/dumps/ssh/ssh.1'
     self.classname = 'sslsnoop.ctypes_openssh.session_state'
@@ -490,7 +490,7 @@ class TestApiLinuxDump(unittest.TestCase):
   #}
 
   def test_show(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
@@ -510,7 +510,7 @@ class TestApiLinuxDump(unittest.TestCase):
 
 #@unittest.skip('')
 class TestApiWin32Dump(unittest.TestCase):
-  ''' test is the python API works. '''
+  """ test is the python API works. """
   def setUp(self):
     self.memdumpname = 'test/dumps/putty/putty.1.dump'
     self.classname = 'haystack.reverse.win32.win7heap.HEAP'
@@ -533,7 +533,7 @@ class TestApiWin32Dump(unittest.TestCase):
   #}
 
   def test_show(self):
-    ''' tests valid structure show and invalid structure show.'''
+    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
@@ -555,7 +555,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+  logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)

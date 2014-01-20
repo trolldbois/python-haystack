@@ -706,6 +706,7 @@ class Mappings:
     def search_win_heaps(self):
         # TODO move in haystack.reverse.heapwalker
         # FIXME, why do we keep a ref to children mmapping ?
+        log.debug('search_win_heaps - START')
         from haystack.reverse.win32 import win7heapwalker # FIXME win7, winxp...
         heaps = list()
         for mapping in self.mappings:
@@ -715,6 +716,7 @@ class Mappings:
                 mapping._children = win7heapwalker.Win7HeapWalker(self, mapping, 0).get_heap_children_mmaps()
         # order by ProcessHeapsListIndex
         heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
+        log.debug('search_win_heaps - END')
         return heaps
     
     def get_target_system(self):

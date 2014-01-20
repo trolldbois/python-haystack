@@ -37,7 +37,7 @@ else:
 
 
 class StructFinder:
-    ''' Generic structure finder.
+    """ Generic structure finder.
     Will search a structure defined by it's pointer and other constraints.
     Address space is defined by    mappings.
     Target memory perimeter is defined by targetMappings.
@@ -45,7 +45,7 @@ class StructFinder:
     
     :param mappings: address space
     :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
-    '''
+    """
     def __init__(self, mappings, targetMappings=None, updateCb=None):
         self.mappings = mappings
         if type(mappings) == bool:
@@ -78,14 +78,14 @@ class StructFinder:
         return outputs
 
     def find_struct_in(self, memoryMap, structType, hintOffset=0, maxNum=10, maxDepth=99 ):
-        '''
+        """
             Looks for structType instances in memory, using :
                 hints from structType (default values, and such)
                 guessing validation with instance(structType)().isValid()
                 and confirming with instance(structType)().loadMembers()
             
             returns POINTERS to structType instances.
-        '''
+        """
         import ctypes
         # update process mappings
         log.debug("scanning 0x%lx --> 0x%lx %s"%(memoryMap.start,memoryMap.end,memoryMap.pathname) )
@@ -130,10 +130,10 @@ class StructFinder:
 
 
     def loadAt(self, memoryMap, offset, structType, depth=99 ):
-        ''' 
+        """ 
             loads a haystack ctypes structure from a specific offset. 
                 return (instance,validated) with instance being the haystack ctypes structure instance and validated a boolean True/False.
-        '''
+        """
         log.debug("Loading %s from 0x%lx "%(structType,offset))
         #instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
         instance=memoryMap.readStruct(offset,structType)
@@ -149,7 +149,7 @@ class StructFinder:
 
 
 class VerboseStructFinder(StructFinder):
-    ''' structure finder with a update callback to be more verbose.
+    """ structure finder with a update callback to be more verbose.
     Will search a structure defined by it's pointer and other constraints.
     Address space is defined by    mappings.
     Target memory perimeter is defined by targetMappings.
@@ -158,7 +158,7 @@ class VerboseStructFinder(StructFinder):
     :param mappings: address space
     :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
     :param updateCb: callback func. for periodic status update
-    '''
+    """
     def __init__(self,mappings, targetMappings=None, updateCb=None):
         StructFinder.__init__(self,mappings, targetMappings)
         self.updateCb = updateCb
@@ -179,7 +179,7 @@ class VerboseStructFinder(StructFinder):
 
 
 def hasValidPermissions(memmap):
-    ''' memmap must be 'rw..' or shared '...s' '''
+    """ memmap must be 'rw..' or shared '...s' """
     perms=memmap.permissions
     return (perms[0] == 'r' and perms[1] == 'w') or (perms[3] == 's')
 
@@ -201,11 +201,11 @@ def getMainFile():
 
 
 def checkModulePath(typ):
-    '''
+    """
         add typ module's path to sys.path
         If the type is a generated haystack structure type, 
         dump the '_generated' string from the module name and import it under the new module name.
-    '''
+    """
     name = typ.__name__
     module,sep,kname = name.rpartition('.')
     # add the __file__ module to sys.path for it to be reachable by subprocess
@@ -230,7 +230,7 @@ def checkModulePath(typ):
 
 def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1, 
                             fullScan=False, nommap=False, hint=None, debug=None, quiet=True ):
-    ''' 
+    """ 
         Find all occurences of a specific structure from a process memory.
         Returns occurences as objects.
 
@@ -243,7 +243,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
         :param offset the offset from which the structure must be loaded.
         :param debug if True, activate debug logs.
         :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
-    '''
+    """
     import ctypes
     if type(structType) != type(ctypes.Structure):
         raise TypeError('structType arg must be a ctypes.Structure')
@@ -278,7 +278,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
     return outs
 
 def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=False, quiet=True):
-    ''' 
+    """ 
         Find all occurences of a specific structure from a process memory.
         
         :param pid is the process PID.
@@ -287,11 +287,11 @@ def findStruct(pid, structType, maxNum=1, fullScan=False, nommap=False, debug=Fa
         :param fullScan obselete
         :param nommap if True, do not use mmap while searching.
         :param debug if True, activate debug logs.
-    '''
+    """
     return _findStruct(pid=pid, structType=structType, maxNum=maxNum, fullScan=fullScan, nommap=nommap, debug=debug, quiet=quiet)
     
 def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, debug=False, quiet=True):
-    ''' 
+    """ 
         Find all occurences of a specific structure from a process memory in a file.
         
         :param filename is the file containing the memory mapping content.
@@ -300,12 +300,12 @@ def findStructInFile(filename, structType, hint=None, maxNum=1, fullScan=False, 
         :param hint obselete
         :param fullScan obselete
         :param debug if True, activate debug logs.
-    '''
+    """
     return _findStruct(memfile=filename, structType=structType, maxNum=maxNum, fullScan=fullScan, debug=debug, quiet=quiet)
 
 
 def refreshStruct(pid, structType, offset, debug=False, nommap=False):
-    ''' 
+    """ 
         returns the pickled or text representation of a structure, from a given offset in a process memory.
         
         :param pid is the process PID.
@@ -313,7 +313,7 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
         :param offset the offset from which the structure must be loaded.
         :param debug if True, activate debug logs.
         :param nommap if True, do not use mmap when mapping the memory
-    '''
+    """
     import ctypes
     if type(structType) != type(ctypes.Structure):
         raise TypeError('structType arg must be a ctypes.Structure')
@@ -345,12 +345,12 @@ class HaystackError(Exception):
 
 
 def getKlass(name):
-    '''
+    """
         Returns the class type from a structure name.
         The class' module is dynamically loaded.
         
         :param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
-    '''
+    """
     module,sep,kname=name.rpartition('.')
     import sys
     mod = __import__(module, globals(), locals(), [kname])

@@ -249,26 +249,22 @@ class LoadableMembers(object):
         AND (pointee is a struct type OR pointee is a union type)
         ) OR struct type OR union type
         """
-        
-        # TODO remove.
-        import ctypes
-        #attrtype=type(attr)
-        #and ( attrtype in self.classRef) 
-        return ( (bool(attr) and 
-            (ctypes.is_pointer_to_struct_type(attrtype) or 
-             ctypes.is_pointer_to_union_type(attrtype) or
-             ctypes.is_pointer_to_basic_type(attrtype) or
-             ctypes.is_pointer_to_array_type(attrtype)
-            )) or
-            ctypes.is_union_type(attrtype) or ctypes.is_struct_type(attrtype) or
-            
-            ctypes.is_cstring_type(attrtype) or
-            (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype))) 
+        ctypes = self._mappings_.config.ctypes
+        return ( (bool(attr) and not ctypes.is_pointer_to_void_type(attrtype)))
+        #return ( (bool(attr) and 
+        #    (ctypes.is_pointer_to_struct_type(attrtype) or 
+        #     ctypes.is_pointer_to_union_type(attrtype) or
+        #     ctypes.is_pointer_to_basic_type(attrtype) or
+        #     ctypes.is_pointer_to_array_type(attrtype)
+        #    )) or
+        #    ctypes.is_union_type(attrtype) or ctypes.is_struct_type(attrtype) or
+        #    ctypes.is_cstring_type(attrtype) or
+        #    (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype))) 
         # should we iterate on Basictypes ? no
 
     def loadMembers(self, mappings, maxDepth):
         """ 
-        The validity of the memebrs will be assessed.
+        The validity of the members will be assessed.
         Each members that can be ( structures, pointers), will be evaluated for
         validity and loaded recursively.
         
@@ -302,7 +298,7 @@ class LoadableMembers(object):
                 if not self._loadMember(attr, attrname, attrtype, mappings,
                                         maxDepth):
                     return False
-            except ValueError, e:
+            except ValueError as e:
                 log.error( 'maxDepth was %d'% maxDepth)
                 raise #
 
@@ -310,8 +306,12 @@ class LoadableMembers(object):
         return True
         
     def _loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
-        import ctypes
-        # skip static basic data members
+        ctypes = self._mappings_.config.ctypes
+        # skip static void_p data members
+        if attrname == 'ListsInUseUlong':
+            print "attrname == ListsInUseUlong"
+            import code
+            code.interact(local=locals())
         if not self._isLoadableMember(attr, attrname, attrtype):
             log.debug("%s %s not loadable bool(attr) = %s"%(attrname, attrtype,
                                                             bool(attr)))
@@ -417,7 +417,7 @@ class LoadableMembers(object):
                 return True
             elif ctypes.is_array_type(subtype):
                 return self._loadMember(self,contents,'pointee',subtype, mappings, maxDepth-1)
-
+                
             if not contents.loadMembers(mappings, maxDepth):
                 log.debug('member %s was not loaded'%(attrname))
                 #invalidate the cache ref.
@@ -448,7 +448,7 @@ class LoadableMembers(object):
         
     def _attrToString(self, attr, field, attrtype, prefix, depth=-1):
         """This should produce strings, based on ctypes structures. No pyOBJ"""
-        import ctypes
+        ctypes = self._mappings_.config.ctypes
         s=''
         if ctypes.is_basic_type(attrtype): 
             try:
@@ -637,10 +637,6 @@ class LoadableMembers(object):
         
     def _attrToPyObject(self, attr, field, attrtype):
         import ctypes
-        #print field, attrtype
-        #if field =='h':
-        #    import code
-        #    code.interact(local=locals())
         if ctypes.is_basic_type(attrtype):
             if ctypes.is_basic_ctype(type(attr)):
                 obj = attr.value
@@ -665,18 +661,13 @@ class LoadableMembers(object):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
             _address = utils.getaddress(attr)
-            _cache = self._mappings_.getRef(_subtype, _address)
-            if _cache is not None:
-                _cache._mappings_ = self._mappings_
             if _address == 0:
                 # Null pointer
                 obj = None
             elif ctypes.is_pointer_to_void_type(attrtype):
-                # void types arereturned as None
-                obj = None #_address
-            elif (ctypes.is_pointer_to_struct_type(attrtype)
-                  or ctypes.is_pointer_to_union_type(attrtype)):
-                obj = _cache.toPyObject()
+                # TODO: make a prototype for c_void_p loading
+                # void types a rereturned as None
+                obj = None 
             elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
                 obj = 'BasicType array'
@@ -686,25 +677,26 @@ class LoadableMembers(object):
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
                 cache = self._mappings_.getRef(_subtype, utils.getaddress(attr) )
-                if cache is not None:
+                if cache is not None: # struct, union...
                     obj = self._attrToPyObject(cache, field, _subtype )
                 elif ctypes.is_pointer_to_basic_type(attrtype):
                     log.error('Pointer to Basic type - %s'%(field))
                     obj = 'Pointer to Basic type'
+                    #import code
+                    #code.interact(local=locals())
                 else:
-                    # you got here because your pointer is in the middle of
-                    # a struct ? if that a linked list ?
-                    log.error('LP structure for field:%s %s/%s not in cache '
+                    # you got here because your pointer is not loaded:
+                    #  did you ignore it in expectedValues ?
+                    #  is itin the middle of a struct ? 
+                    #  is that a linked list ?
+                    log.warning('LP structure for field:%s %s/%s not in cache '
                               '%x'%(field, attrtype, get_subtype(attrtype), 
                                     utils.getaddress(attr)))
-                    #raise ValueError('LP structure for %s not in cache %s,%x'%(field, get_subtype(attrtype), utils.getaddress(attr) ) )
                     return (None,None)
         elif isinstance(attr, numbers.Number): 
             # case for int, long. But needs to be after c_void_p pointers case
             obj = attr
         else:
-            import code
-            code.interact(local=locals())
             log.error('toPyObj default to return attr %s'%( type(attr) ))
             obj = attr
         return obj
