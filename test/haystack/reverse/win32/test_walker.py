@@ -328,7 +328,7 @@ class TestAllocator(unittest.TestCase):
         found=[]
         for mapping in self._mappings:
             addr = mapping.start
-            heap = mapping.readStruct( addr, HEAP )
+            heap = mapping.readStruct(addr, win7heap.HEAP)
             if addr in map(lambda x:x[0] , self._known_heaps):
                 self.assertTrue( heap.loadMembers(self._mappings, 1000), "We expected a valid hit at @ 0x%0.8x"%(addr) )
                 found.append(addr, )
