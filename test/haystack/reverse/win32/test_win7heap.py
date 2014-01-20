@@ -241,7 +241,40 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(reserved_size, meta_size+chunks_size+ucr_size)
         
         # LFH bins are in some chunks, at heap.FrontEndHeap
-        
+
+    def test_get_chunks_all(self):
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+        ctypes = self._mappings.config.ctypes
+        for addr, size in self._known_heaps:
+            h = self._mappings.getMmapForAddr(addr)
+            heap = h.readStruct( addr, win7heap.HEAP )
+            load = heap.loadMembers(self._mappings, 10)            
+            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+
+            allocated, free = heap.get_chunks(self._mappings)
+            s_allocated = sum([c[1] for c in allocated])
+            s_free = sum([c[1] for c in free])
+            total = allocated+free
+            total.sort()
+            s_total = sum([c[1] for c in total])
+            # HEAP counters
+            committed_size = heap.Counters.TotalMemoryCommitted
+            reserved_size = heap.Counters.TotalMemoryReserved
+            ucr_size = reserved_size - committed_size
+
+            # in some segments, they are non-contiguous segments
+            chunks_size = sum([chunk[1] for chunk in total])
+            # chunks are in all segments
+            alloc_size = 0
+            for segment in heap.get_segment_list(self._mappings):
+                valid_alloc_size = segment.LastValidEntry.value - segment.FirstEntry.value
+                alloc_size += valid_alloc_size
+            # 1 chunk is 8 bytes.
+            self.assertEquals(s_free/8, heap.TotalFreeSize)
+            # sum of allocated size for every segment should amount to the
+            # sum of all allocated chunk
+            self.assertEquals(alloc_size, chunks_size+ucr_size)
+
 
     def test_get_freelists(self):
         # You have to import after ctypes has been tuned ( mapping loader )
@@ -255,7 +288,25 @@ class TestWin7Heap(unittest.TestCase):
         allocated, free = heap.get_chunks(self._mappings)
         freelists = heap.get_freelists(self._mappings)
         free_size = sum([x[1] for x in [(hex(x[0]),x[1]) for x in freelists]])
+        free_size2 = sum([x[1] for x in free])
         self.assertEquals(heap.TotalFreeSize*8, free_size)
+        self.assertEquals(free_size, free_size2)
+
+    def test_get_freelists_all(self):
+        from haystack.reverse.win32 import win7heapwalker, win7heap
+        ctypes = self._mappings.config.ctypes
+        for addr, size in self._known_heaps:
+            h = self._mappings.getMmapForAddr(addr)
+            heap = h.readStruct( addr, win7heap.HEAP )
+            load = heap.loadMembers(self._mappings, 10)            
+            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+
+            allocated, free = heap.get_chunks(self._mappings)
+            freelists = heap.get_freelists(self._mappings)
+            free_size = sum([x[1] for x in [(hex(x[0]),x[1]) for x in freelists]])
+            free_size2 = sum([x[1] for x in free])
+            self.assertEquals(heap.TotalFreeSize*8, free_size)
+            self.assertEquals(free_size, free_size2)
 
 
     def test_get_frontend_chunks(self):
