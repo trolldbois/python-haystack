@@ -12,7 +12,7 @@ Uncommitted memory is tracked using UCR entries and segments.
 heap_size = heap.Counters.TotalMemoryReserved
 committed_size = heap.Segment.LastValidEntry -  heap.Segment.FirstEntry
 committed_size = heap.Counters.TotalMemoryCommitted
-ucr_size = heap.Counters.TotalMemoryReserved - heap.Counters.TotalMemoryCommitted
+ucr_size= heap.Counters.TotalMemoryReserved - heap.Counters.TotalMemoryCommitted
 
 Win7 Heap manager uses either Frontend allocator or Backend allocator.
 Default Frontend allocator is Low Fragmentation Heap (LFH).
@@ -22,10 +22,15 @@ List of chunks allocated by the backend allocators are linked in
 heap.segment.FirstValidEntry to LastValidEntry.
 LFH allocations are in one big chunk of that list at heap.FrontEndHeap.
 
+There can be multiple segment in one heap.
+Each segment has a FirstEntry (chunk) and LastValidEntry.
+FirstEntry <= chunks <= UCR < LastValidEntry
+
 You can fetch chunks tuple(address,size) with HEAP.get_chunks .
 
-You can fetch ctypes segments with HEAP.get_segment_list .
-You can fetch ctypes UCR segments with HEAP.get_UCR_segment_list .
+You can fetch ctypes segments with HEAP.get_segment_list 
+You can fetch free ctypes UCR segments with HEAP.get_UCR_segment_list 
+You can fetch a segment UCR segments with HEAP_SEGMENT.get_UCR_segment_list 
 
 """
 
@@ -52,21 +57,13 @@ import code
 
 log = logging.getLogger('win7heap')
 
-# ============== Internal type defs ==============
-
 ################ START copy generated classes ##########################
-
 # copy generated classes (gen.*) to this module as wrapper
 model.copyGeneratedClasses(gen, sys.modules[__name__])
-
-# register all classes (gen.*, locally defines, and local duplicates) to haystack
-# create plain old python object from ctypes.Structure's, to picke them
+# register all classes to haystack
+# create plain old python object from ctypes.Structure's, to pickle them
 model.registerModule(sys.modules[__name__])
-
-################ END     copy generated classes ##########################
-
-
-
+################ END copy generated classes ############################
 
 
 ############# Start expectedValues and methods overrides #################
@@ -85,86 +82,26 @@ _LFH_BLOCK_ZONE._fields_ = [
 
 _HEAP_SEGMENT.expectedValues = {
     'SegmentSignature':[0xffeeffee],
-# Cannot just ignore it. need to load it. FIXME
-#    'LastValidEntry': constraints.IgnoreMember,
+    # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+    'LastValidEntry': constraints.IgnoreMember,
 }
 
 #_HEAP_SEGMENT.UCRSegmentList. points to _HEAP_UCR_DESCRIPTOR.SegmentEntry.
 #_HEAP_UCR_DESCRIPTOR.SegmentEntry. points to _HEAP_SEGMENT.UCRSegmentList.
 
-_HEAP_SEGMENT._listHead_ = [ ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', -8),]
-##_HEAP_SEGMENT._listHead_ = [    ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'SegmentEntry'),]
-#_HEAP_SEGMENT._listMember_ = ['SegmentListEntry']
+_HEAP_SEGMENT._listHead_ = [ 
+                     ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
 
+#_HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', _HEAP_SEGMENT, 'Entry')]
+
+
+# HEAP_ENTRY
 # SubSegmentCode is a encoded c_void_p
 # FIXME: is valid should decode it for validation ?
 N11_HEAP_ENTRY3DOT_13DOT_3E.expectedValues = {
     'SubSegmentCode': constraints.IgnoreMember,
     }
 
-
-## LastValidEntry can be out of mappings
-# (is_valid_address: 0x01f00000 0x01f12000 rw- 0x00000000 fe:01 24422442 None)
-#DEBUG:basicmodel:ptr: LastValidEntry <class 'haystack.reverse.win32.win7heap_generated.LP__HEAP_ENTRY'>
-# <haystack.reverse.win32.win7heap_generated.LP__HEAP_ENTRY object at 0x904989c> 0x2000000 INVALID
-
-
-# For LastValidEntry, we need a special treatment.
-# If the pointer is valid, we should load it.
-# if the pointer is out of mapping, ignore it.
-# Cannot just ignore it... need to load it.
-
-def _HEAP_SEGMENT_isValidAttr(self,attr,attrname,attrtype,mappings):
-    log.debug('_HEAP_SEGMENT_isValidAttr attrname : %s'%(attrname))
-    # FIXME - encoded Entry gives invalid pointers in self.Entry._0._1.SubSegmentCode
-    # why are we ignoring lastvalidentry already ?
-    if attrname == 'LastValidEntry':
-        return True # ignore
-    else:
-        return super(_HEAP_SEGMENT,self)._isValidAttr(attr,attrname,attrtype,mappings)
-
-_HEAP_SEGMENT._isValidAttr = _HEAP_SEGMENT_isValidAttr
-
-def _HEAP_SEGMENT_loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
-    log.debug('_loadMember attrname : %s'%(attrname))
-    #code.interact(local=locals())
-    if attrname == 'LastValidEntry':
-        # isPointerType code.
-        _attrType = utils.get_subtype(attrtype)
-        attr_obj_address = utils.getaddress(attr)
-        ####
-        memoryMap = mappings.is_valid_address( attr, _attrType)
-        if(not memoryMap):
-            log.debug("LastValidEntry out of mapping - 0x%lx - ignore "%(attr_obj_address ))
-            return True
-        ref = mappings.getRef(_attrType,attr_obj_address)
-        if ref:
-            #log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,attr,_attrType,attr_obj_address ))
-            #DO NOT CHANGE STUFF SOUPID attr.contents = ref
-            return True
-        #log.debug("%s %s loading from 0x%lx (is_valid_address: %s)"%(attrname,attr,attr_obj_address, memoryMap ))
-        ##### Read the struct in memory and make a copy to play with.
-        ### ERRROR attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address, _attrType ))
-        contents = memoryMap.readStruct(attr_obj_address, _attrType )
-        # save that validated and loaded ref and original addr so we dont need to recopy it later
-        mappings.keepRef( contents, _attrType, attr_obj_address)
-        #log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))     ))
-        # recursive validation checks on new struct
-        if not bool(attr):
-            log.warning('Member %s is null after copy: %s'%(attrname,attr))
-            return True
-        # go and load the pointed struct members recursively
-        if not contents.loadMembers(mappings, maxDepth):
-            log.debug('member %s was not loaded'%(attrname))
-            #invalidate the cache ref.
-            delRef( _attrType, attr_obj_address)
-            return False
-        return True
-    else:
-        return super(_HEAP_SEGMENT,self)._loadMember(attr,attrname,attrtype,mappings, maxDepth)
-
-
-_HEAP_SEGMENT._loadMember = _HEAP_SEGMENT_loadMember
 
 def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     """Returns a list of UCR segments for this segment.
