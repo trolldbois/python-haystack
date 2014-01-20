@@ -590,8 +590,8 @@ class LoadableMembers(object):
                     s += '%s (@0x%lx) : %s #(CString) \n'%(field, 
                                 ctypes.addressof(attr), 
                                 self._mappings_.getRef(CString, utils.getaddress(attr.ptr)))    
-            elif (ctypes.is_pointer_type(attrtype) and 
-                  not ctypes.is_pointer_to_void_type(attrtype)):
+            elif ctypes.is_pointer_type(attrtype): # and 
+                #not ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.
                 s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),
                                               utils.getaddress(attr))
