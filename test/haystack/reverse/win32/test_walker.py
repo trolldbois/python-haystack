@@ -94,7 +94,7 @@ class TestAllocator(unittest.TestCase):
             
             maxlen = len(heap)
             cheap = win7heapwalker.readHeap(heap)            
-            self.assertEquals(cheap.TotalFreeSize, total)
+            self.assertEquals(cheap.TotalFreeSize*8, total)
             log.debug( 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x'%(heap.start, total, cheap.TotalFreeSize, maxlen ) )
         
         return
@@ -114,19 +114,9 @@ class TestAllocator(unittest.TestCase):
         """ check if the isHeap fn perform correctly."""
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.reverse.win32 import win7heapwalker, win7heap
-        self.assertEquals( self._mappings.get_target_system(), 'win32')
+        self.assertEquals(self._mappings.get_target_system(), 'win32')
         heaps = self._mappings.getHeaps()
-        self.assertEquals( len(heaps), 12)
-        
-        for m in heaps:
-            gen = self._mappings.get_user_allocations(self._mappings, m)
-            try:
-                for addr,s in gen:
-                    #print '(0x%x,0x%x)'%(addr,s) 
-                    pass
-                log.debug('0x%x is heap'%(m.start))
-            except ValueError,e:
-                log.debug('0x%x is not heap'%(m.start))
+        self.assertEquals(len(heaps), 12)
         return    
 
     def test_get_frontendheap(self):
