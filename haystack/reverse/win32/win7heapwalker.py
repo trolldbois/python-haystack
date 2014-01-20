@@ -80,10 +80,13 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         self._allocs = numpy.asarray(sorted(myset))
 
         free_lists = self._get_freelists()
-        lst = va_free+free_chunks+fth_free+free_lists
+        lst = va_free + free_chunks + fth_free
+        # free_lists == free_chunks.
+        # fth_free is part of 1 chunk of allocated chunks.
+        # FIXME: va_free I have no freaking idea.
         myset = set([ (addr+sublen,size-sublen) for addr,size in lst])
-        if len(lst) != len(myset):
-            log.warning('NON unique referenced free chunks found. Please enquire. %d != %d'%(lstlen, setlen) )
+        if len(free_chunks) != len(free_lists):
+            log.warning('Weird: len(free_chunks) != len(free_lists)')
         # need to cut sizeof(HEAP_ENTRY) from address and size
         self._free_chunks = numpy.asarray(sorted(myset))
         return
