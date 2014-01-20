@@ -105,6 +105,7 @@ class TestWin7Heap(unittest.TestCase):
         heaps = [(h.start, len(h)) for h in self._mappings.getHeaps()]
         heaps.sort()
         self.assertEquals(heaps, self._known_heaps)
+        self.assertEquals(len(heaps), len(self._known_heaps))
         
 
     def test_get_UCR_segment_list(self):
