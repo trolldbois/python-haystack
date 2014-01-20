@@ -90,6 +90,9 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         
     def get_heap_children_mmaps(self):
         """ use free lists to establish the hierarchy between mmaps"""
+        # FIXME: we should use get_segmentlist to coallescce segment in one heap
+        # memory mapping. Not free chunks.
+        # heap.get_segment_list.
         if self._child_heaps is None:
             child_heaps = set()
             for x,s in self._get_freelists():
@@ -106,7 +109,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     def _get_virtualallocations(self):
         """ returns addr,size of committed,free vallocs heap entries"""
         if (self._valloc_committed, self._valloc_free) == (None, None):
-            self._valloc_committed = [ block for block in self._heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
+            self._valloc_committed = self._heap.get_virtual_allocated_blocks_list(self._mappings)
             self._valloc_free = [] # FIXME TODO
             log.debug( '\t+ %d vallocated blocks'%( len(self._valloc_committed) ) )
             #for block in allocated: #### BAD should return (vaddr,size)

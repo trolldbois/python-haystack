@@ -168,7 +168,8 @@ _HEAP_SEGMENT._loadMember = _HEAP_SEGMENT_loadMember
 
 def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     """Returns a list of UCR segments for this segment.
-    HEAP_SEGMENT.UCRSegmentList is a linked list to all UCRSegments
+    HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
+    Some may have Size == 0.
     """
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRSegmentList'):
@@ -204,13 +205,27 @@ _HEAP._listHead_ = [('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
 
+def _HEAP_get_virtual_allocated_blocks_list(self, mappings):
+    """Returns a list of virtual allocated entries.
+    
+    TODO: need some working on.
+    """
+    vallocs = list()
+    for valloc in self.iterateListField(mappings, 'VirtualAllocdBlocks'):
+        vallocs.append(valloc)
+        log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x"%(
+                   valloc._orig_addr_, valloc.CommitSize, valloc.ReserveSize))
+    return vallocs
 
-def _HEAP_get_UCR_segment_list(self, mappings):
-    """Returns a list of UCR segments for this heap.
+_HEAP.get_virtual_allocated_blocks_list = _HEAP_get_virtual_allocated_blocks_list
+
+
+def _HEAP_get_free_UCR_segment_list(self, mappings):
+    """Returns a list of available UCR segments for this heap.
     HEAP.UCRList is a linked list to all UCRSegments
     
-    TODO: exclude UCR segment from valid pointer values in mappings.
     """
+    # TODO: exclude UCR segment from valid pointer values in mappings.
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRList'):
         ucr_struct_addr = ucr._orig_addr_
@@ -221,7 +236,7 @@ def _HEAP_get_UCR_segment_list(self, mappings):
         ucrs.append(ucr)
     return ucrs
 
-_HEAP.get_UCR_segment_list = _HEAP_get_UCR_segment_list
+_HEAP.get_free_UCR_segment_list = _HEAP_get_free_UCR_segment_list
 
 
 def _HEAP_get_segment_list(self, mappings):
@@ -530,6 +545,8 @@ def _HEAP_get_freelists(self, mappings):
     @returns freeblock_addr : the address of the _HEAP_ENTRY (chunk header)
         size : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
     """
+    # FIXME: we should use get_segmentlist to coallescce segment in one heap
+    # memory mapping. Not free chunks.
     res = list()
     for freeblock in self.iterateListField( mappings, 'FreeLists'):
         if self.EncodeFlagMask:
