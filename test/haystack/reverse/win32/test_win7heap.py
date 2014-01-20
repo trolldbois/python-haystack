@@ -50,21 +50,24 @@ class TestWin7Heap(unittest.TestCase):
 
         ctypes = self._mappings.config.ctypes
         
-        self.assertEquals( ctypes.sizeof( win7heap._HEAP_SEGMENT), 64 )
-        self.assertEquals( ctypes.sizeof( win7heap._HEAP_ENTRY), 8 )
-        self.assertEquals( ctypes.sizeof( ctypes.POINTER(None)), 4 )
-        self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_TAG_ENTRY)), 4 )
-        self.assertEquals( ctypes.sizeof( win7heap._LIST_ENTRY), 8 )
-        self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_LIST_LOOKUP)), 4 )
-        self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_PSEUDO_TAG_ENTRY)), 4 )
-        self.assertEquals( ctypes.sizeof( ctypes.POINTER(win7heap._HEAP_LOCK)), 4 )
-        self.assertEquals( ctypes.sizeof( ctypes.c_ubyte), 1 )
-        self.assertEquals( ctypes.sizeof( (ctypes.c_ubyte*1)), 1 )
-        self.assertEquals( ctypes.sizeof( win7heap._HEAP_COUNTERS), 84 )
-        self.assertEquals( ctypes.sizeof( win7heap._HEAP_TUNING_PARAMETERS), 8 )
+        self.assertEquals(ctypes.sizeof(win7heap._HEAP_SEGMENT), 64)
+        self.assertEquals(ctypes.sizeof(win7heap._HEAP_ENTRY), 8)
+        self.assertEquals(ctypes.sizeof(ctypes.POINTER(None)), 4)
+        self.assertEquals(ctypes.sizeof(
+                                   ctypes.POINTER(win7heap._HEAP_TAG_ENTRY)), 4)
+        self.assertEquals(ctypes.sizeof(win7heap._LIST_ENTRY), 8)
+        self.assertEquals(ctypes.sizeof(
+                                 ctypes.POINTER(win7heap._HEAP_LIST_LOOKUP)), 4)
+        self.assertEquals(ctypes.sizeof(
+                            ctypes.POINTER(win7heap._HEAP_PSEUDO_TAG_ENTRY)), 4)
+        self.assertEquals(ctypes.sizeof(ctypes.POINTER(win7heap._HEAP_LOCK)), 4)
+        self.assertEquals(ctypes.sizeof(ctypes.c_ubyte), 1 )
+        self.assertEquals(ctypes.sizeof((ctypes.c_ubyte*1)), 1 )
+        self.assertEquals(ctypes.sizeof(win7heap._HEAP_COUNTERS), 84 )
+        self.assertEquals(ctypes.sizeof(win7heap._HEAP_TUNING_PARAMETERS), 8 )
 
-        self.assertEquals( ctypes.sizeof( win7heap.HEAP ) , 312 )
-        self.assertEquals( utils.offsetof( win7heap.HEAP , 'Signature') , 100 )
+        self.assertEquals(ctypes.sizeof(win7heap.HEAP ) , 312 )
+        self.assertEquals(utils.offsetof(win7heap.HEAP , 'Signature') , 100 )
 
 
     def test_is_heap(self):
@@ -72,15 +75,17 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.reverse.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         h = self._mappings.getMmapForAddr(0x005c0000)
-        self.assertEquals(h.getByteBuffer()[0:10],'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
+        self.assertEquals(h.getByteBuffer()[0:10],
+                        '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals( addr , 6029312)
         heap = h.readStruct( addr, win7heap.HEAP )
         
         # check that haystack memory_mapping works
-        self.assertEquals( ctypes.addressof( h._local_mmap_content ), ctypes.addressof( heap ) )
+        self.assertEquals(ctypes.addressof(h._local_mmap_content), 
+                                                         ctypes.addressof(heap))
         # check heap.Signature
-        self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
+        self.assertEquals(heap.Signature, 4009750271L ) # 0xeeffeeff
         load = heap.loadMembers(self._mappings, 10)
         self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
 
@@ -95,15 +100,11 @@ class TestWin7Heap(unittest.TestCase):
             # check heap.Signature
             self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
             load = heap.loadMembers(self._mappings, 10)
-            
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
         
         heaps = [(h.start, len(h)) for h in self._mappings.getHeaps()]
         heaps.sort()
-        import code
-        code.interact(local=locals())
         self.assertEquals(heaps, self._known_heaps)
-        
         
 
     def test_get_UCR_segment_list(self):
@@ -175,8 +176,10 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(segment.Heap.value,addr)
         self.assertEquals(segment.BaseAddress.value,addr)
         # checkings size. a page is 4096 in this example.
-        valid_alloc_size = heap.Segment.LastValidEntry.value - heap.Segment.FirstEntry.value
-        meta_size = heap.Segment.FirstEntry.value - heap.Segment.BaseAddress.value
+        valid_alloc_size = (heap.Segment.LastValidEntry.value
+                             - heap.Segment.FirstEntry.value)
+        meta_size = (heap.Segment.FirstEntry.value
+                        - heap.Segment.BaseAddress.value)
         committed_size = heap.Counters.TotalMemoryCommitted
         reserved_size = heap.Counters.TotalMemoryReserved
         ucr_size = reserved_size - committed_size
@@ -200,9 +203,12 @@ class TestWin7Heap(unittest.TestCase):
             for segment in segments:
                 self.assertEquals(segment.SegmentSignature,0xffeeffee)
                 self.assertEquals(segment.Heap.value,addr)
-                self.assertLess(segment.BaseAddress.value,segment.FirstEntry.value)
-                self.assertLess(segment.FirstEntry.value,segment.LastValidEntry.value)
-                valid_alloc_size = segment.LastValidEntry.value - segment.FirstEntry.value
+                self.assertLess(segment.BaseAddress.value,
+                                segment.FirstEntry.value)
+                self.assertLess(segment.FirstEntry.value,
+                                segment.LastValidEntry.value)
+                valid_alloc_size = (segment.LastValidEntry.value
+                                        - segment.FirstEntry.value)
                 meta_size = segment.FirstEntry.value - segment.BaseAddress.value
                 pages += segment.NumberOfPages
                 total_size += valid_alloc_size+meta_size
@@ -234,8 +240,10 @@ class TestWin7Heap(unittest.TestCase):
                 self.fail('Chunk Gap between %s %s '%(total[i], total[i+1]))
         chunks_size = total[-1][0]+total[-1][1]-total[0][0]
         #
-        valid_alloc_size = heap.Segment.LastValidEntry.value - heap.Segment.FirstEntry.value
-        meta_size = heap.Segment.FirstEntry.value - heap.Segment.BaseAddress.value
+        valid_alloc_size = (heap.Segment.LastValidEntry.value
+                             - heap.Segment.FirstEntry.value)
+        meta_size = (heap.Segment.FirstEntry.value
+                        - heap.Segment.BaseAddress.value)
         committed_size = heap.Counters.TotalMemoryCommitted
         reserved_size = heap.Counters.TotalMemoryReserved
         ucr_size = reserved_size - committed_size
@@ -272,7 +280,8 @@ class TestWin7Heap(unittest.TestCase):
             # chunks are in all segments
             alloc_size = 0
             for segment in heap.get_segment_list(self._mappings):
-                valid_alloc_size = segment.LastValidEntry.value - segment.FirstEntry.value
+                valid_alloc_size = (segment.LastValidEntry.value
+                                    - segment.FirstEntry.value)
                 alloc_size += valid_alloc_size
             # 1 chunk is 8 bytes.
             self.assertEquals(s_free/8, heap.TotalFreeSize)
@@ -308,7 +317,8 @@ class TestWin7Heap(unittest.TestCase):
 
             allocated, free = heap.get_chunks(self._mappings)
             freelists = heap.get_freelists(self._mappings)
-            free_size = sum([x[1] for x in [(hex(x[0]),x[1]) for x in freelists]])
+            free_size = sum([x[1] for x in 
+                                         [(hex(x[0]),x[1]) for x in freelists]])
             free_size2 = sum([x[1] for x in free])
             self.assertEquals(heap.TotalFreeSize*8, free_size)
             self.assertEquals(free_size, free_size2)
@@ -339,7 +349,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self._mappings.getMmapForAddr(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
-        valloc_committed = heap.get_virtual_allocated_blocks_list(self._mappings)
+        valloc_committed= heap.get_virtual_allocated_blocks_list(self._mappings)
         
         size = sum([x.ReserveSize for x in valloc_committed])
         # FIXME Maybe ??
@@ -354,7 +364,8 @@ class TestWin7Heap(unittest.TestCase):
             h = self._mappings.getMmapForAddr(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)
-            valloc_committed = heap.get_virtual_allocated_blocks_list(self._mappings)            
+            valloc_committed = heap.get_virtual_allocated_blocks_list(
+                                                                 self._mappings)
             size = sum([x.ReserveSize for x in valloc_committed])
             self.assertEquals(heap.Counters.TotalSizeInVirtualBlocks,size)
 
@@ -368,7 +379,7 @@ if __name__ == '__main__':
     #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
     #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
     #logging.getLogger('types').setLevel(level=logging.DEBUG)
-    logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+    #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     #unittest.TextTestRunner(verbosity=2).run(suite)
