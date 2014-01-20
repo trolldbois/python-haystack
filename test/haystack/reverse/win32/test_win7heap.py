@@ -210,16 +210,11 @@ class TestWin7Heap(unittest.TestCase):
         allocated, free = heap.get_chunks(self._mappings)
         logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
         freelists = heap.get_freelists(self._mappings)
-        freelists2 = heap.get_freelists2(self._mappings)
-        print len(freelists)
-        print len(freelists2)
-        print freelists == freelists2
-
-        import code
-        code.interact(local=locals())
+        free_size = sum([x[1] for x in [(hex(x[0]),x[1]) for x in freelists]])
+        self.assertEquals(heap.TotalFreeSize*8, free_size)
 
 
-    def test_getFrontendChunks(self):
+    def test_get_frontend_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.reverse.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
@@ -231,7 +226,13 @@ class TestWin7Heap(unittest.TestCase):
         logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
         logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
         logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-        fth_committed, fth_free = heap.getFrontendChunks(self._mappings)
+        fth_committed, fth_free = heap.get_frontend_chunks(self._mappings)
+        #SizeInCache : 59224L, 
+        
+        # not much to check...
+        lfh = h.readStruct(heap.FrontEndHeap.value, win7heap.LFH_HEAP )
+        self.assertEquals(lfh.Heap.value, addr)
+        # FIXME: check more.
 
     def test_getVallocBlocks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
@@ -247,6 +248,9 @@ class TestWin7Heap(unittest.TestCase):
         logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
         valloc_committed = [ block for block in heap.iterateListField(self._mappings, 'VirtualAllocdBlocks') ]
         #valloc_free = [] # FIXME TODO
+
+        import code
+        code.interact(local=locals())
 
 
     def test_all(self):

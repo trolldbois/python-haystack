@@ -131,7 +131,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     def _get_frontend_chunks(self):
         """ returns addr,size of committed,free heap entries in fth heap"""
         if (self._fth_committed, self._fth_free) == (None, None):
-            self._fth_committed, self._fth_free = self._heap.getFrontendChunks(self._mappings)
+            self._fth_committed, self._fth_free = self._heap.get_frontend_chunks(self._mappings)
             fth_commitsize = sum( [c[1] for c in self._fth_committed ])
             fth_freesize = sum( [c[1] for c in self._fth_free ])
             log.debug('\t+ %d frontend chunks, for %d bytes'%( len(self._fth_committed), fth_commitsize ) )

@@ -225,10 +225,7 @@ _HEAP.get_UCR_segment_list = _HEAP_get_UCR_segment_list
 
 
 def _HEAP_get_segment_list(self, mappings):
-    """returns a list of all segment attached to one Heap structure.
-    
-    UCR included ?
-    """
+    """returns a list of all segment attached to one Heap structure."""
     segments = list()
     for segment in self.iterateListField(mappings, 'SegmentList'):
         segment_addr = segment._orig_addr_
@@ -281,65 +278,26 @@ def _HEAP_get_chunks(self, mappings):
 
 _HEAP.get_chunks = _HEAP_get_chunks
 
-#@deprecated
-def _HEAP_scan_heap_segment(self, mappings, entry_addr, size):
-    res = list()
-    off = 0
-    encsize, flags, unused = self.getChunkInfo()
-    chunks = 0
-    bad=0
-    while off < size:
-        m = mappings.getMmapForAddr( entry_addr+off )
-        if not bool(m) :
-            # out of mapping LastValidEntry - do not load
-            # log.info('_HEAP scan-heap on @%x + off:%x = @%x- error'%(entry_addr, off, entry_addr+off))
-            break
-        he = m.readStruct(entry_addr+off, _HEAP_ENTRY)
-        sz = (he.Size ^ encsize)*8
-        if (he.Flags ^ flags) & 1 == 1: # allocated or not ?
-            #chunks[entry_addr+off+ _HEAP_SEGMENT.Entry.size] = sz - (he.UnusedBytes ^ unused)
-            chunks+=1
-            #log.debug('Found a chunk at @%x size %x'% (entry_addr+off+ _HEAP_SEGMENT.Entry.size, sz - (he.UnusedBytes ^ unused) ) )
-            res.append( ((entry_addr+off+ _HEAP_SEGMENT.Entry.size) , (sz - (he.UnusedBytes ^ unused)) ) )
-        else:
-            log.debug('(he.Flags ^ flags) & 1 != 1: %s'% ((he.Flags ^ flags) & 1) ) # HEAP_ENTRY_BUSY = 0x1
-            bad+=1
-        off += sz
-    log.debug('Found %d allocated chunks and %d with bad flags'%(chunks, bad) )
-    return res
 
+def _HEAP_get_frontend_chunks(self, mappings):
+    """ windows xp ?
+        the list of chunks from the frontend are deleted from the segment chunk list. 
+        
+        Functionnaly, (page 28) LFH_HEAP should be fetched by HEAP_BUCKET calcul
 
-#@deprecated
-def _HEAP_getChunkInfo(self):
-    """//position 0x7 in the header denotes
+    //position 0x7 in the header denotes
     //whether the chunk was allocated via
     //the front-end or the back-end (non-encoded ;) )
     if(ChunkHeader->UnusedBytes & 0x80)
         RtlpLowFragHeapFree
     else
         BackEndHeapFree
-    """
-    if self.EncodeFlagMask != 0:
-        return (self.Encoding.Size, self.Encoding.Flags, self.Encoding.UnusedBytes)
-    else:
-        return (0,0,0)
-
-#_HEAP.scan_heap_segment = _HEAP_scan_heap_segment
-#_HEAP.getChunkInfo = _HEAP_getChunkInfo
-
-
-
-def _HEAP_getFrontendChunks(self, mappings):
-    """ windows xp ?
-        the list of chunks from the frontend are deleted from the segment chunk list. 
-        
-        Functionnaly, (page 28) LFH_HEAP should be fetched by HEAP_BUCKET calcul
         
     """
     res = list()
     all_free = list()
     all_committed = list()
-    log.debug('_HEAP_getFrontendChunks')
+    log.debug('_HEAP_get_frontend_chunks')
     ptr = self.FrontEndHeap
     addr = utils.getaddress(ptr)
     if self.FrontEndHeapType == 1: # windows XP per default
@@ -365,7 +323,7 @@ def _HEAP_getFrontendChunks(self, mappings):
         #
         #
         # load members on self.FrontEndHeap car c'est un void *
-        if not st.loadMembers(mappings, 10):
+        if not st.loadMembers(mappings, 1):
             log.error('Error on loading frontend')
             raise model.NotValid('Frontend load at @%x is not valid'%(addr))
         
@@ -395,8 +353,9 @@ def _HEAP_getFrontendChunks(self, mappings):
         pass
     return all_committed, all_free
     
-_HEAP.getFrontendChunks = _HEAP_getFrontendChunks
+_HEAP.get_frontend_chunks = _HEAP_get_frontend_chunks
 
+############################## HEAP_SUBSEGMENT
 
 def _HEAP_SUBSEGMENT_get_userblocks(self):
     """
@@ -576,32 +535,13 @@ def _HEAP_get_freelists(self, mappings):
         if self.EncodeFlagMask:
             chunk_header = _HEAP_ENTRY_decode(freeblock, self)
         # size = header + freespace
-        res.append( (freeblock._orig_addr_, chunk_header.Size ))
+        res.append( (freeblock._orig_addr_, chunk_header.Size*8))
     return res
     
 _HEAP.get_freelists = _HEAP_get_freelists
 
-def _HEAP_getFreeListsWinXP(self, mappings):
-    """ Understanding_the_LFH.pdf page 17 """
-    freeList = []
-    # 128 blocks
-    start = ctypes.addressof(self.FreeLists) # sentinel value
-    logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-    _wordsize = 4 # FIXME: are the header arch independent.
-    for freeBlock in self.FreeLists._iterateList( mappings):
-        # try to get the size
-        sizeaddr = freeBlock - _wordsize
-        memoryMap = mappings.is_valid_address_value(sizeaddr)
-        if memoryMap == False:
-            raise ValueError('the link of this linked list has a bad value')
-        val = memoryMap.readWord( sizeaddr)
-        log.debug('\t - freeblock @%0.8x size:%d'%(freeBlock, val))
-        yield freeBlock
-    #free_chain = [freeBlock for freeBlock in self.iterateListField( mappings, 'FreeLists')]
-    logging.getLogger('listmodel').setLevel(level=logging.INFO)
-
-    raise StopIteration
-
+#def _HEAP_getFreeListsWinXP(self, mappings):
+# Understanding_the_LFH.pdf page 17 """
 
 
 
