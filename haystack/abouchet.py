@@ -448,7 +448,6 @@ def search_dumpname(structName, dumpname, **kwargs):
 
 def _search_cmdline(args):
     """ Internal cmdline mojo. """
-    structType = getKlass(args.structName)
     if args.pid is not None:
         mappings = MemoryMapper(pid=args.pid, mmap=args.mmap).getMappings()
     elif args.dumpname is not None:
@@ -463,6 +462,9 @@ def _search_cmdline(args):
     elif args.json:    rtype = 'json' 
     elif args.pickled:    rtype = 'pickled' 
     d = {'fullscan': args.fullscan, 'hint': args.hint, 'interactive': args.interactive, 'maxnum': args.maxnum}
+    # delay loading of class after the customisation of ctypes by the memory
+    # mapper
+    structType = getKlass(args.structName)
     for out in _search(mappings, structType, rtype=rtype, **d):
         print out
     return
@@ -563,7 +565,6 @@ def refresh(args):
     log.debug(args)
 
     addr=int(args.addr,16)
-    structType=getKlass(args.structName)
 
     mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
     finder = StructFinder(mappings)
@@ -572,6 +573,10 @@ def refresh(args):
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
+
+    # delay loading of class after the customisation of ctypes by the memory
+    # mapper
+    structType=getKlass(args.structName)
     instance,validated = finder.loadAt( memoryMap , 
                     addr, structType)
     ##
@@ -602,9 +607,10 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     """
     from haystack import dump_loader
     log.debug('haystack show %s %s %x'%(dumpname, structname, address ))
-    
-    structType = getKlass(structname)
     mappings = dump_loader.load(dumpname)
+    # delay loading of class after the customisation of ctypes by the memory
+    # mapper
+    structType = getKlass(structname)
     finder = StructFinder(mappings)
     # validate the input address.
     memoryMap = finder.mappings.is_valid_address_value(address)

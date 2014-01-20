@@ -508,7 +508,7 @@ class TestApiLinuxDump(unittest.TestCase):
     
     return 
 
-@unittest.skip('')
+#@unittest.skip('')
 class TestApiWin32Dump(unittest.TestCase):
   ''' test is the python API works. '''
   def setUp(self):
@@ -555,7 +555,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+  logging.basicConfig(stream=sys.stdout, level=logging.INFO)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
