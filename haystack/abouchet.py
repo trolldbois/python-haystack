@@ -136,7 +136,7 @@ class StructFinder:
         """
         log.debug("Loading %s from 0x%lx "%(structType,offset))
         #instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
-        instance=memoryMap.readStruct(offset,structType)
+        instance = memoryMap.readStruct(offset,structType)
         # check if data matches
         if ( instance.loadMembers(self.mappings, depth) ):
             log.info( "found instance %s @ 0x%lx"%(structType,offset) )
@@ -526,18 +526,19 @@ def _output(outs, rtype ):
     return None
 
 def _show_output(instance, validated, rtype ):
-    """ Return results in the rtype format"""
-
-    if not validated :
-        str_fn = lambda x: str(x)
-    else:
-        str_fn = lambda x: x.toString()
+    """ Return results in the rtype format.
+    Results of non validated instance are not very interesting.
+    """
 
     if rtype == 'string':
+        if not validated :
+            str_fn = lambda x: str(x)
+        else:
+            str_fn = lambda x: x.toString()
         return "(%s\n, %s)"% ( str_fn(instance), validated )
     #else {'json', 'pickled', 'python'} : # cast in pyObject
     pyObj = instance.toPyObject()
-    from haystack import basicmodel # TODO replace by isntance method finctypesinpyobj
+    from haystack import basicmodel # TODO replace by instance method finctypesinpyobj
     # last check to clean the structure from any ctypes Structure
     if basicmodel.findCtypesInPyObj(pyObj):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')

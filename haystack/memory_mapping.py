@@ -779,17 +779,22 @@ class Mappings:
         import ctypes
         from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
         # find an executable image and get the ELF header
-        m = [_m for _m in self.mappings if 'r-xp' in _m.permissions][0]
-        head = m.readBytes(m.start, ctypes.sizeof(struct_Elf_Ehdr))
-        x = struct_Elf_Ehdr.from_buffer_copy(head)
-        self.__required_maps.append(m)
-        if x.e_machine == 3:
-            self.config = config.make_config_linux32()
-        elif x.e_machine == 62:
-            self.config = config.make_config_linux64()
-        else:
-            raise NotImplementedError('MACHINE is %s %s'%(x.e_machine, m.pathname))
-        return 
+        for m in self.mappings:
+            if 'r-xp' not in m.permissions:
+                continue
+            head = m.readBytes(m.start, ctypes.sizeof(struct_Elf_Ehdr))
+            x = struct_Elf_Ehdr.from_buffer_copy(head)
+            self.__required_maps.append(m)
+            log.debug('MACHINE:%s pathname:%s'%(x.e_machine, m.pathname))
+            if x.e_machine == 3:
+                self.config = config.make_config_linux32()
+                return
+            elif x.e_machine == 62:
+                self.config = config.make_config_linux64()
+                return
+            else:
+                continue
+        raise NotImplementedError('MACHINE has not been found.')
 
     def get_required_maps(self):
         return list(self.__required_maps)

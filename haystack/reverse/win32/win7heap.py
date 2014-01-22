@@ -110,7 +110,7 @@ def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     """
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRSegmentList'):
-        ucr_struct_addr = ucr._orig_addr_
+        ucr_struct_addr = ucr._orig_address_
         ucr_addr = utils.getaddress(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
         log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
@@ -151,7 +151,7 @@ def _HEAP_get_virtual_allocated_blocks_list(self, mappings):
     for valloc in self.iterateListField(mappings, 'VirtualAllocdBlocks'):
         vallocs.append(valloc)
         log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x"%(
-                   valloc._orig_addr_, valloc.CommitSize, valloc.ReserveSize))
+                   valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
     return vallocs
 
 _HEAP.get_virtual_allocated_blocks_list = _HEAP_get_virtual_allocated_blocks_list
@@ -165,7 +165,7 @@ def _HEAP_get_free_UCR_segment_list(self, mappings):
     # TODO: exclude UCR segment from valid pointer values in mappings.
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRList'):
-        ucr_struct_addr = ucr._orig_addr_
+        ucr_struct_addr = ucr._orig_address_
         ucr_addr = utils.getaddress(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
         log.debug("Heap.UCRList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
@@ -180,7 +180,7 @@ def _HEAP_get_segment_list(self, mappings):
     """returns a list of all segment attached to one Heap structure."""
     segments = list()
     for segment in self.iterateListField(mappings, 'SegmentList'):
-        segment_addr = segment._orig_addr_
+        segment_addr = segment._orig_address_
         first_addr = utils.getaddress(segment.FirstEntry)
         last_addr = utils.getaddress(segment.LastValidEntry)
         log.debug( 'Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x'%( segment_addr, first_addr, last_addr) )
@@ -379,6 +379,10 @@ _HEAP_SUBSEGMENT.get_freeblocks = _HEAP_SUBSEGMENT_get_freeblocks
 #_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
 #_HEAP_UCR_DESCRIPTOR._listHead_ = [    ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),    ]
 
+# per definition, reserved space is not maped.
+HEAP_UCR_DESCRIPTOR.expectedValues = {
+    'Address': constraints.IgnoreMember,
+}
 
 #### _HEAP_LOCAL_SEGMENT_INFO
 # _HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
@@ -467,7 +471,7 @@ def _get_chunk(mappings, heap, entry_addr):
     m = mappings.getMmapForAddr(entry_addr)
     chunk_header = m.readStruct( entry_addr, _HEAP_ENTRY)
     mappings.keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
-    chunk_header._orig_addr_ = entry_addr
+    chunk_header._orig_address_ = entry_addr
     return chunk_header
 
 def _HEAP_get_freelists(self, mappings):
@@ -489,7 +493,7 @@ def _HEAP_get_freelists(self, mappings):
         if self.EncodeFlagMask:
             chunk_header = _HEAP_ENTRY_decode(freeblock, self)
         # size = header + freespace
-        res.append( (freeblock._orig_addr_, chunk_header.Size*8))
+        res.append( (freeblock._orig_address_, chunk_header.Size*8))
     return res
     
 _HEAP.get_freelists = _HEAP_get_freelists

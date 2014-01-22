@@ -193,7 +193,7 @@ def is_heap(mappings, mapping):
     # todo check _heap.ProcessHeapsListIndex
     addr = mapping.start
     heap = mapping.readStruct( addr, win7heap.HEAP )
-    load = heap.loadMembers(mappings, 1)
+    load = heap.loadMembers(mappings, 1) # need to go 3 to load all.
     return load
 
 def readHeap(mapping):

@@ -308,10 +308,6 @@ class LoadableMembers(object):
     def _loadMember(self,attr,attrname,attrtype,mappings, maxDepth):
         ctypes = self._mappings_.config.ctypes
         # skip static void_p data members
-        if attrname == 'ListsInUseUlong':
-            print "attrname == ListsInUseUlong"
-            import code
-            code.interact(local=locals())
         if not self._isLoadableMember(attr, attrname, attrtype):
             log.debug("%s %s not loadable bool(attr) = %s"%(attrname, attrtype,
                                                             bool(attr)))
@@ -325,7 +321,7 @@ class LoadableMembers(object):
             # TODO pydoc for impl.
             attr._orig_address_ = self._orig_address_ + offset
             attr._mappings = mappings
-            if not attr.loadMembers(mappings, maxDepth+1):
+            if not attr.loadMembers(mappings, maxDepth-1):
                 log.debug("st: %s %s not valid, error while loading inner struct"%(attrname,attrtype) )
                 return False
             log.debug("st: %s %s inner struct LOADED "%(attrname,attrtype) )
@@ -335,10 +331,10 @@ class LoadableMembers(object):
         elif ctypes.is_array_type(attrtype):
             log.debug('a: %s is arraytype %s recurse load'%(attrname,
                                                             repr(attr)))
-            attrLen=len(attr)
+            attrLen = len(attr)
             if attrLen == 0:
                 return True
-            elType=type(attr[0])
+            elType = type(attr[0])
             for i in range(0,attrLen):
                 # FIXME BUG DOES NOT WORK
                 # offsetof("%s[%d]") is called, and %s exists, not %s[%d]
@@ -415,10 +411,11 @@ class LoadableMembers(object):
                 ctypes.is_array_of_basic_type(subtype)):
                 # do nothing
                 return True
-            elif ctypes.is_array_type(subtype):
-                return self._loadMember(self,contents,'pointee',subtype, mappings, maxDepth-1)
-                
-            if not contents.loadMembers(mappings, maxDepth):
+            elif (ctypes.is_array_type(subtype) or 
+                  ctypes.is_pointer_type(subtype)):
+                return self._loadMember(contents,'pointee',subtype, mappings, maxDepth-1)
+            
+            if not contents.loadMembers(mappings, maxDepth-1):
                 log.debug('member %s was not loaded'%(attrname))
                 #invalidate the cache ref.
                 mappings.delRef( _attrType, attr_obj_address)
@@ -629,7 +626,11 @@ class LoadableMembers(object):
         self._mappings_.keepRef(my_self, my_class, ctypes.addressof(self) )
         for field,typ in self.getFields():
             attr = getattr(self,field)
-            member = self._attrToPyObject(attr,field,typ)
+            try:
+                member = self._attrToPyObject(attr,field,typ)
+            except NameError as e:
+                raise NameError('%s %s\n%s'%(field,typ,e))
+
             setattr(my_self, field, member)
         # save the original type (me) and the field
         setattr(my_self, '_ctype_', type(self))
@@ -676,22 +677,18 @@ class LoadableMembers(object):
             else:
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
-                cache = self._mappings_.getRef(_subtype, utils.getaddress(attr) )
+                cache = self._mappings_.getRef(_subtype, _address)
                 if cache is not None: # struct, union...
                     obj = self._attrToPyObject(cache, field, _subtype )
-                elif ctypes.is_pointer_to_basic_type(attrtype):
-                    log.error('Pointer to Basic type - %s'%(field))
-                    obj = 'Pointer to Basic type'
-                    #import code
-                    #code.interact(local=locals())
                 else:
                     # you got here because your pointer is not loaded:
                     #  did you ignore it in expectedValues ?
-                    #  is itin the middle of a struct ? 
+                    #  is it in the middle of a struct ? 
                     #  is that a linked list ?
-                    log.warning('LP structure for field:%s %s/%s not in cache '
-                              '%x'%(field, attrtype, get_subtype(attrtype), 
-                                    utils.getaddress(attr)))
+                    #  is it a invalid instance ?
+                    log.debug('Pointer for field:%s %s/%s not in cache '
+                              '0x%x'%(field, attrtype, get_subtype(attrtype), 
+                                    _address))
                     return (None,None)
         elif isinstance(attr, numbers.Number): 
             # case for int, long. But needs to be after c_void_p pointers case

@@ -83,10 +83,10 @@ class ListModel(object):
         """
         import ctypes
         structType, offset = self._getListFieldInfo(fieldname)
-        
+        # FIXME offset == utils.offsetof(type(self), fieldname)
         # DO NOT think HEAD is a valid entry.
         # if its a ListEntries, self has already been loaded anyway.
-        headAddr = self._orig_address_ + utils.offsetof( type(self), fieldname)
+        headAddr = self._orig_address_ + utils.offsetof(type(self), fieldname)
         head = getattr(self, fieldname)
         
         for entry in head._iterateList(mappings):
@@ -101,7 +101,7 @@ class ListModel(object):
                 log.debug("%s loading from references cache %s/0x%lx"%(fieldname, structType, link ))
                 continue # do not reload
             else:
-                #    OFFSET read, specific to a LIST ENTRY model
+                # OFFSET read, specific to a LIST ENTRY model
                 memoryMap = mappings.is_valid_address_value(link, structType)
                 if memoryMap is False:
                     log.error('error while validating address 0x%x type:%s @end:0x%x'%(link, 
@@ -109,8 +109,8 @@ class ListModel(object):
                     log.error('self : %s , fieldname : %s'%(self.__class__.__name__, fieldname))
                     raise ValueError('error while validating address 0x%x type:%s @end:0x%x'%(link, 
                                     structType.__name__, link+ctypes.sizeof(structType)) )
-                st = memoryMap.readStruct( link, structType) # point at the right offset
-                st._orig_addr_ = link
+                st = memoryMap.readStruct(link, structType) # point at the right offset
+                st._orig_address_ = link
                 mappings.keepRef(st, structType, link)
                 log.debug("keepRef %s.%s @%x"%(structType, fieldname, link    ))
                 # load the list entry structure members
@@ -153,11 +153,11 @@ class ListModel(object):
         log.debug('load list elements members recursively on %s @%x '%(type(self).__name__, self._orig_address_))
         log.debug('listmember %s'%self.__class__._listMember_)
         for fieldname in self._listMember_:
-            self._loadListEntries(fieldname, mappings, maxDepth )
+            self._loadListEntries(fieldname, mappings, maxDepth-1)
 
         log.debug('load list head elements members recursively on %s'%(type(self).__name__))
         for fieldname,structType,structFieldname,offset in self._listHead_:
-            self._loadListEntries(fieldname, mappings, maxDepth ) 
+            self._loadListEntries(fieldname, mappings, maxDepth-1) 
      
         log.debug('-+ <%s> loadMembers END +-'%(self.__class__.__name__))
         return True
@@ -190,7 +190,7 @@ class ListModel(object):
             #log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
             # use cache if possible, avoid loops.
             st = mappings.getRef( structType, link)
-            #st._orig_addr_ = link
+            #st._orig_address_ = link
             if st: 
                 yield st
             else:
@@ -264,7 +264,7 @@ def declare_double_linked_list_type(structType, forward, backward):
                     log.error("ValueError: 'the link of this linked list has a bad value'")
                     raise StopIteration
                 st = memoryMap.readStruct( addr, structType)
-                st._orig_addr_ = addr
+                st._orig_address_ = addr
                 mappings.keepRef(st, structType, addr)
                 log.debug("keepRefx2 %s.%s: @%x"%(structType.__name__, fieldname, addr))
                 yield addr
