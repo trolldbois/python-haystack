@@ -58,6 +58,7 @@ class SrcTests(unittest.TestCase):
 class TestLoadMembers(SrcTests):
     """Basic types"""
     def setUp(self):
+        model.reset()
         self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
     
@@ -161,6 +162,7 @@ class TestLoadMembers(SrcTests):
 class TestToPyObject(SrcTests):
     """Basic types"""
     def setUp(self):
+        model.reset()
         self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
     

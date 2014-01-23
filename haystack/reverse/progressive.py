@@ -12,7 +12,7 @@ import time
 import sys
 import numpy
 
-from haystack.config import Config
+from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 
 from fieldtypes import FieldType

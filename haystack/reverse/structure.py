@@ -13,7 +13,7 @@ import numbers
 import math
 import weakref
 
-from haystack.config import Config
+from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 from haystack import model
 

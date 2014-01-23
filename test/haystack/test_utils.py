@@ -21,6 +21,10 @@ import unittest
 class TestHelpers(unittest.TestCase):
     """Tests helpers functions."""
 
+    def setUp(self):
+        model.reset()
+
+
     @unittest.skip('FIXME requires mappings')
     def test_is_valid_address(self):
         #utils.is_valid_address(obj, mappings, structType=None):

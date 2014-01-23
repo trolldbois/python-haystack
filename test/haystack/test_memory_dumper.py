@@ -70,6 +70,7 @@ class TestMemoryDumper32(TestMemoryDumper):
     """
 
     def setUp(self):
+        model.reset()
         from haystack import types
         types.reload_ctypes(4,4,8)
         self.tgts = []

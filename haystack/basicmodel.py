@@ -344,6 +344,9 @@ class LoadableMembers(object):
             return True
         # we have PointerType here . Basic or complex
         # exception cases
+        elif ctypes.is_function_type(attrtype) : 
+            pass
+            # FIXME
         elif ctypes.is_cstring_type(attrtype) : 
             # can't use basic c_char_p because we can't load in foreign memory
             attr_obj_address = utils.getaddress(attr.ptr)
@@ -575,18 +578,9 @@ class LoadableMembers(object):
                 s += ','.join(["%s"%(val) for val in attr ])
                 s += '],\n'
             elif ctypes.is_cstring_type(attrtype):
-                if not bool(attr):
-                    # only print address/null
-                    s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
-                                utils.getaddress(attr.ptr) )
-                elif not utils.is_address_local(attr):
-                    # only print address in target space
-                    s=prefix+'"%s": 0x%lx, #(CString not local)\n'%(field, 
-                                                        utils.getaddress(attr))
-                else:
-                    s += '%s (@0x%lx) : %s #(CString) \n'%(field, 
-                                ctypes.addressof(attr), 
-                                self._mappings_.getRef(CString, utils.getaddress(attr.ptr)))    
+                # only print address/null
+                s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
+                            utils.getaddress(attr.ptr) )
             elif ctypes.is_pointer_type(attrtype): # and 
                 #not ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.

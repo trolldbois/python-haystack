@@ -465,8 +465,10 @@ def _search_cmdline(args):
     # delay loading of class after the customisation of ctypes by the memory
     # mapper
     structType = getKlass(args.structName)
-    for out in _search(mappings, structType, rtype=rtype, **d):
-        print out
+    ret = _search(mappings, structType, rtype=rtype, **d)
+    if isinstance(ret, list):
+        for out in ret:
+            print out
     return
 
 def _search(mappings, structType, fullscan=False, hint=0, rtype='python', interactive=False, maxnum=1):

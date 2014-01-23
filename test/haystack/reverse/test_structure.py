@@ -11,7 +11,7 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
+from haystack import model
 from haystack.reverse import context
 
 __author__ = "Loic Jaquemet"
@@ -22,7 +22,6 @@ __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
 log = logging.getLogger("test_structure")
-import ctypes 
 
 class TestStructure(unittest.TestCase):
 

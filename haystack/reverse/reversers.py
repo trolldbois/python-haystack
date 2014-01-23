@@ -11,7 +11,7 @@ import struct
 import sys
 import time
 
-from haystack.config import Config
+from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 from haystack import argparse_utils
 

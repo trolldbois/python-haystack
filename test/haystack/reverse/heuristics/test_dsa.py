@@ -12,7 +12,7 @@ import pickle
 import sys
 
 from haystack import config
-Config = config.make_config_wordsize(4) # forcing it on these unittest
+Config = config.make_config_linux32() # forcing it on these unittest
 
 from haystack.reverse import fieldtypes
 from haystack.reverse import structure
@@ -28,7 +28,6 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes 
 
 log = logging.getLogger('test_field_analyser')
 

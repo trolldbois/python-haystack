@@ -13,7 +13,8 @@ import itertools
 import collections
 import numbers
 
-from haystack.config import Config
+from haystack import model
+from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 
 from haystack.reverse import utils

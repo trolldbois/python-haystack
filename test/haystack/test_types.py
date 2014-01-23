@@ -54,6 +54,9 @@ def make_types():
 class TestReload(unittest.TestCase):
     """Tests sizes after ctypes changes."""
 
+    def setUp(self):
+        model.reset()
+
     # test ctypes._pointer_type_cache
     def test_pointer_type_cache(self):
         """test the comportment of _pointer_type_cache"""
@@ -229,6 +232,7 @@ class TestBasicFunctions(unittest.TestCase):
     """Tests basic haystack.types functions on base types."""
 
     def setUp(self):
+        model.reset()
         import ctypes
         ctypes = types.load_ctypes_default()
         for name,value in make_types().items():
@@ -345,6 +349,7 @@ class TestBasicFunctions32(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
+        model.reset()
         import ctypes
         ctypes = types.reload_ctypes(4,4,8)
         self.assertTrue(ctypes.proxy)
@@ -376,6 +381,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
+        model.reset()
         import ctypes
         ctypes = types.reload_ctypes(8,8,8)
         self.assertTrue(ctypes.proxy)
@@ -406,6 +412,7 @@ class TestBasicFunctions64(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
+        model.reset()
         import ctypes
         ctypes = types.reload_ctypes(8,8,16)
         self.assertTrue(ctypes.proxy)

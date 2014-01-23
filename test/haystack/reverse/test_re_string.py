@@ -11,7 +11,7 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
+from haystack import model
 from haystack.reverse import re_string
 
 __author__ = "Loic Jaquemet"

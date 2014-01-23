@@ -29,6 +29,7 @@ class TestWin7Heap(unittest.TestCase):
     
     
     def setUp(self):
+        model.reset()
         self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
         self._known_heaps = [(0x390000, 0x3000),  (0x540000, 0x1000),
                              (0x580000, 0x9000),  (0x5c0000, 0x59000),

@@ -445,6 +445,7 @@ class Test6_x64(SrcTests):
 class TestApiLinuxDumpX64(unittest.TestCase):
   """Validate API on a linux x64 dump of SSH."""
   def setUp(self):
+    model.reset()
     self.validAddress = '0x7f724c90d740'
     self.memdumpname = 'test/dumps/ssh/ssh.x64.6653.dump'
     self.classname = 'sslsnoop.ctypes_openssh.session_state'
@@ -469,16 +470,10 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 class TestApiLinuxDump(unittest.TestCase):
   """ test is the python API works. """
   def setUp(self):
+    model.reset()
     self.memdumpname = 'test/dumps/ssh/ssh.1'
     self.classname = 'sslsnoop.ctypes_openssh.session_state'
-    self.known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
-                    (0x00580000, 111933), (0x005c0000, 1704080) , 
-                    (0x01ef0000, 604), (0x02010000, 61348), 
-                    (0x02080000, 474949), (0x021f0000 , 18762),
-                    (0x03360000, 604), (0x04030000 , 632),
-                    (0x04110000, 1334), (0x041c0000 , 644),
-                    # from free stuf
-                    (0x0061a000, 1200),
+    self.known_heaps = [ (0xb84ee318,0 )
                     ]
 
   def tearDown(self):
@@ -512,6 +507,7 @@ class TestApiLinuxDump(unittest.TestCase):
 class TestApiWin32Dump(unittest.TestCase):
   """ test is the python API works. """
   def setUp(self):
+    model.reset()
     self.memdumpname = 'test/dumps/putty/putty.1.dump'
     self.classname = 'haystack.reverse.win32.win7heap.HEAP'
     self.known_heaps = [ (0x00390000, 8956), (0x00540000, 868),

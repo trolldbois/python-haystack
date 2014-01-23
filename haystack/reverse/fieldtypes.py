@@ -10,7 +10,7 @@ import collections
 import struct
 import itertools
 
-from haystack.config import Config
+from haystack.config import ConfigClass as Config
 from haystack.reverse import re_string
 
 import ctypes

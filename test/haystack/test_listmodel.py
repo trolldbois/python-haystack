@@ -7,6 +7,7 @@ import logging
 import unittest
 import sys
 
+from haystack import model
 from haystack import dump_loader
 from haystack import utils
 
@@ -26,6 +27,7 @@ class TestListStruct(unittest.TestCase):
     """
 
     def setUp(self):
+        model.reset()
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
     
     def tearDown(self):
@@ -93,6 +95,7 @@ class TestListStructTest5:#(unittest.TestCase):
     """
 
     def setUp(self):
+        model.reset()
         offset = 0x08f75008
         self.mappings = dump_loader.load('test/src/test-ctypes5.dump')
         sys.path.append('test/src/')

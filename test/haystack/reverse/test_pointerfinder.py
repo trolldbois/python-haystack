@@ -11,11 +11,12 @@ import operator
 import os
 import unittest
 
+from haystack import model
 from haystack import memory_mapping
 from haystack.reverse import pointerfinder
 
 from haystack import config
-Config = config.make_config_wordsize(4)
+Config = config.make_config_linux32()
 
 Config.MMAP_START = 0x0c00000
 Config.MMAP_STOP =  0x0c01000

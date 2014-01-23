@@ -11,6 +11,7 @@ import time
 import mmap
 import struct
 
+from haystack import model
 from haystack import dump_loader
 from haystack import memory_mapping
 from haystack import utils
@@ -20,6 +21,9 @@ from haystack.reverse import context
 log = logging.getLogger('test_memory_mapping')
 
 class TestMmapHack(unittest.TestCase):
+    def setUp(self):    
+        model.reset()
+
     def test_mmap_hack64(self):
         ctypes = types.reload_ctypes(8,8,16)
         real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
@@ -74,7 +78,7 @@ class TestMappingsLinux(unittest.TestCase):
         pass
 
     def setUp(self):    
-        pass
+        model.reset()
 
     def tearDown(self):
         self.ssh.reset()
@@ -166,6 +170,7 @@ class TestMappingsLinux(unittest.TestCase):
 class TestMappingsWin32(unittest.TestCase):
 
     def setUp(self):    
+        model.reset()
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
         pass
 
@@ -196,7 +201,7 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals( len(allocs), 2273)
 
     def test_getMmap(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         with self.assertRaises(IndexError):
             self.assertEquals( len(mappings.getMmap('[heap]')), 1)
         self.assertEquals( len(mappings.getMmap('None')), 71)
@@ -212,43 +217,43 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals( mappings.getHeap().pathname, 'None')
 
     def test_getHeaps(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         self.assertEquals( len(mappings.getHeaps()), 12)
 
     @unittest.expectedFailure # FIXME
     def test_getStack(self):
         #TODO win32        
-        mappings = self.putty.mappings
+        mappings = self.mappings
         #print ''.join(['%s\n'%(m) for m in mappings])        
         #print mappings.getStack() # no [stack]
         self.assertEquals( mappings.getStack().start, 0x00400000)
         self.assertEquals( mappings.getStack().pathname, '''C:\Program Files (x86)\PuTTY\putty.exe''')
         
     def test_contains(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         for m in mappings:
             self.assertTrue( m.start in mappings)
             self.assertTrue( (m.end-1) in mappings)
 
     def test_len(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         self.assertEquals( len(mappings), 403)
         
     def test_getitem(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         self.assertTrue( isinstance(mappings[0], memory_mapping.MemoryMapping))
         self.assertTrue( isinstance(mappings[len(mappings)-1], memory_mapping.MemoryMapping))
         with self.assertRaises(IndexError):
             mappings[0x0005c000]
         
     def test_iter(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         mps = [m for m in mappings]
         mps2 = [m for m in mappings.mappings]
         self.assertEquals(mps, mps2)
 
     def test_setitem(self):
-        mappings = self.putty.mappings
+        mappings = self.mappings
         with self.assertRaises(NotImplementedError):
             mappings[0x0005c000]=1
 
@@ -272,6 +277,7 @@ class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
     
     def setUp(self):
+        model.reset()
         self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
 
     def tearDown(self):

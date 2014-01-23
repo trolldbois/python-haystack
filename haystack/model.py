@@ -46,6 +46,8 @@ __book = _book()
 def reset():
     """Clean the book"""
     __book.modules = set()
+    from haystack import types
+    ctypes = types.load_ctypes_default()
 
 def registeredModules():
     return sys.modules[__name__].__book.getModules()

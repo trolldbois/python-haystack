@@ -11,10 +11,11 @@ import operator
 import os
 import unittest
 
+from haystack import model
 from haystack import memory_mapping
 from haystack.reverse import pattern
 from haystack import config
-Config = config.make_config_wordsize(4) # forcing it on these unittest
+Config = config.make_config_linux32() # forcing it on these unittest
 
 
 Config.MMAP_START = 0x0c00000

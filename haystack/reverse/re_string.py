@@ -15,7 +15,7 @@ import encodings
 import logging
 import string
 
-from haystack.config import Config
+from haystack import model
 
 log = logging.getLogger('re_string')
 
@@ -140,9 +140,10 @@ def rfind_utf16(bytes, offset, size, aligned=False):
   index = _rfind_utf16(bytes_nocp)
   if aligned and index > -1:
     # align results 
-    if index%Config.WORDSIZE :
-      index += index%Config.WORDSIZE
-    if index > offset+size-Config.WORDSIZE:
+    # FIXME TODO WORDSIZE is 4 ?
+    if index%4:
+      index += index%4
+    if index > offset+size-4:
       return -1
   return index
 

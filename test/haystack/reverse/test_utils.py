@@ -7,7 +7,7 @@ import numpy
 import os
 import unittest
 
-from haystack.config import Config
+from haystack import model
 from haystack.reverse import utils
 from haystack.reverse import context
 
@@ -24,7 +24,7 @@ class TestBasicFunctions(unittest.TestCase):
     with self.assertRaises(ValueError):
       utils.closestFloorValue(-1, lst)
     
-    ctx = context.get_context('test/src/test-ctypes3.dump')
+    ctx = context.get_context('test/src/test-ctypes3.32.dump')
     lst = ctx._structures_addresses
     #print ['0x%0.8x'%i for i in lst]
 
