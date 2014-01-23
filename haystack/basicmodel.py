@@ -361,10 +361,10 @@ class LoadableMembers(object):
                 return False
             MAX_SIZE=255
             
-            ref = mappings.getRef(CString,attr_obj_address)
+            ref = mappings.getRef(ctypes.CString,attr_obj_address)
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx"%(attrname,
-                                               attr, CString, attr_obj_address))
+                                               attr, ctypes.CString, attr_obj_address))
                 return True
             log.debug('%s %s is defined as a CString, loading from 0x%lx '
                       'is_valid_address %s'%(attrname, attr, attr_obj_address,
@@ -374,7 +374,7 @@ class LoadableMembers(object):
                 log.warning('buffer size was too small for this CString')
 
             # that will SEGFAULT attr.string = txt - instead keepRef to String
-            mappings.keepRef( txt, CString, attr_obj_address)
+            mappings.keepRef(txt, ctypes.CString, attr_obj_address)
             log.debug('kept CString ref for "%s" at @%x'%(txt, attr_obj_address))
             return True
         elif ctypes.is_pointer_type(attrtype): # not functionType, it's not loadable
@@ -536,7 +536,7 @@ class LoadableMembers(object):
                        self._attrToString(contents, '', _attrType, prefix+'\t'))
                 #raise NotImplementedError('what is this %s'%(_attrType))
         elif ctypes.is_cstring_type(attrtype):
-            s = prefix + '"%s": "%s" , #(CString)'%(field, self._mappings_.getRef(CString, 
+            s = prefix + '"%s": "%s" , #(CString)'%(field, self._mappings_.getRef(ctypes.CString, 
                                                     utils.getaddress(attr.ptr)))
         else: # wtf ? 
             s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr'%(field, repr(attr))
