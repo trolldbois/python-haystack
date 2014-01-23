@@ -141,13 +141,13 @@ class TestMemoryDumper32(TestMemoryDumper):
         self.assertGreater(size1, 500) # not a null archive
         #self.assertGreater(size2, size1) # more mappings
         self.assertGreater(size3, size2) # more mappings
-        print size1, size2, size3
-        print file(out1+'/mappings').read()
-        print '-'*80
-        print file(out2+'/mappings').read()
-        print '-'*80
-        print file(out3+'/mappings').read()
-        print '-'*80
+        #print size1, size2, size3
+        #print file(out1+'/mappings').read()
+        #print '-'*80
+        #print file(out2+'/mappings').read()
+        #print '-'*80
+        #print file(out3+'/mappings').read()
+        #print '-'*80
         
         # test opening by dump_loader
         from haystack import dump_loader
@@ -180,8 +180,6 @@ class TestMemoryDumper32(TestMemoryDumper):
         # get offset from test program        
         offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
         offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
-        import ctypes
-        print 'test pattern', ctypes
         # check offsets in memory dump
         import haystack.abouchet
         for offset in offsets_1:

@@ -193,8 +193,6 @@ class Test6_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    """ tests valid structure refresh."""
-
     # if you delete the Heap memorymap, 
     # all references in the model are invalided
 
@@ -278,7 +276,6 @@ class Test6_x32(SrcTests):
 
 
   def test_search(self):
-    """ tests valid structure show and invalid structure show."""
     if True:
         import ctypes
         self.assertIn('CTypesProxy-4:4:8', '%s'%ctypes)
@@ -334,7 +331,6 @@ class Test6_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    """ tests valid structure refresh."""
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     # string
@@ -410,7 +406,6 @@ class Test6_x64(SrcTests):
 
 
   def test_search(self):
-    """ tests valid structure show and invalid structure show."""
     if True:
         import ctypes
         self.assertIn('CTypesProxy-8:8:16', '%s'%ctypes)
@@ -455,11 +450,10 @@ class TestApiLinuxDumpX64(unittest.TestCase):
     self.mappings = None
 
   def test_show(self):
-    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, long(self.validAddress,16))
     self.assertIsInstance(instance, object)
     self.assertEquals(instance.connection_in, 3)
-    print instance.__dict__
+    #print instance.__dict__
     #self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
     #self.assertEquals(instance.FrontEndHeapType, 0)
     #self.assertTrue(validated)    
@@ -485,7 +479,6 @@ class TestApiLinuxDump(unittest.TestCase):
   #}
 
   def test_show(self):
-    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
@@ -529,7 +522,6 @@ class TestApiWin32Dump(unittest.TestCase):
   #}
 
   def test_show(self):
-    """ tests valid structure show and invalid structure show."""
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
