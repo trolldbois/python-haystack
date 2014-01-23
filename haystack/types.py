@@ -266,15 +266,15 @@ class CTypesProxy(object):
                 ("ptr", self.POINTER(self.c_ubyte) )
             ]
             _type_ = 's' # fake it
-            def toString(self):
+            def toString(myself):
                 from haystack import model
                 from haystack import utils
-                if not bool(self.ptr):
+                if not bool(myself.ptr):
                     return "<NULLPTR>"
-                if model.hasRef(CString, utils.getaddress(self.ptr)):
-                    return model.getRef(CString, utils.getaddress(self.ptr) )
+                if myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
+                    return myself._mappings_.getRef(self.CString, utils.getaddress(myself.ptr) )
                 log.debug('This CString was not in cache - calling toString was not a good idea')
-                return self.string
+                return myself.string
                 pass
         # and there we have it. We can load basicmodel
         self.CString = CString
