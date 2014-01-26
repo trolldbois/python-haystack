@@ -79,19 +79,22 @@ class TestTextOutput(SrcTests):
         ret = d.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
         parser = text.RecursiveTextOutputter(self.mappings)
-        out = parser.parse(d) 
-        import code
-        code.interact(local=locals())
-
-        self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
-        self.assertEquals(None, obj.a)
-        self.assertEquals(int(self.values['struct_d.b.e']), obj.b.e)
-        self.assertEquals(int(self.values['struct_d.b2.e']), obj.b2.e)
+        out = parser.parse(d)
+        # should not fail
+        x = eval(out)
+        
+        self.assertEquals(len(x.keys()), 15 ) # 14 + padding
+        self.assertEquals(self.values['struct_d.a'], hex(x['a']))
+        self.assertEquals(len(x['b'].keys()), 9)
+        self.assertEquals(len(x['b2'].keys()), 8)
+        self.assertEquals(int(self.values['struct_d.b.e']), x['b']['e'])
+        self.assertEquals(int(self.values['struct_d.b2.e']), x['b2']['e'])
+        
         for i in range(9):
-            self.assertEquals(int(self.values['struct_d.c[%d].a'%(i)]), obj.c[i].a)
-            self.assertEquals(int(self.values['struct_d.f[%d]'%(i)]), obj.f[i])
-        self.assertEquals(int(self.values['struct_d.e']), obj.e)
-        self.assertEquals(str(self.values['struct_d.i']), obj.i)
+            self.assertEquals(int(self.values['struct_d.c[%d].a'%(i)]), x['c'][i]['a'])
+            self.assertEquals(int(self.values['struct_d.f[%d]'%(i)]), x['f'][i])
+        self.assertEquals(int(self.values['struct_d.e']), x['e'])
+        self.assertEquals(str(self.values['struct_d.i']), x['i'])
         return 
 
 

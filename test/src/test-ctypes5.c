@@ -203,8 +203,11 @@ int test4(){
         printf("s: struct_d\n");
         ptr = (struct d *) malloc(sizeof(struct d));
         ptr->a = (void *) ptr; // need to be valid memory addr
+        printf("v: a %p\n", ptr->a);
         ptr->b = ptra;
+        printf("v: b %p\n", ptr->b);
         ptr->b2 = ptrau;
+        printf("v: b2 %p\n", ptr->b2);
         for ( i=0;i<10;i++) {
             ptr->c[i].a = i;
             ptr->c[i].e = 40;
