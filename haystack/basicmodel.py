@@ -349,6 +349,9 @@ class LoadableMembers(object):
             # FIXME
         elif ctypes.is_cstring_type(attrtype) : 
             # can't use basic c_char_p because we can't load in foreign memory
+            # FIXME, you need to keep a ref to this ctring if
+            # your want _mappings_ to exists 
+            # or just mandate mappings in toString
             attr_obj_address = utils.getaddress(attr.ptr)
             if not bool(attr_obj_address):
                 log.debug('%s %s is a CString, the pointer is null (validation '
@@ -368,7 +371,7 @@ class LoadableMembers(object):
                 return True
             log.debug('%s %s is defined as a CString, loading from 0x%lx '
                       'is_valid_address %s'%(attrname, attr, attr_obj_address,
-                                             mappings.is_valid_address(attr)))
+                                             mappings.is_valid_address_value(attr_obj_address)))
             txt,full = memoryMap.readCString(attr_obj_address, MAX_SIZE )
             if not full:
                 log.warning('buffer size was too small for this CString')
@@ -427,120 +430,121 @@ class LoadableMembers(object):
         #TATAFN
         return True
     
-    def toString(self, prefix='', depth=5):
-        """ Returns a string formatted description of this Structure. 
-        The returned string should be python-compatible...
-        """
-        # TODO: use a ref table to stop loops on parsed instance, 
-        #             depth kinda sux.
-        if depth == 0 :
-            return 'None, # DEPTH LIMIT REACHED'
-        if hasattr(self, '_orig_address_'):
-            s="{ # <%s at @%x>"%(self.__class__.__name__, self._orig_address_)
-        else:
-            s="{ # <%s at @???>"%(self.__class__.__name__)
-        for field,typ in self.getFields():
-            attr = getattr(self,field)
-            s += '\n'
-            s += self._attrToString(attr, field, typ, prefix, depth)
-        s += '\n'+prefix+'}'
-        return s
-        
-    def _attrToString(self, attr, field, attrtype, prefix, depth=-1):
-        """This should produce strings, based on ctypes structures. No pyOBJ"""
-        ctypes = self._mappings_.config.ctypes
-        s=''
-        if ctypes.is_basic_type(attrtype): 
-            try:
+    if False:
+        def toString(self, prefix='', depth=5):
+            """ Returns a string formatted description of this Structure. 
+            The returned string should be python-compatible...
+            """
+            # TODO: use a ref table to stop loops on parsed instance, 
+            #             depth kinda sux.
+            if depth == 0 :
+                return 'None, # DEPTH LIMIT REACHED'
+            if hasattr(self, '_orig_address_'):
+                s="{ # <%s at @%x>"%(self.__class__.__name__, self._orig_address_)
+            else:
+                s="{ # <%s at @???>"%(self.__class__.__name__)
+            for field,typ in self.getFields():
+                attr = getattr(self,field)
+                s += '\n'
+                s += self._attrToString(attr, field, typ, prefix, depth)
+            s += '\n'+prefix+'}'
+            return s
+            
+        def _attrToString(self, attr, field, attrtype, prefix, depth=-1):
+            """This should produce strings, based on ctypes structures. No pyOBJ"""
+            ctypes = self._mappings_.config.ctypes
+            s=''
+            if ctypes.is_basic_type(attrtype): 
+                try:
+                    attr._mappings_ = self._mappings_
+                except AttributeError as e:
+                    # ignore errors on basic types.
+                    pass
+                if ctypes.is_basic_ctype(type(attr)):
+                    value = attr.value
+                else:
+                    value = repr(attr)
+                s = prefix+'"%s": %s, # %s'%(field, value, attrtype.__name__)
+                if attr is None:
+                    raise ValueError('This field %s has not been loaded'%(field))
+                # print a nice hex output on int types
+                try:
+                    s += ' '+hex(value)
+                except TypeError as e:
+                    pass
+            elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
                 attr._mappings_ = self._mappings_
-            except AttributeError as e:
-                # ignore errors on basic types.
-                pass
-            if ctypes.is_basic_ctype(type(attr)):
-                value = attr.value
-            else:
-                value = repr(attr)
-            s = prefix+'"%s": %s, # %s'%(field, value, attrtype.__name__)
-            if attr is None:
-                raise ValueError('This field %s has not been loaded'%(field))
-            # print a nice hex output on int types
-            try:
-                s += ' '+hex(value)
-            except TypeError as e:
-                pass
-        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
-            attr._mappings_ = self._mappings_
-            s = prefix + '"%s": %s,'%(field,
-                                        attr.toString(prefix+'\t', depth-1))
-        elif ctypes.is_function_type(attrtype):
-            # only print address in target space
-            myaddress = utils.getaddress(attr)
-            myaddress_fmt = utils.formatAddress(myaddress)
-            s = prefix + '"%s": %s, #(FIELD NOT LOADED: function type)'%(
-                                                           field, myaddress_fmt)
-        elif ctypes.is_array_of_basic_type(attrtype):
-            # array of int, float ...
-            s = prefix + '"%s": b%s,'%(field, repr(utils.array2bytes(attr)))
-        elif ctypes.is_array_type(attrtype):
-            # array of something else than int/byte
-            # go through each elements, we hardly can make a array out of that.
-            s = prefix + '"%s" :{'%(field)
-            eltyp = type(attr[0])
-            for i in range(0,len(attr)):
-                s += self._attrToString(attr[i], i, eltyp, '')
-            s += '},'
-        elif ctypes.is_pointer_type(attrtype):
-            myaddress = utils.getaddress(attr)
-            myaddress_fmt = utils.formatAddress(myaddress)
-            _attrType = get_subtype(attrtype)                
-            contents = self._mappings_.getRef(_attrType, myaddress)
-            # TODO: can I just dump this block into a recursive call ?
-            # probably not if we want to stop LIST types from recursing
-            # FIXME why contents is None ?
-            if myaddress == 0 or contents is None:
-                # only print address/null
-                s = prefix + '"%s": %s,'%(field, myaddress_fmt) 
-            elif ctypes.is_pointer_to_void_type(attrtype) :
-                # c_void_p, c_char_p, can load target
-                s = prefix + '"%s": %s, #(FIELD NOT LOADED: void pointer)'%(
-                                                           field, myaddress_fmt)
-            elif type(self) == type(contents):
-                # pointer of self type ? lists ?
-                # TODO: decide if we recurse in lists or not.
-                # if we do, comment this elif/block
-                s = prefix + '"%s": { #(%s) LIST of %s\n%s},'%(field, 
-                                 myaddress_fmt, _attrType.__name__, prefix+'\t')
-            # TODO CUT HERE
-            elif (ctypes.is_pointer_to_struct_type(attrtype)
-                  or ctypes.is_pointer_to_union_type(attrtype)):
-                contents._mappings_ = self._mappings_
                 s = prefix + '"%s": %s,'%(field,
-                                        contents.toString(prefix+'\t', depth-1))
-            #elif ctypes.is_pointer_to_basic_type(attrtype):
-            #    s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
-            #              self._attrToString(contents, None, None, prefix+'\t'))
-            #elif ctypes.is_pointer_type(_attrType):
-            #    # pointer of pointer/function pointer
-            #    s = prefix + '"%s": { #(%s) -> %s%s},'%(field, myaddress_fmt,
-            #           self._attrToString(contents, '', _attrType, prefix+'\t'),
-            #           prefix)
-            #elif ctypes.is_array_type(_attrType):
-            #    # pointer to array
-            #    s = prefix + '"%s": { #(%s) -> %s\n%s},'%(field, myaddress_fmt,
-            #                                              contents, prefix)
-            # TODO STOP CUT HERE
-            else:
-                # could be a pointer to basic type, array type, pointer, ...
-                # we recurse.
-                s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
-                       self._attrToString(contents, '', _attrType, prefix+'\t'))
-                #raise NotImplementedError('what is this %s'%(_attrType))
-        elif ctypes.is_cstring_type(attrtype):
-            s = prefix + '"%s": "%s" , #(CString)'%(field, self._mappings_.getRef(ctypes.CString, 
-                                                    utils.getaddress(attr.ptr)))
-        else: # wtf ? 
-            s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr'%(field, repr(attr))
-        return s
+                                            attr.toString(prefix+'\t', depth-1))
+            elif ctypes.is_function_type(attrtype):
+                # only print address in target space
+                myaddress = utils.getaddress(attr)
+                myaddress_fmt = utils.formatAddress(myaddress)
+                s = prefix + '"%s": %s, #(FIELD NOT LOADED: function type)'%(
+                                                               field, myaddress_fmt)
+            elif ctypes.is_array_of_basic_type(attrtype):
+                # array of int, float ...
+                s = prefix + '"%s": b%s,'%(field, repr(utils.array2bytes(attr)))
+            elif ctypes.is_array_type(attrtype):
+                # array of something else than int/byte
+                # go through each elements, we hardly can make a array out of that.
+                s = prefix + '"%s" :{'%(field)
+                eltyp = type(attr[0])
+                for i in range(0,len(attr)):
+                    s += self._attrToString(attr[i], i, eltyp, '')
+                s += '},'
+            elif ctypes.is_pointer_type(attrtype):
+                myaddress = utils.getaddress(attr)
+                myaddress_fmt = utils.formatAddress(myaddress)
+                _attrType = get_subtype(attrtype)                
+                contents = self._mappings_.getRef(_attrType, myaddress)
+                # TODO: can I just dump this block into a recursive call ?
+                # probably not if we want to stop LIST types from recursing
+                # FIXME why contents is None ?
+                if myaddress == 0 or contents is None:
+                    # only print address/null
+                    s = prefix + '"%s": %s,'%(field, myaddress_fmt) 
+                elif ctypes.is_pointer_to_void_type(attrtype) :
+                    # c_void_p, c_char_p, can load target
+                    s = prefix + '"%s": %s, #(FIELD NOT LOADED: void pointer)'%(
+                                                               field, myaddress_fmt)
+                elif type(self) == type(contents):
+                    # pointer of self type ? lists ?
+                    # TODO: decide if we recurse in lists or not.
+                    # if we do, comment this elif/block
+                    s = prefix + '"%s": { #(%s) LIST of %s\n%s},'%(field, 
+                                     myaddress_fmt, _attrType.__name__, prefix+'\t')
+                # TODO CUT HERE
+                elif (ctypes.is_pointer_to_struct_type(attrtype)
+                      or ctypes.is_pointer_to_union_type(attrtype)):
+                    contents._mappings_ = self._mappings_
+                    s = prefix + '"%s": %s,'%(field,
+                                            contents.toString(prefix+'\t', depth-1))
+                #elif ctypes.is_pointer_to_basic_type(attrtype):
+                #    s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
+                #              self._attrToString(contents, None, None, prefix+'\t'))
+                #elif ctypes.is_pointer_type(_attrType):
+                #    # pointer of pointer/function pointer
+                #    s = prefix + '"%s": { #(%s) -> %s%s},'%(field, myaddress_fmt,
+                #           self._attrToString(contents, '', _attrType, prefix+'\t'),
+                #           prefix)
+                #elif ctypes.is_array_type(_attrType):
+                #    # pointer to array
+                #    s = prefix + '"%s": { #(%s) -> %s\n%s},'%(field, myaddress_fmt,
+                #                                              contents, prefix)
+                # TODO STOP CUT HERE
+                else:
+                    # could be a pointer to basic type, array type, pointer, ...
+                    # we recurse.
+                    s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt, 
+                           self._attrToString(contents, '', _attrType, prefix+'\t'))
+                    #raise NotImplementedError('what is this %s'%(_attrType))
+            elif ctypes.is_cstring_type(attrtype):
+                s = prefix + '"%s": "%s" , #(CString)'%(field, self._mappings_.getRef(ctypes.CString, 
+                                                        utils.getaddress(attr.ptr)))
+            else: # wtf ? 
+                s=prefix+'"%s": %s, # Unknown/bug DEFAULT repr'%(field, repr(attr))
+            return s
 
     def __str__(self):
         """Print the direct members values. Never tries to recurse."""
@@ -598,99 +602,100 @@ class LoadableMembers(object):
                                       self._orig_address_)
         else:
             return "# <%s at @???>\n"%(self.__class__.__name__)
-        
-    def toPyObject(self):
-        """ 
-        Returns a Plain Old python object as a perfect copy of this ctypes object.
-        array would be lists, pointers, inner structures, and circular 
-        reference should be handled nicely.
-        """
-        import ctypes
-        # get self class.
-        try:
-            my_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
-        except AttributeError as e:
-            log.warning('did you forget to register your python structures ?')
-            raise
-        my_self = my_class()
-        # keep ref of the POPO too.
-        if self._mappings_.hasRef(my_class, ctypes.addressof(self) ):
-            return self._mappings_.getRef(my_class, ctypes.addressof(self) )
-        # save our POPO in a partially resolved state, to keep from loops.
-        self._mappings_.keepRef(my_self, my_class, ctypes.addressof(self) )
-        for field,typ in self.getFields():
-            attr = getattr(self,field)
-            try:
-                member = self._attrToPyObject(attr,field,typ)
-            except NameError as e:
-                raise NameError('%s %s\n%s'%(field,typ,e))
 
-            setattr(my_self, field, member)
-        # save the original type (me) and the field
-        setattr(my_self, '_ctype_', type(self))
-        return my_self
-        
-    def _attrToPyObject(self, attr, field, attrtype):
-        import ctypes
-        if ctypes.is_basic_type(attrtype):
-            if ctypes.is_basic_ctype(type(attr)):
-                obj = attr.value
-            else:
-                obj = attr
-        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
-            attr._mappings_ = self._mappings_
-            obj = attr.toPyObject()
-        elif ctypes.is_array_of_basic_type(attrtype):
-            # return a list of int, float, or a char[] to str
-            obj = utils.ctypes_to_python_array(attr)
-        elif ctypes.is_array_type(attrtype): 
-            ## array of something else than int/byte
-            obj = []
-            eltyp=type(attr[0])
-            for i in range(0,len(attr)):
-                obj.append(self._attrToPyObject( attr[i], i, eltyp) )
-        elif ctypes.is_cstring_type(attrtype):
-            attr._mappings_ = self._mappings_
-            obj = attr.toString()
-        elif ctypes.is_pointer_type(attrtype):
-            # get the cached Value of the LP.
-            _subtype = get_subtype(attrtype)
-            _address = utils.getaddress(attr)
-            if _address == 0:
-                # Null pointer
-                obj = None
-            elif ctypes.is_pointer_to_void_type(attrtype):
-                # TODO: make a prototype for c_void_p loading
-                # void types a rereturned as None
-                obj = None 
+    if False:        
+        def toPyObject(self):
+            """ 
+            Returns a Plain Old python object as a perfect copy of this ctypes object.
+            array would be lists, pointers, inner structures, and circular 
+            reference should be handled nicely.
+            """
+            import ctypes
+            # get self class.
+            try:
+                my_class = getattr(sys.modules[self.__class__.__module__],"%s_py"%(self.__class__.__name__) )
+            except AttributeError as e:
+                log.warning('did you forget to register your python structures ?')
+                raise
+            my_self = my_class()
+            # keep ref of the POPO too.
+            if self._mappings_.hasRef(my_class, ctypes.addressof(self) ):
+                return self._mappings_.getRef(my_class, ctypes.addressof(self) )
+            # save our POPO in a partially resolved state, to keep from loops.
+            self._mappings_.keepRef(my_self, my_class, ctypes.addressof(self) )
+            for field,typ in self.getFields():
+                attr = getattr(self,field)
+                try:
+                    member = self._attrToPyObject(attr,field,typ)
+                except NameError as e:
+                    raise NameError('%s %s\n%s'%(field,typ,e))
+
+                setattr(my_self, field, member)
+            # save the original type (me) and the field
+            setattr(my_self, '_ctype_', type(self))
+            return my_self
+            
+        def _attrToPyObject(self, attr, field, attrtype):
+            import ctypes
+            if ctypes.is_basic_type(attrtype):
+                if ctypes.is_basic_ctype(type(attr)):
+                    obj = attr.value
+                else:
+                    obj = attr
+            elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
+                attr._mappings_ = self._mappings_
+                obj = attr.toPyObject()
             elif ctypes.is_array_of_basic_type(attrtype):
-                log.error('basic Type array - %s'%(field))
-                obj = 'BasicType array'
-            elif ctypes.is_function_type(attrtype):
-                obj = repr(attr)
-            else:
+                # return a list of int, float, or a char[] to str
+                obj = utils.ctypes_to_python_array(attr)
+            elif ctypes.is_array_type(attrtype): 
+                ## array of something else than int/byte
+                obj = []
+                eltyp=type(attr[0])
+                for i in range(0,len(attr)):
+                    obj.append(self._attrToPyObject( attr[i], i, eltyp) )
+            elif ctypes.is_cstring_type(attrtype):
+                attr._mappings_ = self._mappings_
+                obj = attr.toString()
+            elif ctypes.is_pointer_type(attrtype):
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
-                cache = self._mappings_.getRef(_subtype, _address)
-                if cache is not None: # struct, union...
-                    obj = self._attrToPyObject(cache, field, _subtype )
+                _address = utils.getaddress(attr)
+                if _address == 0:
+                    # Null pointer
+                    obj = None
+                elif ctypes.is_pointer_to_void_type(attrtype):
+                    # TODO: make a prototype for c_void_p loading
+                    # void types a rereturned as None
+                    obj = None 
+                elif ctypes.is_array_of_basic_type(attrtype):
+                    log.error('basic Type array - %s'%(field))
+                    obj = 'BasicType array'
+                elif ctypes.is_function_type(attrtype):
+                    obj = repr(attr)
                 else:
-                    # you got here because your pointer is not loaded:
-                    #  did you ignore it in expectedValues ?
-                    #  is it in the middle of a struct ? 
-                    #  is that a linked list ?
-                    #  is it a invalid instance ?
-                    log.debug('Pointer for field:%s %s/%s not in cache '
-                              '0x%x'%(field, attrtype, get_subtype(attrtype), 
-                                    _address))
-                    return (None,None)
-        elif isinstance(attr, numbers.Number): 
-            # case for int, long. But needs to be after c_void_p pointers case
-            obj = attr
-        else:
-            log.error('toPyObj default to return attr %s'%( type(attr) ))
-            obj = attr
-        return obj
+                    # get the cached Value of the LP.
+                    _subtype = get_subtype(attrtype)
+                    cache = self._mappings_.getRef(_subtype, _address)
+                    if cache is not None: # struct, union...
+                        obj = self._attrToPyObject(cache, field, _subtype )
+                    else:
+                        # you got here because your pointer is not loaded:
+                        #  did you ignore it in expectedValues ?
+                        #  is it in the middle of a struct ? 
+                        #  is that a linked list ?
+                        #  is it a invalid instance ?
+                        log.debug('Pointer for field:%s %s/%s not in cache '
+                                  '0x%x'%(field, attrtype, get_subtype(attrtype), 
+                                        _address))
+                        return (None,None)
+            elif isinstance(attr, numbers.Number): 
+                # case for int, long. But needs to be after c_void_p pointers case
+                obj = attr
+            else:
+                log.error('toPyObj default to return attr %s'%( type(attr) ))
+                obj = attr
+            return obj
 
 def json_encode_pyobj(obj):
     if hasattr(obj, '_ctype_'):

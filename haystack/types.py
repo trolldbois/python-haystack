@@ -271,9 +271,11 @@ class CTypesProxy(object):
                 from haystack import utils
                 if not bool(myself.ptr):
                     return "<NULLPTR>"
-                if myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
+                if hasattr(myself, '_mappings_') and myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
                     return myself._mappings_.getRef(self.CString, utils.getaddress(myself.ptr) )
                 log.debug('This CString was not in cache - calling toString was not a good idea')
+                import code
+                code.interact(local=locals())
                 return myself.string
                 pass
         # and there we have it. We can load basicmodel

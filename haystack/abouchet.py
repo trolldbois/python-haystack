@@ -498,17 +498,18 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
         import code
         code.interact(local=locals())
     # output genereration
-    return _output(outs, rtype)
+    return _output(mappings, outs, rtype)
 
-def _output(outs, rtype ):
+def _output(mappings, outs, rtype ):
     """ Return results in the rtype format"""
     if len(outs) == 0:
         log.info('Found no occurence.')
         return None
     if rtype == 'string':
+        outputter = text.RecursiveTextOutput(mappings)
         ret = '['
         for ss, addr in outs:
-            ret += "# --------------- 0x%lx \n%s"% (addr, ss.toString() )
+            ret += "# --------------- 0x%lx \n%s"% (addr, outputter.parse(ss) )
             pass
         ret += ']'
         return ret

@@ -75,7 +75,7 @@ class RecursiveTextOutputter(object):
                 pass
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             s = prefix + '"%s": %s,'%(field,
-                                        attr.toString(prefix+'\t', depth-1))
+                                 self.parse(attr, prefix+'\t', depth-1))
         elif ctypes.is_function_type(attrtype):
             # only print address in target space
             myaddress = utils.getaddress(attr)
@@ -118,7 +118,7 @@ class RecursiveTextOutputter(object):
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
                 s = prefix + '"%s": %s,'%(field,
-                                        contents.toString(prefix+'\t', depth-1))
+                                        self.parse(contents,prefix+'\t', depth-1))
             else:
                 # could be a pointer to basic type, array type, pointer, ...
                 # we recurse.
@@ -139,7 +139,7 @@ class TextOutputter(object):
     structure.
     Returned string should be python compatible ( dict )
     """
-    def __ init__(self, mappings):
+    def __init__(self, mappings):
         self.mappings = mappings
     
     
@@ -181,7 +181,7 @@ class TextOutputter(object):
                 pass
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             s = prefix + '"%s": %s,'%(field,
-                                        attr.toString(prefix+'\t', depth-1))
+                                        self.parse(attr, prefix+'\t', depth-1))
         elif ctypes.is_function_type(attrtype):
             # only print address in target space
             myaddress = utils.getaddress(attr)
@@ -224,7 +224,7 @@ class TextOutputter(object):
             elif (ctypes.is_pointer_to_struct_type(attrtype)
                   or ctypes.is_pointer_to_union_type(attrtype)):
                 s = prefix + '"%s": %s,'%(field,
-                                        contents.toString(prefix+'\t', depth-1))
+                                        self.parse(contents, prefix+'\t', depth-1))
             else:
                 # could be a pointer to basic type, array type, pointer, ...
                 # we recurse.
