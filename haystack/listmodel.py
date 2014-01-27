@@ -293,8 +293,8 @@ def declare_double_linked_list_type(structType, forward, backward):
     structType._iterateList = iterateList
     #structType.loadMembers = loadMembers # FIXME DEBUG WHY?
     # be nicer on printouts
-    structType._attrToPyObject2 = structType._attrToPyObject
-    structType._attrToPyObject = attrToPyObject
+    #structType._attrToPyObject2 = structType._attrToPyObject
+    #structType._attrToPyObject = attrToPyObject
 
     log.debug('%s has been fitted with a list iterator self._iterateList(mappings)'%(structType))
     return
