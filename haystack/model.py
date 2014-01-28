@@ -102,7 +102,8 @@ def __createPOPOClasses(targetmodule):
             # Why restrict on module name ?
             # we only need to register loadablemembers (and basic ctypes ? )
             #if klass.__module__.startswith(targetmodule.__name__):            
-            kpy = type('%s.%s_py'%(targetmodule.__name__, name),( basicmodel.pyObj ,),{})
+            from haystack.outputters import python
+            kpy = type('%s.%s_py'%(targetmodule.__name__, name),( python.pyObj ,),{})
             # add the structure size to the class
             if issubclass(klass, ctypes.LoadableMembers ) : 
                 log.debug(klass)

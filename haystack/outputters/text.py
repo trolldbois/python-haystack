@@ -16,6 +16,7 @@ import sys
 from haystack import utils
 from haystack import constraints
 from haystack.utils import get_subtype
+from haystack.outputters import Outputter
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2014 Loic Jaquemet"
@@ -26,17 +27,14 @@ __status__ = "Production"
 
 log = logging.getLogger('text')
 
-class RecursiveTextOutputter(object): 
+class RecursiveTextOutputter(Outputter): 
     """ 
     TODO:
     make a recursive parser that create a text representation of a ctypes
     structure.
     Returned string should be python compatible ( dict )
     """
-    def __init__(self, mappings):
-        self.mappings = mappings
-    
-    
+
     def parse(self, obj, prefix='', depth=10): 
         """ Returns a string formatted description of this Structure. 
         The returned string should be python-compatible...
@@ -45,10 +43,12 @@ class RecursiveTextOutputter(object):
         #             depth kinda sux.
         if depth <= 0 :
             return 'None, # DEPTH LIMIT REACHED'
+        if hasattr(obj, 'toString'):
+            return obj.toString(prefix, depth)
         if hasattr(obj, '_orig_address_'):
-            s="{ # <%s at @%x>"%(obj.__class__.__name__, obj._orig_address_)
+            s="{ # <%s at 0x%x>"%(obj.__class__.__name__, obj._orig_address_)
         else:
-            s="{ # <%s at @???>"%(obj.__class__.__name__)
+            s="{ # <%s at 0x???>"%(obj.__class__.__name__)
         for field,typ in obj.getFields():
             attr = getattr(obj,field)
             s += '\n%s"%s": %s'%(prefix, field, self._attrToString(attr, field, typ, prefix, depth))
@@ -91,6 +91,14 @@ class RecursiveTextOutputter(object):
             for i in range(0,len(attr)):
                 s += '\n%s%s'%(prefix+'\t',self._attrToString(attr[i], i, _attrType, prefix, depth-1))
             s += '\n%s],'%(prefix+'\t')
+        elif ctypes.is_cstring_type(attrtype):
+            if not bool(myself.ptr):
+                return "<NULLPTR>"
+            if self.mappings.hasRef(ctypes.CString, utils.getaddress(obj.ptr)):
+                s = self.mappings.getRef(ctypes.CString, utils.getaddress(obj.ptr))
+            else:
+                raise Exception('This CString was not in cache')
+            s = '"%s" , #(CString)'%(s)
         elif ctypes.is_pointer_type(attrtype):
             myaddress = utils.getaddress(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
@@ -122,9 +130,6 @@ class RecursiveTextOutputter(object):
                 #       self._attrToString(contents, '', _attrType, prefix+'\t'))
                 s = "%s,"%self._attrToString(contents, field, _attrType, prefix+'\t', depth-1)
                 #raise NotImplementedError('what is this %s'%(_attrType))
-        elif ctypes.is_cstring_type(attrtype):
-            s = '"%s" , #(CString)'%(self.mappings.getRef(ctypes.CString, 
-                                                    utils.getaddress(attr.ptr)))
         else: # wtf ? 
             s = '%s, # Unknown/bug DEFAULT repr'%(repr(attr))
         return s

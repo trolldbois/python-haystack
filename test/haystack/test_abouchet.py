@@ -53,7 +53,7 @@ class Test7_x32(SrcTests):
     # string
     retstr = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='string')
     self.assertIn("3735928559L,", retstr ) # 0xdeadbeef
-    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%08x'%(self.address), retstr )
     
     #python
@@ -71,7 +71,7 @@ class Test7_x32(SrcTests):
     
     retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%08x'%(self.address), retstr )
     
     #python
@@ -122,7 +122,7 @@ class Test7_x64(SrcTests):
     # string
     retstr = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%016x'%(self.address), retstr )
     
     #python
@@ -140,7 +140,7 @@ class Test7_x64(SrcTests):
     
     retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
-    self.assertIn("struct_Node at @%x>"%(self.address), retstr )
+    self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%016x'%(self.address), retstr )
     
     #python
@@ -216,10 +216,9 @@ class Test6_x32(SrcTests):
     #print retstr
 
     #usual->root.{f,b}link = &node1->list; # offset list is 4 bytes
-    from haystack import utils
-    node1_list_addr = utils.formatAddress(self.address2+4)
-    self.assertIn('"flink": { #(%s'%(node1_list_addr), retstr)
-    self.assertIn('"blink": { #(%s'%(node1_list_addr), retstr)
+    node1_list_addr = hex(self.address2+4)
+    self.assertIn('"flink": { # <struct_entry at %s'%(node1_list_addr), retstr)
+    self.assertIn('"blink": { # <struct_entry at %s'%(node1_list_addr), retstr)
     
     
     #python
@@ -348,10 +347,9 @@ class Test6_x64(SrcTests):
     
     #usual->root.{f,b}link = &node1->list; # offset list is 8 bytes
     # 64 bits alignement
-    from haystack import utils
-    node1_list_addr = utils.formatAddress(self.address2 + 8)
-    self.assertIn('"flink": { #(%s'%(node1_list_addr), retstr)
-    self.assertIn('"blink": { #(%s'%(node1_list_addr), retstr)
+    node1_list_addr = hex(self.address2 + 8)
+    self.assertIn('"flink": { # <struct_entry at %s'%(node1_list_addr), retstr)
+    self.assertIn('"blink": { # <struct_entry at %s'%(node1_list_addr), retstr)
     
     
     #python
@@ -544,7 +542,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+  logging.basicConfig(stream=sys.stdout, level=logging.INFO)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)

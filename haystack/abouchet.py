@@ -16,7 +16,9 @@ from haystack import model
 from haystack import argparse_utils
 from haystack import utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
-from haystack import memory_mapping 
+from haystack import memory_mapping
+from haystack.outputters import text
+from haystack.outputters import python
 
 from haystack.utils import xrange
 
@@ -381,7 +383,8 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
     # find all possible structType instance
     outs=finder.find_struct( structType, maxNum=maxNum)
     # prepare outputs
-    ret=[ (ss.toPyObject(),addr) for ss, addr in outs]
+    parser = python.PythonOutputter(mappings)
+    ret=[ (parser.parse(ss),addr) for ss, addr in outs]
     if len(ret) >0:
         log.debug("%s %s"%(ret[0], type(ret[0]) )     )
     if basicmodel.findCtypesInPyObj(ret):
@@ -506,18 +509,17 @@ def _output(mappings, outs, rtype ):
         log.info('Found no occurence.')
         return None
     if rtype == 'string':
-        outputter = text.RecursiveTextOutput(mappings)
+        outputter = text.RecursiveTextOutputter(mappings)
         ret = '['
         for ss, addr in outs:
             ret += "# --------------- 0x%lx \n%s"% (addr, outputter.parse(ss) )
             pass
         ret += ']'
         return ret
-    #else {'json', 'pickled'} : # cast in pyObject
-    from haystack import basicmodel # TODO replace by instance method fincCtypesinpyobj
-    ret = [ (ss.toPyObject(), addr) for ss, addr in outs] 
+    parser = python.PythonOutputter(mappings)
+    ret = [ (parser.parse(ss), addr) for ss, addr in outs] 
     # last check to clean the structure from any ctypes Structure
-    if basicmodel.findCtypesInPyObj(ret):
+    if python.findCtypesInPyObj(ret):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     # finally 
     if rtype == 'python': # pyobj
@@ -528,7 +530,7 @@ def _output(mappings, outs, rtype ):
         return pickle.dumps(ret)
     return None
 
-def _show_output(instance, validated, rtype ):
+def _show_output(mappings, instance, validated, rtype ):
     """ Return results in the rtype format.
     Results of non validated instance are not very interesting.
     """
@@ -537,21 +539,20 @@ def _show_output(instance, validated, rtype ):
         if not validated :
             str_fn = lambda x: str(x)
         else:
-            str_fn = lambda x: x.toString()
+            outputter = text.RecursiveTextOutputter(mappings)
+            str_fn = lambda x: outputter.parse(x)
         return "(%s\n, %s)"% ( str_fn(instance), validated )
     #else {'json', 'pickled', 'python'} : # cast in pyObject
-    pyObj = instance.toPyObject()
-    from haystack import basicmodel # TODO replace by instance method finctypesinpyobj
+    parser = python.PythonOutputter(mappings)
+    pyObj = parser.parse(instance)
     # last check to clean the structure from any ctypes Structure
-    if basicmodel.findCtypesInPyObj(pyObj):
+    if python.findCtypesInPyObj(pyObj):
         raise HaystackError('Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
-    # save the day
-    #pyObj._mappings = instance._mappings
     # finally 
     if rtype == 'python': # pyobj
         return (pyObj, validated)
     elif rtype == 'json': #jsoned
-        return json.dumps( (pyObj, validated), default=basicmodel.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
+        return json.dumps( (pyObj, validated), default=python.json_encode_pyobj ) #cirular refs kills it check_circular=False, 
     elif rtype == 'pickled': #pickled
         return pickle.dumps((pyObj, validated))
     
@@ -592,7 +593,7 @@ def refresh(args):
     elif args.json:    rtype = 'json' 
     elif args.pickled:    rtype = 'pickled' 
 
-    print _show_output(instance, validated, rtype)
+    print _show_output(mappings, instance, validated, rtype)
     return
 
 
@@ -622,5 +623,5 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
     instance,validated = finder.loadAt( memoryMap, address, structType)
-    return _show_output(instance, validated, rtype)
+    return _show_output(mappings, instance, validated, rtype)
 

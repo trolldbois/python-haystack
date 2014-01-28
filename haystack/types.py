@@ -266,18 +266,16 @@ class CTypesProxy(object):
                 ("ptr", self.POINTER(self.c_ubyte) )
             ]
             _type_ = 's' # fake it
-            def toString(myself):
-                from haystack import model
-                from haystack import utils
-                if not bool(myself.ptr):
-                    return "<NULLPTR>"
-                if hasattr(myself, '_mappings_') and myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
-                    return myself._mappings_.getRef(self.CString, utils.getaddress(myself.ptr) )
-                log.debug('This CString was not in cache - calling toString was not a good idea')
-                import code
-                code.interact(local=locals())
-                return myself.string
-                pass
+            #def toString(myself):
+            #    from haystack import model
+            #    from haystack import utils
+            #    if not bool(myself.ptr):
+            #        return "<NULLPTR>"
+            #    if hasattr(myself, '_mappings_') and myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
+            #        return myself._mappings_.getRef(self.CString, utils.getaddress(myself.ptr) )
+            #    log.debug('This CString was not in cache - calling toString was not a good idea')
+            #    return myself.string
+            #    pass
         # and there we have it. We can load basicmodel
         self.CString = CString
         
@@ -296,8 +294,9 @@ class CTypesProxy(object):
             pass
         # create local POPO ( lodableMembers )
         #createPOPOClasses(sys.modules[__name__] )
-        self.LoadableMembersStructure_py = type('%s.%s_py'%(__name__, LoadableMembersStructure),( basicmodel.pyObj ,),{})
-        self.LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( basicmodel.pyObj ,),{})
+        from haystack.outputters import python
+        self.LoadableMembersStructure_py = type('%s.%s_py'%(__name__, LoadableMembersStructure),( python.pyObj ,),{})
+        self.LoadableMembersUnion_py = type('%s.%s_py'%(__name__, LoadableMembersUnion),( python.pyObj ,),{})
         # register LoadableMembers 
 
         # we need model to be initialised.
