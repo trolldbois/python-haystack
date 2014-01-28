@@ -480,9 +480,25 @@ class TestApiLinuxDump(unittest.TestCase):
     instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
     self.assertTrue(validated)
     self.assertIsInstance(instance, object)
-    self.assertEquals(instance.Signature, 0xeeffeeff)
-    self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
-    self.assertEquals(instance.FrontEndHeapType, 0)
+    import code
+    code.interact(local=locals())
+    self.assertEquals(instance.connection_in, 3)
+    self.assertEquals(instance.connection_out, 3)
+    self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
+    self.assertEquals(instance.receive_context.evp.cipher.key_len, 16)
+    self.assertEquals(instance.receive_context.evp.cipher.iv_len, 16)
+    self.assertEquals(instance.receive_context.evp.key_len, 16)
+    self.assertEquals(instance.receive_context.cipher.name, 'aes128-ctr')
+    self.assertEquals(instance.receive_context.cipher.block_size, 16)
+    self.assertEquals(instance.receive_context.cipher.key_len, 16)
+
+    self.assertEquals(instance.send_context.evp.cipher.block_size, 16)
+    self.assertEquals(instance.send_context.evp.cipher.key_len, 16)
+    self.assertEquals(instance.send_context.evp.cipher.iv_len, 16)
+    self.assertEquals(instance.send_context.evp.key_len, 16)
+    self.assertEquals(instance.send_context.cipher.name, 'aes128-ctr')
+    self.assertEquals(instance.send_context.cipher.block_size, 16)
+    self.assertEquals(instance.send_context.cipher.key_len, 16)
     
     if False:
         instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
@@ -542,7 +558,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+  logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)

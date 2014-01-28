@@ -372,9 +372,9 @@ class LoadableMembers(object):
             log.debug('%s %s is defined as a CString, loading %d bytes from 0x%lx '
                       'is_valid_address %s'%(attrname, attr, max_size, attr_obj_address,
                                              mappings.is_valid_address_value(attr_obj_address)))
-            txt,full = memoryMap.readCString(attr_obj_address, max_size )
-            if not full:
-                log.warning('buffer size was too small for this CString')
+            txt,full = memoryMap.readCString(attr_obj_address, max_size)
+            if not full: # FIXME, move to DENUG ?
+                log.warning('buffer size was too small for this CString: %d'%(max_size))
 
             # that will SEGFAULT attr.string = txt - instead keepRef to String
             mappings.keepRef(txt, ctypes.CString, attr_obj_address)

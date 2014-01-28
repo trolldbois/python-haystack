@@ -77,8 +77,9 @@ class PythonOutputter(Outputter):
             for i in range(0,len(attr)):
                 obj.append(self._attrToPyObject( attr[i], i, eltyp) )
         elif ctypes.is_cstring_type(attrtype):
-            attr._mappings_ = self.mappings
-            obj = attr.toString()
+            obj = self.mappings.getRef(ctypes.CString, utils.getaddress(attr.ptr))
+        elif ctypes.is_function_type(attrtype):
+            obj = repr(attr)
         elif ctypes.is_pointer_type(attrtype):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
@@ -93,8 +94,6 @@ class PythonOutputter(Outputter):
             elif ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s'%(field))
                 obj = 'BasicType array'
-            elif ctypes.is_function_type(attrtype):
-                obj = repr(attr)
             else:
                 # get the cached Value of the LP.
                 _subtype = get_subtype(attrtype)
@@ -163,7 +162,7 @@ class pyObj(object):
             s = "[%s],"%(s)
         elif not hasattr(attr,'__dict__'):
             s = '%s,'%( repr(attr) )
-        elif    isinstance( attr , pyObj):
+        elif isinstance( attr , pyObj):
             s = '%s,'%( attr.toString(prefix,maxDepth) )
         else:
             s = '%s,'%(repr(attr) )
