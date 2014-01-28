@@ -127,7 +127,7 @@ class TestLoadMembers(SrcTests):
         # other tests are too complex to be done in ctypes.
         # that is why d.toPyObject() exists.
 
-class TestRealSSH(object):
+class TestRealSSH(unittest.TestCase):
     """Basic types"""
     def setUp(self):
         model.reset()
@@ -143,18 +143,27 @@ class TestRealSSH(object):
     
     def test_real_life(self):
         from sslsnoop import ctypes_openssh
+        from sslsnoop import ctypes_openssl
         m = self.mappings.getMmapForAddr(self.known_offset)
-        a = m.readStruct(offset, ctypes_openssh.session_state)
-        ret = a.loadMembers(self.mappings, 10 )
+        ss = m.readStruct(self.known_offset, ctypes_openssh.session_state)
+        ret = ss.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
         
         import ctypes
+        
+        self.assertEquals(ss.connection_in, 3)
+        self.assertEquals(ss.connection_out, 3)
+        
+        # receive
+        r_app_data = ss.receive_context.getEvpAppData(self.mappings)
 
-        self.assertEquals(instance.connection_in, 3)
-        self.assertEquals(instance.connection_out, 3)
-        self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
-        self.assertEquals(instance.receive_context.evp.cipher.key_len, 16)
-        self.assertEquals(instance.receive_context.evp.cipher.iv_len, 16)
+        import code
+        code.interact(local=locals())
+
+        receive_cipher1 = 0
+        self.assertEquals(receive_cipher.block_size, 16)
+        self.assertEquals(receive_cipher.key_len, 16)
+        self.assertEquals(receive_cipher.iv_len, 16)
         self.assertEquals(instance.receive_context.evp.key_len, 16)
         self.assertEquals(instance.receive_context.cipher.name, 'aes128-ctr')
         self.assertEquals(instance.receive_context.cipher.block_size, 16)
@@ -175,7 +184,7 @@ class TestRealSSH(object):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     #logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)
 
