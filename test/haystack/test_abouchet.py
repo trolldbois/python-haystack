@@ -12,18 +12,7 @@ from haystack import abouchet
 from haystack import model
 from haystack import types
 
-
-class SrcTests(unittest.TestCase):
-    def _load_offsets(self, dumpname):
-        """read <dumpname>.stdout to get offsets given by the binary."""
-        offsets = dict()
-        for line in open('%s.stdout'%(dumpname[:-len('.dump')]),'rb').readlines():
-            fields = line.split(' ')
-            k,v = fields[0],int(fields[1].strip(),16)
-            if k not in offsets:
-                offsets[k]=[]
-            offsets[k].append(v)
-        return offsets
+from test.haystack import SrcTests
 
 class Test7_x32(SrcTests):
   """Validate abouchet API on a linux x32 dump of ctypes7.
@@ -436,123 +425,115 @@ class Test6_x64(SrcTests):
 
 #@unittest.skip('')
 class TestApiLinuxDumpX64(unittest.TestCase):
-  """Validate API on a linux x64 dump of SSH."""
-  def setUp(self):
-    model.reset()
-    self.validAddress = '0x7f724c90d740'
-    self.memdumpname = 'test/dumps/ssh/ssh.x64.6653.dump'
-    self.classname = 'sslsnoop.ctypes_openssh.session_state'
-    self.known_heap = (0x00007f724c905000, 249856)
+    """Validate API on a linux x64 dump of SSH."""
+    def setUp(self):
+        model.reset()
+        self.validAddress = '0x7f724c90d740'
+        self.memdumpname = 'test/dumps/ssh/ssh.x64.6653.dump'
+        self.classname = 'sslsnoop.ctypes_openssh.session_state'
+        self.known_heap = (0x00007f724c905000, 249856)
 
-  def tearDown(self):
-    self.mappings = None
+    def tearDown(self):
+        self.mappings = None
 
-  def test_show(self):
-    instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, long(self.validAddress,16))
-    self.assertIsInstance(instance, object)
-    self.assertEquals(instance.connection_in, 3)
-    #print instance.__dict__
-    #self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
-    #self.assertEquals(instance.FrontEndHeapType, 0)
-    #self.assertTrue(validated)    
-    return 
+    def test_show(self):
+        instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, long(self.validAddress,16))
+        self.assertIsInstance(instance, object)
+        self.assertEquals(instance.connection_in, 3)
+        #print instance.__dict__
+        #self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
+        #self.assertEquals(instance.FrontEndHeapType, 0)
+        #self.assertTrue(validated)    
+        return 
 
 
 #@unittest.skip('')
 class TestApiLinuxDump(unittest.TestCase):
-  """ test is the python API works. """
-  def setUp(self):
-    model.reset()
-    self.memdumpname = 'test/dumps/ssh/ssh.1'
-    self.classname = 'sslsnoop.ctypes_openssh.session_state'
-    self.known_heaps = [ (0xb84ee318,0 )
-                    ]
+    """ test is the python API works. """
+    def setUp(self):
+        model.reset()
+        self.memdumpname = 'test/dumps/ssh/ssh.1'
+        self.classname = 'sslsnoop.ctypes_openssh.session_state'
+        self.known_heaps = [ (0xb84ee318,0 )
+                        ]
 
-  def tearDown(self):
-    self.mappings = None
+    def tearDown(self):
+        self.mappings = None
+        model.reset()
 
-  #_HEAP.expectedValues = {
-  #  'Signature':[0xeeffeeff],
-  #  'FrontEndHeapType': [0,1,2]
-  #}
-
-  def test_show(self):
-    instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
-    self.assertTrue(validated)
-    self.assertIsInstance(instance, object)
-    import code
-    code.interact(local=locals())
-    self.assertEquals(instance.connection_in, 3)
-    self.assertEquals(instance.connection_out, 3)
-    self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
-    self.assertEquals(instance.receive_context.evp.cipher.key_len, 16)
-    self.assertEquals(instance.receive_context.evp.cipher.iv_len, 16)
-    self.assertEquals(instance.receive_context.evp.key_len, 16)
-    self.assertEquals(instance.receive_context.cipher.name, 'aes128-ctr')
-    self.assertEquals(instance.receive_context.cipher.block_size, 16)
-    self.assertEquals(instance.receive_context.cipher.key_len, 16)
-
-    self.assertEquals(instance.send_context.evp.cipher.block_size, 16)
-    self.assertEquals(instance.send_context.evp.cipher.key_len, 16)
-    self.assertEquals(instance.send_context.evp.cipher.iv_len, 16)
-    self.assertEquals(instance.send_context.evp.key_len, 16)
-    self.assertEquals(instance.send_context.cipher.name, 'aes128-ctr')
-    self.assertEquals(instance.send_context.cipher.block_size, 16)
-    self.assertEquals(instance.send_context.cipher.key_len, 16)
-    
-    if False:
-        instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
-        self.assertFalse(validated)
+    def test_show(self):
+        instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
+        self.assertTrue(validated)
         self.assertIsInstance(instance, object)
-        self.assertNotEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(   instance.Signature, 0xeeffee) # 1 byte off
-        self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(   instance.VirtualMemoryThreshold, 0xff0000fe)
-    
-    return 
+        import code
+        code.interact(local=locals())
+        self.assertEquals(instance.connection_in, 3)
+        self.assertEquals(instance.connection_out, 3)
+        self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
+        self.assertEquals(instance.receive_context.evp.cipher.key_len, 16)
+        self.assertEquals(instance.receive_context.evp.cipher.iv_len, 16)
+        self.assertEquals(instance.receive_context.evp.key_len, 16)
+        self.assertEquals(instance.receive_context.cipher.name, 'aes128-ctr')
+        self.assertEquals(instance.receive_context.cipher.block_size, 16)
+        self.assertEquals(instance.receive_context.cipher.key_len, 16)
+
+        self.assertEquals(instance.send_context.evp.cipher.block_size, 16)
+        self.assertEquals(instance.send_context.evp.cipher.key_len, 16)
+        self.assertEquals(instance.send_context.evp.cipher.iv_len, 16)
+        self.assertEquals(instance.send_context.evp.key_len, 16)
+        self.assertEquals(instance.send_context.cipher.name, 'aes128-ctr')
+        self.assertEquals(instance.send_context.cipher.block_size, 16)
+        self.assertEquals(instance.send_context.cipher.key_len, 16)
+
+        if False:
+            instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
+            self.assertFalse(validated)
+            self.assertIsInstance(instance, object)
+            self.assertNotEquals(instance.Signature, 0xeeffeeff)
+            self.assertEquals(   instance.Signature, 0xeeffee) # 1 byte off
+            self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
+            self.assertEquals(   instance.VirtualMemoryThreshold, 0xff0000fe)
+
+        return 
 
 class TestApiWin32Dump(unittest.TestCase):
-  """ test is the python API works. """
-  def setUp(self):
-    model.reset()
-    self.memdumpname = 'test/dumps/putty/putty.1.dump'
-    self.classname = 'haystack.reverse.win32.win7heap.HEAP'
-    self.known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
-                    (0x00580000, 111933), (0x005c0000, 1704080) , 
-                    (0x01ef0000, 604), (0x02010000, 61348), 
-                    (0x02080000, 474949), (0x021f0000 , 18762),
-                    (0x03360000, 604), (0x04030000 , 632),
-                    (0x04110000, 1334), (0x041c0000 , 644),
-                    # from free stuf
-                    (0x0061a000, 1200),
-                    ]
+    """ test is the python API works. """
+    def setUp(self):
+        model.reset()
+        self.memdumpname = 'test/dumps/putty/putty.1.dump'
+        self.classname = 'haystack.reverse.win32.win7heap.HEAP'
+        self.known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
+                        (0x00580000, 111933), (0x005c0000, 1704080) , 
+                        (0x01ef0000, 604), (0x02010000, 61348), 
+                        (0x02080000, 474949), (0x021f0000 , 18762),
+                        (0x03360000, 604), (0x04030000 , 632),
+                        (0x04110000, 1334), (0x041c0000 , 644),
+                        # from free stuf
+                        (0x0061a000, 1200),
+                        ]
 
-  def tearDown(self):
-    self.mappings = None
+    def tearDown(self):
+        self.mappings = None
+        model.reset()
 
-  #_HEAP.expectedValues = {
-  #  'Signature':[0xeeffeeff],
-  #  'FrontEndHeapType': [0,1,2]
-  #}
-
-  def test_show(self):
-    instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
-    self.assertTrue(validated)
-    self.assertIsInstance(instance, object)
-    self.assertEquals(instance.Signature, 0xeeffeeff)
-    self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
-    self.assertEquals(instance.FrontEndHeapType, 0)
-    
-    if False:
-        instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
-        self.assertFalse(validated)
+    def test_show(self):
+        instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
+        self.assertTrue(validated)
         self.assertIsInstance(instance, object)
-        self.assertNotEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(   instance.Signature, 0xeeffee) # 1 byte off
-        self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(   instance.VirtualMemoryThreshold, 0xff0000fe)
-    
-    return 
+        self.assertEquals(instance.Signature, 0xeeffeeff)
+        self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
+        self.assertEquals(instance.FrontEndHeapType, 0)
+
+        if False:
+            instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
+            self.assertFalse(validated)
+            self.assertIsInstance(instance, object)
+            self.assertNotEquals(instance.Signature, 0xeeffeeff)
+            self.assertEquals(   instance.Signature, 0xeeffee) # 1 byte off
+            self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
+            self.assertEquals(   instance.VirtualMemoryThreshold, 0xff0000fe)
+
+        return 
 
 
 

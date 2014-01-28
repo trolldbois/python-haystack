@@ -21,41 +21,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-
-class SrcTests(unittest.TestCase):
-    def _load_offsets_values(self, dumpname):
-        """read <dumpname>.stdout to get offsets given by the binary."""
-        offsets = dict()
-        values = dict()
-        sizes = dict()
-        for line in open('%s.stdout'%(dumpname[:-len('.dump')]),'rb').readlines():
-            if line.startswith('s: '):
-                # start
-                fields = line[3:].split(' ')
-                name = fields[0].strip()
-            elif line.startswith('o: '):
-                # offset
-                fields = line[3:].split(' ')
-                k,v = fields[0],int(fields[1].strip(),16)
-                if k not in offsets:
-                    offsets[k]=[]
-                offsets[k].append(v)
-            elif line.startswith('v: '):
-                # value of members
-                fields = line[3:].split(' ')
-                k,v = fields[0],' '.join(fields[1:]).strip()
-                n = '%s.%s'%(name,k)
-                values[n] = v
-            elif line.startswith('t: '): 
-                # sizeof
-                fields = line[3:].split(' ')
-                k,v = fields[0],fields[1].strip()
-                sizes[name] = v
-        self.values = values
-        self.offsets = offsets
-        self.sizes = sizes
-        return 
-
+from test.haystack import SrcTests
 
 class TestLoadMembers(SrcTests):
     """Basic types"""
@@ -160,6 +126,49 @@ class TestLoadMembers(SrcTests):
         self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
         # other tests are too complex to be done in ctypes.
         # that is why d.toPyObject() exists.
+
+class TestRealSSH(object):
+    """Basic types"""
+    def setUp(self):
+        model.reset()
+        self.mappings = dump_loader.load('test/dumps/ssh/ssh.1/')
+        self.classname = 'sslsnoop.ctypes_openssh.session_state'
+        self.known_offset = 0xb84ee318
+    
+    def tearDown(self):
+        from haystack import model
+        model.reset()
+        self.mappings = None
+        pass
+    
+    def test_real_life(self):
+        from sslsnoop import ctypes_openssh
+        m = self.mappings.getMmapForAddr(self.known_offset)
+        a = m.readStruct(offset, ctypes_openssh.session_state)
+        ret = a.loadMembers(self.mappings, 10 )
+        self.assertTrue(ret)
+        
+        import ctypes
+
+        self.assertEquals(instance.connection_in, 3)
+        self.assertEquals(instance.connection_out, 3)
+        self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
+        self.assertEquals(instance.receive_context.evp.cipher.key_len, 16)
+        self.assertEquals(instance.receive_context.evp.cipher.iv_len, 16)
+        self.assertEquals(instance.receive_context.evp.key_len, 16)
+        self.assertEquals(instance.receive_context.cipher.name, 'aes128-ctr')
+        self.assertEquals(instance.receive_context.cipher.block_size, 16)
+        self.assertEquals(instance.receive_context.cipher.key_len, 16)
+
+        self.assertEquals(instance.send_context.evp.cipher.block_size, 16)
+        self.assertEquals(instance.send_context.evp.cipher.key_len, 16)
+        self.assertEquals(instance.send_context.evp.cipher.iv_len, 16)
+        self.assertEquals(instance.send_context.evp.key_len, 16)
+        self.assertEquals(instance.send_context.cipher.name, 'aes128-ctr')
+        self.assertEquals(instance.send_context.cipher.block_size, 16)
+        self.assertEquals(instance.send_context.cipher.key_len, 16)
+        
+        return 
 
 
 
