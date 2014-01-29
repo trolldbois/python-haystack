@@ -273,6 +273,18 @@ class TestMappingsWin32(unittest.TestCase):
     def test_get_mmap_for_haystack_addr(self):
         pass    
 
+    @unittest.skip('')
+    def test_is_valid_address(self):
+        #utils.is_valid_address(obj, mappings, structType=None):
+        # FIXME requires mappings
+        pass
+
+    @unittest.skip('')
+    def test_is_valid_address_value(self):
+        #utils.is_valid_address_value(addr, mappings, structType=None):
+        # FIXME requires mappings
+        pass
+
 class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
     

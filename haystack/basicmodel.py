@@ -94,9 +94,9 @@ class LoadableMembers(object):
             d) Pointer(check valid_address or expectedValues is None == NULL )
                 if field as some expected values in expectedValues 
                     ( None or 0 ) are the only valid options to design NULL pointers
-                     check field getaddress() value against expectedValues[fieldname] // if NULL
+                     check field get_pointee_address() value against expectedValues[fieldname] // if NULL
                             if True(address is NULL and it's a valid value), continue
-                     check getaddress against is_valid_address() 
+                     check get_pointee_address against is_valid_address() 
                             if False, return False, else continue
         """
         valid = self._isValid(mappings)
@@ -173,7 +173,7 @@ class LoadableMembers(object):
             return True
         # e)
         elif ctypes.is_cstring_type(attrtype):
-            myaddress = utils.getaddress(attr.ptr)
+            myaddress = utils.get_pointee_address(attr.ptr)
             if attrname in self.expectedValues:
                 # test if NULL is an option
                 if not bool(myaddress) :
@@ -198,7 +198,7 @@ class LoadableMembers(object):
             return True
         # f) 
         elif ctypes.is_pointer_type(attrtype):
-            myaddress = utils.getaddress(attr)
+            myaddress = utils.get_pointee_address(attr)
             if attrname in self.expectedValues:
                 # test if NULL is an option
                 log.debug('ctypes.is_pointer_type: bool(attr):%s attr:%s'%(
@@ -230,11 +230,11 @@ class LoadableMembers(object):
             if (myaddress != 0 and 
                 not mappings.is_valid_address(attr, _attrType)):
                 log.debug('ptr: %s %s %s 0x%lx INVALID'%(attrname, attrtype,
-                                            repr(attr), utils.getaddress(attr)))
+                                            repr(attr), utils.get_pointee_address(attr)))
                 # f.4) its a pointer, but not valid in our mappings for this pointee type.
                 return False
-            log.debug('ptr: name:%s repr:%s getaddress:0x%lx OK'%(attrname, 
-                                            repr(attr), utils.getaddress(attr)))
+            log.debug('ptr: name:%s repr:%s address:0x%lx OK'%(attrname, 
+                                            repr(attr), utils.get_pointee_address(attr)))
             # f.5) null is accepted by default 
             return True
         # g)
@@ -353,7 +353,7 @@ class LoadableMembers(object):
             # FIXME, you need to keep a ref to this ctring if
             # your want _mappings_ to exists 
             # or just mandate mappings in toString
-            attr_obj_address = utils.getaddress(attr.ptr)
+            attr_obj_address = utils.get_pointee_address(attr.ptr)
             if not bool(attr_obj_address):
                 log.debug('%s %s is a CString, the pointer is null (validation '
                           'must have occurred earlier)'%(attrname, attr))
@@ -382,7 +382,7 @@ class LoadableMembers(object):
             return True
         elif ctypes.is_pointer_type(attrtype): # not functionType, it's not loadable
             _attrType = get_subtype(attrtype)
-            attr_obj_address = utils.getaddress(attr)
+            attr_obj_address = utils.get_pointee_address(attr)
             ####
             # memcpy and save objet ref + pointer in attr
             # we know the field is considered valid, so if it's not in memory_space, we can ignore it
@@ -406,7 +406,7 @@ class LoadableMembers(object):
             # save that validated and loaded ref and original addr so we dont need to recopy it later
             mappings.keepRef( contents, _attrType, attr_obj_address)
             log.debug("keepRef %s.%s @%x"%(_attrType, attrname, attr_obj_address    ))
-            log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.getaddress(attr))     ))
+            log.debug("%s %s loaded memcopy from 0x%lx to 0x%lx"%(attrname, attr, attr_obj_address, (utils.get_pointee_address(attr))     ))
             # recursive validation checks on new struct
             if not bool(attr):
                 log.warning('Member %s is null after copy: %s'%(attrname,attr))
@@ -452,7 +452,7 @@ class LoadableMembers(object):
                 # only print address in target space
                 s+='%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: function type)\n'%(
                             field, ctypes.addressof(attr), 
-                            utils.getaddress(attr) )     
+                            utils.get_pointee_address(attr) )     
             elif ctypes.is_array_of_basic_type(attrtype):
                 try:
                     s+='%s (@0x%lx) : %s\n'%(field, ctypes.addressof(attr), 
@@ -469,12 +469,12 @@ class LoadableMembers(object):
             elif ctypes.is_cstring_type(attrtype):
                 # only print address/null
                 s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr), 
-                            utils.getaddress(attr.ptr) )
+                            utils.get_pointee_address(attr.ptr) )
             elif ctypes.is_pointer_type(attrtype): # and 
                 #not ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.
                 s += '%s (@0x%lx) : 0x%lx\n'%(field, ctypes.addressof(attr),
-                                              utils.getaddress(attr))
+                                              utils.get_pointee_address(attr))
             elif (type(attr) is long) or (type(attr) is int):
                 s += '%s : %s\n'%(field, hex(attr) )    
             else:

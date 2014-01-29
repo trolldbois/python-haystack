@@ -38,7 +38,7 @@ def is_address_local(obj, structType=None):
     Returns the memory mapping if found.
     False, otherwise.
     """
-    addr = getaddress(obj)
+    addr = get_pointee_address(obj)
     if addr == 0:
         return False
     class P:
@@ -48,12 +48,12 @@ def is_address_local(obj, structType=None):
             import ctypes
             return ctypes.string_at(addr, size)
 
-    from memory_mapping import readProcessMappings  # loading dependencies
+    from haystack.memory_mapping import readProcessMappings  # loading dependencies
     mappings = readProcessMappings(P()) # memory_mapping
     ret = mappings.is_valid_address(obj, structType)
     return ret
 
-def getaddress(obj):
+def get_pointee_address(obj):
     """ 
     Returns the address of the struct pointed by the obj, or null if invalid.
 
@@ -67,8 +67,9 @@ def getaddress(obj):
     elif isinstance(obj, int) or isinstance(obj, long):
         # basictype pointers are created as int.
         return obj
-    # check for null pointers
-    if bool(obj):
+    elif ctypes.is_pointer_type(type(obj)):
+        # check for null pointers
+        #if bool(obj):
         if not hasattr(obj,'contents'):
             return 0
         #print '** NOT MY HAYSTACK POINTER'
@@ -167,7 +168,7 @@ def pointer2bytes(attr,nbElement):
     # attr is a pointer and we want to read elementSize of type(attr.contents))
     if not is_address_local(attr):
         return 'POINTER NOT LOCAL'
-    firstElementAddr = getaddress(attr)
+    firstElementAddr = get_pointee_address(attr)
     array = (type(attr.contents)*nbElement).from_address(firstElementAddr)
     # we have an array type starting at attr.contents[0]
     return array2bytes(array)

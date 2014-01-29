@@ -77,13 +77,13 @@ class PythonOutputter(Outputter):
             for i in range(0,len(attr)):
                 obj.append(self._attrToPyObject( attr[i], i, eltyp) )
         elif ctypes.is_cstring_type(attrtype):
-            obj = self.mappings.getRef(ctypes.CString, utils.getaddress(attr.ptr))
+            obj = self.mappings.getRef(ctypes.CString, utils.get_pointee_address(attr.ptr))
         elif ctypes.is_function_type(attrtype):
             obj = repr(attr)
         elif ctypes.is_pointer_type(attrtype):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
-            _address = utils.getaddress(attr)
+            _address = utils.get_pointee_address(attr)
             if _address == 0:
                 # Null pointer
                 obj = None

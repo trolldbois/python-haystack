@@ -111,7 +111,7 @@ def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRSegmentList'):
         ucr_struct_addr = ucr._orig_address_
-        ucr_addr = utils.getaddress(ucr.Address)
+        ucr_addr = utils.get_pointee_address(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
         log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
                    ucr_struct_addr, ucr_addr, ucr.Size))
@@ -166,7 +166,7 @@ def _HEAP_get_free_UCR_segment_list(self, mappings):
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRList'):
         ucr_struct_addr = ucr._orig_address_
-        ucr_addr = utils.getaddress(ucr.Address)
+        ucr_addr = utils.get_pointee_address(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
         log.debug("Heap.UCRList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x"%(
                    ucr_struct_addr, ucr_addr, ucr.Size))
@@ -181,8 +181,8 @@ def _HEAP_get_segment_list(self, mappings):
     segments = list()
     for segment in self.iterateListField(mappings, 'SegmentList'):
         segment_addr = segment._orig_address_
-        first_addr = utils.getaddress(segment.FirstEntry)
-        last_addr = utils.getaddress(segment.LastValidEntry)
+        first_addr = utils.get_pointee_address(segment.FirstEntry)
+        last_addr = utils.get_pointee_address(segment.LastValidEntry)
         log.debug( 'Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x'%( segment_addr, first_addr, last_addr) )
         segments.append(segment)
     return segments
@@ -196,12 +196,12 @@ def _HEAP_get_chunks(self, mappings):
     allocated = list()
     free = list()
     for segment in self.get_segment_list(mappings):
-        first_addr = utils.getaddress(segment.FirstEntry)
-        last_addr = utils.getaddress(segment.LastValidEntry)
+        first_addr = utils.get_pointee_address(segment.FirstEntry)
+        last_addr = utils.get_pointee_address(segment.LastValidEntry)
         # create the skip list for each segment.
         skiplist = dict()
         for ucr in segment.get_UCR_segment_list(mappings):
-            ucr_addr = utils.getaddress(ucr.Address)
+            ucr_addr = utils.get_pointee_address(ucr.Address)
             skiplist[ucr_addr] = ucr.Size # UCR.Size are not chunks sizes. NOT *8
         #
         chunk_addr = first_addr
@@ -251,7 +251,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
     all_committed = list()
     log.debug('_HEAP_get_frontend_chunks')
     ptr = self.FrontEndHeap
-    addr = utils.getaddress(ptr)
+    addr = utils.get_pointee_address(ptr)
     if self.FrontEndHeapType == 1: # windows XP per default
         ## TODO delete this ptr from the heap-segment entries chunks
         for x in range(128):
@@ -284,7 +284,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
         for sinfo in st.LocalData[0].SegmentInfo: #### 128 _HEAP_LOCAL_SEGMENT_INFO
             # TODO , what about ActiveSubsegment ?
             for items_ptr in sinfo.CachedItems: # 16 caches items max
-                items_addr = utils.getaddress(items_ptr)
+                items_addr = utils.get_pointee_address(items_ptr)
                 if not bool(items_addr):
                     #log.debug('NULL pointer items')
                     continue
@@ -314,7 +314,7 @@ def _HEAP_SUBSEGMENT_get_userblocks(self):
     AggregateExchg contains info on userblocks, number left, depth
     
     """
-    userblocks_addr = utils.getaddress(self.UserBlocks)
+    userblocks_addr = utils.get_pointee_address(self.UserBlocks)
     if not bool(userblocks_addr):
         log.debug('Userblocks is null')
         return []
@@ -337,7 +337,7 @@ def _HEAP_SUBSEGMENT_get_freeblocks(self):
     """
     Use AggregateExchg.Depth and NextFreeoffset to fetch the head, then traverse the links
     """
-    userblocks_addr = utils.getaddress(self.UserBlocks)
+    userblocks_addr = utils.get_pointee_address(self.UserBlocks)
     if not bool(userblocks_addr):
         return []
     if self.AggregateExchg.FreeEntryOffset == 0x2 :
@@ -350,7 +350,7 @@ def _HEAP_SUBSEGMENT_get_freeblocks(self):
     return freeblocks
     ###
         
-    #ptr = utils.getaddress(self.AggregateExchg.FreeEntryOffset)
+    #ptr = utils.get_pointee_address(self.AggregateExchg.FreeEntryOffset)
     #for i in range(self.AggregateExchg.Depth):
     #    free.append( userBlocks+ 8*ptr)
     #    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
@@ -413,7 +413,7 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
     freeList = []
     # 128 blocks
     start = ctypes.addressof(self.BlocksIndex) 
-    bi_addr = utils.getaddress(self.BlocksIndex)
+    bi_addr = utils.get_pointee_address(self.BlocksIndex)
     # enumerate BlocksIndex recursively on ExtendedLookup param
     while bi_addr != 0:
         log.debug('BLocksIndex is at %x'%(bi_addr))
@@ -432,9 +432,9 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
         """
         log.debug('ArraySize is %d'%(bi.ArraySize))        
         log.debug('BlocksIndex: %s'%(bi.toString()))        
-        hints_addr = utils.getaddress(bi.ListHints)
+        hints_addr = utils.get_pointee_address(bi.ListHints)
         log.debug('ListHints is pointing to %x'%(hints_addr))
-        extlookup_addr = utils.getaddress(bi.ExtendedLookup)
+        extlookup_addr = utils.get_pointee_address(bi.ExtendedLookup)
         log.debug('ExtendedLookup is pointing to %x'%(extlookup_addr))
         if extlookup_addr == 0:
             """ all chunks of size greater than or equal to BlocksIndex->ArraySize - 1 will 

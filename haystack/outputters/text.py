@@ -76,7 +76,7 @@ class RecursiveTextOutputter(Outputter):
             s = '%s,'%(self.parse(attr, prefix+'\t', depth-1))
         elif ctypes.is_function_type(attrtype):
             # only print address in target space
-            myaddress = utils.getaddress(attr)
+            myaddress = utils.get_pointee_address(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
             s = '%s, #(FIELD NOT LOADED: function type)'%(myaddress_fmt)
         elif ctypes.is_array_of_basic_type(attrtype):
@@ -94,13 +94,13 @@ class RecursiveTextOutputter(Outputter):
         elif ctypes.is_cstring_type(attrtype):
             if not bool(myself.ptr):
                 return "<NULLPTR>"
-            if self.mappings.hasRef(ctypes.CString, utils.getaddress(obj.ptr)):
-                s = self.mappings.getRef(ctypes.CString, utils.getaddress(obj.ptr))
+            if self.mappings.hasRef(ctypes.CString, utils.get_pointee_address(obj.ptr)):
+                s = self.mappings.getRef(ctypes.CString, utils.get_pointee_address(obj.ptr))
             else:
                 raise Exception('This CString was not in cache')
             s = '"%s" , #(CString)'%(s)
         elif ctypes.is_pointer_type(attrtype):
-            myaddress = utils.getaddress(attr)
+            myaddress = utils.get_pointee_address(attr)
             myaddress_fmt = utils.formatAddress(myaddress)
             _attrType = get_subtype(attrtype)                
             contents = self.mappings.getRef(_attrType, myaddress)

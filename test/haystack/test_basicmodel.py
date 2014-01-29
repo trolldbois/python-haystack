@@ -150,7 +150,7 @@ class TestRealSSH(unittest.TestCase):
         self.assertTrue(ret)
         
         import ctypes
-        
+
         self.assertEquals(ss.connection_in, 3)
         self.assertEquals(ss.connection_out, 3)
         
@@ -161,7 +161,7 @@ class TestRealSSH(unittest.TestCase):
         
         self.assertEquals(rounds,10)
         receive_cipher_ssl = self.mappings.getRef(ctypes_openssl.EVP_CIPHER,
-                                utils.getaddress(ss.receive_context.evp.cipher))
+                                utils.get_pointee_address(ss.receive_context.evp.cipher))
         receive_cipher_ssh = ss.receive_context.getCipher(self.mappings)
         self.assertEquals(receive_cipher_ssl.block_size, 16)
         self.assertEquals(receive_cipher_ssl.key_len, 16)
@@ -178,7 +178,7 @@ class TestRealSSH(unittest.TestCase):
         
         self.assertEquals(rounds,10)
         send_cipher_ssl = self.mappings.getRef(ctypes_openssl.EVP_CIPHER,
-                                utils.getaddress(ss.send_context.evp.cipher))
+                                utils.get_pointee_address(ss.send_context.evp.cipher))
         send_cipher_ssh = ss.send_context.getCipher(self.mappings)
         self.assertEquals(send_cipher_ssl.block_size, 16)
         self.assertEquals(send_cipher_ssl.key_len, 16)
@@ -187,6 +187,9 @@ class TestRealSSH(unittest.TestCase):
         self.assertEquals(send_cipher_ssh.getName(self.mappings), 'aes128-ctr')
         self.assertEquals(send_cipher_ssh.block_size, 16)
         self.assertEquals(send_cipher_ssh.key_len, 16)
+
+        import code
+        code.interact(local=locals())
       
         return 
 

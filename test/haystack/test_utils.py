@@ -25,25 +25,40 @@ class TestHelpers(unittest.TestCase):
         model.reset()
 
 
-    @unittest.skip('FIXME requires mappings')
-    def test_is_valid_address(self):
-        #utils.is_valid_address(obj, mappings, structType=None):
-        # FIXME requires mappings
-        pass
-
-    @unittest.skip('FIXME requires mappings')
-    def test_is_valid_address_value(self):
-        #utils.is_valid_address_value(addr, mappings, structType=None):
-        # FIXME requires mappings
-        pass
-
-    @unittest.skip('FIXME: requires memory_mapping')
     def test_is_address_local(self):
-        #utils.is_address_local(obj, structType=None):
-        # FIXME requires memory_mapping
-        pass
+        ctypes = types.load_ctypes_default()
+        from test.src import ctypes5_gen64
+        # kinda chicken and egg here...
+        from haystack.memory_mapping import readProcessMappings
+        import os
+        class P:
+            pid = os.getpid()
+            def readBytes(self, addr, size):
+                import ctypes
+                return ctypes.string_at(addr, size)
 
-    @unittest.skip('FIXME: requires is_address_local')
+        mappings = readProcessMappings(P())
+        m = mappings.mappings[0]
+        # struct a - basic types
+        a = ctypes5_gen64.struct_a.from_address(m.start)
+        s = ctypes.sizeof(ctypes5_gen64.struct_a)
+        b = ctypes5_gen64.struct_a.from_address(m.end-s)
+        c = ctypes5_gen64.struct_a.from_address(m.end-1)
+
+        print hex(m.start)
+        print hex(utils.get_pointee_address(a))
+        import code
+        code.interact(local=locals())
+
+        self.assertTrue(utils.is_address_local(a, structType=None))
+        self.assertTrue(utils.is_address_local(a, structType=ctypes5_gen32.struct_a))
+
+        self.assertTrue(utils.is_address_local(b, structType=None))
+        self.assertTrue(utils.is_address_local(b, structType=ctypes5_gen32.struct_a))
+
+        self.assertFalse(utils.is_address_local(c, structType=None))
+        self.assertFalse(utils.is_address_local(c, structType=ctypes5_gen32.struct_a))
+
     def test_pointer2bytes(self):
         #utils.pointer2bytes(attr,nbElement)
         # FIXME: requires is_address_local
@@ -84,8 +99,8 @@ class TestHelpers(unittest.TestCase):
         self.assertEquals(x, 2)
         pass
 
-    def test_getaddress(self):
-        """tests getaddress on host ctypes POINTER and haystack POINTER"""
+    def test_get_pointee_address(self):
+        """tests get_pointee_address on host ctypes POINTER and haystack POINTER"""
         ctypes = types.reload_ctypes(8,8,16)
         class X(ctypes.Structure):
             _pack_ = True
@@ -94,14 +109,14 @@ class TestHelpers(unittest.TestCase):
                 ('b', ctypes.c_ubyte)]
         self.assertEquals( ctypes.sizeof(X), 17) 
         i = X.from_buffer_copy(b'\xAA\xAA\xBB\xBB'+4*'\xBB'+8*'\x11'+'\xCC')
-        a = utils.getaddress(i.p)
+        a = utils.get_pointee_address(i.p)
         self.assertEquals( ctypes.sizeof(i.p), 8) 
         self.assertNotEquals(a, 0)
         self.assertEquals(a, 0x1111111111111111) # 8*'\x11'
         # null pointer
         i = X.from_buffer_copy(b'\xAA\xAA\xBB\xBB'+4*'\xBB'+8*'\x00'+'\xCC')
-        pnull = utils.getaddress(i.p)
-        self.assertEquals( utils.getaddress(pnull), 0)
+        pnull = utils.get_pointee_address(i.p)
+        self.assertEquals( utils.get_pointee_address(pnull), 0)
 
         # change arch, and retry
         ctypes = types.reload_ctypes(4,4,8)
@@ -112,21 +127,21 @@ class TestHelpers(unittest.TestCase):
                 ('b', ctypes.c_ubyte)]
         self.assertEquals( ctypes.sizeof(Y), 9) 
         i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB'+4*'\x11'+'\xCC')
-        a = utils.getaddress(i.p)
+        a = utils.get_pointee_address(i.p)
         self.assertEquals( ctypes.sizeof(i.p), 4) 
         self.assertNotEquals(a, 0)
         self.assertEquals(a, 0x11111111) # 4*'\x11'
         # null pointer
         i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB'+4*'\x00'+'\xCC')
-        pnull = utils.getaddress(i.p)
-        self.assertEquals( utils.getaddress(pnull), 0)
+        pnull = utils.get_pointee_address(i.p)
+        self.assertEquals( utils.get_pointee_address(pnull), 0)
         
         # non-pointer, and void null pointer
         ctypes = types.load_ctypes_default()
         i = ctypes.c_int(69)
-        self.assertEquals( utils.getaddress(i), 0)
+        self.assertEquals( utils.get_pointee_address(i), 0)
         pnull = ctypes.c_void_p(0)
-        self.assertEquals( utils.getaddress(pnull), 0)
+        self.assertEquals( utils.get_pointee_address(pnull), 0)
 
         pass
 

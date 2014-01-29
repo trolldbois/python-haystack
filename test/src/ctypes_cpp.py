@@ -9,8 +9,8 @@ import logging, sys
 ''' insure ctypes basic types are subverted '''
 from haystack import model
 
-from haystack.model import is_valid_address,is_valid_address_value,getaddress,array2bytes,bytes2array
-from haystack.model import LoadableMembers,RangeValue,NotNull,CString
+from haystack.utils import get_pointee_address,array2bytes,bytes2array
+from haystack.constraints import LoadableMembers,RangeValue,NotNull,CString
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 

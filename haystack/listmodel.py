@@ -252,7 +252,7 @@ def declare_double_linked_list_type(structType, forward, backward):
         #print 'going forward '
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
-            addr = utils.getaddress(link)
+            addr = utils.get_pointee_address(link)
             #print fieldname,addr,hex(addr)
             log.debug('iterateList got a <%s>/0x%x'%(link.__class__.__name__,addr))
             nb=0
@@ -270,7 +270,7 @@ def declare_double_linked_list_type(structType, forward, backward):
                 yield addr
                 # next
                 link = getattr(st, fieldname)
-                addr = utils.getaddress(link)
+                addr = utils.get_pointee_address(link)
             #print 'going backward after %x'%(addr)
         raise StopIteration
     

@@ -807,7 +807,7 @@ class Mappings:
                 return m
         raise ValueError('addr is not a local addr')
 
-    def is_valid_address(self, obj, structType=None):
+    def is_valid_address(self, obj, structType=None): # FIXME is valid pointer
         """ 
         :param obj: the obj to evaluate.
         :param structType: the object's type, so the size could be taken in consideration.
@@ -819,7 +819,7 @@ class Mappings:
         Returns the mapping in which the object stands otherwise.
         """
         # check for null pointers
-        addr = utils.getaddress(obj)
+        addr = utils.get_pointee_address(obj)
         if addr == 0:
             return False
         return self.is_valid_address_value(addr, structType)
