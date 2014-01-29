@@ -195,7 +195,7 @@ class TestRealSSH(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     #logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)
 

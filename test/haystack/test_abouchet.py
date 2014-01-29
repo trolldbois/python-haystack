@@ -22,8 +22,8 @@ class Test7_x32(SrcTests):
     types.reload_ctypes(4,4,8)
     self.memdumpname = 'test/src/test-ctypes7.32.dump'
     self.classname = 'test.src.ctypes7.struct_Node'
-    offsets = self._load_offsets(self.memdumpname)
-    self.address = offsets['test1'][0] #0x8f40008
+    self._load_offsets_values(self.memdumpname)
+    self.address = self.offsets['test1'][0] #0x8f40008
     # load layout in x32
     from test.src import ctypes7
     from test.src import ctypes7_gen32
@@ -36,7 +36,6 @@ class Test7_x32(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    """ tests valid structure refresh."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -54,7 +53,6 @@ class Test7_x32(SrcTests):
 
 
   def test_search(self):
-    """ tests valid structure show and invalid structure show."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
@@ -91,8 +89,8 @@ class Test7_x64(SrcTests):
     types.reload_ctypes(8,8,16)
     self.memdumpname = 'test/src/test-ctypes7.64.dump'
     self.classname = 'test.src.ctypes7.struct_Node'
-    offsets = self._load_offsets(self.memdumpname)
-    self.address = offsets['test1'][0] # 0x000000001b1e010
+    self._load_offsets_values(self.memdumpname)
+    self.address = self.offsets['test1'][0] # 0x000000001b1e010
     # load layout in x64
     from test.src import ctypes7
     from test.src import ctypes7_gen64
@@ -105,7 +103,6 @@ class Test7_x64(SrcTests):
     self.mappings = None
 
   def test_refresh(self):
-    """ tests valid structure refresh."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
@@ -123,7 +120,6 @@ class Test7_x64(SrcTests):
 
 
   def test_search(self):
-    """ tests valid structure show and invalid structure show."""
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
@@ -166,10 +162,10 @@ class Test6_x32(SrcTests):
     self.memdumpname = 'test/src/test-ctypes6.32.dump'
     self.node_structname = 'test.src.ctypes6.struct_Node'
     self.usual_structname = 'test.src.ctypes6.struct_usual'
-    offsets = self._load_offsets(self.memdumpname)
-    self.address1 = offsets['test1'][0] # struct_usual
-    self.address2 = offsets['test2'][0] # struct_Node
-    self.address3 = offsets['test3'][0] # struct_Node
+    self._load_offsets_values(self.memdumpname)
+    self.address1 = self.offsets['test1'][0] # struct_usual
+    self.address2 = self.offsets['test2'][0] # struct_Node
+    self.address3 = self.offsets['test3'][0] # struct_Node
     # load layout in x32
     from test.src import ctypes6
     from test.src import ctypes6_gen32
@@ -303,10 +299,10 @@ class Test6_x64(SrcTests):
     self.memdumpname = 'test/src/test-ctypes6.64.dump'
     self.node_structname = 'test.src.ctypes6.struct_Node'
     self.usual_structname = 'test.src.ctypes6.struct_usual'
-    offsets = self._load_offsets(self.memdumpname)
-    self.address1 = offsets['test1'][0] # struct_usual
-    self.address2 = offsets['test2'][0] # struct_Node
-    self.address3 = offsets['test3'][0] # struct_Node
+    self._load_offsets_values(self.memdumpname)
+    self.address1 = self.offsets['test1'][0] # struct_usual
+    self.address2 = self.offsets['test2'][0] # struct_Node
+    self.address3 = self.offsets['test3'][0] # struct_Node
     # load layout in x64
     from test.src import ctypes6
     from test.src import ctypes6_gen64
@@ -465,8 +461,6 @@ class TestApiLinuxDump(unittest.TestCase):
         instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0])
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)
-        import code
-        code.interact(local=locals())
         self.assertEquals(instance.connection_in, 3)
         self.assertEquals(instance.connection_out, 3)
         self.assertEquals(instance.receive_context.evp.cipher.block_size, 16)
@@ -484,15 +478,6 @@ class TestApiLinuxDump(unittest.TestCase):
         self.assertEquals(instance.send_context.cipher.name, 'aes128-ctr')
         self.assertEquals(instance.send_context.cipher.block_size, 16)
         self.assertEquals(instance.send_context.cipher.key_len, 16)
-
-        if False:
-            instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
-            self.assertFalse(validated)
-            self.assertIsInstance(instance, object)
-            self.assertNotEquals(instance.Signature, 0xeeffeeff)
-            self.assertEquals(   instance.Signature, 0xeeffee) # 1 byte off
-            self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
-            self.assertEquals(   instance.VirtualMemoryThreshold, 0xff0000fe)
 
         return 
 
@@ -539,7 +524,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
 if __name__ == '__main__':
   import sys
-  logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+  logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
   #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
   #logging.getLogger('model').setLevel(level=logging.DEBUG)
