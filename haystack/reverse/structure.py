@@ -24,6 +24,8 @@ import utils
 
 import lrucache
 
+import ctypes
+
 log = logging.getLogger('structure')
 
 DEBUG_ADDRS=[]
@@ -623,7 +625,7 @@ class AnonymousStructInstance():
     if len(self.getPointerFields()) != 0:
       info += ' resolvedPointers:%s'%(self.is_resolvedPointers())
     ctypes_def = '''
-class %s(LoadableMembersStructure):  # %s
+class %s(ctypes.Structure):  # %s
   _fields_ = %s
 
 ''' % (self.get_name(), info, fieldsString)
@@ -670,7 +672,7 @@ class %s(LoadableMembersStructure):  # %s
     return 'struct_%x'%(self._vaddr )
   
 
-class ReversedType(model.LoadableMembersStructure):
+class ReversedType(ctypes.Structure):
   
   @classmethod
   def create(cls, context, name):
@@ -717,7 +719,7 @@ class ReversedType(model.LoadableMembersStructure):
 
     info = 'size:%d'%( ctypes.sizeof(cls) )
     ctypes_def = '''
-class %s(LoadableMembersStructure):  # %s
+class %s(ctypes.Structure):  # %s
   _fields_ = %s
 
 ''' % (cls.__name__, info, fieldsString)

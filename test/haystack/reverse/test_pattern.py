@@ -15,13 +15,6 @@ from haystack import model
 from haystack import memory_mapping
 from haystack.reverse import pattern
 from haystack import config
-Config = config.make_config_linux32() # forcing it on these unittest
-
-
-Config.MMAP_START = 0x0c00000
-Config.MMAP_STOP =  0x0c01000
-Config.MMAP_LENGTH = 4096
-Config.STRUCT_OFFSET = 44
 
 
 def accumulate(iterable, func=operator.add):
@@ -63,6 +56,13 @@ def makeSignature(seq):
 class TestSignature(unittest.TestCase):
 
   def setUp(self):
+    self.Config = config.make_config_linux32() # forcing it on these unittest
+
+
+    self.Config.MMAP_START = 0x0c00000
+    self.Config.MMAP_STOP =  0x0c01000
+    self.Config.MMAP_LENGTH = 4096
+    self.Config.STRUCT_OFFSET = 44
     self.seq = [4,4,8,128,4,8,4,4,12]
     self.mmap = makeMMap(self.seq)
     self.name = 'test_dump_1'
