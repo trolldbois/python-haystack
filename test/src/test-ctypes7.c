@@ -15,7 +15,7 @@ int test1(){
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
   node->ptr2 = node;
-  printf("test1 %p\n", node);
+  printf("o: test1 %p\n", node);
   
   return 0;
 }

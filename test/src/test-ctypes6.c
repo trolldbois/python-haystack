@@ -59,9 +59,9 @@ int test1(){
   usual->root.flink = &node1->list;
   usual->root.blink = &node1->list;
 
-  printf("test1 %p\n", usual);
-  printf("test2 %p\n", node1);
-  printf("test3 %p\n", node2);
+  printf("o: test1 %p\n", usual);
+  printf("o: test2 %p\n", node1);
+  printf("o: test3 %p\n", node2);
   
   return 0;
 }
