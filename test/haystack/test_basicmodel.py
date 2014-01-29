@@ -188,9 +188,6 @@ class TestRealSSH(unittest.TestCase):
         self.assertEquals(send_cipher_ssh.block_size, 16)
         self.assertEquals(send_cipher_ssh.key_len, 16)
 
-        import code
-        code.interact(local=locals())
-      
         return 
 
 

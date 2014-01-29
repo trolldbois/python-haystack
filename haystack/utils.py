@@ -67,7 +67,12 @@ def get_pointee_address(obj):
     elif isinstance(obj, int) or isinstance(obj, long):
         # basictype pointers are created as int.
         return obj
+    elif not bool(obj):
+        return 0
+    elif ctypes.is_function_type(type(obj)):
+        return ctypes.cast(obj, ctypes.c_void_p).value
     elif ctypes.is_pointer_type(type(obj)):
+        return ctypes.cast(obj, ctypes.c_void_p).value
         # check for null pointers
         #if bool(obj):
         if not hasattr(obj,'contents'):

@@ -40,24 +40,34 @@ class TestHelpers(unittest.TestCase):
         mappings = readProcessMappings(P())
         m = mappings.mappings[0]
         # struct a - basic types
-        a = ctypes5_gen64.struct_a.from_address(m.start)
         s = ctypes.sizeof(ctypes5_gen64.struct_a)
+
+        a = ctypes5_gen64.struct_a.from_address(m.start)
+        pa = ctypes.c_void_p(m.start)
+        ptr_a = ctypes.POINTER(ctypes5_gen64.struct_a)(a)
+
         b = ctypes5_gen64.struct_a.from_address(m.end-s)
+        pb = ctypes.c_void_p(m.end-s)
+        ptr_b = ctypes.POINTER(ctypes5_gen64.struct_a)(b)
+
         c = ctypes5_gen64.struct_a.from_address(m.end-1)
+        pc = ctypes.c_void_p(m.end-1)
+        ptr_c = ctypes.POINTER(ctypes5_gen64.struct_a)(c)
 
-        print hex(m.start)
-        print hex(utils.get_pointee_address(a))
-        import code
-        code.interact(local=locals())
+        self.assertTrue(utils.is_address_local(pa, structType=None))
+        self.assertTrue(utils.is_address_local(pa, structType=ctypes5_gen64.struct_a))
+        self.assertTrue(utils.is_address_local(ptr_a, structType=None))
+        self.assertTrue(utils.is_address_local(ptr_a, structType=ctypes5_gen64.struct_a))
 
-        self.assertTrue(utils.is_address_local(a, structType=None))
-        self.assertTrue(utils.is_address_local(a, structType=ctypes5_gen32.struct_a))
+        self.assertTrue(utils.is_address_local(pb, structType=None))
+        self.assertTrue(utils.is_address_local(pb, structType=ctypes5_gen64.struct_a))
+        self.assertTrue(utils.is_address_local(ptr_b, structType=None))
+        self.assertTrue(utils.is_address_local(ptr_b, structType=ctypes5_gen64.struct_a))
 
-        self.assertTrue(utils.is_address_local(b, structType=None))
-        self.assertTrue(utils.is_address_local(b, structType=ctypes5_gen32.struct_a))
-
-        self.assertFalse(utils.is_address_local(c, structType=None))
-        self.assertFalse(utils.is_address_local(c, structType=ctypes5_gen32.struct_a))
+        self.assertTrue(utils.is_address_local(pc, structType=None))
+        self.assertFalse(utils.is_address_local(pc, structType=ctypes5_gen64.struct_a))
+        self.assertTrue(utils.is_address_local(ptr_c, structType=None))
+        self.assertFalse(utils.is_address_local(ptr_c, structType=ctypes5_gen64.struct_a))
 
     def test_pointer2bytes(self):
         #utils.pointer2bytes(attr,nbElement)
@@ -67,6 +77,8 @@ class TestHelpers(unittest.TestCase):
             _fields_ = [('a',ctypes.c_long)]
         x = (8*X)()
         ptr = ctypes.POINTER(X)(x[0])
+        import code
+        code.interact(local=locals())
         new_x = utils.pointer2bytes(ptr, 8)
         self.assertEquals(x, new_x)
         pass
