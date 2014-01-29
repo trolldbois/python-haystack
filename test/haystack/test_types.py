@@ -355,6 +355,16 @@ class TestBasicFunctions(unittest.TestCase):
         p = ctypes.cast(a,stp)
         self.assertEquals(ctypes.addressof(i), a.value)
         self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
+        #print fptr
+        #x = fptr
+        #print ctypes.is_pointer_type(fptr)
+        #print ctypes.is_function_type(fptr)
+        #print ctypes.POINTER(ctypes.c_int).__bases__
+        #print ctypes._cfuncptrt
+        #print ctypes._ptrt
+        #print 
+        #import code
+        #code.interact(local=locals())
 
 
 

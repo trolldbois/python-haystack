@@ -112,6 +112,8 @@ class CTypesProxy(object):
         self.__set_long()
         self.__set_float()
         self.__set_pointer()
+        # change function types
+        self.__set_CFUNCTYPE()
         self.__set_records()
         self.__set_utils_types()
         return
@@ -191,6 +193,7 @@ class CTypesProxy(object):
         if self.sizeof(self.__real_ctypes.c_void_p) == self.__pointersize:
             # use the same pointer cache
             self._pointer_type_cache = self.__real_ctypes._pointer_type_cache
+            self.__ptrt = self.POINTER(self.c_byte).__bases__[0]
             return
         # get the replacement type.
         if self.__pointersize == 4:
@@ -258,6 +261,7 @@ class CTypesProxy(object):
             my_ctypes._pointer_type_cache[pointee] = _class
             return _class
         self.POINTER = POINTER_T
+        self.__ptrt = self._T_Simple
         self._pointer_type_cache.clear()
         self.c_void_p = self.POINTER(None)
         # c_void_p is a simple type
@@ -266,8 +270,8 @@ class CTypesProxy(object):
         self.c_char_p = self.POINTER(self.c_char)
         self.c_wchar_p = self.POINTER(self.c_wchar)
         
-        # change cast function, function types
-        self.__set_cast()
+        # set the casting function
+        self.cast = self.__cast
         return
 
     def __set_records(self):
@@ -321,10 +325,10 @@ class CTypesProxy(object):
     def __set_utils_types(self):
         """Creates some types to compare to"""
         self.__arrayt = type(self.c_byte*1)
-        self.__cfuncptrt = type(type(self.memmove))
-        class _p(self.Structure):
-            pass
-        self.__ptrt = type(self.POINTER(_p))
+        #self.__cfuncptrt = type(type(self.memmove))
+        #class _p(self.Structure):
+        #    pass
+        #self.__ptrt = type(self.POINTER(_p))
         self.__basic_types_name = {
             'c_bool': '?',
             'c_char': 'c',
@@ -360,9 +364,6 @@ class CTypesProxy(object):
         self.__basic_types = set([getattr(self,k) for k in self.__basic_types_name.keys() if hasattr(self,k)])
         return
     
-    def __set_cast(self):
-        self.cast = self.__cast
-    
     def __cast(self, obj, next_type):
         # obj and next_type have to be our instances
         if not isinstance(obj, self._T_Simple):
@@ -373,9 +374,22 @@ class CTypesProxy(object):
         instance.value = obj.value
         return instance
 
-    #import sys
-    #from inspect import getmembers, isclass
-    #self = sys.modules[__name__]
+    def __set_CFUNCTYPE(self):
+        if self.sizeof(self.__real_ctypes.c_void_p) == self.__pointersize:
+            # ignore me
+            self.__cfuncptrt = self.CFUNCTYPE(self.c_uint).__bases__[0]
+            return 
+        class _FUNC_T(self._T_Simple,):
+            def __init__(myself, *a, **args):
+                pass
+        def fn_FUNC_T(*args):
+            _class = type('FN_%d_CFunctionType'%(self.__pointersize), (_FUNC_T,),{}) 
+            return _class
+        self.CFUNCTYPE = fn_FUNC_T
+        self.__cfuncptrt = _FUNC_T
+        return
+    
+
     def _p_type(s):
         """CHECKME: Something about self reference in structure fields in ctypeslib"""
         return dict(getmembers(self, isclass))[s]
@@ -446,12 +460,15 @@ class CTypesProxy(object):
     @check_arg_is_type
     def is_function_type(self, objtype):
         """Checks if an object is a function pointer."""
-        return self.__cfuncptrt == type(objtype)
+        #return self.__cfuncptrt == type(objtype)
+        return issubclass(objtype, self.__cfuncptrt)
+        #return isinstance(objtype, self.__cfuncptrt)
 
     @check_arg_is_type
     def is_pointer_type(self, objtype):
         """ Checks if an object is a ctypes pointer.m CTypesPointer or CSimpleTypePointer"""
-        if hasattr(objtype, '_subtype_'):
+        #if hasattr(objtype, '_subtype_'):
+        if issubclass(objtype, self.__ptrt):
             return True
         if hasattr(objtype, '_type_'):
             # all basic types, pointers and array have a _type_
