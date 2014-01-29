@@ -138,10 +138,15 @@ def array2bytes(array):
     if isinstance(array, str):
         # special case for c_char[]
         return array
-    if not ctypes.is_array_of_basic_instance(array):
-        raise TypeError('NOT-AN-Basic-Type-ARRAY')
-    sb = b''.join([pack(array._type_._type_, el) for el in array])
-    return sb
+    if ctypes.is_array_of_basic_instance(array):
+        sb = b''.join([pack(array._type_._type_, el) for el in array])
+        return sb
+    else:
+        c_size = ctypes.sizeof(array)
+        a2 = (ctypes.c_ubyte*c_size).from_address(ctypes.addressof(array))
+        sb = b''.join([pack('B', el) for el in a2])
+        return sb
+        
 
 def bytes2array(bytes, typ):
     """Converts a bytestring in a ctypes array of typ() elements."""

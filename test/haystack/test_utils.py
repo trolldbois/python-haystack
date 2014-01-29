@@ -75,12 +75,13 @@ class TestHelpers(unittest.TestCase):
         ctypes = types.load_ctypes_default()
         class X(ctypes.Structure):
             _fields_ = [('a',ctypes.c_long)]
-        x = (8*X)()
+        nb = 3
+        x = (nb*X)()
+        x[2].a = 42
         ptr = ctypes.POINTER(X)(x[0])
-        import code
-        code.interact(local=locals())
-        new_x = utils.pointer2bytes(ptr, 8)
-        self.assertEquals(x, new_x)
+        bytes_x = utils.pointer2bytes(ptr, nb)
+        self.assertEquals(len(bytes_x), ctypes.sizeof(x))
+        self.assertEquals(bytes_x, b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00*\x00\x00\x00\x00\x00\x00\x00')
         pass
 
 
