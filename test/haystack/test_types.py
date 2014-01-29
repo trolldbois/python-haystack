@@ -42,7 +42,7 @@ def make_types():
     arra3 = (ctypes.POINTER(St) *4)
     charp = ctypes.c_char_p
     string = ctypes.CString
-    fptr = type(ctypes.memmove)
+    fptr = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint)
     arra4 = (fptr*256)
     double = ctypes.c_longdouble
     arra5 = ctypes.c_ubyte*8
@@ -343,6 +343,20 @@ class TestBasicFunctions(unittest.TestCase):
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
         self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
+    def test_cast(self):
+        i = ctypes.c_int(42)
+        a = ctypes.c_void_p(ctypes.addressof(i))
+        p = ctypes.cast(a,ctypes.POINTER(ctypes.c_int))
+        self.assertEquals(ctypes.addressof(i), a.value)
+        self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
+
+        i = St()
+        a = ctypes.c_void_p(ctypes.addressof(i))
+        p = ctypes.cast(a,stp)
+        self.assertEquals(ctypes.addressof(i), a.value)
+        self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
+
+
 
 class TestBasicFunctions32(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x32 arch."""
@@ -368,6 +382,8 @@ class TestBasicFunctions32(TestBasicFunctions):
         self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 4)
         self.assertEquals( ctypes.sizeof(arra1), 4*4)
         self.assertEquals( ctypes.sizeof(double), 8)
+        self.assertEquals( ctypes.sizeof(fptr), 4 )
+
         return 
 
     def test_import(self):
@@ -399,6 +415,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 8)
         self.assertEquals( ctypes.sizeof(arra1), 4*8)
         self.assertEquals( ctypes.sizeof(double), 8)
+        self.assertEquals( ctypes.sizeof(fptr), 8 )
         return 
 
     def test_import(self):
@@ -430,7 +447,9 @@ class TestBasicFunctions64(TestBasicFunctions):
         self.assertEquals( ctypes.sizeof(ctypes.c_wchar_p), 8)
         self.assertEquals( ctypes.sizeof(arra1), 4*8)
         self.assertEquals( ctypes.sizeof(double), 16)
+        self.assertEquals( ctypes.sizeof(fptr), 8 )
         return 
+
 
     def test_import(self):
         from haystack import basicmodel

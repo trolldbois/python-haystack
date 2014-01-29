@@ -208,42 +208,66 @@ class CTypesProxy(object):
         # The new class should have :
         # ['__module__', 'from_param', '_type_', '__dict__', '__weakref__', '__doc__']
         my_ctypes = self
+        # special class for c_void_p
+        class _T_Simple(_ctypes._SimpleCData,):
+            _type_ = replacement_type_char
+            @property
+            def _sub_addr_(myself):
+                return myself.value
+            def __init__(myself, value):
+                myself.value = value
+            def __repr__(myself):
+                return '%s(%d)'%(type(myself).__name__, myself.value)
+        self._T_Simple = _T_Simple
+        
         def POINTER_T(pointee):
             if pointee in my_ctypes._pointer_type_cache:
                 return my_ctypes._pointer_type_cache[pointee]
             # specific case for c_void_p
             subtype = pointee
             if pointee is None: # VOID pointer type. c_void_p.
-                subtype = type(None) # ctypes.c_void_p # ctypes.c_ulong
-                clsname = 'c_void'
-            else:
-                clsname = pointee.__name__
+                _class = type('LP_%d_c_void_p'%(POINTERSIZE), (_T_Simple,),{})
+                _class._subtype_ = type(None)
+                my_ctypes._pointer_type_cache[pointee] = _class
+                return _class
+
+            clsname = pointee.__name__
             # template that creates a PointerType to pointee (clsname *)
             # we have to fake the size of the structure to 
             # replacement_type_char's size.
             # so we replace _type_ with the fake type of the expected size.
             # and we had _subtype_ that will be queried by our helper functions. 
-            # TODO: inspect _ctypes._SimpleCData to understand what is c_void_p/c_char_p
-            class _T(_ctypes._SimpleCData,):
-                _type_ = replacement_type_char
+            class _T(_T_Simple,):
                 _subtype_ = subtype # could use _pointer_type_cache
+                def __repr__(myself):
+                    return '%s(%d)'%(type(myself).__name__, myself.value)
                 @property
-                def _sub_addr_(self):
-                    return self.value
-                def __repr__(self):
-                    return '%s(%d)'%(clsname, self.value)
-                def contents(self):
-                    raise TypeError('This is not a ctypes pointer.')
-                def __init__(self, **args):
-                    raise TypeError('This is not a ctypes pointer. It is not instanciable.')
+                def contents(myself):
+                    return myself._subtype_.from_address(myself.value)
+                    #raise TypeError('This is not a ctypes pointer.')
+                def __init__(myself, _value=None):
+                    if _value is None:
+                        myself.value = 0
+                        return
+                    if not isinstance(value, subtype):
+                        raise TypeError('%s expected, not %s'%(subtype, type(_value)))
+                    myself.value = my_ctypes.addressof(_value)
+                    #raise TypeError('This is not a ctypes pointer.')
+
             _class = type('LP_%d_%s'%(POINTERSIZE, clsname), (_T,),{}) 
             my_ctypes._pointer_type_cache[pointee] = _class
             return _class
         self.POINTER = POINTER_T
         self._pointer_type_cache.clear()
         self.c_void_p = self.POINTER(None)
+        # c_void_p is a simple type
+        #self.c_void_p = type('c_void_p', (_T_Simple,),{})
+        # other are different
         self.c_char_p = self.POINTER(self.c_char)
         self.c_wchar_p = self.POINTER(self.c_wchar)
+        
+        # change cast function, function types
+        self.__set_cast()
         return
 
     def __set_records(self):
@@ -266,16 +290,6 @@ class CTypesProxy(object):
                 ("ptr", self.POINTER(self.c_ubyte) )
             ]
             _type_ = 's' # fake it
-            #def toString(myself):
-            #    from haystack import model
-            #    from haystack import utils
-            #    if not bool(myself.ptr):
-            #        return "<NULLPTR>"
-            #    if hasattr(myself, '_mappings_') and myself._mappings_.hasRef(self.CString, utils.getaddress(myself.ptr)):
-            #        return myself._mappings_.getRef(self.CString, utils.getaddress(myself.ptr) )
-            #    log.debug('This CString was not in cache - calling toString was not a good idea')
-            #    return myself.string
-            #    pass
         # and there we have it. We can load basicmodel
         self.CString = CString
         
@@ -346,6 +360,18 @@ class CTypesProxy(object):
         self.__basic_types = set([getattr(self,k) for k in self.__basic_types_name.keys() if hasattr(self,k)])
         return
     
+    def __set_cast(self):
+        self.cast = self.__cast
+    
+    def __cast(self, obj, next_type):
+        # obj and next_type have to be our instances
+        if not isinstance(obj, self._T_Simple):
+            raise TypeError('%s is not a haystack ctypes pointer'%(type(obj)))
+        if not issubclass(next_type, self._T_Simple):
+            raise TypeError('%s is not a haystack ctypes pointer'%(next_type))
+        instance = next_type()
+        instance.value = obj.value
+        return instance
 
     #import sys
     #from inspect import getmembers, isclass
