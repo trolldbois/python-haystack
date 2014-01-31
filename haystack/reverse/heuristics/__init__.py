@@ -6,9 +6,9 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-__doc__ = '''
+__doc__ = """
   Heuristics to do static type analysis from bytes.
-'''
+"""
 
 #import pattern
 

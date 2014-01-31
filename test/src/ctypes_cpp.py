@@ -91,10 +91,10 @@ C.__setattr__(e, 'a', 99)
 D.__setattr__(e, 'a', 66)
 e.C.a = 122
 
-for f in e.getFields():
-  print f[0], getattr(e, f[0])
+#for f in e.getFields():
+#  print f[0], getattr(e, f[0])
 
-print e.C.a
+#print e.C.a
 
 #print dict(e.getFields())
 

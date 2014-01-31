@@ -11,12 +11,8 @@ from haystack.constraints import RangeValue,NotNull,IgnoreMember
 import ctypes
 longbits = ctypes.sizeof(ctypes.c_long)*8
 
-print '****', longbits, ctypes
-
 # import target arch generated ctypes3 python module.
 gen = importlib.import_module('test.src.ctypes3_gen%d'%(longbits)) 
-
-print '****', longbits, gen
 
 
 model.copyGeneratedClasses(gen, sys.modules[__name__])
