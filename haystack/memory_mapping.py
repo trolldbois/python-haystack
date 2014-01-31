@@ -799,14 +799,6 @@ class Mappings:
     def get_required_maps(self):
         return list(self.__required_maps)
     
-    def _get_mmap_for_haystack_addr(self, haddr):
-        ''' FIXME should replace utils.is_local_addr ?'''
-        for m in self.mappings:
-            pstart, pstop = m.vtop(m.start), m.vtop(m.stop)
-            if pstart <= haddr < pstop:
-                return m
-        raise ValueError('addr is not a local addr')
-
     def is_valid_address(self, obj, structType=None): # FIXME is valid pointer
         """ 
         :param obj: the obj to evaluate.

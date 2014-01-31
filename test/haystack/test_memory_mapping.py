@@ -20,6 +20,8 @@ from haystack.reverse import context
 
 log = logging.getLogger('test_memory_mapping')
 
+from test.haystack import SrcTests
+
 class TestMmapHack(unittest.TestCase):
     def setUp(self):    
         model.reset()
@@ -70,7 +72,7 @@ class TestMmapHack(unittest.TestCase):
         self.assertIn('CTypesProxy-4:4:8', str(ctypes))
 
 
-class TestMappingsLinux(unittest.TestCase):
+class TestMappingsLinux(SrcTests):
 
     @classmethod
     def setUpClass(self):
@@ -154,18 +156,45 @@ class TestMappingsLinux(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             mappings[0x0005c000] = 1
         
-    @unittest.skip('')
-    def test_search_win_heaps(self):
-        pass
-    
-    @unittest.skip('')
     def test_get_target_system(self):
+        mappings = self.ssh.mappings
+        x = mappings.get_target_system()
+        self.assertEquals(x,'linux')
         pass
     
-    @unittest.skip('')
-    def test_get_mmap_for_haystack_addr(self):
-        pass    
-        
+
+    def test_is_valid_address(self):
+        mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+        from test.src import ctypes5_gen32
+        # struct a - basic types
+        self._load_offsets_values('test/src/test-ctypes5.32.dump')
+        offset = self.offsets['struct_d'][0]
+        m = mappings.getMmapForAddr(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(mappings, 10 )
+
+        self.assertTrue(mappings.is_valid_address(d.a))
+        self.assertTrue(mappings.is_valid_address(d.b))
+        self.assertTrue(mappings.is_valid_address(d.d))
+        self.assertTrue(mappings.is_valid_address(d.h))
+        pass
+
+    def test_is_valid_address_value(self):
+        mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+        from test.src import ctypes5_gen32
+        # struct a - basic types
+        self._load_offsets_values('test/src/test-ctypes5.32.dump')
+        offset = self.offsets['struct_d'][0]
+        m = mappings.getMmapForAddr(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(mappings, 10 )
+
+        self.assertTrue(mappings.is_valid_address(d.a.value))
+        self.assertTrue(mappings.is_valid_address(d.b.value))
+        self.assertTrue(mappings.is_valid_address(d.d.value))
+        self.assertTrue(mappings.is_valid_address(d.h.value))
+        pass
+
 
 class TestMappingsWin32(unittest.TestCase):
 
@@ -206,9 +235,11 @@ class TestMappingsWin32(unittest.TestCase):
             self.assertEquals( len(mappings.getMmap('[heap]')), 1)
         self.assertEquals( len(mappings.getMmap('None')), 71)
 
-    @unittest.skip('')
     def test_getMmapForAddr(self):
-        pass
+        m = self.mappings.getMmapForAddr(0x005c0000)
+        self.assertNotEquals(m, False)
+        self.assertEquals(m.start, 0x005c0000)
+        self.assertEquals(m.end, 0x00619000)
 
     def test_getHeap(self):
         mappings = self.mappings
@@ -257,33 +288,18 @@ class TestMappingsWin32(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             mappings[0x0005c000]=1
 
-    @unittest.skip('')
     def test_search_win_heaps(self):
-        pass
+        mappings = self.mappings
+        heaps = mappings.search_win_heaps()
+        self.assertEquals(len(heaps), 12)
+        self.assertEquals(len(mappings.getHeaps()), 12)
 
-    @unittest.skip('')
-    def test_search_nux_heaps(self):
-        pass
-    
-    @unittest.skip('')
     def test_get_target_system(self):
+        x = self.mappings.get_target_system()
+        self.assertEquals(x,'win32')
         pass
     
-    @unittest.skip('')
-    def test_get_mmap_for_haystack_addr(self):
-        pass    
 
-    @unittest.skip('')
-    def test_is_valid_address(self):
-        #utils.is_valid_address(obj, mappings, structType=None):
-        # FIXME requires mappings
-        pass
-
-    @unittest.skip('')
-    def test_is_valid_address_value(self):
-        #utils.is_valid_address_value(addr, mappings, structType=None):
-        # FIXME requires mappings
-        pass
 
 class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
