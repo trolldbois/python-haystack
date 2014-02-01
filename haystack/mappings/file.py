@@ -38,7 +38,7 @@ import ctypes
 # haystack
 from haystack import utils
 from haystack import config # MMAP_HACK
-from haystack.mappings import MemoryMapping
+from haystack.mappings.base import MemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

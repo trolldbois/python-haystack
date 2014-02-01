@@ -17,7 +17,7 @@ from haystack import utils
 from haystack import types
 from haystack.reverse import context
 from haystack.mappings.base import MemoryMapping
-from haystack.mappings.process import readProcessMappings
+from haystack.mappings.process import readLocalProcessMappings
 
 log = logging.getLogger('test_memory_mapping')
 

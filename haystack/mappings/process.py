@@ -19,7 +19,8 @@ from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
 from haystack import types
 from haystack import utils
 from haystack import config
-from haystack.mappings import MemoryMapping
+from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import Mappings
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
