@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''Provide several memory mapping wrappers to handle different situations.
+"""Provide several memory mapping wrappers to handle different situations.
 
 Short story, the memory of a process is segmented in several memory 
 zones called memory mapping, 
@@ -25,7 +25,7 @@ Classes:
 
 This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
 Its intended to be retrofittable with ptrace's memory mappings.
-'''
+"""
 
 import os
 import logging
@@ -163,7 +163,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         return not (self._base is None)
         
     def mmap(self):
-        ''' mmap-ed access gives a 20% perf increase on by tests '''
+        """ mmap-ed access gives a 20% perf increase on by tests """
         if not self.isMmaped():
             self._mmap()
         return self._base
@@ -243,18 +243,18 @@ class MemoryDumpMemoryMapping(MemoryMapping):
     
     @classmethod
     def fromFile(cls, memoryMapping, aFile):
-        '''
+        """
             aFile must be able to read().
-        '''
+        """
         return cls( aFile, memoryMapping.start, memoryMapping.end, 
                         memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                         memoryMapping.inode, memoryMapping.pathname)
 
 
 class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
-    '''
+    """
         Don't mmap the memoryMap. use the file on disk to read data.
-    '''
+    """
     def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0, major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
         MemoryDumpMemoryMapping.__init__(self, memdump, start, end, permissions, offset, major_device, minor_device, inode, pathname, preload=False)
         self._local_mmap = LazyMmap(self._memdump)
@@ -262,7 +262,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         return
 
     def _mmap(self):
-        ''' returns self to force super() to read through us    '''
+        """ returns self to force super() to read through us    """
         return self
 
 
@@ -316,9 +316,9 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
                                 memoryMapping.inode, memoryMapping.pathname)
 
 class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
-    '''
+    """
         Don't mmap the memoryMap. use the file name on disk to read data.
-    '''
+    """
     def __init__(self, memdumpname, start, end, permissions='rwx-', offset=0x0, 
                                             major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
         MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset, 
@@ -333,9 +333,9 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         return MemoryDumpMemoryMapping._mmap(self)
 
 class LazyMmap:
-    ''' 
+    """ 
     lazy mmap no memory.
-    '''
+    """
     def __init__(self,memdump):
         i = memdump.tell()
         try:
