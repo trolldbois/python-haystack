@@ -47,7 +47,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_ctypes_sizes(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
 
         ctypes = self._mappings.config.ctypes
         
@@ -73,7 +73,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_is_heap(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         h = self._mappings.getMmapForAddr(0x005c0000)
         self.assertEquals(h.getByteBuffer()[0:10],
@@ -93,7 +93,7 @@ class TestWin7Heap(unittest.TestCase):
         
     def test_is_heap_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)
@@ -111,7 +111,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_UCR_segment_list(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -135,7 +135,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(ucr.Size, ucr_size)
 
     def test_get_UCR_segment_list_all(self):
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)
@@ -160,7 +160,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_segment_list(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -190,7 +190,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(reserved_size, meta_size+valid_alloc_size)
 
     def test_get_segment_list_all(self):
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)
@@ -222,7 +222,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -258,7 +258,7 @@ class TestWin7Heap(unittest.TestCase):
         # LFH bins are in some chunks, at heap.FrontEndHeap
 
     def test_get_chunks_all(self):
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)
@@ -294,7 +294,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_freelists(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -309,7 +309,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(free_size, free_size2)
 
     def test_get_freelists_all(self):
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)
@@ -328,7 +328,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_frontend_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -345,7 +345,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_vallocs(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.getMmapForAddr(addr)
@@ -360,7 +360,7 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_vallocs_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr,size in self._known_heaps:
             h = self._mappings.getMmapForAddr(addr)

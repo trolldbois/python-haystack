@@ -171,7 +171,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
   '''
   # TODO if linux
   # TODO from haystack.reverse import heapwalker
-  import libc.ctypes_malloc
+  #from haystack.structures.libc  import libc.ctypes_malloc
   config = mappings.config
   f_addrs = config.getCacheFilename('%x.%s'%(heap.start,config.CACHE_MALLOC_CHUNKS_ADDRS), dumpfilename)
   f_sizes = config.getCacheFilename('%x.%s'%(heap.start,config.CACHE_MALLOC_CHUNKS_SIZES), dumpfilename)

@@ -14,11 +14,11 @@ import time
 from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 from haystack import argparse_utils
+from haystack.structures import libc
 
 import structure
 import fieldtypes
 import utils
-import libc
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

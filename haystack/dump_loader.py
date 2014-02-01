@@ -117,10 +117,10 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         self._load_memory_mappings() # set self.mappings
         if self.mappings.get_target_system() == 'win32':
             self.mappings.search_win_heaps() # mmmh neeeh...
-            from haystack.reverse.win32 import win7heapwalker
+            from haystack.structures.win32 import win7heapwalker
             self.mappings.get_user_allocations = win7heapwalker.get_user_allocations
         else: # linux/libc
-            from haystack.reverse.libc import libcheapwalker
+            from haystack.structures.libc import libcheapwalker
             self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
         return
 
@@ -269,10 +269,11 @@ def load(dumpname):
     return memdump.getMappings()
 
 def _heap(opt):
-    """find    the heap in a haystack dump."""
+    """find the heap in a haystack dump."""
+    # FIXME TU
     mappings = load(opt.dumpname)
-    from haystack.reverse import libc as linux
-    from haystack.reverse import win32
+    from haystack.structures import libc as linux
+    from haystack.structures import win32
     for m in mappings:
         pass
     

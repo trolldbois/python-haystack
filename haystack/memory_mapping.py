@@ -640,10 +640,10 @@ class Mappings:
         # FIXME why is this in dump_loader
         #if self.mappings.get_target_system() == 'win32':
         #    self.mappings.search_win_heaps() # mmmh neeeh...
-        #    from haystack.reverse.win32 import win7heapwalker
+        #    from haystack.structures.win32 import win7heapwalker
         #    self.mappings.get_user_allocations = win7heapwalker.get_user_allocations
         #else: # linux/libc
-        #    from haystack.reverse.libc import libcheapwalker
+        #    from haystack.structures.libc import libcheapwalker
         #    self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
 
     def getMmap(self, pathname):
@@ -691,7 +691,7 @@ class Mappings:
 
     def search_nux_heaps(self):
         # TODO move in haystack.reverse.heapwalker
-        from haystack.reverse.libc import libcheapwalker 
+        from haystack.structures.libc import libcheapwalker 
         heaps = self.getMmap('[heap]')
         for mapping in self.getMmap('None'):
             if libcheapwalker.is_heap(self, mapping):
@@ -707,7 +707,7 @@ class Mappings:
         # TODO move in haystack.reverse.heapwalker
         # FIXME, why do we keep a ref to children mmapping ?
         log.debug('search_win_heaps - START')
-        from haystack.reverse.win32 import win7heapwalker # FIXME win7, winxp...
+        from haystack.structures.win32 import win7heapwalker # FIXME win7, winxp...
         heaps = list()
         for mapping in self.mappings:
             if win7heapwalker.is_heap(self, mapping):
@@ -777,7 +777,7 @@ class Mappings:
 
     def _process_machine_arch_elf(self):
         import ctypes
-        from haystack.reverse.libc.ctypes_elf import struct_Elf_Ehdr
+        from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
         # find an executable image and get the ELF header
         for m in self.mappings:
             if 'r-xp' not in m.permissions:
@@ -806,7 +806,6 @@ class Mappings:
 
         Returns False if the object address is NULL.
         Returns False if the object address is not in a mapping.
-        Returns False if the object overflows the mapping.
 
         Returns the mapping in which the object stands otherwise.
         """

@@ -50,7 +50,7 @@ class TestAllocator(unittest.TestCase):
     def test_freelists(self):
         """ List all free blocks """
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
 
         # TODO test 0x0061a000 for overflow
         
@@ -102,7 +102,7 @@ class TestAllocator(unittest.TestCase):
     def test_sorted_heaps(self):
         """ check if memory_mapping gives heaps sorted by index. """
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         #self.skipTest('known_ok')
         
         for i, m in enumerate(self._mappings.getHeaps()):
@@ -113,7 +113,7 @@ class TestAllocator(unittest.TestCase):
     def test_is_heap(self):
         """ check if the isHeap fn perform correctly."""
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         self.assertEquals(self._mappings.get_target_system(), 'win32')
         heaps = self._mappings.getHeaps()
         self.assertEquals(len(heaps), 12)
@@ -121,7 +121,7 @@ class TestAllocator(unittest.TestCase):
 
     def test_get_frontendheap(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         #heap = self._mappings.getMmapForAddr(0x00390000)
         #for heap in self._mappings.getHeaps():
         for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
@@ -190,7 +190,7 @@ class TestAllocator(unittest.TestCase):
 
     def test_get_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         #heap = self._mappings.getMmapForAddr(0x00390000)
         #for heap in self._mappings.getHeaps():
         for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
@@ -225,7 +225,7 @@ class TestAllocator(unittest.TestCase):
     def test_totalsize(self):
         """ check if there is an adequate allocation rate as per get_user_allocations """
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         
         #
         # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
@@ -322,7 +322,7 @@ class TestAllocator(unittest.TestCase):
         """    Testing the loading of _HEAP in each memory mapping. 
         Compare loadMembers results with known offsets. expect failures otherwise. """
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         #self.skipTest('known_ok')
         
         found=[]
@@ -348,7 +348,7 @@ class TestAllocator(unittest.TestCase):
     def test_get_user_allocations(self):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.reverse.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heapwalker, win7heap
         
         #self.skipTest('useless')
         

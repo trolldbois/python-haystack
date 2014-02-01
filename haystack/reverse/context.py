@@ -57,7 +57,7 @@ class ReverserContext():
     
     if self.mappings._target_system != 'win32':
       log.info('[+] Reversing function pointers names')
-      from haystack.reverse.libc import libdl
+      from haystack.structures.libc import libdl
       self._function_names = dict() #TODO INLINE CACHED dict(libdl.reverseLocalFonctionPointerNames(self) )
     
     log.info('[+] Fetching cached malloc chunks list')

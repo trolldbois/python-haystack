@@ -22,7 +22,7 @@ class TestPointer(unittest.TestCase):
     def setUp(self):
         self.config = config.make_config_linux32()
         self.config.MMAP_START = 0x0c00000
-        self.config.MMAP_STOP =    0x0c01000
+        self.config.MMAP_STOP = 0x0c01000
         self.config.MMAP_LENGTH = 4096
         self.config.STRUCT_OFFSET = 44
         self.seq = [4,4,8,128,4,8,4,4,12]
@@ -38,6 +38,8 @@ class TestPointer(unittest.TestCase):
             yield total
 
     def makeMMap(self, seq):
+        """Creates a home made mapping with pointer values in the middle of 
+        garbage"""
         start = self.config.MMAP_START
         offset = self.config.STRUCT_OFFSET
         nsig = [offset]
@@ -94,7 +96,7 @@ class TestPointerEnumerator(TestPointer):
 
         nsig = [self.config.MMAP_START+self.config.STRUCT_OFFSET]
         nsig.extend(self.seq)
-        indices = [ i for i in accumulate(nsig)]
+        indices = [ i for i in self.accumulate(nsig)]
         self.assertEqual( indices, offsets)
         self.assertEqual( indices, offsets_2)
 

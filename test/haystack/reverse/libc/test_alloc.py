@@ -13,8 +13,8 @@ import sys
 
 
 from haystack.reverse import context
-from haystack.reverse.libc import ctypes_malloc as ctypes_alloc
-from haystack.reverse.libc import libcheapwalker
+from haystack.structures.libc import ctypes_malloc as ctypes_alloc
+from haystack.structures.libc import libcheapwalker
 from haystack import dump_loader
 
 __author__ = "Loic Jaquemet"

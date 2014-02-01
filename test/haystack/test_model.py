@@ -11,7 +11,7 @@ from haystack import dump_loader
 from haystack import model
 from haystack import types
 from haystack import utils
-from haystack.reverse.win32 import win7heapwalker 
+from haystack.structures.win32 import win7heapwalker 
 
 
 class TestCopyModule(unittest.TestCase):
