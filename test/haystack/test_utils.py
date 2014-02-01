@@ -29,7 +29,7 @@ class TestHelpers(unittest.TestCase):
         ctypes = types.load_ctypes_default()
         from test.src import ctypes5_gen64
         # kinda chicken and egg here...
-        from haystack.memory_mapping import readProcessMappings
+        from haystack.mappings.process import readProcessMappings
         import os
         class P:
             pid = os.getpid()

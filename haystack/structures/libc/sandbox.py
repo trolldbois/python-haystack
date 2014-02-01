@@ -16,7 +16,9 @@ import ctypes
 
 offset = 0xb6b3ef68 - 0xb68b1000
 
-from haystack import memory_mapping, utils
+from haystack import utils
+from haystack.mappings.process import readProcessMappings
+
 
 class Dummy():
   pass
@@ -32,7 +34,7 @@ class Dl_info(ctypes.Structure):
 def getMappings():
   me = Dummy()
   me.pid = os.getpid()
-  return memory_mapping.readProcessMappings(me)
+  return readProcessMappings(me)
 
   
 def test1():

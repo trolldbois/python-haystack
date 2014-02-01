@@ -12,9 +12,11 @@ import os
 import unittest
 
 from haystack import model
-from haystack import memory_mapping
 from haystack.reverse import pattern
 from haystack import config
+from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import Mappings
+from haystack.mappings.file import LocalMemoryMapping
 
 
 def accumulate(iterable, func=operator.add):
@@ -42,14 +44,14 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   if len(dump)*Config.get_word_size() != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
-  mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
-  mmap2= memory_mapping.LocalMemoryMapping.fromBytebuffer( mmap, dump2)
+  mmap = MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
+  mmap2= LocalMemoryMapping.fromBytebuffer( mmap, dump2)
   return mmap2
 
 
 def makeSignature(seq):
   mmap = makeMMap(seq)
-  mappings = memory_mapping.Mappings([mmap], 'test')
+  mappings = Mappings([mmap], 'test')
   sig = pattern.PointerIntervalSignature(mappings, 'test_mmap', Config)
   return sig  
 

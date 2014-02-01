@@ -48,7 +48,7 @@ def is_address_local(obj, structType=None):
             import ctypes
             return ctypes.string_at(addr, size)
 
-    from haystack.memory_mapping import readProcessMappings  # loading dependencies
+    from haystack.mappings.process import readProcessMappings  # loading dependencies
     mappings = readProcessMappings(P()) # memory_mapping
     ret = mappings.is_valid_address(obj, structType)
     return ret

@@ -12,7 +12,8 @@ import os
 import unittest
 
 from haystack import model
-from haystack import memory_mapping
+from haystack.mappings.base import MemoryMapping
+from haystack.mappings.file import LocalMemoryMapping
 from haystack.reverse import pointerfinder
 
 from haystack import config
@@ -61,8 +62,8 @@ class TestPointer(unittest.TestCase):
         if len(dump)*self.config.get_word_size() != len(dump2):
             raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
         stop = start + len(dump2)
-        mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
-        mmap2= memory_mapping.LocalMemoryMapping.fromBytebuffer( mmap, dump2)
+        mmap = MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
+        mmap2= LocalMemoryMapping.fromBytebuffer( mmap, dump2)
         mmap2.init_config(self.config)
         return mmap2, values
 

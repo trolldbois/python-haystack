@@ -15,7 +15,6 @@ import sys
 import statushandler
 from haystack import dump_loader
 from haystack import argparse_utils
-from haystack import memory_mapping
 from haystack.reverse import signature
 from haystack.reverse import pointerfinder
 

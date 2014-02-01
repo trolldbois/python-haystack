@@ -28,8 +28,12 @@ import zipfile # relatively useless
 
 from haystack import config
 from haystack import utils
-from haystack import memory_mapping
 from haystack import argparse_utils
+from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import Mappings
+from haystack.mappings.file import FilenameBackedMemoryMapping
+from haystack.mappings.file import LocalMemoryMapping
+from haystack.mappings.file import MemoryDumpMemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -139,7 +143,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         
     def _load_memory_mappings(self):
         """ make the python objects"""
-        self.mappings = memory_mapping.Mappings(None, self.dumpname)
+        self.mappings = Mappings(None, self.dumpname)
         #self_mappings = []
         for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
             start,end = int(_start,16),int(_end,16 )
@@ -157,38 +161,38 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
             except (IOError, KeyError), e:
                 log.debug('Ignore absent file : %s'%(e))
-                mmap = memory_mapping.MemoryMapping( start, end, permissions, offset, 
+                mmap = MemoryMapping( start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
                 self.mappings.append(mmap)
                 continue
             #except ValueError,e: # explicit non-loading
             #    log.debug('Ignore useless file : %s'%(e))
-            #    mmap = memory_mapping.MemoryMapping(start, end, permissions, offset, 
+            #    mmap = MemoryMapping(start, end, permissions, offset, 
             #                                                    major_device, minor_device, inode,pathname=mmap_pathname)
             #    self.mappings.append(mmap)
             #    continue
             except LazyLoadingException,e: 
-                mmap = memory_mapping.FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset, 
+                mmap = FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
                 self.mappings.append(mmap)
                 continue
             
             if isinstance(self.archive, zipfile.ZipFile): # ZipExtFile is lame
                 log.warning('Using a local memory mapping . Zipfile sux. thx ruby.')
-                mmap = memory_mapping.MemoryMapping(start, end, permissions, offset, 
+                mmap = MemoryMapping(start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
-                mmap = memory_mapping.LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
+                mmap = LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
             elif end-start > config.MAX_MAPPING_SIZE_FOR_MMAP: # use file mmap when file is too big
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).'%(mmap_pathname)+
                                         ' Search will fail. Buffer is needed.')
-                mmap = memory_mapping.FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                mmap = FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
             else:
                 log.debug('Using a MemoryDumpMemoryMapping. small size')
-                mmap = memory_mapping.MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
+                mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
             self.mappings.append(mmap)
-        #self.mappings = memory_mapping.Mappings(self.config, self_mappings, self.dumpname)
+        #self.mappings = Mappings(self.config, self_mappings, self.dumpname)
         self.mappings.init_config()
         return        
 

@@ -11,8 +11,11 @@ import time
 from haystack.dbg import PtraceDebugger
 # local
 from haystack import config
-from haystack import memory_mapping
 from haystack import dump_loader
+from haystack.mappings.base import Mappings
+from haystack.mappings.file import FileBackedMemoryMapping
+from haystack.mappings.file import MemoryDumpMemoryMapping
+from haystack.mappings.process import readProcessMappings
 
 log = logging.getLogger('mapper')
 
@@ -49,11 +52,11 @@ class MemoryMapper:
     def initMemfile(self, memfile, baseOffset):
         size = os.fstat(memfile.fileno()).st_size
         if size > self.config.MAX_MAPPING_SIZE_FOR_MMAP:
-            mem = memory_mapping.FileBackedMemoryMapping(memfile, baseOffset, baseOffset+size) ## is that valid ?
+            mem = FileBackedMemoryMapping(memfile, baseOffset, baseOffset+size) ## is that valid ?
             log.warning('Dump file size is big. Using file backend memory mapping. Its gonna be slooow')
         else:
-            mem = memory_mapping.MemoryDumpMemoryMapping(memfile, baseOffset, baseOffset+size) ## is that valid ?
-        mappings = memory_mapping.Mappings([mem], memfile.name)
+            mem = MemoryDumpMemoryMapping(memfile, baseOffset, baseOffset+size) ## is that valid ?
+        mappings = Mappings([mem], memfile.name)
         return mappings
 
     def initPid(self, pid, mmap):
@@ -65,7 +68,7 @@ class MemoryMapper:
             log.error("Error initializing Process debugging for %d"% pid)
             raise IOError
             # ptrace exception is raised before that
-        mappings = memory_mapping.readProcessMappings(process)
+        mappings = readProcessMappings(process)
         t0 = time.time()
         for m in mappings :
             if mmap:

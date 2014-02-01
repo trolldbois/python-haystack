@@ -20,6 +20,8 @@ from haystack import utils
 from haystack import memory_mapping
 from haystack import argparse_utils
 from haystack import config
+from haystack.mappings.process import readProcessMappings
+
 
 #import code
 
@@ -62,7 +64,7 @@ class MemoryDumper:
             log.error("Error initializing Process debugging for %d"% self._pid)
             raise IOError
             # ptrace exception is raised before that
-        self.mappings = memory_mapping.readProcessMappings(self.process)
+        self.mappings = readProcessMappings(self.process)
         log.debug('mappings read. Dropping ptrace on pid.')
         return
 

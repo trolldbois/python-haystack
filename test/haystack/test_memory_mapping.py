@@ -13,10 +13,11 @@ import struct
 
 from haystack import model
 from haystack import dump_loader
-from haystack import memory_mapping
 from haystack import utils
 from haystack import types
 from haystack.reverse import context
+from haystack.mappings.base import MemoryMapping
+from haystack.mappings.process import readProcessMappings
 
 log = logging.getLogger('test_memory_mapping')
 
@@ -38,7 +39,7 @@ class TestMmapHack(unittest.TestCase):
         heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) + 
                                         2*(ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
-        maps = memory_mapping.readLocalProcessMappings()
+        maps = readLocalProcessMappings()
         ret=[m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals( len(ret), 1)
@@ -61,7 +62,7 @@ class TestMmapHack(unittest.TestCase):
         heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) + 
                                         2*(ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x'%(heapmap) )
-        maps = memory_mapping.readLocalProcessMappings()
+        maps = readLocalProcessMappings()
         ret=[m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals( len(ret), 1)
@@ -115,7 +116,7 @@ class TestMappingsLinux(SrcTests):
 
     def test_getHeap(self):
         mappings = self.ssh.mappings
-        self.assertTrue( isinstance(mappings.getHeap(), memory_mapping.MemoryMapping))
+        self.assertTrue( isinstance(mappings.getHeap(), MemoryMapping))
         self.assertEquals( mappings.getHeap().start, 0xb84e0000)
         self.assertEquals( mappings.getHeap().pathname, '[heap]')
 
@@ -140,8 +141,8 @@ class TestMappingsLinux(SrcTests):
         
     def test_getitem(self):
         mappings = self.ssh.mappings
-        self.assertTrue( isinstance(mappings[0], memory_mapping.MemoryMapping))
-        self.assertTrue( isinstance(mappings[len(mappings)-1], memory_mapping.MemoryMapping))
+        self.assertTrue( isinstance(mappings[0], MemoryMapping))
+        self.assertTrue( isinstance(mappings[len(mappings)-1], MemoryMapping))
         with self.assertRaises(IndexError):
             mappings[0x0005c000]
         
@@ -243,7 +244,7 @@ class TestMappingsWin32(unittest.TestCase):
 
     def test_getHeap(self):
         mappings = self.mappings
-        self.assertTrue( isinstance(mappings.getHeap(), memory_mapping.MemoryMapping))
+        self.assertTrue( isinstance(mappings.getHeap(), MemoryMapping))
         self.assertEquals( mappings.getHeap().start, 0x005c0000)
         self.assertEquals( mappings.getHeap().pathname, 'None')
 
@@ -272,8 +273,8 @@ class TestMappingsWin32(unittest.TestCase):
         
     def test_getitem(self):
         mappings = self.mappings
-        self.assertTrue( isinstance(mappings[0], memory_mapping.MemoryMapping))
-        self.assertTrue( isinstance(mappings[len(mappings)-1], memory_mapping.MemoryMapping))
+        self.assertTrue( isinstance(mappings[0], MemoryMapping))
+        self.assertTrue( isinstance(mappings[len(mappings)-1], MemoryMapping))
         with self.assertRaises(IndexError):
             mappings[0x0005c000]
         

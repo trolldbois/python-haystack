@@ -10,7 +10,6 @@ import logging
 import sys
 
 from haystack import model
-from haystack import memory_mapping
 
 import ctypes
 # FIXME: ctypes = types.reload_ctyps(4,4,8) #?

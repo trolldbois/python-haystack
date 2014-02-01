@@ -16,7 +16,6 @@ from haystack import model
 from haystack import argparse_utils
 from haystack import utils
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
-from haystack import memory_mapping
 from haystack.outputters import text
 from haystack.outputters import python
 

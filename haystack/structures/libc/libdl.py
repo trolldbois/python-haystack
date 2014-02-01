@@ -13,7 +13,7 @@ import ctypes
 
 log=logging.getLogger('libdl')
 
-from haystack import memory_mapping
+from haystack.mappings.process import readProcessMappings
 
 class Dl_info(ctypes.Structure):
   _fields_ = [
@@ -29,7 +29,7 @@ class Dummy():
 def getMappings():
   me = Dummy()
   me.pid = os.getpid()
-  return memory_mapping.readProcessMappings(me)
+  return readProcessMappings(me)
 
 # TODO FIXME: make a non-batch version
 def reverseLocalFonctionPointerNames(context):

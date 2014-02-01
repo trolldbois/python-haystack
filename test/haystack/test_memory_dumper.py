@@ -151,9 +151,9 @@ class TestMemoryDumper32(TestMemoryDumper):
         
         # test opening by dump_loader
         from haystack import dump_loader
-        from haystack import memory_mapping
+        from haystack.mappings.base import Mappings
         mappings1 = dump_loader.load(out1)
-        self.assertIsInstance( mappings1, memory_mapping.Mappings)
+        self.assertIsInstance( mappings1, Mappings)
 
         mappings2 = dump_loader.load(out2)
         mappings3 = dump_loader.load(out3)
