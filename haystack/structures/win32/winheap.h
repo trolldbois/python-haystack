@@ -2,15 +2,24 @@
 Borrowed from LGPL metasm
 */
 
-#include <bits/types.h>
+//#include <bits/types.h>
+//#define UINT8 __uint8_t
+//#define UINT16 __uint16_t
+//#define WCHAR __uint16_t
+//#define ULONG32 __uint32_t
+//#define LONG32 __int32_t
+//#define UINT64 __uint64_t
+//#define INT64 __int64_t
 
-#define UINT8 __uint8_t
-#define UINT16 __uint16_t
-#define WCHAR __uint16_t
-#define ULONG32 __uint32_t
-#define LONG32 __int32_t
-#define UINT64 __uint64_t
-#define INT64 __int64_t
+
+
+#define UINT8 unsigned __int8
+#define UINT16 unsigned __int16
+#define WCHAR unsigned __int16
+#define ULONG32 unsigned __int32
+#define LONG32 __int32
+#define UINT64 unsigned __int64
+#define INT64 __int64
 
 typedef void VOID;
 
@@ -21,15 +30,54 @@ typedef void VOID;
 //typedef __int64 INT64;
 //typedef unsigned __int64 UINT64;
 
-// pseudo struct, for the PEB heap list
-struct HEAPTABLE {
-	struct _HEAP *list[16];
-};
 
 struct _LIST_ENTRY {
 	struct _LIST_ENTRY *FLink;
 	struct _LIST_ENTRY *BLink;
 };
+
+
+//////////////////////////// Added by LXJ
+
+#define SIZE_T ULONG32
+
+typedef struct _HEAP_TAG_ENTRY
+{
+	ULONG32      Allocs;
+	ULONG32      Frees;
+	ULONG32      Size;
+	UINT16       TagIndex;
+	UINT16       CreatorBackTraceIndex;
+	WCHAR        TagName[24];
+} HEAP_TAG_ENTRY, *PHEAP_TAG_ENTRY;
+
+typedef struct _HEAP_UCR_SEGMENT
+{
+    struct _LIST_ENTRY ListEntry;
+    SIZE_T ReservedSize;
+    SIZE_T CommittedSize;
+} HEAP_UCR_SEGMENT, *PHEAP_UCR_SEGMENT;
+
+typedef struct _HEAP_PSEUDO_TAG_ENTRY
+{
+    ULONG32 Allocs;
+    ULONG32 Frees;
+    SIZE_T Size;
+} HEAP_PSEUDO_TAG_ENTRY, *PHEAP_PSEUDO_TAG_ENTRY;
+
+struct _HEAP_LOCK
+{
+};
+
+///////////////////// FROM LGPL metasm
+
+struct _HEAP;
+
+// pseudo struct, for the PEB heap list
+struct HEAPTABLE {
+	struct _HEAP *list[16];
+};
+
 
 union _SLIST_HEADER {
 	struct _LIST_ENTRY le;
@@ -100,6 +148,8 @@ typedef struct _HEAP                                         // 36 elements, 0x5
 /*0x586*/     UINT8        FrontEndHeapType;
 /*0x587*/     UINT8        LastSegmentIndex;
 }HEAP, *PHEAP;
+
+
 
 typedef struct _HEAP_UNCOMMMTTED_RANGE    // 4 elements, 0x10 bytes (sizeof)
 {
