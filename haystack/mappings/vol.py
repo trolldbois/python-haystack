@@ -11,7 +11,8 @@ Volatility backed mappings.
 import os
 import logging
 import struct
-import mmap
+#import mmap
+from functools import partial
 
 # haystack
 from haystack import utils
@@ -29,26 +30,25 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('volmapping')
 
 class VolatilityProcessMapping(MemoryMapping):
-    """Process memory mapping using volatitlity.
+    """Process memory mapping using volatility.
     """
-    def __init__(self, task_space, start, end, permissions='r--', offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
+    def __init__(self, address_space, start, end, permissions='r--', offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
         MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
-        self._backend = task_space
+        self._backend = address_space
 
-    def readWord(self, vaddr ):
+    def readWord(self, addr ):
         ws = self.config.get_word_size()
-        return self._backend.read(vaddr, ws)
+        return self._backend.zread(addr, ws)
     
-    def readStruct(self, vaddr, struct):
-        laddr = self.vtop( vaddr )
-        struct = struct.from_address(int(laddr))
-        #struct = struct.from_buffer_copy(struct.from_address(int(laddr)))
-        struct._orig_address_ = vaddr
-        return struct
+    def readStruct(self, addr, struct):
+        size = self.config.ctypes.sizeof(struct)
+        instance = struct.from_buffer_copy(self._backend.zread(addr, size))
+        isntance._orig_address_ = addr
+        return instance
 
-    def readArray(self, vaddr, basetype, count):
-        laddr = self.vtop( vaddr )
-        array = (basetype *count).from_address(int(laddr))
+    def readArray(self, addr, basetype, count):
+        size = self.config.ctypes.sizeof(basetype*count)
+        array = (basetype*count).from_buffer_copy(self._backend.zread(addr, size))
         return array
 
 import sys
@@ -97,10 +97,12 @@ class VolatilityProcessMapper:
         # Exceptionally useful for debugging/telling people what's going on
         sys.stderr.write("Volatility Foundation Volatility Framework {0}\n".format(constants.VERSION))
         sys.stderr.flush()
+        
+        module = 'vadinfo'
 
         class MyOptionParser(conf.PyFlagOptionParser):
             def _get_args(myself,args):
-                return ['-f', self.imgname, 'memmap','-p', str(self.pid)]
+                return ['-f', self.imgname, module,'-p', str(self.pid)]
         # singleton - replace with a controlled args list
         conf.ConfObject.optparser = MyOptionParser(add_help_option = False,
                                    version = False,)
@@ -116,7 +118,6 @@ class VolatilityProcessMapper:
 
         ## Parse all the options now
         self.v_config.parse_options(False)
-        module = 'memmap'
         # Reset the logging level now we know whether debug is set or not
         #debug.setup(self.v_config.DEBUG)
 
@@ -130,12 +131,12 @@ class VolatilityProcessMapper:
             if module in cmds.keys():
                 command = cmds[module](self.v_config)
                 
-                command.render_text = my_render_text
+                command.render_text = partial(my_render_text, self, command)
                 self.v_config.parse_options()
 
                 command.execute()
-                import code
-                code.interact(local=locals())
+                #import code
+                #code.interact(local=locals())
         
         except exceptions.VolatilityException, e:
             print e        
@@ -146,55 +147,49 @@ class VolatilityProcessMapper:
         return self.mappings
 
 
+PERMS_PROTECTION = dict(enumerate([
+    '---', #'PAGE_NOACCESS',
+    'r--',#'PAGE_READONLY',
+    '--x',#'PAGE_EXECUTE',
+    'r-x',#'PAGE_EXECUTE_READ',
+    'rw-',#'PAGE_READWRITE',
+    'rc-',#'PAGE_WRITECOPY',
+    'rwx',#'PAGE_EXECUTE_READWRITE',
+    'rcx',#'PAGE_EXECUTE_WRITECOPY',
+    ]))
 
-def my_render_text(outfd, data):
-    first = True
-    for pid, task, pagedata in data: # only one.
 
-        task_space = task.get_process_address_space()
-        
-        # TODO
-        # task_space is Mapping
-        # task_space.read
-        
-        #task.ImageFileName
-        maps = []
-       
-        expected = -1
-        done = False
-        ordered_pages = [(p[0],p[1]) for p in pagedata]
-        ordered_pages.sort()
-        for p in ordered_pages: #[:10]:
-            # task_space.vtop( I dont want the physical address.
-            start = p[0]
-            size = p[1]
-            end2 = start - size
-            end = start + size
-            #print '%x %x %x %x'%(start, end, end2, size)
-            
-            
-            if expected == -1:
-                current_start = start
-                expected = start
-    
-            if start == expected:
-                expected = end
-                done = False
-                #print hex(start), hex(end)
+
+def my_render_text(mapper, cmd, outfd, data):
+    maps = []
+    for task in data:
+        #print type(task)
+        address_space = task.get_process_address_space()
+        for vad in task.VadRoot.traverse():
+            #print type(vad)
+            if vad == None:
                 continue
-            else:
-                # merge
-                #print 'merged', hex(current_start), hex(end), (end-current_start)/4096, 'pages'
-                maps.append(VolatilityProcessMapping(task_space, current_start, end))
-                print maps[-1]
-                current_start = start
-                expected = end
-                done = True
-        # tail
-        if not done:
-            maps.append(VolatilityProcessMapping(task_space, current_start, end))
-        
-        mappings = Mappings(maps)
-        print mappings
+            offset = vad.obj_offset
+            start = vad.Start
+            end = vad.End
+            tag = vad.Tag
+            flags = str(vad.u.VadFlags)
+            perms = PERMS_PROTECTION[vad.u.VadFlags.Protection.v() & 7]
+            pathname = ''
+            if vad.u.VadFlags.PrivateMemory == 1 or not vad.ControlArea:
+                pathname = ''
+            elif vad.FileObject:
+                pathname = str(vad.FileObject.FileName or '')
+
+            pmap = VolatilityProcessMapping(address_space, start, end, permissions=perms, pathname=pathname)
+            #print pmap
+            import code
+            code.interact(local=locals())
+            
+            maps.append(pmap)
+
+    mappings = Mappings(maps)
+    #print mappings
+    mapper.mappings = mappings
 
 

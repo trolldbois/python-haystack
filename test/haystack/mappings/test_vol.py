@@ -19,8 +19,8 @@ class TestMapper(unittest.TestCase):
 
     def test_init(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
-        #pid = 676 # services
-        pid = 124 #cmd
+        pid = 676 # services
+        #pid = 124 #cmd
         mapper = VolatilityProcessMapper(f,pid)
         print 'mapper initialised'
         #import code
