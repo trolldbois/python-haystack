@@ -40,13 +40,13 @@ class VolatilityProcessMapping(MemoryMapping):
         ws = self.config.get_word_size()
         return self._backend.zread(addr, ws)
 
-    def readBytes(self, address, size):
+    def readBytes(self, addr, size):
         return self._backend.zread(addr, size)
     
     def readStruct(self, addr, struct):
         size = self.config.ctypes.sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
-        isntance._orig_address_ = addr
+        instance._orig_address_ = addr
         return instance
 
     def readArray(self, addr, basetype, count):
@@ -186,13 +186,14 @@ def my_render_text(mapper, cmd, outfd, data):
 
             pmap = VolatilityProcessMapping(address_space, start, end, permissions=perms, pathname=pathname)
             #print pmap
-            import code
-            code.interact(local=locals())
+            #import code
+            #code.interact(local=locals())
             
             maps.append(pmap)
 
     mappings = Mappings(maps)
     #print mappings
+    mappings.init_config()
     mapper.mappings = mappings
 
 

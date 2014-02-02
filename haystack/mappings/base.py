@@ -311,13 +311,17 @@ class Mappings:
             return self._target_system
         self._target_system = 'linux'
         for l in [m.pathname for m in self.mappings]:
-            if l is not None and '\\System32\\' in l:
+            if l is not None and '\\system32\\' in l.lower():
                 log.debug('Found a windows executable dump')
                 self._target_system = 'win32'
                 break
         return self._target_system
 
     def init_config(self):
+        """self.config and all mappings.config are set here"""
+        # we need a default config.ctypes to read PE/ELF structs
+        # PE/ELF structs are size independent. Hopefully.
+        self.config = config.make_config()
         if self.__wordsize is not None:
             return self.__wordsize
         elif self.get_target_system() == 'win32':
@@ -343,11 +347,15 @@ class Mappings:
         pe = None
         m = [_m for _m in self.mappings if 'r--' in _m.permissions][0]
         for m in self.mappings:
-            if m.permissions != 'r--':
-                continue
+            # volatility dumps VAD differently than winappdbg
+            # we have to look at all mappings
+            #if m.permissions != 'r--':
+            #    continue
             try:
-                pe = pefile.PE(data=m.getByteBuffer(), fast_load=True)
+                pe = pefile.PE(data=m.readBytes(m.start,0x1000), fast_load=True)
                 # only get the dirst one that works
+                if pe is None:
+                    continue
                 break
             except pefile.PEFormatError as e:
                 pass

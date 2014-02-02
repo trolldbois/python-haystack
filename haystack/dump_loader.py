@@ -137,14 +137,11 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             if '' in fields:
                 fields.remove('')
             self.metalines.append( (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], ' '.join(fields[6:])) )
-        # make an empty config
-        #self.config = config.make_config()
         return 
         
     def _load_memory_mappings(self):
         """ make the python objects"""
         self.mappings = Mappings(None, self.dumpname)
-        #self_mappings = []
         for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
             start,end = int(_start,16),int(_end,16 )
             offset = int(offset,16)
@@ -192,7 +189,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
             self.mappings.append(mmap)
-        #self.mappings = Mappings(self.config, self_mappings, self.dumpname)
         self.mappings.init_config()
         return        
 

@@ -247,6 +247,14 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertTrue( isinstance(mappings.getHeap(), MemoryMapping))
         self.assertEquals( mappings.getHeap().start, 0x005c0000)
         self.assertEquals( mappings.getHeap().pathname, 'None')
+        m = mappings.getHeap()
+        buf = m.readBytes(m.start,500)
+        from haystack.structures.win32 import win7heap
+        x = win7heap.HEAP.from_buffer_copy(buf)
+        print win7heap.HEAP.Signature
+        print repr(buf[100:104])
+        print hex(x.Signature)
+        print mappings.config.ctypes.sizeof(x)
 
     def test_getHeaps(self):
         mappings = self.mappings
