@@ -39,6 +39,9 @@ class VolatilityProcessMapping(MemoryMapping):
     def readWord(self, addr ):
         ws = self.config.get_word_size()
         return self._backend.zread(addr, ws)
+
+    def readBytes(self, address, size):
+        return self._backend.zread(addr, size)
     
     def readStruct(self, addr, struct):
         size = self.config.ctypes.sizeof(struct)
