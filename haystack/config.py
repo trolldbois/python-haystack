@@ -21,6 +21,16 @@ log = logging.getLogger('config')
 MMAP_HACK_ACTIVE = True 
 MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
 
+# triplet = getattr(sys, 'implementation', sys)._multiarch 
+# arch vendor os
+TARGET_TRIPLETS = [
+    ('i386-linux-gnu', (4,4,12)),
+    ('x86_64-linux-gnu', (8,8,16)),
+    ('i386-pc-win', (4,4,8)),
+    ('x86_64-pc-win', (8,8,8)),
+    ]
+
+
 class ConfigClass():
     """Project-wide config class. """
     def __init__(self):
@@ -61,7 +71,7 @@ class ConfigClass():
         self.ctypes = ctypes
         
     def _set_rlimits(self):
-        '''set rlimits to maximum allowed'''
+        """set rlimits to maximum allowed"""
         maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
         resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
         return     
@@ -139,28 +149,43 @@ def make_config():
     cfg = ConfigClass()
     return cfg
 
-def make_config_win32():
+def make_config_winxp_32():
     """    """
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(4,4,8)
     return cfg
 
-def make_config_win64():
+def make_config_winxp_64():
     """    """
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(8,8,8)
     return cfg
 
-def make_config_linux32():
+def make_config_win7_32():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(4,4,8)
+    return cfg
+
+def make_config_win7_64():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(8,8,8)
+    return cfg
+
+
+def make_config_linux_32():
     """    """
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(4,4,12)
     return cfg
 
-def make_config_linux64():
+def make_config_linux_64():
     """    """
     from haystack import types
     cfg = ConfigClass()

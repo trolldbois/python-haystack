@@ -290,10 +290,10 @@ class Mappings:
         #heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
         return heaps
 
-    def search_win_heaps(self):
+    def search_win7_heaps(self):
         # TODO move in haystack.reverse.heapwalker
         # FIXME, why do we keep a ref to children mmapping ?
-        log.debug('search_win_heaps - START')
+        log.debug('search_win7_heaps - START')
         from haystack.structures.win32 import win7heapwalker # FIXME win7, winxp...
         heaps = list()
         for mapping in self.mappings:
@@ -303,7 +303,21 @@ class Mappings:
                 mapping._children = win7heapwalker.Win7HeapWalker(self, mapping, 0).get_heap_children_mmaps()
         # order by ProcessHeapsListIndex
         heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
-        log.debug('search_win_heaps - END')
+        log.debug('search_win7_heaps - END')
+        return heaps
+
+    def search_winxp_heaps(self):
+        log.debug('search_winxp_heaps - START')
+        from haystack.structures.win32 import winheapwalker # FIXME win7, winxp...
+        heaps = list()
+        for mapping in self.mappings:
+            if winheapwalker.is_heap(self, mapping):
+                heaps.append(mapping)
+                log.debug('%s is a Heap'%(mapping))
+                mapping._children = winheapwalker.WinHeapWalker(self, mapping, 0).get_heap_children_mmaps()
+        # order by ProcessHeapsListIndex
+        heaps.sort(key=lambda m: winheapwalker.readHeap(m).ProcessHeapsListIndex)
+        log.debug('search_winxp_heaps - END')
         return heaps
     
     def get_target_system(self):
@@ -313,7 +327,7 @@ class Mappings:
         for l in [m.pathname for m in self.mappings]:
             if l is not None and '\\system32\\' in l.lower():
                 log.debug('Found a windows executable dump')
-                self._target_system = 'win32'
+                self._target_system = 'win'
                 break
         return self._target_system
 
@@ -324,7 +338,7 @@ class Mappings:
         self.config = config.make_config()
         if self.__wordsize is not None:
             return self.__wordsize
-        elif self.get_target_system() == 'win32':
+        elif self.get_target_system() == 'win':
             self._process_machine_arch_pe()
         elif self.get_target_system() == 'linux':
             self._process_machine_arch_elf()

@@ -13,48 +13,39 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import logging, sys
-
-''' insure ctypes basic types are subverted '''
+"""ensure ctypes basic types are subverted"""
 from haystack import model
-
-import ctypes
+from haystack import utils
+from haystack import constraints
 
 from haystack.structures.win32 import winheap_generated as gen
 
-log=logging.getLogger('winheap')
+import ctypes
+import struct
+import logging
+import sys
 
-# ============== Internal type defs ==============
+import code
+
+log = logging.getLogger('winheap')
 
 ################ START copy generated classes ##########################
-
 # copy generated classes (gen.*) to this module as wrapper
 model.copyGeneratedClasses(gen, sys.modules[__name__])
-
-# register all classes (gen.*, locally defines, and local duplicates) to haystack
-# create plain old python object from ctypes.Structure's, to picke them
+# register all classes to haystack
+# create plain old python object from ctypes.Structure's, to pickle them
 model.registerModule(sys.modules[__name__])
-
-################ END   copy generated classes ##########################
-
-
-
+################ END copy generated classes ############################
 
 
 ############# Start expectedValues and methods overrides #################
 
-## fix partial declaration
-_HEAP_LOCK._fields_ = [
-  ('voidme', ctypes.c_ubyte),
-  ]
 
-## make a match
-
-_HEAP_SEGMENT.expectedValued = {
+HEAP_SEGMENT.expectedValued = {
   'SegmentSignature':[0xffeeffee],
 }
 
-_HEAP.expectedValues = {
+HEAP.expectedValues = {
     'Signature':[0xeeffeeff],
     }
 

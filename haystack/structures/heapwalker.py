@@ -29,4 +29,13 @@ class HeapWalker(object):
 # or put that in the MemoryMappings ?
 # or in the context ?
  
+def detect_heap_type(mappings):
+    """try to find what type of heaps are """
+    if not instance(mappings, lst):
+        raise TypeError('Feed me a list')
+    
+    # a = winheapwalker.get_heaps()
+    # b = win7heapwalker.get_heaps()
+    # c = libcheapwalker.get_heaps()
+    return None
 

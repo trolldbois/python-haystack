@@ -6,6 +6,8 @@ Volatility backed mappings.
 - VolatilityProcessMapping: a wrapper around volatility addresspace
 - VolatilityProcessMapper: the mappings builder.
 
+http://computer.forensikblog.de/en/2007/05/walking-the-vad-tree.html
+http://www.dfrws.org/2007/proceedings/p62-dolan-gavitt.pdf
 """
 
 import os
@@ -38,7 +40,12 @@ class VolatilityProcessMapping(MemoryMapping):
 
     def readWord(self, addr ):
         ws = self.config.get_word_size()
-        return self._backend.zread(addr, ws)
+        data = self._backend.zread(addr, ws)
+        if ws == 4:
+            return struct.unpack('I',data)[0]
+        elif ws == 8:
+            return struct.unpack('Q',data)[0]
+            
 
     def readBytes(self, addr, size):
         return self._backend.zread(addr, size)

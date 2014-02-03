@@ -35,19 +35,22 @@ class TestMapper(unittest.TestCase):
         self.assertEquals(len(mappings), 51)
         self.assertEquals(mappings.get_target_system(), 'win32')
         
-        from haystack.structures.win32 import win7heap
-        import ctypes
+        ctypes = mappings.config.ctypes
+        from haystack.structures.win32 import winheap
         print ctypes
         import pefile
         import code
-        m = [ m for m in mappings.mappings if 'wscntfy.exe' in m.pathname][0]
-        x = m.readBytes(m.start,0x1000)
+        for m in mappings.mappings:
+            data = m.readWord(m.start+8)
+            if data == 0xeeffeeff:
+                # we have a heap
+                 x = m.readStruct(m.start,winheap.HEAP)
+                 print x
         
-        print win7heap.HEAP.Signature 
-        x = win7heap.HEAP.from_buffer_copy(buf)
-        self.assertEquals(len(win7heap.HEAP()), 312)
+        #self.assertEquals( ctypes.sizeof(x), 1430)
+        #print x
 
-        heaps = mappings.getHeaps()
+        #heaps = mappings.getHeaps()
         #code.interact(local=locals())
 
 

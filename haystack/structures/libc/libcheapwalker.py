@@ -59,6 +59,16 @@ def is_heap(mappings, mapping):
   return True
 
 
+def get_heaps(mappings):
+    """return the list of mappings that load as heaps"""
+    if not instance(mappings, lst):
+        raise TypeError('Feed me a list') 
+    ret = []
+    for mapping in mappings:
+        if is_heap(mapping):
+            ret.append(mapping)
+    return ret
+
 
 
 

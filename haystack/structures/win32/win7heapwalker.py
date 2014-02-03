@@ -202,6 +202,18 @@ def readHeap(mapping):
     heap = mapping.readStruct( addr, win7heap.HEAP )
     return heap
 
+def get_heaps(mappings):
+    """return the list of mappings that load as heaps"""
+    if not instance(mappings, lst):
+        raise TypeError('Feed me a list') 
+    ret = []
+    for mapping in mappings:
+        addr = mapping.start
+        heap = mapping.readStruct(addr, win7heap.HEAP)
+        load = heap.loadMembers(mappings, 1) # first level validation
+        if load:
+            ret.append(heap)
+    return ret
 
 
 
