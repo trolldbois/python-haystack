@@ -33,6 +33,8 @@ import logging
 from haystack import utils
 from haystack import config
 
+from haystack.structures import heapwalker
+
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
@@ -171,16 +173,17 @@ class MemoryMapping:
 class Mappings:
     """List of memory mappings for one process"""
     def __init__(self, lst, name='noname'):
-        self.heaps = None
         if lst is None:
             self.mappings = []
         elif type(lst) != list:
             raise TypeError('Please feed me a list')
         else:
             self.mappings = list(lst)
-        self._target_system = None
-        self.config = None #
-        self.name = name
+        self.config = None
+        self.__heaps = None
+        self.__heap_finder = None
+        self.__os_name = None
+        self.__cpu_bits = None
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
         # set the word size in this config.
@@ -197,10 +200,10 @@ class Mappings:
         if hasattr(mmap, '_context'):
             #print '** _context exists'
             return mmap._context        
-        if mmap not in self.getHeaps(): # addr is not a heap addr, 
+        if mmap not in self.get_heaps(): # addr is not a heap addr, 
             found = False
             # or its in a child heap ( win7)
-            for h in self.getHeaps():
+            for h in self.get_heaps():
                 if hasattr(h, '_children'):
                     if mmap in h._children:
                         found = True
@@ -222,16 +225,11 @@ class Mappings:
     
     def get_user_allocations(self, heap, filterInUse=True):
         """changed when the dump is loaded"""
-        # set by dump_loader. DO NOT FIX
-        raise NotImplementedError
-        # FIXME why is this in dump_loader
-        #if self.mappings.get_target_system() == 'win32':
-        #    self.mappings.search_win_heaps() # mmmh neeeh...
-        #    from haystack.structures.win32 import win7heapwalker
-        #    self.mappings.get_user_allocations = win7heapwalker.get_user_allocations
-        #else: # linux/libc
-        #    from haystack.structures.libc import libcheapwalker
-        #    self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
+        if self.__heap_finder is None:
+            self.get_heaps()
+            
+        walker = self.__heap_finder.get_walker_for_heap(heap)
+        return walker.get_user_allocations()
 
     def get_mapping(self, pathname):
         mmap = None
@@ -247,19 +245,26 @@ class Mappings:
                 return m
         return False
 
+    def init_config(self):
+        self.get_heaps()
+
     def get_heap(self):
         """Returns the first Heap"""
         return self.get_heaps()[0]
 
     def get_heaps(self):
         """Find heap type and returns mappings with heaps"""
-        if self.heaps is None:
-            from haystack.structures import heapwalker 
-            finder = heapwalker.detect_heap_walker(self.mappings)
-            self.heaps = finder.get_heaps(self.mappings)
-        return self.heaps
+        if self.__heaps is None:
+            os_name = self.get_os_name()
+            cpu = self.get_cpu_bits()
+            self.config, self.__heap_finder = heapwalker.make_heap_walker(self.mappings,
+                                                       os_name=os_name, cpu=cpu)
+            self._reset_config()
+            self.__heaps = self.__heap_finder.get_heaps(self)
+        return self.__heaps
 
     def get_stack(self):
+        # FIXME wont work.
         stack = self.get_mapping('[stack]')[0] 
         return stack
 
@@ -267,77 +272,27 @@ class Mappings:
         self.mappings.append(m)
         if self.config is not None:
             m.config = self.config
-
-    def search_nux_heaps(self):
-        # TODO move in haystack.reverse.heapwalker
-        from haystack.structures.libc import libcheapwalker 
-        heaps = self.get_mapping('[heap]')
-        for mapping in self.get_mapping('None'):
-            if libcheapwalker.is_heap(self, mapping):
-                heaps.append(mapping)
-                log.debug('%s is a Heap'%(mapping))
-            else:
-                log.debug('%s is NOT a Heap'%(mapping))
-        # order by ProcessHeapsListIndex
-        #heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
-        return heaps
-
-    def search_win7_heaps(self):
-        # TODO move in haystack.reverse.heapwalker
-        # FIXME, why do we keep a ref to children mmapping ?
-        log.debug('search_win7_heaps - START')
-        from haystack.structures.win32 import win7heapwalker # FIXME win7, winxp...
-        heaps = list()
-        for mapping in self.mappings:
-            if win7heapwalker.is_heap(self, mapping):
-                heaps.append(mapping)
-                log.debug('%s is a Heap'%(mapping))
-                mapping._children = win7heapwalker.Win7HeapWalker(self, mapping, 0).get_heap_children_mmaps()
-        # order by ProcessHeapsListIndex
-        heaps.sort(key=lambda m: win7heapwalker.readHeap(m).ProcessHeapsListIndex)
-        log.debug('search_win7_heaps - END')
-        return heaps
-
-    def search_winxp_heaps(self):
-        log.debug('search_winxp_heaps - START')
-        from haystack.structures.win32 import winheapwalker # FIXME win7, winxp...
-        heaps = list()
-        for mapping in self.mappings:
-            if winheapwalker.is_heap(self, mapping):
-                heaps.append(mapping)
-                log.debug('%s is a Heap'%(mapping))
-                mapping._children = winheapwalker.WinHeapWalker(self, mapping, 0).get_heap_children_mmaps()
-        # order by ProcessHeapsListIndex
-        heaps.sort(key=lambda m: winheapwalker.readHeap(m).ProcessHeapsListIndex)
-        log.debug('search_winxp_heaps - END')
-        return heaps
     
-    def get_target_system(self):
-        if self._target_system is not None:
-            return self._target_system
-        self._target_system = 'linux'
-        for l in [m.pathname for m in self.mappings]:
-            if l is not None and '\\system32\\' in l.lower():
-                log.debug('Found a windows executable dump')
-                self._target_system = 'win'
-                break
-        return self._target_system
+    def get_os_name(self):
+        if self.__os_name is not None:
+            return self.__os_name
+        self.__os_name = heapwalker.detect_os(self.mappings)
+        return self.__os_name
 
-    def init_config(self):
-        """self.config and all mappings.config are set here"""
-        # we need a default config.ctypes to read PE/ELF structs
-        # PE/ELF structs are size independent. Hopefully.
-        self.config = config.make_config()
-        if self.__wordsize is not None:
-            return self.__wordsize
-        elif self.get_target_system() == 'win':
-            self._process_machine_arch_pe()
-        elif self.get_target_system() == 'linux':
-            self._process_machine_arch_elf()
-        else:
-            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
-        self._reset_config()
-        self.__wordsize = self.config.get_word_size()
+    def get_cpu_bits(self):
+        if self.__cpu_bits is not None:
+            return self.__cpu_bits
+        self.__cpu_bits = heapwalker.detect_cpu(self.mappings, self.__os_name)
+        return self.__cpu_bits
+
+    def init_target(self, cpu=None, os_name=None):
+        """Pre-populate cpu and os_name"""
+        if os_name is not None and os_name not in ['linux', 'winxp', 'win7']:
+            raise NotImplementedError('OS not implemented: %s'%(os_name))
+        if cpu is not None and cpu not in ['32', '64']:
+            raise NotImplementedError('CPU bites not implemented: %s'%(cpu))
+        self.__os_name = os_name
+        self.__cpu_bits = cpu
         return
     
     def _reset_config(self):
@@ -345,60 +300,6 @@ class Mappings:
         for m in self.mappings:
             m.config = self.config
         return
-    
-    def _process_machine_arch_pe(self):
-        import pefile
-        # get the maps with read-only data
-        # find the executable image and get the PE header
-        pe = None
-        m = [_m for _m in self.mappings if 'r--' in _m.permissions][0]
-        for m in self.mappings:
-            # volatility dumps VAD differently than winappdbg
-            # we have to look at all mappings
-            #if m.permissions != 'r--':
-            #    continue
-            try:
-                pe = pefile.PE(data=m.readBytes(m.start,0x1000), fast_load=True)
-                # only get the dirst one that works
-                if pe is None:
-                    continue
-                break
-            except pefile.PEFormatError as e:
-                pass
-        self.__required_maps.append(m)
-        machine = pe.FILE_HEADER.Machine
-        arch = pe.OPTIONAL_HEADER.Magic
-        if arch == 0x10b:
-            self.config = config.make_config_win32()
-        elif arch == 0x20b:
-            self.config = config.make_config_win64()
-        else:
-            raise NotImplementedError('MACHINE is %s'%(x.e_machine))
-        return 
-
-    def _process_machine_arch_elf(self):
-        import ctypes
-        from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
-        # find an executable image and get the ELF header
-        for m in self.mappings:
-            if 'r-xp' not in m.permissions:
-                continue
-            head = m.readBytes(m.start, ctypes.sizeof(struct_Elf_Ehdr))
-            x = struct_Elf_Ehdr.from_buffer_copy(head)
-            self.__required_maps.append(m)
-            log.debug('MACHINE:%s pathname:%s'%(x.e_machine, m.pathname))
-            if x.e_machine == 3:
-                self.config = config.make_config_linux32()
-                return
-            elif x.e_machine == 62:
-                self.config = config.make_config_linux64()
-                return
-            else:
-                continue
-        raise NotImplementedError('MACHINE has not been found.')
-
-    def get_required_maps(self):
-        return list(self.__required_maps)
     
     def is_valid_address(self, obj, structType=None): # FIXME is valid pointer
         """ 

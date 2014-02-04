@@ -3,39 +3,40 @@
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
+import logging
+
+log = logging.getLogger('heapwalker')
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 class HeapWalker(object):
-  def __init__(self, mappings, mapping, offset=0):
-    self._mappings = mappings
-    self._mapping = mapping
-    self._offset = offset
-    self._init_heap()
-  
-  def _init_heap(self):
-    raise NotImplementedError('Please implement all methods')
+    def __init__(self, mappings, mapping, offset=0):
+        self._mappings = mappings
+        self._mapping = mapping
+        self._offset = offset
+        self._init_heap()
 
-  def get_user_allocations(self):
-    ''' returns all User allocations (addr,size) '''
-    raise NotImplementedError('Please implement all methods')
+    def _init_heap(self):
+        raise NotImplementedError('Please implement all methods')
 
-  def get_free_chunks(self):
-    ''' returns all free chunks in the heap (addr,size) '''
-    raise NotImplementedError('Please implement all methods')
-  
-  
+    def get_user_allocations(self):
+        """ returns all User allocations (addr,size) """
+        raise NotImplementedError('Please implement all methods')
+
+    def get_free_chunks(self):
+        """ returns all free chunks in the heap (addr,size) """
+        raise NotImplementedError('Please implement all methods')
+
+
 # TODO make a virtual function that plays libc or win32 ?
 # or put that in the MemoryMappings ?
 # or in the context ?
- 
-def detect_heap_walker(mappings):
-    """try to find what type of heaps are """
-    if not instance(mappings, lst):
-        raise TypeError('Feed me a list')
-    # try to orient the guessing
+
+
+def detect_os(mappings):
+    """Arch independent way to assess the os of a captured process"""
     linux = winxp = win7 = 0
-    for pathname in [m.pathname.lower() for m in self.mappings if m.pathname is not None]:
+    for pathname in [m.pathname.lower() for m in mappings if m.pathname is not None]:
          if '\\system32\\' in pathname:
             winxp += 1
             win7 += 1
@@ -58,27 +59,108 @@ def detect_heap_walker(mappings):
             linux += 1
          elif '/' == pathname[0]:
             linux += 1
-    print 'scores', linux, winxp, win7
-    # TODO fight for cpu arch ?
+    log.debug('detect_os: scores linux:%d winxp:%d win7:%d'%(linux,winxp,win7))
     scores = max(linux,max(winxp,win7))
     if scores == linux:
-        from haystack.structures.libc import libcheapwalker
-        return libcheapwalker.LibcHeapFinder()
+        return 'linux'
     elif scores == winxp:
-        from haystack.structures.win32 import winheapwalker
-        return winheapwalker.WinHeapFinder()
+        return 'winxp'
+    elif scores == win7:
+        return 'win7'
+
+def detect_cpu(mappings, os_name=None):
+    if os_name is None:
+        os_name = detect_os(mappings)
+    cpu = 'unknown'
+    if os_name == 'linux':
+        cpu = _detect_cpu_arch_elf(mappings)
+    elif os_name == 'winxp' or os_name == 'win7':
+        cpu = _detect_cpu_arch_pe(mappings)
+    return cpu
+
+
+def _detect_cpu_arch_pe(mappings):
+    import pefile
+    # get the maps with read-only data
+    # find the executable image and get the PE header
+    pe = None
+    for m in mappings:
+        # volatility dumps VAD differently than winappdbg
+        # we have to look at all mappings
+        #if m.permissions != 'r--':
+        #    continue
+        try:
+            head = m.readBytes(m.start,0x1000)
+            pe = pefile.PE(data=head, fast_load=True)
+            # only get the dirst one that works
+            if pe is None:
+                continue
+            break
+        except pefile.PEFormatError as e:
+            pass
+    machine = pe.FILE_HEADER.Machine
+    arch = pe.OPTIONAL_HEADER.Magic
+    if arch == 0x10b:
+        return '32'
+    elif arch == 0x20b:
+        return '64'
     else:
+        raise NotImplementedError('MACHINE is %s'%(x.e_machine))
+    return 
+
+def _detect_cpu_arch_elf(mappings):
+    from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
+    # find an executable image and get the ELF header
+    for m in mappings:
+        if 'r-xp' not in m.permissions:
+            continue
+        head = m.readBytes(m.start, 0x40) # 0x34 really
+        x = struct_Elf_Ehdr.from_buffer_copy(head)
+        log.debug('MACHINE:%s pathname:%s'%(x.e_machine, m.pathname))
+        if x.e_machine == 3:
+            return '32'
+        elif x.e_machine == 62:
+            return '64'
+        else:
+            continue
+    raise NotImplementedError('MACHINE has not been found.')
+
+def make_heap_walker(mappings, os_name=None, cpu=None):
+    """try to find what type of heaps are """
+    if not isinstance(mappings, list):
+        raise TypeError('Feed me a list')
+    if os_name is None:
+        os_name = detect_os(mappings)
+    if cpu is None:
+        cpu = detect_cpu(mappings, os_name=os_name)
+    # load a config with proper cpu and os to get a proper ctypes
+    from haystack import config
+    config = config.make_config(cpu=cpu, os_name=os_name)
+    # ctypes is now preloaded with proper arch
+    if os_name == 'linux':
+        from haystack.structures.libc import libcheapwalker
+        return config, libcheapwalker.LibcHeapFinder()
+    elif os_name == 'winxp':
+        from haystack.structures.win32 import winheapwalker
+        return config, winheapwalker.WinHeapFinder()
+    elif os_name == 'win7':
         from haystack.structures.win32 import win7heapwalker
-        return win7heapwalker.Win7HeapFinder()
+        return config, win7heapwalker.Win7HeapFinder()
+    else:
+        raise NotImplementedError('Heap Walker not found for os %s'%(os_name))
 
 
-class WinHeapFinder(object):
+class HeapFinder(object):
     def __init__(self):
         self.heap_type = None
-        raise NotImplementedError('Please fix your self.heap_type')
+        self.walker_class = None
+        raise NotImplementedError('Please fix your self.heap_type and self.walker_class')
 
     def is_heap(self, mappings, mapping):
         """test if a mapping is a heap"""
+        from haystack.mappings import base
+        if not isinstance(mappings, base.Mappings):
+            raise TypeError('Feed me a Mappings object') 
         heap = self.read_heap(mapping)
         load = heap.loadMembers(mappings, 1) # need to go 3 to load all.
         return load
@@ -91,17 +173,21 @@ class WinHeapFinder(object):
 
     def get_heaps(self, mappings):
         """return the list of mappings that load as heaps"""
-        if not instance(mappings, lst):
-            raise TypeError('Feed me a list of mappings') 
+        from haystack.mappings import base
+        if not isinstance(mappings, base.Mappings):
+            raise TypeError('Feed me a Mappings object') 
         heaps = []
         for mapping in mappings:
             addr = mapping.start
             heap = self.read_heap(mapping)
-            load = heap.loadMembers(mappings, 1) # first level validation
+            try:
+                load = heap.loadMembers(mappings, 1) # first level validation
+            except Exception as e:
+                continue
             if load:
                 heaps.append(heap)
-        heaps.sort(key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
         return heaps
 
-
+    def get_walker_for_heap(self, mappings, heap):
+        return self.walker_class(mappings, heap, 0)
 

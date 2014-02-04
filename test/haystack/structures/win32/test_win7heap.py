@@ -103,7 +103,7 @@ class TestWin7Heap(unittest.TestCase):
             load = heap.loadMembers(self._mappings, 10)
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
         
-        heaps = [(h.start, len(h)) for h in self._mappings.getHeaps()]
+        heaps = [(h.start, len(h)) for h in self._mappings.get_heaps()]
         heaps.sort()
         self.assertEquals(heaps, self._known_heaps)
         self.assertEquals(len(heaps), len(self._known_heaps))

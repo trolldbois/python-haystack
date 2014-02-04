@@ -47,7 +47,7 @@ class TestAllocator(unittest.TestCase):
         #self.skipTest('notready')
 
         mappings = self.ssh1.mappings
-        heaps = mappings.getHeaps()
+        heaps = mappings.get_heaps()
         self.assertEquals(len(heaps), 1)
         
         heap = heaps[0]
@@ -87,7 +87,7 @@ class TestAllocatorSimple(unittest.TestCase):
 
     def test_ctypes6(self):
         mappings = self.context6.mappings
-        heaps = mappings.getHeaps()
+        heaps = mappings.get_heaps()
         self.assertEquals(len(heaps), 1)
         
         heap = heaps[0]

@@ -58,10 +58,10 @@ class TestAllocator(unittest.TestCase):
         #self.skipTest('known ok')
         self.assertNotEqual( self._mappings, None )
         
-        heap_sums = dict([(heap,list()) for heap in self._mappings.getHeaps()])
+        heap_sums = dict([(heap,list()) for heap in self._mappings.get_heaps()])
         child_heaps = dict()
         # append addr and size to each mmaps
-        for heap in self._mappings.getHeaps():
+        for heap in self._mappings.get_heaps():
             log.debug( '==== walking heap num: %0.2d @ %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start))
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             for x,s in walker._get_freelists():
@@ -105,7 +105,7 @@ class TestAllocator(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         #self.skipTest('known_ok')
         
-        for i, m in enumerate(self._mappings.getHeaps()):
+        for i, m in enumerate(self._mappings.get_heaps()):
             #print '%d @%0.8x'%(win7heapwalker.readHeap(m).ProcessHeapsListIndex, m.start)
             self.assertEquals(win7heapwalker.readHeap(m).ProcessHeapsListIndex, i+1, 'ProcessHeaps should have correct indexes')
         return
@@ -115,7 +115,7 @@ class TestAllocator(unittest.TestCase):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         self.assertEquals(self._mappings.get_target_system(), 'win32')
-        heaps = self._mappings.getHeaps()
+        heaps = self._mappings.get_heaps()
         self.assertEquals(len(heaps), 12)
         return    
 
@@ -123,7 +123,7 @@ class TestAllocator(unittest.TestCase):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         #heap = self._mappings.get_mapping_for_address(0x00390000)
-        #for heap in self._mappings.getHeaps():
+        #for heap in self._mappings.get_heaps():
         for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
             allocs=list()
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
@@ -192,7 +192,7 @@ class TestAllocator(unittest.TestCase):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         #heap = self._mappings.get_mapping_for_address(0x00390000)
-        #for heap in self._mappings.getHeaps():
+        #for heap in self._mappings.get_heaps():
         for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
             allocs=list()
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
@@ -239,7 +239,7 @@ class TestAllocator(unittest.TestCase):
         self.assertEquals( self._mappings.get_target_system(), 'win32')
         
         full = list()
-        for heap in self._mappings.getHeaps():
+        for heap in self._mappings.get_heaps():
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             my_chunks = list()
 
@@ -352,7 +352,7 @@ class TestAllocator(unittest.TestCase):
         
         #self.skipTest('useless')
         
-        for m in self._mappings.getHeaps():
+        for m in self._mappings.get_heaps():
             #
             total = 0
             for chunk_addr, chunk_size in win7heapwalker.get_user_allocations(self._mappings, m):

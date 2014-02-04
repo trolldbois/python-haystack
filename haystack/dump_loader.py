@@ -119,13 +119,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         """
         self._load_metadata()
         self._load_memory_mappings() # set self.mappings
-        if self.mappings.get_target_system() == 'win32':
-            self.mappings.search_win_heaps() # mmmh neeeh...
-            from haystack.structures.win32 import win7heapwalker
-            self.mappings.get_user_allocations = win7heapwalker.get_user_allocations
-        else: # linux/libc
-            from haystack.structures.libc import libcheapwalker
-            self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
         return
 
     def _load_metadata(self):

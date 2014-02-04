@@ -120,9 +120,9 @@ class TestMappingsLinux(SrcTests):
         self.assertEquals( mappings.getHeap().start, 0xb84e0000)
         self.assertEquals( mappings.getHeap().pathname, '[heap]')
 
-    def test_getHeaps(self):
+    def test_get_heaps(self):
         mappings = self.ssh.mappings
-        self.assertEquals( len(mappings.getHeaps()), 1) # really ?
+        self.assertEquals( len(mappings.get_heaps()), 1) # really ?
 
     def test_getStack(self):
         mappings = self.ssh.mappings
@@ -256,9 +256,9 @@ class TestMappingsWin32(unittest.TestCase):
         print hex(x.Signature)
         print mappings.config.ctypes.sizeof(x)
 
-    def test_getHeaps(self):
+    def test_get_heaps(self):
         mappings = self.mappings
-        self.assertEquals( len(mappings.getHeaps()), 12)
+        self.assertEquals( len(mappings.get_heaps()), 12)
 
     @unittest.expectedFailure # FIXME
     def test_getStack(self):
@@ -301,7 +301,7 @@ class TestMappingsWin32(unittest.TestCase):
         mappings = self.mappings
         heaps = mappings.search_win_heaps()
         self.assertEquals(len(heaps), 12)
-        self.assertEquals(len(mappings.getHeaps()), 12)
+        self.assertEquals(len(mappings.get_heaps()), 12)
 
     def test_get_target_system(self):
         x = self.mappings.get_target_system()

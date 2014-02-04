@@ -125,9 +125,8 @@ class MemoryDumper:
         err=0
         #print '\n'.join([str(m) for m in self.mappings])
         if self._compact_dump:
-            self.__required = self.mappings.getHeaps()
-            self.__required.append(self.mappings.getStack())
-            self.__required.extend(self.mappings.get_required_maps())
+            self.__required = self.mappings.get_heaps()
+            self.__required.append(self.mappings.get_stack())
         for m in self.mappings:
             try:
                 self._dump_mapping(m, destdir)

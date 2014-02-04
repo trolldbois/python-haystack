@@ -159,38 +159,10 @@ class WinHeapWalker(heapwalker.HeapWalker):
         
 
 
-def get_user_allocations(mappings, heap):
-    """ list user allocations """
-    walker = WinHeapWalker(mappings, heap, 0)
-    for chunk_addr, chunk_size in walker.get_user_allocations():
-        yield (chunk_addr, chunk_size)
-    raise StopIteration
-
-# TODO : 
-#def getAllUserAllocations(mappings):
-#def _init_Win7_MemoryMappings_Heaps(mappings):
-#    found=[]
-#    for mapping in self._mappings:
-#        addr = mapping.start
-#        heap = mapping.readStruct( addr, HEAP )
-#        if addr in map(lambda x:x[0] , self._known_heaps):
-#            self.assertTrue(    heap.loadMembers(self._mappings, 1), "We expected a valid hit at @%x"%(addr) )
-#            found.append(addr, )
-#        else:
-#            try:
-#                ret = heap.loadMembers(self._mappings, 1)
-#                self.assertFalse( ret, "We didnt expected a valid hit at @%x"%(addr) )
-#            except ValueError,e:
-#                self.assertRaisesRegexp( ValueError, 'error while loading members')
-#
-#    found.sort()
-#
-# TODO : change the mappings file ?
-#
-
 class WinHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
         self.heap_type = winheap.HEAP
+        self.walker_class = WinHeapWalker
 
     def get_heaps(self, mappings):
         """return the list of mappings that load as heaps"""
@@ -200,4 +172,5 @@ class WinHeapFinder(heapwalker.HeapFinder):
             mapping._children = WinHeapWalker(mappings, mapping, 0).get_heap_children_mmaps()
         heaps.sort(key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
         return heaps
+
 

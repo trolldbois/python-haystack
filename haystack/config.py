@@ -144,39 +144,37 @@ class ConfigClass():
         return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
 
-def make_config():
+def make_config(cpu,os_name):
     """    """
-    cfg = ConfigClass()
-    return cfg
+    if cpu is None :
+        raise ValueError('cpu is None')
+    if os_name is None:
+        raise ValueError('os_name is None')
+    if cpu == '32':
+        if os_name in ['winxp','win7']:
+            return make_config_win_32()
+        elif os_name == 'linux':
+            return make_config_linux_32()
+    elif cpu == '64':
+        if os_name in ['winxp','win7']:
+            return make_config_win_64()
+        elif os_name == 'linux':
+            return make_config_linux_64()
+    raise NotImplementedError()
 
-def make_config_winxp_32():
+def make_config_win_32():
     """    """
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(4,4,8)
     return cfg
 
-def make_config_winxp_64():
+def make_config_win_64():
     """    """
     from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(8,8,8)
     return cfg
-
-def make_config_win7_32():
-    """    """
-    from haystack import types
-    cfg = ConfigClass()
-    cfg.set_word_size(4,4,8)
-    return cfg
-
-def make_config_win7_64():
-    """    """
-    from haystack import types
-    cfg = ConfigClass()
-    cfg.set_word_size(8,8,8)
-    return cfg
-
 
 def make_config_linux_32():
     """    """
