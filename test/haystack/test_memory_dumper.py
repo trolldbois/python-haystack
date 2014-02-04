@@ -152,11 +152,14 @@ class TestMemoryDumper32(TestMemoryDumper):
         # test opening by dump_loader
         from haystack import dump_loader
         from haystack.mappings.base import Mappings
-        mappings1 = dump_loader.load(out1)
+        # PYDOC 
+        # NotImplementedError: MACHINE has not been found.
+        # laoder should habe a cpu, os_name loading
+        mappings1 = dump_loader.load(out1, cpu='32', os_name='linux')
         self.assertIsInstance( mappings1, Mappings)
 
-        mappings2 = dump_loader.load(out2)
-        mappings3 = dump_loader.load(out3)
+        mappings2 = dump_loader.load(out2, cpu='32', os_name='linux')
+        mappings3 = dump_loader.load(out3, cpu='32', os_name='linux')
         
         pathnames1 = [m.pathname for m in mappings1]
         pathnames2 = [m.pathname for m in mappings2]

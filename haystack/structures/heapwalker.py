@@ -114,7 +114,10 @@ def _detect_cpu_arch_elf(mappings):
     for m in mappings:
         if 'r-xp' not in m.permissions:
             continue
-        head = m.readBytes(m.start, 0x40) # 0x34 really
+        try:
+            head = m.readBytes(m.start, 0x40) # 0x34 really
+        except Exception as e:
+            continue
         x = struct_Elf_Ehdr.from_buffer_copy(head)
         log.debug('MACHINE:%s pathname:%s'%(x.e_machine, m.pathname))
         if x.e_machine == 3:
@@ -179,8 +182,8 @@ class HeapFinder(object):
         heaps = []
         for mapping in mappings:
             addr = mapping.start
-            heap = self.read_heap(mapping)
             try:
+                heap = self.read_heap(mapping)
                 load = heap.loadMembers(mappings, 1) # first level validation
             except Exception as e:
                 continue

@@ -57,7 +57,9 @@ class MemoryDumpLoader(object):
     isValid and loadMapping should be implemented.
     '''
 
-    def __init__(self, dumpname):
+    def __init__(self, dumpname, cpu=None, os_name=None):
+        self._cpu_bits = cpu
+        self._os_name = os_name
         self.dumpname = os.path.normpath(dumpname)
         self.mappings = None
         if not self._is_valid():
@@ -182,12 +184,14 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset, 
                                                                 major_device, minor_device, inode,pathname=mmap_pathname)
             self.mappings.append(mmap)
-        self.mappings.init_config()
+        self.mappings.init_config(cpu=self._cpu_bits, os_name=self._os_name)
         return        
 
 
 class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
-    def __init__(self, dumpname, maps_to_load=None):
+    def __init__(self, dumpname, maps_to_load=None, cpu=None, os_name=None):
+        self._cpu_bits = cpu
+        self._os_name = os_name
         self.dumpname = os.path.normpath(dumpname)
         self.mappings = None
         if not self._is_valid():
@@ -254,9 +258,9 @@ class KCoreDumpLoader(MemoryDumpLoader):
 """Order of attempted loading"""
 loaders = [ProcessMemoryDumpLoader,KCoreDumpLoader]
 
-def load(dumpname):
+def load(dumpname, cpu=None, os_name=None):
     """Loads a haystack dump."""
-    memdump = LazyProcessMemoryDumpLoader( os.path.normpath(dumpname) )
+    memdump = LazyProcessMemoryDumpLoader(os.path.normpath(dumpname), cpu=cpu, os_name=os_name)
     log.debug('%d dump file loaded'%(len(memdump.getMappings()) ))
     #excep mmap.error - to much openfile - increase ulimit 
     return memdump.getMappings()
@@ -274,6 +278,8 @@ def _heap(opt):
 def argparser():
     heap_parser = argparse.ArgumentParser(prog='dump_loader', description='load dumped process memory.')
     heap_parser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='The dump file')
+    heap_parser.add_argument('--os', type=str, action='store', help='The os name ( linux, winxp, win7 )')
+    heap_parser.add_argument('--cpu', type=int, action='store', help='The cpu bits number')
     heap_parser.set_defaults(func=_heap)    
     return rootparser
 

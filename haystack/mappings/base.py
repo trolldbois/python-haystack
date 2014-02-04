@@ -245,7 +245,14 @@ class Mappings:
                 return m
         return False
 
-    def init_config(self):
+    def init_config(self, cpu=None, os_name=None):
+        """Pre-populate cpu and os_name"""
+        if os_name is not None and os_name not in ['linux', 'winxp', 'win7']:
+            raise NotImplementedError('OS not implemented: %s'%(os_name))
+        if cpu is not None and cpu not in ['32', '64']:
+            raise NotImplementedError('CPU bites not implemented: %s'%(cpu))
+        self.__os_name = os_name
+        self.__cpu_bits = cpu
         self.get_heaps()
 
     def get_heap(self):
@@ -284,16 +291,6 @@ class Mappings:
             return self.__cpu_bits
         self.__cpu_bits = heapwalker.detect_cpu(self.mappings, self.__os_name)
         return self.__cpu_bits
-
-    def init_target(self, cpu=None, os_name=None):
-        """Pre-populate cpu and os_name"""
-        if os_name is not None and os_name not in ['linux', 'winxp', 'win7']:
-            raise NotImplementedError('OS not implemented: %s'%(os_name))
-        if cpu is not None and cpu not in ['32', '64']:
-            raise NotImplementedError('CPU bites not implemented: %s'%(cpu))
-        self.__os_name = os_name
-        self.__cpu_bits = cpu
-        return
     
     def _reset_config(self):
         # This is where the config is set for all maps.
