@@ -77,10 +77,10 @@ def reverseLocalFonctionPointerNames(context):
   
   for ptr in set(all_ptrs):
     # get dump mmap
-    m = mappings.getMmapForAddr(ptr)
+    m = mappings.get_mapping_for_address(ptr)
     if m.pathname not in IGNORES:
       # find the right localmmap
-      localmaps = localmappings.getMmap(m.pathname)
+      localmaps = localmappings.get_mapping(m.pathname)
       found = False
       for localm in localmaps:
         if localm.offset == m.offset and localm.permissions == m.permissions:

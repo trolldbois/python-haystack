@@ -175,7 +175,7 @@ class ReverserContext():
     log.debug('\t[-] loaded my context from cache')
     context.config = config
     context.mappings = mappings
-    context.heap = context.mappings.getMmapForAddr(context._heap_start) 
+    context.heap = context.mappings.get_mapping_for_address(context._heap_start) 
     
     context._init2()
     return context

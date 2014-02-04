@@ -191,7 +191,7 @@ class Mappings:
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
         """
-        mmap = self.getMmapForAddr(addr)
+        mmap = self.get_mapping_for_address(addr)
         if not mmap:
             raise ValueError
         if hasattr(mmap, '_context'):
@@ -233,7 +233,7 @@ class Mappings:
         #    from haystack.structures.libc import libcheapwalker
         #    self.mappings.get_user_allocations = libcheapwalker.get_user_allocations
 
-    def getMmap(self, pathname):
+    def get_mapping(self, pathname):
         mmap = None
         if len(self.mappings) >= 1:
             mmap = [m for m in self.mappings if m.pathname == pathname]
@@ -241,34 +241,26 @@ class Mappings:
             raise IndexError('No mmap of pathname %s'%(pathname))
         return mmap
 
-    def getMmapForAddr(self, vaddr):
+    def get_mapping_for_address(self, vaddr):
         for m in self.mappings:
             if vaddr in m:
                 return m
         return False
 
-    def getHeap(self):
-        #if len(self.mappings) == 0:
-        #        import code
-        #        code.interact(local=locals())
-        #log.debug('heaps: %s'%(self.heaps))
-        #import code        
-        #code.interact(local=locals())
-        return self.getHeaps()[0]
+    def get_heap(self):
+        """Returns the first Heap"""
+        return self.get_heaps()[0]
 
-    def getHeaps(self):
-        # This does not really exists on win32.
-        # getHeaps() will be more appropriate...
-        # this fn is used onlly in reverse/*
+    def get_heaps(self):
+        """Find heap type and returns mappings with heaps"""
         if self.heaps is None:
-            if self.get_target_system() == 'linux':
-                self.heaps = self.search_nux_heaps()
-            else:
-                self.heaps = self.search_win_heaps()
+            from haystack.structures import heapwalker 
+            finder = heapwalker.detect_heap_walker(self.mappings)
+            self.heaps = finder.get_heaps(self.mappings)
         return self.heaps
 
-    def getStack(self):
-        stack = self.getMmap('[stack]')[0] 
+    def get_stack(self):
+        stack = self.get_mapping('[stack]')[0] 
         return stack
 
     def append(self, m):
@@ -279,8 +271,8 @@ class Mappings:
     def search_nux_heaps(self):
         # TODO move in haystack.reverse.heapwalker
         from haystack.structures.libc import libcheapwalker 
-        heaps = self.getMmap('[heap]')
-        for mapping in self.getMmap('None'):
+        heaps = self.get_mapping('[heap]')
+        for mapping in self.get_mapping('None'):
             if libcheapwalker.is_heap(self, mapping):
                 heaps.append(mapping)
                 log.debug('%s is a Heap'%(mapping))
@@ -437,7 +429,7 @@ class Mappings:
         Returns the mapping in which the address stands otherwise.
         """
         import ctypes
-        m = self.getMmapForAddr(addr)
+        m = self.get_mapping_for_address(addr)
         log.debug('is_valid_address_value = %x %s'%(addr, m))
         if m:
             if (structType is not None):

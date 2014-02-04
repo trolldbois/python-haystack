@@ -65,7 +65,7 @@ class TestAllocator(unittest.TestCase):
             log.debug( '==== walking heap num: %0.2d @ %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start))
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             for x,s in walker._get_freelists():
-                m = self._mappings.getMmapForAddr(x)
+                m = self._mappings.get_mapping_for_address(x)
                 #Found new mmap outside of heaps mmaps
                 if m not in heap_sums:
                     heap_sums[m] = []
@@ -122,9 +122,9 @@ class TestAllocator(unittest.TestCase):
     def test_get_frontendheap(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
-        #heap = self._mappings.getMmapForAddr(0x00390000)
+        #heap = self._mappings.get_mapping_for_address(0x00390000)
         #for heap in self._mappings.getHeaps():
-        for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
+        for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
             allocs=list()
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             heap_children = walker.get_heap_children_mmaps()
@@ -143,7 +143,7 @@ class TestAllocator(unittest.TestCase):
             for chunk_addr, chunk_size in committed:
                 self.assertGreater( chunk_size, 0x8, 'too small chunk_addr == 0x%0.8x'%(chunk_addr))
 
-                m = self._mappings.getMmapForAddr(chunk_addr)
+                m = self._mappings.get_mapping_for_address(chunk_addr)
                 if m != heap:
                     self.assertIn(m, heap_children)
 
@@ -173,7 +173,7 @@ class TestAllocator(unittest.TestCase):
             ### FIXME - UNITTEST- you need to validate that NextOffset in userblock gives same answer
             oracle = committed[0] # TODO
             for chunk_addr, chunk_size in committed:
-                m = self._mappings.getMmapForAddr(chunk_addr)
+                m = self._mappings.get_mapping_for_address(chunk_addr)
                 if m != heap:
                     self.assertIn(m, heap_children)
                 # should be aligned
@@ -182,7 +182,7 @@ class TestAllocator(unittest.TestCase):
                 #NextOffset in userblock gives same answer
 
             for addr,s in allocs:
-                m = self._mappings.getMmapForAddr(addr)
+                m = self._mappings.get_mapping_for_address(addr)
                 if addr+s > m.end:
                     self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )    
         return 
@@ -191,9 +191,9 @@ class TestAllocator(unittest.TestCase):
     def test_get_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
-        #heap = self._mappings.getMmapForAddr(0x00390000)
+        #heap = self._mappings.get_mapping_for_address(0x00390000)
         #for heap in self._mappings.getHeaps():
-        for heap in [self._mappings.getMmapForAddr(0x005c0000)]:
+        for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
             allocs=list()
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             allocated, free = walker._get_chunks()
@@ -203,14 +203,14 @@ class TestAllocator(unittest.TestCase):
                 allocs.append( (chunk_addr, chunk_size) ) # with header
 
             for addr,s in allocs:
-                m = self._mappings.getMmapForAddr(addr)
+                m = self._mappings.get_mapping_for_address(addr)
                 if addr+s > m.end:
                     self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )    
         return 
 
     def _chunks_in_mapping(self, lst, walker):
         for addr,s in lst:
-            m = self._mappings.getMmapForAddr(addr)
+            m = self._mappings.get_mapping_for_address(addr)
             if addr+s > m.end:
                 self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x'%(m.start,m.end, addr, s, addr+s) )
             ##self.assertEquals(mapping, m)
@@ -281,13 +281,13 @@ class TestAllocator(unittest.TestCase):
 
         where = dict()
         for addr,s in full:
-            m = self._mappings.getMmapForAddr(addr)
+            m = self._mappings.get_mapping_for_address(addr)
             self.assertTrue( m, '0x%0.8x is not a valid address!'%(addr))
             if m not in where:
                 where[m] = []
             if addr+s > m.end:
                 log.debug('OVERFLOW 0x%0.8x-0x%0.8x, 0x%0.8x size: %d end: 0x%0.8x'%(m.start,m.end, addr, s, addr+s) )
-                m2 = self._mappings.getMmapForAddr(addr+s)
+                m2 = self._mappings.get_mapping_for_address(addr+s)
                 self.assertTrue( m2, '0x%0.8x is not a valid address 0x%0.8x + 0x%0.8x!'%(addr+s, addr, s))
                 if m2 not in where:
                     where[m2] = []

@@ -40,7 +40,7 @@ class TestListStruct(unittest.TestCase):
         #offset = 0x390000
         from haystack.structures.win32 import win7heap
         offset = 0x1ef0000
-        self.m = self.mappings.getMmapForAddr(offset)
+        self.m = self.mappings.get_mapping_for_address(offset)
         self.heap = self.m.readStruct(offset, win7heap.HEAP)
         
         import code
@@ -77,7 +77,7 @@ class TestListStruct(unittest.TestCase):
         
         heaps =[ 0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000    ]
         for addr in heaps:
-            m = self.mappings.getMmapForAddr(addr)
+            m = self.mappings.get_mapping_for_address(addr)
             #print '\n+ Heap @%x size: %d'%(addr, len(m))
             heap = m.readStruct(addr, win7heap.HEAP)
             self.assertTrue(heap.loadMembers(self.mappings, 10 ))
@@ -100,7 +100,7 @@ class TestListStructTest5:#(unittest.TestCase):
         self.mappings = dump_loader.load('test/src/test-ctypes5.dump')
         sys.path.append('test/src/')
         import ctypes5
-        self.m = self.mappings.getMmapForAddr(offset)
+        self.m = self.mappings.get_mapping_for_address(offset)
         self.usual = self.m.readStruct(offset, ctypes5.usual)
     
     def test_iter(self):

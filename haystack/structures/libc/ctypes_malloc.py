@@ -33,9 +33,9 @@ SIZE_BITS            = (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
 
 
 def iter_user_allocations(mappings, heap, filterInuse=False):
-    ''' 
+    """ 
     Lists all (addr, size) of allocated space by malloc_chunks.
-    '''
+    """
     #allocations = [] # index, size
     orig_addr = heap.start
     
@@ -78,9 +78,9 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
     raise StopIteration
 
 def get_user_allocations(mappings, heap):
-    ''' 
+    """ 
     Lists all (addr, size) of allocated space by malloc_chunks.
-    '''
+    """
     allocs = [] # index, size
     free = []
 
@@ -132,12 +132,12 @@ def is_malloc_heap(mappings, mapping):
 
 
 class mallocStruct(ctypes.Structure):
-    ''' defines classRef '''
+    """ defines classRef """
     pass
 
 
 class malloc_chunk(mallocStruct):
-    '''FAKE python representation of a struct malloc_chunk
+    """FAKE python representation of a struct malloc_chunk
 
 struct malloc_chunk {
 
@@ -157,7 +157,7 @@ struct malloc_chunk {
 0000020 1018 0927 1010 1010 beef dead 0fd9 0002
 0000030 0000 0000 0000 0000 0000 0000 0000 0000
 
-    '''
+    """
     def get_mem_addr(self, orig_addr):
         return orig_addr + 2*self.config.get_word_size()
 
@@ -176,9 +176,9 @@ struct malloc_chunk {
         return self.size & PREV_INUSE
 
     def check_inuse(self, mappings, orig_addr):
-        '''extract p's inuse bit
+        """extract p's inuse bit
         doesnt not work on the top one
-        '''
+        """
         next_addr = self.next_addr(orig_addr) + self.config.get_word_size()
         mmap = mappings.is_valid_address_value(next_addr)
         if not mmap:

@@ -40,7 +40,7 @@ class TestLoadMembers(SrcTests):
         from test.src import ctypes5_gen32        
         # struct a - basic types
         offset = self.offsets['struct_a'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         a = m.readStruct(offset, ctypes5_gen32.struct_a)
         ret = a.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
@@ -58,7 +58,7 @@ class TestLoadMembers(SrcTests):
 
 
         offset = self.offsets['union_au'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         au = m.readStruct(offset, ctypes5_gen32.union_au)
         ret = au.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
@@ -73,7 +73,7 @@ class TestLoadMembers(SrcTests):
         from test.src import ctypes5_gen32        
         # struct a - basic types
         offset = self.offsets['union_b'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         b = m.readStruct(offset, ctypes5_gen32.union_b)
         ret = b.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
@@ -93,7 +93,7 @@ class TestLoadMembers(SrcTests):
         from test.src import ctypes5_gen32        
         # struct a - basic types
         offset = self.offsets['struct_c'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         c = m.readStruct(offset, ctypes5_gen32.struct_c)
         ret = c.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
@@ -117,7 +117,7 @@ class TestLoadMembers(SrcTests):
         from test.src import ctypes5_gen32        
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
@@ -144,7 +144,7 @@ class TestRealSSH(unittest.TestCase):
     def test_real_life(self):
         from sslsnoop import ctypes_openssh
         from sslsnoop import ctypes_openssl
-        m = self.mappings.getMmapForAddr(self.known_offset)
+        m = self.mappings.get_mapping_for_address(self.known_offset)
         ss = m.readStruct(self.known_offset, ctypes_openssh.session_state)
         ret = ss.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)

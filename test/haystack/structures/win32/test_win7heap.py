@@ -75,7 +75,7 @@ class TestWin7Heap(unittest.TestCase):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
-        h = self._mappings.getMmapForAddr(0x005c0000)
+        h = self._mappings.get_mapping_for_address(0x005c0000)
         self.assertEquals(h.getByteBuffer()[0:10],
                         '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
@@ -96,7 +96,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             # check heap.Signature
             self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
@@ -114,7 +114,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
 
@@ -138,7 +138,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
@@ -163,7 +163,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
 
@@ -193,7 +193,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
@@ -225,7 +225,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
 
@@ -261,7 +261,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
@@ -297,7 +297,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
 
@@ -312,7 +312,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
             self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
@@ -331,7 +331,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
 
@@ -348,7 +348,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
-        h = self._mappings.getMmapForAddr(addr)
+        h = self._mappings.get_mapping_for_address(addr)
         heap = h.readStruct( addr, win7heap.HEAP )
         load = heap.loadMembers(self._mappings, 10)
         valloc_committed= heap.get_virtual_allocated_blocks_list(self._mappings)
@@ -363,7 +363,7 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
         for addr,size in self._known_heaps:
-            h = self._mappings.getMmapForAddr(addr)
+            h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)
             valloc_committed = heap.get_virtual_allocated_blocks_list(

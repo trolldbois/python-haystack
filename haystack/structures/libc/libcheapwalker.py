@@ -51,13 +51,6 @@ def get_user_allocations(mappings, heap):
     yield (chunk_addr, chunk_size)
   raise StopIteration
 
-def is_heap(mappings, mapping):
-  """test if a mapping is a heap"""
-  if not ctypes_malloc.is_malloc_heap(mappings, mapping):
-    return False
-  # could implement other allocators
-  return True
-
 
 def get_heaps(mappings):
     """return the list of mappings that load as heaps"""
@@ -68,6 +61,17 @@ def get_heaps(mappings):
         if is_heap(mapping):
             ret.append(mapping)
     return ret
+
+class LibcHeapFinder(heapwalker.HeapFinder):
+    def __init__(self):
+        self.heap_type = ctypes_malloc.malloc_chunk
+
+    def is_heap(mappings, mapping):
+        """test if a mapping is a heap"""
+        if not ctypes_malloc.is_malloc_heap(mappings, mapping):
+            return False
+        # could implement other allocators
+        return True
 
 
 

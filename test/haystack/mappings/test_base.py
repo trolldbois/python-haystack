@@ -98,21 +98,21 @@ class TestMappingsLinux(SrcTests):
         with self.assertRaises(ValueError):
             mappings.get_context(0xb76e12d3)
         #[heap]
-        self.assertEquals(mappings.get_context(0xb84e02d3).heap, mappings.getMmapForAddr(0xb84e02d3))
+        self.assertEquals(mappings.get_context(0xb84e02d3).heap, mappings.get_mapping_for_address(0xb84e02d3))
     
     def test_get_user_allocations(self):
         mappings = self.ssh.mappings
         allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
         self.assertEquals( len(allocs), 2568)
 
-    def test_getMmap(self):
+    def test_get_mapping(self):
         mappings = self.ssh.mappings
-        self.assertEquals( len(mappings.getMmap('[heap]')), 1)
-        self.assertEquals( len(mappings.getMmap('None')), 9)
+        self.assertEquals( len(mappings.get_mapping('[heap]')), 1)
+        self.assertEquals( len(mappings.get_mapping('None')), 9)
 
-    def test_getMmapForAddr(self):
+    def test_get_mapping_for_address(self):
         mappings = self.ssh.mappings
-        self.assertEquals(mappings.getHeap(), mappings.getMmapForAddr(0xb84e02d3))
+        self.assertEquals(mappings.getHeap(), mappings.get_mapping_for_address(0xb84e02d3))
 
     def test_getHeap(self):
         mappings = self.ssh.mappings
@@ -170,7 +170,7 @@ class TestMappingsLinux(SrcTests):
         # struct a - basic types
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
         offset = self.offsets['struct_d'][0]
-        m = mappings.getMmapForAddr(offset)
+        m = mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(mappings, 10 )
 
@@ -186,7 +186,7 @@ class TestMappingsLinux(SrcTests):
         # struct a - basic types
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
         offset = self.offsets['struct_d'][0]
-        m = mappings.getMmapForAddr(offset)
+        m = mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(mappings, 10 )
 
@@ -217,8 +217,8 @@ class TestMappingsWin32(unittest.TestCase):
         with self.assertRaises(ValueError):
             mappings.get_context(0xb76e12d3)
         #[heap] children
-        self.assertEquals(mappings.get_context(0x0062d000).heap, mappings.getMmapForAddr(0x005c0000))
-        self.assertEquals(mappings.get_context(0x0063e123).heap, mappings.getMmapForAddr(0x005c0000))
+        self.assertEquals(mappings.get_context(0x0062d000).heap, mappings.get_mapping_for_address(0x005c0000))
+        self.assertEquals(mappings.get_context(0x0063e123).heap, mappings.get_mapping_for_address(0x005c0000))
         self.putty.reset()
         self.putty = None
 
@@ -230,14 +230,14 @@ class TestMappingsWin32(unittest.TestCase):
         allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
         self.assertEquals( len(allocs), 2273)
 
-    def test_getMmap(self):
+    def test_get_mapping(self):
         mappings = self.mappings
         with self.assertRaises(IndexError):
-            self.assertEquals( len(mappings.getMmap('[heap]')), 1)
-        self.assertEquals( len(mappings.getMmap('None')), 71)
+            self.assertEquals( len(mappings.get_mapping('[heap]')), 1)
+        self.assertEquals( len(mappings.get_mapping('None')), 71)
 
-    def test_getMmapForAddr(self):
-        m = self.mappings.getMmapForAddr(0x005c0000)
+    def test_get_mapping_for_address(self):
+        m = self.mappings.get_mapping_for_address(0x005c0000)
         self.assertNotEquals(m, False)
         self.assertEquals(m.start, 0x005c0000)
         self.assertEquals(m.end, 0x00619000)

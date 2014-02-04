@@ -74,13 +74,13 @@ def test2():
   localmappings = getMappings()
 
   print 'libssl.ssl3_read by id() is @%x'%( id(libssl.ssl3_read) )
-  print localmappings.getMmapForAddr(id(libssl.ssl3_read))
+  print localmappings.get_mapping_for_address(id(libssl.ssl3_read))
 
   print ''
   signed_addr = libssl.dlsym( libssl._handle, 'ssl3_read', 'xxx')
   fnaddr = struct.unpack('L',struct.pack('l', signed_addr) )[0]
   print 'libssl.ssl3_read by dlsym is @%x'%(fnaddr)
-  print localmappings.getMmapForAddr(fnaddr)
+  print localmappings.get_mapping_for_address(fnaddr)
 
   info = Dl_info()
   ret = libdl.dladdr( fnaddr, ctypes.byref(info))
@@ -153,12 +153,12 @@ def test3():
 
   localmappings = getMappings()
   
-  #crypto = mappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  #crypto = mappings.get_mapping('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
   #for lm in crypto:
   #  print lm
   
   #print '---'
-  #crypto = localmappings.getMmap('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+  #crypto = localmappings.get_mapping('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
   #for lm in crypto:
   #  print lm
   
@@ -166,10 +166,10 @@ def test3():
   #return
   for ptr in set(all_ptrs):
     # get dump mmap
-    m = mappings.getMmapForAddr(ptr)
+    m = mappings.get_mapping_for_address(ptr)
     if m.pathname not in IGNORES:
       # find the right localmmap
-      localmaps = localmappings.getMmap(m.pathname)
+      localmaps = localmappings.get_mapping(m.pathname)
       found = False
       for localm in localmaps:
         if localm.offset == m.offset and localm.permissions == m.permissions:
@@ -216,7 +216,7 @@ def test4():
   mappings = ctx.mappings
   
   for ptr,name in ctx._function_names.items():
-    print '@%x -> %s::%s'%(ptr, mappings.getMmapForAddr(ptr).pathname, name)
+    print '@%x -> %s::%s'%(ptr, mappings.get_mapping_for_address(ptr).pathname, name)
   
 
 libdl = ctypes.CDLL('libdl.so')

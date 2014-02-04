@@ -481,7 +481,7 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
     else:
         if hint:
             log.debug('Looking for the mmap containing the hint addr.')
-            m = mappings.getMmapForAddr(hint)
+            m = mappings.get_mapping_for_address(hint)
             if not m:
                 log.error('This hint is not a valid addr (0x%x)'%(hint))
                 raise ValueError('This hint is not a valid addr (0x%x)'%(hint))

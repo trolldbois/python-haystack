@@ -12,14 +12,14 @@ import sys
 import numpy 
 from haystack import model
 from haystack.structures import heapwalker
-from haystack.structures.win32 import win7heap
+from haystack.structures.win32 import winheap
 
 import ctypes
 
-log=logging.getLogger('win7heapwalker')
+log=logging.getLogger('winheapwalker')
 
 
-class Win7HeapWalker(heapwalker.HeapWalker):
+class WinHeapWalker(heapwalker.HeapWalker):
     """
     Helpers functions that return pure python lists - no ctypes in here.
     
@@ -31,7 +31,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         self._allocs = None
         self._free_chunks = None
         self._child_heaps = None
-        self._heap = self._mapping.readStruct(self._mapping.start+self._offset, win7heap.HEAP)
+        self._heap = self._mapping.readStruct(self._mapping.start+self._offset, winheap.HEAP)
         if not self._heap.loadMembers(self._mappings, 1):
             raise TypeError('HEAP.loadMembers returned False')
 
@@ -65,7 +65,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
 
     def _set_chunk_lists(self):
-        sublen = ctypes.sizeof( win7heap.HEAP_ENTRY)
+        sublen = ctypes.sizeof( winheap.HEAP_ENTRY)
         # get all chunks
         vallocs, va_free = self._get_virtualallocations()
         chunks, free_chunks = self._get_chunks()
@@ -161,7 +161,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
 def get_user_allocations(mappings, heap):
     """ list user allocations """
-    walker = Win7HeapWalker(mappings, heap, 0)
+    walker = WinHeapWalker(mappings, heap, 0)
     for chunk_addr, chunk_size in walker.get_user_allocations():
         yield (chunk_addr, chunk_size)
     raise StopIteration
@@ -188,19 +188,16 @@ def get_user_allocations(mappings, heap):
 # TODO : change the mappings file ?
 #
 
-class Win7HeapFinder(heapwalker.HeapFinder):
+class WinHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
-        self.heap_type = win7heap.HEAP
+        self.heap_type = winheap.HEAP
 
     def get_heaps(self, mappings):
         """return the list of mappings that load as heaps"""
         heaps = WinHeapFinder.get_heaps(mappings)
         # FIXME PYDOC  cant remember why we do this.
         for mapping in heaps:
-            mapping._children = Win7HeapWalker(mappings, mapping, 0).get_heap_children_mmaps()
+            mapping._children = WinHeapWalker(mappings, mapping, 0).get_heap_children_mmaps()
         heaps.sort(key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
         return heaps
-
-
-
 

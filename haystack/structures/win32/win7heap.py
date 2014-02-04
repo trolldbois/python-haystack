@@ -256,7 +256,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
         ## TODO delete this ptr from the heap-segment entries chunks
         for x in range(128):
             log.debug('finding lookaside %d at @%x'%(x, addr))
-            m = mappings.getMmapForAddr(addr)
+            m = mappings.get_mapping_for_address(addr)
             st = m.readStruct(addr, _HEAP_LOOKASIDE)
             # load members on self.FrontEndHeap car c'est un void *
             for free in st.iterateList('ListHead'): # single link list.
@@ -267,7 +267,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
             addr += ctypes.sizeof(_HEAP_LOOKASIDE)
     elif self.FrontEndHeapType == 2: # win7 per default
         log.debug('finding frontend at @%x'%(addr))
-        m = mappings.getMmapForAddr(addr)
+        m = mappings.get_mapping_for_address(addr)
         st = m.readStruct(addr, _LFH_HEAP)
         # LFH is a big chunk allocated by the backend allocator, called subsegment
         # but rechopped as small chunks of a heapbin.
@@ -288,7 +288,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
                 if not bool(items_addr):
                     #log.debug('NULL pointer items')
                     continue
-                m = mappings.getMmapForAddr(items_addr)
+                m = mappings.get_mapping_for_address(items_addr)
                 subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
                 #log.debug(subsegment)
                 ## TODO current subsegment.SFreeListEntry is on error at some depth.
@@ -417,7 +417,7 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
     # enumerate BlocksIndex recursively on ExtendedLookup param
     while bi_addr != 0:
         log.debug('BLocksIndex is at %x'%(bi_addr))
-        m = mappings.getMmapForAddr(bi_addr)
+        m = mappings.get_mapping_for_address(bi_addr)
         bi = m.readStruct( bi_addr, _HEAP_LIST_LOOKUP)
         """
             ('ExtendedLookup', POINTER(_HEAP_LIST_LOOKUP)),
@@ -468,7 +468,7 @@ def _HEAP_ENTRY_decode(chunk_header, heap):
 
 _HEAP_ENTRY.decode = _HEAP_ENTRY_decode
 def _get_chunk(mappings, heap, entry_addr):
-    m = mappings.getMmapForAddr(entry_addr)
+    m = mappings.get_mapping_for_address(entry_addr)
     chunk_header = m.readStruct( entry_addr, _HEAP_ENTRY)
     mappings.keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
     chunk_header._orig_address_ = entry_addr

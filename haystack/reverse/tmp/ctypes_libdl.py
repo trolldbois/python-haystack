@@ -143,7 +143,7 @@ def getDiff(d1, d2):
   new2 = pnames2 - pnames1
   news = []
   for pathname in new2:
-    news.extend(mappings2.getMmap(pathname))
+    news.extend(mappings2.get_mapping(pathname))
   print 'new mappings in %s:'%(d2.name)
   for n in news:
     print n

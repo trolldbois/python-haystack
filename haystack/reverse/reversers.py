@@ -338,7 +338,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
 
   def twoWords(self, ctx, st_addr, offset=0):
     #return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
-    m = ctx.mappings.getMmapForAddr(st_addr+offset)
+    m = ctx.mappings.get_mapping_for_address(st_addr+offset)
     return m.readBytes( st_addr+offset, 2*Config.WORDSIZE )
 
   def unpack(self, context, ptr_value):

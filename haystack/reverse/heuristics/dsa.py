@@ -164,10 +164,10 @@ class PointerFields(FieldAnalyser):
             field.value = value
             # TODO: leverage the context._function_names 
             if value in structure._context._function_names :
-                field.comment = ' %s::%s'%(os.path.basename(structure._mappings.getMmapForAddr(value).pathname), 
+                field.comment = ' %s::%s'%(os.path.basename(structure._mappings.get_mapping_for_address(value).pathname), 
                                         structure._context._function_names[value])
             else:
-                field.comment = structure._mappings.getMmapForAddr(value).pathname 
+                field.comment = structure._mappings.get_mapping_for_address(value).pathname 
             fields.append(field)
             size -= self.config.get_word_size()
             offset += self.config.get_word_size()
@@ -356,7 +356,7 @@ class EnrichedPointerFields(StructureAnalyser):
                 # + ask context for the target structure or code info
             except ValueError,e:
                 log.debug('target to non heap mmaps is not implemented')
-                m = mappings.getMmapForAddr(value)
+                m = mappings.get_mapping_for_address(value)
                 field.set_child_desc('ext_lib @%0.8x %s'%(m.start, m.pathname))
                 field._ptr_to_ext_lib = True
                 field.set_child_ctype('void') # TODO: Function pointer ?

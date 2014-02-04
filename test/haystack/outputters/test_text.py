@@ -41,7 +41,7 @@ class TestTextOutput(SrcTests):
         model.registerModule(ctypes5_gen32)
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
-        m = self.mappings.getMmapForAddr(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(self.mappings, 10 )
         self.assertTrue(ret)
