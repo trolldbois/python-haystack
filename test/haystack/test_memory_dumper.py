@@ -73,6 +73,8 @@ class TestMemoryDumper32(TestMemoryDumper):
         model.reset()
         from haystack import types
         types.reload_ctypes(4,4,8)
+        self.cpu_bits = '32'
+        self.os_name = 'linux'
         self.tgts = []
         self.process = None
         self.tests = {  "test1": "test-ctypes1.%d"%(32),
@@ -81,6 +83,7 @@ class TestMemoryDumper32(TestMemoryDumper):
                      }
 
     def tearDown(self):
+        return
         if self.process is not None:
             try:
                 self.process.kill()
@@ -155,11 +158,11 @@ class TestMemoryDumper32(TestMemoryDumper):
         # PYDOC 
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
-        mappings1 = dump_loader.load(out1, cpu='32', os_name='linux')
+        mappings1 = dump_loader.load(out1, cpu=self.cpu_bit, os_name=self.os_name)
         self.assertIsInstance( mappings1, Mappings)
 
-        mappings2 = dump_loader.load(out2, cpu='32', os_name='linux')
-        mappings3 = dump_loader.load(out3, cpu='32', os_name='linux')
+        mappings2 = dump_loader.load(out2, cpu=self.cpu_bit, os_name=self.os_name)
+        mappings3 = dump_loader.load(out3, cpu=self.cpu_bit, os_name=self.os_name)
         
         pathnames1 = [m.pathname for m in mappings1]
         pathnames2 = [m.pathname for m in mappings2]
@@ -169,17 +172,17 @@ class TestMemoryDumper32(TestMemoryDumper):
         
         return 
 
-    def _setUp_known_pattern(self):
+    def _setUp_known_pattern(self, compact=True):
         self.devnull = file('/dev/null')
         self.process = self.run_app_test('test3', stdout=subprocess.PIPE)
         time.sleep(0.1)
         tgt = self._make_tgt_dir()
-        self.out = memory_dumper.dump(self.process.pid, tgt, 'dir', True)
+        self.out = memory_dumper.dump(self.process.pid, tgt, 'dir', compact)
         self.process.kill()
         return self.process.communicate()
     
     def test_known_pattern_python(self):
-        (stdoutdata, stderrdata) = self._setUp_known_pattern()
+        (stdoutdata, stderrdata) = self._setUp_known_pattern(compact=False)
         # get offset from test program        
         offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
         offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
@@ -202,7 +205,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             pass
 
     def test_known_pattern_string(self):
-        (stdoutdata, stderrdata) = self._setUp_known_pattern()
+        (stdoutdata, stderrdata) = self._setUp_known_pattern(compact=False)
         # get offset from test program        
         offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
         offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
