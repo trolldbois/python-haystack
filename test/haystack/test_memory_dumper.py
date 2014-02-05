@@ -83,7 +83,6 @@ class TestMemoryDumper32(TestMemoryDumper):
                      }
 
     def tearDown(self):
-        return
         if self.process is not None:
             try:
                 self.process.kill()
@@ -158,11 +157,11 @@ class TestMemoryDumper32(TestMemoryDumper):
         # PYDOC 
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
-        mappings1 = dump_loader.load(out1, cpu=self.cpu_bit, os_name=self.os_name)
+        mappings1 = dump_loader.load(out1, cpu=self.cpu_bits, os_name=self.os_name)
         self.assertIsInstance( mappings1, Mappings)
 
-        mappings2 = dump_loader.load(out2, cpu=self.cpu_bit, os_name=self.os_name)
-        mappings3 = dump_loader.load(out3, cpu=self.cpu_bit, os_name=self.os_name)
+        mappings2 = dump_loader.load(out2, cpu=self.cpu_bits, os_name=self.os_name)
+        mappings3 = dump_loader.load(out3, cpu=self.cpu_bits, os_name=self.os_name)
         
         pathnames1 = [m.pathname for m in mappings1]
         pathnames2 = [m.pathname for m in mappings2]
@@ -221,7 +220,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             pass
 
     def test_known_pattern_json(self):
-        (stdoutdata, stderrdata) = self._setUp_known_pattern()
+        (stdoutdata, stderrdata) = self._setUp_known_pattern(compact=False)
         # get offset from test program        
         offsets_1 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test1" in l]
         offsets_3 = [l.split(' ')[1] for l in stdoutdata.split('\n') if "test3" in l]
