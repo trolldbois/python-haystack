@@ -88,20 +88,22 @@ class TestWin7Heap(unittest.TestCase):
         # check heap.Signature
         self.assertEquals(heap.Signature, 4009750271L ) # 0xeeffeeff
         load = heap.loadMembers(self._mappings, 10)
-        self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+        walker = win7heapwalker.Win7HeapFinder()
+        self.assertTrue(walker.is_heap(self._mappings, h))
 
         
     def test_is_heap_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
+        walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             # check heap.Signature
             self.assertEquals( heap.Signature , 4009750271L ) # 0xeeffeeff
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+            self.assertTrue(walker.is_heap(self._mappings, h))
         
         heaps = [(h.start, len(h)) for h in self._mappings.get_heaps()]
         heaps.sort()
@@ -137,11 +139,12 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_UCR_segment_list_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
+        walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
-            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+            self.assertTrue(walker.is_heap(self._mappings, h))
             # get free UCRS from heap
             reserved_ucrs = heap.get_free_UCR_segment_list(self._mappings)
             all_ucrs = []
@@ -192,11 +195,12 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_segment_list_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
+        walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
-            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+            self.assertTrue(walker.is_heap(self._mappings, h))
 
             segments = heap.get_segment_list(self._mappings)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
@@ -260,11 +264,12 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_chunks_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
+        walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
-            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+            self.assertTrue(walker.is_heap(self._mappings, h))
 
             allocated, free = heap.get_chunks(self._mappings)
             s_allocated = sum([c[1] for c in allocated])
@@ -311,11 +316,12 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_freelists_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
         ctypes = self._mappings.config.ctypes
+        walker = win7heapwalker.Win7HeapFinder()        
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.readStruct( addr, win7heap.HEAP )
             load = heap.loadMembers(self._mappings, 10)            
-            self.assertTrue(win7heapwalker.is_heap(self._mappings, h))
+            self.assertTrue(walker.is_heap(self._mappings, h))
 
             allocated, free = heap.get_chunks(self._mappings)
             freelists = heap.get_freelists(self._mappings)
