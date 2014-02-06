@@ -63,17 +63,6 @@ class VolatilityProcessMapping(MemoryMapping):
 
 import sys
 
-import volatility
-from  volatility import conf
-import volatility.constants as constants
-import volatility.registry as registry
-import volatility.exceptions as exceptions
-import volatility.obj as obj
-import volatility.debug as debug
-
-import volatility.addrspace as addrspace
-import volatility.commands as commands
-import volatility.scan as scan
 
 class VolatilityProcessMapper:
     """
@@ -103,6 +92,17 @@ class VolatilityProcessMapper:
         self._init_volatility()
     
     def _init_volatility(self):
+        import volatility
+        from volatility import conf
+        from volatility import constants
+        from volatility import exceptions
+        from volatility import debug
+        #from volatility import obj
+        from volatility import addrspace
+        from volatility import commands
+        from volatility import plugins
+        from volatility import scan
+        from volatility import registry
         # Get the version information on every output from the beginning
         # Exceptionally useful for debugging/telling people what's going on
         sys.stderr.write("Volatility Foundation Volatility Framework {0}\n".format(constants.VERSION))
@@ -111,13 +111,36 @@ class VolatilityProcessMapper:
         module = 'vadinfo'
 
         class MyOptionParser(conf.PyFlagOptionParser):
+            __my_args = ['-f', self.imgname, module,'-p', str(self.pid)]
             def _get_args(myself,args):
+                #return myself.__my_args#[1:]
                 return ['-f', self.imgname, module,'-p', str(self.pid)]
         # singleton - replace with a controlled args list
+        conf.ConfObject.initialised = False
+        conf.ConfObject.g_dict = dict(__builtins__ = None)
+        conf.ConfObject.cnf_opts = {}
+        conf.ConfObject.opts = {}
+        conf.ConfObject.args = None
+        conf.ConfObject.default_opts = {}
+        conf.ConfObject.docstrings = {}
+        conf.ConfObject.optparse_opts = None
+        #conf.ConfObject._filename = None
+        #conf.ConfObject._filenames = []
+        conf.ConfObject.readonly = {}
+        conf.ConfObject._absolute = {}
+        conf.ConfObject.options = []
+        conf.ConfObject.cache_invalidators = {}
         conf.ConfObject.optparser = MyOptionParser(add_help_option = False,
-                                   version = False,)
+                                   version = False,)        
         self.v_config = conf.ConfObject()
         conf.config = self.v_config
+
+        #self.v_config.default_opts = dict()
+        #for k,v in conf.ConfObject.__dict__.items():
+        #    print k, v
+
+        #print self.v_config.__dict__.keys()
+        #print conf.ConfObject.__dict__
 
         # Load up modules in case they set config options
         registry.PluginImporter()
@@ -142,7 +165,7 @@ class VolatilityProcessMapper:
                 command = cmds[module](self.v_config)
                 
                 command.render_text = partial(my_render_text, self, command)
-                self.v_config.parse_options()
+                self.v_config.parse_options(True)
 
                 command.execute()
                 #import code
@@ -150,7 +173,26 @@ class VolatilityProcessMapper:
         
         except exceptions.VolatilityException, e:
             print e        
+        finally:
+            pass
+            volatility = reload(volatility)
+            #del sys.modules["volatility"]
+            #del sys.modules["volatility.conf"]
+            #del sys.modules["volatility.constants"]
+            #del sys.modules["volatility.registry"]
+            #del sys.modules["volatility.exceptions"]
+            #del sys.modules["volatility.debug"]
+            #del sys.modules["volatility.addrspace"]
+            #del sys.modules["volatility.commands"]
 
+            #del volatility
+            #del conf
+            #del constants
+            #del registry
+            #del exceptions
+            #del debug
+            #del addrspace
+            #del commands
         
 
     def getMappings(self):
