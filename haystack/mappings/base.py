@@ -267,7 +267,7 @@ class Mappings:
             self.config, self.__heap_finder = heapwalker.make_heap_walker(self.mappings,
                                                        os_name=os_name, cpu=cpu)
             self._reset_config()
-            self.__heaps = self.__heap_finder.get_heaps(self)
+            self.__heaps = self.__heap_finder.get_heap_mappings(self)
         return self.__heaps
 
     def get_stack(self):

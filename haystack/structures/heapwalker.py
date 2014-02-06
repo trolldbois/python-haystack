@@ -36,7 +36,8 @@ class HeapWalker(object):
 def detect_os(mappings):
     """Arch independent way to assess the os of a captured process"""
     linux = winxp = win7 = 0
-    for pathname in [m.pathname.lower() for m in mappings if m.pathname is not None]:
+    for pathname in [m.pathname.lower() for m in mappings 
+                        if m.pathname is not None and m.pathname != '' ]:
          if '\\system32\\' in pathname:
             winxp += 1
             win7 += 1
@@ -174,12 +175,12 @@ class HeapFinder(object):
         heap = mapping.readStruct( addr, self.heap_type )
         return heap
 
-    def get_heaps(self, mappings):
-        """return the list of mappings that load as heaps"""
+    def get_heap_mappings(self, mappings):
+        """return the list of heaps that load as heaps"""
         from haystack.mappings import base
         if not isinstance(mappings, base.Mappings):
             raise TypeError('Feed me a Mappings object') 
-        heaps = []
+        heaps_mappings = []
         for mapping in mappings:
             addr = mapping.start
             try:
@@ -188,8 +189,8 @@ class HeapFinder(object):
             except Exception as e:
                 continue
             if load:
-                heaps.append(heap)
-        return heaps
+                heaps_mappings.append(mappings.get_mapping_for_address(addr))
+        return heaps_mappings
 
     def get_walker_for_heap(self, mappings, heap):
         return self.walker_class(mappings, heap, 0)

@@ -163,14 +163,14 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         self.heap_type = win7heap.HEAP
         self.walker_class = Win7HeapWalker
 
-    def get_heaps(self, mappings):
+    def get_heap_mappings(self, mappings):
         """return the list of mappings that load as heaps"""
-        heaps = WinHeapFinder.get_heaps(mappings)
+        heap_mappings = super(Win7HeapFinder,self).get_heap_mappings(mappings)
         # FIXME PYDOC  cant remember why we do this.
-        for mapping in heaps:
+        for mapping in heap_mappings:
             mapping._children = Win7HeapWalker(mappings, mapping, 0).get_heap_children_mmaps()
-        heaps.sort(key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
-        return heaps
+        heap_mappings.sort(key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
+        return heap_mappings
 
 
 
