@@ -80,7 +80,8 @@ class TestAllocator(unittest.TestCase):
             # for each heap, look at all children
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
-            cheap = win7heapwalker.readHeap(heap)
+            finder = win7heapwalker.Win7HeapFinder()
+            cheap = finder.read_heap(heap)
             log.debug('-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x'%(heap.start, free_size, cheap.TotalFreeSize))
             total = free_size
             for child in children:
@@ -94,7 +95,7 @@ class TestAllocator(unittest.TestCase):
             log.debug('     \= total: \t\t free:%0.5x '%(total) )
             
             maxlen = len(heap)
-            cheap = win7heapwalker.readHeap(heap)            
+            cheap = finder.read_heap(heap)            
             self.assertEquals(cheap.TotalFreeSize*8, total)
             log.debug( 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x'%(heap.start, total, cheap.TotalFreeSize, maxlen ) )
         

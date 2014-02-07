@@ -184,9 +184,8 @@ class HeapFinder(object):
             raise TypeError('Feed me a Mappings object') 
         heap_mappings = []
         for mapping in mappings:
-            addr = mapping.start
             if self.is_heap(mappings, mapping):
-                heap_mappings.append(mappings.get_mapping_for_address(addr))
+                heap_mappings.append(mapping)
         heap_mappings.sort(key=lambda m: m.start)
         return heap_mappings
 

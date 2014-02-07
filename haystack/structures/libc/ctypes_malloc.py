@@ -44,10 +44,6 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
     ret = chunk.loadMembers(mappings, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
-    #data = chunk.getUserData(mappings, orig_addr)
-    #print chunk.toString(''), 'real_size = ', chunk.real_size()
-    #print hexdump(data)
-    #print ' ---------------- '
     if filterInuse:
         if chunk.check_inuse(mappings, orig_addr):
             yield    (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
@@ -55,17 +51,12 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
         yield    (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
 
     while True:
-        next, next_addr = chunk.getNextChunk(mappings, orig_addr)
+        next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
         if next_addr is None:
-            #print 'no next chunk'
             break
-        #print ' next_addr 0x%x, size: %x'%(next_addr, next.size)     
         ret = next.loadMembers(mappings, 10)
         if not ret:
             raise ValueError
-        #print next.toString(''), 'real_size = ', next.real_size()
-        #print test.hexdump(next.getUserData(mappings, next_addr))
-        #print ' ---------------- '
         if filterInuse:
             if next.check_inuse(mappings, next_addr):
                 yield    (next.get_mem_addr(next_addr), next.get_mem_size()) 
@@ -95,7 +86,7 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
         free.append( (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) )
 
     while True:
-        next, next_addr = chunk.getNextChunk(mappings, orig_addr)
+        next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
         if next_addr is None:
             break
         ret = next.loadMembers(mappings, 10)
@@ -189,7 +180,6 @@ struct malloc_chunk {
             return 0
             #raise ValueError()
         next_size = mmap.readWord( next_addr)
-        #print 'next_size',next_size, '%x'%next_addr
         return next_size & PREV_INUSE
 
     
@@ -220,57 +210,77 @@ struct malloc_chunk {
             log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
             return True
         self.config = mappings.config
-        maxDepth-=1
+        maxDepth -= 1
         log.debug('%s loadMembers'%(self.__class__.__name__))
         if not self.isValid(mappings):
             return False
         try:
-            # update virtual fields
-            next, next_addr = self.getNextChunk(mappings, self._orig_address_)
-            #if next_addr is None: #most of the time its not
-            #    return True
 
             if self.check_prev_inuse() : # if in use, prev_size is not readable
                 #self.prev_size = 0
                 pass
             else:
-                prev,prev_addr = self.getPrevChunk(mappings, self._orig_address_)
-                if prev_addr is None:
-                    return False
+                prev,prev_addr = self.getPrevChunk(mappings, self._orig_address_, maxDepth)
+                if prev_addr is not None:
+                    log.debug('prevchunk: 0x%x'%(prev_addr))
+
+            # update virtual fields
+            if self.size != 0:
+                next, next_addr = self.getNextChunk(mappings, self._orig_address_, maxDepth)
+                log.debug('nextchunk: 0x%x'%(next_addr))
+
+            #if next_addr is None: #most of the time its not
+            #    return True
         except ValueError as e:
+            log.debug(e)
             return False
         return True
     
-    def getPrevChunk(self, mappings, orig_addr):
+    def getPrevChunk(self, mappings, orig_addr, depth):
         ## do prev_chunk
         if self.check_prev_inuse():
             raise TypeError('Previous chunk is in use. can read its size.')
         mmap = mappings.is_valid_address_value(orig_addr)
         if not mmap:
-            raise ValueError
+            raise ValueError('STOP: prev orig_addr invalid: 0x%x'%(orig_addr))
         # FIXME: check if this is correct. No prev to start of maps
         if mmap.start == orig_addr:
+            log.debug('STOP: prev orig_addr is same as mapping.start: 0x%x'%(orig_addr))
             return None,None
         if self.prev_size > 0 :
             prev_addr = orig_addr - self.prev_size
+            if not mappings.is_valid_address_value(prev_addr):
+                raise ValueError('STOP: prev_addr invalid: 0x%x'%(prev_addr))
             #if prev_addr not in mmap:
-            #    mmap = mappings.is_valid_address_value(prev_addr)                
+            #    mmap = mappings.is_valid_address_value(prev_addr)
             prev_chunk = mmap.readStruct(prev_addr, malloc_chunk )
             mappings.keepRef( prev_chunk, malloc_chunk, prev_addr)
+            # load
+            if depth > 0:
+                ret = prev_chunk.loadMembers(mappings, depth)
+                if not ret:
+                    raise ValueError('next_chunk not loaded')
             return prev_chunk, prev_addr
-        return None, None
+        raise ValueError('STOP: prev_size <=0: 0x%x'%(self.prev_size))
             
-    def getNextChunk(self, mappings, orig_addr):
+    def getNextChunk(self, mappings, orig_addr, depth):
         ## do next_chunk
         mmap = mappings.is_valid_address_value(orig_addr)
         if not mmap:
-            raise ValueError
+            raise ValueError('STOP: next orig_addr invalid: 0x%x'%(orig_addr))
         next_addr = orig_addr + self.real_size()
+        log.debug('next_addr: 0x%x realsize:0x%x'%(next_addr, self.real_size()))
+        if next_addr == orig_addr:
+            return None,None
         # check if its in mappings
         if not mappings.is_valid_address_value(next_addr):
-            return None,None
+            raise ValueError('STOP: next_addr invalid: 0x%x'%(next_addr))
         next_chunk = mmap.readStruct(next_addr, malloc_chunk )
         mappings.keepRef( next_chunk, malloc_chunk, next_addr)
+        if depth > 0:
+            ret = next_chunk.loadMembers(mappings, depth)
+            if not ret:
+                raise ValueError('next_chunk not loaded')
         return next_chunk, next_addr
 
 
