@@ -61,8 +61,9 @@ class TestAllocator(unittest.TestCase):
         heap_sums = dict([(heap,list()) for heap in self._mappings.get_heaps()])
         child_heaps = dict()
         # append addr and size to each mmaps
+        finder = win7heapwalker.Win7HeapFinder()
         for heap in self._mappings.get_heaps():
-            log.debug( '==== walking heap num: %0.2d @ %0.8x'%(win7heapwalker.readHeap(heap).ProcessHeapsListIndex, heap.start))
+            log.debug( '==== walking heap num: %0.2d @ %0.8x'%(finder.read_heap(heap).ProcessHeapsListIndex, heap.start))
             walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)        
             for x,s in walker._get_freelists():
                 m = self._mappings.get_mapping_for_address(x)
@@ -104,17 +105,18 @@ class TestAllocator(unittest.TestCase):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
         #self.skipTest('known_ok')
-        
+        finder = win7heapwalker.Win7HeapFinder()        
         for i, m in enumerate(self._mappings.get_heaps()):
             #print '%d @%0.8x'%(win7heapwalker.readHeap(m).ProcessHeapsListIndex, m.start)
-            self.assertEquals(win7heapwalker.readHeap(m).ProcessHeapsListIndex, i+1, 'ProcessHeaps should have correct indexes')
+            self.assertEquals(finder.read_heap(m).ProcessHeapsListIndex, i+1,
+                                     'ProcessHeaps should have correct indexes')
         return
 
     def test_is_heap(self):
         """ check if the isHeap fn perform correctly."""
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
-        self.assertEquals(self._mappings.get_target_system(), 'win32')
+        self.assertEquals(self._mappings.get_os_name(), 'win7')
         heaps = self._mappings.get_heaps()
         self.assertEquals(len(heaps), 12)
         return    

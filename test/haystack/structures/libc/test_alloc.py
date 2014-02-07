@@ -38,17 +38,17 @@ class TestAllocator(unittest.TestCase):
         return
         
     def test_search(self):
-        ''' def search(mappings, heap, filterInuse=False ):'''
+        """ def search(mappings, heap, filterInuse=False ):"""
         self.skipTest('notready')
         return    
 
     def test_chunks_numbers(self):
-        ''' Count all user allocations and free chunks'''
+        """ Count all user allocations and free chunks"""
         #self.skipTest('notready')
 
         mappings = self.ssh1.mappings
         heaps = mappings.get_heaps()
-        self.assertEquals(len(heaps), 1)
+        self.assertEquals(len(heaps), 17)
         
         heap = heaps[0]
         self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))
@@ -88,7 +88,7 @@ class TestAllocatorSimple(unittest.TestCase):
     def test_ctypes6(self):
         mappings = self.context6.mappings
         heaps = mappings.get_heaps()
-        self.assertEquals(len(heaps), 1)
+        self.assertEquals(len(heaps), 7)
         
         heap = heaps[0]
         self.assertTrue(ctypes_alloc.is_malloc_heap(mappings, heap))

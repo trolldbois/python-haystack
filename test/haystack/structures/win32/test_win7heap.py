@@ -50,7 +50,6 @@ class TestWin7Heap(unittest.TestCase):
         from haystack.structures.win32 import win7heapwalker, win7heap
 
         ctypes = self._mappings.config.ctypes
-        print ctypes
         
         self.assertEquals(ctypes.sizeof(win7heap._HEAP_SEGMENT), 64)
         self.assertEquals(ctypes.sizeof(win7heap._HEAP_ENTRY), 8)
