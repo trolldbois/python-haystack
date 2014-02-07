@@ -131,8 +131,9 @@ def _detect_cpu_arch_elf(mappings):
 
 def make_heap_walker(mappings, os_name=None, cpu=None):
     """try to find what type of heaps are """
-    if not isinstance(mappings, list):
-        raise TypeError('Feed me a list')
+    from haystack.mappings import base
+    if not isinstance(mappings, base.Mappings):
+        raise TypeError('Feed me a Mappings')
     if os_name is None:
         os_name = detect_os(mappings)
     if cpu is None:
@@ -140,7 +141,6 @@ def make_heap_walker(mappings, os_name=None, cpu=None):
     # load a config with proper cpu and os to get a proper ctypes
     from haystack import config
     config = config.make_config(cpu=cpu, os_name=os_name)
-    print config.ctypes
     # ctypes is now preloaded with proper arch
     if os_name == 'linux':
         from haystack.structures.libc import libcheapwalker
@@ -184,12 +184,7 @@ class HeapFinder(object):
         heaps_mappings = []
         for mapping in mappings:
             addr = mapping.start
-            try:
-                heap = self.read_heap(mapping)
-                load = heap.loadMembers(mappings, 1) # first level validation
-            except Exception as e:
-                continue
-            if load:
+            if self.is_heap(mappings, mapping):
                 heaps_mappings.append(mappings.get_mapping_for_address(addr))
         return heaps_mappings
 

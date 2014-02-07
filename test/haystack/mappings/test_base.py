@@ -75,13 +75,10 @@ class TestMmapHack(unittest.TestCase):
 
 class TestMappingsLinux(SrcTests):
 
-    @classmethod
-    def setUpClass(self):
-        self.ssh = context.get_context('test/dumps/ssh/ssh.1')
-        pass
-
-    def setUp(self):    
+    def setUp(self):
         model.reset()
+        self.ssh = context.get_context('test/dumps/ssh/ssh.1')
+        self.mappings = self.ssh.mappings
 
     def tearDown(self):
         self.ssh.reset()
@@ -91,102 +88,122 @@ class TestMappingsLinux(SrcTests):
         pass
 
     def test_get_context(self):
-        mappings = self.ssh.mappings
         #print ''.join(['%s\n'%(m) for m in mappings])        
         with self.assertRaises(ValueError):
-            mappings.get_context(0x0)
+            self.mappings.get_context(0x0)
         with self.assertRaises(ValueError):
-            mappings.get_context(0xb76e12d3)
+            self.mappings.get_context(0xb76e12d3)
         #[heap]
-        self.assertEquals(mappings.get_context(0xb84e02d3).heap, mappings.get_mapping_for_address(0xb84e02d3))
+        self.assertEquals(self.mappings.get_context(0xb84e02d3).heap, self.mappings.get_mapping_for_address(0xb84e02d3))
     
     def test_get_user_allocations(self):
-        mappings = self.ssh.mappings
-        allocs = list(mappings.get_user_allocations(mappings, mappings.get_heap()))
+        allocs = list(self.mappings.get_user_allocations(self.mappings.get_heap()))
         self.assertEquals( len(allocs), 2568)
 
     def test_get_mapping(self):
-        mappings = self.ssh.mappings
-        self.assertEquals( len(mappings.get_mapping('[heap]')), 1)
-        self.assertEquals( len(mappings.get_mapping('None')), 9)
+        self.assertEquals( len(self.mappings.get_mapping('[heap]')), 1)
+        self.assertEquals( len(self.mappings.get_mapping('None')), 9)
 
     def test_get_mapping_for_address(self):
-        mappings = self.ssh.mappings
-        self.assertEquals(mappings.get_heap(), mappings.get_mapping_for_address(0xb84e02d3))
+        self.assertEquals(self.mappings.get_heap(), self.mappings.get_mapping_for_address(0xb84e02d3))
 
     def test_get_heap(self):
-        mappings = self.ssh.mappings
-        self.assertTrue( isinstance(mappings.get_heap(), MemoryMapping))
-        self.assertEquals( mappings.get_heap().start, 0xb84e0000)
-        self.assertEquals( mappings.get_heap().pathname, '[heap]')
+        self.assertTrue( isinstance(self.mappings.get_heap(), MemoryMapping))
+        self.assertEquals( self.mappings.get_heap().start, 0xb84e0000)
+        self.assertEquals( self.mappings.get_heap().pathname, '[heap]')
 
     def test_get_heaps(self):
-        mappings = self.ssh.mappings
-        self.assertEquals( len(mappings.get_heaps()), 1) # really ?
+        self.assertEquals( len(self.mappings.get_heaps()), 1) # really ?
 
-    def test_getStack(self):
-        mappings = self.ssh.mappings
-        self.assertEquals( mappings.getStack().start, 0xbff45000)
-        self.assertEquals( mappings.getStack().pathname, '[stack]')
+    def test_get_stack(self):
+        self.assertEquals( self.mappings.get_stack().start, 0xbff45000)
+        self.assertEquals( self.mappings.get_stack().pathname, '[stack]')
         
     def test_contains(self):
-        mappings = self.ssh.mappings
-        for m in mappings:
-            self.assertTrue( m.start in mappings)
-            self.assertTrue( (m.end-1) in mappings)
+        for m in self.mappings:
+            self.assertTrue( m.start in self.mappings)
+            self.assertTrue( (m.end-1) in self.mappings)
 
     def test_len(self):
-        mappings = self.ssh.mappings
-        self.assertEquals( len(mappings), 70)
+        self.assertEquals( len(self.mappings), 70)
         
     def test_getitem(self):
-        mappings = self.ssh.mappings
-        self.assertTrue( isinstance(mappings[0], MemoryMapping))
-        self.assertTrue( isinstance(mappings[len(mappings)-1], MemoryMapping))
+        self.assertTrue( isinstance(self.mappings[0], MemoryMapping))
+        self.assertTrue( isinstance(self.mappings[len(self.mappings)-1], MemoryMapping))
         with self.assertRaises(IndexError):
-            mappings[0x0005c000]
+            self.mappings[0x0005c000]
         
     def test_iter(self):
-        mappings = self.ssh.mappings
-        mps = [m for m in mappings]
-        mps2 = [m for m in mappings.mappings]
+        mps = [m for m in self.mappings]
+        mps2 = [m for m in self.mappings.mappings]
         self.assertEquals(mps, mps2)
 
     def test_setitem(self):
-        mappings = self.ssh.mappings
         with self.assertRaises(NotImplementedError):
-            mappings[0x0005c000] = 1
-        
-    def test_get_target_system(self):
-        mappings = self.ssh.mappings
-        x = mappings.get_target_system()
-        self.assertEquals(x,'linux')
-        pass
+            self.mappings[0x0005c000] = 1
     
+    def test_init_config(self):
+        x = self.mappings.init_config()
+        cfg = self.mappings.config
+        self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
+        self.assertEquals(cfg.get_word_size(), 4)
+        self.assertEquals(cfg.get_word_type_char(), 'I')
+        for m in self.mappings:
+            self.assertEquals(self.mappings.config, m.config)
+        pass
+        
+    def test_get_os_name(self):
+        x = self.mappings.get_os_name()
+        self.assertEquals(x,'linux')
+    
+    def test_get_cpu_bits(self):
+        x = self.mappings.get_cpu_bits()
+        self.assertEquals(x,'32')
 
-    def test_is_valid_address(self):
-        mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+    def test__reset_config(self):
+        self.mappings.config = 1
+        self.mappings._reset_config()
+        for m in self.mappings:
+            self.assertEquals(1, m.config)
+
+    
+class TestMappingsLinuxAddresses(SrcTests):
+
+    @classmethod
+    def setUpClass(self):
+        self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
         from test.src import ctypes5_gen32
         # struct a - basic types
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
-        offset = self.offsets['struct_d'][0]
-        m = mappings.get_mapping_for_address(offset)
-        d = m.readStruct(offset, ctypes5_gen32.struct_d)
-        ret = d.loadMembers(mappings, 10 )
+        pass
 
-        self.assertTrue(mappings.is_valid_address(d.a))
-        self.assertTrue(mappings.is_valid_address(d.b))
-        self.assertTrue(mappings.is_valid_address(d.d))
-        self.assertTrue(mappings.is_valid_address(d.h))
+    def setUp(self):
+        self.mappings = None
+        model.reset()
+
+    def tearDown(self):
+        import haystack
+        from haystack import model
+        haystack.model.reset()
+        pass
+
+    def test_is_valid_address(self):
+        from test.src import ctypes5_gen32
+        offset = self.offsets['struct_d'][0]
+        m = self.mappings.get_mapping_for_address(offset)
+        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        ret = d.loadMembers(self.mappings, 10 )
+
+        self.assertTrue(self.mappings.is_valid_address(d.a))
+        self.assertTrue(self.mappings.is_valid_address(d.b))
+        self.assertTrue(self.mappings.is_valid_address(d.d))
+        self.assertTrue(self.mappings.is_valid_address(d.h))
         pass
 
     def test_is_valid_address_value(self):
-        mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
         from test.src import ctypes5_gen32
-        # struct a - basic types
-        self._load_offsets_values('test/src/test-ctypes5.32.dump')
         offset = self.offsets['struct_d'][0]
-        m = mappings.get_mapping_for_address(offset)
+        m = self.mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(mappings, 10 )
 
@@ -195,19 +212,6 @@ class TestMappingsLinux(SrcTests):
         self.assertTrue(mappings.is_valid_address(d.d.value))
         self.assertTrue(mappings.is_valid_address(d.h.value))
         pass
-
-    def test_init_config(self):
-        x = self.mappings.init_config()
-        self.fail()
-        pass
-        
-    def test_get_os_name(self):
-        x = self.mappings.get_os_name()
-        self.assertEquals(x,'linux')
-    
-    def test_get_cpu_bits(self):
-        x = self.mappings.get_os_name()
-        self.assertEquals(x,'32')
 
 
 class TestMappingsWin32(unittest.TestCase):
@@ -240,7 +244,7 @@ class TestMappingsWin32(unittest.TestCase):
         """ FIXME: this methods expands a full reversal of all HEAPs.
         It should probably be in haystack.reverse."""
         mappings = self.mappings
-        allocs = list(mappings.get_user_allocations(mappings, mappings.get_heap()))
+        allocs = list(mappings.get_user_allocations(mappings.get_heap()))
         self.assertEquals( len(allocs), 2273)
 
     def test_get_mapping(self):
@@ -264,23 +268,23 @@ class TestMappingsWin32(unittest.TestCase):
         buf = m.readBytes(m.start,500)
         from haystack.structures.win32 import win7heap
         x = win7heap.HEAP.from_buffer_copy(buf)
-        print win7heap.HEAP.Signature
-        print repr(buf[100:104])
-        print hex(x.Signature)
-        print mappings.config.ctypes.sizeof(x)
+        #print win7heap.HEAP.Signature
+        #print repr(buf[100:104])
+        #print hex(x.Signature)
+        #print mappings.config.ctypes.sizeof(x)
 
     def test_get_heaps(self):
         mappings = self.mappings
         self.assertEquals( len(mappings.get_heaps()), 12)
 
     @unittest.expectedFailure # FIXME
-    def test_getStack(self):
+    def test_get_stack(self):
         #TODO win32        
         mappings = self.mappings
         #print ''.join(['%s\n'%(m) for m in mappings])        
-        #print mappings.getStack() # no [stack]
-        self.assertEquals( mappings.getStack().start, 0x00400000)
-        self.assertEquals( mappings.getStack().pathname, '''C:\Program Files (x86)\PuTTY\putty.exe''')
+        #print mappings.get_stack() # no [stack]
+        self.assertEquals( mappings.get_stack().start, 0x00400000)
+        self.assertEquals( mappings.get_stack().pathname, '''C:\Program Files (x86)\PuTTY\putty.exe''')
         
     def test_contains(self):
         mappings = self.mappings
@@ -312,12 +316,17 @@ class TestMappingsWin32(unittest.TestCase):
 
     def test_init_config(self):
         x = self.mappings.init_config()
-        self.assertEquals(x,'win32')
+        cfg = self.mappings.config
+        self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
+        self.assertEquals(cfg.get_word_size(), 4)
+        self.assertEquals(cfg.get_word_type_char(), 'I')
+        for m in self.mappings:
+            self.assertEquals(self.mappings.config, m.config)
         pass
         
     def test_get_os_name(self):
         x = self.mappings.get_os_name()
-        self.assertEquals(x,'winxp')
+        self.assertEquals(x,'win7')
     
     def test_get_cpu_bits(self):
         x = self.mappings.get_cpu_bits()

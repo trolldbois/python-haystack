@@ -107,7 +107,7 @@ def getHeapPointers(dumpfilename, mappings):
   #stack_values = int_array_cache(F_STACK_V)
   if heap_addrs is None or heap_values is None:
     log.info('[+] Making new cache - heap pointers') #- getting pointers values from stack')
-    #stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
+    #stack_enumerator = pointerfinder.PointerEnumerator(mappings.get_stack())
     #stack_enumerator.setTargetMapping(mappings.get_heap()) #only interested in heap pointers
     #stack_enum = stack_enumerator.search()
     #if len(stack_enum)>0:
@@ -189,7 +189,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
     ### in case of a pointer ( bad allocation ) out of a mmapping space.
     ### But that is not possible, because we are reporting factual reference to existing address space.
     ### OK. heap.start should be deleted from the cache name.
-    allocations = mappings.get_user_allocations(mappings, heap)
+    allocations = mappings.get_user_allocations(heap)
     addrs, sizes = zip(*allocations)
     int_array_save(f_addrs, addrs)
     int_array_save(f_sizes, sizes)

@@ -195,6 +195,7 @@ class Mappings:
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
         """
+        assert isinstance(addr, long) or isinstance(addr, int)
         mmap = self.get_mapping_for_address(addr)
         if not mmap:
             raise ValueError
@@ -226,10 +227,11 @@ class Mappings:
     
     def get_user_allocations(self, heap, filterInUse=True):
         """changed when the dump is loaded"""
+        assert isinstance(heap, MemoryMapping)
         if self.__heap_finder is None:
             self.get_heaps()
             
-        walker = self.__heap_finder.get_walker_for_heap(self.mappings, heap)
+        walker = self.__heap_finder.get_walker_for_heap(self, heap)
         return walker.get_user_allocations()
 
     def get_mapping(self, pathname):
@@ -241,6 +243,7 @@ class Mappings:
         return mmap
 
     def get_mapping_for_address(self, vaddr):
+        assert isinstance(vaddr, long) or isinstance(vaddr, int)
         for m in self.mappings:
             if vaddr in m:
                 return m
@@ -265,11 +268,17 @@ class Mappings:
         if self.__heaps is None:
             os_name = self.get_os_name()
             cpu = self.get_cpu_bits()
-            self.config, self.__heap_finder = heapwalker.make_heap_walker(self.mappings,
+            self.config, self.__heap_finder = heapwalker.make_heap_walker(self,
                                                        os_name=os_name, cpu=cpu)
             self._reset_config()
             self.__heaps = self.__heap_finder.get_heap_mappings(self)
         return self.__heaps
+
+    def _reset_config(self):
+        # This is where the config is set for all maps.
+        for m in self.mappings:
+            m.config = self.config
+        return
 
     def get_stack(self):
         # FIXME wont work.
@@ -277,6 +286,7 @@ class Mappings:
         return stack
 
     def append(self, m):
+        assert isinstance(m, MemoryMapping)
         self.mappings.append(m)
         if self.config is not None:
             m.config = self.config
@@ -292,13 +302,7 @@ class Mappings:
             return self.__cpu_bits
         self.__cpu_bits = heapwalker.detect_cpu(self.mappings, self.__os_name)
         return self.__cpu_bits
-    
-    def _reset_config(self):
-        # This is where the config is set for all maps.
-        for m in self.mappings:
-            m.config = self.config
-        return
-    
+        
     def is_valid_address(self, obj, structType=None): # FIXME is valid pointer
         """ 
         :param obj: the obj to evaluate.

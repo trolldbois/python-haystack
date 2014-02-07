@@ -77,7 +77,7 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
 
     raise StopIteration
 
-def get_user_allocations(mappings, heap):
+def get_user_allocations(mappings, heap, filterOnUsed=False):
     """ 
     Lists all (addr, size) of allocated space by malloc_chunks.
     """
@@ -108,20 +108,24 @@ def get_user_allocations(mappings, heap):
         # next loop
         orig_addr = next_addr
         chunk = next
-
+    
+    
     return allocs, free
 
 def is_malloc_heap(mappings, mapping):
     """test if a mapping is a malloc generated heap"""
     config = mappings.config
     try:
-        sizes = [size for addr,size in iter_user_allocations(mappings, mapping ) ]
+        # i'm lazy. Heap validation could be 10 chunks deep.
+        # but we validate is_heap by looking at the mapping size
+        sizes = [size for (addr,size) in iter_user_allocations(mappings, mapping)]
         size = sum(sizes)
     except ValueError as e:
         log.debug(e)
         return False
     except NotImplementedError as e:
         # file absent
+        log.debug(e)
         return False
     # FIXME: is malloc word size dependent
     if size != ( len(mapping) - config.get_word_size()*len(sizes) ):

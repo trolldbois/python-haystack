@@ -49,8 +49,11 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         self.heap_type = ctypes_malloc.malloc_chunk
         self.walker_class = LibcHeapWalker
 
-    def is_heap(mappings, mapping):
+    def is_heap(self, mappings, mapping):
         """test if a mapping is a heap"""
+        # FIXME: that depends on the mapping dumper.
+        if mapping.pathname != '[heap]':
+            return False
         if not ctypes_malloc.is_malloc_heap(mappings, mapping):
             return False
         # could implement other allocators
