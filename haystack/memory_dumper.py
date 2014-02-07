@@ -65,6 +65,7 @@ class MemoryDumper:
             # ptrace exception is raised before that
         self.mappings = readProcessMappings(self.process)
         log.debug('mappings read. Dropping ptrace on pid.')
+        self.mappings.init_config()
         return
 
     def dump(self, dest=None):

@@ -169,8 +169,6 @@ def readProcessMappings(process):
     finally:
         if type(mapsfile) is file:
             mapsfile.close()
-    # set the target arch        
-    mappings.init_config()
     # reposition the previous ctypes module.
     if True:
         ctypes = types.set_ctypes(before)
