@@ -12,7 +12,6 @@ import sys
 import numpy 
 from haystack import model
 from haystack.structures import heapwalker
-from haystack.structures.win32 import winheap
 
 import ctypes
 
@@ -31,6 +30,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
         self._allocs = None
         self._free_chunks = None
         self._child_heaps = None
+        from haystack.structures.win32 import winheap
         self._heap = self._mapping.readStruct(self._mapping.start+self._offset, winheap.HEAP)
         if not self._heap.loadMembers(self._mappings, 1):
             raise TypeError('HEAP.loadMembers returned False')
@@ -65,6 +65,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
 
     def _set_chunk_lists(self):
+        from haystack.structures.win32 import winheap
         sublen = ctypes.sizeof( winheap.HEAP_ENTRY)
         # get all chunks
         vallocs, va_free = self._get_virtualallocations()
@@ -161,6 +162,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
 class WinHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
+        from haystack.structures.win32 import winheap
         self.heap_type = winheap.HEAP
         self.walker_class = WinHeapWalker
 

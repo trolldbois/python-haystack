@@ -140,6 +140,7 @@ def make_heap_walker(mappings, os_name=None, cpu=None):
     # load a config with proper cpu and os to get a proper ctypes
     from haystack import config
     config = config.make_config(cpu=cpu, os_name=os_name)
+    print config.ctypes
     # ctypes is now preloaded with proper arch
     if os_name == 'linux':
         from haystack.structures.libc import libcheapwalker
