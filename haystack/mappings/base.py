@@ -229,7 +229,7 @@ class Mappings:
         if self.__heap_finder is None:
             self.get_heaps()
             
-        walker = self.__heap_finder.get_walker_for_heap(heap)
+        walker = self.__heap_finder.get_walker_for_heap(self.mappings, heap)
         return walker.get_user_allocations()
 
     def get_mapping(self, pathname):

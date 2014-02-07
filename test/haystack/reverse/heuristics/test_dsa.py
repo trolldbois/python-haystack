@@ -12,7 +12,7 @@ import pickle
 import sys
 
 from haystack import config
-Config = config.make_config_linux32() # forcing it on these unittest
+Config = config.make_config_linux_32() # forcing it on these unittest
 
 from haystack.reverse import fieldtypes
 from haystack.reverse import structure

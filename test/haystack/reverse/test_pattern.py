@@ -58,7 +58,7 @@ def makeSignature(seq):
 class TestSignature(unittest.TestCase):
 
   def setUp(self):
-    self.Config = config.make_config_linux32() # forcing it on these unittest
+    self.Config = config.make_config_linux_32() # forcing it on these unittest
 
 
     self.Config.MMAP_START = 0x0c00000
