@@ -159,6 +159,7 @@ class HeapFinder(object):
     def __init__(self):
         self.heap_type = None
         self.walker_class = None
+        self.heap_validation_depth = 1
         raise NotImplementedError('Please fix your self.heap_type and self.walker_class')
 
     def is_heap(self, mappings, mapping):
@@ -167,7 +168,7 @@ class HeapFinder(object):
         if not isinstance(mappings, base.Mappings):
             raise TypeError('Feed me a Mappings object') 
         heap = self.read_heap(mapping)
-        load = heap.loadMembers(mappings, 1) # need to go 3 to load all.
+        load = heap.loadMembers(mappings, self.heap_validation_depth) 
         return load
 
     def read_heap(self, mapping):
@@ -181,12 +182,13 @@ class HeapFinder(object):
         from haystack.mappings import base
         if not isinstance(mappings, base.Mappings):
             raise TypeError('Feed me a Mappings object') 
-        heaps_mappings = []
+        heap_mappings = []
         for mapping in mappings:
             addr = mapping.start
             if self.is_heap(mappings, mapping):
-                heaps_mappings.append(mappings.get_mapping_for_address(addr))
-        return heaps_mappings
+                heap_mappings.append(mappings.get_mapping_for_address(addr))
+        heap_mappings.sort(key=lambda m: m.start)
+        return heap_mappings
 
     def get_walker_for_heap(self, mappings, heap):
         return self.walker_class(mappings, heap, 0)

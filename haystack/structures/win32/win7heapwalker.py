@@ -164,6 +164,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         from haystack.structures.win32 import win7heap
         self.heap_type = win7heap.HEAP
         self.walker_class = Win7HeapWalker
+        self.heap_validation_depth = 1
 
     def get_heap_mappings(self, mappings):
         """return the list of mappings that load as heaps"""

@@ -224,20 +224,21 @@ struct malloc_chunk {
         log.debug('%s loadMembers'%(self.__class__.__name__))
         if not self.isValid(mappings):
             return False
-        
-        # update virtual fields
-        next, next_addr = self.getNextChunk(mappings, self._orig_address_)
-        #if next_addr is None: #most of the time its not
-        #    return True
+        try:
+            # update virtual fields
+            next, next_addr = self.getNextChunk(mappings, self._orig_address_)
+            #if next_addr is None: #most of the time its not
+            #    return True
 
-        if self.check_prev_inuse() : # if in use, prev_size is not readable
-            #self.prev_size = 0
-            pass
-        else:
-            prev,prev_addr = self.getPrevChunk(mappings, self._orig_address_)
-            if prev_addr is None:
-                return False
-
+            if self.check_prev_inuse() : # if in use, prev_size is not readable
+                #self.prev_size = 0
+                pass
+            else:
+                prev,prev_addr = self.getPrevChunk(mappings, self._orig_address_)
+                if prev_addr is None:
+                    return False
+        except ValueError as e:
+            return False
         return True
     
     def getPrevChunk(self, mappings, orig_addr):

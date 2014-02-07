@@ -68,11 +68,6 @@ model.registerModule(sys.modules[__name__])
 
 ############# Start expectedValues and methods overrides #################
 
-import traceback
-traceback.print_stack()
-
-
-
 ## fix partial declaration
 _HEAP_LOCK._fields_ = [
     ('voidme', ctypes.c_ubyte),
