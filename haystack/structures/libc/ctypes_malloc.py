@@ -44,11 +44,15 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
     ret = chunk.loadMembers(mappings, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
+    addr, size = (chunk.get_mem_addr(orig_addr), chunk.get_mem_size())
+    if size < 0: # chunk.size is 0, its invalid
+        raise StopIteration
+        
     if filterInuse:
         if chunk.check_inuse(mappings, orig_addr):
-            yield    (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
+            yield (addr,size)
     else:
-        yield    (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) 
+        yield (addr,size)
 
     while True:
         next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
@@ -80,10 +84,11 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
     ret = chunk.loadMembers(mappings, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
+    addr, size = (chunk.get_mem_addr(orig_addr), chunk.get_mem_size())
     if chunk.check_inuse(mappings, orig_addr):
-        allocs.append( (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) )
+        allocs.append( (addr,size) )
     else:
-        free.append( (chunk.get_mem_addr(orig_addr), chunk.get_mem_size()) )
+        free.append( (addr,size) )
 
     while True:
         next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
@@ -188,10 +193,13 @@ struct malloc_chunk {
         # get the real data headers. size of fields of based on struct definition
         #    (self.prev_size,    self.size) = struct.unpack_from("<II", mem, 0x0)
         real_size = self.real_size()
-        
-        log.debug('self.prev_size %d'% self.prev_size )
-        log.debug('self.size %d'% self.size )
-        log.debug('real_size %d'% real_size )
+        if real_size == 0:
+            log.debug('real_size is 0')
+            return False
+        if False:
+            log.debug('self.prev_size %d'% self.prev_size )
+            log.debug('self.size %d'% self.size )
+            log.debug('real_size %d'% real_size )
 
         ## inuse : to know if inuse, you have to look at next_chunk.size & PREV_SIZE bit
         inuse = self.check_inuse(mappings, self._orig_address_) 
@@ -205,7 +213,7 @@ struct malloc_chunk {
         return True
 
     def loadMembers(self, mappings, maxDepth):
-        if maxDepth == 0:
+        if maxDepth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug('Struct partially LOADED. %s not loaded'%(self.__class__.__name__))
             return True
@@ -227,7 +235,8 @@ struct malloc_chunk {
             # update virtual fields
             if self.size != 0:
                 next, next_addr = self.getNextChunk(mappings, self._orig_address_, maxDepth)
-                log.debug('nextchunk: 0x%x'%(next_addr))
+                if next_addr is not None:
+                    log.debug('nextchunk: 0x%x'%(next_addr))
 
             #if next_addr is None: #most of the time its not
             #    return True
@@ -274,6 +283,10 @@ struct malloc_chunk {
             return None,None
         # check if its in mappings
         if not mappings.is_valid_address_value(next_addr):
+            current_heap = mappings.get_mapping_for_address(orig_addr)
+            if next_addr == current_heap.end:
+                log.debug('Last chunk: size: 0x%x'%(self.real_size()))
+                return None,None
             raise ValueError('STOP: next_addr invalid: 0x%x'%(next_addr))
         next_chunk = mmap.readStruct(next_addr, malloc_chunk )
         mappings.keepRef( next_chunk, malloc_chunk, next_addr)

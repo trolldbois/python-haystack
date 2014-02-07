@@ -46,17 +46,8 @@ class TestAllocator(unittest.TestCase):
         from haystack.structures.libc import ctypes_malloc as ctypes_alloc
         from haystack.structures.libc import libcheapwalker
 
-        heaps = self.mappings.get_heaps()
-        for heap in heaps:
-            log.info(heap)
-            walker = libcheapwalker.LibcHeapWalker(self.mappings, heap, 0)
-            # 
-            allocs = walker.get_user_allocations()
-            import code
-            if heap.pathname == '[heap]':
-                code.interact(local=locals)
-        
-        self.assertEquals(len(heaps), 17)
+        heaps = self.mappings.get_heaps()        
+        self.assertEquals(len(heaps), 1)
         
         heap = heaps[0]
         self.assertTrue(ctypes_alloc.is_malloc_heap(self.mappings, heap))
@@ -94,7 +85,7 @@ class TestAllocatorSimple(unittest.TestCase):
         from haystack.structures.libc import ctypes_malloc as ctypes_alloc
         from haystack.structures.libc import libcheapwalker
         heaps = self.mappings.get_heaps()
-        self.assertEquals(len(heaps), 7)
+        self.assertEquals(len(heaps), 1)
         
         heap = heaps[0]
         self.assertTrue(ctypes_alloc.is_malloc_heap(self.mappings, heap))
@@ -111,6 +102,10 @@ class TestAllocatorSimple(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('basicmodel').setLevel(level=logging.INFO)
+    logging.getLogger('base').setLevel(level=logging.INFO)
+    #logging.getLogger('model').setLevel(level=logging.DEBUG)
+    #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
     unittest.main(verbosity=2)
 
