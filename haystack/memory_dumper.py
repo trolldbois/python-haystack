@@ -17,7 +17,6 @@ import zipfile
 
 from haystack import dbg
 from haystack import utils
-from haystack import memory_mapping
 from haystack import argparse_utils
 from haystack import config
 from haystack.mappings.process import readProcessMappings

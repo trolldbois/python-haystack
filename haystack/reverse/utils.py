@@ -108,7 +108,7 @@ def getHeapPointers(dumpfilename, mappings):
   if heap_addrs is None or heap_values is None:
     log.info('[+] Making new cache - heap pointers') #- getting pointers values from stack')
     #stack_enumerator = pointerfinder.PointerEnumerator(mappings.getStack())
-    #stack_enumerator.setTargetMapping(mappings.getHeap()) #only interested in heap pointers
+    #stack_enumerator.setTargetMapping(mappings.get_heap()) #only interested in heap pointers
     #stack_enum = stack_enumerator.search()
     #if len(stack_enum)>0:
     #  stack_offsets, stack_values = zip(*stack_enum) 
@@ -116,7 +116,7 @@ def getHeapPointers(dumpfilename, mappings):
     #  stack_offsets, stack_values = (),()
     #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
     #log.info('\t[-] merging pointers from heap')
-    heap_enum = pointerfinder.PointerEnumerator(mappings.getHeap()).search()
+    heap_enum = pointerfinder.PointerEnumerator(mappings.get_heap()).search()
     if len(heap_enum)>0:
       heap_addrs, heap_values = zip(*heap_enum) # WTF
     else:
@@ -150,7 +150,7 @@ def getAllPointers(dumpfilename, mappings):
   heap_values = int_array_cache(F_HEAP_V)
   if heap_addrs is None or heap_values is None:
     log.info('[+] Making new cache - all pointers') 
-    heap_enumerator = pointerfinder.PointerEnumerator(mappings.getHeap())
+    heap_enumerator = pointerfinder.PointerEnumerator(mappings.get_heap())
     heap_enumerator.setTargetMapping(mappings) # all pointers
     heap_enum = heap_enumerator.search()
     if len(heap_enum)>0:

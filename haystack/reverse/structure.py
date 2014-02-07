@@ -599,7 +599,7 @@ class AnonymousStructInstance():
 
   @property
   def _heap(self):
-    return self._context.mappings.getHeap()
+    return self._context.mappings.get_heap()
 
   @property # TODO add a cache property ?
   def bytes(self):

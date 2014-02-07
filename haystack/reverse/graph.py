@@ -79,7 +79,7 @@ def make(opts):
 
   #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
   digraph=networkx.readwrite.gexf.read_gexf(  opts.gexf.name)
-  heap = ctx.mappings.getHeap()
+  heap = ctx.mappings.get_heap()
 
   # only add heap structure with links
   edges = [(x,y) for x,y in digraph.edges() if int(x,16) in heap and int(y,16) in heap]

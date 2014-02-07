@@ -180,6 +180,7 @@ class Mappings:
         else:
             self.mappings = list(lst)
         self.config = None
+        self.name = name
         self.__heaps = None
         self.__heap_finder = None
         self.__os_name = None

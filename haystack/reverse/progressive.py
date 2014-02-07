@@ -52,7 +52,7 @@ def make(opts):
   # we
   if not os.access(Config.structsCacheDir, os.F_OK):
     os.mkdir(Config.structsCacheDir )
-  heap = mappings.getHeap()
+  heap = mappings.get_heap()
   log.info('[+] Reversing %s'%(heap))
   # creates
   t0 = time.time()

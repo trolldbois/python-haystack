@@ -55,7 +55,7 @@ class ReverserContext():
     ##self._pointers_values = all_values
     ##self._pointers_offsets = all_offsets
     
-    if self.mappings._target_system != 'win32':
+    if self.mappings.get_os_name() not in [ 'winxp', 'win7']:
       log.info('[+] Reversing function pointers names')
       from haystack.structures.libc import libdl
       self._function_names = dict() #TODO INLINE CACHED dict(libdl.reverseLocalFonctionPointerNames(self) )
@@ -233,7 +233,7 @@ def get_context(fname):
   try:
     context = ReverserContext.cacheLoad(mappings)
   except IOError,e:
-    context = ReverserContext(mappings, mappings.getHeap())  
+    context = ReverserContext(mappings, mappings.get_heap())  
   # cache it
   context.heap._context = context
   return context

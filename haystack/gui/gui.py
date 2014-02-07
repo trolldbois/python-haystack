@@ -367,7 +367,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
     # load memorymapping
     mappings = dump_loader.load(dumpname)
     # TODO : make a mapping chooser 
-    heap = mappings.getHeap()
+    heap = mappings.get_heap()
     #if len(mappings) > 1:
     #  heap = [m for m in mappings if m.pathname == '[heap]'][0]
     #else:

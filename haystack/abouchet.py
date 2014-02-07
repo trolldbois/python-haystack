@@ -487,7 +487,7 @@ def _search(mappings, structType, fullscan=False, hint=0, rtype='python', intera
                 raise ValueError('This hint is not a valid addr (0x%x)'%(hint))
             targetMappings = [m]
         else:
-            targetMappings = [mappings.getHeap()]
+            targetMappings = [mappings.get_heap()]
         # we don't want a Mappings instance, only a list
         if len(targetMappings) == 0:
             log.warning('No memorymapping found. Searching everywhere.')

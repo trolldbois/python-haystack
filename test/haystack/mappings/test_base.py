@@ -102,7 +102,7 @@ class TestMappingsLinux(SrcTests):
     
     def test_get_user_allocations(self):
         mappings = self.ssh.mappings
-        allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+        allocs = list(mappings.get_user_allocations(mappings, mappings.get_heap()))
         self.assertEquals( len(allocs), 2568)
 
     def test_get_mapping(self):
@@ -112,13 +112,13 @@ class TestMappingsLinux(SrcTests):
 
     def test_get_mapping_for_address(self):
         mappings = self.ssh.mappings
-        self.assertEquals(mappings.getHeap(), mappings.get_mapping_for_address(0xb84e02d3))
+        self.assertEquals(mappings.get_heap(), mappings.get_mapping_for_address(0xb84e02d3))
 
-    def test_getHeap(self):
+    def test_get_heap(self):
         mappings = self.ssh.mappings
-        self.assertTrue( isinstance(mappings.getHeap(), MemoryMapping))
-        self.assertEquals( mappings.getHeap().start, 0xb84e0000)
-        self.assertEquals( mappings.getHeap().pathname, '[heap]')
+        self.assertTrue( isinstance(mappings.get_heap(), MemoryMapping))
+        self.assertEquals( mappings.get_heap().start, 0xb84e0000)
+        self.assertEquals( mappings.get_heap().pathname, '[heap]')
 
     def test_get_heaps(self):
         mappings = self.ssh.mappings
@@ -196,6 +196,19 @@ class TestMappingsLinux(SrcTests):
         self.assertTrue(mappings.is_valid_address(d.h.value))
         pass
 
+    def test_init_config(self):
+        x = self.mappings.init_config()
+        self.fail()
+        pass
+        
+    def test_get_os_name(self):
+        x = self.mappings.get_os_name()
+        self.assertEquals(x,'linux')
+    
+    def test_get_cpu_bits(self):
+        x = self.mappings.get_os_name()
+        self.assertEquals(x,'32')
+
 
 class TestMappingsWin32(unittest.TestCase):
 
@@ -227,7 +240,7 @@ class TestMappingsWin32(unittest.TestCase):
         """ FIXME: this methods expands a full reversal of all HEAPs.
         It should probably be in haystack.reverse."""
         mappings = self.mappings
-        allocs = list(mappings.get_user_allocations(mappings, mappings.getHeap()))
+        allocs = list(mappings.get_user_allocations(mappings, mappings.get_heap()))
         self.assertEquals( len(allocs), 2273)
 
     def test_get_mapping(self):
@@ -242,12 +255,12 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals(m.start, 0x005c0000)
         self.assertEquals(m.end, 0x00619000)
 
-    def test_getHeap(self):
+    def test_get_heap(self):
         mappings = self.mappings
-        self.assertTrue( isinstance(mappings.getHeap(), MemoryMapping))
-        self.assertEquals( mappings.getHeap().start, 0x005c0000)
-        self.assertEquals( mappings.getHeap().pathname, 'None')
-        m = mappings.getHeap()
+        self.assertTrue( isinstance(mappings.get_heap(), MemoryMapping))
+        self.assertEquals( mappings.get_heap().start, 0x005c0000)
+        self.assertEquals( mappings.get_heap().pathname, 'None')
+        m = mappings.get_heap()
         buf = m.readBytes(m.start,500)
         from haystack.structures.win32 import win7heap
         x = win7heap.HEAP.from_buffer_copy(buf)
@@ -297,16 +310,22 @@ class TestMappingsWin32(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             mappings[0x0005c000]=1
 
-    def test_search_win_heaps(self):
-        mappings = self.mappings
-        heaps = mappings.search_win_heaps()
-        self.assertEquals(len(heaps), 12)
-        self.assertEquals(len(mappings.get_heaps()), 12)
-
-    def test_get_target_system(self):
-        x = self.mappings.get_target_system()
+    def test_init_config(self):
+        x = self.mappings.init_config()
         self.assertEquals(x,'win32')
         pass
+        
+    def test_get_os_name(self):
+        x = self.mappings.get_os_name()
+        self.assertEquals(x,'winxp')
+    
+    def test_get_cpu_bits(self):
+        x = self.mappings.get_cpu_bits()
+        self.assertEquals(x,'32')
+    
+    def test__reset_config(self):
+        self.fail()
+        
     
 
 

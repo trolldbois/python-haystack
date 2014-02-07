@@ -12,7 +12,7 @@ import sys
 import unittest
 
 from haystack import config
-Config = config.make_config_linux32() # forcing it on these unittest
+Config = config.make_config_linux_32() # forcing it on these unittest
 
 from haystack import model
 from haystack.reverse import context

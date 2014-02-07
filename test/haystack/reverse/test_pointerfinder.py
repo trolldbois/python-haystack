@@ -21,7 +21,7 @@ from haystack import config
 
 class TestPointer(unittest.TestCase):
     def setUp(self):
-        self.config = config.make_config_linux32()
+        self.config = config.make_config_linux_32()
         self.config.MMAP_START = 0x0c00000
         self.config.MMAP_STOP = 0x0c01000
         self.config.MMAP_LENGTH = 4096

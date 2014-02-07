@@ -43,10 +43,10 @@ def make(opts):
     log.info('[+] Final %d structures from malloc blocs'%( len(context.structures) ))
 
   
-  heap1 = context.mappings.getHeap()
+  heap1 = context.mappings.get_heap()
   log.info('[+] Loading mappings of %s'%(opts.dump2))
   newmappings = dump_loader.load( opts.dump2)  
-  heap2 = newmappings.getHeap()
+  heap2 = newmappings.get_heap()
   log.info('[+] finding diff values with %s'%(opts.dump2))
   addrs = cmd_cmp(heap1, heap2, heap1.start)
   
