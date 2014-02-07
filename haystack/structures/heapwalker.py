@@ -129,28 +129,22 @@ def _detect_cpu_arch_elf(mappings):
             continue
     raise NotImplementedError('MACHINE has not been found.')
 
-def make_heap_walker(mappings, os_name=None, cpu=None):
+def make_heap_walker(mappings):
     """try to find what type of heaps are """
     from haystack.mappings import base
     if not isinstance(mappings, base.Mappings):
         raise TypeError('Feed me a Mappings')
-    if os_name is None:
-        os_name = detect_os(mappings)
-    if cpu is None:
-        cpu = detect_cpu(mappings, os_name=os_name)
-    # load a config with proper cpu and os to get a proper ctypes
-    from haystack import config
-    config = config.make_config(cpu=cpu, os_name=os_name)
-    # ctypes is now preloaded with proper arch
+    # ctypes is preloaded with proper arch
+    os_name = mappings.get_os_name()
     if os_name == 'linux':
         from haystack.structures.libc import libcheapwalker
-        return config, libcheapwalker.LibcHeapFinder()
+        return libcheapwalker.LibcHeapFinder()
     elif os_name == 'winxp':
         from haystack.structures.win32 import winheapwalker
-        return config, winheapwalker.WinHeapFinder()
+        return winheapwalker.WinHeapFinder()
     elif os_name == 'win7':
         from haystack.structures.win32 import win7heapwalker
-        return config, win7heapwalker.Win7HeapFinder()
+        return win7heapwalker.Win7HeapFinder()
     else:
         raise NotImplementedError('Heap Walker not found for os %s'%(os_name))
 
@@ -169,6 +163,7 @@ class HeapFinder(object):
             raise TypeError('Feed me a Mappings object') 
         heap = self.read_heap(mapping)
         load = heap.loadMembers(mappings, self.heap_validation_depth) 
+        log.debug('HeapFinder.is_heap %s %s'%(mapping,load))
         return load
 
     def read_heap(self, mapping):

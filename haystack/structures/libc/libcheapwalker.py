@@ -12,7 +12,6 @@ import sys
 import numpy 
 from haystack import model
 from haystack.structures import heapwalker
-from haystack.structures.libc import ctypes_malloc
 
 log=logging.getLogger('libcheapwalker')
 
@@ -46,7 +45,14 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
 class LibcHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
-        self.heap_type = ctypes_malloc.malloc_chunk
+        from haystack.structures import libc 
+        libc = reload(libc)
+        import ctypes_malloc
+        import ctypes
+        print ctypes
+        print ctypes.sizeof(libc.ctypes_malloc.malloc_chunk)
+        print libc.ctypes_malloc.malloc_chunk.size
+        self.heap_type = libc.ctypes_malloc.malloc_chunk
         self.walker_class = LibcHeapWalker
         self.heap_validation_depth = 20
 

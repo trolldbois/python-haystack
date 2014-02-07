@@ -11,10 +11,10 @@ import sys
 
 from haystack import model
 
-import ctypes
 # FIXME: ctypes = types.reload_ctyps(4,4,8) #?
 
 import struct
+import ctypes
 
 log=logging.getLogger('ctypes_malloc')
 
@@ -297,14 +297,15 @@ struct malloc_chunk {
         return next_chunk, next_addr
 
 
-# Unint is 32. always.
+# Unint is 32. always. - so not true.
 UINT = ctypes.c_uint
 
+
 malloc_chunk._fields_ = [
-        ( 'prev_size' , UINT ), #    INTERNAL_SIZE_T
-        ( 'size' , UINT ), #    INTERNAL_SIZE_T with some flags
-        # totally virtual
-     ]
+            ( 'prev_size' , ctypes.c_ulong ), #    INTERNAL_SIZE_T
+            ( 'size' , ctypes.c_ulong ), #    INTERNAL_SIZE_T with some flags
+            # totally virtual
+         ]
 # make subclass for empty or inuse..
 
 # cant use 2** expectedValues, there is a mask on sizes...

@@ -268,9 +268,11 @@ class Mappings:
         if self.__heaps is None:
             os_name = self.get_os_name()
             cpu = self.get_cpu_bits()
-            self.config, self.__heap_finder = heapwalker.make_heap_walker(self,
-                                                       os_name=os_name, cpu=cpu)
+            # Change ctypes now
+            from haystack import config
+            self.config = config.make_config(cpu=cpu, os_name=os_name)
             self._reset_config()
+            self.__heap_finder = heapwalker.make_heap_walker(self)
             self.__heaps = self.__heap_finder.get_heap_mappings(self)
         return self.__heaps
 

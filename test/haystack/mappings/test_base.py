@@ -110,7 +110,7 @@ class TestMappingsLinux(SrcTests):
         self.assertEquals( self.mappings.get_heap().pathname, '[heap]')
 
     def test_get_heaps(self):
-        self.assertEquals( len(self.mappings.get_heaps()), 17)
+        self.assertEquals( len(self.mappings.get_heaps()), 1)
 
     def test_get_stack(self):
         self.assertEquals( self.mappings.get_stack().start, 0xbff45000)
@@ -260,7 +260,7 @@ class TestMappingsWin32(unittest.TestCase):
         #print mappings.config.ctypes.sizeof(x)
 
     def test_get_heaps(self):
-        self.assertEquals( len(self.mappings.get_heaps()), 12)
+        self.assertEquals( len(self.mappings.get_heaps()), 1)
 
     @unittest.expectedFailure # FIXME
     def test_get_stack(self):
