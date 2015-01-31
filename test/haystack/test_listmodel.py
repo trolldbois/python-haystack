@@ -66,10 +66,10 @@ class TestListStruct(unittest.TestCase):
         from haystack.structures.win32 import win7heap
         
         heap = win7heap.HEAP()
-        self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap._HEAP_SEGMENT,-16))
+        self.assertEquals(heap._getListFieldInfo('SegmentList'), (win7heap.HEAP_SEGMENT,-16))
         
-        seg = win7heap._HEAP_SEGMENT()
-        self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap._HEAP_UCR_DESCRIPTOR,-8))
+        seg = win7heap.HEAP_SEGMENT()
+        self.assertEquals(seg._getListFieldInfo('UCRSegmentList'), (win7heap.HEAP_UCR_DESCRIPTOR,-8))
         
     def test_otherHeap(self):
         #self.skipTest('not ready')
