@@ -40,19 +40,16 @@ class LibcHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
+        from haystack.structures.libc import ctypes_malloc
         self._allocs, self._free_chunks = ctypes_malloc.get_user_allocations(self._mappings, self._mapping)
 
 
 class LibcHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
-        from haystack.structures import libc 
-        libc = reload(libc)
-        import ctypes_malloc
         import ctypes
-        print ctypes
-        print ctypes.sizeof(libc.ctypes_malloc.malloc_chunk)
-        print libc.ctypes_malloc.malloc_chunk.size
-        self.heap_type = libc.ctypes_malloc.malloc_chunk
+        from haystack.structures.libc import ctypes_malloc
+        ctypes_malloc = reload(ctypes_malloc)
+        self.heap_type = ctypes_malloc.malloc_chunk
         self.walker_class = LibcHeapWalker
         self.heap_validation_depth = 20
 

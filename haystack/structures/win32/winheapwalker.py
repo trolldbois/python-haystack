@@ -163,6 +163,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
 class WinHeapFinder(heapwalker.HeapFinder):
     def __init__(self):
         from haystack.structures.win32 import winheap
+        winheap = reload(winheap)
         self.heap_type = winheap.HEAP
         self.walker_class = WinHeapWalker
         self.heap_validation_depth = 1

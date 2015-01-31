@@ -467,6 +467,7 @@ class TestBasicFunctions64(TestBasicFunctions):
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
         self.assertIn( ctypes.CString, ctypes.__dict__.values() )
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
     unittest.main(verbosity=2)

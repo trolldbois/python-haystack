@@ -162,6 +162,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 class Win7HeapFinder(heapwalker.HeapFinder):
     def __init__(self):
         from haystack.structures.win32 import win7heap
+        win7heap = reload(win7heap)
         self.heap_type = win7heap.HEAP
         self.walker_class = Win7HeapWalker
         self.heap_validation_depth = 1

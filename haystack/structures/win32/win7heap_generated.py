@@ -1,510 +1,562 @@
-from ctypes import *
+# -*- coding: utf-8 -*-
+#
+# TARGET arch is: ['-target', 'x86_64-win64']
+# WORD_SIZE is: 8
+# POINTER_SIZE is: 8
+# LONGDOUBLE_SIZE is: 16
+#
+import ctypes
 
-STRING = c_char_p
+
 
 
 VOID = None
-class HEAPTABLE(Structure):
+
+class struct__LIST_ENTRY(ctypes.Structure):
     pass
-class _HEAP(Structure):
-    pass
-HEAPTABLE._fields_ = [
-    ('list', POINTER(_HEAP) * 16),
+
+struct__LIST_ENTRY._pack_ = True # source:False
+struct__LIST_ENTRY._fields_ = [
+    ('FLink', ctypes.POINTER(struct__LIST_ENTRY)),
+    ('BLink', ctypes.POINTER(struct__LIST_ENTRY)),
 ]
-class _LIST_ENTRY(Structure):
+
+PLIST_ENTRY = ctypes.POINTER(struct__LIST_ENTRY)
+
+LIST_ENTRY = struct__LIST_ENTRY
+
+class struct__LFH_BLOCK_ZONE(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ListEntry', struct__LIST_ENTRY),
+    ('FreePointer', ctypes.POINTER(None)),
+    ('Limit', ctypes.POINTER(None)),
+     ]
+
+PLFH_BLOCK_ZONE = ctypes.POINTER(struct__LFH_BLOCK_ZONE)
+
+LFH_BLOCK_ZONE = struct__LFH_BLOCK_ZONE
+
+class struct__HEAP_PSEUDO_TAG_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Allocs', ctypes.c_uint32),
+    ('Frees', ctypes.c_uint32),
+    ('Size', ctypes.c_uint32),
+     ]
+
+PHEAP_PSEUDO_TAG_ENTRY = ctypes.POINTER(struct__HEAP_PSEUDO_TAG_ENTRY)
+
+HEAP_PSEUDO_TAG_ENTRY = struct__HEAP_PSEUDO_TAG_ENTRY
+
+class struct__HEAP_LOCK(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Lock', ctypes.c_uint32),
+     ]
+
+PHEAP_LOCK = ctypes.POINTER(struct__HEAP_LOCK)
+
+HEAP_LOCK = struct__HEAP_LOCK
+
+class struct_HEAPTABLE(ctypes.Structure):
     pass
-_LIST_ENTRY._fields_ = [
-    ('FLink', POINTER(_LIST_ENTRY)),
-    ('BLink', POINTER(_LIST_ENTRY)),
+
+class struct__HEAP(ctypes.Structure):
+    pass
+
+class struct__HEAP_LIST_LOOKUP(ctypes.Structure):
+    pass
+
+struct__HEAP_LIST_LOOKUP._pack_ = True # source:False
+struct__HEAP_LIST_LOOKUP._fields_ = [
+    ('ExtendedLookup', ctypes.POINTER(struct__HEAP_LIST_LOOKUP)),
+    ('ArraySize', ctypes.c_uint32),
+    ('ExtraItem', ctypes.c_uint32),
+    ('ItemCount', ctypes.c_uint32),
+    ('OutOfRangeItems', ctypes.c_uint32),
+    ('BaseIndex', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('ListHead', ctypes.POINTER(struct__LIST_ENTRY)),
+    ('ListsInUseUlong', ctypes.POINTER(ctypes.c_uint32)),
+    ('ListHints', ctypes.POINTER(ctypes.POINTER(struct__LIST_ENTRY))),
 ]
-class _SLIST_HEADER(Structure):
-    pass
-__uint16_t = c_ushort
-_SLIST_HEADER._fields_ = [
-    ('Next', POINTER(_SLIST_HEADER)),
-    ('Depth', __uint16_t),
-    ('Sequence', __uint16_t),
+
+class struct__HEAP_COUNTERS(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('TotalMemoryReserved', ctypes.c_uint32),
+    ('TotalMemoryCommitted', ctypes.c_uint32),
+    ('TotalMemoryLargeUCR', ctypes.c_uint32),
+    ('TotalSizeInVirtualBlocks', ctypes.c_uint32),
+    ('TotalSegments', ctypes.c_uint32),
+    ('TotalUCRs', ctypes.c_uint32),
+    ('CommittOps', ctypes.c_uint32),
+    ('DeCommitOps', ctypes.c_uint32),
+    ('LockAcquires', ctypes.c_uint32),
+    ('LockCollisions', ctypes.c_uint32),
+    ('CommitRate', ctypes.c_uint32),
+    ('DecommittRate', ctypes.c_uint32),
+    ('CommitFailures', ctypes.c_uint32),
+    ('InBlockCommitFailures', ctypes.c_uint32),
+    ('CompactHeapCalls', ctypes.c_uint32),
+    ('CompactedUCRs', ctypes.c_uint32),
+    ('AllocAndFreeOps', ctypes.c_uint32),
+    ('InBlockDeccommits', ctypes.c_uint32),
+    ('InBlockDeccomitSize', ctypes.c_uint32),
+    ('HighWatermarkSize', ctypes.c_uint32),
+    ('LastPolledSize', ctypes.c_uint32),
+     ]
+
+class struct__HEAP_TAG_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Allocs', ctypes.c_uint32),
+    ('Frees', ctypes.c_uint32),
+    ('Size', ctypes.c_uint32),
+    ('TagIndex', ctypes.c_uint16),
+    ('CreatorBackTraceIndex', ctypes.c_uint16),
+    ('TagName', ctypes.c_uint16 * 24),
+     ]
+
+class struct__HEAP_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('PADDING_0', ctypes.c_ubyte * 16),
+     ]
+
+class struct__HEAP_SEGMENT(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Entry', struct__HEAP_ENTRY),
+    ('SegmentSignature', ctypes.c_uint32),
+    ('SegmentFlags', ctypes.c_uint32),
+    ('SegmentListEntry', struct__LIST_ENTRY),
+    ('Heap', ctypes.POINTER(struct__HEAP)),
+    ('BaseAddress', ctypes.POINTER(None)),
+    ('NumberOfPages', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('FirstEntry', ctypes.POINTER(struct__HEAP_ENTRY)),
+    ('LastValidEntry', ctypes.POINTER(struct__HEAP_ENTRY)),
+    ('NumberOfUnCommittedPages', ctypes.c_uint32),
+    ('NumberOfUnCommittedRanges', ctypes.c_uint32),
+    ('SegmentAllocatorBackTraceIndex', ctypes.c_uint16),
+    ('Reserved', ctypes.c_uint16),
+    ('PADDING_1', ctypes.c_ubyte * 4),
+    ('UCRSegmentList', struct__LIST_ENTRY),
+     ]
+
+class struct__HEAP_TUNING_PARAMETERS(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('CommittThresholdShift', ctypes.c_uint32),
+    ('MaxPreCommittThreshold', ctypes.c_uint32),
+     ]
+
+struct__HEAP._pack_ = True # source:False
+struct__HEAP._fields_ = [
+    ('Segment', struct__HEAP_SEGMENT),
+    ('Flags', ctypes.c_uint32),
+    ('ForceFlags', ctypes.c_uint32),
+    ('CompatibilityFlags', ctypes.c_uint32),
+    ('EncodeFlagMask', ctypes.c_uint32),
+    ('Encoding', struct__HEAP_ENTRY),
+    ('PointerKey', ctypes.c_uint32),
+    ('Interceptor', ctypes.c_uint32),
+    ('VirtualMemoryThreshold', ctypes.c_uint32),
+    ('Signature', ctypes.c_uint32),
+    ('SegmentReserve', ctypes.c_uint32),
+    ('SegmentCommit', ctypes.c_uint32),
+    ('DeCommitFreeBlockThreshold', ctypes.c_uint32),
+    ('DeCommitTotalFreeThreshold', ctypes.c_uint32),
+    ('TotalFreeSize', ctypes.c_uint32),
+    ('MaximumAllocationSize', ctypes.c_uint32),
+    ('ProcessHeapsListIndex', ctypes.c_uint16),
+    ('HeaderValidateLength', ctypes.c_uint16),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('HeaderValidateCopy', ctypes.POINTER(None)),
+    ('NextAvailableTagIndex', ctypes.c_uint16),
+    ('MaximumTagIndex', ctypes.c_uint16),
+    ('PADDING_1', ctypes.c_ubyte * 4),
+    ('TagEntries', ctypes.POINTER(struct__HEAP_TAG_ENTRY)),
+    ('UCRList', struct__LIST_ENTRY),
+    ('AlignRound', ctypes.c_uint32),
+    ('AlignMask', ctypes.c_uint32),
+    ('VirtualAllocdBlocks', struct__LIST_ENTRY),
+    ('SegmentList', struct__LIST_ENTRY),
+    ('AllocatorBackTraceIndex', ctypes.c_uint16),
+    ('_PADDING0_', ctypes.c_ubyte * 2),
+    ('NonDedicatedListLength', ctypes.c_uint32),
+    ('BlocksIndex', ctypes.POINTER(struct__HEAP_LIST_LOOKUP)),
+    ('UCRIndex', ctypes.POINTER(None)),
+    ('PseudoTagEntries', ctypes.POINTER(struct__HEAP_PSEUDO_TAG_ENTRY)),
+    ('FreeLists', struct__LIST_ENTRY),
+    ('LockVariable', ctypes.POINTER(struct__HEAP_LOCK)),
+    ('CommitRoutine', ctypes.POINTER(None)),
+    ('FrontEndHeap', ctypes.POINTER(None)),
+    ('FrontHeapLockCount', ctypes.c_uint16),
+    ('FrontEndHeapType', ctypes.c_ubyte),
+    ('_PADDING1_', ctypes.c_ubyte * 1),
+    ('Counters', struct__HEAP_COUNTERS),
+    ('TuningParameters', struct__HEAP_TUNING_PARAMETERS),
 ]
-PSLIST_HEADER = POINTER(_SLIST_HEADER)
-SLIST_HEADER = _SLIST_HEADER
-class _SINGLE_LIST_ENTRY(Structure):
-    pass
-_SINGLE_LIST_ENTRY._fields_ = [
-    ('Next', POINTER(_SINGLE_LIST_ENTRY)),
+
+struct_HEAPTABLE._pack_ = True # source:False
+struct_HEAPTABLE._fields_ = [
+    ('list', ctypes.POINTER(struct__HEAP) * 16),
 ]
-class _HEAP_ENTRY(Structure):
+
+PHEAPTABLE = ctypes.POINTER(struct_HEAPTABLE)
+
+HEAPTABLE = struct_HEAPTABLE
+
+class struct__SLIST_HEADER(ctypes.Structure):
     pass
-class N11_HEAP_ENTRY3DOT_1E(Union):
-    pass
-class N11_HEAP_ENTRY3DOT_13DOT_2E(Structure):
-    pass
-__uint8_t = c_ubyte
-N11_HEAP_ENTRY3DOT_13DOT_2E._fields_ = [
-    ('Size', __uint16_t),
-    ('Flags', __uint8_t),
-    ('SmallTagIndex', __uint8_t),
-    ('_PADDING0_', __uint8_t * 4),
+
+struct__SLIST_HEADER._pack_ = True # source:False
+struct__SLIST_HEADER._fields_ = [
+    ('Next', ctypes.POINTER(struct__SLIST_HEADER)),
+    ('Depth', ctypes.c_uint16),
+    ('Sequence', ctypes.c_uint16),
+    ('PADDING_0', ctypes.c_ubyte * 4),
 ]
-class N11_HEAP_ENTRY3DOT_13DOT_3E(Structure):
+
+SLIST_HEADER = struct__SLIST_HEADER
+
+PSLIST_HEADER = ctypes.POINTER(struct__SLIST_HEADER)
+
+class struct__SINGLE_LIST_ENTRY(ctypes.Structure):
     pass
-class N11_HEAP_ENTRY3DOT_13DOT_33DOT_4E(Union):
+
+struct__SINGLE_LIST_ENTRY._pack_ = True # source:False
+struct__SINGLE_LIST_ENTRY._fields_ = [
+    ('Next', ctypes.POINTER(struct__SINGLE_LIST_ENTRY)),
+]
+
+SINGLE_LIST_ENTRY = struct__SINGLE_LIST_ENTRY
+
+PSINGLE_LIST_ENTRY = ctypes.POINTER(struct__SINGLE_LIST_ENTRY)
+
+class union_c__S__HEAP_ENTRY_Ua(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('AgregateCode', ctypes.c_uint64),
+    ('PADDING_0', ctypes.c_ubyte * 8),
+     ]
+
+class struct_c__S__HEAP_ENTRY_Ua_Sa(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Size', ctypes.c_uint16),
+    ('Flags', ctypes.c_ubyte),
+    ('SmallTagIndex', ctypes.c_ubyte),
+    ('_PADDING0_', ctypes.c_ubyte * 4),
+     ]
+
+class union_c__S__HEAP_ENTRY_Ua_Sa_Ua(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('SegmentOffset', ctypes.c_ubyte),
+    ('LFHFlags', ctypes.c_ubyte),
+     ]
+
+PHEAP_ENTRY = ctypes.POINTER(struct__HEAP_ENTRY)
+
+HEAP_ENTRY = struct__HEAP_ENTRY
+
+PHEAP_COUNTERS = ctypes.POINTER(struct__HEAP_COUNTERS)
+
+HEAP_COUNTERS = struct__HEAP_COUNTERS
+
+PHEAP_TUNING_PARAMETERS = ctypes.POINTER(struct__HEAP_TUNING_PARAMETERS)
+
+HEAP_TUNING_PARAMETERS = struct__HEAP_TUNING_PARAMETERS
+
+HEAP_SEGMENT = struct__HEAP_SEGMENT
+
+PHEAP_SEGMENT = ctypes.POINTER(struct__HEAP_SEGMENT)
+
+PHEAP = ctypes.POINTER(struct__HEAP)
+
+HEAP = struct__HEAP
+
+class struct__HEAP_ENTRY_EXTRA(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('PADDING_0', ctypes.c_ubyte * 8),
+     ]
+
+class union_c__S__HEAP_ENTRY_EXTRA_Ua(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ZeroInit', ctypes.c_uint64),
+     ]
+
+class struct_c__S__HEAP_ENTRY_EXTRA_Ua_Sa(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('AllocatorBackTraceIndex', ctypes.c_uint16),
+    ('TagIndex', ctypes.c_uint16),
+    ('Settable', ctypes.c_uint32),
+     ]
+
+PHEAP_ENTRY_EXTRA = ctypes.POINTER(struct__HEAP_ENTRY_EXTRA)
+
+HEAP_ENTRY_EXTRA = struct__HEAP_ENTRY_EXTRA
+
+class struct__HEAP_FREE_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Entry', struct__HEAP_ENTRY),
+    ('FreeList', struct__LIST_ENTRY),
+     ]
+
+PHEAP_FREE_ENTRY = ctypes.POINTER(struct__HEAP_FREE_ENTRY)
+
+HEAP_FREE_ENTRY = struct__HEAP_FREE_ENTRY
+
+HEAP_LIST_LOOKUP = struct__HEAP_LIST_LOOKUP
+
+PHEAP_LIST_LOOKUP = ctypes.POINTER(struct__HEAP_LIST_LOOKUP)
+
+class struct__HEAP_LOOKASIDE(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ListHead', struct__SLIST_HEADER),
+    ('Depth', ctypes.c_uint16),
+    ('MaximumDepth', ctypes.c_uint16),
+    ('TotalAllocates', ctypes.c_uint32),
+    ('AllocateMisses', ctypes.c_uint32),
+    ('TotalFrees', ctypes.c_uint32),
+    ('FreeMisses', ctypes.c_uint32),
+    ('LastTotalAllocates', ctypes.c_uint32),
+    ('LastAllocateMisses', ctypes.c_uint32),
+    ('Counters', ctypes.c_uint32 * 2),
+    ('_PADDING0_', ctypes.c_ubyte * 4),
+     ]
+
+HEAP_LOOKASIDE = struct__HEAP_LOOKASIDE
+
+PHEAP_LOOKASIDE = ctypes.POINTER(struct__HEAP_LOOKASIDE)
+
+class struct__INTERLOCK_SEQ(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('PADDING_0', ctypes.c_ubyte * 8),
+     ]
+
+class union_c__S__INTERLOCK_SEQ_Ua(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Exchg', ctypes.c_int64),
+     ]
+
+class struct_c__S__INTERLOCK_SEQ_Ua_Sa(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Depth', ctypes.c_uint16),
+    ('FreeEntryOffset', ctypes.c_uint16),
+    ('_PADDING0_', ctypes.c_ubyte * 4),
+     ]
+
+PINTERLOCK_SEQ = ctypes.POINTER(struct__INTERLOCK_SEQ)
+
+INTERLOCK_SEQ = struct__INTERLOCK_SEQ
+
+PHEAP_TAG_ENTRY = ctypes.POINTER(struct__HEAP_TAG_ENTRY)
+
+HEAP_TAG_ENTRY = struct__HEAP_TAG_ENTRY
+
+class struct__HEAP_UCR_DESCRIPTOR(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ListEntry', struct__LIST_ENTRY),
+    ('SegmentEntry', struct__LIST_ENTRY),
+    ('Address', ctypes.POINTER(None)),
+    ('Size', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+     ]
+
+PHEAP_UCR_DESCRIPTOR = ctypes.POINTER(struct__HEAP_UCR_DESCRIPTOR)
+
+HEAP_UCR_DESCRIPTOR = struct__HEAP_UCR_DESCRIPTOR
+
+class struct__HEAP_USERDATA_HEADER(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('PADDING_0', ctypes.c_ubyte * 8),
+    ('Reserved', ctypes.POINTER(None)),
+    ('SizeIndex', ctypes.c_uint32),
+    ('Signature', ctypes.c_uint32),
+     ]
+
+class union_c__S__HEAP_USERDATA_HEADER_Ua(ctypes.Union):
     pass
-N11_HEAP_ENTRY3DOT_13DOT_33DOT_4E._fields_ = [
-    ('SegmentOffset', __uint8_t),
-    ('LFHFlags', __uint8_t),
-]
-N11_HEAP_ENTRY3DOT_13DOT_3E._anonymous_ = ['_0']
-N11_HEAP_ENTRY3DOT_13DOT_3E._fields_ = [
-    ('SubSegmentCode', POINTER(VOID)),
-    ('PreviousSize', __uint16_t),
-    ('_0', N11_HEAP_ENTRY3DOT_13DOT_33DOT_4E),
-    ('UnusedBytes', __uint8_t),
-]
-class N11_HEAP_ENTRY3DOT_13DOT_5E(Structure):
+
+class struct__HEAP_SUBSEGMENT(ctypes.Structure):
     pass
-__uint32_t = c_uint
-N11_HEAP_ENTRY3DOT_13DOT_5E._fields_ = [
-    ('Code1', __uint32_t),
-    ('Code2', __uint16_t),
-    ('Code3', __uint8_t),
-    ('Code4', __uint8_t),
-]
-__uint64_t = c_ulonglong
-N11_HEAP_ENTRY3DOT_1E._pack_ = 4
-N11_HEAP_ENTRY3DOT_1E._anonymous_ = ['_1', '_0', '_2']
-N11_HEAP_ENTRY3DOT_1E._fields_ = [
-    ('_0', N11_HEAP_ENTRY3DOT_13DOT_2E),
-    ('_1', N11_HEAP_ENTRY3DOT_13DOT_3E),
-    ('_2', N11_HEAP_ENTRY3DOT_13DOT_5E),
-    ('AgregateCode', __uint64_t),
-]
-_HEAP_ENTRY._anonymous_ = ['_0']
-_HEAP_ENTRY._fields_ = [
-    ('_0', N11_HEAP_ENTRY3DOT_1E),
-]
-HEAP_ENTRY = _HEAP_ENTRY
-PHEAP_ENTRY = POINTER(_HEAP_ENTRY)
-class _HEAP_COUNTERS(Structure):
+
+class struct__HEAP_LOCAL_SEGMENT_INFO(ctypes.Structure):
     pass
-_HEAP_COUNTERS._fields_ = [
-    ('TotalMemoryReserved', __uint32_t),
-    ('TotalMemoryCommitted', __uint32_t),
-    ('TotalMemoryLargeUCR', __uint32_t),
-    ('TotalSizeInVirtualBlocks', __uint32_t),
-    ('TotalSegments', __uint32_t),
-    ('TotalUCRs', __uint32_t),
-    ('CommittOps', __uint32_t),
-    ('DeCommitOps', __uint32_t),
-    ('LockAcquires', __uint32_t),
-    ('LockCollisions', __uint32_t),
-    ('CommitRate', __uint32_t),
-    ('DecommittRate', __uint32_t),
-    ('CommitFailures', __uint32_t),
-    ('InBlockCommitFailures', __uint32_t),
-    ('CompactHeapCalls', __uint32_t),
-    ('CompactedUCRs', __uint32_t),
-    ('AllocAndFreeOps', __uint32_t),
-    ('InBlockDeccommits', __uint32_t),
-    ('InBlockDeccomitSize', __uint32_t),
-    ('HighWatermarkSize', __uint32_t),
-    ('LastPolledSize', __uint32_t),
+
+class struct__HEAP_BUCKET_COUNTERS(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Foo', ctypes.c_uint32 * 2),
+     ]
+
+class struct__HEAP_LOCAL_DATA(ctypes.Structure):
+    pass
+
+class struct__LFH_HEAP(ctypes.Structure):
+    pass
+
+class struct__USER_MEMORY_CACHE_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Foo', ctypes.c_uint32 * 4),
+     ]
+
+class struct__HEAP_BUCKET(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Foo', ctypes.c_uint32),
+     ]
+
+struct__LFH_HEAP._pack_ = True # source:False
+struct__LFH_HEAP._fields_ = [
+    ('Lock', ctypes.c_uint32 * 6),
+    ('SubSegmentZones', struct__LIST_ENTRY),
+    ('ZoneBlockSize', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('Heap', ctypes.POINTER(None)),
+    ('SegmentChange', ctypes.c_uint32),
+    ('SegmentCreate', ctypes.c_uint32),
+    ('SegmentInsertInFree', ctypes.c_uint32),
+    ('SegmentDelete', ctypes.c_uint32),
+    ('CacheAllocs', ctypes.c_uint32),
+    ('CacheFrees', ctypes.c_uint32),
+    ('SizeInCache', ctypes.c_uint32),
+    ('RunInfo', ctypes.c_uint32 * 3),
+    ('UserBlockCache', struct__USER_MEMORY_CACHE_ENTRY * 12),
+    ('Buckets', struct__HEAP_BUCKET * 128),
+    ('LocalData', struct__HEAP_LOCAL_DATA * 1),
 ]
-HEAP_COUNTERS = _HEAP_COUNTERS
-PHEAP_COUNTERS = POINTER(_HEAP_COUNTERS)
-class _HEAP_TUNING_PARAMETERS(Structure):
-    pass
-_HEAP_TUNING_PARAMETERS._fields_ = [
-    ('CommittThresholdShift', __uint32_t),
-    ('MaxPreCommittThreshold', __uint32_t),
+
+struct__HEAP_LOCAL_DATA._pack_ = True # source:False
+struct__HEAP_LOCAL_DATA._fields_ = [
+    ('DeletedSubSegments', struct__SLIST_HEADER),
+    ('CrtZone', ctypes.POINTER(struct__LFH_BLOCK_ZONE)),
+    ('LowFragHeap', ctypes.POINTER(struct__LFH_HEAP)),
+    ('Sequence', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('SegmentInfo', struct__HEAP_LOCAL_SEGMENT_INFO * 128),
 ]
-HEAP_TUNING_PARAMETERS = _HEAP_TUNING_PARAMETERS
-PHEAP_TUNING_PARAMETERS = POINTER(_HEAP_TUNING_PARAMETERS)
-class _HEAP_SEGMENT(Structure):
-    pass
-_HEAP_SEGMENT._fields_ = [
-    ('Entry', _HEAP_ENTRY),
-    ('SegmentSignature', __uint32_t),
-    ('SegmentFlags', __uint32_t),
-    ('SegmentListEntry', _LIST_ENTRY),
-    ('Heap', POINTER(_HEAP)),
-    ('BaseAddress', POINTER(VOID)),
-    ('NumberOfPages', __uint32_t),
-    ('FirstEntry', POINTER(_HEAP_ENTRY)),
-    ('LastValidEntry', POINTER(_HEAP_ENTRY)),
-    ('NumberOfUnCommittedPages', __uint32_t),
-    ('NumberOfUnCommittedRanges', __uint32_t),
-    ('SegmentAllocatorBackTraceIndex', __uint16_t),
-    ('Reserved', __uint16_t),
-    ('UCRSegmentList', _LIST_ENTRY),
+
+struct__HEAP_LOCAL_SEGMENT_INFO._pack_ = True # source:False
+struct__HEAP_LOCAL_SEGMENT_INFO._fields_ = [
+    ('Hint', ctypes.POINTER(struct__HEAP_SUBSEGMENT)),
+    ('ActiveSubsegment', ctypes.POINTER(struct__HEAP_SUBSEGMENT)),
+    ('CachedItems', ctypes.POINTER(struct__HEAP_SUBSEGMENT) * 16),
+    ('SListHeader', struct__SLIST_HEADER),
+    ('Counters', struct__HEAP_BUCKET_COUNTERS),
+    ('LocalData', ctypes.POINTER(struct__HEAP_LOCAL_DATA)),
+    ('LastOpSequence', ctypes.c_uint32),
+    ('BucketIndex', ctypes.c_uint16),
+    ('LastUsed', ctypes.c_uint16),
+    ('Pad', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
 ]
-HEAP_SEGMENT = _HEAP_SEGMENT
-PHEAP_SEGMENT = POINTER(_HEAP_SEGMENT)
-class _HEAP_TAG_ENTRY(Structure):
-    pass
-class _HEAP_LIST_LOOKUP(Structure):
-    pass
-class _HEAP_PSEUDO_TAG_ENTRY(Structure):
-    pass
-class _HEAP_LOCK(Structure):
-    pass
-_HEAP._fields_ = [
-    ('Segment', _HEAP_SEGMENT),
-    ('Flags', __uint32_t),
-    ('ForceFlags', __uint32_t),
-    ('CompatibilityFlags', __uint32_t),
-    ('EncodeFlagMask', __uint32_t),
-    ('Encoding', _HEAP_ENTRY),
-    ('PointerKey', __uint32_t),
-    ('Interceptor', __uint32_t),
-    ('VirtualMemoryThreshold', __uint32_t),
-    ('Signature', __uint32_t),
-    ('SegmentReserve', __uint32_t),
-    ('SegmentCommit', __uint32_t),
-    ('DeCommitFreeBlockThreshold', __uint32_t),
-    ('DeCommitTotalFreeThreshold', __uint32_t),
-    ('TotalFreeSize', __uint32_t),
-    ('MaximumAllocationSize', __uint32_t),
-    ('ProcessHeapsListIndex', __uint16_t),
-    ('HeaderValidateLength', __uint16_t),
-    ('HeaderValidateCopy', POINTER(VOID)),
-    ('NextAvailableTagIndex', __uint16_t),
-    ('MaximumTagIndex', __uint16_t),
-    ('TagEntries', POINTER(_HEAP_TAG_ENTRY)),
-    ('UCRList', _LIST_ENTRY),
-    ('AlignRound', __uint32_t),
-    ('AlignMask', __uint32_t),
-    ('VirtualAllocdBlocks', _LIST_ENTRY),
-    ('SegmentList', _LIST_ENTRY),
-    ('AllocatorBackTraceIndex', __uint16_t),
-    ('_PADDING0_', __uint8_t * 2),
-    ('NonDedicatedListLength', __uint32_t),
-    ('BlocksIndex', POINTER(_HEAP_LIST_LOOKUP)),
-    ('UCRIndex', POINTER(VOID)),
-    ('PseudoTagEntries', POINTER(_HEAP_PSEUDO_TAG_ENTRY)),
-    ('FreeLists', _LIST_ENTRY),
-    ('LockVariable', POINTER(_HEAP_LOCK)),
-    ('CommitRoutine', POINTER(VOID)),
-    ('FrontEndHeap', POINTER(VOID)),
-    ('FrontHeapLockCount', __uint16_t),
-    ('FrontEndHeapType', __uint8_t),
-    ('_PADDING1_', __uint8_t * 1),
-    ('Counters', _HEAP_COUNTERS),
-    ('TuningParameters', _HEAP_TUNING_PARAMETERS),
+
+struct__HEAP_SUBSEGMENT._pack_ = True # source:False
+struct__HEAP_SUBSEGMENT._fields_ = [
+    ('LocalInfo', ctypes.POINTER(struct__HEAP_LOCAL_SEGMENT_INFO)),
+    ('UserBlocks', ctypes.POINTER(struct__HEAP_USERDATA_HEADER)),
+    ('AggregateExchg', struct__INTERLOCK_SEQ),
+    ('BlockSize', ctypes.c_uint16),
+    ('Flags', ctypes.c_uint16),
+    ('BlockCount', ctypes.c_uint16),
+    ('SizeIndex', ctypes.c_ubyte),
+    ('AffinityIndex', ctypes.c_ubyte),
+    ('SFreeListEntry', struct__SINGLE_LIST_ENTRY),
+    ('Lock', ctypes.c_uint32),
+    ('PADDING_0', ctypes.c_ubyte * 4),
 ]
-HEAP = _HEAP
-PHEAP = POINTER(_HEAP)
-class _HEAP_ENTRY_EXTRA(Structure):
-    pass
-class N17_HEAP_ENTRY_EXTRA3DOT_6E(Union):
-    pass
-class N17_HEAP_ENTRY_EXTRA3DOT_63DOT_7E(Structure):
-    pass
-N17_HEAP_ENTRY_EXTRA3DOT_63DOT_7E._fields_ = [
-    ('AllocatorBackTraceIndex', __uint16_t),
-    ('TagIndex', __uint16_t),
-    ('Settable', __uint32_t),
+
+union_c__S__HEAP_USERDATA_HEADER_Ua._pack_ = True # source:False
+union_c__S__HEAP_USERDATA_HEADER_Ua._fields_ = [
+    ('SFreeListEntry', struct__SINGLE_LIST_ENTRY),
+    ('SubSegment', ctypes.POINTER(struct__HEAP_SUBSEGMENT)),
 ]
-N17_HEAP_ENTRY_EXTRA3DOT_6E._pack_ = 4
-N17_HEAP_ENTRY_EXTRA3DOT_6E._anonymous_ = ['_0']
-N17_HEAP_ENTRY_EXTRA3DOT_6E._fields_ = [
-    ('_0', N17_HEAP_ENTRY_EXTRA3DOT_63DOT_7E),
-    ('ZeroInit', __uint64_t),
-]
-_HEAP_ENTRY_EXTRA._anonymous_ = ['_0']
-_HEAP_ENTRY_EXTRA._fields_ = [
-    ('_0', N17_HEAP_ENTRY_EXTRA3DOT_6E),
-]
-HEAP_ENTRY_EXTRA = _HEAP_ENTRY_EXTRA
-PHEAP_ENTRY_EXTRA = POINTER(_HEAP_ENTRY_EXTRA)
-class _HEAP_FREE_ENTRY(Structure):
-    pass
-_HEAP_FREE_ENTRY._fields_ = [
-    ('Entry', _HEAP_ENTRY),
-    ('FreeList', _LIST_ENTRY),
-]
-PHEAP_FREE_ENTRY = POINTER(_HEAP_FREE_ENTRY)
-HEAP_FREE_ENTRY = _HEAP_FREE_ENTRY
-_HEAP_LIST_LOOKUP._fields_ = [
-    ('ExtendedLookup', POINTER(_HEAP_LIST_LOOKUP)),
-    ('ArraySize', __uint32_t),
-    ('ExtraItem', __uint32_t),
-    ('ItemCount', __uint32_t),
-    ('OutOfRangeItems', __uint32_t),
-    ('BaseIndex', __uint32_t),
-    ('ListHead', POINTER(_LIST_ENTRY)),
-    ('ListsInUseUlong', POINTER(__uint32_t)),
-    ('ListHints', POINTER(POINTER(_LIST_ENTRY))),
-]
-HEAP_LIST_LOOKUP = _HEAP_LIST_LOOKUP
-PHEAP_LIST_LOOKUP = POINTER(_HEAP_LIST_LOOKUP)
-class _HEAP_LOOKASIDE(Structure):
-    pass
-_HEAP_LOOKASIDE._fields_ = [
-    ('ListHead', _SLIST_HEADER),
-    ('Depth', __uint16_t),
-    ('MaximumDepth', __uint16_t),
-    ('TotalAllocates', __uint32_t),
-    ('AllocateMisses', __uint32_t),
-    ('TotalFrees', __uint32_t),
-    ('FreeMisses', __uint32_t),
-    ('LastTotalAllocates', __uint32_t),
-    ('LastAllocateMisses', __uint32_t),
-    ('Counters', __uint32_t * 2),
-    ('_PADDING0_', __uint8_t * 4),
-]
-HEAP_LOOKASIDE = _HEAP_LOOKASIDE
-PHEAP_LOOKASIDE = POINTER(_HEAP_LOOKASIDE)
-class _INTERLOCK_SEQ(Structure):
-    pass
-class N14_INTERLOCK_SEQ3DOT_8E(Union):
-    pass
-class N14_INTERLOCK_SEQ3DOT_83DOT_9E(Structure):
-    pass
-N14_INTERLOCK_SEQ3DOT_83DOT_9E._fields_ = [
-    ('Depth', __uint16_t),
-    ('FreeEntryOffset', __uint16_t),
-    ('_PADDING0_', __uint8_t * 4),
-]
-class N14_INTERLOCK_SEQ3DOT_84DOT_10E(Structure):
-    pass
-N14_INTERLOCK_SEQ3DOT_84DOT_10E._fields_ = [
-    ('OffsetAndDepth', __uint32_t),
-    ('Sequence', __uint32_t),
-]
-__int64_t = c_longlong
-N14_INTERLOCK_SEQ3DOT_8E._pack_ = 4
-N14_INTERLOCK_SEQ3DOT_8E._anonymous_ = ['_1', '_0']
-N14_INTERLOCK_SEQ3DOT_8E._fields_ = [
-    ('_0', N14_INTERLOCK_SEQ3DOT_83DOT_9E),
-    ('_1', N14_INTERLOCK_SEQ3DOT_84DOT_10E),
-    ('Exchg', __int64_t),
-]
-_INTERLOCK_SEQ._anonymous_ = ['_0']
-_INTERLOCK_SEQ._fields_ = [
-    ('_0', N14_INTERLOCK_SEQ3DOT_8E),
-]
-INTERLOCK_SEQ = _INTERLOCK_SEQ
-PINTERLOCK_SEQ = POINTER(_INTERLOCK_SEQ)
-_HEAP_TAG_ENTRY._fields_ = [
-    ('Allocs', __uint32_t),
-    ('Frees', __uint32_t),
-    ('Size', __uint32_t),
-    ('TagIndex', __uint16_t),
-    ('CreatorBackTraceIndex', __uint16_t),
-    ('TagName', __uint16_t * 24),
-]
-PHEAP_TAG_ENTRY = POINTER(_HEAP_TAG_ENTRY)
-HEAP_TAG_ENTRY = _HEAP_TAG_ENTRY
-class _HEAP_UCR_DESCRIPTOR(Structure):
-    pass
-_HEAP_UCR_DESCRIPTOR._fields_ = [
-    ('ListEntry', _LIST_ENTRY),
-    ('SegmentEntry', _LIST_ENTRY),
-    ('Address', POINTER(VOID)),
-    ('Size', __uint32_t),
-]
-PHEAP_UCR_DESCRIPTOR = POINTER(_HEAP_UCR_DESCRIPTOR)
-HEAP_UCR_DESCRIPTOR = _HEAP_UCR_DESCRIPTOR
-class _HEAP_USERDATA_HEADER(Structure):
-    pass
-class N21_HEAP_USERDATA_HEADER4DOT_11E(Union):
-    pass
-class _HEAP_SUBSEGMENT(Structure):
-    pass
-N21_HEAP_USERDATA_HEADER4DOT_11E._fields_ = [
-    ('SFreeListEntry', _SINGLE_LIST_ENTRY),
-    ('SubSegment', POINTER(_HEAP_SUBSEGMENT)),
-]
-_HEAP_USERDATA_HEADER._anonymous_ = ['_0']
-_HEAP_USERDATA_HEADER._fields_ = [
-    ('_0', N21_HEAP_USERDATA_HEADER4DOT_11E),
-    ('Reserved', POINTER(VOID)),
-    ('SizeIndex', __uint32_t),
-    ('Signature', __uint32_t),
-]
-HEAP_USERDATA_HEADER = _HEAP_USERDATA_HEADER
-PHEAP_USERDATA_HEADER = POINTER(_HEAP_USERDATA_HEADER)
-class _HEAP_VIRTUAL_ALLOC_ENTRY(Structure):
-    pass
-_HEAP_VIRTUAL_ALLOC_ENTRY._fields_ = [
-    ('Entry', _LIST_ENTRY),
-    ('ExtraStuff', _HEAP_ENTRY_EXTRA),
-    ('CommitSize', __uint32_t),
-    ('ReserveSize', __uint32_t),
-    ('BusyBlock', _HEAP_ENTRY),
-]
-PHEAP_VIRTUAL_ALLOC_ENTRY = POINTER(_HEAP_VIRTUAL_ALLOC_ENTRY)
-HEAP_VIRTUAL_ALLOC_ENTRY = _HEAP_VIRTUAL_ALLOC_ENTRY
-class _USER_MEMORY_CACHE_ENTRY(Structure):
-    pass
-_USER_MEMORY_CACHE_ENTRY._fields_ = [
-    ('Foo', __uint32_t * 4),
-]
-class _HEAP_BUCKET(Structure):
-    pass
-_HEAP_BUCKET._fields_ = [
-    ('Foo', __uint32_t),
-]
-class _HEAP_BUCKET_COUNTERS(Structure):
-    pass
-_HEAP_BUCKET_COUNTERS._fields_ = [
-    ('Foo', __uint32_t * 2),
-]
-class _HEAP_LOCAL_SEGMENT_INFO(Structure):
-    pass
-class _HEAP_LOCAL_DATA(Structure):
-    pass
-_HEAP_LOCAL_SEGMENT_INFO._fields_ = [
-    ('Hint', POINTER(_HEAP_SUBSEGMENT)),
-    ('ActiveSubsegment', POINTER(_HEAP_SUBSEGMENT)),
-    ('CachedItems', POINTER(_HEAP_SUBSEGMENT) * 16),
-    ('SListHeader', _SLIST_HEADER),
-    ('Counters', _HEAP_BUCKET_COUNTERS),
-    ('LocalData', POINTER(_HEAP_LOCAL_DATA)),
-    ('LastOpSequence', __uint32_t),
-    ('BucketIndex', __uint16_t),
-    ('LastUsed', __uint16_t),
-    ('Pad', __uint32_t),
-]
-PHEAP_LOCAL_SEGMENT_INFO = POINTER(_HEAP_LOCAL_SEGMENT_INFO)
-HEAP_LOCAL_SEGMENT_INFO = _HEAP_LOCAL_SEGMENT_INFO
-class _LFH_BLOCK_ZONE(Structure):
-    pass
-class _LFH_HEAP(Structure):
-    pass
-_HEAP_LOCAL_DATA._fields_ = [
-    ('DeletedSubSegments', _SLIST_HEADER),
-    ('CrtZone', POINTER(_LFH_BLOCK_ZONE)),
-    ('LowFragHeap', POINTER(_LFH_HEAP)),
-    ('Sequence', __uint32_t),
-    ('SegmentInfo', _HEAP_LOCAL_SEGMENT_INFO * 128),
-]
-HEAP_LOCAL_DATA = _HEAP_LOCAL_DATA
-_HEAP_SUBSEGMENT._fields_ = [
-    ('LocalInfo', POINTER(_HEAP_LOCAL_SEGMENT_INFO)),
-    ('UserBlocks', POINTER(_HEAP_USERDATA_HEADER)),
-    ('AggregateExchg', _INTERLOCK_SEQ),
-    ('BlockSize', __uint16_t),
-    ('Flags', __uint16_t),
-    ('BlockCount', __uint16_t),
-    ('SizeIndex', __uint8_t),
-    ('AffinityIndex', __uint8_t),
-    ('SFreeListEntry', _SINGLE_LIST_ENTRY),
-    ('Lock', __uint32_t),
-]
-PHEAP_SUBSEGMENT = POINTER(_HEAP_SUBSEGMENT)
-HEAP_SUBSEGMENT = _HEAP_SUBSEGMENT
-_LFH_HEAP._fields_ = [
-    ('Lock', __uint32_t * 6),
-    ('SubSegmentZones', _LIST_ENTRY),
-    ('ZoneBlockSize', __uint32_t),
-    ('Heap', POINTER(VOID)),
-    ('SegmentChange', __uint32_t),
-    ('SegmentCreate', __uint32_t),
-    ('SegmentInsertInFree', __uint32_t),
-    ('SegmentDelete', __uint32_t),
-    ('CacheAllocs', __uint32_t),
-    ('CacheFrees', __uint32_t),
-    ('SizeInCache', __uint32_t),
-    ('RunInfo', __uint32_t * 3),
-    ('UserBlockCache', _USER_MEMORY_CACHE_ENTRY * 12),
-    ('Buckets', _HEAP_BUCKET * 128),
-    ('LocalData', _HEAP_LOCAL_DATA * 1),
-]
-LFH_HEAP = _LFH_HEAP
-__u_char = c_ubyte
-__u_short = c_ushort
-__u_int = c_uint
-__u_long = c_ulong
-__int8_t = c_byte
-__int16_t = c_short
-__int32_t = c_int
-__quad_t = c_longlong
-__u_quad_t = c_ulonglong
-__dev_t = __u_quad_t
-__uid_t = c_uint
-__gid_t = c_uint
-__ino_t = c_ulong
-__ino64_t = __u_quad_t
-__mode_t = c_uint
-__nlink_t = c_uint
-__off_t = c_long
-__off64_t = __quad_t
-__pid_t = c_int
-class __fsid_t(Structure):
-    pass
-__fsid_t._fields_ = [
-    ('__val', c_int * 2),
-]
-__clock_t = c_long
-__rlim_t = c_ulong
-__rlim64_t = __u_quad_t
-__id_t = c_uint
-__time_t = c_long
-__useconds_t = c_uint
-__suseconds_t = c_long
-__daddr_t = c_int
-__swblk_t = c_long
-__key_t = c_int
-__clockid_t = c_int
-__timer_t = c_void_p
-__blksize_t = c_long
-__blkcnt_t = c_long
-__blkcnt64_t = __quad_t
-__fsblkcnt_t = c_ulong
-__fsblkcnt64_t = __u_quad_t
-__fsfilcnt_t = c_ulong
-__fsfilcnt64_t = __u_quad_t
-__ssize_t = c_int
-__loff_t = __off64_t
-__qaddr_t = POINTER(__quad_t)
-__caddr_t = STRING
-__intptr_t = c_int
-__socklen_t = c_uint
-__all__ = ['__uint16_t', '__int16_t', 'HEAP_VIRTUAL_ALLOC_ENTRY',
-           'VOID', '_HEAP_LOCK', '__fsid_t', '__off64_t',
-           'INTERLOCK_SEQ', '__uint32_t', '__timer_t',
-           '_HEAP_UCR_DESCRIPTOR', '__rlim64_t',
-           'PHEAP_LOCAL_SEGMENT_INFO', '__ino64_t', '__qaddr_t',
-           'LFH_HEAP', 'N11_HEAP_ENTRY3DOT_13DOT_3E', '__loff_t',
-           'HEAP_ENTRY', '_HEAP_LOOKASIDE', '__time_t',
-           '_SLIST_HEADER', 'PINTERLOCK_SEQ', '__int32_t',
-           '__nlink_t', 'HEAP_FREE_ENTRY', '__swblk_t',
-           'PHEAP_SEGMENT', '__uint64_t', '__ssize_t',
-           '_HEAP_VIRTUAL_ALLOC_ENTRY', 'N11_HEAP_ENTRY3DOT_13DOT_5E',
-           '_LFH_HEAP', '__id_t', 'HEAP_SUBSEGMENT', 'HEAP_TAG_ENTRY',
-           '__clockid_t', '__useconds_t', '_HEAP_TUNING_PARAMETERS',
-           'HEAP_USERDATA_HEADER', 'HEAP_LOOKASIDE',
-           '_USER_MEMORY_CACHE_ENTRY', '_HEAP_ENTRY',
-           'HEAP_LOCAL_DATA', '_SINGLE_LIST_ENTRY',
-           '_HEAP_PSEUDO_TAG_ENTRY', 'PHEAP_TUNING_PARAMETERS',
-           'PHEAP_TAG_ENTRY', 'SLIST_HEADER',
-           '_HEAP_LOCAL_SEGMENT_INFO', '__u_long',
-           'N14_INTERLOCK_SEQ3DOT_84DOT_10E',
-           'HEAP_LOCAL_SEGMENT_INFO', '__blkcnt_t', 'HEAP_SEGMENT',
-           'HEAP_COUNTERS', '_HEAP_BUCKET_COUNTERS', 'PHEAP_ENTRY',
-           'HEAP_LIST_LOOKUP', '_HEAP_LIST_LOOKUP',
-           '_HEAP_ENTRY_EXTRA', 'N14_INTERLOCK_SEQ3DOT_83DOT_9E',
-           '__mode_t', '__blksize_t', 'N14_INTERLOCK_SEQ3DOT_8E',
-           '__off_t', '__intptr_t', '__gid_t', '_HEAP_LOCAL_DATA',
-           'PSLIST_HEADER', '__daddr_t', 'HEAPTABLE', '__caddr_t',
-           '__uint8_t', '_HEAP_SUBSEGMENT', '__u_char',
-           '__fsblkcnt64_t', '__blkcnt64_t', '_HEAP_BUCKET',
-           'PHEAP_FREE_ENTRY', '_HEAP_FREE_ENTRY', '_HEAP',
-           '_HEAP_SEGMENT', 'HEAP_TUNING_PARAMETERS',
-           '_INTERLOCK_SEQ', '__suseconds_t', 'HEAP_ENTRY_EXTRA',
-           '__fsfilcnt64_t', '__socklen_t',
-           'N17_HEAP_ENTRY_EXTRA3DOT_63DOT_7E',
-           'N11_HEAP_ENTRY3DOT_1E', '_HEAP_TAG_ENTRY',
-           '_LFH_BLOCK_ZONE', 'PHEAP', '_HEAP_USERDATA_HEADER',
-           'PHEAP_LIST_LOOKUP', 'PHEAP_SUBSEGMENT', '__fsblkcnt_t',
-           '__rlim_t', 'HEAP_UCR_DESCRIPTOR', 'PHEAP_USERDATA_HEADER',
-           'PHEAP_LOOKASIDE', 'N11_HEAP_ENTRY3DOT_13DOT_33DOT_4E',
-           '__u_quad_t', '__u_short', 'PHEAP_ENTRY_EXTRA', '__pid_t',
-           'N21_HEAP_USERDATA_HEADER4DOT_11E', '_HEAP_COUNTERS',
-           '__ino_t', 'HEAP', 'PHEAP_VIRTUAL_ALLOC_ENTRY',
-           'N17_HEAP_ENTRY_EXTRA3DOT_6E', 'PHEAP_COUNTERS',
-           'N11_HEAP_ENTRY3DOT_13DOT_2E', '_LIST_ENTRY',
-           '__fsfilcnt_t', 'PHEAP_UCR_DESCRIPTOR', '__u_int',
-           '__quad_t', '__int64_t', '__key_t', '__clock_t', '__uid_t',
-           '__int8_t', '__dev_t']
+
+PHEAP_USERDATA_HEADER = ctypes.POINTER(struct__HEAP_USERDATA_HEADER)
+
+HEAP_USERDATA_HEADER = struct__HEAP_USERDATA_HEADER
+
+class struct__HEAP_VIRTUAL_ALLOC_ENTRY(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Entry', struct__LIST_ENTRY),
+    ('ExtraStuff', struct__HEAP_ENTRY_EXTRA),
+    ('CommitSize', ctypes.c_uint32),
+    ('ReserveSize', ctypes.c_uint32),
+    ('BusyBlock', struct__HEAP_ENTRY),
+     ]
+
+PHEAP_VIRTUAL_ALLOC_ENTRY = ctypes.POINTER(struct__HEAP_VIRTUAL_ALLOC_ENTRY)
+
+HEAP_VIRTUAL_ALLOC_ENTRY = struct__HEAP_VIRTUAL_ALLOC_ENTRY
+
+HEAP_LOCAL_SEGMENT_INFO = struct__HEAP_LOCAL_SEGMENT_INFO
+
+PHEAP_LOCAL_SEGMENT_INFO = ctypes.POINTER(struct__HEAP_LOCAL_SEGMENT_INFO)
+
+HEAP_LOCAL_DATA = struct__HEAP_LOCAL_DATA
+
+HEAP_SUBSEGMENT = struct__HEAP_SUBSEGMENT
+
+PHEAP_SUBSEGMENT = ctypes.POINTER(struct__HEAP_SUBSEGMENT)
+
+LFH_HEAP = struct__LFH_HEAP
+
+__all__ = ['struct__HEAP_VIRTUAL_ALLOC_ENTRY', 'PHEAP_SEGMENT',
+           'PHEAP_SUBSEGMENT', 'struct__HEAP_UCR_DESCRIPTOR',
+           'INTERLOCK_SEQ', 'PHEAP_FREE_ENTRY', 'PHEAP',
+           'HEAP_ENTRY_EXTRA', 'VOID', 'struct__HEAP_COUNTERS',
+           'HEAP_LOCAL_DATA', 'HEAP_SUBSEGMENT', 'PHEAP_LIST_LOOKUP',
+           'struct__USER_MEMORY_CACHE_ENTRY',
+           'struct__HEAP_USERDATA_HEADER', 'LFH_HEAP',
+           'struct__SLIST_HEADER', 'PLFH_BLOCK_ZONE',
+           'struct__HEAP_LOCAL_SEGMENT_INFO', 'HEAP_UCR_DESCRIPTOR',
+           'union_c__S__INTERLOCK_SEQ_Ua', 'PHEAP_LOOKASIDE',
+           'HEAP_TAG_ENTRY', 'PHEAP_PSEUDO_TAG_ENTRY', 'PHEAP_LOCK',
+           'struct__HEAP', 'PSLIST_HEADER', 'struct__LFH_HEAP',
+           'LFH_BLOCK_ZONE', 'HEAP_USERDATA_HEADER',
+           'struct__LFH_BLOCK_ZONE', 'HEAP_LOOKASIDE',
+           'struct__HEAP_LIST_LOOKUP', 'PSINGLE_LIST_ENTRY',
+           'struct__HEAP_ENTRY_EXTRA', 'struct__HEAP_LOCK',
+           'HEAPTABLE', 'struct__SINGLE_LIST_ENTRY',
+           'struct_c__S__INTERLOCK_SEQ_Ua_Sa',
+           'union_c__S__HEAP_ENTRY_Ua', 'PLIST_ENTRY', 'HEAP_ENTRY',
+           'union_c__S__HEAP_ENTRY_Ua_Sa_Ua',
+           'union_c__S__HEAP_USERDATA_HEADER_Ua',
+           'struct_c__S__HEAP_ENTRY_Ua_Sa', 'struct__INTERLOCK_SEQ',
+           'PHEAP_USERDATA_HEADER', 'struct__HEAP_LOOKASIDE',
+           'struct__HEAP_SEGMENT', 'PHEAP_TUNING_PARAMETERS',
+           'struct__HEAP_TAG_ENTRY', 'PHEAP_TAG_ENTRY',
+           'struct__HEAP_BUCKET', 'HEAP_VIRTUAL_ALLOC_ENTRY',
+           'struct__HEAP_FREE_ENTRY', 'HEAP', 'HEAP_FREE_ENTRY',
+           'PHEAP_VIRTUAL_ALLOC_ENTRY', 'struct__HEAP_SUBSEGMENT',
+           'struct__HEAP_TUNING_PARAMETERS',
+           'PHEAP_LOCAL_SEGMENT_INFO', 'struct__LIST_ENTRY',
+           'HEAP_TUNING_PARAMETERS', 'PHEAP_COUNTERS',
+           'struct__HEAP_BUCKET_COUNTERS', 'SINGLE_LIST_ENTRY',
+           'PHEAPTABLE', 'struct__HEAP_PSEUDO_TAG_ENTRY',
+           'HEAP_LOCAL_SEGMENT_INFO', 'PHEAP_ENTRY_EXTRA',
+           'struct__HEAP_LOCAL_DATA', 'PHEAP_UCR_DESCRIPTOR',
+           'struct_HEAPTABLE', 'struct_c__S__HEAP_ENTRY_EXTRA_Ua_Sa',
+           'HEAP_SEGMENT', 'union_c__S__HEAP_ENTRY_EXTRA_Ua',
+           'HEAP_PSEUDO_TAG_ENTRY', 'HEAP_COUNTERS',
+           'struct__HEAP_ENTRY', 'HEAP_LOCK', 'PINTERLOCK_SEQ',
+           'SLIST_HEADER', 'LIST_ENTRY', 'PHEAP_ENTRY',
+           'HEAP_LIST_LOOKUP']

@@ -46,6 +46,40 @@ from haystack import model
 from haystack import utils
 from haystack import constraints
 
+
+# python ~/Compil/pdbparse/examples/pdb_print_ctypes.py -f -g -w 8 heap.pdb > win7-sp1-x64.h 
+# python ~/Compil/pdbparse/examples/pdb_print_ctypes.py -g -w 8 ../_000143D  > win7-sp1-x64.h
+'''
+for s in $( echo "
+_LIST_ENTRY
+_LFH_BLOCK_ZONE
+_HEAP_PSEUDO_TAG_ENTRY
+_HEAP_LOCK
+_HEAPTABLE
+_SLIST_HEADER
+_SINGLE_LIST_ENTRY
+_HEAP_ENTRY
+_HEAP_COUNTERS
+_HEAP_TUNING_PARAMETERS
+_HEAP_SEGMENT
+_HEAP
+_HEAP_ENTRY_EXTRA
+_HEAP_FREE_ENTRY
+_HEAP_LIST_LOOKUP
+_HEAP_LOOKASIDE
+_INTERLOCK_SEQ
+_HEAP_TAG_ENTRY
+_HEAP_UCR_DESCRIPTOR
+_HEAP_USERDATA_HEADER
+_HEAP_VIRTUAL_ALLOC_ENTRY
+_HEAP_LOCAL_SEGMENT_INFO
+_HEAP_LOCAL_DATA
+_HEAP_SUBSEGMENT
+_LFH_HEAP" ) ; do
+    awk "BEGIN{ RS=\"typedef\" } /struct $s/ { print \$0}" win7-sp1-x64.h
+done
+'''
+
 from haystack.structures.win32 import win7heap_generated as gen
 
 import ctypes
@@ -68,42 +102,34 @@ model.registerModule(sys.modules[__name__])
 
 ############# Start expectedValues and methods overrides #################
 
-## fix partial declaration
-_HEAP_LOCK._fields_ = [
-    ('voidme', ctypes.c_ubyte),
-    ]
-
-_LFH_BLOCK_ZONE._fields_ = [
-    ('voidme', ctypes.c_ubyte),
-    ]
-
 
 ## HEAP_SEGMENT
 
-_HEAP_SEGMENT.expectedValues = {
+HEAP_SEGMENT.expectedValues = {
     'SegmentSignature':[0xffeeffee],
     # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
     'LastValidEntry': constraints.IgnoreMember,
 }
 
-#_HEAP_SEGMENT.UCRSegmentList. points to _HEAP_UCR_DESCRIPTOR.SegmentEntry.
-#_HEAP_UCR_DESCRIPTOR.SegmentEntry. points to _HEAP_SEGMENT.UCRSegmentList.
+#HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
+#HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
 
-_HEAP_SEGMENT._listHead_ = [ 
-                     ('UCRSegmentList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
+HEAP_SEGMENT._listHead_ = [ 
+                     ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
 
-#_HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', _HEAP_SEGMENT, 'Entry')]
+#HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
 
 
 # HEAP_ENTRY
 # SubSegmentCode is a encoded c_void_p
 # FIXME: is valid should decode it for validation ?
-N11_HEAP_ENTRY3DOT_13DOT_3E.expectedValues = {
-    'SubSegmentCode': constraints.IgnoreMember,
-    }
+## Does not exists anymore
+#N11_HEAP_ENTRY3DOT_13DOT_3E.expectedValues = {
+#    'SubSegmentCode': constraints.IgnoreMember,
+#    }
 
 
-def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
+def HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     """Returns a list of UCR segments for this segment.
     HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
     Some may have Size == 0.
@@ -118,7 +144,7 @@ def _HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
         ucrs.append(ucr)
     return ucrs
 
-_HEAP_SEGMENT.get_UCR_segment_list = _HEAP_SEGMENT_get_UCR_segment_list
+HEAP_SEGMENT.get_UCR_segment_list = HEAP_SEGMENT_get_UCR_segment_list
 
 ###### HEAP
 
@@ -128,21 +154,21 @@ _HEAP_SEGMENT.get_UCR_segment_list = _HEAP_SEGMENT_get_UCR_segment_list
 #Starting with Windows Vista, this field was encoded using a random value that 
 #was also stored as a field in the HEAP handle data structure.
 
-_HEAP.expectedValues = {
+HEAP.expectedValues = {
     'Signature':[0xeeffeeff],
     'FrontEndHeapType': [0,1,2],
     'CommitRoutine': constraints.IgnoreMember,
 }
-_HEAP._listHead_ = [('SegmentList', _HEAP_SEGMENT, 'SegmentListEntry', -16 ),
-                    ('UCRList', _HEAP_UCR_DESCRIPTOR, 'ListEntry', 0 ),
+HEAP._listHead_ = [('SegmentList', HEAP_SEGMENT, 'SegmentListEntry', -16 ),
+                    ('UCRList', HEAP_UCR_DESCRIPTOR, 'ListEntry', 0 ),
                     # for get_freelists. offset is sizeof(HEAP_ENTRY)
-                    ('FreeLists', _HEAP_FREE_ENTRY, 'FreeList', -8), 
-                    ('VirtualAllocdBlocks', _HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
+                    ('FreeLists', HEAP_FREE_ENTRY, 'FreeList', -8), 
+                    ('VirtualAllocdBlocks', HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8 )]
 #HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
 #SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
 # you need to ignore the Head in the iterator...
 
-def _HEAP_get_virtual_allocated_blocks_list(self, mappings):
+def HEAP_get_virtual_allocated_blocks_list(self, mappings):
     """Returns a list of virtual allocated entries.
     
     TODO: need some working on.
@@ -154,10 +180,10 @@ def _HEAP_get_virtual_allocated_blocks_list(self, mappings):
                    valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
     return vallocs
 
-_HEAP.get_virtual_allocated_blocks_list = _HEAP_get_virtual_allocated_blocks_list
+HEAP.get_virtual_allocated_blocks_list = HEAP_get_virtual_allocated_blocks_list
 
 
-def _HEAP_get_free_UCR_segment_list(self, mappings):
+def HEAP_get_free_UCR_segment_list(self, mappings):
     """Returns a list of available UCR segments for this heap.
     HEAP.UCRList is a linked list to all UCRSegments
     
@@ -173,10 +199,10 @@ def _HEAP_get_free_UCR_segment_list(self, mappings):
         ucrs.append(ucr)
     return ucrs
 
-_HEAP.get_free_UCR_segment_list = _HEAP_get_free_UCR_segment_list
+HEAP.get_free_UCR_segment_list = HEAP_get_free_UCR_segment_list
 
 
-def _HEAP_get_segment_list(self, mappings):
+def HEAP_get_segment_list(self, mappings):
     """returns a list of all segment attached to one Heap structure."""
     segments = list()
     for segment in self.iterateListField(mappings, 'SegmentList'):
@@ -188,9 +214,9 @@ def _HEAP_get_segment_list(self, mappings):
     return segments
     
 
-_HEAP.get_segment_list = _HEAP_get_segment_list
+HEAP.get_segment_list = HEAP_get_segment_list
 
-def _HEAP_get_chunks(self, mappings):
+def HEAP_get_chunks(self, mappings):
     """Returns a list of tuple(address,size) for all chunks in
      the backend allocator."""
     allocated = list()
@@ -211,11 +237,11 @@ def _HEAP_get_chunks(self, mappings):
                 log.debug('Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x'%(chunk_addr, size, chunk_addr+size))
                 chunk_addr += size
                 continue
-            chunk_header = mappings.getRef(_HEAP_ENTRY, chunk_addr)
+            chunk_header = mappings.getRef(HEAP_ENTRY, chunk_addr)
             if chunk_header is None: # force read it
                 chunk_header = _get_chunk(mappings, self, chunk_addr)
             if self.EncodeFlagMask: #heap.EncodeFlagMask
-                chunk_header = _HEAP_ENTRY_decode(chunk_header, self)
+                chunk_header = HEAP_ENTRY_decode(chunk_header, self)
             #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
             
             if ((chunk_header.Flags & 1) == 1):
@@ -228,10 +254,10 @@ def _HEAP_get_chunks(self, mappings):
             chunk_addr += chunk_header.Size*8
     return (allocated, free)
 
-_HEAP.get_chunks = _HEAP_get_chunks
+HEAP.get_chunks = HEAP_get_chunks
 
 
-def _HEAP_get_frontend_chunks(self, mappings):
+def HEAP_get_frontend_chunks(self, mappings):
     """ windows xp ?
         the list of chunks from the frontend are deleted from the segment chunk list. 
         
@@ -249,7 +275,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
     res = list()
     all_free = list()
     all_committed = list()
-    log.debug('_HEAP_get_frontend_chunks')
+    log.debug('HEAP_get_frontend_chunks')
     ptr = self.FrontEndHeap
     addr = utils.get_pointee_address(ptr)
     if self.FrontEndHeapType == 1: # windows XP per default
@@ -257,18 +283,18 @@ def _HEAP_get_frontend_chunks(self, mappings):
         for x in range(128):
             log.debug('finding lookaside %d at @%x'%(x, addr))
             m = mappings.get_mapping_for_address(addr)
-            st = m.readStruct(addr, _HEAP_LOOKASIDE)
+            st = m.readStruct(addr, HEAP_LOOKASIDE)
             # load members on self.FrontEndHeap car c'est un void *
             for free in st.iterateList('ListHead'): # single link list.
                 ## TODO delete this free from the heap-segment entries chunks
                 log.debug('free')
                 res.append( free ) #???
                 pass
-            addr += ctypes.sizeof(_HEAP_LOOKASIDE)
+            addr += ctypes.sizeof(HEAP_LOOKASIDE)
     elif self.FrontEndHeapType == 2: # win7 per default
         log.debug('finding frontend at @%x'%(addr))
         m = mappings.get_mapping_for_address(addr)
-        st = m.readStruct(addr, _LFH_HEAP)
+        st = m.readStruct(addr, LFH_HEAP)
         # LFH is a big chunk allocated by the backend allocator, called subsegment
         # but rechopped as small chunks of a heapbin.
         # Active subsegment hold that big chunk.
@@ -281,7 +307,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
         
         #log.debug(st.LocalData[0].toString())
         #
-        for sinfo in st.LocalData[0].SegmentInfo: #### 128 _HEAP_LOCAL_SEGMENT_INFO
+        for sinfo in st.LocalData[0].SegmentInfo: #### 128 HEAP_LOCAL_SEGMENT_INFO
             # TODO , what about ActiveSubsegment ?
             for items_ptr in sinfo.CachedItems: # 16 caches items max
                 items_addr = utils.get_pointee_address(items_ptr)
@@ -289,7 +315,7 @@ def _HEAP_get_frontend_chunks(self, mappings):
                     #log.debug('NULL pointer items')
                     continue
                 m = mappings.get_mapping_for_address(items_addr)
-                subsegment = m.readStruct( items_addr, _HEAP_SUBSEGMENT)
+                subsegment = m.readStruct( items_addr, HEAP_SUBSEGMENT)
                 #log.debug(subsegment)
                 ## TODO current subsegment.SFreeListEntry is on error at some depth.
                 ## bad pointer value on the second subsegment
@@ -305,11 +331,11 @@ def _HEAP_get_frontend_chunks(self, mappings):
         pass
     return all_committed, all_free
     
-_HEAP.get_frontend_chunks = _HEAP_get_frontend_chunks
+HEAP.get_frontend_chunks = HEAP_get_frontend_chunks
 
 ############################## HEAP_SUBSEGMENT
 
-def _HEAP_SUBSEGMENT_get_userblocks(self):
+def HEAP_SUBSEGMENT_get_userblocks(self):
     """
     AggregateExchg contains info on userblocks, number left, depth
     
@@ -320,7 +346,7 @@ def _HEAP_SUBSEGMENT_get_userblocks(self):
         return []
     # its basically an array of self.BlockCount blocks of self.BlockSie*8 bytes.
     log.debug('fetching %d blocks of %d bytes'%(self.BlockCount, self.BlockSize*8))
-    # UserBlocks points to _HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( _HEAP_USERDATA_HEADER ) = 0x10
+    # UserBlocks points to HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( HEAP_USERDATA_HEADER ) = 0x10
     # each chunk starts with a 8 byte header + n user-writeable data
     # user writable chunk starts with 2 bytes for next offset
     # basically, first committed block is first.
@@ -333,7 +359,7 @@ def _HEAP_SUBSEGMENT_get_userblocks(self):
     return userblocks 
 
 
-def _HEAP_SUBSEGMENT_get_freeblocks(self):
+def HEAP_SUBSEGMENT_get_freeblocks(self):
     """
     Use AggregateExchg.Depth and NextFreeoffset to fetch the head, then traverse the links
     """
@@ -369,25 +395,25 @@ def _HEAP_SUBSEGMENT_get_freeblocks(self):
     #
     #up += 0x10
     #list -= free
-    #list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('_HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
+    #list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
     #end
 
-_HEAP_SUBSEGMENT.get_userblocks = _HEAP_SUBSEGMENT_get_userblocks
-_HEAP_SUBSEGMENT.get_freeblocks = _HEAP_SUBSEGMENT_get_freeblocks
+HEAP_SUBSEGMENT.get_userblocks = HEAP_SUBSEGMENT_get_userblocks
+HEAP_SUBSEGMENT.get_freeblocks = HEAP_SUBSEGMENT_get_freeblocks
 
 #### HEAP_UCR_DESCRIPTOR
-#_HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
-#_HEAP_UCR_DESCRIPTOR._listHead_ = [    ('SegmentEntry', _HEAP_SEGMENT, 'SegmentListEntry'),    ]
+#HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
+#HEAP_UCR_DESCRIPTOR._listHead_ = [    ('SegmentEntry', HEAP_SEGMENT, 'SegmentListEntry'),    ]
 
 # per definition, reserved space is not maped.
 HEAP_UCR_DESCRIPTOR.expectedValues = {
     'Address': constraints.IgnoreMember,
 }
 
-#### _HEAP_LOCAL_SEGMENT_INFO
-# _HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
-# _HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
-_HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
+#### HEAP_LOCAL_SEGMENT_INFO
+# HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
+# HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
+HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
     'LocalData': constraints.IgnoreMember,
 }
 
@@ -395,7 +421,7 @@ _HEAP_LOCAL_SEGMENT_INFO.expectedValues = {
 
 ## TODO current subsegment.SFreeListEntry is on error at some depth.
 ## bad pointer value on the second subsegment
-_HEAP_SUBSEGMENT.expectedValues = {
+HEAP_SUBSEGMENT.expectedValues = {
     'SFreeListEntry': constraints.IgnoreMember,
 }
 
@@ -406,7 +432,7 @@ _HEAP_SUBSEGMENT.expectedValues = {
 
 
 
-def _HEAP_getFreeLists_by_blocksindex(self, mappings):
+def HEAP_getFreeLists_by_blocksindex(self, mappings):
     """ Understanding_the_LFH.pdf page 21 
     Not Implemented yet
     """
@@ -418,17 +444,17 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
     while bi_addr != 0:
         log.debug('BLocksIndex is at %x'%(bi_addr))
         m = mappings.get_mapping_for_address(bi_addr)
-        bi = m.readStruct( bi_addr, _HEAP_LIST_LOOKUP)
+        bi = m.readStruct( bi_addr, HEAP_LIST_LOOKUP)
         """
-            ('ExtendedLookup', POINTER(_HEAP_LIST_LOOKUP)),
+            ('ExtendedLookup', POINTER(HEAP_LIST_LOOKUP)),
             ('ArraySize', __uint32_t),
             ('ExtraItem', __uint32_t),
             ('ItemCount', __uint32_t),
             ('OutOfRangeItems', __uint32_t),
             ('BaseIndex', __uint32_t),
-            ('ListHead', POINTER(_LIST_ENTRY)),
+            ('ListHead', POINTER(LIST_ENTRY)),
             ('ListsInUseUlong', POINTER(__uint32_t)),
-            ('ListHints', POINTER(POINTER(_LIST_ENTRY))),
+            ('ListHints', POINTER(POINTER(LIST_ENTRY))),
         """
         log.debug('ArraySize is %d'%(bi.ArraySize))        
         log.debug('BlocksIndex: %s'%(bi.toString()))        
@@ -448,11 +474,11 @@ def _HEAP_getFreeLists_by_blocksindex(self, mappings):
     raise StopIteration
 
 
-def _HEAP_ENTRY_decode(chunk_header, heap):
+def HEAP_ENTRY_decode(chunk_header, heap):
     """returns a decoded copy """
-    #N11_HEAP_ENTRY3DOT_13DOT_2E()
-    chunk_len = ctypes.sizeof(N11_HEAP_ENTRY3DOT_13DOT_2E)
-    chunk_header_decoded = (N11_HEAP_ENTRY3DOT_13DOT_2E).from_buffer_copy(chunk_header)
+    #N11_HEAP_ENTRY3DOT_13DOT_2E() now struct_c__S__HEAP_ENTRY_Ua_Sa
+    chunk_len = ctypes.sizeof(struct_c__S__HEAP_ENTRY_Ua_Sa)
+    chunk_header_decoded = (struct_c__S__HEAP_ENTRY_Ua_Sa).from_buffer_copy(chunk_header)
     working_array = (ctypes.c_ubyte*chunk_len).from_buffer(chunk_header_decoded)
     encoding_array = (ctypes.c_ubyte*chunk_len).from_buffer_copy(heap.Encoding)
     # check if (heap.Encoding & working_array)
@@ -466,47 +492,47 @@ def _HEAP_ENTRY_decode(chunk_header, heap):
         working_array[i] ^= encoding_array[i]
     return chunk_header_decoded
 
-_HEAP_ENTRY.decode = _HEAP_ENTRY_decode
+HEAP_ENTRY.decode = HEAP_ENTRY_decode
 def _get_chunk(mappings, heap, entry_addr):
     m = mappings.get_mapping_for_address(entry_addr)
-    chunk_header = m.readStruct( entry_addr, _HEAP_ENTRY)
-    mappings.keepRef( chunk_header, _HEAP_ENTRY, entry_addr)
+    chunk_header = m.readStruct( entry_addr, HEAP_ENTRY)
+    mappings.keepRef( chunk_header, HEAP_ENTRY, entry_addr)
     chunk_header._orig_address_ = entry_addr
     return chunk_header
 
-def _HEAP_get_freelists(self, mappings):
+def HEAP_get_freelists(self, mappings):
     """Returns the list of free chunks.
     
     This method is very important because its used by memory_mappings to 
     load mappings that contains subsegment of a heap.
     
     Understanding_the_LFH.pdf page 18 ++
-    We iterate on _HEAP.FreeLists to get ALL free blocks.
+    We iterate on HEAP.FreeLists to get ALL free blocks.
     
-    @returns freeblock_addr : the address of the _HEAP_ENTRY (chunk header)
-        size : the size of the free chunk + _HEAP_ENTRY header size, in blocks.
+    @returns freeblock_addr : the address of the HEAP_ENTRY (chunk header)
+        size : the size of the free chunk + HEAP_ENTRY header size, in blocks.
     """
     # FIXME: we should use get_segmentlist to coallescce segment in one heap
     # memory mapping. Not free chunks.
     res = list()
     for freeblock in self.iterateListField( mappings, 'FreeLists'):
         if self.EncodeFlagMask:
-            chunk_header = _HEAP_ENTRY_decode(freeblock, self)
+            chunk_header = HEAP_ENTRY_decode(freeblock, self)
         # size = header + freespace
         res.append( (freeblock._orig_address_, chunk_header.Size*8))
     return res
     
-_HEAP.get_freelists = _HEAP_get_freelists
+HEAP.get_freelists = HEAP_get_freelists
 
-#def _HEAP_getFreeListsWinXP(self, mappings):
+#def HEAP_getFreeListsWinXP(self, mappings):
 # Understanding_the_LFH.pdf page 17 """
 
 
 
-########## _LIST_ENTRY
+########## LIST_ENTRY
 
 from haystack import listmodel
-listmodel.declare_double_linked_list_type(_LIST_ENTRY, 'FLink', 'BLink')
+listmodel.declare_double_linked_list_type(LIST_ENTRY, 'FLink', 'BLink')
 
 
 

@@ -20,14 +20,43 @@ typedef void VOID;
 //typedef __int64 INT64;
 //typedef unsigned __int64 UINT64;
 
-struct HEAPTABLE {
-	struct _HEAP *list[16];
-};
 
-struct _LIST_ENTRY {
+typedef struct _LIST_ENTRY {
 	struct _LIST_ENTRY *FLink;
 	struct _LIST_ENTRY *BLink;
-};
+} LIST_ENTRY, *PLIST_ENTRY;
+
+
+//////////////////////////// Added by LXJ
+
+#define SIZE_T ULONG32
+
+typedef struct _LFH_BLOCK_ZONE
+{
+     struct _LIST_ENTRY ListEntry;
+     VOID* FreePointer;
+     VOID* Limit;
+} LFH_BLOCK_ZONE, *PLFH_BLOCK_ZONE;
+
+typedef struct _HEAP_PSEUDO_TAG_ENTRY
+{
+    ULONG32 Allocs;
+    ULONG32 Frees;
+    SIZE_T Size;
+} HEAP_PSEUDO_TAG_ENTRY, *PHEAP_PSEUDO_TAG_ENTRY;
+
+typedef struct _HEAP_LOCK
+{
+     ULONG32 Lock; // i'm gonna go with ULONG32, but it could as well be ULONG
+} HEAP_LOCK, *PHEAP_LOCK;
+
+//////////////////////////// 
+
+typedef struct HEAPTABLE {
+	struct _HEAP *list[16];
+} HEAPTABLE, *PHEAPTABLE;
+
+
 
 typedef struct _SLIST_HEADER {
 	struct _SLIST_HEADER *Next;
@@ -35,12 +64,17 @@ typedef struct _SLIST_HEADER {
 	UINT16       Sequence;
 } SLIST_HEADER, *PSLIST_HEADER;
 
-struct _SINGLE_LIST_ENTRY {
+typedef struct _SINGLE_LIST_ENTRY {
 	struct _SINGLE_LIST_ENTRY *Next;
-};
+} SINGLE_LIST_ENTRY, *PSINGLE_LIST_ENTRY;
 
-
+// LXJ
+// x64 HEAP ENTRY seems to be 0x10 bytes. 2x ULONG64 if you trust volatility
+// with an extra pointer PreviousBlockPrivateData in offset 0
 typedef struct _HEAP_ENTRY {
+#ifdef _LP_64
+     VOID* PreviousBlockPrivateData;
+#endif
 	union {
 		struct {
 			UINT16       Size;

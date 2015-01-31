@@ -11,7 +11,18 @@ Borrowed from LGPL metasm
 //#define UINT64 __uint64_t
 //#define INT64 __int64_t
 
-
+/*
+#define UINT8 unsigned __int8
+#define INT8  __int8
+#define USHORT unsigned __int16
+#define SHORT __int16
+#define WCHAR unsigned __int16
+#define ULONG unsigned __int32
+#define LONG __int32
+#define ULONGLONG unsigned __int64
+#define LONGLONG __int64
+#define PVOID64 void*
+*/
 
 #define UINT8 unsigned __int8
 #define UINT16 unsigned __int16
@@ -65,9 +76,10 @@ typedef struct _HEAP_PSEUDO_TAG_ENTRY
     SIZE_T Size;
 } HEAP_PSEUDO_TAG_ENTRY, *PHEAP_PSEUDO_TAG_ENTRY;
 
-struct _HEAP_LOCK
+typedef struct _HEAP_LOCK
 {
-};
+     ULONG32 Lock; // i'm gonna go with ULONG32, but it could as well be ULONG
+} HEAP_LOCK, *PHEAP_LOCK;
 
 ///////////////////// FROM LGPL metasm
 

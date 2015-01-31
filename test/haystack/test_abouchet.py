@@ -34,6 +34,7 @@ class Test7_x32(SrcTests):
 
   def tearDown(self):
     self.mappings = None
+    model.reset()
 
   def test_refresh(self):
     from test.src import ctypes7
@@ -101,9 +102,12 @@ class Test7_x64(SrcTests):
 
   def tearDown(self):
     self.mappings = None
+    model.reset()
 
   def test_refresh(self):
+    import ctypes
     from test.src import ctypes7
+    self.assertEquals(ctypes.sizeof(ctypes7.struct_Node), 16)
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     # string
     retstr = abouchet.show_dumpname(self.classname, self.memdumpname, self.address,rtype='string')
@@ -120,7 +124,9 @@ class Test7_x64(SrcTests):
 
 
   def test_search(self):
+    import ctypes
     from test.src import ctypes7
+    self.assertEquals(ctypes.sizeof(ctypes7.struct_Node), 16)
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
     retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
@@ -176,6 +182,7 @@ class Test6_x32(SrcTests):
 
   def tearDown(self):
     self.mappings = None
+    model.reset()
 
   def test_refresh(self):
     # if you delete the Heap memorymap, 
@@ -313,6 +320,7 @@ class Test6_x64(SrcTests):
 
   def tearDown(self):
     self.mappings = None
+    model.reset()
 
   def test_refresh(self):
     from test.src import ctypes6
@@ -431,6 +439,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 
     def tearDown(self):
         self.mappings = None
+        model.reset()
 
     def test_show(self):
         instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, long(self.validAddress,16))

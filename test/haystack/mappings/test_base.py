@@ -260,7 +260,7 @@ class TestMappingsWin32(unittest.TestCase):
         #print mappings.config.ctypes.sizeof(x)
 
     def test_get_heaps(self):
-        self.assertEquals( len(self.mappings.get_heaps()), 1)
+        self.assertEquals(len(self.mappings.get_heaps()), 12)
 
     @unittest.expectedFailure # FIXME
     def test_get_stack(self):
