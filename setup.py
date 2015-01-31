@@ -13,7 +13,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 setup(name="haystack",
-    version="0.17",
+    version="0.19-pre",
     description="Search C Structures in a process' memory",
     long_description=open("README.rst").read(),
 
