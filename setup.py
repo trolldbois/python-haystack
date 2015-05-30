@@ -40,8 +40,7 @@ setup(name="haystack",
     #package_dir={"haystack.reverse": 'haystack/reverse'},
     package_data={"haystack.reverse": ['data/words.100'], },
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
-    # use pip requirements.txt instead
-    #install_requires = ["python-ptrace", "argparse", "networkx"],#"python-levenschtein", "python-networkx"],
+    install_requires = ["ctypeslib2", "numpy", "networkx", "pefile", "ptrace", "python-Levenshtein"],
     # build_tests_requires = ["python-ctypeslib","libqt-dev"]
     test_suite= "test.alltests",
     #tests_require="haystack",
