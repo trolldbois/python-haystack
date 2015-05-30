@@ -10,6 +10,7 @@ python:
 install:
 # travis-ci use Ubuntu 12.04.5 LTS (Precise Pangolin) 64bit
 # install gcc dev requirements
+  - sudo apt-get update
   - sudo apt-get install libc6-dev --yes --force-yes
 # tests dependencies
   - pip install coveralls
