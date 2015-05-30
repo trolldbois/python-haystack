@@ -40,6 +40,7 @@ setup(name="haystack",
     #package_dir={"haystack.reverse": 'haystack/reverse'},
     package_data={"haystack.reverse": ['data/words.100'], },
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
+    setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434
     install_requires = ["ctypeslib2", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
     # build_tests_requires = ["python-ctypeslib","libqt-dev"]
     test_suite= "test.alltests",
