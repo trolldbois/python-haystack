@@ -10,13 +10,13 @@ python:
 install:
 # travis-ci use Ubuntu 12.04.5 LTS (Precise Pangolin) 64bit
 # install gcc dev requirements
- - sudo apt-get install libc6-dev --yes --force-yes
+  - sudo apt-get install libc6-dev --yes --force-yes
 # tests dependencies
-#  - pip install nose
-#  - pip install -r requirements.txt
   - pip install coveralls
 
 script:
+# install with requirements
+  - python setup.py install
 # run tests
   - python setup.py test
   - coverage run --source=python-haystack setup.py test
