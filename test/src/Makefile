@@ -10,8 +10,8 @@ CPPFLAGS = -O2 -g -Wall -stdlib=libstdc++ -x c++
 CC=clang
 CXX=clang++
 
-TGT32=-target linux-i386
-TGT64=-target linux-x86_64
+TGT32=--target i386-linux
+TGT64=--target x86_64-linux
 
 pid=
 
