@@ -1,4 +1,5 @@
-python-ptrace
 networkx
+numpy
+pefile
+ptrace
 python-Levenshtein
-#python-networkx
