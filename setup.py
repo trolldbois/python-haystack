@@ -41,8 +41,9 @@ setup(name="haystack",
     package_data={"haystack.reverse": ['data/words.100'], },
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
     setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434
-    install_requires = ["ctypeslib2", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
-    # build_tests_requires = ["python-ctypeslib","libqt-dev"]
+    install_requires = ["ctypeslib2>=2.1.3", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
+    dependency_links = ['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.2beta'],
+    #build_test_requires = ["ctypeslib2>=2.1.3"],
     test_suite= "test.alltests",
     #tests_require="haystack",
     #entry_points = {'haystack.plugins':['haystack.model:register']},

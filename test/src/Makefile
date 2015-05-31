@@ -7,6 +7,8 @@ EXTRA =
 
 CFLAGS = -O2 -g -Wall $(INCLS) $(EXTRA)
 CPPFLAGS = -O2 -g -Wall -stdlib=libstdc++ -x c++
+CPPLIB = /usr/lib/gcc/i686-linux-gnu/4.8/
+CPPINCLUDE = /usr/include/i386-linux-gnu/c++/4.8/
 CC=clang
 CXX=clang++
 
@@ -46,7 +48,7 @@ dumps: dumps32 dumps64
 	$(CC) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
 	
 %.32: %.cpp
-	$(CXX) $(CPPFLAGS) -target $(TGT32) $<  $(LDFLAGS) -L/usr/lib/gcc/i686-linux-gnu/4.8/ -o $@
+	$(CXX) $(CPPFLAGS) -target $(TGT32) $<  $(LDFLAGS) -L$(CPPLIB) -I$(CPPINCLUDE) -o $@
 
 %.64: %.cpp
 	$(CXX) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
