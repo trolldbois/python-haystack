@@ -10,8 +10,8 @@ CPPFLAGS = -O2 -g -Wall -stdlib=libstdc++ -x c++
 CC=clang
 CXX=clang++
 
-TGT32=--target i386-linux
-TGT64=--target x86_64-linux
+TGT32=i386-linux
+TGT64=x86_64-linux
 
 pid=
 
@@ -40,30 +40,30 @@ binaries: $(OBJS32) $(OBJS64)
 dumps: dumps32 dumps64
 
 %.32: %.c
-	$(CC) $(CFLAGS) $(TGT32) $<  $(LDFLAGS)  -o $@
+	$(CC) $(CFLAGS) -target $(TGT32) $<  $(LDFLAGS)  -o $@
 
 %.64: %.c
-	$(CC) $(CFLAGS) $(TGT64) $<  $(LDFLAGS)  -o $@
+	$(CC) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
 	
 %.32: %.cpp
-	$(CXX) $(CPPFLAGS) $(TGT32) $<  $(LDFLAGS) -L/usr/lib/gcc/i686-linux-gnu/4.8/ -o $@
+	$(CXX) $(CPPFLAGS) -target $(TGT32) $<  $(LDFLAGS) -L/usr/lib/gcc/i686-linux-gnu/4.8/ -o $@
 
 %.64: %.cpp
-	$(CXX) $(CFLAGS) $(TGT64) $<  $(LDFLAGS)  -o $@
+	$(CXX) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
 
 py: $(PY32) $(PY64)
 
 %_gen32.py: test-%.c 
-	$(C2PY) -k dstu -x $< -o $@ $(TGT32)
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
 %_gen32.py: test-%.cpp 
-	$(C2PY) -k dstu -x $< -o $@ $(TGT32)
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
 %_gen64.py: test-%.c 
-	$(C2PY) -k dstu -x $< -o $@ $(TGT64)
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
 
 %_gen64.py: test-%.cpp 
-	$(C2PY) -k dstu -x $< -o $@ $(TGT64)
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
 
 
 dumps32: $(SRCS) $(DUMPS32) $(OBJS32) 
