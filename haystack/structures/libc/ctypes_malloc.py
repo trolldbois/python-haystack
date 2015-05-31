@@ -202,7 +202,10 @@ struct malloc_chunk {
             log.debug('real_size %d'% real_size )
 
         ## inuse : to know if inuse, you have to look at next_chunk.size & PREV_SIZE bit
-        inuse = self.check_inuse(mappings, self._orig_address_) 
+        try:        
+            inuse = self.check_inuse(mappings, self._orig_address_) 
+        except Exception:
+            return False
         log.debug('is chunk in use ?: %s'% bool(inuse) )
         
         if real_size % self.config.get_word_size() != 0:
