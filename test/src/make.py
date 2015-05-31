@@ -7,7 +7,6 @@ import sys
 import shutil
 import time
 
-from test.run_src_app import run_app_test
 from haystack import memory_dumper
 
 log=logging.getLogger('make.py')
