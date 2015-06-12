@@ -26,8 +26,14 @@ install:
 script:
 # install with requirements
   - python setup.py install
-# we need the i386 version too, but after buliding all install deps
-  - sudo apt-get install libc6-dev libc6-dev:i386 libgcc-4.8-dev lib32gcc-4.8-dev lib64gcc-4.8-dev --yes --force-yes
+# we need the libc6-dev i386 version too too build the tests., but after building all install deps
+# we also need the libgcc-dev packages  for "/usr/bin/ld: cannot find crtbegin.o: No such file or directory"
+# we also need 
+  - sudo apt-get install libc6-dev libc6-dev-i386 libgcc-4.8-dev lib32gcc-4.8-dev lib64gcc-4.8-dev --yes --force-yes
+# debug versions
+  - clang --version
+  - gcc --version
+  - dpkg -l
 # run tests
   - python setup.py test
   - coverage run --source=python-haystack setup.py test
