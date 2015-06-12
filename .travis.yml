@@ -27,7 +27,7 @@ script:
 # install with requirements
   - python setup.py install
 # we need the i386 version too, but after buliding all install deps
-  - sudo apt-get install libc6-dev libc6-dev:i386 --yes --force-yes
+  - sudo apt-get install libc6-dev libc6-dev:i386 libgcc-4.8-dev lib32gcc-4.8-dev lib64gcc-4.8-dev --yes --force-yes
 # run tests
   - python setup.py test
   - coverage run --source=python-haystack setup.py test
