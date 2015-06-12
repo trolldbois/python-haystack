@@ -34,8 +34,9 @@ script:
   - clang --version
   - gcc --version
   - dpkg -l
-# run tests
-  - python setup.py test
+# run tests. Need root for memory dumps. TODO change that to a prep-test cmd
+  - sudo python setup.py test
+# run coverage only on test, not on memory dumps.
   - coverage run --source=python-haystack setup.py test
 
 after_success:
