@@ -16,7 +16,7 @@ install:
   - sudo apt-get update 
     # arrrh... http://docs.travis-ci.com/user/languages/python/.
     # system python package will not be used.
-  - sudo apt-get install libclang1-3.7 --yes --force-yes
+  - sudo apt-get -q install libclang1-3.7 --yes --force-yes
 #permission denied  - sudo echo `echo "/usr/lib/llvm-3.7/lib/" >> /etc/ld.so.conf.d/llvm-dev.conf`
   - sudo ln -v -s /usr/lib/x86_64-linux-gnu/libclang-3.7.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
   - sudo ldconfig  
@@ -28,11 +28,11 @@ script:
   - python setup.py install
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
 # we also need 
-  - sudo apt-get install libc6-dev libc6-dev-i386 --yes --force-yes
+  - sudo apt-get -q install libc6-dev libc6-dev-i386 --yes --force-yes
 # we also need the libgcc-dev packages  for "/usr/bin/ld: cannot find crtbegin.o: No such file or directory"
-  - sudo apt-get install libgcc-4.8-dev --yes --force-yes
+  - sudo apt-get -q install libgcc-4.8-dev --yes --force-yes
 # we need stdc++ 32 bits too /usr/bin/ld: cannot find -lstdc++  
-  - sudo apt-get install libstdc++:i386 --yes --force-yes
+  - sudo apt-get -q install libstdc++6:i386 --yes --force-yes
 # debug versions
   - which clang
   - clang --version
