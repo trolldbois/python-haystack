@@ -36,26 +36,29 @@ before_script:
   - sudo apt-get -qq install libgcc-4.8-dev --yes --force-yes
 # we need stdc++ 32 bits too /usr/bin/ld: cannot find -lstdc++  
   - sudo apt-get -q install libstdc++6:i386 libstdc++-4.8-dev:i386 --yes --force-yes
-# we also need the dump test files
-#  - mkdir -p test/dumps/putty
+# we also need the large test files (memory dumps)
+  - mkdir -p test/dumps/putty
   - mkdir -p test/dumps/ssh
-#  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
-#  - unzip putty.1.dump.zip
-#  - mv putty.1.dump test/dumps/putty/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
+  - unzip putty.1.dump.zip
+  - mv putty.1.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
   - tar zxf ssh.1.tgz
   - mv ssh.1 test/dumps/putty/
-#  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
-#  - tar zxf ssh.x64.6653.dump.tgz
-#  - mv ssh.x64.6653.dump test/dumps/putty/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
+  - tar zxf ssh.x64.6653.dump.tgz
+  - mv ssh.x64.6653.dump test/dumps/putty/
+# build memory tests. The Makefile will build a 32 bits and 64 bits version
+# of simple C program, and dump their memory.
+# You need root for memory dumps.
+# but we cannot pass virtualenv to sudo/root so this is not happenning
+#  - python setup.py preptests
 
 script:
-# build memory tests. Need root for memory dumps. sudo is called in Makefile
-  - python setup.py preptests
 # run tests. Need root for memory dumps tests.
-#  - python setup.py test
+  - python setup.py test
 # run coverage only on test, not on memory dumps.
-#  - coverage run --source=haystack setup.py test
+  - coverage run --source=haystack setup.py test
 
 after_success:
   - which clang
@@ -64,6 +67,7 @@ after_success:
   - gcc --version
   - dpkg -l
   - find
+  - cat /etc/sudoers
   - coveralls
 
 after_failure:
@@ -74,6 +78,7 @@ after_failure:
   - gcc --version
   - dpkg -l
   - find
+  - cat /etc/sudoers
 
 # disable email notifications
 notifications:
