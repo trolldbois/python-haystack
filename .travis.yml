@@ -20,11 +20,11 @@ before_install:
   - sudo ln -v -s /usr/lib/x86_64-linux-gnu/libclang-3.7.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
   - sudo ldconfig  
 # tests dependencies
-  - pip install coveralls
+  - pip -q install coveralls
 
 install:
 # install with requirements
-  - python setup.py install
+  - python setup.py -q install
 
 before_script:
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
@@ -37,11 +37,11 @@ before_script:
 
 script:
 # build memory tests. Need root for memory dumps.
-#  - python setup.py preptests
+  - python setup.py preptests
 # run tests. Need root for memory dumps.
-  - python setup.py test
+#  - python setup.py test
 # run coverage only on test, not on memory dumps.
-  - coverage run --source=python-haystack setup.py test
+#  - coverage run --source=haystack setup.py test
 
 after_success:
   coveralls
