@@ -12,6 +12,47 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+
+import distutils.cmd
+import distutils.log
+import subprocess
+
+
+class PyPrepTestsCommand(distutils.cmd.Command):
+    """A custom command to build test sets."""
+
+    description = 'Run tests and dumps memory'
+    user_options = []
+    #    # The format is (long option, short option, description).
+    #    ('pylint-rcfile=', None, 'path to Pylint config file'),
+    #]
+
+    def initialize_options(self):
+        """Set default values for options."""
+    #  # Each user option must be listed here with their default value.
+    #  self.pylint_rcfile = ''
+        pass
+
+    def finalize_options(self):
+        """Post-process options."""
+    #  if self.pylint_rcfile:
+    #    assert os.path.exists(self.pylint_rcfile), (
+    #        'Pylint config file %s does not exist.' % self.pylint_rcfile)
+        pass
+
+    def run(self):
+        """Run command."""
+        import os
+        import sys
+        os.getcwd()
+        makeCmd = ['make']
+        p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
+        p.wait()
+        return p.returncode
+
+
+
+
 setup(name="haystack",
     version="0.20",
     description="Search C Structures in a process' memory",
@@ -47,6 +88,9 @@ setup(name="haystack",
     test_suite= "test.alltests",
     #tests_require="haystack",
     #entry_points = {'haystack.plugins':['haystack.model:register']},
+    cmdclass={
+        'preptests': PyPrepTestsCommand,
+    },
 )
 
 
