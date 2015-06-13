@@ -44,10 +44,10 @@ before_script:
   - mv putty.1.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
   - tar zxf ssh.1.tgz
-  - mv ssh.1 test/dumps/putty/
+  - mv ssh.1 test/dumps/ssh/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
   - tar zxf ssh.x64.6653.dump.tgz
-  - mv ssh.x64.6653.dump test/dumps/putty/
+  - mv ssh.x64.6653.dump test/dumps/ssh/
 # build memory tests. The Makefile will build a 32 bits and 64 bits version
 # of simple C program, and dump their memory.
 # You need root for memory dumps.
