@@ -6,14 +6,13 @@ python:
   - "2.7"
 #  - "3.4"
 
-
-install:
+before_install:
 # travis-ci use Ubuntu 12.04.5 LTS (Precise Pangolin) 64bit
 # install snapshot version of libclang1 libclang-common-3.X-dev
   - sudo apt-add-repository "deb http://llvm.org/apt/precise/ llvm-toolchain-precise main" --yes
   - sudo apt-add-repository "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"  --yes
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -
-  - sudo apt-get update 
+  - sudo apt-get update -qq
     # arrrh... http://docs.travis-ci.com/user/languages/python/.
     # system python package will not be used.
   - sudo apt-get -q install libclang1-3.7 --yes --force-yes
@@ -23,9 +22,11 @@ install:
 # tests dependencies
   - pip install coveralls
 
-script:
+install:
 # install with requirements
   - python setup.py install
+
+before_script:
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
 # we also need 
   - sudo apt-get -q install libc6-dev libc6-dev-i386 --yes --force-yes
@@ -33,19 +34,26 @@ script:
   - sudo apt-get -q install libgcc-4.8-dev --yes --force-yes
 # we need stdc++ 32 bits too /usr/bin/ld: cannot find -lstdc++  
   - sudo apt-get -q install libstdc++6:i386 --yes --force-yes
+
+script:
+# build memory tests. Need root for memory dumps.
+#  - python setup.py preptests
+# run tests. Need root for memory dumps.
+  - python setup.py test
+# run coverage only on test, not on memory dumps.
+  - coverage run --source=python-haystack setup.py test
+
+after_success:
+  coveralls
+
+after_failure:
 # debug versions
   - which clang
   - clang --version
   - which gcc
   - gcc --version
   - dpkg -l
-# run tests. Need root for memory dumps. TODO change that to a prep-test cmd
-  - sudo python setup.py test
-# run coverage only on test, not on memory dumps.
-  - coverage run --source=python-haystack setup.py test
 
-after_success:
-  coveralls
 
 # disable email notifications
 notifications:
