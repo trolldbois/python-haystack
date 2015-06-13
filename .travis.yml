@@ -33,17 +33,22 @@ before_script:
 # we also need the libgcc-dev packages  for "/usr/bin/ld: cannot find crtbegin.o: No such file or directory"
   - sudo apt-get -q install libgcc-4.8-dev --yes --force-yes
 # we need stdc++ 32 bits too /usr/bin/ld: cannot find -lstdc++  
-  - sudo apt-get -q install libstdc++6:i386 --yes --force-yes
+  - sudo apt-get -q install libstdc++6:i386 libstdc++-4.8-dev:i386 --yes --force-yes
 
 script:
-# build memory tests. Need root for memory dumps.
+# build memory tests. Need root for memory dumps. sudo is called in Makefile
   - python setup.py preptests
-# run tests. Need root for memory dumps.
+# run tests. Need root for memory dumps tests.
 #  - python setup.py test
 # run coverage only on test, not on memory dumps.
 #  - coverage run --source=haystack setup.py test
 
 after_success:
+  - which clang
+  - clang --version
+  - which gcc
+  - gcc --version
+  - dpkg -l
   coveralls
 
 after_failure:
