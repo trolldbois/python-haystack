@@ -26,7 +26,8 @@ before_install:
 
 install:
 # install with requirements
-  - python setup.py install
+#  - python setup.py install
+  - pip install -r requirements
 # but use the git tree
   - python setup.py develop
 
