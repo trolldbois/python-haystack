@@ -26,7 +26,7 @@ before_install:
 
 install:
 # install with requirements
-  - python setup.py -q install
+  - python setup.py install
 
 before_script:
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
