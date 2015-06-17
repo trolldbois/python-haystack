@@ -4,7 +4,11 @@ LDFLAGS = -ldl
 INCLS = 
 
 # use the virtualenv python even in sudo
-PYTHON=`which python`
+PYTHON=$(shell which python)
+
+USER=$(shell whoami)
+G=$(shell groups)
+GROUP=$(word 1, $(G))
 
 EXTRA =
 
@@ -40,7 +44,7 @@ TGZ64 := $(patsubst %,%.dump.tgz,$(OBJS64))
 .PHONY: 
 	
 
-all: py binaries dumps
+all: py binaries dumps tgz
 
 binaries: $(OBJS32) $(OBJS64)
 
@@ -79,19 +83,19 @@ dumps64: $(SRCS) $(DUMPS64) $(OBJS64)
 	
 %.32.dump: %.c 
 	sudo $(PYTHON) make.py $@
-	sudo chown -R jal.jal $@
+	sudo chown -R $(USER).$(GROUP) $@
 
 %.32.dump: %.cpp
 	sudo $(PYTHON) make.py $@
-	sudo chown -R jal.jal $@
+	sudo chown -R $(USER).$(GROUP) $@
 	
 %.64.dump: %.c 
 	sudo $(PYTHON) make.py $@
-	sudo chown -R jal.jal $@
+	sudo chown -R $(USER).$(GROUP) $@
 	
 %.64.dump: %.cpp
 	sudo $(PYTHON) make.py $@
-	sudo chown -R jal.jal $@
+	sudo chown -R $(USER).$(GROUP) $@
 
 tgz: $(TGZ32) $(TGZ64)
 #%.64.dump.tgz
@@ -110,6 +114,7 @@ cleanall: clean cleanpy
 	rm -f $(OBJS32) $(OBJS64)
 	rm -f $(OUTLOGS32) $(OUTLOGS64)
 	rm -rf $(DUMPS32) $(DUMPS64)
+	rm -f $(TGZ32) $(TGZ64)
 
 clean: 
 	rm -f *~ *.pyc
