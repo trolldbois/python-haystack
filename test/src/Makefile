@@ -3,6 +3,9 @@
 LDFLAGS = -ldl
 INCLS = 
 
+# use the virtualenv python even in sudo
+PYTHON=`which python`
+
 EXTRA =
 
 CFLAGS = -O2 -g -Wall $(INCLS) $(EXTRA)
@@ -29,8 +32,10 @@ PY64 := $(patsubst test-%.64,%_gen64.py,$(OBJS64))
 
 DUMPS32 := $(patsubst %,%.dump,$(OBJS32))
 OUTLOGS32 := $(patsubst %,%.stdout,$(OBJS32))
+TGZ32 := $(patsubst %,%.dump.tgz,$(OBJS32))
 DUMPS64 := $(patsubst %,%.dump,$(OBJS64))
 OUTLOGS64 := $(patsubst %,%.stdout,$(OBJS64))
+TGZ64 := $(patsubst %,%.dump.tgz,$(OBJS64))
 
 .PHONY: 
 	
@@ -73,22 +78,31 @@ dumps32: $(SRCS) $(DUMPS32) $(OBJS32)
 dumps64: $(SRCS) $(DUMPS64) $(OBJS64) 
 	
 %.32.dump: %.c 
-	sudo python make.py $@
+	sudo $(PYTHON) make.py $@
 	sudo chown -R jal.jal $@
 
 %.32.dump: %.cpp
-	sudo python make.py $@
+	sudo $(PYTHON) make.py $@
 	sudo chown -R jal.jal $@
 	
 %.64.dump: %.c 
-	sudo python make.py $@
+	sudo $(PYTHON) make.py $@
 	sudo chown -R jal.jal $@
 	
 %.64.dump: %.cpp
-	sudo python make.py $@
+	sudo $(PYTHON) make.py $@
 	sudo chown -R jal.jal $@
 
+tgz: $(TGZ32) $(TGZ64)
+#%.64.dump.tgz
+
+%.32.dump.tgz: %.32.dump
+	tar zcf $@ $<
+
+%.64.dump.tgz: %.64.dump
+	tar zcf $@ $<
 	
+
 cleanpy: 
 	rm -f $(PY32) $(PY64) 
 	
