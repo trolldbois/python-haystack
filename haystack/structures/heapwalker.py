@@ -160,7 +160,7 @@ class HeapFinder(object):
         """test if a mapping is a heap"""
         from haystack.mappings import base
         if not isinstance(mappings, base.Mappings):
-            raise TypeError('Feed me a Mappings object') 
+            raise TypeError('Feed me a Mappings object')
         heap = self.read_heap(mapping)
         load = heap.loadMembers(mappings, self.heap_validation_depth) 
         log.debug('HeapFinder.is_heap %s %s'%(mapping,load))
@@ -179,7 +179,11 @@ class HeapFinder(object):
             raise TypeError('Feed me a Mappings object') 
         heap_mappings = []
         for mapping in mappings:
-            if self.is_heap(mappings, mapping):
+            # BUG: python-ptrace read /proc/$$/mem. 
+            # file.seek does not like long integers
+            if mapping.pathname in ['[vdso]','[vsyscall]']:
+                log.debug('Ignore system mapping %s'%(mapping))
+            elif self.is_heap(mappings, mapping):
                 heap_mappings.append(mapping)
         heap_mappings.sort(key=lambda m: m.start)
         return heap_mappings
