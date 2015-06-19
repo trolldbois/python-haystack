@@ -257,7 +257,16 @@ class Mappings:
             raise NotImplementedError('CPU bites not implemented: %s'%(cpu))
         self.__os_name = os_name
         self.__cpu_bits = cpu
-        self.get_heaps()
+        # the config init should NOT load heaps as a way to determine the 
+        # memory dump arch
+        #self.get_heaps()
+        # but 
+        os_name = self.get_os_name()
+        cpu = self.get_cpu_bits()
+        # Change ctypes now
+        from haystack import config
+        self.config = config.make_config(cpu=cpu, os_name=os_name)
+        self._reset_config()
 
     def get_heap(self):
         """Returns the first Heap"""
@@ -266,14 +275,10 @@ class Mappings:
     def get_heaps(self):
         """Find heap type and returns mappings with heaps"""
         if self.__heaps is None:
-            os_name = self.get_os_name()
-            cpu = self.get_cpu_bits()
-            # Change ctypes now
-            from haystack import config
-            self.config = config.make_config(cpu=cpu, os_name=os_name)
-            self._reset_config()
             self.__heap_finder = heapwalker.make_heap_walker(self)
             self.__heaps = self.__heap_finder.get_heap_mappings(self)
+            #if len(self.__heaps) == 0:
+            #    raise RuntimeError("No heap found")
         return self.__heaps
 
     def _reset_config(self):
