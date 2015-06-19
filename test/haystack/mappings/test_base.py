@@ -213,6 +213,8 @@ class TestMappingsWin32(unittest.TestCase):
         pass
 
     def tearDown(self):
+        # we need to close all these files.
+        self.mappings = None
         pass
 
     @unittest.skip('require reverser')
