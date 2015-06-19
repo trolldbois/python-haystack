@@ -122,11 +122,14 @@ HEAP_SEGMENT._listHead_ = [
 
 # HEAP_ENTRY
 # SubSegmentCode is a encoded c_void_p
-# FIXME: is valid should decode it for validation ?
-## Does not exists anymore
-#N11_HEAP_ENTRY3DOT_13DOT_3E.expectedValues = {
-#    'SubSegmentCode': constraints.IgnoreMember,
-#    }
+struct_c__S__HEAP_ENTRY_Ua_Sa_1.expectedValues = {
+    'SubSegmentCode': constraints.IgnoreMember,
+    }
+
+# another to ignore because of encoded pointer.
+struct_c__S__HEAP_FREE_ENTRY_Ua_Sa_1.expectedValues = {
+    'SubSegmentCode': constraints.IgnoreMember,
+    }
 
 
 def HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
@@ -476,9 +479,9 @@ def HEAP_getFreeLists_by_blocksindex(self, mappings):
 
 def HEAP_ENTRY_decode(chunk_header, heap):
     """returns a decoded copy """
-    #N11_HEAP_ENTRY3DOT_13DOT_2E() now struct_c__S__HEAP_ENTRY_Ua_Sa
-    chunk_len = ctypes.sizeof(struct_c__S__HEAP_ENTRY_Ua_Sa)
-    chunk_header_decoded = (struct_c__S__HEAP_ENTRY_Ua_Sa).from_buffer_copy(chunk_header)
+    # struct_c__S__HEAP_ENTRY_Ua_Sa_0 contains the Size
+    chunk_len = ctypes.sizeof(struct_c__S__HEAP_ENTRY_Ua_Sa_0)
+    chunk_header_decoded = (struct_c__S__HEAP_ENTRY_Ua_Sa_0).from_buffer_copy(chunk_header)
     working_array = (ctypes.c_ubyte*chunk_len).from_buffer(chunk_header_decoded)
     encoding_array = (ctypes.c_ubyte*chunk_len).from_buffer_copy(heap.Encoding)
     # check if (heap.Encoding & working_array)
@@ -532,7 +535,7 @@ HEAP.get_freelists = HEAP_get_freelists
 ########## LIST_ENTRY
 
 from haystack import listmodel
-listmodel.declare_double_linked_list_type(LIST_ENTRY, 'FLink', 'BLink')
+listmodel.declare_double_linked_list_type(LIST_ENTRY, 'Flink', 'Blink')
 
 
 
