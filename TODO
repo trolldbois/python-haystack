@@ -1,0 +1,59 @@
+
+
+- A) debug win heap structures. pdbparse and clang2py should now generate better structs.
+- B) otherwise, use VTypes from rekall/volatility to create a heapwalker ?
+
+
+
+Todo:
+Put constraints in yara form ? at least in separate folder/
+Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
+Add a struct beautifier for the string formatting. (hex vs int)
+
+
+HEAP_ENTRY
+SubSegmentCode
+0x8f715c66
+
+0x00390000 0x00540000 0x00580000 0x005c0000 0x01ef0000
+
+
+++ Add to ipython
+
+Build steps:
+a) pdbparse
+
+Look at /home/other/outputs/pdb/
+
+use 
+$ grep UCR_DESCRIPTOR *
+Fichier binaire _0000021 correspondant
+Fichier binaire _00003BA correspondant
+Fichier binaire _000160E correspondant
+$ grep _HEAP_LOCAL_SEGMENT_INFO *
+Fichier binaire _0000021 correspondant
+Fichier binaire _00003BA correspondant
+Fichier binaire _000160E correspondant
+
+between 160E and 3BA, we find must symbols ok.
+
+python ../scripts/pdbtoh.py -g -w 4 -d heap.structures /home/other/outputs/pdb/Win7SP1X86/_00003BA > Win7SP1X86._00003BA.32.h
+python ../scripts/pdbtoh.py -g -w 4 -d heap.structures /home/other/outputs/pdb/Win7SP1X86/_000160E > Win7SP1X86._000160E.32.h
+clang2py --target i386 Win7SP1X86._00003BA.32.h Win7SP1X86._000160E.32.h -o win7_generated.py
+
+# now it works.
+
+
+
+python scripts/pdbtoh.py test/win32k.pdb -w 4 > test/win32k.32.h
+python scripts/pdbtoh.py test/ntdll.pdb -w 4 > test/ntdll.32.h
+python scripts/pdbtoh.py test/ntoskrnl.pdb -w 4 > test/ntoskrnl.32.h
+python scripts/pdbtoh.py test/wkernel32.pdb -w 4 > test/wkernel32.32.h 
+cat test/win32k.32.h test/ntdll.32.h test/ntoskrnl.32.h test/wkernel32.32.h > win7.32.h
+
+## do no do a reduceing with awk. But instead use the object filters from clang2py
+cp win7.32.h ~haystack/
+clang2py --target i386 win7.32.h -o win7_x32.py
+
+# use win7_x32.py
+
