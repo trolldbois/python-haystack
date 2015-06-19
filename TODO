@@ -1,7 +1,9 @@
 
 
-- A) debug win heap structures. pdbparse and clang2py should now generate better structs.
+- A) Done debugging win heap structures. pdbparse and clang2py should now generate better structs.
+    That means Profiles for kernel structs. Kinda useless to duplicate rekall&vol efforts.
 - B) otherwise, use VTypes from rekall/volatility to create a heapwalker ?
+
 
 
 
@@ -9,6 +11,13 @@ Todo:
 Put constraints in yara form ? at least in separate folder/
 Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
 Add a struct beautifier for the string formatting. (hex vs int)
+
+
+- Document the generation of profiles
+- generate x64 profiles
+- generate winxp  profiles because otherzise the zeus volatility test is not going to work stupid
+
+
 
 
 HEAP_ENTRY
