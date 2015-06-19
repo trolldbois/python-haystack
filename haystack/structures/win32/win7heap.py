@@ -47,10 +47,8 @@ from haystack import utils
 from haystack import constraints
 
 
-# python ~/Compil/pdbparse/examples/pdb_print_ctypes.py -f -g -w 8 heap.pdb > win7-sp1-x64.h 
-# python ~/Compil/pdbparse/examples/pdb_print_ctypes.py -g -w 8 ../_000143D  > win7-sp1-x64.h
 '''
-for s in $( echo "
+Critical structs are
 _LIST_ENTRY
 _LFH_BLOCK_ZONE
 _HEAP_PSEUDO_TAG_ENTRY
@@ -75,9 +73,7 @@ _HEAP_VIRTUAL_ALLOC_ENTRY
 _HEAP_LOCAL_SEGMENT_INFO
 _HEAP_LOCAL_DATA
 _HEAP_SUBSEGMENT
-_LFH_HEAP" ) ; do
-    awk "BEGIN{ RS=\"typedef\" } /struct $s/ { print \$0}" win7-sp1-x64.h
-done
+_LFH_HEAP
 '''
 
 from haystack.structures.win32 import win7heap_generated as gen
@@ -340,26 +336,30 @@ HEAP.get_frontend_chunks = HEAP_get_frontend_chunks
 
 def HEAP_SUBSEGMENT_get_userblocks(self):
     """
-    AggregateExchg contains info on userblocks, number left, depth
-    
+    AggregateExchg contains info on userblocks, number left, depth    
     """
     userblocks_addr = utils.get_pointee_address(self.UserBlocks)
     if not bool(userblocks_addr):
         log.debug('Userblocks is null')
         return []
-    # its basically an array of self.BlockCount blocks of self.BlockSie*8 bytes.
-    log.debug('fetching %d blocks of %d bytes'%(self.BlockCount, self.BlockSize*8))
+    # the structure is astructure in an unnamed union of self
+    st = self._3._0
+    # its basically an array of self.BlockCount blocks of self.BlockSize*8 bytes.
+    log.debug('fetching %d blocks of %d bytes'%(st.BlockCount, st.BlockSize*8))
     # UserBlocks points to HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( HEAP_USERDATA_HEADER ) = 0x10
     # each chunk starts with a 8 byte header + n user-writeable data
     # user writable chunk starts with 2 bytes for next offset
     # basically, first committed block is first.
     # ( page 38 ) 
-    userblocks = [ (userblocks_addr + 0x10 + self.BlockSize*8*i, self.BlockSize*8) for i in range(self.BlockCount)]
+    userblocks = [ (userblocks_addr + 0x10 + st.BlockSize*8*i, st.BlockSize*8) for i in range(st.BlockCount)]
     #
     ## we need to substract non allocated blocks
     # self.AggregateExchg.Depth counts how many blocks are remaining free
     # if self.AggregateExchg.FreeEntryOffset == 0x2, there a are no commited blocks
     return userblocks 
+
+
+HEAP_SUBSEGMENT.get_userblocks = HEAP_SUBSEGMENT_get_userblocks
 
 
 def HEAP_SUBSEGMENT_get_freeblocks(self):
@@ -369,13 +369,17 @@ def HEAP_SUBSEGMENT_get_freeblocks(self):
     userblocks_addr = utils.get_pointee_address(self.UserBlocks)
     if not bool(userblocks_addr):
         return []
-    if self.AggregateExchg.FreeEntryOffset == 0x2 :
-        log.debug(' * FirstFreeOffset==0x2 Depth==%d'%(self.AggregateExchg.Depth))
+    # structure is in a structure in an union
+    aggExchange=self.AggregateExchg._0._0 #struct_c__S__INTERLOCK_SEQ_Ua_Sa_0
+    if aggExchange.FreeEntryOffset == 0x2 :
+        log.debug(' * FirstFreeOffset==0x2 Depth==%d'%(aggExchange.Depth))
     # self.AggregateExchg.Depth the size of UserBlock divided by the HeapBucket size
     # self.AggregateExchg.FreeEntryOffset starts at 0x2 (blocks), which means 0x10 bytes after UserBlocks
     # see Understanding LFH page 14
     # nextoffset of user data is at current + offset*8 + len(HEAP_ENTRY)
-    freeblocks = [ (userblocks_addr + (self.AggregateExchg.FreeEntryOffset*8) + self.BlockSize*8*i, self.BlockSize*8) for i in range(self.AggregateExchg.Depth)]
+    # the structure is astructure in an unnamed union of self
+    st = self._3._0
+    freeblocks = [ (userblocks_addr + (aggExchange.FreeEntryOffset*8) + st.BlockSize*8*i, st.BlockSize*8) for i in range(aggExchange.Depth)]
     return freeblocks
     ###
         
@@ -401,7 +405,6 @@ def HEAP_SUBSEGMENT_get_freeblocks(self):
     #list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
     #end
 
-HEAP_SUBSEGMENT.get_userblocks = HEAP_SUBSEGMENT_get_userblocks
 HEAP_SUBSEGMENT.get_freeblocks = HEAP_SUBSEGMENT_get_freeblocks
 
 #### HEAP_UCR_DESCRIPTOR

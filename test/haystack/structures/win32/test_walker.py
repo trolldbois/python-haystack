@@ -28,17 +28,18 @@ log = logging.getLogger('testwalker')
 class TestAllocator(unittest.TestCase):
     
     
-    def setUp(self):    
+    def setUp(self):
+        # putty 1 was done under winxp 32 bits ?
         self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
         self._known_heaps = [ (0x00390000, 8956), (0x00540000, 868),
-                                        ( 0x00580000, 111933), (0x005c0000, 1704080) , 
-                                        ( 0x01ef0000, 604), (0x02010000, 61348), 
-                                        ( 0x02080000, 474949), (0x021f0000 , 18762),
-                                        ( 0x03360000, 604), (0x04030000 , 632),
-                                        ( 0x04110000, 1334), (0x041c0000 , 644),
-                                        # from free stuf - erroneous 
-                                        #( 0x0061a000, 1200),
-                                        ]
+                            ( 0x00580000, 111933), (0x005c0000, 1704080) , 
+                            ( 0x01ef0000, 604), (0x02010000, 61348), 
+                            ( 0x02080000, 474949), (0x021f0000 , 18762),
+                            ( 0x03360000, 604), (0x04030000 , 632),
+                            ( 0x04110000, 1334), (0x041c0000 , 644),
+                            # from free stuf - erroneous 
+                            #( 0x0061a000, 1200),
+                            ]
         return
         
     def tearDown(self):
@@ -108,7 +109,7 @@ class TestAllocator(unittest.TestCase):
         #self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder()        
         for i, m in enumerate(self._mappings.get_heaps()):
-            #print '%d @%0.8x'%(win7heapwalker.readHeap(m).ProcessHeapsListIndex, m.start)
+            #print '%d @%0.8x'%(finder.read_heap(m).ProcessHeapsListIndex, m.start)
             self.assertEquals(finder.read_heap(m).ProcessHeapsListIndex, i+1,
                                      'ProcessHeaps should have correct indexes')
         return
@@ -162,10 +163,10 @@ class TestAllocator(unittest.TestCase):
                 #log.debug(st) 
                 
                 ### THIS is not working. FIXME
-                st = m.readStruct( chunk_addr, win7heap.N11_HEAP_ENTRY3DOT_13DOT_2E) #HEAP_ENTRY)
+                #st = m.readStruct( chunk_addr, win7heap.HEAP_ENTRY)
                 # decode chunk ? SHOULD check if encoded 
                 
-                #st = m.readStruct( chunk_addr, HEAP_ENTRY)
+                #st = m.readStruct( chunk_addr, win7heap.HEAP_ENTRY)
                 #st = st.decode(walker._heap) # returns sub Union struct
 
                 #log.debug(st)
