@@ -58,7 +58,7 @@ class TestMapper(unittest.TestCase):
         #self.assertEquals( ctypes.sizeof(x), 1430)
         #print x
 
-        #heaps = mappings.get_heaps()
+        heaps = mappings.get_heaps()
         #code.interact(local=locals())
 
 

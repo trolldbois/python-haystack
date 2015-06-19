@@ -16,6 +16,7 @@ from haystack.mappings.base import Mappings
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import MemoryDumpMemoryMapping
 from haystack.mappings.process import readProcessMappings
+from haystack.mappings.vol import VolatilityProcessMapper
 
 log = logging.getLogger('mapper')
 
@@ -29,9 +30,11 @@ __status__ = "Production"
 
 class MemoryMapper:
     """Build MemoryMappings from a PID or a haystack memory dump."""
-    def __init__(self, pid=None, mmap=True, memfile=None, baseOffset=None, dumpname=None):
+    def __init__(self, pid=None, mmap=True, memfile=None, baseOffset=None, dumpname=None, volname=None):
         # args are checked by the parser
         self.config = config.ConfigClass()
+        if not (volname is None) and not (pid is None):
+            mappings = self.initVolatility(dumpname,pid)
         if not (pid is None):
             mappings = self.initPid(pid, mmap)
         elif not (memfile is None):
@@ -80,4 +83,10 @@ class MemoryMapper:
             process.cont()
             log.info('Memory mmaped, process released after %02.02f secs'%(time.time()-t0))
         return mappings
+
+    def initVolatility(self, volname, pid):
+        mapper = VolatilityProcessMapper(volname,pid)
+        mappings = mapper.getMappings()
+        return mappings
+    
 

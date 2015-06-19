@@ -71,6 +71,16 @@ class VolatilityProcessMapper:
         self._init_volatility()
     
     def _init_volatility(self):
+        #import sys
+        #for mod in sys.modules.keys():
+        #    if 'parse' in mod:
+        #        del sys.modules[mod]
+        #        print "deleted",mod
+        #import sys
+        #if len(sys.argv) > 3:
+        #    #sys.args=[sys.args[3]]
+        #    sys.argv=[sys.argv[0],'-f',sys.argv[3]]
+        #print 'after modif',sys.argv
         import volatility
         import volatility.conf as conf
         import volatility.registry as registry
@@ -85,7 +95,14 @@ class VolatilityProcessMapper:
         #config.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s"%self.imgname
         config.PID=str(self.pid)
+
+
         import volatility.plugins.vadinfo as vadinfo
+
+        import code
+        print config.__dict__
+        #code.interact(local=locals())
+
         command = vadinfo.VADWalk(config)
         command.render_text = partial(my_render_text, self, command)
         command.execute()

@@ -450,7 +450,9 @@ def search_dumpname(structName, dumpname, **kwargs):
 
 def _search_cmdline(args):
     """ Internal cmdline mojo. """
-    if args.pid is not None:
+    if args.volname is not None:
+        mappings = MemoryMapper(pid=args.pid, volname=args.volname).getMappings()
+    elif args.pid is not None:
         mappings = MemoryMapper(pid=args.pid, mmap=args.mmap).getMappings()
     elif args.dumpname is not None:
         mappings = MemoryMapper(dumpname=args.dumpname).getMappings()
@@ -570,7 +572,7 @@ def refresh(args):
 
     addr=int(args.addr,16)
 
-    mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname ).getMappings()
+    mappings = MemoryMapper(pid=args.pid, memfile=args.memfile, dumpname=args.dumpname, volname=args.volname).getMappings()
     finder = StructFinder(mappings)
     
     memoryMap = finder.mappings.is_valid_address_value(addr)
