@@ -157,6 +157,8 @@ HEAP.expectedValues = {
     'Signature':[0xeeffeeff],
     'FrontEndHeapType': [0,1,2],
     'CommitRoutine': constraints.IgnoreMember,
+    # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+    'LastValidEntry': constraints.IgnoreMember,    
 }
 HEAP._listHead_ = [('SegmentList', HEAP_SEGMENT, 'SegmentListEntry', -16 ),
                     ('UCRList', HEAP_UCR_DESCRIPTOR, 'ListEntry', 0 ),
