@@ -181,10 +181,10 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(segment.Heap.value,addr)
         self.assertEquals(segment.BaseAddress.value,addr)
         # checkings size. a page is 4096 in this example.
-        valid_alloc_size = (heap.Segment.LastValidEntry.value
-                             - heap.Segment.FirstEntry.value)
-        meta_size = (heap.Segment.FirstEntry.value
-                        - heap.Segment.BaseAddress.value)
+        valid_alloc_size = (heap.LastValidEntry.value
+                             - heap.FirstEntry.value)
+        meta_size = (heap.FirstEntry.value
+                        - heap.BaseAddress.value)
         committed_size = heap.Counters.TotalMemoryCommitted
         reserved_size = heap.Counters.TotalMemoryReserved
         ucr_size = reserved_size - committed_size
@@ -245,11 +245,11 @@ class TestWin7Heap(unittest.TestCase):
             if total[i][0]+total[i][1] != total[i+1][0]:
                 self.fail('Chunk Gap between %s %s '%(total[i], total[i+1]))
         chunks_size = total[-1][0]+total[-1][1]-total[0][0]
-        #
-        valid_alloc_size = (heap.Segment.LastValidEntry.value
-                             - heap.Segment.FirstEntry.value)
-        meta_size = (heap.Segment.FirstEntry.value
-                        - heap.Segment.BaseAddress.value)
+        # HEAP segment was aggregated into HEAP
+        valid_alloc_size = (heap.LastValidEntry.value
+                             - heap.FirstEntry.value)
+        meta_size = (heap.FirstEntry.value
+                        - heap.BaseAddress.value)
         committed_size = heap.Counters.TotalMemoryCommitted
         reserved_size = heap.Counters.TotalMemoryReserved
         ucr_size = reserved_size - committed_size

@@ -157,6 +157,7 @@ HEAP.expectedValues = {
     'Signature':[0xeeffeeff],
     'FrontEndHeapType': [0,1,2],
     'CommitRoutine': constraints.IgnoreMember,
+    # HEAP segment was aggregated into HEAP
     # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
     'LastValidEntry': constraints.IgnoreMember,    
 }
