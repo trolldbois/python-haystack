@@ -51,21 +51,21 @@ class TestWin7Heap(unittest.TestCase):
 
         ctypes = self._mappings.config.ctypes
         
-        self.assertEquals(ctypes.sizeof(win7heap._HEAP_SEGMENT), 64)
-        self.assertEquals(ctypes.sizeof(win7heap._HEAP_ENTRY), 8)
+        self.assertEquals(ctypes.sizeof(win7heap.HEAP_SEGMENT), 64)
+        self.assertEquals(ctypes.sizeof(win7heap.HEAP_ENTRY), 8)
         self.assertEquals(ctypes.sizeof(ctypes.POINTER(None)), 4)
         self.assertEquals(ctypes.sizeof(
-                                   ctypes.POINTER(win7heap._HEAP_TAG_ENTRY)), 4)
-        self.assertEquals(ctypes.sizeof(win7heap._LIST_ENTRY), 8)
+                                   ctypes.POINTER(win7heap.HEAP_TAG_ENTRY)), 4)
+        self.assertEquals(ctypes.sizeof(win7heap.LIST_ENTRY), 8)
         self.assertEquals(ctypes.sizeof(
-                                 ctypes.POINTER(win7heap._HEAP_LIST_LOOKUP)), 4)
+                                 ctypes.POINTER(win7heap.HEAP_LIST_LOOKUP)), 4)
         self.assertEquals(ctypes.sizeof(
-                            ctypes.POINTER(win7heap._HEAP_PSEUDO_TAG_ENTRY)), 4)
-        self.assertEquals(ctypes.sizeof(ctypes.POINTER(win7heap._HEAP_LOCK)), 4)
+                            ctypes.POINTER(win7heap.HEAP_PSEUDO_TAG_ENTRY)), 4)
+        self.assertEquals(ctypes.sizeof(ctypes.POINTER(win7heap.HEAP_LOCK)), 4)
         self.assertEquals(ctypes.sizeof(ctypes.c_ubyte), 1 )
         self.assertEquals(ctypes.sizeof((ctypes.c_ubyte*1)), 1 )
-        self.assertEquals(ctypes.sizeof(win7heap._HEAP_COUNTERS), 84 )
-        self.assertEquals(ctypes.sizeof(win7heap._HEAP_TUNING_PARAMETERS), 8 )
+        self.assertEquals(ctypes.sizeof(win7heap.HEAP_COUNTERS), 84 )
+        self.assertEquals(ctypes.sizeof(win7heap.HEAP_TUNING_PARAMETERS), 8 )
 
         self.assertEquals(ctypes.sizeof(win7heap.HEAP ) , 312 )
         self.assertEquals(utils.offsetof(win7heap.HEAP , 'Signature') , 100 )
