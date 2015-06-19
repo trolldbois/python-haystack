@@ -47,7 +47,7 @@ DEBUG_ADDRS=[]
 # Compare sruct type from parent with multiple pointer (
 
 def makeFilename(context, st):
-  sdir = Config.getStructsCacheDir(context.dumpname)
+  sdir = context.config.getStructsCacheDir(context.dumpname)
   if not os.path.isdir(sdir):
     os.mkdir(sdir)
   return os.path.sep.join([sdir, str(st)])
