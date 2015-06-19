@@ -322,7 +322,7 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
     def __init__(self, memdumpname, start, end, permissions='rwx-', offset=0x0, 
                                             major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP'):
         MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset, 
-                                                                            major_device, minor_device, inode, pathname, preload=False)
+                                        major_device, minor_device, inode, pathname, preload=False)
         self._memdumpname = memdumpname
         return 
 
