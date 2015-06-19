@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# TARGET arch is: ['-target', 'linux-x86_64']
+# TARGET arch is: ['-target', 'x86_64-linux']
 # WORD_SIZE is: 8
 # POINTER_SIZE is: 8
 # LONGDOUBLE_SIZE is: 16
@@ -28,4 +28,5 @@ class class_cB(ctypes.Structure):
     ('b', ctypes.c_uint32),
      ]
 
-__all__ = ['class_cB', 'class_cA']
+__all__ = \
+    ['class_cB', 'class_cA']
