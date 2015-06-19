@@ -63,28 +63,7 @@ class VolatilityProcessMapping(MemoryMapping):
 
 import sys
 
-
 class VolatilityProcessMapper:
-    """
-# Volatility
-# Copyright (C) 2007-2013 Volatility Foundation
-#
-# This file is part of Volatility.
-#
-# Volatility is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Volatility is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Volatility.  If not, see <http://www.gnu.org/licenses/>.
-#
-"""
     def __init__(self, imgname, pid):
         self.pid = pid
         self.imgname = imgname
@@ -93,107 +72,28 @@ class VolatilityProcessMapper:
     
     def _init_volatility(self):
         import volatility
-        from volatility import conf
-        from volatility import constants
-        from volatility import exceptions
-        from volatility import debug
-        #from volatility import obj
-        from volatility import addrspace
-        from volatility import commands
-        from volatility import plugins
-        from volatility import scan
-        from volatility import registry
-        # Get the version information on every output from the beginning
-        # Exceptionally useful for debugging/telling people what's going on
-        sys.stderr.write("Volatility Foundation Volatility Framework {0}\n".format(constants.VERSION))
-        sys.stderr.flush()
-        
-        module = 'vadinfo'
-
-        class MyOptionParser(conf.PyFlagOptionParser):
-            __my_args = ['-f', self.imgname, module,'-p', str(self.pid)]
-            def _get_args(myself,args):
-                #return myself.__my_args#[1:]
-                return ['-f', self.imgname, module,'-p', str(self.pid)]
-        # singleton - replace with a controlled args list
-        conf.ConfObject.initialised = False
-        conf.ConfObject.g_dict = dict(__builtins__ = None)
-        conf.ConfObject.cnf_opts = {}
-        conf.ConfObject.opts = {}
-        conf.ConfObject.args = None
-        conf.ConfObject.default_opts = {}
-        conf.ConfObject.docstrings = {}
-        conf.ConfObject.optparse_opts = None
-        #conf.ConfObject._filename = None
-        #conf.ConfObject._filenames = []
-        conf.ConfObject.readonly = {}
-        conf.ConfObject._absolute = {}
-        conf.ConfObject.options = []
-        conf.ConfObject.cache_invalidators = {}
-        conf.ConfObject.optparser = MyOptionParser(add_help_option = False,
-                                   version = False,)        
-        self.v_config = conf.ConfObject()
-        conf.config = self.v_config
-
-        #self.v_config.default_opts = dict()
-        #for k,v in conf.ConfObject.__dict__.items():
-        #    print k, v
-
-        #print self.v_config.__dict__.keys()
-        #print conf.ConfObject.__dict__
-
-        # Load up modules in case they set config options
+        import volatility.conf as conf
+        import volatility.registry as registry
         registry.PluginImporter()
-
-        ## Register all register_options for the various classes
-        registry.register_global_options(self.v_config, addrspace.BaseAddressSpace)
-        registry.register_global_options(self.v_config, commands.Command)
-
-        ## Parse all the options now
-        self.v_config.parse_options(False)
-        # Reset the logging level now we know whether debug is set or not
-        #debug.setup(self.v_config.DEBUG)
-
-        ## Try to find the first thing that looks like a module name
-        cmds = registry.get_plugin_classes(commands.Command, lower = True)
-        
-        if module not in cmds.keys():
-            raise NotImplementedError('Volatility could not find module memmap')
-
-        try:
-            if module in cmds.keys():
-                command = cmds[module](self.v_config)
-                
-                command.render_text = partial(my_render_text, self, command)
-                self.v_config.parse_options(True)
-
-                command.execute()
-                #import code
-                #code.interact(local=locals())
-        
-        except exceptions.VolatilityException, e:
-            print e        
-        finally:
-            pass
-            volatility = reload(volatility)
-            #del sys.modules["volatility"]
-            #del sys.modules["volatility.conf"]
-            #del sys.modules["volatility.constants"]
-            #del sys.modules["volatility.registry"]
-            #del sys.modules["volatility.exceptions"]
-            #del sys.modules["volatility.debug"]
-            #del sys.modules["volatility.addrspace"]
-            #del sys.modules["volatility.commands"]
-
-            #del volatility
-            #del conf
-            #del constants
-            #del registry
-            #del exceptions
-            #del debug
-            #del addrspace
-            #del commands
-        
+        config = conf.ConfObject()
+        import volatility.commands as commands
+        import volatility.addrspace as addrspace
+        registry.register_global_options(config, commands.Command)
+        registry.register_global_options(config, addrspace.BaseAddressSpace)
+        config.parse_options()
+        config.PROFILE="WinXPSP2x86"
+        #config.LOCATION = "file:///media/memory/private/image.dmp"
+        config.LOCATION = "file://%s"%self.imgname
+        config.PID=str(self.pid)
+        import volatility.plugins.vadinfo as vadinfo
+        command = vadinfo.VADWalk(config)
+        command.render_text = partial(my_render_text, self, command)
+        command.execute()
+        # works now.
+        #for x in self.mappings:
+        #    print x
+        #import code
+        #code.interact(local=locals())
 
     def getMappings(self):
         return self.mappings

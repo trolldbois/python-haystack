@@ -14,8 +14,16 @@ log = logging.getLogger('test_vol')
 
 
 class TestMapper(unittest.TestCase):
-    def setUp(self):    
+    def setUp(self):
         model.reset()
+
+    def tearDown(self):
+        model.reset()
+        # we need to unload volatility before continuing
+        import sys
+        for mod in sys.modules.keys():
+            if 'volatility' in mod:
+                del sys.modules[mod]
 
     def test_init(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
@@ -55,8 +63,8 @@ class TestMapper(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    #logging.basicConfig(level=logging.DEBUG)
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
+    #logging.basicConfig(level=logging.INFO)
     #logging.getLogger('memory_mapping').setLevel(logging.DEBUG)
     #logging.getLogger('basicmodel').setLevel(logging.INFO)
     #logging.getLogger('model').setLevel(logging.INFO)
