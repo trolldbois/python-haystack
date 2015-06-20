@@ -56,7 +56,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 setup(name="haystack",
     version="0.20",
     description="Search C Structures in a process' memory",
-    long_description=open("README.rst").read(),
+    long_description=open("README.md").read(),
 
     url="http://packages.python.org/haystack/",
     download_url="http://github.com/trolldbois/python-haystack/tree/master",
