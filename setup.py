@@ -84,10 +84,14 @@ setup(name="haystack",
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
     setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434
     install_requires = ["ctypeslib2>2.1.3", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
-    dependency_links = ['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta'],
+    dependency_links = ['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta',
+                        'https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk',
+                        'https://github.com/google/rekall/tarball/master#egg=rekall-trunk',
+                        'https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk'],
     #build_test_requires = ["ctypeslib2>=2.1.3"],
     test_suite= "test.alltests",
-    #tests_require="haystack",
+    # https://pythonhosted.org/setuptools/setuptools.html
+    tests_require=[ "volatility"],
     #entry_points = {'haystack.plugins':['haystack.model:register']},
     cmdclass={
         'preptests': PyPrepTestsCommand,
