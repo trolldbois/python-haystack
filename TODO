@@ -20,6 +20,7 @@ Add a struct beautifier for the string formatting. (hex vs int)
 - Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
 - ctypeslib: why is struct__HEAP_SUBSEGMENT._fields generated twice in win7 profile
 - ctypeslib: why is struct__HEAP_USERDATA_HEADER._field generated twice
+- pylint ignore W0212 in profiles.
 
 
 HEAP_ENTRY
