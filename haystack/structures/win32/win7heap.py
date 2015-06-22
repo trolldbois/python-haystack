@@ -76,7 +76,8 @@ _HEAP_SUBSEGMENT
 _LFH_HEAP
 '''
 
-from haystack.structures.win32 import win7heap_generated as gen
+from haystack.structures.win32 import win7_32 as gen
+from haystack.structures.win32 import win7_64 #as gen
 
 import ctypes
 import struct
@@ -86,6 +87,11 @@ import sys
 import code
 
 log = logging.getLogger('win7heap')
+
+# IF config says x32, load win7_32
+# IF config says x64, load win7_64
+
+# todo extract constraints in yara format
 
 ################ START copy generated classes ##########################
 # copy generated classes (gen.*) to this module as wrapper
