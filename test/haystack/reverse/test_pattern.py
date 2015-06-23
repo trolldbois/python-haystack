@@ -6,10 +6,11 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import struct
+import logging
 import operator
 import os
 import unittest
+import struct
 
 from haystack import model
 from haystack.reverse import pattern
@@ -79,7 +80,9 @@ class SignatureTests(unittest.TestCase):
         mmap = self._make_mmap(self._mstart, self._mlength, self._struct_offset, 
                                intervals, word_size)
         mappings = Mappings([mmap], 'test')
-        sig = pattern.PointerIntervalSignature(mappings, 'test_mmap', self.config)
+        mappings.config = self.config
+        mappings._reset_config()
+        sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
         return sig
 
 
@@ -347,6 +350,10 @@ class TestPatternEncoder(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('haystack').setLevel(logging.INFO)
+    logging.getLogger('pattern').setLevel(logging.DEBUG)
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)
+    

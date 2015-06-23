@@ -20,13 +20,13 @@ reverse
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __all__ = [
-  'findStruct',
-  'findStructInFile',
-  'refreshStruct',
-  'search_process',
-  'search_memfile',
-  'search_dumpname',
-  'refresh'
+    'findStruct',
+    'findStructInFile',
+    'refreshStruct',
+    'search_process',
+    'search_memfile',
+    'search_dumpname',
+    'refresh'
 ]
 
 from pkg_resources import get_distribution, DistributionNotFound
@@ -60,6 +60,3 @@ import model
 #search_dumpname = abouchet.search_dumpname
 #refresh = abouchet.refresh
 #show_dumpname = abouchet.show_dumpname
-
-
-

@@ -8,6 +8,7 @@ import logging
 
 log = logging.getLogger('heuristics.model')
 
+
 class FieldAnalyser(object):
 
     def __init__(self, config):
@@ -18,25 +19,26 @@ class FieldAnalyser(object):
         @param structure: the structure object, with a bytes()
         @param offset: the offset of the field to analyze
         @param size: the size of said field
-        
+
         @return False, or [Field(), ]
         """
         raise NotImplementedError('This should be implemented.')
 
+
 class StructureAnalyser(object):
-    """ StructureAnalyzer should apply heuristics on the structure, all fields included, 
-    and try to determine specific field types that are identifiable with a 
+
+    """ StructureAnalyzer should apply heuristics on the structure, all fields included,
+    and try to determine specific field types that are identifiable with a
     full structure-view.
     """
+
     def __init__(self, config):
         self.config = config
 
     def analyze_fields(self, structure):
         """
         @param structure: the AnonymousStructure to analyze and modify
-        
+
         @returns
         """
         raise NotImplementedError('This should be implemented.')
-
-

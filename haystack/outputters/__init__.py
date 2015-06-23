@@ -8,11 +8,13 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-class Outputter(object): 
+
+class Outputter(object):
+
     """ Outputter interface """
+
     def __init__(self, mappings):
         self.mappings = mappings
-    
-    def parse(self, obj, prefix='', depth=10): 
-        raise NotImplementedError('Please define parse')
 
+    def parse(self, obj, prefix='', depth=10):
+        raise NotImplementedError('Please define parse')

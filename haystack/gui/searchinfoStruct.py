@@ -14,11 +14,19 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
+
 class Ui_SearchInfoStructWidget(object):
+
     def setupUi(self, SearchInfoStructWidget):
-        SearchInfoStructWidget.setObjectName(_fromUtf8("SearchInfoStructWidget"))
+        SearchInfoStructWidget.setObjectName(
+            _fromUtf8("SearchInfoStructWidget"))
         SearchInfoStructWidget.resize(421, 501)
-        SearchInfoStructWidget.setWindowTitle(QtGui.QApplication.translate("SearchInfoStructWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
+        SearchInfoStructWidget.setWindowTitle(
+            QtGui.QApplication.translate(
+                "SearchInfoStructWidget",
+                "Form",
+                None,
+                QtGui.QApplication.UnicodeUTF8))
         self.gridLayout = QtGui.QGridLayout(SearchInfoStructWidget)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.info_listview = QtGui.QListView(SearchInfoStructWidget)
@@ -26,9 +34,12 @@ class Ui_SearchInfoStructWidget(object):
         self.gridLayout.addWidget(self.info_listview, 0, 0, 1, 1)
 
         self.retranslateUi(SearchInfoStructWidget)
-        QtCore.QObject.connect(self.info_listview, QtCore.SIGNAL(_fromUtf8("activated(QModelIndex)")), self.info_listview.update)
+        QtCore.QObject.connect(
+            self.info_listview,
+            QtCore.SIGNAL(
+                _fromUtf8("activated(QModelIndex)")),
+            self.info_listview.update)
         QtCore.QMetaObject.connectSlotsByName(SearchInfoStructWidget)
 
     def retranslateUi(self, SearchInfoStructWidget):
         pass
-

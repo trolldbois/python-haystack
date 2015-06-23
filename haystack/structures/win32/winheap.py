@@ -42,14 +42,12 @@ model.registerModule(sys.modules[__name__])
 
 
 HEAP_SEGMENT.expectedValued = {
-  'SegmentSignature':[0xffeeffee],
+    'SegmentSignature': [0xffeeffee],
 }
 
 HEAP.expectedValues = {
-    'Signature':[0xeeffeeff],
-    }
+    'Signature': [0xeeffeeff],
+}
 
 
 #################
-
-

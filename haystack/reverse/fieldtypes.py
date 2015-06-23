@@ -20,6 +20,7 @@ log = logging.getLogger('field')
 # Field related functions and classes
 config = ConfigClass()
 
+
 def findFirstNot(s, c):
     for i in xrange(len(s)):
         if s[i] != c:

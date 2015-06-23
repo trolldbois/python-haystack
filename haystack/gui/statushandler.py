@@ -6,11 +6,12 @@
 
 import logging
 
-class StatusBarHandler(logging.Handler):
-  def __init__(self, statusbar):
-    self.statusbar = statusbar
-    logging.Handler.__init__(self)
-  def emit(self, record):
-    self.statusbar.showMessage(record.getMessage(), 2000)
-  
 
+class StatusBarHandler(logging.Handler):
+
+    def __init__(self, statusbar):
+        self.statusbar = statusbar
+        logging.Handler.__init__(self)
+
+    def emit(self, record):
+        self.statusbar.showMessage(record.getMessage(), 2000)

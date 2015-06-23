@@ -34,20 +34,22 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('process')
 
 PROC_MAP_REGEX = re.compile(
-        # Address range: '08048000-080b0000 '
-        r'([0-9a-f]+)-([0-9a-f]+) '
-        # Permission: 'r-xp '
-        r'(.{4}) '
-        # Offset: '0804d000'
-        r'([0-9a-f]+) '
-        # Device (major:minor): 'fe:01 '
-        r'([0-9a-f]{2}):([0-9a-f]{2}) '
-        # Inode: '3334030'
-        r'([0-9]+)'
-        # Filename: '    /usr/bin/synergyc'
-        r'(?: +(.*))?')
+    # Address range: '08048000-080b0000 '
+    r'([0-9a-f]+)-([0-9a-f]+) '
+    # Permission: 'r-xp '
+    r'(.{4}) '
+    # Offset: '0804d000'
+    r'([0-9a-f]+) '
+    # Device (major:minor): 'fe:01 '
+    r'([0-9a-f]{2}):([0-9a-f]{2}) '
+    # Inode: '3334030'
+    r'([0-9]+)'
+    # Filename: '    /usr/bin/synergyc'
+    r'(?: +(.*))?')
+
 
 class ProcessMemoryMapping(MemoryMapping):
+
     """
     Process memory mapping (metadata about the mapping).
 
@@ -64,15 +66,26 @@ class ProcessMemoryMapping(MemoryMapping):
      - "readArray()": read an array, from local mmap-ed memory if mmap-ed
          useful in list contexts
     """
-    def __init__(self, process, start, end, permissions, offset, major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+
+    def __init__(self, process, start, end, permissions, offset,
+                 major_device, minor_device, inode, pathname):
+        MemoryMapping.__init__(
+            self,
+            start,
+            end,
+            permissions,
+            offset,
+            major_device,
+            minor_device,
+            inode,
+            pathname)
         self._process = ref(process)
         self._local_mmap = None
         self._local_mmap_content = None
         # read from process by default
         #self._base = self._process()
         self._base = process
-    
+
     def readWord(self, address):
         word = self._base.readWord(address)
         return word
@@ -92,20 +105,28 @@ class ProcessMemoryMapping(MemoryMapping):
 
     def isMmaped(self):
         return not (self._local_mmap is None)
-        
+
     def mmap(self):
         ''' mmap-ed access gives a 20% perf increase on by tests '''
         # DO NOT USE ptrace.process.readArray on 64 bits.
         # It breaks stuff.
         # probably a bad cast statement on c_char_p
-        # FIXME: the big perf increase is now gone. Howto cast pointer to bytes into ctypes array ?
+        # FIXME: the big perf increase is now gone. Howto cast pointer to bytes
+        # into ctypes array ?
         ctypes = self.config.ctypes
         if not self.isMmaped():
-            #self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
-            #self._local_mmap_content = self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
-            self._local_mmap_content = utils.bytes2array( self._process().readBytes(self.start, len(self)), ctypes.c_ubyte )
-            log.debug('type array %s'%(type(self._local_mmap_content)))
-            self._local_mmap = LocalMemoryMapping.fromAddress( self, ctypes.addressof(self._local_mmap_content) )
+            # self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+            # self._local_mmap_content = self._process().readArray(self.start,
+            # ctypes.c_ubyte, len(self) ) # keep ref
+            self._local_mmap_content = utils.bytes2array(
+                self._process().readBytes(
+                    self.start,
+                    len(self)),
+                ctypes.c_ubyte)
+            log.debug('type array %s' % (type(self._local_mmap_content)))
+            self._local_mmap = LocalMemoryMapping.fromAddress(
+                self, ctypes.addressof(
+                    self._local_mmap_content))
             self._base = self._local_mmap
         return self._local_mmap
 
@@ -121,7 +142,7 @@ class ProcessMemoryMapping(MemoryMapping):
         d['_base'] = None
         d['_process'] = None
         return d
-        
+
 
 def readProcessMappings(process):
     """
@@ -137,10 +158,10 @@ def readProcessMappings(process):
         return maps
     try:
         mapsfile = openProc(process.pid)
-    except ProcError, err:
+    except ProcError as err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
 
-    from haystack import types    
+    from haystack import types
     before = None
     # save the current ctypes module.
     mappings = Mappings(None)
@@ -152,10 +173,13 @@ def readProcessMappings(process):
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
-                raise ProcessError(process, "Unable to parse memory mapping: %r" % line)
-            log.debug('readProcessMappings %s'%( str(match.groups())) )
+                raise ProcessError(
+                    process,
+                    "Unable to parse memory mapping: %r" %
+                    line)
+            log.debug('readProcessMappings %s' % (str(match.groups())))
             _map = ProcessMemoryMapping(
-                #cfg,
+                # cfg,
                 process,
                 int(match.group(1), 16),
                 int(match.group(2), 16),
@@ -167,20 +191,21 @@ def readProcessMappings(process):
                 match.group(8))
             mappings.append(_map)
     finally:
-        if type(mapsfile) is file:
+        if isinstance(mapsfile, file):
             mapsfile.close()
     # reposition the previous ctypes module.
     if True:
         ctypes = types.set_ctypes(before)
     return mappings
 
+
 def readLocalProcessMappings():
     class P:
         pid = os.getpid()
         # we need that for the machine arch read.
+
         def readBytes(self, addr, size):
             import ctypes
             return ctypes.string_at(addr, size)
 
-    return readProcessMappings(P()) # memory_mapping
-
+    return readProcessMappings(P())  # memory_mapping

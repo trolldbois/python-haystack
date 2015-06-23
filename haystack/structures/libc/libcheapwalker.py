@@ -9,17 +9,21 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 import logging
 import sys
 
-import numpy 
+import numpy
 from haystack import model
 from haystack.structures import heapwalker
 
-log=logging.getLogger('libcheapwalker')
+log = logging.getLogger('libcheapwalker')
 
 
 class LibcHeapWalker(heapwalker.HeapWalker):
+
     """ """
+
     def _init_heap(self):
-        log.debug('+ Heap @%x size: %d # %s'%(self._mapping.start+self._offset, len(self._mapping), self._mapping) )
+        log.debug('+ Heap @%x size: %d # %s' %
+                  (self._mapping.start +
+                   self._offset, len(self._mapping), self._mapping))
         self._allocs = None
         self._free_chunks = None
 
@@ -41,10 +45,12 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
     def _set_chunk_lists(self):
         from haystack.structures.libc import ctypes_malloc
-        self._allocs, self._free_chunks = ctypes_malloc.get_user_allocations(self._mappings, self._mapping)
+        self._allocs, self._free_chunks = ctypes_malloc.get_user_allocations(
+            self._mappings, self._mapping)
 
 
 class LibcHeapFinder(heapwalker.HeapFinder):
+
     def __init__(self):
         import ctypes
         from haystack.structures.libc import ctypes_malloc
@@ -53,7 +59,7 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         self.walker_class = LibcHeapWalker
         self.heap_validation_depth = 20
 
-    #def is_heap(self, mappings, mapping):
+    # def is_heap(self, mappings, mapping):
     #    """test if a mapping is a heap - at least one allocation."""
     #    if not super(LibcHeapFinder,self).is_heap(mappings, mapping):
     #        return False
@@ -65,13 +71,12 @@ class LibcHeapFinder(heapwalker.HeapFinder):
 
     def get_heap_mappings(self, mappings):
         """Prioritize heaps with [heap]"""
-        heap_mappings = super(LibcHeapFinder,self).get_heap_mappings(mappings)
-        i = [i for (i,m) in enumerate(heap_mappings) if m.pathname == '[heap]']
+        heap_mappings = super(LibcHeapFinder, self).get_heap_mappings(mappings)
+        i = [
+            i for (
+                i,
+                m) in enumerate(heap_mappings) if m.pathname == '[heap]']
         if len(i) == 1:
             h = heap_mappings.pop(i[0])
             heap_mappings.insert(0, h)
         return heap_mappings
-
-
-
-

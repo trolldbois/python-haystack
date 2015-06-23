@@ -11,9 +11,8 @@ __doc__ = '''
 
 '''
 
-import sys, abouchet 
+import sys
+import abouchet
 
 if __name__ == "__main__":
-  abouchet.main(sys.argv[1:])
-
-
+    abouchet.main(sys.argv[1:])

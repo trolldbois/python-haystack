@@ -6,7 +6,7 @@
 import logging
 import os
 import platform
-import resource 
+import resource
 import shutil
 
 __author__ = "Loic Jaquemet"
@@ -19,21 +19,23 @@ __status__ = "Production"
 log = logging.getLogger('config')
 
 # bad bad idea...
-MMAP_HACK_ACTIVE = True 
-MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
+MMAP_HACK_ACTIVE = True
+MAX_MAPPING_SIZE_FOR_MMAP = 1024 * 1024 * 20
 
-# triplet = getattr(sys, 'implementation', sys)._multiarch 
+# triplet = getattr(sys, 'implementation', sys)._multiarch
 # arch vendor os
 TARGET_TRIPLETS = [
-    ('i386-linux-gnu', (4,4,12)),
-    ('x86_64-linux-gnu', (8,8,16)),
-    ('i386-pc-win', (4,4,8)),
-    ('x86_64-pc-win', (8,8,8)),
-    ]
+    ('i386-linux-gnu', (4, 4, 12)),
+    ('x86_64-linux-gnu', (8, 8, 16)),
+    ('i386-pc-win', (4, 4, 8)),
+    ('x86_64-pc-win', (8, 8, 8)),
+]
 
 
 class ConfigClass():
+
     """Project-wide config class. """
+
     def __init__(self):
         #self.cacheDir = os.path.normpath(outputDir)
         #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
@@ -58,32 +60,37 @@ class ConfigClass():
         self.CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'
         self.CACHE_CONTEXT = 'ctx'
         self.CACHE_GRAPH = 'graph.gexf'
-        self.DIFF_PY_HEADERS='diff_headers'
+        self.DIFF_PY_HEADERS = 'diff_headers'
         self.CACHE_SIGNATURE_SIZES_DIR = 'structs.sizes.d'
         self.CACHE_SIGNATURE_SIZES_DIR_TAG = 'done'
         self.CACHE_SIGNATURE_GROUPS_DIR = 'structs.groups.d'
         self.REVERSED_TYPES_FILENAME = 'reversed_types.py'
         self.SIGNATURES_FILENAME = 'signatures'
         self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
-        #others
+        # others
         self._set_rlimits()
         # save current ctypes
         import ctypes
         self.ctypes = ctypes
-        
+
     def _set_rlimits(self):
         """set rlimits to maximum allowed"""
         maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-        resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
-        return     
-                
+        resource.setrlimit(
+            resource.RLIMIT_NOFILE,
+            (maxnofile[1],
+             maxnofile[1]))
+        return
+
     def get_word_type(self):
         if self.get_word_size() == 4:
             return self.ctypes.c_uint32
         elif self.get_word_size() == 8:
             return self.ctypes.c_uint64
         else:
-            raise ValueError('platform not supported for word size == %d'%(self.get_word_size()))
+            raise ValueError(
+                'platform not supported for word size == %d' %
+                (self.get_word_size()))
         return
 
     def get_word_type_char(self):
@@ -92,12 +99,14 @@ class ConfigClass():
         elif self.get_word_size() == 8:
             return 'Q'
         else:
-            raise ValueError('platform not supported for word size == %d'%(self.get_word_size()))
+            raise ValueError(
+                'platform not supported for word size == %d' %
+                (self.get_word_size()))
         return
-        
+
     def get_word_size(self):
         return self.__size
-        
+
     def set_word_size(self, wordsize, ptrsize, ldsize):
         from haystack import types
         self.__size = wordsize
@@ -107,31 +116,30 @@ class ConfigClass():
         # linux 64 bits, 8,8,16
         self.ctypes = types.reload_ctypes(wordsize, ptrsize, ldsize)
         return
-    
-    ### FUNCTIONS FOR REVERSE
-    
+
+    # FUNCTIONS FOR REVERSE
+
     def makeCache(self, dumpname):
         root = os.path.abspath(dumpname)
         folder = os.path.sep.join([root, self.CACHE_NAME])
-        if not os.access(folder, os.F_OK):        
+        if not os.access(folder, os.F_OK):
             os.mkdir(folder)
         return
-    
+
     def cleanCache(self, dumpname):
         root = os.path.abspath(dumpname)
         folder = os.path.sep.join([root, self.CACHE_NAME])
-        if os.access(folder, os.F_OK):        
+        if os.access(folder, os.F_OK):
             shutil.rmtree(folder)
         return
 
     def getCacheName(self, dumpname):
         root = os.path.abspath(dumpname)
         return os.path.sep.join([root, self.CACHE_NAME])
-        
-    
+
     def getCacheFilename(self, typ, dumpname):
         '''Returns a filename for caching a type of data based on the dump filename.
-    
+
         typ: one of Config.CACHE_XX types.
         dumpname: the dump file name.
         '''
@@ -140,61 +148,64 @@ class ConfigClass():
     def getStructsCacheDir(self, dumpname):
         """
         Returns a dirname for caching the structures based on the dump filename.
-    
+
         dumpname: the dump file name.
         """
         root = os.path.abspath(dumpname)
         return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
 
-def make_config(cpu=None,os_name=None):
+def make_config(cpu=None, os_name=None):
     """    """
-    if cpu is None :
+    if cpu is None:
         #raise ValueError('cpu is None')
         cpu = platform.architecture()[0].split('bit')[0]
     if os_name is None:
         raise ValueError('os_name is None')
-        #if linux in sys.platform:
+        # if linux in sys.platform:
         #    os_name='linux'
-        #else:# sys.platform.startswith('win'):
+        # else:# sys.platform.startswith('win'):
         #    os_name=win7
     if cpu == '32':
-        if os_name in ['winxp','win7']:
+        if os_name in ['winxp', 'win7']:
             return make_config_win_32()
         elif os_name == 'linux':
             return make_config_linux_32()
     elif cpu == '64':
-        if os_name in ['winxp','win7']:
+        if os_name in ['winxp', 'win7']:
             return make_config_win_64()
         elif os_name == 'linux':
             return make_config_linux_64()
     raise NotImplementedError()
 
+
 def make_config_win_32():
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.set_word_size(4,4,8)
+    cfg.set_word_size(4, 4, 8)
     return cfg
+
 
 def make_config_win_64():
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.set_word_size(8,8,8)
+    cfg.set_word_size(8, 8, 8)
     return cfg
+
 
 def make_config_linux_32():
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.set_word_size(4,4,12)
+    cfg.set_word_size(4, 4, 12)
     return cfg
+
 
 def make_config_linux_64():
     """    """
     from haystack import types
     cfg = ConfigClass()
-    cfg.set_word_size(8,8,16)
+    cfg.set_word_size(8, 8, 16)
     return cfg
-

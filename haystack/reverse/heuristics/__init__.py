@@ -12,7 +12,5 @@ __doc__ = """
 
 #import pattern
 
-all =[
+all = [
 ]
-
-

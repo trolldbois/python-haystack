@@ -31,25 +31,37 @@ __credits__ = ["Victor Skinner"]
 
 log = logging.getLogger('volmapping')
 
+
 class VolatilityProcessMapping(MemoryMapping):
+
     """Process memory mapping using volatility.
     """
-    def __init__(self, address_space, start, end, permissions='r--', offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
-        MemoryMapping.__init__(self, start, end, permissions, offset, major_device, minor_device, inode, pathname)
+
+    def __init__(self, address_space, start, end, permissions='r--',
+                 offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
+        MemoryMapping.__init__(
+            self,
+            start,
+            end,
+            permissions,
+            offset,
+            major_device,
+            minor_device,
+            inode,
+            pathname)
         self._backend = address_space
 
-    def readWord(self, addr ):
+    def readWord(self, addr):
         ws = self.config.get_word_size()
         data = self._backend.zread(addr, ws)
         if ws == 4:
-            return struct.unpack('I',data)[0]
+            return struct.unpack('I', data)[0]
         elif ws == 8:
-            return struct.unpack('Q',data)[0]
-            
+            return struct.unpack('Q', data)[0]
 
     def readBytes(self, addr, size):
         return self._backend.zread(addr, size)
-    
+
     def readStruct(self, addr, struct):
         size = self.config.ctypes.sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
@@ -57,30 +69,37 @@ class VolatilityProcessMapping(MemoryMapping):
         return instance
 
     def readArray(self, addr, basetype, count):
-        size = self.config.ctypes.sizeof(basetype*count)
-        array = (basetype*count).from_buffer_copy(self._backend.zread(addr, size))
+        size = self.config.ctypes.sizeof(basetype * count)
+        array = (
+            basetype *
+            count).from_buffer_copy(
+            self._backend.zread(
+                addr,
+                size))
         return array
 
 import sys
 
+
 class VolatilityProcessMapper:
+
     def __init__(self, imgname, pid):
         self.pid = pid
         self.imgname = imgname
         self.mappings = None
         self._init_volatility()
-    
+
     def _init_volatility(self):
         #import sys
-        #for mod in sys.modules.keys():
+        # for mod in sys.modules.keys():
         #    if 'parse' in mod:
         #        del sys.modules[mod]
         #        print "deleted",mod
         #import sys
-        #if len(sys.argv) > 3:
+        # if len(sys.argv) > 3:
         #    #sys.args=[sys.args[3]]
         #    sys.argv=[sys.argv[0],'-f',sys.argv[3]]
-        #print 'after modif',sys.argv
+        # print 'after modif',sys.argv
         import volatility
         import volatility.conf as conf
         import volatility.registry as registry
@@ -91,52 +110,50 @@ class VolatilityProcessMapper:
         registry.register_global_options(config, commands.Command)
         registry.register_global_options(config, addrspace.BaseAddressSpace)
         config.parse_options()
-        config.PROFILE="WinXPSP2x86"
+        config.PROFILE = "WinXPSP2x86"
         #config.LOCATION = "file:///media/memory/private/image.dmp"
-        config.LOCATION = "file://%s"%self.imgname
-        config.PID=str(self.pid)
-
+        config.LOCATION = "file://%s" % self.imgname
+        config.PID = str(self.pid)
 
         import volatility.plugins.vadinfo as vadinfo
 
         import code
         print config.__dict__
-        #code.interact(local=locals())
+        # code.interact(local=locals())
 
         command = vadinfo.VADWalk(config)
         command.render_text = partial(my_render_text, self, command)
         command.execute()
         # works now.
-        #for x in self.mappings:
+        # for x in self.mappings:
         #    print x
         #import code
-        #code.interact(local=locals())
+        # code.interact(local=locals())
 
     def getMappings(self):
         return self.mappings
 
 
 PERMS_PROTECTION = dict(enumerate([
-    '---', #'PAGE_NOACCESS',
-    'r--',#'PAGE_READONLY',
-    '--x',#'PAGE_EXECUTE',
-    'r-x',#'PAGE_EXECUTE_READ',
-    'rw-',#'PAGE_READWRITE',
-    'rc-',#'PAGE_WRITECOPY',
-    'rwx',#'PAGE_EXECUTE_READWRITE',
-    'rcx',#'PAGE_EXECUTE_WRITECOPY',
-    ]))
-
+    '---',  # 'PAGE_NOACCESS',
+    'r--',  # 'PAGE_READONLY',
+    '--x',  # 'PAGE_EXECUTE',
+    'r-x',  # 'PAGE_EXECUTE_READ',
+    'rw-',  # 'PAGE_READWRITE',
+    'rc-',  # 'PAGE_WRITECOPY',
+    'rwx',  # 'PAGE_EXECUTE_READWRITE',
+    'rcx',  # 'PAGE_EXECUTE_WRITECOPY',
+]))
 
 
 def my_render_text(mapper, cmd, outfd, data):
     maps = []
     for task in data:
-        #print type(task)
+        # print type(task)
         address_space = task.get_process_address_space()
         for vad in task.VadRoot.traverse():
-            #print type(vad)
-            if vad == None:
+            # print type(vad)
+            if vad is None:
                 continue
             offset = vad.obj_offset
             start = vad.Start
@@ -150,16 +167,19 @@ def my_render_text(mapper, cmd, outfd, data):
             elif vad.FileObject:
                 pathname = str(vad.FileObject.FileName or '')
 
-            pmap = VolatilityProcessMapping(address_space, start, end, permissions=perms, pathname=pathname)
-            #print pmap
+            pmap = VolatilityProcessMapping(
+                address_space,
+                start,
+                end,
+                permissions=perms,
+                pathname=pathname)
+            # print pmap
             #import code
-            #code.interact(local=locals())
-            
+            # code.interact(local=locals())
+
             maps.append(pmap)
 
     mappings = Mappings(maps)
-    #print mappings
+    # print mappings
     mappings.init_config()
     mapper.mappings = mappings
-
-
