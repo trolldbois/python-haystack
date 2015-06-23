@@ -347,6 +347,12 @@ class TestBasicFunctions(unittest.TestCase):
         i = ctypes.c_int(42)
         a = ctypes.c_void_p(ctypes.addressof(i))
         p = ctypes.cast(a,ctypes.POINTER(ctypes.c_int))
+        # ctypes is 32bits, local is 64, pointer is 64 bytes
+        # pointer value is truncated.
+        # why is ctypes 32 bites in the first place ? because its called
+        # in the 32 bits unit test class that inherits this one
+        if ctypes.sizeof(ctypes.c_void_p) != ctypes.sizeof(ctypes._CTypesProxy__real_ctypes.c_void_p):
+            self.skipTest('cant cast memory pointer cross platform')
         self.assertEquals(ctypes.addressof(i), a.value)
         self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
 
@@ -401,6 +407,7 @@ class TestBasicFunctions32(TestBasicFunctions):
         self.assertTrue( issubclass(ctypes.Structure, basicmodel.LoadableMembers) )
         self.assertTrue( issubclass(ctypes.Union, basicmodel.LoadableMembers) )
         self.assertIn( ctypes.CString, ctypes.__dict__.values() )
+
 
 class TestBasicFunctionsWin(TestBasicFunctions):
     """Tests basic haystack.utils functions on base types for x64 arch."""
