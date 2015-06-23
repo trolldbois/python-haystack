@@ -28,7 +28,7 @@ class TestStructureSizes(unittest.TestCase):
     sys.path.append('test/src/')
     import ctypes3
     
-    node = ctypes3.Node
+    node = ctypes3.struct_Node
     node._expectedValues_ = dict([('val1',[0xdeadbeef]),('ptr2',[model.NotNull])])
     test3 = ctypes3.test3
     test3._expectedValues_ = dict([
@@ -73,8 +73,8 @@ class TestStructureSizes(unittest.TestCase):
     self.assertEqual( sizes[1], ctypes.sizeof(ctypes3.test3))
     
     # is that padding I see ?
-    self.assertNotEqual( sizes[0], ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
-    self.assertEqual( sizes[0]-4, ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
+    self.assertNotEqual( sizes[0], ctypes.sizeof(ctypes3.struct_Node), 'There should be a 4 bytes padding here')
+    self.assertEqual( sizes[0]-4, ctypes.sizeof(ctypes3.struct_Node), 'There should be a 4 bytes padding here')
     #print 'Node', ctypes.sizeof(ctypes3.Node)
     #if ctypes.sizeof(ctypes3.Node) % Config.get_word_size() == 0:
     #  print 'MOD'

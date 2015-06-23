@@ -11,7 +11,7 @@ import struct
 import sys
 import time
 
-from haystack.config import ConfigClass as Config
+#from haystack.config import ConfigClass as Config
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.structures import libc
@@ -195,7 +195,7 @@ class PointerReverser(StructureOrientedReverser):
         # get pointers addrs in start -> start+size
         log.debug('Adding %d pointer fields field '%( len(my_pointers_addrs)) )
         for p_addr in my_pointers_addrs:
-          f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+          f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, context.config.WORDSIZE, False)
           #log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
 
       if time.time()-tl > 10: #i>0 and i%10000 == 0:
@@ -225,7 +225,7 @@ class FieldReverser(StructureOrientedReverser):
     decoded = 0
     fromcache = 0
     ## writing to file
-    fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
+    fout = file(context.config.getCacheFilename(context.config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
     towrite=[]
     from haystack.reverse.heuristics.dsa import DSASimple
     dsa = DSASimple()
@@ -300,7 +300,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     lists = []
     for ptr_value in context.listStructuresAddresses():
       '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
-      if context.pointers_offsets[i-1]+Config.WORDSIZE != context.pointers_offsets[i]:
+      if context.pointers_offsets[i-1]+context.config.WORDSIZE != context.pointers_offsets[i]:
         done+=1
         continue
       ptr_value = context._pointers_values[i-1]
@@ -337,12 +337,12 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     return
 
   def twoWords(self, ctx, st_addr, offset=0):
-    #return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*Config.WORDSIZE]
+    #return ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.WORDSIZE]
     m = ctx.mappings.get_mapping_for_address(st_addr+offset)
-    return m.readBytes( st_addr+offset, 2*Config.WORDSIZE )
+    return m.readBytes( st_addr+offset, 2*ctx.config.WORDSIZE )
 
   def unpack(self, context, ptr_value):
-    if Config.WORDSIZE == 8:
+    if context.config.WORDSIZE == 8:
       return struct.unpack('QQ', self.twoWords(context, ptr_value ) )
     else:
       return struct.unpack('LL', self.twoWords(context, ptr_value ) )
@@ -399,19 +399,19 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
   def findHead(self, ctx, members):
     sizes = [(ctx.getStructureSizeForAddr(m), m) for m in members]
     sizes.sort()
-    if sizes[0]<3*Config.WORDSIZE:
+    if sizes[0]<3*ctx.config.WORDSIZE:
       log.error('a double linked list element must be 3 WORD at least')
       raise ValueError('a double linked list element must be 3 WORD at least')
-    numWordSized = [s for s,addr in sizes].count(3*Config.WORDSIZE)
+    numWordSized = [s for s,addr in sizes].count(3*ctx.config.WORDSIZE)
     if numWordSized == 1:
       head = sizes.pop(0)[1]
     else: #if numWordSized > 1:
       ## find one element with 0, and take that for granted...
       head = None
       for s, addr in sizes:
-        if s == 3*Config.WORDSIZE:
+        if s == 3*onfig.WORDSIZE:
           # read ->next ptr and first field of struct || null
-          f2, field0 = self.unpack(ctx, addr+Config.WORDSIZE )
+          f2, field0 = self.unpack(ctx, addr+ctx.config.WORDSIZE )
           if field0 == 0: # this could be HEAD. or a 0 value.
             head = addr
             log.debug('We had to guess the HEAD for this linked list %x'%(addr))
@@ -452,7 +452,7 @@ class PointerGraphReverser(StructureOrientedReverser):
         log.info('%2.2f secondes to go (g:%d)'%( 
             (len(graph)-(i))*rate, i ) )
     log.info('[+] Graph - added %d edges'%(graph.number_of_edges()))
-    networkx.readwrite.gexf.write_gexf( graph, Config.getCacheFilename(Config.CACHE_GRAPH, context.dumpname))
+    networkx.readwrite.gexf.write_gexf( graph, context.config.getCacheFilename(context.config.CACHE_GRAPH, context.dumpname))
     context.parsed.add(str(self))
     return
 
@@ -470,7 +470,7 @@ def refreshOne(context, ptr_value):
   mystruct = structure.makeStructure(context, ptr_value, size)
   context.structures[ ptr_value ] = mystruct
   for p_addr in my_pointers_addrs:
-    f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+    f = mystruct.addField(p_addr, fieldtypes.FieldType.POINTER, context.config.WORDSIZE, False)
   #resolvePointers
   mystruct.resolvePointers()
   #resolvePointers
@@ -479,7 +479,7 @@ def refreshOne(context, ptr_value):
 def save_headers(context, addrs=None):
   ''' structs_addrs is sorted '''
   log.info('[+] saving headers')
-  fout = file(Config.getCacheFilename(Config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
+  fout = file(context.config.getCacheFilename(context.config.CACHE_GENERATED_PY_HEADERS_VALUES, context.dumpname),'w')
   towrite = []
   if addrs is None:
     addrs = iter(context.listStructuresAddresses())
@@ -505,8 +505,8 @@ def reverseInstances(dumpname):
   log.debug ('[+] Loading the memory dump ')
   ctx = context.get_context(dumpname)
   try:
-    if not os.access(Config.getStructsCacheDir(ctx.dumpname), os.F_OK):    
-      os.mkdir(Config.getStructsCacheDir(ctx.dumpname))
+    if not os.access(ctx.config.getStructsCacheDir(ctx.dumpname), os.F_OK):    
+      os.mkdir(ctx.config.getStructsCacheDir(ctx.dumpname))
     
     # we use common allocators to find structures.
     #log.debug('Reversing malloc')

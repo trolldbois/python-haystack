@@ -28,7 +28,7 @@ class TestStructure(unittest.TestCase):
   @classmethod
   def setUpClass(self):
     from haystack.reverse.heuristics import dsa
-    self.context = context.get_context('test/src/test-ctypes3.dump')
+    self.context = context.get_context('test/src/test-ctypes3.32.dump')
     self.dsa = dsa.DSASimple()
     self.pta = dsa.EnrichedPointerFields()
     pass
@@ -93,7 +93,7 @@ class TestStructure(unittest.TestCase):
 
 
   def test_string_overlap(self):
-    context6 = context.get_context('test/src/test-ctypes6.dump')
+    context6 = context.get_context('test/src/test-ctypes6.32.dump')
     for s in context6.listStructures():
       #s.resolvePointers()
       self.dsa.analyze_fields(s)

@@ -158,7 +158,7 @@ class TestDSA(unittest.TestCase):
   def setUpClass(self):
     self.context = None #context.get_context('test/src/test-ctypes3.dump')
     self.putty7124 = context.get_context('test/dumps/putty/putty.7124.dump')
-    self.dsa = DSASimple()
+    self.dsa = DSASimple(self.putty7124.mappings)
     
   def setUp(self):  
     pass

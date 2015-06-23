@@ -27,21 +27,22 @@ def accumulate(iterable, func=operator.add):
     total = func(total, element)
     yield total
 
-def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
+def makeMMap(testObj): #, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
+  seq = testObj.seq
   nsig = [offset]
   nsig.extend(seq)
   indices = [ i for i in accumulate(nsig)]
   dump = [] #b''
-  for i in range(0,Config.MMAP_LENGTH, Config.get_word_size()): 
+  for i in range(0,testObj.Config.MMAP_LENGTH, testObj.Config.get_word_size()): 
     if i in indices:
       dump.append( struct.pack('L',start+i) )
     else:
       dump.append( struct.pack('L',0x2e2e2e2e) )
   
-  if len(dump) != Config.MMAP_LENGTH/Config.get_word_size() :
+  if len(dump) != testObj.Config.MMAP_LENGTH/testObj.Config.get_word_size() :
     raise ValueError('error on length dump %d '%( len(dump) ) )  
   dump2 = ''.join(dump)
-  if len(dump)*Config.get_word_size() != len(dump2):
+  if len(dump)*testObj.Config.get_word_size() != len(dump2):
     raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
   stop = start + len(dump2)
   mmap = MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
@@ -49,7 +50,8 @@ def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
   return mmap2
 
 
-def makeSignature(seq):
+def makeSignature(testObj):
+  seq = testObj.seq
   mmap = makeMMap(seq)
   mappings = Mappings([mmap], 'test')
   sig = pattern.PointerIntervalSignature(mappings, 'test_mmap', Config)
@@ -66,9 +68,9 @@ class TestSignature(unittest.TestCase):
     self.Config.MMAP_LENGTH = 4096
     self.Config.STRUCT_OFFSET = 44
     self.seq = [4,4,8,128,4,8,4,4,12]
-    self.mmap = makeMMap(self.seq)
+    self.mmap = makeMMap(self) #.seq)
     self.name = 'test_dump_1'
-    self.sig = makeSignature(self.seq)
+    self.sig = makeSignature(self) #.seq)
 
   def test_init(self):
     # forget about the start of the mmap  ( 0 to first pointer value) , its irrelevant
