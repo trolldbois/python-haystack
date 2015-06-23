@@ -14,7 +14,7 @@ import unittest
 from haystack import config
 Config = config.make_config_linux_32() # forcing it on these unittest
 
-from haystack import model
+from haystack import model, constraints
 from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics.dsa import *
@@ -29,20 +29,20 @@ class TestStructureSizes(unittest.TestCase):
     import ctypes3
     
     node = ctypes3.struct_Node
-    node._expectedValues_ = dict([('val1',[0xdeadbeef]),('ptr2',[model.NotNull])])
-    test3 = ctypes3.test3
+    node._expectedValues_ = dict([('val1',[0xdeadbeef]),('ptr2',[constraints.NotNull])])
+    test3 = ctypes3.struct_test3
     test3._expectedValues_ = dict([
       ('val1', [0xdeadbeef]),
       ('val1b', [0xdeadbeef]),
       ('val2', [0x10101010]),
       ('val2b', [0x10101010]),
-      ('me',[model.NotNull]) ])
-    cls.dsa = DSASimple()
+      ('me',[constraints.NotNull]) ])
 
 
   def setUp(self):    
     #os.chdir()
-    self.context = context.get_context('test/src/test-ctypes3.dump')
+    self.context = context.get_context('test/src/test-ctypes3.32.dump')
+    self.dsa = DSASimple(self.context.config)
 
   def tearDown(self):
     self.context = None
