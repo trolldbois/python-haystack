@@ -76,10 +76,16 @@ _HEAP_SUBSEGMENT
 _LFH_HEAP
 '''
 
-from haystack.structures.win32 import win7_32 as gen
-from haystack.structures.win32 import win7_64 #as gen
-
 import ctypes
+
+from haystack.structures.win32 import win7_32 #as gen
+from haystack.structures.win32 import win7_64 #as gen
+gen=None
+if ctypes.sizeof(ctypes.c_void_p)==4:
+    gen = win7_32
+else:
+    gen = win7_64
+    
 import struct
 import logging
 import sys

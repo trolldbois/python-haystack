@@ -58,6 +58,8 @@ class TestWalkers(unittest.TestCase):
         winxp_x64 = winheapwalker.WinHeapFinder()
         win7_x64 = win7heapwalker.Win7HeapFinder()
         
+        #import code
+        #code.interact(local=locals())
         self.assertEquals(ctypes.sizeof(libc_x64.heap_type), 16)
         self.assertEquals(ctypes.sizeof(winxp_x64.heap_type), 2754) # who knows...
         self.assertEquals(ctypes.sizeof(win7_x64.heap_type), 520) 
