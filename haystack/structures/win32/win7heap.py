@@ -76,10 +76,15 @@ _HEAP_SUBSEGMENT
 _LFH_HEAP
 '''
 
+# TODO  extract constraints in yara format
+
+
 import ctypes
 
 from haystack.structures.win32 import win7_32 #as gen
 from haystack.structures.win32 import win7_64 #as gen
+
+# use the win7 heap that relates to the current loaded ctypes
 gen=None
 if ctypes.sizeof(ctypes.c_void_p)==4:
     gen = win7_32
@@ -93,11 +98,6 @@ import sys
 import code
 
 log = logging.getLogger('win7heap')
-
-# IF config says x32, load win7_32
-# IF config says x64, load win7_64
-
-# todo extract constraints in yara format
 
 ################ START copy generated classes ##########################
 # copy generated classes (gen.*) to this module as wrapper
