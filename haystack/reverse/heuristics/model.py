@@ -10,9 +10,8 @@ log = logging.getLogger('heuristics.model')
 
 class FieldAnalyser(object):
 
-    def __init__(self, mappings):
-        self.mappings = mappings
-        self.config = mappings.config
+    def __init__(self, config):
+        self.config = config
 
     def make_fields(self, structure, offset, size):
         """
@@ -29,9 +28,8 @@ class StructureAnalyser(object):
     and try to determine specific field types that are identifiable with a 
     full structure-view.
     """
-    def __init__(self, mappings):
-        self.mappings = mappings
-        self.config = mappings.config
+    def __init__(self, config):
+        self.config = config
 
     def analyze_fields(self, structure):
         """

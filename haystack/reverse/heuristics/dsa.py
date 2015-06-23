@@ -227,13 +227,13 @@ class DSASimple(StructureAnalyser):
     
     If the word content does not match theses heuristics, tag the fiel has unknown.
     """
-    def __init__(self, mappings):
-        super(DSASimple,self).__init__(mappings)
-        self.zero_a = ZeroFields(self.mappings)
-        self.ascii_a = PrintableAsciiFields(self.mappings)
-        self.utf16_a = UTF16Fields(self.mappings)
-        self.int_a = IntegerFields(self.mappings)
-        self.ptr_a = PointerFields(self.mappings)
+    def __init__(self, config):
+        super(DSASimple,self).__init__(config)
+        self.zero_a = ZeroFields(self.config)
+        self.ascii_a = PrintableAsciiFields(self.config)
+        self.utf16_a = UTF16Fields(self.config)
+        self.int_a = IntegerFields(self.config)
+        self.ptr_a = PointerFields(self.config)
 
     def analyze_fields(self, structure):
         structure.reset()

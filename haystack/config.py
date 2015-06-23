@@ -5,6 +5,7 @@
 
 import logging
 import os
+import platform
 import resource 
 import shutil
 
@@ -106,7 +107,9 @@ class ConfigClass():
         # linux 64 bits, 8,8,16
         self.ctypes = types.reload_ctypes(wordsize, ptrsize, ldsize)
         return
-        
+    
+    ### FUNCTIONS FOR REVERSE
+    
     def makeCache(self, dumpname):
         root = os.path.abspath(dumpname)
         folder = os.path.sep.join([root, self.CACHE_NAME])
@@ -144,12 +147,17 @@ class ConfigClass():
         return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
 
-def make_config(cpu,os_name):
+def make_config(cpu=None,os_name=None):
     """    """
     if cpu is None :
-        raise ValueError('cpu is None')
+        #raise ValueError('cpu is None')
+        cpu = platform.architecture()[0].split('bit')[0]
     if os_name is None:
         raise ValueError('os_name is None')
+        #if linux in sys.platform:
+        #    os_name='linux'
+        #else:# sys.platform.startswith('win'):
+        #    os_name=win7
     if cpu == '32':
         if os_name in ['winxp','win7']:
             return make_config_win_32()
