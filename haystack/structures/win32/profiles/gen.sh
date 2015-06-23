@@ -27,10 +27,6 @@ clang2py --target x86_64-win64 -o winxp_64.py Win7SP1X64.64.h
 # generate win7 x32 profiles
 pdbtoh.py -g -w 4 -d heap.structures.win7.1 /home/other/outputs/pdb/Win7SP1X86/_000160E > Win7SP1X86._000160E.32.h
 pdbtoh.py -g -w 4 -d heap.structures.win7.2 /home/other/outputs/pdb/Win7SP1X86/_00003BA > Win7SP1X86._00003BA.32.h
-#clang -E -target i386-win Win7SP1X86._000160E.32.h Win7SP1X86._00003BA.32.h  > Win7SP1X86.32.h
-#clang2py --target i386-win -o win7_32.py Win7SP1X86.32.h
-#close but heap is in double clang2py --target i386-win -o win7_32.py Win7SP1X86._00003BA.32.h Win7SP1X86._000160E.32.h
-
 # ok that works
 clang -E -target i386-win Win7SP1X86._00003BA.32.h Win7SP1X86._000160E.32.h  > Win7SP1X86.32.h
 clang2py --target i386-win -o win7_32.py Win7SP1X86.32.h
@@ -51,9 +47,9 @@ clang2py --target i386-win -o win7_32.py Win7SP1X86.32.h
 
 pdbtoh.py -g -w 8 -d heap.structures.win7.1 /home/other/outputs/pdb/Win7SP1X64/_0000BEB > Win7SP1X64.0000BEB.64.h
 pdbtoh.py -g -w 8 -d heap.structures.win7.2 /home/other/outputs/pdb/Win7SP1X64/_000143D > Win7SP1X64.000143D.64.h
-#clang -E -target x86_64-win64 Win7SP1X64.0000BEB.64.h Win7SP1X64.000143D.64.h > Win7SP1X64.64.h
-#clang2py --target x86_64-win64 -o win7_64.py Win7SP1X64.64.h
-clang2py --target x86_64-win64 -o win7_64.py Win7SP1X64.000143D.64.h Win7SP1X64.0000BEB.64.h
+clang -E -target x86_64-win64 Win7SP1X64.000143D.64.h Win7SP1X64.0000BEB.64.h  > Win7SP1X64.64.h
+clang2py --target x86_64-win64 -o win7_64.py Win7SP1X64.64.h
+
 
 
 # HEAP_SUBSEGMENT has a circular dependencies that clang doesn't like
