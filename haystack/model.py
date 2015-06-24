@@ -80,7 +80,8 @@ def copyGeneratedClasses(src, dst):
     :param me : dst module
     :param src : src module, generated
     """
-    #FIXME import ctypes
+    #FIXME - definively required. 
+    import ctypes
     log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
     copied = 0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
@@ -106,7 +107,8 @@ def __createPOPOClasses(targetmodule):
 
         Mandatory.
     """
-    #FIXME import ctypes
+    #FIXME maybe required
+    import ctypes
     from haystack import basicmodel
     _created = 0
     for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
