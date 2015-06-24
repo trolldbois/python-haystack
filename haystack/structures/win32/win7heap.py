@@ -49,8 +49,9 @@ from haystack import utils
 from haystack import constraints
 
 
+# pylint: disable=pointeless-string-statement
 '''
-Critical structs are
+# Critical structs are
 _LIST_ENTRY
 _LFH_BLOCK_ZONE
 _HEAP_PSEUDO_TAG_ENTRY
@@ -93,11 +94,8 @@ if ctypes.sizeof(ctypes.c_void_p) == 4:
 else:
     gen = win7_64
 
-import struct
 import logging
 import sys
-
-import code
 
 log = logging.getLogger('win7heap')
 
@@ -112,6 +110,11 @@ model.registerModule(sys.modules[__name__])
 
 ############# Start expectedValues and methods overrides #################
 
+# asserts for pyflakes
+assert HEAP_SEGMENT
+assert HEAP_SEGMENT
+assert struct_c__S__HEAP_ENTRY_Ua_Sa_1
+assert struct_c__S__HEAP_FREE_ENTRY_Ua_Sa_1
 
 # HEAP_SEGMENT
 

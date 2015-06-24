@@ -20,7 +20,11 @@ from haystack.config import Config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
 from haystack.reverse import utils
+
+#FIXME
 from haystack.reverse.reversers import *
+
+import ctypes
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
