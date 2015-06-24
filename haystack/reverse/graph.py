@@ -15,7 +15,7 @@ import networkx
 import matplotlib.pyplot as plt
 
 
-from haystack import config
+from haystack.config import ConfigClass
 from haystack import argparse_utils
 from haystack.reverse import utils
 from haystack.reverse import context
@@ -23,17 +23,20 @@ from haystack.reverse.reversers import *  # by the pickle of my thumb
 
 log = logging.getLogger('graph')
 
+# FIXME, use objects.
+config = ConfigClass()
+
 
 def printGraph(G, gname):
     h = networkx.DiGraph()
     h.add_edges_from(G.edges())
     networkx.draw_graphviz(h)
     fname = os.path.sep.join(
-        [config.Config.imgCacheDir, 'graph_%s.png' % (gname)])
+        [config.imgCacheDir, 'graph_%s.png' % (gname)])
     plt.savefig(fname)
     plt.clf()
     fname = os.path.sep.join(
-        [config.Config.cacheDir, 'graph_%s.gexf' % (gname)])
+        [config.cacheDir, 'graph_%s.gexf' % (gname)])
     networkx.readwrite.gexf.write_gexf(h, fname)
 
 # extract graph
@@ -51,7 +54,7 @@ def depthSubgraph(source, target, nodes, depth):
 
 
 def save_graph_headers(ctx, graph, fname):
-    fout = file(os.path.sep.join([Config.cacheDir, fname]), 'w')
+    fout = file(os.path.sep.join([config.cacheDir, fname]), 'w')
     towrite = []
     structs = [ctx.structures[int(addr, 16)] for addr in graph.nodes()]
     for anon in structs:
@@ -96,7 +99,7 @@ def make(opts):
     printGraph(graph, os.path.basename(opts.dumpname))
 
 
-def clean():
+def clean(digraph):
     # clean solos
     isolates = networkx.algorithms.isolate.isolates(digraph)
     digraph.remove_nodes_from(isolates)
@@ -155,7 +158,7 @@ def clean():
         for rg in g.nodes():
             networkx.draw(rg)
         fname = os.path.sep.join(
-            [config.Config.imgCacheDir, 'isomorph_subgraphs_%d.png' % (num)])
+            [config.imgCacheDir, 'isomorph_subgraphs_%d.png' % (num)])
         plt.savefig(fname)
         plt.clf()
     # need to use gephi-like for rendering nicely on the same pic
@@ -164,8 +167,8 @@ def clean():
     bigGraph.add_edges_from(digraph.edges(subgraphs[0].nodes()))
 
     stack_addrs = utils.int_array_cache(
-        config.Config.getCacheFilename(
-            config.Config.CACHE_STACK_VALUES,
+        config.getCacheFilename(
+            config.CACHE_STACK_VALUES,
             ctx.dumpname))
     stack_addrs_txt = set(['%x' % (addr)
                            for addr in stack_addrs])  # new, no long
@@ -201,7 +204,7 @@ def printImportant(ind):
     # pointerFields'%(impDiGraph.in_degree(saddr),
     # impDiGraph.out_degree(saddr))
     fname = os.path.sep.join(
-        [config.Config.imgCacheDir, 'important_%s.png' % (saddr)])
+        [config.imgCacheDir, 'important_%s.png' % (saddr)])
     networkx.draw(impDiGraph)
     plt.savefig(fname)
     plt.clf()

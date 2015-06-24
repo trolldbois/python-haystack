@@ -18,6 +18,7 @@ import ctypes
 log = logging.getLogger('field')
 
 # Field related functions and classes
+# FIXME, use objects.
 config = ConfigClass()
 
 
@@ -442,7 +443,7 @@ class ArrayField(Field):
                   % (self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename))
         #
         comment = '# %s %s array:%s' % (
-            self.comment, self.usercomment, self.getValue(Config.commentMaxSize))
+            self.comment, self.usercomment, self.getValue(config.commentMaxSize))
         fstr = "%s( '%s' , %s ), %s\n" % (
             prefix, self.get_name(), self.getTypename(), comment)
         return fstr

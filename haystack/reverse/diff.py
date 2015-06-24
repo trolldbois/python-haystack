@@ -41,6 +41,7 @@ def make(opts):
             '[+] Refreshing from %d structures cached' %
             (len(
                 ctx.structures)))
+        # FIXME, I think its now an heapwalker, not a reverser
         mallocRev = MallocReverser()
         context = mallocRev.reverse(context)
         mallocRev.check_inuse(context)
