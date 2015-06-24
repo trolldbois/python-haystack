@@ -31,7 +31,8 @@ class TestMemoryDumper(unittest.TestCase):
         import os
         import sys
         if not os.geteuid() == 0:
-            raise RuntimeError(
+            #raise RuntimeError(
+            raise unittest.SkipTest(
                 "Memory dump test can only be run as root. Please sudo")
 
     def get_folder_size(self, folder):

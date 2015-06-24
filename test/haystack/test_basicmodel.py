@@ -137,6 +137,10 @@ class TestRealSSH(unittest.TestCase):
     def setUp(self):
         model.reset()
         self.mappings = dump_loader.load('test/dumps/ssh/ssh.1/')
+        try:
+            import sslsnoop
+        except ImportError:
+            self.skipTest('sslsnoop not present')
         self.classname = 'sslsnoop.ctypes_openssh.session_state'
         self.known_offset = 0xb84ee318
 
