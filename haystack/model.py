@@ -81,6 +81,7 @@ def copyGeneratedClasses(src, dst):
     :param src : src module, generated
     """
     #FIXME - definively required. 
+    # pylint: disable=reimported
     import ctypes
     log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
     copied = 0
@@ -108,6 +109,7 @@ def __createPOPOClasses(targetmodule):
         Mandatory.
     """
     #FIXME maybe required
+    # pylint: disable=reimported
     import ctypes
     from haystack import basicmodel
     _created = 0
@@ -159,7 +161,7 @@ def registerModule(targetmodule):
     - Creates Plain old python object for each ctypes record to be able to
     pickle/unpickle them later.
     """
-    #FIXME import ctypes
+    #import ctypes
     log.debug('registering module %s' % (targetmodule))
     if targetmodule in registeredModules():
         log.warning('Module %s already registered. Skipping.' % (targetmodule))

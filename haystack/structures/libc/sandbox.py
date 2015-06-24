@@ -18,6 +18,10 @@ offset = 0xb6b3ef68 - 0xb68b1000
 
 from haystack import utils
 from haystack.mappings.process import readProcessMappings
+from haystack.reverse import context
+from haystack.reverse import reversers
+from haystack.reverse import pointerfinder
+
 
 
 class Dummy():
@@ -140,7 +144,6 @@ def test3():
 
     IGNORES = ['None', '[heap]', '[stack]', '[vdso]']
 
-    from haystack.reverse import reversers, pointerfinder
     dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'  # 23418'
     #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
     print '[+] load context', dumpname
@@ -219,7 +222,6 @@ def test3():
 
 
 def test4():
-    from haystack.reverse import reversers, pointerfinder
     dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'  # 23418'
     #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
     print '[+] load context', dumpname

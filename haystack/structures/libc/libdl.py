@@ -6,15 +6,15 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import ctypes
 import logging
 import os
+import pickle
 import sys
-import ctypes
-
-log = logging.getLogger('libdl')
 
 from haystack.mappings.process import readProcessMappings
 
+log = logging.getLogger('libdl')
 
 class Dl_info(ctypes.Structure):
     _fields_ = [
@@ -53,13 +53,11 @@ def reverseLocalFonctionPointerNames(context):
         context.config.CACHE_FUNCTION_NAMES,
         context.dumpname)
     if os.access(fsave, os.F_OK):
-        import pickle
         vtable = pickle.load(file(fsave, 'rb'))
         for x in vtable.items():
             yield x
         raise StopIteration
 
-    import ctypes
     IGNORES = ['None', '[heap]', '[stack]', '[vdso]']
 
     # XXX this is not portable.

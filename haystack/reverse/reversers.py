@@ -66,7 +66,6 @@ class StructureOrientedReverser():
                 'incomplete unpickling : %s - You should probably reset context.parsed' %
                 (e))
             ###context.parsed = set()
-            import sys
             ex = sys.exc_info()
             raise ex[1], None, ex[2]
         finally:
@@ -491,7 +490,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
             # find one element with 0, and take that for granted...
             head = None
             for s, addr in sizes:
-                if s == 3 * onfig.WORDSIZE:
+                if s == 3 * ctx.config.WORDSIZE:
                     # read ->next ptr and first field of struct || null
                     f2, field0 = self.unpack(ctx, addr + ctx.config.WORDSIZE)
                     if field0 == 0:  # this could be HEAD. or a 0 value.

@@ -706,7 +706,6 @@ class PinnedPointersMapper:
         return sig_uncommon_slice_offset, sig_aggregated_seqs
 
     def _findMultipleInstances(self):
-        import itertools
         allpp = sorted([v for l in self.cacheValues2.values()
                         for v in l], reverse=True)
         unresolved = []

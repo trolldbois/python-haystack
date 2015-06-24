@@ -126,7 +126,9 @@ class StructureSizeCache:
             return False
         for myfile in os.listdir(outdir):
             try:
-                addr = int(myfile.split(_)[1], 16)
+                # FIXME: not sure its -
+                # and what that section is about in general.
+                addr = int(myfile.split('-')[1], 16)
             except IndexError as e:
                 continue  # ignore file
 

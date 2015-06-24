@@ -186,7 +186,7 @@ def clean(digraph):
 # important struct
 
 
-def printImportant(ind):
+def printImportant(ctx, digraph, degreesList, ind, bigGraph):
     import structure
     nb, saddr = degreesList[ind]
     addr = int(saddr, 16)
@@ -223,7 +223,7 @@ def printImportant(ind):
     return s1
 
 
-def deref(f):
+def deref(ctx, f):
     ctx.structures[f.target_struct_addr].decodeFields()
     return ctx.structures[f.target_struct_addr]
 
