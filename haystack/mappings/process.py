@@ -161,10 +161,10 @@ def readProcessMappings(process):
     except ProcError as err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
 
-    from haystack import types
     before = None
     # save the current ctypes module.
     mappings = Mappings(None)
+    # FIXME Debug, but probably useless now that ctypes is in config
     if True:
         import ctypes
         before = ctypes

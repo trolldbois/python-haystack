@@ -195,8 +195,10 @@ class pyObj(object):
     def __len__(self):
         return self._len_
 
-    def findCtypes(self, cache=set()):
+    def findCtypes(self, cache=None):
         """ recurse on members to check for ctypes object. """
+        if cache is None:
+            cache = set()
         ret = False
         for attrname, attr in self.__dict__.items():
             if id(attr) in cache:  # do not recurse in already parsed

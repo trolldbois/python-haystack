@@ -31,6 +31,7 @@ from haystack import utils
 from haystack import argparse_utils
 from haystack.mappings.base import MemoryMapping
 from haystack.mappings.base import Mappings
+from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import FilenameBackedMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 from haystack.mappings.file import MemoryDumpMemoryMapping
@@ -282,7 +283,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
         end = 0xc090d000
         kmap = memory_mapping.MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0,
                                                       major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpname)
-        self.mappings = memory_mapping.Mappings([kmap], self.dumpname)
+        self.mappings = Mappings([kmap], self.dumpname)
 
 
 """Order of attempted loading"""
@@ -330,7 +331,7 @@ def argparser():
         action='store',
         help='The cpu bits number')
     heap_parser.set_defaults(func=_heap)
-    return rootparser
+    return heap_parser
 
 
 def main(argv):

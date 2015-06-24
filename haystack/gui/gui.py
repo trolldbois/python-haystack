@@ -205,6 +205,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
             found += 1
             resultGroup.addToGroup(
                 widgets.Word(
+                    # FIXME offset?
                     offset,
                     value,
                     scene=self.scene,

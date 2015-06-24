@@ -275,7 +275,7 @@ class Mappings:
         os_name = self.get_os_name()
         cpu = self.get_cpu_bits()
         # Change ctypes now
-        from haystack import config
+        #from haystack import config
         self.config = config.make_config(cpu=cpu, os_name=os_name)
         self._reset_config()
 

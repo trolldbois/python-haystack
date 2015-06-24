@@ -114,7 +114,7 @@ class MemoryDumper:
         for mbi in memory_maps:
             # TODO
             try:
-                self._dump_mapping(m, destdir)
+                self._dump_mapping(mbi, destdir)
             except IOError as e:
                 err += 1
                 log.warning(e)
@@ -206,7 +206,7 @@ def dump(pid, outfile, typ="dir", compact=False):
 
 def _dump(opt):
     """Dumps a process memory mappings to Haystack dump format."""
-    return dump(opt.pid, opt.dumpname, opt.type, opt.stack, opt.heap)
+    return dump(opt.pid, opt.dumpname, opt.type)
 
 
 def argparser():

@@ -108,14 +108,14 @@ class RecursiveTextOutputter(Outputter):
                                      depth - 1))
             s += '\n%s],' % (prefix + '\t')
         elif ctypes.is_cstring_type(attrtype):
-            if not bool(myself.ptr):
+            if not bool(attr.ptr):
                 return "<NULLPTR>"
             if self.mappings.hasRef(
-                    ctypes.CString, utils.get_pointee_address(obj.ptr)):
+                    ctypes.CString, utils.get_pointee_address(attr.ptr)):
                 s = self.mappings.getRef(
                     ctypes.CString,
                     utils.get_pointee_address(
-                        obj.ptr))
+                        attr.ptr))
             else:
                 raise Exception('This CString was not in cache')
             s = '"%s" , #(CString)' % (s)

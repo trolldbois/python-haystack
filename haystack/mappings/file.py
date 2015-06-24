@@ -385,7 +385,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         return array
 
     @classmethod
-    def fromFile(self, memoryMapping, memdump):
+    def fromFile(cls, memoryMapping, memdump):
         """
             Transform a MemoryMapping to a file-backed MemoryMapping using FileBackedMemoryMapping.
 

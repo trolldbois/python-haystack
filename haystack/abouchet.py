@@ -15,6 +15,7 @@ import json
 from haystack import model
 from haystack import argparse_utils
 from haystack import utils
+from haystack import basicmodel
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack.outputters import text
 from haystack.outputters import python
@@ -390,7 +391,6 @@ def getKlass(name):
         :param name a haystack structure's text name. ( 'sslsnoop.ctypes_openssh.session_state' for example )
     """
     module, sep, kname = name.rpartition('.')
-    import sys
     mod = __import__(module, globals(), locals(), [kname])
     klass = getattr(mod, kname)
 
@@ -413,7 +413,6 @@ def search_struct_mem(structName, mappings, targetMappings=None, maxNum=-1):
         :param targetMappings the list of specific mapping to look into.
         :param maxNum the maximum number of results expected. -1 for infinite.
     """
-    from haystack import basicmodel  # TODO replace by instance method
     log.debug('searchIn: %s - %s' % (structName, mappings))
     structType = getKlass(structName)
     finder = StructFinder(mappings, targetMappings)
@@ -424,6 +423,7 @@ def search_struct_mem(structName, mappings, targetMappings=None, maxNum=-1):
     ret = [(parser.parse(ss), addr) for ss, addr in outs]
     if len(ret) > 0:
         log.debug("%s %s" % (ret[0], type(ret[0])))
+    # TODO replace by instance method
     if basicmodel.findCtypesInPyObj(ret):
         log.error('=========************======= CTYPES STILL IN pyOBJ !!!! ')
     return ret

@@ -80,7 +80,7 @@ def copyGeneratedClasses(src, dst):
     :param me : dst module
     :param src : src module, generated
     """
-    import ctypes
+    #FIXME import ctypes
     log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
     copied = 0
     for (name, klass) in inspect.getmembers(src, inspect.isclass):
@@ -106,7 +106,7 @@ def __createPOPOClasses(targetmodule):
 
         Mandatory.
     """
-    import ctypes
+    #FIXME import ctypes
     from haystack import basicmodel
     _created = 0
     for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
@@ -157,7 +157,7 @@ def registerModule(targetmodule):
     - Creates Plain old python object for each ctypes record to be able to
     pickle/unpickle them later.
     """
-    import ctypes
+    #FIXME import ctypes
     log.debug('registering module %s' % (targetmodule))
     if targetmodule in registeredModules():
         log.warning('Module %s already registered. Skipping.' % (targetmodule))

@@ -64,7 +64,7 @@ if platform.system() != 'Windows':
     # formatAddress = ptrace.ctypes_tools.formatAddress #TODO move to utils
 
 else:
-    import ctypes
+    # TODO Test unit
     import winappdbg
     from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
 

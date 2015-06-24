@@ -182,11 +182,12 @@ class ListModel(object):
         log.debug('-+ <%s> loadMembers END +-' % (self.__class__.__name__))
         return True
 
-    def iterateListField(self, mappings, fieldname, sentinels=[]):
+    def iterateListField(self, mappings, fieldname, sentinels=None):
         """
         start from the field    and iterate a list.
         does not return self."""
-
+        if sentinels is None:
+            sentinels = []
         structType, offset = self._getListFieldInfo(fieldname)
 
         # @ of the field

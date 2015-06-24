@@ -34,22 +34,22 @@ log = logging.getLogger('diff')
 def make(opts):
     log.info('[+] Loading context of %s' % (opts.dump1))
     # '../../outputs/skype.1.a') # TODO
-    context = context.get_context(opts.dump1)
+    ctx = context.get_context(opts.dump1)
     # refresh
-    if len(context.structures) != len(context.structures_addresses):
+    if len(ctx.structures) != len(ctx.structures_addresses):
         log.info(
             '[+] Refreshing from %d structures cached' %
             (len(
-                context.structures)))
+                ctx.structures)))
         mallocRev = MallocReverser()
         context = mallocRev.reverse(context)
         mallocRev.check_inuse(context)
         log.info(
             '[+] Final %d structures from malloc blocs' %
             (len(
-                context.structures)))
+                ctx.structures)))
 
-    heap1 = context.mappings.get_heap()
+    heap1 = ctx.mappings.get_heap()
     log.info('[+] Loading mappings of %s' % (opts.dump2))
     newmappings = dump_loader.load(opts.dump2)
     heap2 = newmappings.get_heap()
@@ -64,8 +64,8 @@ def make(opts):
     # joined iteration, found structure affected
     # use info from malloc : structures.start + .size
     addr_iter = iter(addrs)
-    structs_addr_iter = iter(context.malloc_addresses)
-    structs_size_iter = iter(context.malloc_sizes)
+    structs_addr_iter = iter(ctx.malloc_addresses)
+    structs_size_iter = iter(ctx.malloc_sizes)
     try:
         addr = addr_iter.next()
         st_addr = structs_addr_iter.next()
@@ -90,7 +90,7 @@ def make(opts):
             # dumb/there no holes )
             if 0 <= (addr - st_addr) < st_size:
                 # tag the structure as different
-                structures.append(context.structures[st_addr])
+                structures.append(ctx.structures[st_addr])
                 cnt += 1
             else:
                 # (addr - st_addr) < 0 # impossible by previous while
@@ -132,11 +132,11 @@ def print_diff_files(opts, context, newmappings, structures):
         # TODO, in toString(), pointer value should be in comment, to check for
         # pointer change, when same pointed struct.
         st.decodeFields()
-        #st.resolvePointers(context.structures_addresses, context.structures)
+        #st.resolvePointers(ctx.structures_addresses, ctx.structures)
         # st._aggregateFields()
         st2.reset()  # clean previous state
         st2.decodeFields()
-        #st2.resolvePointers(context.structures_addresses, context.structures)
+        #st2.resolvePointers(ctx.structures_addresses, ctx.structures)
         # st2._aggregateFields()
         # write the files
         f1.write(st.toString())
