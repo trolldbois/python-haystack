@@ -4,54 +4,60 @@
 """Expected testing structures."""
 
 import ctypes
-import logging, sys
+import logging
+import sys
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
 
-from haystack.utils import get_pointee_address,array2bytes,bytes2array
-from haystack.constraints import LoadableMembers,RangeValue,NotNull,CString
+from haystack.utils import get_pointee_address, array2bytes, bytes2array
+from haystack.constraints import LoadableMembers, RangeValue, NotNull, CString
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 
-log=logging.getLogger('cpp')
+log = logging.getLogger('cpp')
 
 
 # ============== Internal type defs ==============
 
 
 class CPP(LoadableMembers):
-  ''' defines classRef '''
-  pass
+
+    ''' defines classRef '''
+    pass
+
 
 class A(CPP):
-  _fields_ = [
-    ('a', ctypes.c_uint)
-  ]
+    _fields_ = [
+        ('a', ctypes.c_uint)
+    ]
+
 
 class B(A):
-  _fields_ = [
-    ('b', ctypes.c_uint)
-  ]
+    _fields_ = [
+        ('b', ctypes.c_uint)
+    ]
+
 
 class C(B):
-  _fields_ = [
-    ('c', ctypes.c_uint)
-  ]
+    _fields_ = [
+        ('c', ctypes.c_uint)
+    ]
+
 
 class D(B):
-  _fields_ = [
-    ('d', ctypes.c_uint)
-  ]
+    _fields_ = [
+        ('d', ctypes.c_uint)
+    ]
 
 
-class E(D,C):
-  _fields_ = [
-    ('C', C),
-    #('C', C),
-    ('e', ctypes.c_uint)
-  ]
+class E(D, C):
+    _fields_ = [
+        ('C', C),
+        #('C', C),
+        ('e', ctypes.c_uint)
+    ]
 
 ################ START copy generated classes ##########################
 
@@ -69,17 +75,20 @@ model.registerModule(sys.modules[__name__])
 
 # checkks
 
-import sys,inspect
-src=sys.modules[__name__]
+import sys
+import inspect
+src = sys.modules[__name__]
 
 
 def printSizeof(mini=-1):
-  for (name,klass) in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-    if type(klass) == type(ctypes.Structure):# and klass.__module__.endswith('%s_generated'%(__name__) ) :
-      if ctypes.sizeof(klass) > mini:
-        print '%s:'%name,ctypes.sizeof(klass)
+    for (name, klass) in inspect.getmembers(
+            sys.modules[__name__], inspect.isclass):
+        # and klass.__module__.endswith('%s_generated'%(__name__) ) :
+        if isinstance(klass, type(ctypes.Structure)):
+            if ctypes.sizeof(klass) > mini:
+                print '%s:' % name, ctypes.sizeof(klass)
 
-e= E()
+e = E()
 
 e.a = 1
 e.b = 2
@@ -91,16 +100,15 @@ C.__setattr__(e, 'a', 99)
 D.__setattr__(e, 'a', 66)
 e.C.a = 122
 
-#for f in e.getFields():
+# for f in e.getFields():
 #  print f[0], getattr(e, f[0])
 
-#print e.C.a
+# print e.C.a
 
-#print dict(e.getFields())
+# print dict(e.getFields())
 
 ##########
 
 
 if __name__ == '__main__':
-  pass #printSizeof()
-
+    pass  # printSizeof()

@@ -2,4 +2,3 @@
 # -*- coding: utf-8 -*-
 
 """Module holds some test structure definition."""
-

@@ -10,3 +10,5 @@ Ongoing:
  - FIX OverflowError: Python int too large to convert to C long on ptrace file.seek - ignore vsyscall mmap
  - add memory dumps test case to a dropbox
  - fix the heap structures used by haystack for win7. Ignore HEAP_ENTRY SubSegmentCode pointer as it is encoded.
+ - fix the generation process for HEAP structures. ctypeslib and clang do not like circular dependencies.
+ - autopep8 all

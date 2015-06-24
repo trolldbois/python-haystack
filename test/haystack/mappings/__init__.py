@@ -10,7 +10,5 @@ __doc__ = """
   Memory Mappings used in haystack
 """
 
-all =[
+all = [
 ]
-
-

@@ -17,9 +17,5 @@ log = logging.getLogger('bad')
 from bad_gen import *
 
 Struct1.expectedValues = {
-  'field1': constraints.RangeValue(1,16),
-  }
- 
-
-
-
+    'field1': constraints.RangeValue(1, 16),
+}

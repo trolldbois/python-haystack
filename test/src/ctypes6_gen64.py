@@ -20,65 +20,74 @@ else:
     # but the class should be submitted to a unique instance for each base type
     # to that if A == B, POINTER_T(A) == POINTER_T(B)
     ctypes._pointer_t_type_cache = {}
+
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint64 
+        fake_ptr_base_type = ctypes.c_uint64
         # specific case for c_void_p
-        if pointee is None: # VOID pointer type. c_void_p.
-            pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
+        if pointee is None:  # VOID pointer type. c_void_p.
+            pointee = type(None)  # ctypes.c_void_p # ctypes.c_ulong
             clsname = 'c_void'
         else:
             clsname = pointee.__name__
         if clsname in ctypes._pointer_t_type_cache:
             return ctypes._pointer_t_type_cache[clsname]
         # make template
+
         class _T(_ctypes._SimpleCData,):
             _type_ = 'L'
             _subtype_ = pointee
+
             def _sub_addr_(self):
                 return self.value
+
             def __repr__(self):
-                return '%s(%d)'%(clsname, self.value)
+                return '%s(%d)' % (clsname, self.value)
+
             def contents(self):
                 raise TypeError('This is not a ctypes pointer.')
+
             def __init__(self, **args):
-                raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(8, clsname), (_T,),{}) 
+                raise TypeError(
+                    'This is not a ctypes pointer. It is not instanciable.')
+        _class = type('LP_%d_%s' % (8, clsname), (_T,), {})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
-
 
 
 class struct_entry(ctypes.Structure):
     pass
 
-struct_entry._pack_ = True # source:False
+struct_entry._pack_ = True  # source:False
 struct_entry._fields_ = [
     ('flink', POINTER_T(struct_entry)),
     ('blink', POINTER_T(struct_entry)),
 ]
 
 Entry = struct_entry
+
+
 class struct_usual(ctypes.Structure):
-    _pack_ = True # source:False
+    _pack_ = True  # source:False
     _fields_ = [
-    ('val1', ctypes.c_uint32),
-    ('val2', ctypes.c_uint32),
-    ('root', Entry),
-    ('txt', ctypes.c_char * 128),
-    ('val2b', ctypes.c_uint32),
-    ('val1b', ctypes.c_uint32),
-     ]
+        ('val1', ctypes.c_uint32),
+        ('val2', ctypes.c_uint32),
+        ('root', Entry),
+        ('txt', ctypes.c_char * 128),
+        ('val2b', ctypes.c_uint32),
+        ('val1b', ctypes.c_uint32),
+    ]
+
 
 class struct_Node(ctypes.Structure):
-    _pack_ = True # source:False
+    _pack_ = True  # source:False
     _fields_ = [
-    ('val1', ctypes.c_uint32),
-    ('PADDING_0', ctypes.c_ubyte * 4),
-    ('list', Entry),
-    ('val2', ctypes.c_uint32),
-    ('PADDING_1', ctypes.c_ubyte * 4),
-     ]
+        ('val1', ctypes.c_uint32),
+        ('PADDING_0', ctypes.c_ubyte * 4),
+        ('list', Entry),
+        ('val2', ctypes.c_uint32),
+        ('PADDING_1', ctypes.c_ubyte * 4),
+    ]
 
 __all__ = \
     ['Entry', 'struct_entry', 'struct_usual', 'struct_Node']

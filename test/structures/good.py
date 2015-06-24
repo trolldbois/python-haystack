@@ -16,8 +16,5 @@ def populate():
     from haystack import constraints
     global Struct2
     Struct2.expectedValues = {
-      'field1': constraints.RangeValue(1,16),
-      }
- 
-
-
+        'field1': constraints.RangeValue(1, 16),
+    }

@@ -24,12 +24,14 @@ __status__ = "Production"
 
 
 class TestTextOutput(SrcTests):
+
     """Basic types"""
+
     def setUp(self):
         model.reset()
         self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
-    
+
     def tearDown(self):
         from haystack import model
         model.reset()
@@ -43,33 +45,31 @@ class TestTextOutput(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.mappings.get_mapping_for_address(offset)
         d = m.readStruct(offset, ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.mappings, 10 )
+        ret = d.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
         parser = text.RecursiveTextOutputter(self.mappings)
         out = parser.parse(d)
         # should not fail
         x = eval(out)
-        
-        self.assertEquals(len(x.keys()), 15 ) # 14 + padding
+
+        self.assertEquals(len(x.keys()), 15)  # 14 + padding
         self.assertEquals(self.values['struct_d.a'], hex(x['a']))
         self.assertEquals(len(x['b'].keys()), 9)
         self.assertEquals(len(x['b2'].keys()), 8)
         self.assertEquals(int(self.values['struct_d.b.e']), x['b']['e'])
         self.assertEquals(int(self.values['struct_d.b2.e']), x['b2']['e'])
-        
+
         for i in range(9):
-            self.assertEquals(int(self.values['struct_d.c[%d].a'%(i)]), x['c'][i]['a'])
-            self.assertEquals(int(self.values['struct_d.f[%d]'%(i)]), x['f'][i])
+            self.assertEquals(
+                int(self.values['struct_d.c[%d].a' % (i)]), x['c'][i]['a'])
+            self.assertEquals(
+                int(self.values['struct_d.f[%d]' % (i)]), x['f'][i])
         self.assertEquals(int(self.values['struct_d.e']), x['e'])
         self.assertEquals(str(self.values['struct_d.i']), x['i'])
-        return 
-
-
-
+        return
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    #logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)
-

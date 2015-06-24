@@ -20,10 +20,9 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 
-
 def alltests():
     # 2015-06-12 move to preptests target
-    #makeTests()
+    # makeTests()
     # run all tests
     ret = unittest.TestLoader().discover('test/haystack/')
     return ret
@@ -34,4 +33,4 @@ def alltests():
 if __name__ == '__main__':
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    # unittest.TextTestRunner(verbosity=2).run(suite)

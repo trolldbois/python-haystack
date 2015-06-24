@@ -9,7 +9,9 @@ import haystack
 
 from haystack import argparse_utils
 
+
 class Test(unittest.TestCase):
+
     def test_readable(self):
         """test the readable helper."""
         invalid = '/345678ui0d9t921giv9'
@@ -17,7 +19,7 @@ class Test(unittest.TestCase):
 
         valid = sys.modules[__name__].__file__
         self.assertEquals(argparse_utils.readable(valid), valid)
-        return 
+        return
 
     def test_writeable(self):
         """test the writeable helper."""
@@ -26,7 +28,7 @@ class Test(unittest.TestCase):
 
         valid = sys.modules[__name__].__file__
         self.assertEquals(argparse_utils.writeable(valid), valid)
-        return 
+        return
 
     def test_int16(self):
         """test the int16 helper."""
@@ -37,15 +39,13 @@ class Test(unittest.TestCase):
 
         valid = '0x01293'
         self.assertEquals(argparse_utils.int16(valid), 0x01293)
-        return 
+        return
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.WARNING)
-  #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-  #logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
-  #logging.getLogger('model').setLevel(level=logging.DEBUG)
-  #logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
-  unittest.main(verbosity=2)
-
-
+    logging.basicConfig(level=logging.WARNING)
+    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    # logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
+    # logging.getLogger('model').setLevel(level=logging.DEBUG)
+    # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+    unittest.main(verbosity=2)

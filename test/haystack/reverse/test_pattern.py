@@ -25,13 +25,14 @@ Testing pointer patterns recognition.
 
 
 class SignatureTests(unittest.TestCase):
+
     '''Helper class for signature tests'''
-    
+
     # a example pattern of interval between pointers
     #seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
     seq = [8, 8, 16, 256, 8, 16, 8, 8, 24]
     config = config.make_config(os_name='linux')
-        
+
     def _accumulate(self, iterable, func=operator.add):
         '''Translate an interval sequence to a absolute offset sequence'''
         it = iter(iterable)
@@ -42,11 +43,11 @@ class SignatureTests(unittest.TestCase):
             yield total
 
     def _make_mmap(self, mstart, mlength, struct_offset, seq, word_size):
-        '''Create memory mapping with some pointer values at specific 
+        '''Create memory mapping with some pointer values at specific
         intervals. '''
         nsig = [struct_offset]
         nsig.extend(seq)
-        # rewrite intervals indices to offsets from start 
+        # rewrite intervals indices to offsets from start
         indices = [i for i in self._accumulate(nsig)]
         dump = []  # b''
         # write a memory map with valid pointer address in specifics offsets.
@@ -73,11 +74,12 @@ class SignatureTests(unittest.TestCase):
         '''Make a memory map, with a fake structure of pointer pattern inside.
         Return the pattern signature'''
         # template of a memory map metadata
-        self._mstart = 0x0c00000 
-        self._mlength = 4096 # end at (0x0c01000)
+        self._mstart = 0x0c00000
+        self._mlength = 4096  # end at (0x0c01000)
         self._struct_offset = struct_offset
-        word_size = self.config.get_word_size()# could be 8, it doesn't really matter
-        mmap = self._make_mmap(self._mstart, self._mlength, self._struct_offset, 
+        # could be 8, it doesn't really matter
+        word_size = self.config.get_word_size()
+        mmap = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, word_size)
         mappings = Mappings([mmap], 'test')
         mappings.config = self.config
@@ -356,4 +358,3 @@ if __name__ == '__main__':
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)
-    

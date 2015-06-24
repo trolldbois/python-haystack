@@ -10,7 +10,5 @@ __doc__ = """
   Structures used in haystack
 """
 
-all =[
+all = [
 ]
-
-

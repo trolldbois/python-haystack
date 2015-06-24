@@ -23,6 +23,7 @@ __status__ = "Production"
 
 log = logging.getLogger('test_fieldtypes')
 
+
 class TestField(unittest.TestCase):
 
     @classmethod
@@ -32,25 +33,29 @@ class TestField(unittest.TestCase):
         from haystack.reverse.heuristics import dsa
         self.dsa = dsa.DSASimple(self.context6.mappings)
         self.st = self.context6.listStructures()[0]
-        
+
     def setUp(self):
         model.reset()
         pass
 
     def tearDown(self):
         pass
-    
+
     def test_is_types(self):
         from haystack.reverse import fieldtypes
-        #def __init__(self, astruct, offset, typename, size, isPadding):
-        ptr = fieldtypes.PointerField(self.st,8, fieldtypes.FieldType.POINTER, 4, False)
+        # def __init__(self, astruct, offset, typename, size, isPadding):
+        ptr = fieldtypes.PointerField(
+            self.st,
+            8,
+            fieldtypes.FieldType.POINTER,
+            4,
+            False)
         self.assertFalse(ptr.isString())
         self.assertTrue(ptr.isPointer())
         self.assertFalse(ptr.isZeroes())
         self.assertFalse(ptr.isArray())
         self.assertFalse(ptr.isInteger())
-    
-    
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
@@ -60,6 +65,4 @@ if __name__ == '__main__':
     logging.getLogger("re_string").setLevel(level=logging.DEBUG)
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-
-
+    # unittest.TextTestRunner(verbosity=2).run(suite)
