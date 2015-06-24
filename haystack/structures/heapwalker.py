@@ -111,7 +111,7 @@ def _detect_cpu_arch_pe(mappings):
     elif arch == 0x20b:
         return '64'
     else:
-        raise NotImplementedError('MACHINE is %s' % (x.e_machine))
+        raise NotImplementedError('MACHINE is %s' % (pe.e_machine))
     return
 
 
@@ -162,7 +162,7 @@ class HeapFinder(object):
 
     def __init__(self):
         self.heap_type = None
-        self.walker_class = None
+        self.walker_class = callable()
         self.heap_validation_depth = 1
         raise NotImplementedError(
             'Please fix your self.heap_type and self.walker_class')

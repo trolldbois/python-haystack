@@ -88,7 +88,7 @@ class BytesComparable:
     def __cmp__(self, obj):
         import ctypes
         if isinstance(obj, type(ctypes.c_void_p)):
-            if ctypes.sizeof(obj) != len(seq):
+            if ctypes.sizeof(obj) != len(self.seq):
                 return -1
             bytes = ctypes.string_at(ctypes.addressof(obj), ctypes.sizeof(obj))
             if bytes == self.seq:

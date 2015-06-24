@@ -95,7 +95,7 @@ class CTypesProxy(object):
         self.__real_ctypes = ctypes
         if hasattr(ctypes, 'proxy'):
             raise RuntimeError('base ctype should not be a proxy')
-        # copy every members
+        # copy every members from ctypes to our proxy instance
         for name in dir(ctypes):
             if name == '_pointer_type_cache':
                 setattr(self, name, dict())
@@ -213,6 +213,8 @@ class CTypesProxy(object):
         if self.sizeof(self.__real_ctypes.c_void_p) == self.__pointersize:
             # use the same pointer cache
             self._pointer_type_cache = self.__real_ctypes._pointer_type_cache
+            # see __init__
+            # pylint: disable=access-member-before-definition
             self.__ptrt = self.POINTER(self.c_byte).__bases__[0]
             return
         # get the replacement type.
@@ -285,7 +287,7 @@ class CTypesProxy(object):
                     if _value is None:
                         myself.value = 0
                         return
-                    if not isinstance(value, subtype):
+                    if not isinstance(_value, subtype):
                         raise TypeError(
                             '%s expected, not %s' %
                             (subtype, type(_value)))
@@ -425,7 +427,8 @@ class CTypesProxy(object):
 
     def __set_CFUNCTYPE(self):
         if self.sizeof(self.__real_ctypes.c_void_p) == self.__pointersize:
-            # ignore me
+            # see __init__
+            # pylint: disable=access-member-before-definition
             self.__cfuncptrt = self.CFUNCTYPE(self.c_uint).__bases__[0]
             return
 
@@ -444,8 +447,12 @@ class CTypesProxy(object):
         return
 
     def _p_type(s):
-        """CHECKME: Something about self reference in structure fields in ctypeslib"""
-        return dict(getmembers(self, isclass))[s]
+        ''' ??? '''
+        #FIXME: Something about self reference in structure fields from 
+        #ctypeslib.
+        #Check if still used
+        import inspect
+        return dict(inspect.getmembers(self, isclass))[s]
 
     def get_real_ctypes_member(self, typename):
         return getattr(self.__real_ctypes, typename)

@@ -281,7 +281,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
         #start = 0xc0100000
         start = 0xc0000000
         end = 0xc090d000
-        kmap = memory_mapping.MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0,
+        kmap = MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0,
                                                       major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpname)
         self.mappings = Mappings([kmap], self.dumpname)
 

@@ -1,6 +1,6 @@
 
 '''
-	( 'ptr_ext_lib' , ctypes.c_void_p ), # @ b6b3ef68 /usr/lib/libQtCore.so.4.7.2
+    ( 'ptr_ext_lib' , ctypes.c_void_p ), # @ b6b3ef68 /usr/lib/libQtCore.so.4.7.2
 
 
 local python
@@ -109,7 +109,7 @@ dladdr test ssl3_read True
     # testing low level
     # low level call
     #(const void *address, Dl_info *info,
-    #	  struct link_map **mapp, const ElfW(Sym) **symbolp)
+    #      struct link_map **mapp, const ElfW(Sym) **symbolp)
     print libdl._dl_addr(fnaddr, ctypes.byref(info), 0, 0)
     # iterate the struct link_map
     # for (Lmid_t ns = 0; ns < GL(dl_nns); ++ns)

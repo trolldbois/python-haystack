@@ -250,6 +250,8 @@ class RegexpSearcher(pointerfinder.AbstractSearcher):
         for match in self.getSearchMapping().finditer(
                 self.getSearchMapping().mmap().getByteBuffer()):
             offset = match.start()
+            # FIXME, TU what is value for?
+            value = match.group(0)
             if isinstance(value, list):
                 value = ''.join([chr(x) for x in match.group()])
             vaddr = offset + self.getSearchMapping().start
@@ -395,7 +397,6 @@ def printStructureGroups(context, chains, originAddr=None):
 def graphStructureGroups(context, chains, originAddr=None):
     # TODO change generic fn
     chains.sort()
-    import networkx
     graph = networkx.DiGraph()
     for chain in chains:
         log.debug('\t[-] chain len:%d' % len(chain))
@@ -434,7 +435,6 @@ def makeReversedTypes(context, sizeCache):
 
     log.info(
         '[+] For each instances, fix pointers fields to newly created types.')
-    import ctypes
     for s in context.listStructures():
         s.reset()
         s.decodeFields()

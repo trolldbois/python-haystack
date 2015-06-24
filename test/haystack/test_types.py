@@ -20,6 +20,7 @@ import logging
 import struct
 import unittest
 
+import ctypes
 
 def make_types():
     import ctypes
@@ -352,6 +353,20 @@ class TestBasicFunctions(unittest.TestCase):
         self._testMe(ctypes.is_ctypes_instance, valids, invalids)
         return
 
+
+class TestProxyCTypesAPI(unittest.TestCase):
+
+    """Tests that the ctypes API is respected."""
+
+    def setUp(self):
+        model.reset()
+        ctypes = types.load_ctypes_default()
+        for name, value in make_types().items():
+            globals()[name] = value
+        self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
+                      arra2, arra3, charp, string, fptr, arra4, double, arra5,
+                      arra6, Union, ptrUnion]
+
     def test_import(self):
         #''' Do not replace c_char_p '''
         from haystack import basicmodel
@@ -395,6 +410,13 @@ class TestBasicFunctions(unittest.TestCase):
         # print
         #import code
         # code.interact(local=locals())
+        
+    def test_cfunctype(self):
+        #verify this is our proxy module
+        self.assertTrue(hasattr(ctypes,'get_real_ctypes_member'))
+        self.assertTrue(hasattr(ctypes,'CFUNCTYPE'))
+        self.assertEquals(ctypes.get_real_ctypes_member('CFUNCTYPE'),
+                          ctypes.CFUNCTYPE)
 
 
 class TestBasicFunctions32(TestBasicFunctions):

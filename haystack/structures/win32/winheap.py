@@ -1,6 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# because of dynamic imports
+# pylint: disable=undefined-variable
+
 """ Win heap structure - from LGPL metasm
 http://www.informit.com/articles/article.aspx?p=1081496
 

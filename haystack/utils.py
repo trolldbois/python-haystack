@@ -8,6 +8,7 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import ctypes
 import logging
 import os
 import struct
@@ -169,7 +170,6 @@ def bytes2array(bytes, typ):
     if arrayLen == 0:
         return array
     fmt = ctypes.get_pack_format()[typ.__name__]
-    import struct
     try:
         for i in range(0, arrayLen):
             array[i] = struct.unpack(

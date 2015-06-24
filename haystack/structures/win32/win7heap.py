@@ -1,5 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+# because of dynamic imports
+# pylint: disable=undefined-variable
 #
 """ Win 7 heap structure - from LGPL metasm.
 See docs/win32_heap for all supporting documentation.
@@ -518,7 +520,7 @@ def HEAP_getFreeLists_by_blocksindex(self, mappings):
         bi_addr = extlookup_addr
     #
     raise NotImplementedError('NOT FINISHED')
-    raise StopIteration
+    #raise StopIteration
 
 
 def HEAP_ENTRY_decode(chunk_header, heap):
@@ -545,6 +547,8 @@ def HEAP_ENTRY_decode(chunk_header, heap):
         working_array[i] ^= encoding_array[i]
     return chunk_header_decoded
 
+# imported dynamically
+# pylint: disable=undefined-variable
 HEAP_ENTRY.decode = HEAP_ENTRY_decode
 
 
@@ -578,6 +582,8 @@ def HEAP_get_freelists(self, mappings):
         res.append((freeblock._orig_address_, chunk_header.Size * 8))
     return res
 
+# imported dynamically
+# pylint: disable=undefined-variable
 HEAP.get_freelists = HEAP_get_freelists
 
 # def HEAP_getFreeListsWinXP(self, mappings):

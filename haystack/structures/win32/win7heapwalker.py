@@ -84,7 +84,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         if len(lst) != len(myset):
             log.warning(
                 'NON unique referenced user chunks found. Please enquire. %d != %d' %
-                (lstlen, setlen))
+                (len(lst), len(myset)))
         # need to cut sizeof(HEAP_ENTRY) from address and size
         self._allocs = numpy.asarray(sorted(myset))
 
