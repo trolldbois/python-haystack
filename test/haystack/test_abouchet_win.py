@@ -14,7 +14,7 @@ from haystack import types
 
 from test.haystack import SrcTests
 
-@unittest.skip('win32 memory is broken right now')
+#@unittest.skip('win32 memory is broken right now')
 class TestApiWin32Dump(unittest.TestCase):
     """ test is the python API works. 
 
@@ -45,7 +45,7 @@ class TestApiWin32Dump(unittest.TestCase):
         self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
         self.assertEquals(instance.FrontEndHeapType, 0)
 
-        if False:
+        if True:
             instance, validated = abouchet.show_dumpname(self.classname, self.memdumpname, self.known_heaps[0][0]+1)
             self.assertFalse(validated)
             self.assertIsInstance(instance, object)

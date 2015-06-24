@@ -20,12 +20,12 @@ reverse
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __all__ = [
-    'findStruct',
-    'findStructInFile',
-    'refreshStruct',
-    'search_process',
-    'search_memfile',
-    'search_dumpname',
+    'find_struct_process',
+    'find_struct_memfile',
+    'refresh_struct_process',
+    'search_struct_process',
+    'search_struct_memfile',
+    'search_struct_dumpname',
     'refresh'
 ]
 
@@ -49,14 +49,14 @@ else:
 import model
 
 # DEFINE the API.
-#import abouchet
+import abouchet
 
-#findStruct = abouchet.findStruct
-#findStructInFile = abouchet.findStructInFile
-#refreshStruct = abouchet.refreshStruct
+find_struct_process = abouchet.find_struct_process
+find_struct_memfile = abouchet.find_struct_memfile
+refresh_struct_process = abouchet.refresh_struct_process
 
-#search_process = abouchet.search_process
-#search_memfile = abouchet.search_memfile
-#search_dumpname = abouchet.search_dumpname
-#refresh = abouchet.refresh
-#show_dumpname = abouchet.show_dumpname
+search_struct_process = abouchet.search_struct_process
+search_struct_memfile = abouchet.search_struct_memfile
+search_struct_dumpname = abouchet.search_struct_dumpname
+refresh = abouchet.refresh
+show_dumpname = abouchet.show_dumpname

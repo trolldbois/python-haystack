@@ -57,13 +57,13 @@ class Test7_x32(SrcTests):
     from test.src import ctypes7
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
-    retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
+    retstr = abouchet.search_struct_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
     self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%08x'%(self.address), retstr )
     
     #python
-    results = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='python')
+    results = abouchet.search_struct_dumpname(self.classname, self.memdumpname, rtype='python')
     self.assertEquals(len(results), 1)
     for node, offset in results:
         self.assertEquals(offset, self.address)
@@ -72,7 +72,7 @@ class Test7_x32(SrcTests):
         self.assertIsNone(node.ptr2)
     
     #python
-    results = abouchet.search_dumpname(self.classname, self.memdumpname, maxnum=10, rtype='python')
+    results = abouchet.search_struct_dumpname(self.classname, self.memdumpname, maxnum=10, rtype='python')
     self.assertEquals(len(results), 1)
     for node, offset in results:
         self.assertEquals(offset, self.address)
@@ -129,13 +129,13 @@ class Test7_x64(SrcTests):
     self.assertEquals(ctypes.sizeof(ctypes7.struct_Node), 16)
     self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
     
-    retstr = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='string')
+    retstr = abouchet.search_struct_dumpname(self.classname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr )
     self.assertIn("struct_Node at 0x%x>"%(self.address), retstr )
     self.assertIn('"ptr2": 0x%016x'%(self.address), retstr )
     
     #python
-    results = abouchet.search_dumpname(self.classname, self.memdumpname, rtype='python')
+    results = abouchet.search_struct_dumpname(self.classname, self.memdumpname, rtype='python')
     self.assertEquals(len(results), 1)
     for node, offset in results:
         self.assertEquals(offset, self.address)
@@ -145,7 +145,7 @@ class Test7_x64(SrcTests):
 
     return
     #python
-    results = abouchet.search_dumpname(self.classname, self.memdumpname, maxnum=10, rtype='python')
+    results = abouchet.search_struct_dumpname(self.classname, self.memdumpname, maxnum=10, rtype='python')
     self.assertEquals(len(results), 1)
     for node, offset in results:
         self.assertEquals(offset, self.address)
@@ -274,16 +274,16 @@ class Test6_x32(SrcTests):
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     
-    retstr = abouchet.search_dumpname(self.node_structname, self.memdumpname, rtype='string')
+    retstr = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr ) # 0xdeadbeef
     self.assertIn(hex(self.address2), retstr )
     
     #python
-    results = abouchet.search_dumpname(self.node_structname, self.memdumpname, rtype='python')
+    results = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, rtype='python')
     self.assertEquals(len(results), 1)
     
     #python nultiple results
-    results = abouchet.search_dumpname(self.node_structname, self.memdumpname, maxnum=10, rtype='python')
+    results = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, maxnum=10, rtype='python')
     self.assertEquals(len(results), 2)
     (node1, offset1),(node2, offset2) = results
     self.assertEquals(node1.val1, 0xdeadbeef)
@@ -404,16 +404,16 @@ class Test6_x64(SrcTests):
     from test.src import ctypes6
     self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
     
-    retstr = abouchet.search_dumpname(self.node_structname, self.memdumpname, rtype='string')
+    retstr = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, rtype='string')
     self.assertIn("3735928559L,", retstr ) # 0xdeadbeef
     self.assertIn(hex(self.address2), retstr )
     
     #python
-    results = abouchet.search_dumpname(self.node_structname, self.memdumpname, rtype='python')
+    results = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, rtype='python')
     self.assertEquals(len(results), 1)
     
     #python nultiple results
-    results = abouchet.search_dumpname(self.node_structname, self.memdumpname, maxnum=10, rtype='python')
+    results = abouchet.search_struct_dumpname(self.node_structname, self.memdumpname, maxnum=10, rtype='python')
     self.assertEquals(len(results), 2)
     (node1, offset1),(node2, offset2) = results
     self.assertEquals(node1.val1, 0xdeadbeef)

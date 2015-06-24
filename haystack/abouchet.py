@@ -128,7 +128,6 @@ class StructFinder:
             "checking 0x%lx-0x%lx by increment of %d" %
             (start, (end - structlen), plen))
         instance = None
-        import time
         t0 = time.time()
         p = 0
         # xrange sucks. long int not ok
@@ -260,7 +259,7 @@ def checkModulePath(typ):
     return structName
 
 
-def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
+def _find_struct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
                 fullScan=False, nommap=False, hint=None, debug=None, quiet=True):
     """
         Find all occurences of a specific structure from a process memory.
@@ -310,7 +309,7 @@ def _findStruct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1,
     return outs
 
 
-def findStruct(pid, structType, maxNum=1, fullScan=False,
+def find_struct_process(pid, structType, maxNum=1, fullScan=False,
                nommap=False, debug=False, quiet=True):
     """
         Find all occurences of a specific structure from a process memory.
@@ -322,11 +321,11 @@ def findStruct(pid, structType, maxNum=1, fullScan=False,
         :param nommap if True, do not use mmap while searching.
         :param debug if True, activate debug logs.
     """
-    return _findStruct(pid=pid, structType=structType, maxNum=maxNum,
+    return _find_struct(pid=pid, structType=structType, maxNum=maxNum,
                        fullScan=fullScan, nommap=nommap, debug=debug, quiet=quiet)
 
 
-def findStructInFile(filename, structType, hint=None,
+def find_struct_memfile(filename, structType, hint=None,
                      maxNum=1, fullScan=False, debug=False, quiet=True):
     """
         Find all occurences of a specific structure from a process memory in a file.
@@ -338,11 +337,11 @@ def findStructInFile(filename, structType, hint=None,
         :param fullScan obselete
         :param debug if True, activate debug logs.
     """
-    return _findStruct(memfile=filename, structType=structType,
+    return _find_struct(memfile=filename, structType=structType,
                        maxNum=maxNum, fullScan=fullScan, debug=debug, quiet=quiet)
 
 
-def refreshStruct(pid, structType, offset, debug=False, nommap=False):
+def refresh_struct_process(pid, structType, offset, debug=False, nommap=False):
     """
         returns the pickled or text representation of a structure, from a given offset in a process memory.
 
@@ -365,9 +364,9 @@ def refreshStruct(pid, structType, offset, debug=False, nommap=False):
     if pid:
         # live PID. with mmap or not
         cmd_line.extend(["--pid", "%d" % pid])
-    elif memfile:
-        # proc mappings dump file
-        cmd_line.extend(["--memfile", memfile])
+    #elif memfile:
+    #    # proc mappings dump file
+    #    cmd_line.extend(["--memfile", memfile])
     cmd_line.append('--pickled')
     # always add search
     cmd_line.extend(['refresh', "0x%lx" % offset])
@@ -402,7 +401,7 @@ def getKlass(name):
     return klass
 
 
-def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
+def search_struct_mem(structName, mappings, targetMappings=None, maxNum=-1):
     """
         Search a structure in a specific memory mapping.
 
@@ -430,7 +429,7 @@ def searchIn(structName, mappings, targetMappings=None, maxNum=-1):
     return ret
 
 
-def search_process(structName, pid, mmap=True, **kwargs):
+def search_struct_process(structName, pid, mmap=True, **kwargs):
     """Search a structure in the memory of a live process.
 
     :param structName the ctypes Structure
@@ -451,7 +450,7 @@ def search_process(structName, pid, mmap=True, **kwargs):
     return _search(mappings, structType, **kwargs)
 
 
-def search_memfile(structName, memfile, baseOffset, **kwargs):
+def search_struct_memfile(structName, memfile, baseOffset, **kwargs):
     """Search a structure in a raw memory file.
 
     :param structName the ctypes Structure
@@ -474,7 +473,7 @@ def search_memfile(structName, memfile, baseOffset, **kwargs):
     return _search(mappings, structType, **kwargs)
 
 
-def search_dumpname(structName, dumpname, **kwargs):
+def search_struct_dumpname(structName, dumpname, **kwargs):
     """Search a structure in the memory dump of a process.
 
     :param structName the ctypes Structure
