@@ -22,6 +22,17 @@ Why is ctypes original c_void_p returning None ? probably because poitner value 
 Attribute packed is not correct in ctypeslib
 
 HEAP_ENTRY is not the right size in win7_x64
+because of namespace colisions !!!
+
+union {
+ struct { // Ua_Sa_0
+    union {} // Ua_Sa_Ua_0
+    }
+ struct { // Ua_Sa_1
+    union {} // Ua_Sa_Ua_0 !!!!!!
+    }
+ 
+struct_c__S__HEAP_ENTRY_Ua_Sa_Ua_Sa_1
 
 
 Todo:
