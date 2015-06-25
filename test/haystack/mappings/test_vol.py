@@ -46,7 +46,7 @@ class TestMapper(unittest.TestCase):
 
         ctypes = mappings.config.ctypes
         from haystack.structures.win32 import winheap
-        print ctypes
+        #print ctypes
         import pefile
         import code
         for m in mappings.mappings:

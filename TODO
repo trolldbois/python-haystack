@@ -5,7 +5,9 @@
 - B) otherwise, use VTypes from rekall/volatility to create a heapwalker ?
 
 
-2015-06-24 FAILED (failures=4, errors=8, skipped=4, expected failures=4)
+2015-06-24 
+FAILED (failures=4, errors=8, skipped=4, expected failures=4)
+FAILED (failures=3, errors=6, skipped=5, expected failures=3)
 
 
 
