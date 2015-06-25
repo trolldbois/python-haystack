@@ -28,6 +28,9 @@ def int_array_cache(filename):
     if os.access(filename, os.F_OK):
         f = file(filename, 'r')
         return numpy.load(f)
+    #print 'int_array_cache'
+    #import code
+    #code.interact(local=locals())
     return None
 
 

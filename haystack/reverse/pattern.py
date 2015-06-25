@@ -256,6 +256,10 @@ class PointerIntervalSignature:
         # DO NOT SORT LIST. c'est des sequences. pas des sets.
         myname = self.cacheFilenamePrefix + '.pinned'
         log.debug('Reading signature from %s',myname)
+        #import code
+        #code.interact(local=locals())
+        #import pdb
+        #pdb.set_trace()
         sig = utils.int_array_cache(myname)
         if sig is None:
             log.info(
@@ -387,7 +391,7 @@ class PinnedPointers:
     '''
       A variable length sequence of intervals between pointers.
       It already pinned at a specific offset of a signature,
-      so you migth find several instance p1 and p2 at different offset, but with the same sequence
+      so you might find several instance p1 and p2 at different offset, but with the same sequence
       and therefore equal signature. p1 == p2.
       It is easily pin onto the initial dump/heap by getAddress()
 

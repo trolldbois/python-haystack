@@ -23,6 +23,7 @@ from haystack.mappings.file import LocalMemoryMapping
 Testing pointer patterns recognition.
 '''
 
+log = logging.getLogger('test_pattern')
 
 class SignatureTests(unittest.TestCase):
 
@@ -53,6 +54,7 @@ class SignatureTests(unittest.TestCase):
         # write a memory map with valid pointer address in specifics offsets.
         for i in range(0, mlength, word_size):
             if i in indices:
+                log.debug('Insert word %x at 0x%x',mstart + i,mstart + i)
                 dump.append(struct.pack('L', mstart + i))
             else:
                 dump.append(struct.pack('L', 0x2e2e2e2e2e2e2e2e))
@@ -70,17 +72,20 @@ class SignatureTests(unittest.TestCase):
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
         return mmap2
 
-    def _make_signature(self, intervals, struct_offset=44):
+    def _make_signature(self, intervals, struct_offset=None):
         '''Make a memory map, with a fake structure of pointer pattern inside.
         Return the pattern signature'''
         # template of a memory map metadata
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)
-        self._struct_offset = struct_offset
         # could be 8, it doesn't really matter
-        word_size = self.config.get_word_size()
+        self.word_size = self.config.get_word_size()
+        if struct_offset is not None:
+            self._struct_offset = struct_offset
+        else:
+            self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
-                               intervals, word_size)
+                               intervals, self.word_size)
         mappings = Mappings([mmap], 'test')
         mappings.config = self.config
         mappings._reset_config()
@@ -114,7 +119,7 @@ class TestSignature(SignatureTests):
             self.sig.getAddressForPreviousPointer(2),
             self._mstart +
             self._struct_offset +
-            4)
+            self.word_size)
 
     def test_len(self):
         self.assertEqual(len(self.sig), len(self.seq) + 1)
@@ -152,7 +157,7 @@ class TestPinnedPointers(SignatureTests):
         self.assertEqual(len(self.pp), len_seq)
 
     def test_structlen(self):
-        len_struct = sum(self.seq) + 4
+        len_struct = sum(self.seq) + self.word_size
         self.assertEqual(self.pp.structLen(), len_struct)
 
     def test_cmp(self):
@@ -163,7 +168,8 @@ class TestPinnedPointers(SignatureTests):
         pp4 = pattern.PinnedPointers(self.seq[:], self.sig, self.offset + 1)
 
         #seq = [4, 8, 4, 128, 4, 8, 4, 4, 12]
-        pp5 = pattern.PinnedPointers(self.seq, self.sig, self.offset)
+        seq = [8, 16, 8, 256, 8, 16, 8, 8, 24]
+        pp5 = pattern.PinnedPointers(seq, self.sig, self.offset)
 
         self.assertNotEqual(pp1, self.pp)
         self.assertNotEqual(pp2, self.pp)
@@ -216,7 +222,7 @@ class TestAnonymousStructRange(SignatureTests):
         self.astruct = pattern.AnonymousStructRange(self.pp)
 
     def test_len(self):
-        len_struct = sum(self.seq) + 4
+        len_struct = sum(self.seq) + self.word_size
         self.assertEqual(len(self.astruct), len_struct)
         self.assertEqual(len(self.astruct), self.pp.structLen())
 
@@ -353,8 +359,8 @@ class TestPatternEncoder(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger('haystack').setLevel(logging.INFO)
-    logging.getLogger('pattern').setLevel(logging.DEBUG)
-    unittest.main(verbosity=0)
+    #logging.getLogger('haystack').setLevel(logging.INFO)
+    #logging.getLogger('pattern').setLevel(logging.DEBUG)
+    unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)
