@@ -8,6 +8,13 @@
 2015-06-24 
 FAILED (failures=4, errors=8, skipped=4, expected failures=4)
 FAILED (failures=3, errors=6, skipped=5, expected failures=3)
+FAILED (failures=3, errors=2, skipped=7, expected failures=3)
+Ran 225 tests in 81.876s
+
+
+Why is ctypes original c_void_p returning None ? probably because poitner value is 0
+>>> winheap.HEAP.HeaderValidateCopy
+<Field type=c_void_p, ofs=52, size=8>
 
 
 
