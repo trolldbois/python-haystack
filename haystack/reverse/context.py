@@ -197,7 +197,7 @@ class ReverserContext():
             os.remove(context_cache)
             log.error(
                 'Error in the context file. File cleaned. Please restart.')
-            raise e('Error in the context file. File cleaned. Please restart.')
+            raise RuntimeError('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
         context.config = config
         context.mappings = mappings

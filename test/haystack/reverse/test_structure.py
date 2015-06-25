@@ -30,8 +30,8 @@ class TestStructure(unittest.TestCase):
     def setUpClass(self):
         from haystack.reverse.heuristics import dsa
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
-        self.dsa = dsa.DSASimple()
-        self.pta = dsa.EnrichedPointerFields()
+        self.dsa = dsa.DSASimple(self.context.config)
+        self.pta = dsa.EnrichedPointerFields(self.context.config)
         pass
 
     def setUp(self):
