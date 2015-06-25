@@ -466,6 +466,16 @@ class CTypesProxy(object):
         """Return the struct.pack/unpack format translation table"""
         return dict(self.__basic_types_name)
 
+    def get_bytes_for_record_field(self, record, fieldname):
+        """Return the bytes behind a specific field of a record"""
+        _class = record.__class__
+        _cls_field = getattr(_class,fieldname)
+        _ofs = getattr(_class, fieldname).offset
+        _size = getattr(_class, fieldname).size
+        # FIXME, use address + _ofs instead
+        _bytes = (self.c_byte*(_ofs+_size)).from_buffer_copy(record)[_ofs:]
+        return _bytes
+
     # migration from utils.
     def is_ctypes_instance(self, obj):
         """Checks if an object is a ctypes type object"""

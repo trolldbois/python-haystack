@@ -7,6 +7,7 @@ import unittest
 import logging
 
 from haystack import model
+from haystack import types
 from haystack.mappings.vol import VolatilityProcessMapper
 from haystack.mappings.vol import VolatilityProcessMapping
 
@@ -20,6 +21,7 @@ class TestMapper(unittest.TestCase):
 
     def tearDown(self):
         model.reset()
+        types.load_ctypes_default()
         # we need to unload volatility before continuing
         import sys
         for mod in sys.modules.keys():
@@ -64,7 +66,7 @@ class TestMapper(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     # logging.basicConfig(level=logging.INFO)
     # logging.getLogger('memory_mapping').setLevel(logging.DEBUG)
     # logging.getLogger('basicmodel').setLevel(logging.INFO)

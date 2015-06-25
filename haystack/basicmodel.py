@@ -531,9 +531,8 @@ class LoadableMembers(object):
             elif ctypes.is_pointer_type(attrtype):  # and
                 # not ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.
-                #import code
-                #code.interact(local=locals())
-                print field, attrtype, attr
+                if attr is None:
+                    attr = 0
                 s += '%s (@0x%lx) : 0x%lx\n' % (field, ctypes.addressof(attr),
                                                 utils.get_pointee_address(attr))
             elif (isinstance(attr, long)) or (isinstance(attr, int)):
