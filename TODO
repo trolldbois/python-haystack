@@ -10,12 +10,18 @@ FAILED (failures=4, errors=8, skipped=4, expected failures=4)
 FAILED (failures=3, errors=6, skipped=5, expected failures=3)
 FAILED (failures=3, errors=2, skipped=7, expected failures=3)
 Ran 225 tests in 81.876s
+Ran 225 tests in 73.785s
+FAILED (failures=1, errors=1, skipped=9, expected failures=3)
 
 
 Why is ctypes original c_void_p returning None ? probably because poitner value is 0
 >>> winheap.HEAP.HeaderValidateCopy
 <Field type=c_void_p, ofs=52, size=8>
 
+
+Attribute packed is not correct in ctypeslib
+
+HEAP_ENTRY is not the right size in win7_x64
 
 
 Todo:
