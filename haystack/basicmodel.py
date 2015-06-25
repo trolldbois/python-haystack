@@ -533,7 +533,9 @@ class LoadableMembers(object):
                 # do not recurse.
                 if attr is None:
                     attr = 0
-                s += '%s (@0x%lx) : 0x%lx\n' % (field, ctypes.addressof(attr),
+                    s += '%s (@????) : 0x0\n' % (field)
+                else:
+                    s += '%s (@0x%lx) : 0x%lx\n' % (field, ctypes.addressof(attr),
                                                 utils.get_pointee_address(attr))
             elif (isinstance(attr, long)) or (isinstance(attr, int)):
                 s += '%s : %s\n' % (field, hex(attr))
