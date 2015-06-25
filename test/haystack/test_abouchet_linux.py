@@ -501,6 +501,11 @@ class TestApiLinuxDumpX64(unittest.TestCase):
         self.memdumpname = 'test/dumps/ssh/ssh.x64.6653.dump'
         self.classname = 'sslsnoop.ctypes_openssh.session_state'
         self.known_heap = (0x00007f724c905000, 249856)
+        try:
+            import sslsnoop
+        except ImportError:
+            self.skipTest('sslsnoop not present')
+
 
     def tearDown(self):
         self.mappings = None
@@ -530,6 +535,11 @@ class TestApiLinuxDump(unittest.TestCase):
         self.classname = 'sslsnoop.ctypes_openssh.session_state'
         self.known_heaps = [(0xb84ee318, 0)
                             ]
+        try:
+            import sslsnoop
+        except ImportError:
+            self.skipTest('sslsnoop not present')
+
 
     def tearDown(self):
         self.mappings = None

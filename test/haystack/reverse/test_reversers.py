@@ -70,7 +70,7 @@ class TestStructureSizes(unittest.TestCase):
         # print 'test3',ctypes.sizeof(ctypes3.test3)
         # if ctypes.sizeof(ctypes3.test3) % Config.get_word_size() == 0:
         #  print 'MOD'
-        self.assertEqual(sizes[1], ctypes.sizeof(ctypes3.test3))
+        self.assertEqual(sizes[1], ctypes.sizeof(ctypes3.struct_test3))
 
         # is that padding I see ?
         self.assertNotEqual(
