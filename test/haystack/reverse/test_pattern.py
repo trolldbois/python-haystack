@@ -51,13 +51,16 @@ class SignatureTests(unittest.TestCase):
         # rewrite intervals indices to offsets from start
         indices = [i for i in self._accumulate(nsig)]
         dump = []  # b''
+        values = []
+        fmt = self.config.get_word_type_char()
         # write a memory map with valid pointer address in specifics offsets.
         for i in range(0, mlength, word_size):
             if i in indices:
                 log.debug('Insert word %x at 0x%x',mstart + i,mstart + i)
-                dump.append(struct.pack('L', mstart + i))
+                dump.append(struct.pack(fmt, mstart + i))
+                values.append(mstart + i)
             else:
-                dump.append(struct.pack('L', 0x2e2e2e2e2e2e2e2e))
+                dump.append(struct.pack(fmt, 0x2e2e2e2e2e2e2e2e))
 
         if len(dump) != mlength / word_size:
             raise ValueError('error 1 on length dump %d ' % (len(dump)))
@@ -70,7 +73,8 @@ class SignatureTests(unittest.TestCase):
         stop = mstart + len(dump2)
         mmap = MemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
-        return mmap2
+        mmap2.init_config(self.config)
+        return mmap2, values
 
     def _make_signature(self, intervals, struct_offset=None):
         '''Make a memory map, with a fake structure of pointer pattern inside.
@@ -84,11 +88,11 @@ class SignatureTests(unittest.TestCase):
             self._struct_offset = struct_offset
         else:
             self._struct_offset = self.word_size*12 # 12, or any other aligned
-        mmap = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
+        mmap, values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
         mappings = Mappings([mmap], 'test')
         mappings.config = self.config
-        mappings._reset_config()
+        mappings._reset_config() # set it again
         sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
         return sig
 

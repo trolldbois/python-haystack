@@ -12,67 +12,38 @@ import os
 import unittest
 
 from haystack import model
-from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import Mappings
 from haystack.mappings.file import LocalMemoryMapping
 from haystack.reverse import pointerfinder
 
 from haystack import config
 
+import test_pattern
 
-class TestPointer(unittest.TestCase):
+class TestPointer(test_pattern.SignatureTests):
 
     def setUp(self):
-        self.config = config.make_config_linux_32()
-        self.config.MMAP_START = 0x0c00000
-        self.config.MMAP_STOP = 0x0c01000
-        self.config.MMAP_LENGTH = 4096
-        self.config.STRUCT_OFFSET = 44
-        self.seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
-        self.mmap, self.values = self.makeMMap(self.seq)
+        self.mmap, self.values = self._make_mmap_with_values(self.seq)
         self.name = 'test_dump_1'
 
-    def accumulate(self, iterable, func=operator.add):
-        it = iter(iterable)
-        total = next(it)
-        yield total
-        for element in it:
-            total = func(total, element)
-            yield total
-
-    def makeMMap(self, seq):
-        """Creates a home made mapping with pointer values in the middle of
-        garbage"""
-        start = self.config.MMAP_START
-        offset = self.config.STRUCT_OFFSET
-        nsig = [offset]
-        nsig.extend(seq)
-        indices = [i for i in self.accumulate(nsig)]
-        dump = []  # b''
-        values = []
-        for i in range(
-                0, self.config.MMAP_LENGTH, self.config.get_word_size()):
-            if i in indices:
-                dump.append(struct.pack('I', start + i))
-                values.append(start + i)
-            else:
-                dump.append(struct.pack('I', 0x2e2e2e2e))
-
-        if len(dump) != self.config.MMAP_LENGTH / self.config.get_word_size():
-            raise ValueError(
-                'error on length dump %d expected %d' %
-                (len(dump), (self.config.MMAP_LENGTH / self.config.get_word_size())))
-        dump2 = ''.join(dump)
-        # print repr(dump2[:16]), self.config.get_word_size(),
-        # self.config.MMAP_LENGTH
-        if len(dump) * self.config.get_word_size() != len(dump2):
-            raise ValueError(
-                'error on length dump %d dump2 %d' %
-                (len(dump), len(dump2)))
-        stop = start + len(dump2)
-        mmap = MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
-        mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
-        mmap2.init_config(self.config)
-        return mmap2, values
+    def _make_mmap_with_values(self, intervals, struct_offset=None):
+        '''Make a memory map, with a fake structure of pointer pattern inside.
+        Return the pattern signature'''
+        # template of a memory map metadata
+        self._mstart = 0x0c00000
+        self._mlength = 4096  # end at (0x0c01000)
+        # could be 8, it doesn't really matter
+        self.word_size = self.config.get_word_size()
+        if struct_offset is not None:
+            self._struct_offset = struct_offset
+        else:
+            self._struct_offset = self.word_size*12 # 12, or any other aligned
+        mmap,values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
+                               intervals, self.word_size)
+        mappings = Mappings([mmap], 'test')
+        mappings.config = self.config
+        mappings._reset_config()
+        return mmap, values
 
 
 class TestPointerSearcher(TestPointer):
@@ -100,9 +71,9 @@ class TestPointerEnumerator(TestPointer):
         self.assertEqual(self.values, values)
         self.assertEqual(self.values, values_2)
 
-        nsig = [self.config.MMAP_START + self.config.STRUCT_OFFSET]
+        nsig = [self._mstart + self._struct_offset]
         nsig.extend(self.seq)
-        indices = [i for i in self.accumulate(nsig)]
+        indices = [i for i in self._accumulate(nsig)]
         self.assertEqual(indices, offsets)
         self.assertEqual(indices, offsets_2)
 
