@@ -301,7 +301,7 @@ class AnonymousStructInstance():
     def saveme(self):
         if not self._dirty:
             return
-        sdir = Config.getStructsCacheDir(self._context.dumpname)
+        sdir = self._context.config.getStructsCacheDir(self._context.dumpname)
         if not os.path.isdir(sdir):
             os.mkdir(sdir)
         fname = makeFilename(self._context, self)
@@ -309,6 +309,13 @@ class AnonymousStructInstance():
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
             pickle.dump(self, file(fname, 'w'))
+        except pickle.PickleError as e:
+            # self.struct must be cleaned.
+            log.error("Pickling error, file %s removed",fname)
+            os.remove(fname)
+            #import code
+            #code.interact(local=locals())
+            raise e
         except RuntimeError as e:
             log.error(e)
             print self.toString()
@@ -723,6 +730,16 @@ class %s(ctypes.Structure):  # %s
         return cmp(self._vaddr, other._vaddr)
 
     def __getstate__(self):
+        """ the important fields are
+            _resolvedPointers
+            _dirty
+            _vaddr
+            _name
+            _resolved
+            _ctype
+            _size
+            _fields
+        """
         d = self.__dict__.copy()
         try:
             d['dumpname'] = os.path.normpath(self._mappings.name)

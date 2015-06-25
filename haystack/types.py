@@ -257,11 +257,12 @@ class CTypesProxy(object):
             # specific case for c_void_p
             subtype = pointee
             if pointee is None:  # VOID pointer type. c_void_p.
-                _class = type(
-                    'LP_%d_c_void_p' %
-                    (POINTERSIZE), (_T_Simple,), {})
+                clsname = 'LP_%d_c_void_p'%POINTERSIZE
+                _class = type(clsname, (_T_Simple,), {})
                 _class._subtype_ = type(None)
                 my_ctypes._pointer_type_cache[pointee] = _class
+                # additionnaly register this type in this module fo pickling
+                setattr(sys.modules[__name__], clsname, _class)
                 return _class
 
             clsname = pointee.__name__
@@ -296,7 +297,10 @@ class CTypesProxy(object):
 
             _class = type('LP_%d_%s' % (POINTERSIZE, clsname), (_T,), {})
             my_ctypes._pointer_type_cache[pointee] = _class
+            # additionnaly register this type in this module fo pickling
+            setattr(sys.modules[__name__], clsname, _class)
             return _class
+        # end of POINTER_T
         self.POINTER = POINTER_T
         self.__ptrt = self._T_Simple
         self._pointer_type_cache.clear()
@@ -366,6 +370,7 @@ class CTypesProxy(object):
         # we need model to be initialised.
         self.Structure = LoadableMembersStructure
         self.Union = LoadableMembersUnion
+        
         return
 
     def __set_utils_types(self):

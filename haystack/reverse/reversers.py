@@ -156,7 +156,7 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
             ##log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
             # optimise insertion
             # if len(my_pointers_addrs) > 0:
-            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, Config.WORDSIZE, False)
+            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, config.get_word_size(), False)
             # cache to disk
             mystruct.saveme()
             # next
@@ -232,7 +232,7 @@ class PointerReverser(StructureOrientedReverser):
                     f = mystruct.addField(
                         p_addr,
                         fieldtypes.FieldType.POINTER,
-                        context.config.WORDSIZE,
+                        context.config.get_word_size(),
                         False)
                     #log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
 
@@ -279,7 +279,7 @@ class FieldReverser(StructureOrientedReverser):
             'w')
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
-        dsa = DSASimple()
+        dsa = DSASimple(context.config)
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
@@ -321,7 +321,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         decoded = 0
         fromcache = 0
         from haystack.reverse.heuristics.dsa import EnrichedPointerFields
-        pfa = EnrichedPointerFields()
+        pfa = EnrichedPointerFields(context.config)
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
             if anon.is_resolvedPointers():
@@ -362,7 +362,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         lists = []
         for ptr_value in context.listStructuresAddresses():
             '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
-            if context.pointers_offsets[i-1]+context.config.WORDSIZE != context.pointers_offsets[i]:
+            if context.pointers_offsets[i-1]+context.config.get_word_size() != context.pointers_offsets[i]:
               done+=1
               continue
             ptr_value = context._pointers_values[i-1]
@@ -409,16 +409,21 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         return
 
     def twoWords(self, ctx, st_addr, offset=0):
+        """we want to read both pointers"""
         # return
-        # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.WORDSIZE]
+        # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.get_word_size()]
         m = ctx.mappings.get_mapping_for_address(st_addr + offset)
-        return m.readBytes(st_addr + offset, 2 * ctx.config.WORDSIZE)
+        return m.readBytes(st_addr + offset, 2 * ctx.config.get_word_size())
 
     def unpack(self, context, ptr_value):
-        if context.config.WORDSIZE == 8:
-            return struct.unpack('QQ', self.twoWords(context, ptr_value))
-        else:
-            return struct.unpack('LL', self.twoWords(context, ptr_value))
+        """we want to read both pointers"""
+        fmt = context.config.get_word_type_char()*2
+        # FIXME check and delete
+        #if context.config.get_word_size() == 8:
+        #    return struct.unpack('QQ', self.twoWords(context, ptr_value))
+        #else:
+        #    return struct.unpack('LL', self.twoWords(context, ptr_value))
+        return struct.unpack(fmt, self.twoWords(context, ptr_value))
 
     def isLinkedListMember(self, context, ptr_value):
         f1, f2 = self.unpack(context, ptr_value)
@@ -479,20 +484,20 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
 
     def findHead(self, ctx, members):
         sizes = sorted([(ctx.getStructureSizeForAddr(m), m) for m in members])
-        if sizes[0] < 3 * ctx.config.WORDSIZE:
+        if sizes[0] < 3 * ctx.config.get_word_size():
             log.error('a double linked list element must be 3 WORD at least')
             raise ValueError(
                 'a double linked list element must be 3 WORD at least')
-        numWordSized = [s for s, addr in sizes].count(3 * ctx.config.WORDSIZE)
+        numWordSized = [s for s, addr in sizes].count(3 * ctx.config.get_word_size())
         if numWordSized == 1:
             head = sizes.pop(0)[1]
         else:  # if numWordSized > 1:
             # find one element with 0, and take that for granted...
             head = None
             for s, addr in sizes:
-                if s == 3 * ctx.config.WORDSIZE:
+                if s == 3 * ctx.config.get_word_size():
                     # read ->next ptr and first field of struct || null
-                    f2, field0 = self.unpack(ctx, addr + ctx.config.WORDSIZE)
+                    f2, field0 = self.unpack(ctx, addr + ctx.config.get_word_size())
                     if field0 == 0:  # this could be HEAD. or a 0 value.
                         head = addr
                         log.debug(
@@ -573,7 +578,7 @@ def refreshOne(context, ptr_value):
         f = mystruct.addField(
             p_addr,
             fieldtypes.FieldType.POINTER,
-            context.config.WORDSIZE,
+            context.config.get_word_size(),
             False)
     # resolvePointers
     mystruct.resolvePointers()

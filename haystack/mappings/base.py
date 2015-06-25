@@ -299,7 +299,7 @@ class Mappings:
         return
 
     def get_stack(self):
-        # FIXME wont work.
+        # FIXME wont work on windows.
         stack = self.get_mapping('[stack]')[0]
         return stack
 

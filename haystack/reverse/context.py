@@ -197,7 +197,7 @@ class ReverserContext():
             os.remove(context_cache)
             log.error(
                 'Error in the context file. File cleaned. Please restart.')
-            raise e
+            raise e('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
         context.config = config
         context.mappings = mappings
@@ -213,7 +213,12 @@ class ReverserContext():
         context_cache = self.config.getCacheFilename(
             self.config.CACHE_CONTEXT,
             self.dumpname)
-        pickle.dump(self, file(context_cache, 'w'))
+        try:
+            pickle.dump(self, file(context_cache, 'w'))
+        except pickle.PicklingError, e:
+            log.error("Pickling error on %s, file removed",context_cache)
+            os.remove(context_cache)
+            raise e
 
     def reset(self):
         try:
@@ -235,17 +240,28 @@ class ReverserContext():
             pass
 
     def __getstate__(self):
-        d = self.__dict__.copy()
-        del d['mappings']
-        del d['heap']
-
-        del d['_structures']
-        del d['_structures_addresses']
-        #del d['_pointers_values']
-        #del d['_pointers_offsets']
-        del d['_malloc_addresses']
-        del d['_malloc_sizes']
+        """The important things to pickle are:
+               dumpname
+               parsed
+               _heap_start
+           Ignore the rest
+        """
+        
+        # FIXME, double check and delete
+        #d = self.__dict__.copy()
+        #del d['mappings']
+        #del d['heap']
+        #del d['_structures']
+        #del d['_structures_addresses']
+        ##del d['_pointers_values']
+        ##del d['_pointers_offsets']
+        #del d['_malloc_addresses']
+        #del d['_malloc_sizes']
         # print d
+        d = dict()
+        d['dumpname'] = self.__dict__['dumpname']
+        d['parsed'] = self.__dict__['parsed']
+        d['_heap_start'] = self.__dict__['_heap_start']
         return d
 
     def __setstate__(self, d):
