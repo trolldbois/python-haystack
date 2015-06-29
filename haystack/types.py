@@ -311,6 +311,10 @@ class CTypesProxy(object):
         self.c_char_p = self.POINTER(self.c_char)
         self.c_wchar_p = self.POINTER(self.c_wchar)
 
+        setattr(sys.modules[__name__], 'c_void_p', self.c_void_p)
+        setattr(sys.modules[__name__], 'c_char_p', self.c_char_p)
+        setattr(sys.modules[__name__], 'c_wchar_p', self.c_wchar_p)
+
         # set the casting function
         self.cast = self.__cast
         return

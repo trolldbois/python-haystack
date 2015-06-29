@@ -11,6 +11,8 @@ import sys
 
 import numpy
 from haystack import model
+from haystack import types
+
 from haystack.structures import heapwalker
 
 log = logging.getLogger('libcheapwalker')
@@ -51,7 +53,7 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
 class LibcHeapFinder(heapwalker.HeapFinder):
 
-    def __init__(self):
+    def __init__(self):#, ctypes):
         import ctypes
         from haystack.structures.libc import ctypes_malloc
         ctypes_malloc = reload(ctypes_malloc)

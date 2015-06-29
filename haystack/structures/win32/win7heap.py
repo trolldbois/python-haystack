@@ -83,6 +83,7 @@ _LFH_HEAP
 
 
 import ctypes
+#print ctypes
 
 from haystack.structures.win32 import win7_32  # as gen
 from haystack.structures.win32 import win7_64  # as gen
@@ -91,8 +92,10 @@ from haystack.structures.win32 import win7_64  # as gen
 gen = None
 if ctypes.sizeof(ctypes.c_void_p) == 4:
     gen = win7_32
+    #print 'LOADING x32',ctypes
 else:
     gen = win7_64
+    #print 'LOADING x64',ctypes
 
 import logging
 import sys

@@ -11,6 +11,8 @@ import sys
 
 import numpy
 from haystack import model
+from haystack import types
+
 from haystack.structures import heapwalker
 
 import ctypes
@@ -32,6 +34,12 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         self._allocs = None
         self._free_chunks = None
         self._child_heaps = None
+        # unload win7heap
+        # clean the iport module to remove any rpevious loading with a different
+        # ctypes proxy class
+        #if 'win7heap' in sys.modules:
+        #    del sys.modules['win7heap']
+        #import ctypes
         from haystack.structures.win32 import win7heap
         self._heap = self._mapping.readStruct(
             self._mapping.start +
@@ -190,7 +198,10 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
 class Win7HeapFinder(heapwalker.HeapFinder):
 
-    def __init__(self):
+    def __init__(self):#, ctypes):
+        #ctypes = types.set_ctypes(ctypes)
+        #if 'win7heap' in sys.modules:
+        #    del sys.modules['win7heap']
         from haystack.structures.win32 import win7heap
         win7heap = reload(win7heap)
         self.heap_type = win7heap.HEAP

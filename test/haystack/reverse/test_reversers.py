@@ -41,12 +41,14 @@ class TestStructureSizes(unittest.TestCase):
             ('me', [constraints.NotNull])])
 
     def setUp(self):
+        model.reset()
         # os.chdir()
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
         self.dsa = DSASimple(self.context.config)
 
     def tearDown(self):
         self.context = None
+        model.reset()
 
     def test_sizes(self):
         structs = self.context.listStructures()

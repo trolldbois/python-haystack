@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 import logging
+from haystack import types
 
 log = logging.getLogger('heapwalker')
 
@@ -160,7 +161,8 @@ def make_heap_walker(mappings):
 
 class HeapFinder(object):
 
-    def __init__(self):
+    def __init__(self):#, ctypes):
+        #ctypes = types.set_ctypes(ctypes)
         self.heap_type = None
         self.walker_class = callable()
         self.heap_validation_depth = 1
