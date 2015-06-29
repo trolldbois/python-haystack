@@ -113,8 +113,8 @@ model.registerModule(sys.modules[__name__])
 # asserts for pyflakes
 assert HEAP_SEGMENT
 assert HEAP_SEGMENT
-assert struct_c__S__HEAP_ENTRY_Ua_Sa_1
-assert struct_c__S__HEAP_FREE_ENTRY_Ua_Sa_1
+assert struct__HEAP_ENTRY_0_1 #only 32bits
+assert struct__HEAP_FREE_ENTRY_0_1 #only 32bits
 
 # HEAP_SEGMENT
 
@@ -134,13 +134,16 @@ HEAP_SEGMENT._listHead_ = [
 
 
 # HEAP_ENTRY
-# SubSegmentCode is a encoded c_void_p
-struct_c__S__HEAP_ENTRY_Ua_Sa_1.expectedValues = {
+
+#only 32bits
+# SubSegmentCode is a encoded c_void_p, ignore its value
+struct__HEAP_ENTRY_0_1.expectedValues = {
     'SubSegmentCode': constraints.IgnoreMember,
 }
 
+#only 32bits
 # another to ignore because of encoded pointer.
-struct_c__S__HEAP_FREE_ENTRY_Ua_Sa_1.expectedValues = {
+struct__HEAP_FREE_ENTRY_0_1.expectedValues = {
     'SubSegmentCode': constraints.IgnoreMember,
 }
 
@@ -528,10 +531,15 @@ def HEAP_getFreeLists_by_blocksindex(self, mappings):
 
 def HEAP_ENTRY_decode(chunk_header, heap):
     """returns a decoded copy """
-    # struct_c__S__HEAP_ENTRY_Ua_Sa_0 contains the Size
-    chunk_len = ctypes.sizeof(struct_c__S__HEAP_ENTRY_Ua_Sa_0)
+    # contains the Size
+    # 32 bits: struct__HEAP_ENTRY_0_0
+    # FIXME BUG, we need to use _0_0_0_0 for 64 bits, otherwise 
+    # we are reading bad data
+    # 64 bits: struct__HEAP_ENTRY_0_0_0_0
+    chunk_len = ctypes.sizeof(struct__HEAP_ENTRY_0_0)
     chunk_header_decoded = (
-        struct_c__S__HEAP_ENTRY_Ua_Sa_0).from_buffer_copy(chunk_header)
+        struct__HEAP_ENTRY_0_0).from_buffer_copy(chunk_header)
+    # decode the heap entry chunk header with the heap.Encoding
     working_array = (
         ctypes.c_ubyte *
         chunk_len).from_buffer(chunk_header_decoded)
