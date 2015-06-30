@@ -15,6 +15,11 @@ __status__ = "Production"
 
 class SrcTests(unittest.TestCase):
 
+    def tearDown(self):
+        self.values = None
+        self.offsets = None
+        self.sizes = None
+
     def _load_offsets_values(self, dumpname):
         """read <dumpname>.stdout to get offsets given by the binary."""
         offsets = dict()

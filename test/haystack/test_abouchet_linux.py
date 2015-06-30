@@ -36,7 +36,10 @@ class Test7_x32(SrcTests):
         ctypes7.populate()
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.classname = None
+        self.address = None
         model.reset()
 
     def test_refresh(self):
@@ -120,7 +123,10 @@ class Test7_x64(SrcTests):
         ctypes7.populate()
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.classname = None
+        self.address = None
         model.reset()
 
     def test_refresh(self):
@@ -216,7 +222,13 @@ class Test6_x32(SrcTests):
         ctypes6.populate()
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.node_structname = None
+        self.usual_structname = None
+        self.address1 = None
+        self.address2 = None
+        self.address3 = None
         model.reset()
 
     def test_refresh(self):
@@ -369,7 +381,13 @@ class Test6_x64(SrcTests):
         ctypes6.populate()
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.node_structname = None
+        self.usual_structname = None
+        self.address1 = None
+        self.address2 = None
+        self.address3 = None
         model.reset()
 
     def test_refresh(self):
@@ -508,7 +526,11 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.validAddress = None
+        self.classname = None
+        self.known_heap = None
         model.reset()
 
     def test_show(self):
@@ -542,7 +564,10 @@ class TestApiLinuxDump(unittest.TestCase):
 
 
     def tearDown(self):
-        self.mappings = None
+        super(SrcTests,self).tearDown()
+        self.memdumpname = None
+        self.classname = None
+        self.known_heap = None
         model.reset()
 
     def test_show(self):
