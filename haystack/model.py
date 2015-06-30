@@ -26,6 +26,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 import logging
+import sys
 
 log = logging.getLogger('model')
 
@@ -49,9 +50,15 @@ __book = _book()
 
 def reset():
     """Clean the book"""
+    log.info('RESET MODEL')
     __book.modules = set()
     from haystack import types
     ctypes = types.load_ctypes_default()
+    for mod in sys.modules.keys():
+        if 'haystack.reverse' in mod:
+            del sys.modules[mod]
+            log.debug('de-imported %s',mod)
+    log.info("MODEL: %s %s",str(ctypes.c_void_p),id(ctypes.c_void_p))
 
 
 def registeredModules():

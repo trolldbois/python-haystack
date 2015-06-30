@@ -308,13 +308,12 @@ class AnonymousStructInstance():
         try:
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
+            log.debug('saving to %s', fname)
             pickle.dump(self, file(fname, 'w'))
         except pickle.PickleError as e:
             # self.struct must be cleaned.
             log.error("Pickling error, file %s removed",fname)
             os.remove(fname)
-            #import code
-            #code.interact(local=locals())
             raise e
         except RuntimeError as e:
             log.error(e)

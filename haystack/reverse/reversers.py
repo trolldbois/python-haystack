@@ -279,6 +279,7 @@ class FieldReverser(StructureOrientedReverser):
             'w')
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
+        log.debug('Run heuristics structure fields type discovery')
         dsa = DSASimple(context.config)
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
@@ -289,6 +290,7 @@ class FieldReverser(StructureOrientedReverser):
             else:
                 decoded += 1
                 dsa.analyze_fields(anon)
+                log.info("_reverse: %s %s",str(context.config.ctypes.c_void_p),id(context.config.ctypes.c_void_p))
                 anon.saveme()
             # output headers
             towrite.append(anon.toString())

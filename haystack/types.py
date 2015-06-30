@@ -110,6 +110,7 @@ class CTypesProxy(object):
         self.__name__ = "CTypesProxy-%d:%d:%d" % (self.__longsize,
                                                   self.__pointersize,
                                                   self.__longdoublesize)
+        log.info("types: %s %s",str(self.c_void_p),id(self.c_void_p))
         pass
 
     def __init_types(self):

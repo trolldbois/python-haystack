@@ -1,5 +1,13 @@
 
 
+- FIX the model reloading of ctypes across all modules.
+- never import ctypes anywhere ? 
+- always rely on a model.py ctypes singleton ??
+- pickling error: fieldtypes import ctypes and uses it. that cant work.
+- resetting some haystack sub modules (reverse) seems to work
+- close mappings file in memory mappings.???
+
+
 - A) Done debugging win heap structures. pdbparse and clang2py should now generate better structs.
     That means Profiles for kernel structs. Kinda useless to duplicate rekall&vol efforts.
 - B) otherwise, use VTypes from rekall/volatility to create a heapwalker ?
