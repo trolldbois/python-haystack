@@ -81,7 +81,7 @@ dumps32: $(SRCS) $(DUMPS32) $(OBJS32)
 
 dumps64: $(SRCS) $(DUMPS64) $(OBJS64) 
 	
-%.32.dump: %.c 
+%.32.dump: %.c
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 
@@ -89,7 +89,7 @@ dumps64: $(SRCS) $(DUMPS64) $(OBJS64)
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 	
-%.64.dump: %.c 
+%.64.dump: %.c
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 	

@@ -61,7 +61,7 @@ before_script:
 
 script:
 # run tests. Need root for memory dumps tests.
-  - python setup.py test
+#  - python setup.py test
 # run coverage only on test, not on memory dumps.
   - coverage run --source=haystack setup.py test
 
