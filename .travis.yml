@@ -45,6 +45,9 @@ before_script:
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
   - unzip putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.7124.dump.zip
+  - unzip putty.7124.dump.zip
+  - mv putty.7124.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
   - tar zxf ssh.1.tgz
   - mv ssh.1 test/dumps/ssh/
