@@ -81,6 +81,7 @@ after_failure:
   - clang --version
   - which gcc
   - gcc --version
+  - make -v
   - dpkg -l
   - find
   - cat /etc/sudoers

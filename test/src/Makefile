@@ -27,8 +27,8 @@ pid=
 C2PY=clang2py
 
 SRCS := $(wildcard *.c *.cpp) 
-OBJS32 := $(patsubst %.c,%.32,$(SRCS))
-OBJS32 := $(patsubst %.cpp,%.32,$(OBJS32))
+OBJS32x := $(patsubst %.c,%.32,$(SRCS))
+OBJS32 := $(patsubst %.cpp,%.32,$(OBJS32x))
 OBJS64 := $(patsubst %.32,%.64,$(OBJS32))
 
 PY32 := $(patsubst test-%.32,%_gen32.py,$(OBJS32))
