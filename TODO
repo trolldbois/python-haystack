@@ -1,108 +1,36 @@
 
 
 - FIX the model reloading of ctypes across all modules.
-- never import ctypes anywhere ? 
-- always rely on a model.py ctypes singleton ??
-- pickling error: fieldtypes import ctypes and uses it. that cant work.
-- resetting some haystack sub modules (reverse) seems to work
-- close mappings file in memory mappings.???
+    - unloading all reverse module is crude.
+    - resetting some haystack sub modules (reverse) seems to work
+
+- never import ctypes anywhere !
+    - always rely on a model.py/config.py ctypes singleton
+
+- too many open files
+    - close mappings file in memory mappings.???
+    - clean all TU to clean memory mappings in bringDown
 
 
-- A) Done debugging win heap structures. pdbparse and clang2py should now generate better structs.
-    That means Profiles for kernel structs. Kinda useless to duplicate rekall&vol efforts.
-- B) otherwise, use VTypes from rekall/volatility to create a heapwalker ?
+- use heapwalker plugins from rekall/volatility to create a proxy heapwalker ?
 
-
-2015-06-24 
-FAILED (failures=4, errors=8, skipped=4, expected failures=4)
-FAILED (failures=3, errors=6, skipped=5, expected failures=3)
-FAILED (failures=3, errors=2, skipped=7, expected failures=3)
-Ran 225 tests in 81.876s
-Ran 225 tests in 73.785s
-FAILED (failures=1, errors=1, skipped=9, expected failures=3)
-
-
-Why is ctypes original c_void_p returning None ? probably because poitner value is 0
->>> winheap.HEAP.HeaderValidateCopy
-<Field type=c_void_p, ofs=52, size=8>
 
 
 Attribute packed is not correct in ctypeslib
 
-HEAP_ENTRY is not the right size in win7_x64
-because of namespace colisions !!!
-
-union {
- struct { // Ua_Sa_0
-    union {} // Ua_Sa_Ua_0
-    }
- struct { // Ua_Sa_1
-    union {} // Ua_Sa_Ua_0 !!!!!!
-    }
- 
-struct_c__S__HEAP_ENTRY_Ua_Sa_Ua_Sa_1
-
 
 Todo:
-Put constraints in yara form ? at least in separate folder/
-Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
-Add a struct beautifier for the string formatting. (hex vs int)
+ - Put constraints in yara form ? at least in separate folder/
+ - Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
+ - Add a struct beautifier for the string formatting. (hex vs int)
+ - easy API
+ - documented example
+ - Rekall plugin
+ - Rekall memorymap
+ - make basicmodel:loadable members work with vtypes ?
+ - Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
+ - pylint ignore W0212 in profiles.
+ - add PyQt4 as dependency for optional functions
+ - Add to ipython
 
-
-- Document the generation of profiles
-- generate x64 profiles
-- generate winxp  profiles because otherzise the zeus volatility test is not going to work stupid
-
-- Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
-- pylint ignore W0212 in profiles.
-
-
-- add PyQt4 as dependency for optional functions
-
-
-HEAP_ENTRY
-SubSegmentCode
-0x8f715c66
-
-0x00390000 0x00540000 0x00580000 0x005c0000 0x01ef0000
-
-
-++ Add to ipython
-
-Build steps:
-a) pdbparse
-
-Look at /home/other/outputs/pdb/
-
-use 
-$ grep UCR_DESCRIPTOR *
-Fichier binaire _0000021 correspondant
-Fichier binaire _00003BA correspondant
-Fichier binaire _000160E correspondant
-$ grep _HEAP_LOCAL_SEGMENT_INFO *
-Fichier binaire _0000021 correspondant
-Fichier binaire _00003BA correspondant
-Fichier binaire _000160E correspondant
-
-between 160E and 3BA, we find must symbols ok.
-
-python ../scripts/pdbtoh.py -g -w 4 -d heap.structures /home/other/outputs/pdb/Win7SP1X86/_00003BA > Win7SP1X86._00003BA.32.h
-python ../scripts/pdbtoh.py -g -w 4 -d heap.structures /home/other/outputs/pdb/Win7SP1X86/_000160E > Win7SP1X86._000160E.32.h
-clang2py --target i386 Win7SP1X86._00003BA.32.h Win7SP1X86._000160E.32.h -o win7_generated.py
-
-# now it works.
-
-
-
-python scripts/pdbtoh.py test/win32k.pdb -w 4 > test/win32k.32.h
-python scripts/pdbtoh.py test/ntdll.pdb -w 4 > test/ntdll.32.h
-python scripts/pdbtoh.py test/ntoskrnl.pdb -w 4 > test/ntoskrnl.32.h
-python scripts/pdbtoh.py test/wkernel32.pdb -w 4 > test/wkernel32.32.h 
-cat test/win32k.32.h test/ntdll.32.h test/ntoskrnl.32.h test/wkernel32.32.h > win7.32.h
-
-## do no do a reduceing with awk. But instead use the object filters from clang2py
-cp win7.32.h ~haystack/
-clang2py --target i386 win7.32.h -o win7_x32.py
-
-# use win7_x32.py
 

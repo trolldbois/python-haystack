@@ -1,14 +1,23 @@
 Ongoing:
-- fix installation requirements
-- fix test run
-
+ - Volatility plugin
+ - Volatility memorymap
+ - merge in master
 
 2015-06:
- - keep track of changes 
+ - keep track of changes in this file
  - use travis-ci to compile
- - fix makefile and sudo and virtualenv
- - FIX OverflowError: Python int too large to convert to C long on ptrace file.seek - ignore vsyscall mmap
+ - fix makefile in tests/ and sudo & virtualenv play together nicely
+ - FIX OverflowError: Python int too large to convert to C long on ptrace file.seek - ignore vsyscall mmap that is in the higher mmap reagion
+    + this is a temporary bugfix.
  - add memory dumps test case to a dropbox
- - fix the heap structures used by haystack for win7. Ignore HEAP_ENTRY SubSegmentCode pointer as it is encoded.
+ - fix the heap structures used by haystack for win7. 
+    + Constraints: Ignore HEAP_ENTRY SubSegmentCode pointer as it is encoded.
+    + fix some ctypeslib bugs
  - fix the generation process for HEAP structures. ctypeslib and clang do not like circular dependencies.
+ - fix the name generation in ctypeslib
  - autopep8 all
+ - fix all TU to pass
+ - fix installation requirements
+ - fix test run
+ - Script the generation of profiles
+
