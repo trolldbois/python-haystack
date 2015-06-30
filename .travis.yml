@@ -66,6 +66,7 @@ script:
   - coverage run --source=haystack setup.py test
 
 after_success:
+  - coveralls
   - which clang
   - clang --version
   - which gcc
@@ -73,7 +74,6 @@ after_success:
   - dpkg -l
   - find
   - cat /etc/sudoers
-  - coveralls
 
 after_failure:
 # debug versions

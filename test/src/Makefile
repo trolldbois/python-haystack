@@ -82,18 +82,22 @@ dumps32: $(SRCS) $(DUMPS32) $(OBJS32)
 dumps64: $(SRCS) $(DUMPS64) $(OBJS64) 
 	
 %.32.dump: %.c
+	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 
 %.32.dump: %.cpp
+	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 	
 %.64.dump: %.c
+	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 	
 %.64.dump: %.cpp
+	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
 
