@@ -20,7 +20,7 @@ from haystack import model
 from haystack import utils
 from haystack import constraints
 
-from haystack.structures.win32 import winheap_generated as gen
+from haystack.structures.win32 import winxp_32 as gen
 
 import ctypes
 import struct
@@ -49,6 +49,18 @@ HEAP_SEGMENT.expectedValued = {
 
 HEAP.expectedValues = {
     'Signature': [0xeeffeeff],
+}
+
+#only 32bits
+# SubSegmentCode is a encoded c_void_p, ignore its value
+struct__HEAP_ENTRY_0_1.expectedValues = {
+    'SubSegmentCode': constraints.IgnoreMember,
+}
+
+#only 32bits
+# another to ignore because of encoded pointer.
+struct__HEAP_FREE_ENTRY_0_1.expectedValues = {
+    'SubSegmentCode': constraints.IgnoreMember,
 }
 
 
