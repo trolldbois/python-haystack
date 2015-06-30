@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 import subprocess
 import sys
 import shutil
@@ -27,6 +28,12 @@ def main():
     #print('   **DUMP** ', pid1.pid)
     memory_dumper.dump(pid1.pid, dumpname)
     pid1.kill()
+    out.close()
+    if not os.access(app + ".stdout", os.F_OK):
+        print "file %s was not written"%app + ".stdout"
+        with file(app + ".stdout", 'w') as out:
+            out.write('plop')
+    return
 
 
 if __name__ == '__main__':
