@@ -38,7 +38,9 @@ class TestApiWin32Dump(unittest.TestCase):
                             ]
 
     def tearDown(self):
-        self.mappings = None
+        self.memdumpname = None
+        self.classname = None
+        self.known_heaps = None
         model.reset()
 
     def test_show(self):

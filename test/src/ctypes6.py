@@ -4,7 +4,7 @@ from haystack import model
 from haystack.constraints import RangeValue, NotNull, IgnoreMember
 
 
-def populate():
+def populate(config):
     # classes copy from ctypes6_genXX is done from unittest setUp
     struct_usual.expectedValues = {
         "val1": [0x0aaaaaaa],
@@ -25,7 +25,10 @@ def populate():
 
     # x32 -4.
     #import ctypes
-    #struct_Node._listHead_ = [('list', struct_Node, 'wqd', -4),]
+    if config.get_word_size() == 4:
+        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -4),]
+    elif config.get_word_size() == 8:
+        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -8),]
     #                           #('list', struct_Node, 'qwd', -4)]
-    #from haystack import listmodel
-    #listmodel.declare_double_linked_list_type(struct_entry, 'flink', 'blink')
+    from haystack import listmodel
+    listmodel.declare_double_linked_list_type(struct_entry, 'flink', 'blink')

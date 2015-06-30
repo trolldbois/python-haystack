@@ -34,9 +34,9 @@ class TestLoadMembers(SrcTests):
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
+        super(SrcTests,self).tearDown()
         self.mappings = None
+        model.reset()
         pass
 
     def test_basic_types(self):
@@ -145,10 +145,11 @@ class TestRealSSH(unittest.TestCase):
         self.known_offset = 0xb84ee318
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
+        super(SrcTests,self).tearDown()
         self.mappings = None
-        pass
+        self.classname = None
+        self.known_offset = None
+        model.reset()
 
     def test_real_life(self):
         from sslsnoop import ctypes_openssh

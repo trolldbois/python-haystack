@@ -18,6 +18,24 @@
 
 Attribute packed is not correct in ctypeslib
 
+ - proper way to load constraints and bit-dependant modules is side by side
+ like ctypes6.py
+ 
+    # A - the caller has to load the proper bit-dependant python code, 
+    from test.src import ctypes6_gen32
+    # B - then apply the classes to a dynamic module if needed
+    from test.src import ctypes6
+    model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
+    model.registerModule(ctypes6)
+    # C - then apply constraints on objects.
+    ctypes6.populate(self.mappings.config)
+
+Step C) would be nicer is a yara format is applied, and gen that into the module
+itself. 
+    -> model.apply_constraints("yaraconstraintsfilename")
+format yara constraints as
+
+ 
 
 Todo:
  - Put constraints in yara form ? at least in separate folder/

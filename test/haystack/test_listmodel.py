@@ -19,6 +19,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+from test.haystack import SrcTests
 
 class TestListStruct(unittest.TestCase):
 
@@ -31,10 +32,8 @@ class TestListStruct(unittest.TestCase):
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
         self.mappings = None
-        pass
+        model.reset()
 
     def test_iter(self):
         #offset = 0x390000
@@ -42,8 +41,6 @@ class TestListStruct(unittest.TestCase):
         offset = 0x1ef0000
         self.m = self.mappings.get_mapping_for_address(offset)
         self.heap = self.m.readStruct(offset, win7heap.HEAP)
-
-        import code
 
         self.assertTrue(self.heap.loadMembers(self.mappings, 10))
 
@@ -105,21 +102,31 @@ class TestListStruct(unittest.TestCase):
                     'VirtualAllocdBlocks')]
             self.assertEquals(len(allocated), 0)
 
-
-class TestListStructTest5:  # (unittest.TestCase):
-
+class TestListStructTest6(SrcTests):
     """
-    haystack --dumpname putty.1.dump --string haystack.structures.win32.win7heap.HEAP refresh 0x390000
     """
 
     def setUp(self):
         model.reset()
-        offset = 0x08f75008
-        self.mappings = dump_loader.load('test/src/test-ctypes5.dump')
+        self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
+        self.memdumpname = 'test/src/test-ctypes6.32.dump'
+        self._load_offsets_values(self.memdumpname)
         sys.path.append('test/src/')
-        import ctypes5
-        self.m = self.mappings.get_mapping_for_address(offset)
-        self.usual = self.m.readStruct(offset, ctypes5.usual)
+        from test.src import ctypes6
+        from test.src import ctypes6_gen32
+        model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
+        model.registerModule(ctypes6)
+        # apply constraints
+        ctypes6.populate(self.mappings.config)
+        self.offset = self.offsets['test1'][0]
+        self.m = self.mappings.get_mapping_for_address(self.offset)
+        self.usual = self.m.readStruct(self.offset, ctypes6.struct_usual)
+
+    def tearDown(self):
+        self.mappings = None
+        self.m = None
+        self.usual = None
+        model.reset()
 
     def test_iter(self):
 
@@ -128,9 +135,9 @@ class TestListStructTest5:  # (unittest.TestCase):
         nodes_addrs = [
             el for el in self.usual.root._iterateList(
                 self.mappings)]
-
+        # test that we have a list of two structures in a list
         self.assertEquals(len(nodes_addrs), 2)
-
+        
         return
 
 

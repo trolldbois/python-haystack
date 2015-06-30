@@ -206,6 +206,9 @@ class Test6_x32(SrcTests):
         import sys
         model.reset()
         types.reload_ctypes(4, 4, 8)
+        class MyConfig:
+            def get_word_size(self):
+                return 4
         self.memdumpname = 'test/src/test-ctypes6.32.dump'
         self.node_structname = 'test.src.ctypes6.struct_Node'
         self.usual_structname = 'test.src.ctypes6.struct_usual'
@@ -219,7 +222,7 @@ class Test6_x32(SrcTests):
         model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
         model.registerModule(ctypes6)
         # apply constraints
-        ctypes6.populate()
+        ctypes6.populate(MyConfig())
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -365,6 +368,9 @@ class Test6_x64(SrcTests):
     def setUp(self):
         model.reset()
         types.reload_ctypes(8, 8, 16)
+        class MyConfig:
+            def get_word_size(self):
+                return 8
         self.memdumpname = 'test/src/test-ctypes6.64.dump'
         self.node_structname = 'test.src.ctypes6.struct_Node'
         self.usual_structname = 'test.src.ctypes6.struct_usual'
@@ -378,7 +384,7 @@ class Test6_x64(SrcTests):
         model.copyGeneratedClasses(ctypes6_gen64, ctypes6)
         model.registerModule(ctypes6)
         # apply constraints
-        ctypes6.populate()
+        ctypes6.populate(MyConfig())
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -598,7 +604,7 @@ class TestApiLinuxDump(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     # logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
     # logging.getLogger('model').setLevel(level=logging.DEBUG)
