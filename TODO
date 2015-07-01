@@ -4,6 +4,7 @@
 - add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
 
 - make a listmodel method for arrays of structures
+- make the winxp freelists method to work.
 
 - FIX the model reloading of ctypes across all modules.
     - unloading all reverse module is crude.

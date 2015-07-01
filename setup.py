@@ -45,7 +45,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         import os
         import sys
         os.getcwd()
-        makeCmd = ['make']
+        makeCmd = ['make','-d']
         p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
         p.wait()
         return p.returncode
