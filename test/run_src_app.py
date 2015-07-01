@@ -37,6 +37,6 @@ def run_app_test(testName, stdout=sys.stdout):
 
 def makeTests():
     os.getcwd()
-    makeCmd = ['make']
+    makeCmd = ['make','-d']
     p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
     p.wait()
