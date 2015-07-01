@@ -1,0 +1,60 @@
+
+
+- FIX get_heap on windows XP/zeus demo
+- add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
+
+- make a listmodel method for arrays of structures
+- make the winxp freelists method to work.
+
+- FIX the model reloading of ctypes across all modules.
+    - unloading all reverse module is crude.
+    - resetting some haystack sub modules (reverse) seems to work
+
+- never import ctypes anywhere !
+    - always rely on a model.py/config.py ctypes singleton
+
+- too many open files
+    - close mappings file in memory mappings.???
+    - clean all TU to clean memory mappings in bringDown
+
+
+- use heapwalker plugins from rekall/volatility to create a proxy heapwalker ?
+
+
+
+Attribute packed is not correct in ctypeslib
+
+ - proper way to load constraints and bit-dependant modules is side by side
+ like ctypes6.py
+ 
+    # A - the caller has to load the proper bit-dependant python code, 
+    from test.src import ctypes6_gen32
+    # B - then apply the classes to a dynamic module if needed
+    from test.src import ctypes6
+    model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
+    model.registerModule(ctypes6)
+    # C - then apply constraints on objects.
+    ctypes6.populate(self.mappings.config)
+
+Step C) would be nicer is a yara format is applied, and gen that into the module
+itself. 
+    -> model.apply_constraints("yaraconstraintsfilename")
+format yara constraints as
+
+ 
+
+Todo:
+ - Put constraints in yara form ? at least in separate folder/
+ - Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
+ - Add a struct beautifier for the string formatting. (hex vs int)
+ - easy API
+ - documented example
+ - Rekall plugin
+ - Rekall memorymap
+ - make basicmodel:loadable members work with vtypes ?
+ - Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
+ - pylint ignore W0212 in profiles.
+ - add PyQt4 as dependency for optional functions
+ - Add to ipython
+
+

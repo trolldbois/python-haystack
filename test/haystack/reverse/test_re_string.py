@@ -11,7 +11,7 @@ import unittest
 import pickle
 import sys
 
-from haystack.config import Config
+from haystack import model
 from haystack.reverse import re_string
 
 __author__ = "Loic Jaquemet"
@@ -21,168 +21,210 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes 
+import ctypes
+
 
 class TestReString(unittest.TestCase):
 
-  @classmethod
-  def setUpClass(self):
-    self.context = None #context.get_context('test/src/test-ctypes3.dump')
-    self.test1 = '''C\x00:\x00\\\x00U\x00s\x00e\x00r\x00s\x00\\\x00j\x00a\x00l\x00\\\x00A\x00p\x00p\x00D\x00a\x00t\x00a\x00\\\x00R\x00o\x00a\x00m\x00i\x00n\x00g\x00\\\x00M\x00i\x00c\x00r\x00o\x00s\x00o\x00f\x00t\x00\\\x00I\x00n\x00t\x00e\x00r\x00n\x00e\x00t\x00 \x00E\x00x\x00p\x00l\x00o\x00r\x00e\x00r\x00\\\x00Q\x00u\x00i\x00c\x00k\x00 \x00L\x00a\x00u\x00n\x00c\x00h\x00\\\x00d\x00e\x00s\x00k\x00t\x00o\x00p\x00.\x00i\x00n\x00i\x00\x00\x00'''
-    self.test2 = '''\x4C\x00\x6F\x00\xEF\x00\x63\x00\x20\x00\x4A\x00\x61\x00\x71\x00\x75\x00\x65\x00\x6D\x00\x65\x00\x74\x00\x00\x00'''
-    self.test3 = '''\\\x00R\x00E\x00G\x00I\x00S\x00T\x00R\x00Y\x00\\\x00U\x00S\x00E\x00R\x00\\\x00S\x00-\x001\x00-\x005\x00-\x002\x001\x00-\x002\x008\x008\x004\x000\x006\x003\x000\x007\x003\x00-\x003\x003\x002\x009\x001\x001\x007\x003\x002\x000\x00-\x003\x008\x001\x008\x000\x003\x009\x001\x009\x009\x00-\x001\x000\x000\x000\x00_\x00C\x00L\x00A\x00S\x00S\x00E\x00S\x00\\\x00W\x00o\x00w\x006\x004\x003\x002\x00N\x00o\x00d\x00e\x00\\\x00C\x00L\x00S\x00I\x00D\x00\\\x00{\x007\x006\x007\x006\x005\x00B\x001\x001\x00-\x003\x00F\x009\x005\x00-\x004\x00A\x00F\x002\x00-\x00A\x00C\x009\x00D\x00-\x00E\x00A\x005\x005\x00D\x008\x009\x009\x004\x00F\x001\x00A\x00}\x00'''
-    self.test4 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\x07\x08\x09\x00'''
-    self.test5 = '''edrt\x00fguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
-    self.test6 = '''\xf3drtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
-    self.test7 = '\x1e\x1c\x8c\xd8\xcc\x01\x00' # pure crap
-    self.test8 = 'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00Y\x00'
-    self.test9 = '\x01\x01@\x00C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00'
-    self.test10 = '''\x4C\x6F\xEF\x63\x20\x4A\x61\x71\x75\x65\x6D\x65\x74'''
-    
-  def setUp(self):  
-    pass
+    @classmethod
+    def setUpClass(self):
+        # context.get_context('test/src/test-ctypes3.dump')
+        self.context = None
+        self.test1 = '''C\x00:\x00\\\x00U\x00s\x00e\x00r\x00s\x00\\\x00j\x00a\x00l\x00\\\x00A\x00p\x00p\x00D\x00a\x00t\x00a\x00\\\x00R\x00o\x00a\x00m\x00i\x00n\x00g\x00\\\x00M\x00i\x00c\x00r\x00o\x00s\x00o\x00f\x00t\x00\\\x00I\x00n\x00t\x00e\x00r\x00n\x00e\x00t\x00 \x00E\x00x\x00p\x00l\x00o\x00r\x00e\x00r\x00\\\x00Q\x00u\x00i\x00c\x00k\x00 \x00L\x00a\x00u\x00n\x00c\x00h\x00\\\x00d\x00e\x00s\x00k\x00t\x00o\x00p\x00.\x00i\x00n\x00i\x00\x00\x00'''
+        self.test2 = '''\x4C\x00\x6F\x00\xEF\x00\x63\x00\x20\x00\x4A\x00\x61\x00\x71\x00\x75\x00\x65\x00\x6D\x00\x65\x00\x74\x00\x00\x00'''
+        self.test3 = '''\\\x00R\x00E\x00G\x00I\x00S\x00T\x00R\x00Y\x00\\\x00U\x00S\x00E\x00R\x00\\\x00S\x00-\x001\x00-\x005\x00-\x002\x001\x00-\x002\x008\x008\x004\x000\x006\x003\x000\x007\x003\x00-\x003\x003\x002\x009\x001\x001\x007\x003\x002\x000\x00-\x003\x008\x001\x008\x000\x003\x009\x001\x009\x009\x00-\x001\x000\x000\x000\x00_\x00C\x00L\x00A\x00S\x00S\x00E\x00S\x00\\\x00W\x00o\x00w\x006\x004\x003\x002\x00N\x00o\x00d\x00e\x00\\\x00C\x00L\x00S\x00I\x00D\x00\\\x00{\x007\x006\x007\x006\x005\x00B\x001\x001\x00-\x003\x00F\x009\x005\x00-\x004\x00A\x00F\x002\x00-\x00A\x00C\x009\x00D\x00-\x00E\x00A\x005\x005\x00D\x008\x009\x009\x004\x00F\x001\x00A\x00}\x00'''
+        self.test4 = '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\x07\x08\x09\x00'''
+        self.test5 = '''edrt\x00fguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00\x00'''
+        self.test6 = '''\xf3drtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00'''
+        self.test7 = '\x1e\x1c\x8c\xd8\xcc\x01\x00'  # pure crap
+        self.test8 = 'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00Y\x00'
+        self.test9 = '\x01\x01@\x00C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00'
+        self.test10 = '''\x4C\x6F\xEF\x63\x20\x4A\x61\x71\x75\x65\x6D\x65\x74'''
 
-  def tearDown(self):
-    pass
+    def setUp(self):
+        pass
 
-  def test_startsWithNulTerminatedString(self):
-    #self.skipTest('')
+    def tearDown(self):
+        pass
 
-    size, codec, txt = re_string.startsWithNulTerminatedString(self.test1)
-    self.assertEquals(size, len(self.test1) )
-    
-    pass
-  
-  @unittest.expectedFailure
-  def test_try_decode_string(self):
-    #self.skipTest('')
-    
-    size, codec, txt = re_string.try_decode_string(self.test1)
-    self.assertEquals(size, len(self.test1) )
+    def test_startsWithNulTerminatedString(self):
+        # self.skipTest('')
 
-    size, codec, txt = re_string.try_decode_string(self.test2)
-    self.assertEquals(size, len(self.test2) )
+        size, codec, txt = re_string.startsWithNulTerminatedString(self.test1)
+        self.assertEquals(size, len(self.test1))
 
-    size, codec, txt = re_string.try_decode_string(self.test3)
-    self.assertEquals(size, len(self.test3) )
+        pass
 
-    size, codec, txt = re_string.try_decode_string(self.test4)
-    self.assertEquals(size, len(self.test4)-4 )
-    
-    size, codec, txt = re_string.try_decode_string(self.test5)
-    self.assertEquals(size, len(self.test5)-5 )
-    
-    ret = re_string.try_decode_string(self.test7)
-    self.assertFalse(ret )
+    @unittest.expectedFailure
+    def test_try_decode_string(self):
+        # self.skipTest('')
 
-    size, codec, txt = re_string.try_decode_string(self.test8)
-    self.assertEquals(size, len(self.test8) )
-    
-    pass
+        size, codec, txt = re_string.try_decode_string(self.test1)
+        self.assertEquals(size, len(self.test1))
 
-  def test_testEncoding(self):
-    #self.skipTest('')
+        size, codec, txt = re_string.try_decode_string(self.test2)
+        self.assertEquals(size, len(self.test2))
 
-    uni = self.test1
-    size, encoded = re_string.testEncoding(uni, 'utf-16le')
-    self.assertEquals(size, len(uni) )
+        size, codec, txt = re_string.try_decode_string(self.test3)
+        self.assertEquals(size, len(self.test3))
 
-    x3 = self.test2
-    size, encoded = re_string.testEncoding(x3, 'utf-16le')
-    self.assertEquals(size, len(x3) )
+        size, codec, txt = re_string.try_decode_string(self.test4)
+        self.assertEquals(size, len(self.test4) - 4)
 
-    size, encoded = re_string.testEncoding(self.test4, 'utf-16le')
-    self.assertEquals(size, -1 )
+        size, codec, txt = re_string.try_decode_string(self.test5)
+        self.assertEquals(size, len(self.test5) - 5)
 
-    size, encoded = re_string.testEncoding(self.test4, 'utf-8')
-    self.assertEquals(size, len(self.test4) )
+        ret = re_string.try_decode_string(self.test7)
+        self.assertFalse(ret)
 
-    pass
+        size, codec, txt = re_string.try_decode_string(self.test8)
+        self.assertEquals(size, len(self.test8))
 
-  def test_testAllEncodings(self):
+        pass
 
-    #self.skipTest('')
+    def test_testEncoding(self):
+        # self.skipTest('')
 
-    uni = self.test1
-    solutions = re_string.testAllEncodings(uni)
-    size, codec, encoded = solutions[0]
-    self.assertEquals(size, len(uni) , '%s'%codec)
+        uni = self.test1
+        size, encoded = re_string.testEncoding(uni, 'utf-16le')
+        self.assertEquals(size, len(uni))
 
-    x3 = self.test2
-    solutions = re_string.testAllEncodings(x3)
-    size, codec, encoded = solutions[0]
-    self.assertEquals(size, len(x3) )
-    
-    solutions = re_string.testAllEncodings(self.test3)
-    size, codec, encoded = solutions[0]
-    self.assertEquals(size, len(self.test3) )
+        x3 = self.test2
+        size, encoded = re_string.testEncoding(x3, 'utf-16le')
+        self.assertEquals(size, len(x3))
 
-    solutions = re_string.testAllEncodings(self.test4)
-    size, codec, encoded = solutions[0]
-    self.assertEquals(size, len(self.test4) )
+        size, encoded = re_string.testEncoding(self.test4, 'utf-16le')
+        self.assertEquals(size, -1)
 
-    pass
+        size, encoded = re_string.testEncoding(self.test4, 'utf-8')
+        self.assertEquals(size, len(self.test4))
 
-  def test_nocopy_class(self):
-    #self.skipTest('')
-    s = '1234567890'
-    x = re_string.Nocopy(s,2,9)
-    x1 = s[2:9]
-    self.assertEquals(len(x), len(x1))
-    for i in range(len(x)):
-      self.assertEquals( x[i], x1[i])
-    #
-    val = x[2:4]
-    self.assertEquals(val, '56')
-    self.assertEquals(val, x[2:4])
-    self.assertEquals(s[4:-1], x[2:])
-    self.assertEquals(s[2:-1], x[:16])
-    self.assertEquals(s[2:-1], x[:])
-    self.assertEquals(s[2:-1], x[0:])
-    self.assertEquals(s[2:-1], x)
-    
+        pass
 
-    self.assertEquals(re_string.Nocopy(s,9,10), s[9:10])
-    self.assertEquals(re_string.Nocopy(s,9,10), '0')
-    self.assertEquals(re_string.Nocopy(s,-2,-1), '9')
-  
-    #self.assertRaises(re_string.Nocopy(s,9,11))
+    def test_testAllEncodings(self):
 
-  def test_rfind_utf16(self):
-    #print len(self.test1)
-    self.assertEquals( 0 , re_string.rfind_utf16(self.test1, 0, len(self.test1) ))
-    self.assertEquals( 0 , re_string.rfind_utf16(self.test2, 0, len(self.test2) ))
-    self.assertEquals( 0 , re_string.rfind_utf16(self.test3, 0, len(self.test3) ))
-    self.assertEquals( -1 , re_string.rfind_utf16(self.test4, 0, len(self.test4) ))
-    self.assertEquals( -1 , re_string.rfind_utf16(self.test5, 0, len(self.test5) ))
-    self.assertEquals( -1 , re_string.rfind_utf16(self.test6, 0, len(self.test6) ))
-    self.assertEquals( -1 , re_string.rfind_utf16(self.test7, 0, len(self.test7) ))
-    # truncated last field
-    #print repr(self.test8[120:])
-    self.assertEquals( 122 , re_string.rfind_utf16(self.test8, 0, len(self.test8) ))
-    # find start with limited size
-    self.assertEquals( 0 , re_string.rfind_utf16(self.test8, 0, 64 ))
-    # middle field ( 12+64 )
-    self.assertEquals( 12 , re_string.rfind_utf16(self.test8, 64, 58 ))
-    # non aligned middle field ?
-    #TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0, len(self.test9) ))
-    
-  def test_find_ascii(self):
-    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test1, 0, len(self.test1) ))
-    self.assertEquals( (0, 43) , re_string.find_ascii(self.test4, 0, len(self.test4) ))
-    self.assertEquals( (0, 4) , re_string.find_ascii(self.test5, 0, len(self.test5) ))
-    self.assertEquals( (0, 39) , re_string.find_ascii(self.test5, 5, len(self.test5)-5 ))
-    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test6, 0, len(self.test6) ))
-    self.assertEquals( (0,42) , re_string.find_ascii(self.test6, 1, len(self.test6)-1 ))
-    self.assertEquals( (-1,-1) , re_string.find_ascii(self.test10, 0, len(self.test10) )) # too small
-    self.assertEquals( (0, 10) , re_string.find_ascii(self.test10, 3, len(self.test10)-3 )) 
-  
+        # self.skipTest('')
+
+        uni = self.test1
+        solutions = re_string.testAllEncodings(uni)
+        size, codec, encoded = solutions[0]
+        self.assertEquals(size, len(uni), '%s' % codec)
+
+        x3 = self.test2
+        solutions = re_string.testAllEncodings(x3)
+        size, codec, encoded = solutions[0]
+        self.assertEquals(size, len(x3))
+
+        solutions = re_string.testAllEncodings(self.test3)
+        size, codec, encoded = solutions[0]
+        self.assertEquals(size, len(self.test3))
+
+        solutions = re_string.testAllEncodings(self.test4)
+        size, codec, encoded = solutions[0]
+        self.assertEquals(size, len(self.test4))
+
+        pass
+
+    def test_nocopy_class(self):
+        # self.skipTest('')
+        s = '1234567890'
+        x = re_string.Nocopy(s, 2, 9)
+        x1 = s[2:9]
+        self.assertEquals(len(x), len(x1))
+        for i in range(len(x)):
+            self.assertEquals(x[i], x1[i])
+        #
+        val = x[2:4]
+        self.assertEquals(val, '56')
+        self.assertEquals(val, x[2:4])
+        self.assertEquals(s[4:-1], x[2:])
+        self.assertEquals(s[2:-1], x[:16])
+        self.assertEquals(s[2:-1], x[:])
+        self.assertEquals(s[2:-1], x[0:])
+        self.assertEquals(s[2:-1], x)
+
+        self.assertEquals(re_string.Nocopy(s, 9, 10), s[9:10])
+        self.assertEquals(re_string.Nocopy(s, 9, 10), '0')
+        self.assertEquals(re_string.Nocopy(s, -2, -1), '9')
+
+        # self.assertRaises(re_string.Nocopy(s,9,11))
+
+    def test_rfind_utf16(self):
+        # print len(self.test1)
+        self.assertEquals(
+            0, re_string.rfind_utf16(
+                self.test1, 0, len(
+                    self.test1)))
+        self.assertEquals(
+            0, re_string.rfind_utf16(
+                self.test2, 0, len(
+                    self.test2)))
+        self.assertEquals(
+            0, re_string.rfind_utf16(
+                self.test3, 0, len(
+                    self.test3)))
+        self.assertEquals(-1,
+                          re_string.rfind_utf16(self.test4,
+                                                0,
+                                                len(self.test4)))
+        self.assertEquals(-1,
+                          re_string.rfind_utf16(self.test5,
+                                                0,
+                                                len(self.test5)))
+        self.assertEquals(-1,
+                          re_string.rfind_utf16(self.test6,
+                                                0,
+                                                len(self.test6)))
+        self.assertEquals(-1,
+                          re_string.rfind_utf16(self.test7,
+                                                0,
+                                                len(self.test7)))
+        # truncated last field
+        # print repr(self.test8[120:])
+        self.assertEquals(
+            122, re_string.rfind_utf16(
+                self.test8, 0, len(
+                    self.test8)))
+        # find start with limited size
+        self.assertEquals(0, re_string.rfind_utf16(self.test8, 0, 64))
+        # middle field ( 12+64 )
+        self.assertEquals(12, re_string.rfind_utf16(self.test8, 64, 58))
+        # non aligned middle field ?
+        # TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0,
+        # len(self.test9) ))
+
+    def test_find_ascii(self):
+        self.assertEquals(
+            (-1, -1), re_string.find_ascii(self.test1, 0, len(self.test1)))
+        self.assertEquals(
+            (0, 43), re_string.find_ascii(
+                self.test4, 0, len(
+                    self.test4)))
+        self.assertEquals(
+            (0, 4), re_string.find_ascii(
+                self.test5, 0, len(
+                    self.test5)))
+        self.assertEquals(
+            (0, 39), re_string.find_ascii(
+                self.test5, 5, len(
+                    self.test5) - 5))
+        self.assertEquals(
+            (-1, -1), re_string.find_ascii(self.test6, 0, len(self.test6)))
+        self.assertEquals(
+            (0, 42), re_string.find_ascii(
+                self.test6, 1, len(
+                    self.test6) - 1))
+        self.assertEquals(
+            (-1, -1), re_string.find_ascii(self.test10, 0, len(self.test10)))  # too small
+        self.assertEquals(
+            (0, 10), re_string.find_ascii(
+                self.test10, 3, len(
+                    self.test10) - 3))
+
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO)
-  logging.getLogger("re_string").setLevel(level=logging.DEBUG)
-  unittest.main(verbosity=0)
-  #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-  #unittest.TextTestRunner(verbosity=2).run(suite)
-
-
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("re_string").setLevel(level=logging.DEBUG)
+    unittest.main(verbosity=0)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
+    # unittest.TextTestRunner(verbosity=2).run(suite)

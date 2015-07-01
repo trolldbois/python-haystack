@@ -11,86 +11,109 @@ import os
 import sys
 import unittest
 
-from haystack.config import Config
-Config.set_word_size(4) # forcing it on these unittest
+from haystack import config
 
-from haystack import model
+from haystack import model, constraints
 from haystack.reverse import context
 from haystack.reverse import reversers
-from haystack.reverse.heuristics.dsa import *
+from haystack.reverse.heuristics import dsa
 
-import ctypes 
+#import ctypes
+
+log=logging.getLogger("test_reversers")
+
 
 class TestStructureSizes(unittest.TestCase):
 
-  @classmethod
-  def setUpClass(cls):    
-    sys.path.append('test/src/')
-    import ctypes3
-    
-    node = ctypes3.Node
-    node._expectedValues_ = dict([('val1',[0xdeadbeef]),('ptr2',[model.NotNull])])
-    test3 = ctypes3.test3
-    test3._expectedValues_ = dict([
-      ('val1', [0xdeadbeef]),
-      ('val1b', [0xdeadbeef]),
-      ('val2', [0x10101010]),
-      ('val2b', [0x10101010]),
-      ('me',[model.NotNull]) ])
-    cls.dsa = DSASimple()
+    @classmethod
+    def setUpClass(cls):
+        sys.path.append('test/src/')
+        #import ctypes3
+        #
+        #node = ctypes3.struct_Node
+        #node._expectedValues_ = dict(
+        #    [('val1', [0xdeadbeef]), ('ptr2', [constraints.NotNull])])
+        #test3 = ctypes3.struct_test3
+        #test3._expectedValues_ = dict([
+        #    ('val1', [0xdeadbeef]),
+        #    ('val1b', [0xdeadbeef]),
+        #    ('val2', [0x10101010]),
+        #    ('val2b', [0x10101010]),
+        #    ('me', [constraints.NotNull])])
 
+    def setUp(self):
+        model.reset()
+        # os.chdir()
+        self.context = context.get_context('test/src/test-ctypes3.32.dump')
+        self.dsa = dsa.DSASimple(self.context.config)
 
-  def setUp(self):    
-    #os.chdir()
-    self.context = context.get_context('test/src/test-ctypes3.dump')
+    def tearDown(self):
+        self.context = None
+        model.reset()
 
-  def tearDown(self):
-    self.context = None
+    @unittest.skip('DEBUGging the other one')
+    def test_sizes(self):
+        ctypes = self.context.config.ctypes
+        structs = self.context.listStructures()
+        sizes = sorted(set([len(s) for s in structs]))
+        import ctypes3
+        for st in structs:  # [1:2]:
+            self.dsa.analyze_fields(st)
+            #print st.toString()
+            # print repr(self.context.heap.readBytes(st._vaddr, len(st)))
 
-  def test_sizes(self):
-    structs = self.context.listStructures()
-    sizes = list(set([ len(s) for s in structs]))
-    sizes.sort() # Node and test3
-    import ctypes3
-    for st in structs: #[1:2]:
-      self.dsa.analyze_fields(st)
-      #print st.toString()
-      #print repr(self.context.heap.readBytes(st._vaddr, len(st)))
+        # there are only two struct types
+        # the free chunks is not listed
+        self.assertEqual(len(sizes), 2)
+        self.assertEqual(len(structs), 6)
 
-    # there are only two struct types
-    # the free chunks is not listed
-    self.assertEqual( len(sizes), 2) 
-    self.assertEqual( len(structs), 6) 
-    
-    #st = ctypes3.Node()
-    #print st.toString(), st._expectedValues_
+        # our compiler put a padding at the end of struct_Node
+        # struct_node should be 8, no padding, but its 12.
+        self.assertEqual(sizes, [12,20])
+        
+        #st = ctypes3.Node()
+        # print st.toString(), st._expectedValues_
 
-    #print ctypes3.test3.__dict__
-    #print ctypes3.Node.__dict__
-    #print 'test3',ctypes.sizeof(ctypes3.test3)
-    #if ctypes.sizeof(ctypes3.test3) % Config.WORDSIZE == 0:
-    #  print 'MOD'
-    self.assertEqual( sizes[1], ctypes.sizeof(ctypes3.test3))
-    
-    # is that padding I see ?
-    self.assertNotEqual( sizes[0], ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
-    self.assertEqual( sizes[0]-4, ctypes.sizeof(ctypes3.Node), 'There should be a 4 bytes padding here')
-    #print 'Node', ctypes.sizeof(ctypes3.Node)
-    #if ctypes.sizeof(ctypes3.Node) % Config.WORDSIZE == 0:
-    #  print 'MOD'
+        self.assertEqual(ctypes.sizeof(ctypes.c_void_p),4)
+        self.assertEqual(ctypes3.struct_test3.me.size,4)
+        self.assertEqual(sizes[1], ctypes.sizeof(ctypes3.struct_test3))
+
+        # our compiler put a padding at the end of struct_Node
+        # struct_node should be 8, no padding, but its 12.
+        self.assertNotEqual(
+            sizes[0],
+            ctypes.sizeof(
+                ctypes3.struct_Node),
+            'There should be a 4 bytes padding here')
+        self.assertEqual(
+            sizes[0] - 4,
+            ctypes.sizeof(
+                ctypes3.struct_Node),
+            'There should be a 4 bytes padding here')
 
 
 class TestFullReverse(unittest.TestCase):
-    
-  def test_reverseInstances(self):
-    ctx = context.get_context('test/dumps/ssh/ssh.1')
-    dumpname = 'test/dumps/ssh/ssh.1'
-    ctx = Config.cleanCache(dumpname)
-    ctx = reversers.reverseInstances(dumpname)
 
+    def setUp(self):
+        model.reset()
+
+    def tearDown(self):
+        model.reset()
+
+    def test_reverseInstances(self):
+        log.info('START test test_reverseInstances')
+        ctx = context.get_context('test/dumps/ssh/ssh.1')
+        dumpname = 'test/dumps/ssh/ssh.1'
+        ctx = ctx.config.cleanCache(dumpname)
+        ctx = reversers.reverseInstances(dumpname)
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO)
-  unittest.main()
-
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("ctypes_malloc").setLevel(logging.INFO)
+    logging.getLogger("base").setLevel(logging.INFO)
+    logging.getLogger("heapwalker").setLevel(logging.INFO)
+    logging.getLogger("filemappings").setLevel(logging.INFO)
+    logging.getLogger("dsa").setLevel(logging.INFO)
+    logging.getLogger("dump_loader").setLevel(logging.INFO)
+    unittest.main()

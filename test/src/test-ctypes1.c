@@ -1,4 +1,6 @@
-
+/*
+test on dynamic lib C program
+*/
 #ifdef PYTHON_BUILD
 #define __cplusplus
 
@@ -48,7 +50,7 @@ int test1(){
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
   node->ptr2 = node;
-  printf("test1 0x%lx\n",(unsigned long )node);
+  printf("test1 %p\n", node);
   
   return 0;
 }
@@ -69,23 +71,24 @@ int main(){
   handle = (void *)1;
   //handle = dlopen ("libQtCore.so", RTLD_NOW|RTLD_GLOBAL);
   //handle = dlopen ("libQtGui.so", RTLD_NOW|RTLD_GLOBAL);
-  handle = dlopen ("libQtNetwork.so", RTLD_NOW|RTLD_GLOBAL);
+  //handle = dlopen ("libQtNetwork.so", RTLD_NOW|RTLD_GLOBAL);
   //handle = dlopen ("libQtSvg.so", RTLD_NOW|RTLD_GLOBAL);
+  handle = dlopen ("libdaemon.so.0", RTLD_NOW|RTLD_GLOBAL);
   if (handle == NULL){
-    fprintf (stderr, "cannot load: lib.so\n");
-    return -1;  
+    fprintf (stderr, "cannot load: libdaemon.so.0\n");
+    //return -1;  
   }
   
-  printf("_rtld_global 0x%lx\n",(unsigned long )&_rtld_global);
+  printf("_rtld_global %p\n", &_rtld_global);
   //printf("_rtld_global._dl_initfirst 0x%x\n",(&_rtld_global) + offsetof(struct rtld_global, _dl_initfirst) );
   
   //printf("_rtld_local 0x%x\n",(unsigned int )&_rtld_local);
-  printf("_rtld_global_ro 0x%lx\n",(unsigned long )&_rtld_global_ro);
+  printf("_rtld_global_ro %p\n",&_rtld_global_ro);
  
   // TEST
   test1();
   
-  printf("pid %d\n",getpid());
+  printf("pid %u\n",getpid());
   fflush(stdout);
   sleep(-1);
   

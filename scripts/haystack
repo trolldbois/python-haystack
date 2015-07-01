@@ -7,8 +7,11 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __doc__ = '''
-  Structure search and operation on live process.
+Search for struct in memory.
+Memory can be a file dump or a live process.
 
+Output offset and values of possible matches.
+Output type can be txt, json, pickled.
 '''
 
 import argparse
@@ -39,7 +42,11 @@ def argparser():
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
   target.add_argument('--dumpname', type=argparse_utils.readable, help='Use a haystack memory dump instead of a live process ID')
+  target.add_argument('--volname', type=argparse.FileType('r'), help='Use a OS memory dump')
 
+  #FIXME
+  rootparser.add_argument('--volpid', type=int, help='Target PID for the OS --volname memory parser')
+  
   output = rootparser.add_mutually_exclusive_group(required=True)
   output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   output.add_argument('--json', dest='json', action='store_const', const=True, help='Print results as json readable string')
@@ -81,6 +88,9 @@ def main(argv):
     print ('[+] **** COMPLETE debug log to %s'%(flog))    
   else:
     logging.basicConfig(level=level)
+
+  if opts.volname:
+    opts.pid = opts.volpid
 
   sh=logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
   #logging.getLogger('abouchet').addHandler( sh )

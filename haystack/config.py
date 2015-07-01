@@ -5,7 +5,8 @@
 
 import logging
 import os
-import resource 
+import platform
+import resource
 import shutil
 
 __author__ = "Loic Jaquemet"
@@ -17,149 +18,194 @@ __status__ = "Production"
 
 log = logging.getLogger('config')
 
+# bad bad idea...
+MMAP_HACK_ACTIVE = True
+MAX_MAPPING_SIZE_FOR_MMAP = 1024 * 1024 * 20
+
+# triplet = getattr(sys, 'implementation', sys)._multiarch
+# arch vendor os
+TARGET_TRIPLETS = [
+    ('i386-linux-gnu', (4, 4, 12)),
+    ('x86_64-linux-gnu', (8, 8, 16)),
+    ('i386-pc-win', (4, 4, 8)),
+    ('x86_64-pc-win', (8, 8, 8)),
+]
+
 
 class ConfigClass():
-  """Project-wide config class. """
-  def __init__(self):
-    #self.cacheDir = os.path.normpath(outputDir)
-    #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
-    self._WORDSIZE = None
-    self.commentMaxSize = 64
-    self.mmap_hack = True # bad bad idea...
-    #
-    self.DUMPNAME_INDEX_FILENAME = 'mappings'
-    self.MAX_MAPPING_SIZE_FOR_MMAP = 1024*1024*20
-    self.CACHE_NAME = 'cache'
-    self.CACHE_STRUCT_DIR = 'structs'
-    # cache file names
-    self.CACHE_GENERATED_PY_HEADERS_VALUES = 'headers_values.py'
-    self.CACHE_GENERATED_PY_HEADERS = 'headers.py'
-    self.CACHE_HS_POINTERS_VALUES = 'heap+stack.pointers.values'
-    self.CACHE_HEAP_ADDRS = 'heap.pointers.offsets'
-    self.CACHE_HEAP_VALUES = 'heap.pointers.values'
-    self.CACHE_STACK_ADDRS = 'stack.pointers.offsets'
-    self.CACHE_STACK_VALUES = 'stack.pointers.values'
-    self.CACHE_ALL_PTRS_ADDRS = 'all.pointers.offsets'
-    self.CACHE_ALL_PTRS_VALUES = 'all.pointers.values'
-    self.CACHE_FUNCTION_NAMES = 'names.pointers.functions'
-    self.CACHE_STRUCTURES = 'structures'
-    self.CACHE_MALLOC_CHUNKS_ADDRS = 'mchunks.addrs'
-    self.CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'
-    self.CACHE_CONTEXT = 'ctx'
-    self.CACHE_GRAPH = 'graph.gexf'
-    self.DIFF_PY_HEADERS='diff_headers'
-    self.CACHE_SIGNATURE_SIZES_DIR = 'structs.sizes.d'
-    self.CACHE_SIGNATURE_SIZES_DIR_TAG = 'done'
-    self.CACHE_SIGNATURE_GROUPS_DIR = 'structs.groups.d'
-    self.REVERSED_TYPES_FILENAME = 'reversed_types.py'
-    self.SIGNATURES_FILENAME = 'signatures'
-    self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
-    #others
-    self._set_rlimits()
-    
-  def _set_rlimits(self):
-    '''set rlimits to maximum allowed'''
-    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-    resource.setrlimit(resource.RLIMIT_NOFILE, (maxnofile[1], maxnofile[1]))
-    return   
-        
-  def set_word_size(self, v):
-    if self._WORDSIZE is not None and v != self._WORDSIZE:
-      raise NotImplementedError('You should not change wordsize')
-    #
-    # TODO
-    #
-    import ctypes
-    local = ctypes.sizeof( ctypes.c_void_p)
-    if v != local :
-      raise NotImplementedError('Haystack is not cross-arch. Local word is %d, target dump seems to be %d'%( local,v ))      
-    #log.warning('Setting WORDTYPE size to %d'%(v))
-    self._WORDSIZE = v
-    # FIXME when multi arch
-    # from haystack import model
-    self.PTR_TYPE = type(ctypes.POINTER(Config.WORDTYPE)) # _ctypes.PyCPointerType    
 
-  def get_word_size(self):
-    ''' default config to local arch. you can change it. '''
-    if self._WORDSIZE is None:
-      # FIXME : Iam DROPPING THIS coz there no way we can do cross arch x32-x64 for now...
-      #raise NotImplementedError('Please set_word_size(x) before.')
-      import ctypes
-      self.set_word_size( ctypes.sizeof(ctypes.c_void_p) )
-    return self._WORDSIZE
-  
-  def get_word_type(self):
-    import ctypes
-    if self.WORDSIZE == 4:
-      return ctypes.c_uint32
-    elif self.WORDSIZE == 8:
-      return ctypes.c_uint64
-    else:
-      raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
-    return
+    """Project-wide config class. """
 
-  def get_word_type_char(self):
-    if self.WORDSIZE == 4:
-      return 'I'
-    elif self.WORDSIZE == 8:
-      return 'Q'
-    else:
-      raise ValueError('platform not supported for WORDSIZE == %d'%(self.WORDSIZE))
-    return
-    
-  WORDSIZE = property(get_word_size, set_word_size)
-  WORDTYPE = property(get_word_type)
-  
-  def makeCache(self, dumpname):
-    root = os.path.abspath(dumpname)
-    folder = os.path.sep.join([root, self.CACHE_NAME])
-    if not os.access(folder, os.F_OK):    
-      os.mkdir(folder)
-    return
-  
-  def cleanCache(self, dumpname):
-    root = os.path.abspath(dumpname)
-    folder = os.path.sep.join([root, self.CACHE_NAME])
-    if os.access(folder, os.F_OK):    
-      shutil.rmtree(folder)
-    return
+    def __init__(self):
+        #self.cacheDir = os.path.normpath(outputDir)
+        #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
+        self.commentMaxSize = 64
+        #
+        self.DUMPNAME_INDEX_FILENAME = 'mappings'
+        self.CACHE_NAME = 'cache'
+        self.CACHE_STRUCT_DIR = 'structs'
+        # cache file names
+        self.CACHE_GENERATED_PY_HEADERS_VALUES = 'headers_values.py'
+        self.CACHE_GENERATED_PY_HEADERS = 'headers.py'
+        self.CACHE_HS_POINTERS_VALUES = 'heap+stack.pointers.values'
+        self.CACHE_HEAP_ADDRS = 'heap.pointers.offsets'
+        self.CACHE_HEAP_VALUES = 'heap.pointers.values'
+        self.CACHE_STACK_ADDRS = 'stack.pointers.offsets'
+        self.CACHE_STACK_VALUES = 'stack.pointers.values'
+        self.CACHE_ALL_PTRS_ADDRS = 'all.pointers.offsets'
+        self.CACHE_ALL_PTRS_VALUES = 'all.pointers.values'
+        self.CACHE_FUNCTION_NAMES = 'names.pointers.functions'
+        self.CACHE_STRUCTURES = 'structures'
+        self.CACHE_MALLOC_CHUNKS_ADDRS = 'mchunks.addrs'
+        self.CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'
+        self.CACHE_CONTEXT = 'ctx'
+        self.CACHE_GRAPH = 'graph.gexf'
+        self.DIFF_PY_HEADERS = 'diff_headers'
+        self.CACHE_SIGNATURE_SIZES_DIR = 'structs.sizes.d'
+        self.CACHE_SIGNATURE_SIZES_DIR_TAG = 'done'
+        self.CACHE_SIGNATURE_GROUPS_DIR = 'structs.groups.d'
+        self.REVERSED_TYPES_FILENAME = 'reversed_types.py'
+        self.SIGNATURES_FILENAME = 'signatures'
+        self.WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
+        # others
+        self._set_rlimits()
+        # save current ctypes
+        import ctypes
+        self.ctypes = ctypes
 
-  def getCacheName(self, dumpname):
-    root = os.path.abspath(dumpname)
-    return os.path.sep.join([root, self.CACHE_NAME])
-    
-  
-  def getCacheFilename(self, typ, dumpname):
-    '''Returns a filename for caching a type of data based on the dump filename.
-  
-    typ: one of Config.CACHE_XX types.
-    dumpname: the dump file name.
-    '''
-    return os.path.sep.join([self.getCacheName(dumpname), typ])
+    def _set_rlimits(self):
+        """set rlimits to maximum allowed"""
+        maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+        resource.setrlimit(
+            resource.RLIMIT_NOFILE,
+            (maxnofile[1],
+             maxnofile[1]))
+        return
 
-  def getStructsCacheDir(self, dumpname):
-    '''Returns a dirname for caching the structures based on the dump filename.
-  
-    dumpname: the dump file name.
-    '''
-    root = os.path.abspath(dumpname)
-    return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
+    def get_word_type(self):
+        if self.get_word_size() == 4:
+            return self.ctypes.c_uint32
+        elif self.get_word_size() == 8:
+            return self.ctypes.c_uint64
+        else:
+            raise ValueError(
+                'platform not supported for word size == %d' %
+                (self.get_word_size()))
+        return
+
+    def get_word_type_char(self):
+        if self.get_word_size() == 4:
+            return 'I'
+        elif self.get_word_size() == 8:
+            return 'Q'
+        else:
+            raise ValueError(
+                'platform not supported for word size == %d' %
+                (self.get_word_size()))
+        return
+
+    def get_word_size(self):
+        return self.__size
+
+    def set_word_size(self, wordsize, ptrsize, ldsize):
+        from haystack import types
+        self.__size = wordsize
+        # FIXME
+        # win  32 bits, 4,4,8
+        # linux 32 bits, 4,4,12
+        # linux 64 bits, 8,8,16
+        self.ctypes = types.reload_ctypes(wordsize, ptrsize, ldsize)
+        return
+
+    # FUNCTIONS FOR REVERSE
+
+    def makeCache(self, dumpname):
+        root = os.path.abspath(dumpname)
+        folder = os.path.sep.join([root, self.CACHE_NAME])
+        if not os.access(folder, os.F_OK):
+            os.mkdir(folder)
+        return
+
+    def cleanCache(self, dumpname):
+        root = os.path.abspath(dumpname)
+        folder = os.path.sep.join([root, self.CACHE_NAME])
+        if os.access(folder, os.F_OK):
+            shutil.rmtree(folder)
+        return
+
+    def getCacheName(self, dumpname):
+        root = os.path.abspath(dumpname)
+        return os.path.sep.join([root, self.CACHE_NAME])
+
+    def getCacheFilename(self, typ, dumpname):
+        '''Returns a filename for caching a type of data based on the dump filename.
+
+        typ: one of Config.CACHE_XX types.
+        dumpname: the dump file name.
+        '''
+        return os.path.sep.join([self.getCacheName(dumpname), typ])
+
+    def getStructsCacheDir(self, dumpname):
+        """
+        Returns a dirname for caching the structures based on the dump filename.
+
+        dumpname: the dump file name.
+        """
+        root = os.path.abspath(dumpname)
+        return self.getCacheFilename(self.CACHE_STRUCT_DIR, root)
 
 
-def make_config_from_memdump(dumpname):
-  """ Load a memory dump meta data """
-  index = open( os.path.sep.join( [dumpname, Config.DUMPNAME_INDEX_FILENAME] ), 'r' )
-  m1 = index.readline().split(' ')
-  # test if x32 or x64
-  if len(m1[0]) > 10:
-    log.info('[+] WORDSIZE = 8 #x64 arch dump detected')
-    Config.set_word_size(8)
-  else:
-    Config.set_word_size(4)
-  return 
+def make_config(cpu=None, os_name=None):
+    """    """
+    if cpu is None:
+        #raise ValueError('cpu is None')
+        cpu = platform.architecture()[0].split('bit')[0]
+    if os_name is None:
+        raise ValueError('os_name is None')
+        # if linux in sys.platform:
+        #    os_name='linux'
+        # else:# sys.platform.startswith('win'):
+        #    os_name=win7
+    if cpu == '32':
+        if os_name in ['winxp', 'win7']:
+            return make_config_win_32()
+        elif os_name == 'linux':
+            return make_config_linux_32()
+    elif cpu == '64':
+        if os_name in ['winxp', 'win7']:
+            return make_config_win_64()
+        elif os_name == 'linux':
+            return make_config_linux_64()
+    raise NotImplementedError()
 
-Config = ConfigClass()
 
-# FIXME set the word size and ptr_type
-Config.get_word_size()
+def make_config_win_32():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(4, 4, 8)
+    return cfg
 
+
+def make_config_win_64():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(8, 8, 8)
+    return cfg
+
+
+def make_config_linux_32():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(4, 4, 12)
+    return cfg
+
+
+def make_config_linux_64():
+    """    """
+    from haystack import types
+    cfg = ConfigClass()
+    cfg.set_word_size(8, 8, 16)
+    return cfg

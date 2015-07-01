@@ -1,0 +1,38 @@
+
+TODO Target.
+
+I'm fed up with mixed cases.
+
+
+Naming examples
+
+Type 	                Public 	                Internal
+Packages 	            lower_with_under 	
+Modules 	            lower_with_under 	    _lower_with_under
+Classes 	            CapWords             	_CapWords
+Exceptions 	            CapWords 	
+Functions 	            lower_with_under() 	_lower_with_under()
+Global/Class Constants 	CAPS_WITH_UNDER 	    _CAPS_WITH_UNDER
+Global/Class Variables 	lower_with_under 	    _lower_with_under
+Instance Variables 	    lower_with_under 	    _lower_with_under/__lower_with_under
+Method Names* 	        lower_with_under() 	_lower_with_under()/__lower_with_under()
+Function/Method Params 	lower_with_under 	
+Local Variables 	    lower_with_under 	
+
+
+
+Docstrings:
+def method():
+    """one liner docstring"""
+    pass
+
+class B(object):
+    """one liner docstring"""
+    pass
+
+
+whitespaces:
+    4 spaces
+    x = b
+    80 cols
+    

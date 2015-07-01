@@ -11,97 +11,72 @@ import operator
 import os
 import unittest
 
-from haystack.config import Config
-Config.set_word_size(4)
-
-from haystack import memory_mapping
+from haystack import model
+from haystack.mappings.base import Mappings
+from haystack.mappings.file import LocalMemoryMapping
 from haystack.reverse import pointerfinder
 
-Config.MMAP_START = 0x0c00000
-Config.MMAP_STOP =  0x0c01000
-Config.MMAP_LENGTH = 4096
-Config.STRUCT_OFFSET = 44
-#Config.cacheDir = os.path.normpath('./outputs/')
+from haystack import config
+
+import test_pattern
+
+class TestPointer(test_pattern.SignatureTests):
+
+    def setUp(self):
+        self.mmap, self.values = self._make_mmap_with_values(self.seq)
+        self.name = 'test_dump_1'
+
+    def _make_mmap_with_values(self, intervals, struct_offset=None):
+        '''Make a memory map, with a fake structure of pointer pattern inside.
+        Return the pattern signature'''
+        # template of a memory map metadata
+        self._mstart = 0x0c00000
+        self._mlength = 4096  # end at (0x0c01000)
+        # could be 8, it doesn't really matter
+        self.word_size = self.config.get_word_size()
+        if struct_offset is not None:
+            self._struct_offset = struct_offset
+        else:
+            self._struct_offset = self.word_size*12 # 12, or any other aligned
+        mmap,values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
+                               intervals, self.word_size)
+        mappings = Mappings([mmap], 'test')
+        mappings.config = self.config
+        mappings._reset_config()
+        return mmap, values
 
 
-def accumulate(iterable, func=operator.add):
-  it = iter(iterable)
-  total = next(it)
-  yield total
-  for element in it:
-    total = func(total, element)
-    yield total
+class TestPointerSearcher(TestPointer):
 
-def makeMMap( seq, start=Config.MMAP_START, offset=Config.STRUCT_OFFSET  ):
-  nsig = [offset]
-  nsig.extend(seq)
-  indices = [ i for i in accumulate(nsig)]
-  dump = [] #b''
-  values = []
-  for i in range(0,Config.MMAP_LENGTH, Config.WORDSIZE): 
-    if i in indices:
-      dump.append( struct.pack('I',start+i) )
-      values.append(start+i)
-    else:
-      dump.append( struct.pack('I',0x2e2e2e2e) )
-  
-  if len(dump) != Config.MMAP_LENGTH/Config.WORDSIZE :
-    raise ValueError('error on length dump %d expected %d'%( len(dump), (Config.MMAP_LENGTH/Config.WORDSIZE) ) )  
-  dump2 = ''.join(dump)
-  #print repr(dump2[:16]), Config.WORDSIZE, Config.MMAP_LENGTH
-  if len(dump)*Config.WORDSIZE != len(dump2):
-    raise ValueError('error on length dump %d dump2 %d'%( len(dump),len(dump2)) )
-  stop = start + len(dump2)
-  mmap = memory_mapping.MemoryMapping(start, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
-  mmap2= memory_mapping.LocalMemoryMapping.fromBytebuffer( mmap, dump2)
-  return mmap2, values
+    def test_iter(self):
+        self.pointerSearcher = pointerfinder.PointerSearcher(self.mmap)
+        iters = [value for value in self.pointerSearcher]
+        values = self.pointerSearcher.search()
+        self.assertEqual(iters, values)
+        self.assertEqual(self.values, values)
+        self.assertEqual(self.values, iters)
 
 
+class TestPointerEnumerator(TestPointer):
 
+    def test_iter(self):
+        self.pointerEnum = pointerfinder.PointerEnumerator(self.mmap)
+        values = [value for offset, value in self.pointerEnum]
+        offsets = [offset for offset, value in self.pointerEnum]
+        values_2 = [value for offset, value in self.pointerEnum.search()]
+        offsets_2 = [offset for offset, value in self.pointerEnum.search()]
 
-class TestPointerSearcher(unittest.TestCase):
+        self.assertEqual(values, values_2)
+        self.assertEqual(offsets, offsets_2)
+        self.assertEqual(self.values, values)
+        self.assertEqual(self.values, values_2)
 
-  def setUp(self):
-    self.seq = [4,4,8,128,4,8,4,4,12]
-    self.mmap, self.values = makeMMap(self.seq)
-    self.name = 'test_dump_1'
-    self.pointerSearcher = pointerfinder.PointerSearcher(self.mmap)
-
-  def test_iter(self):
-    iters = [value for value in self.pointerSearcher ]
-    values = self.pointerSearcher.search()
-    self.assertEqual( iters, values)
-    self.assertEqual( self.values, values)
-    self.assertEqual( self.values, iters)
-
-
-class TestPointerEnumerator(unittest.TestCase):
-
-  def setUp(self):
-    self.seq = [4,4,8,128,4,8,4,4,12]
-    self.mmap, self.values = makeMMap(self.seq)
-    self.name = 'test_dump_1'
-    self.pointerEnum = pointerfinder.PointerEnumerator(self.mmap)
-
-  def test_iter(self):
-    values = [value for offset,value in self.pointerEnum ]
-    offsets = [offset for offset,value in self.pointerEnum ]
-    values_2 = [value for offset,value in self.pointerEnum.search() ]
-    offsets_2 = [offset for offset,value in self.pointerEnum.search() ]
-
-    self.assertEqual( values, values_2)
-    self.assertEqual( offsets, offsets_2)
-    self.assertEqual( self.values, values)
-    self.assertEqual( self.values, values_2)
-
-    nsig = [Config.MMAP_START+Config.STRUCT_OFFSET]
-    nsig.extend(self.seq)
-    indices = [ i for i in accumulate(nsig)]
-    self.assertEqual( indices, offsets)
-    self.assertEqual( indices, offsets_2)
-
+        nsig = [self._mstart + self._struct_offset]
+        nsig.extend(self.seq)
+        indices = [i for i in self._accumulate(nsig)]
+        self.assertEqual(indices, offsets)
+        self.assertEqual(indices, offsets_2)
 
 
 if __name__ == '__main__':
     unittest.main()
-

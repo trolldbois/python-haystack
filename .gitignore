@@ -6,6 +6,8 @@ test/src/test-ctypes2*
 test/src/test-ctypes3*
 test/src/test-ctypes4*
 test/src/test-ctypes5*
+test/src/test-ctypes6*
+test/src/test-ctypes7*
 *.xml
 build
 dist

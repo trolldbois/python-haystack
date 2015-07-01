@@ -1,4 +1,10 @@
-python-ptrace
-argparse
+ctypeslib2
 networkx
+<<<<<<< HEAD
 python-levenshtein
+=======
+numpy
+pefile
+python-ptrace
+python-Levenshtein
+>>>>>>> development

@@ -3,73 +3,124 @@
 LDFLAGS = -ldl
 INCLS = 
 
+# use the virtualenv python even in sudo
+PYTHON=$(shell which python)
+
+USER=$(shell whoami)
+G=$(shell groups)
+GROUP=$(word 1, $(G))
+
 EXTRA =
 
 CFLAGS = -O2 -g -Wall $(INCLS) $(EXTRA)
-CPPFLAGS = -O2 -g -Wall
+CPPFLAGS = -O2 -g -Wall -stdlib=libstdc++ -x c++
+CPPLIB = /usr/lib/gcc/i686-linux-gnu/4.8/
+CPPINCLUDE = /usr/include/i386-linux-gnu/c++/4.8/
+CC=clang
+CXX=clang++
+
+TGT32=i386-linux
+TGT64=x86_64-linux
 
 pid=
 
-H2XML=h2xml.py
-XML2PY=xml2py.py
+C2PY=clang2py
 
 SRCS := $(wildcard *.c *.cpp) 
-OBJS := $(patsubst %.c,%,$(SRCS))
-OBJS := $(patsubst %.cpp,%,$(OBJS))
+OBJS32x := $(patsubst %.c,%.32,$(SRCS))
+OBJS32 := $(patsubst %.cpp,%.32,$(OBJS32x))
+OBJS64 := $(patsubst %.32,%.64,$(OBJS32))
 
-DUMPS := $(patsubst %,%.dump,$(OBJS))
-OUTLOGS := $(patsubst %,%.stdout,$(OBJS))
-PY := $(patsubst test-%,%.py,$(OBJS))
+PY32 := $(patsubst test-%.32,%_gen32.py,$(OBJS32))
+PY64 := $(patsubst test-%.64,%_gen64.py,$(OBJS64))
+
+DUMPS32 := $(patsubst %,%.dump,$(OBJS32))
+OUTLOGS32 := $(patsubst %,%.stdout,$(OBJS32))
+TGZ32 := $(patsubst %,%.dump.tgz,$(OBJS32))
+DUMPS64 := $(patsubst %,%.dump,$(OBJS64))
+OUTLOGS64 := $(patsubst %,%.stdout,$(OBJS64))
+TGZ64 := $(patsubst %,%.dump.tgz,$(OBJS64))
 
 .PHONY: 
 	
 
-all: py binaries dumps 
+all: py binaries dumps tgz
 
-binaries: $(OBJS)
+binaries: $(OBJS32) $(OBJS64)
 
-#test-ctypes6: test-ctypes6.cpp
-#	$(CC) $(CFLAGS) `pkg-config --cflags QtGui` $<  $(LDFLAGS)  -o $@
+dumps: dumps32 dumps64
 
+%.32: %.c
+	$(CC) $(CFLAGS) -target $(TGT32) $<  $(LDFLAGS)  -o $@
 
-%: %.c
-	$(CC) $(CFLAGS) $<  $(LDFLAGS)  -o $@
+%.64: %.c
+	$(CC) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
 	
-%: %.cpp
-	$(CXX) $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
+%.32: %.cpp
+	$(CXX) $(CPPFLAGS) -target $(TGT32) $<  $(LDFLAGS) -L$(CPPLIB) -I$(CPPINCLUDE) -o $@
 
-%: %.cpp
-	$(CXX) `pkg-config --libs --cflags QtGui` $(CPPFLAGS) $<  $(LDFLAGS)  -o $@
+%.64: %.cpp
+	$(CXX) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
 
-py: $(PY)
+py: $(PY32) $(PY64)
 
-%.xml: test-%.c
-	$(H2XML) -I. $< -o $@
+%_gen32.py: test-%.c 
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
-%.xml: test-%.cpp
-	$(H2XML) -I. `pkg-config --cflags QtGui` $< -o $@
+%_gen32.py: test-%.cpp 
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
-%.py: %.xml
-	$(XML2PY) -kdst $< -o $@
+%_gen64.py: test-%.c 
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
+
+%_gen64.py: test-%.cpp 
+	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
 
 
-dumps: $(SRCS) $(DUMPS) $(OBJS) 
+dumps32: $(SRCS) $(DUMPS32) $(OBJS32) 
+
+dumps64: $(SRCS) $(DUMPS64) $(OBJS64) 
 	
-%.dump: %.c 
-	sudo python make.py $@
-	sudo chown -R jal.jal $@
-	
-%.dump: %.cpp
-	sudo python make.py $@
-	sudo chown -R jal.jal $@
+%.32.dump: %.c
+	echo "looking at $@"
+	sudo $(PYTHON) make.py $@
+	sudo chown -R $(USER).$(GROUP) $@
 
+%.32.dump: %.cpp
+	echo "looking at $@"
+	sudo $(PYTHON) make.py $@
+	sudo chown -R $(USER).$(GROUP) $@
 	
+%.64.dump: %.c
+	echo "looking at $@"
+	sudo $(PYTHON) make.py $@
+	sudo chown -R $(USER).$(GROUP) $@
 	
+%.64.dump: %.cpp
+	echo "looking at $@"
+	sudo $(PYTHON) make.py $@
+	sudo chown -R $(USER).$(GROUP) $@
+
+tgz: $(TGZ32) $(TGZ64)
+#%.64.dump.tgz
+
+%.32.dump.tgz: %.32.dump
+	tar zcf $@ $<
+
+%.64.dump.tgz: %.64.dump
+	tar zcf $@ $<
+	
+
+cleanpy: 
+	rm -f $(PY32) $(PY64) 
+	
+cleanall: clean cleanpy 
+	rm -f $(OBJS32) $(OBJS64)
+	rm -f $(OUTLOGS32) $(OUTLOGS64)
+	rm -rf $(DUMPS32) $(DUMPS64)
+	rm -f $(TGZ32) $(TGZ64)
+
 clean: 
 	rm -f *~ *.pyc
-	rm -f $(OBJS)
-	rm -f $(OUTLOGS)
-	rm -f $(PY)
-	rm -rf $(DUMPS)
 
 

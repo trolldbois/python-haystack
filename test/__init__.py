@@ -5,9 +5,9 @@
 
 import sys
 if sys.version_info < (2, 7):
-  import unittest2 as unittest
+    import unittest2 as unittest
 else:
-  import unittest
+    import unittest
 
 from run_src_app import run_app_test
 from run_src_app import makeTests
@@ -20,16 +20,17 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 
-
 def alltests():
-  makeTests()
-  ret = unittest.TestLoader().discover('test/haystack/')
-  return ret
+    # 2015-06-12 move to preptests target
+    # makeTests()
+    # run all tests
+    ret = unittest.TestLoader().discover('test/haystack/')
+    return ret
 
 
 #alltests = suite()
 
 if __name__ == '__main__':
-  unittest.main(verbosity=0)
-  #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
-  #unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main(verbosity=0)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
+    # unittest.TextTestRunner(verbosity=2).run(suite)

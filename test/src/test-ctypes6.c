@@ -1,3 +1,6 @@
+/*
+    Linked list tests.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,8 +38,8 @@ int test1(){
   struct usual * usual;
   usual = (struct usual *) malloc(sizeof(struct usual));
   strcpy(usual->txt, "This a string with a test this is a test string");
-  usual->val1 = 0xaaaaaaa;
-  usual->val2 = 0xffffff0;
+  usual->val1 = 0x0aaaaaaa;
+  usual->val2 = 0x0ffffff0;
 
   struct Node * node1;
   struct Node * node2;
@@ -56,9 +59,9 @@ int test1(){
   usual->root.flink = &node1->list;
   usual->root.blink = &node1->list;
 
-  printf("test1 0x%lx\n",(unsigned long )usual);
-  printf("test2 0x%lx\n",(unsigned long )node1);
-  printf("test3 0x%lx\n",(unsigned long )node2);
+  printf("o: test1 %p\n", usual);
+  printf("o: test2 %p\n", node1);
+  printf("o: test3 %p\n", node2);
   
   return 0;
 }
@@ -69,7 +72,7 @@ int main(){
 
   test1();
   
-  printf("pid %d\n",getpid());
+  printf("pid %u\n",getpid());
   fflush(stdout);
   sleep(-1);
   

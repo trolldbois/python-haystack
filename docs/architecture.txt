@@ -1,0 +1,96 @@
+ctypes:
+    Never import ctypes as a global import.
+    Or you will have to global ctypes = types.reload_ctypes over it.
+    just import ctypes locally in functions.
+
+    beware that _pointer_type_cache is resetted often.
+    
+scripts/haystack:
+    Search for struct in memory. Memory can be a file dump or a live process.
+    calls haystack.abouchet
+    
+haytack.abouchet:
+    a) Wraps memory dump using Factory haystack.memory_mapper.MemoryMapper.
+    MemoryMapper outputs haystack.memory_mapping.MemoryMappings, a wrapper
+        around memory mappings.
+
+    b) treatment of other cmd line args
+    
+    c) search for structure with haystack.abouchet.StructFinder
+
+    retype for API:
+    - string: return a string with basic type data information and pointer 
+          values of the target address space.
+    - python,json,pickled: return a python object that contains non ctypes
+          python objects. A non resolved pointer will return None.
+
+
+haystack.abouchet.StructFinder:
+    a) iterate over mappings in filter
+    b) try to load struct on each aligned offset 
+        MemoryMapping.readStruct -> load x bytes
+    c) validates constraints from structure declaration
+        "struct instance".loadMembers
+    d) iterate.
+
+
+
+haytack.model:
+    Defines some base classes and API.
+    Invokes haystack.types.CTypesProxy to replace the ctypes modules in 
+    sys.modules.
+    
+    This module should be imported early.
+    It is imported as first import of the haystack package.
+    Any import of ctypes thereafter will effectively import the proxy instance.
+    If a third party code was to use ctypes in a conflicting manner, the caller
+    should switch from and for the original ctypes module by using
+    haystack.types.reload_ctypes,load_ctypes_default,reset_ctypes,load_ctypes
+
+    Book/getRef is used to accelerate loading of structures in foreign memory.
+
+haystack.types:
+    Holds the ctypes proxy class CTypesProxy.
+    If invoked with the host's current size of types, the proxy instance does 
+    not alter the host ctypes module functionality.
+    When installed with alternative type sizes then specific methods and types 
+    are altered to match a specific target architecture.
+    To use this, you need to use local ctypes imports.
+    In haystack code, I would recommend NEVER EVER importing ctypes at the 
+    module level.
+
+    _pointer_type_cache is reseted and updated by the POINTER code.
+    because reset() is called, the cache is cleaned between reloads.
+
+haystack.utils:
+    Functions used in the definitions of haystack ctypes record.
+    Several ways to implement value-based constraints on fields.
+    
+haystack.basicmodel:
+    Contains the core validation and loading internals.
+    
+    tests are:
+    # a) ctypes.is_basic_type(attrtype)
+    # b) ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype)
+    # c) ctypes.is_array_of_basic_type(attrtype)
+    # d) ctypes.is_array_type(attrtype)
+    # e) ctypes.is_function_type(attrtype)
+    # f) ctypes.is_cstring_type(attrtype)
+    # g) ctypes.is_pointer_type(attrtype)
+    #   gs) basic, struct, union, array, cstring, pointer, function
+    # h) error.
+
+    You can define constraints on members by adding and 'expectedValues' dict()
+    to the ctypes record.
+
+haystack.listmodel:
+    Contains core validation and loading methods to assist with records that
+    have linked list pointers.
+    
+    _listHead_:
+    
+    _listMember_:
+    You can define a '_listMember_' list() to the ctypes record.
+    See 
+
+

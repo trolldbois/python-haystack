@@ -12,10 +12,51 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+
+import distutils.cmd
+import distutils.log
+import subprocess
+
+
+class PyPrepTestsCommand(distutils.cmd.Command):
+    """A custom command to build test sets."""
+
+    description = 'Run tests and dumps memory'
+    user_options = []
+    #    # The format is (long option, short option, description).
+    #    ('pylint-rcfile=', None, 'path to Pylint config file'),
+    #]
+
+    def initialize_options(self):
+        """Set default values for options."""
+    #  # Each user option must be listed here with their default value.
+    #  self.pylint_rcfile = ''
+        pass
+
+    def finalize_options(self):
+        """Post-process options."""
+    #  if self.pylint_rcfile:
+    #    assert os.path.exists(self.pylint_rcfile), (
+    #        'Pylint config file %s does not exist.' % self.pylint_rcfile)
+        pass
+
+    def run(self):
+        """Run command."""
+        import os
+        import sys
+        os.getcwd()
+        makeCmd = ['make','-d']
+        p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
+        p.wait()
+        return p.returncode
+
+
+
+
 setup(name="haystack",
-    version="0.17",
+    version="0.20",
     description="Search C Structures in a process' memory",
-    long_description=open("README.rst").read(),
+    long_description=open("README.md").read(),
 
     url="http://packages.python.org/haystack/",
     download_url="http://github.com/trolldbois/python-haystack/tree/master",
@@ -28,21 +69,33 @@ setup(name="haystack",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
+        #"Development Status :: 5 - Production/Stable",
     ],
     keywords=["memory","analysis","forensics","struct","ptrace","reverse","heap"],
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
-    packages = ["haystack", "haystack.gui", "haystack.reverse", "haystack.reverse.libc", "haystack.reverse.win32"],
+    packages = ["haystack", "haystack.gui", "haystack.reverse", 
+                "haystack.structures", "haystack.outputters",
+                "haystack.structures.libc", "haystack.structures.win32"],
     #package_dir={"haystack.reverse": 'haystack/reverse'},
-    package_data={"haystack.reverse": ['data/words.100'], },
+    package_data={"haystack.reverse": ['data/words.100'], 
+                  "haystack.structures.win32": ['profiles']},
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
-    # use pip requirements.txt instead
-    #install_requires = ["python-ptrace", "argparse", "networkx"],#"python-levenschtein", "python-networkx"],
-    # build_tests_requires = ["python-ctypeslib","libqt-dev"]
+    setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434
+    install_requires = ["ctypeslib2>2.1.3", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
+    dependency_links = ['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta',
+                        'https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk',
+                        'https://github.com/google/rekall/tarball/master#egg=rekall-trunk',
+                        'https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk'],
+    #build_test_requires = ["ctypeslib2>=2.1.3"],
     test_suite= "test.alltests",
-    #tests_require="haystack",
+    # https://pythonhosted.org/setuptools/setuptools.html
+    tests_require=[ "volatility"],
     #entry_points = {'haystack.plugins':['haystack.model:register']},
+    cmdclass={
+        'preptests': PyPrepTestsCommand,
+    },
 )
 
 
