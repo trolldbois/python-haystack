@@ -1,5 +1,10 @@
 
 
+- FIX get_heap on windows XP/zeus demo
+- add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
+
+- make a listmodel method for arrays of structures
+
 - FIX the model reloading of ctypes across all modules.
     - unloading all reverse module is crude.
     - resetting some haystack sub modules (reverse) seems to work

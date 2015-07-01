@@ -87,7 +87,16 @@ class VolatilityProcessMapper:
         self.pid = pid
         self.imgname = imgname
         self.mappings = None
+        self._unload_volatility()
         self._init_volatility()
+
+    def _unload_volatility(self):
+        '''we cannot have volatility already loaded.
+        we need to remove it'''
+        for mod in sys.modules.keys():
+            if 'volatility' in mod:
+                del sys.modules[mod]
+    
 
     def _init_volatility(self):
         #import sys
@@ -117,8 +126,8 @@ class VolatilityProcessMapper:
 
         import volatility.plugins.vadinfo as vadinfo
 
-        import code
-        print config.__dict__
+        #import code
+        #print config.__dict__
         # code.interact(local=locals())
 
         command = vadinfo.VADWalk(config)

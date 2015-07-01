@@ -28,6 +28,9 @@ class TestMmapHack(unittest.TestCase):
     def setUp(self):
         model.reset()
 
+    def tearDown(self):
+        model.reset()
+
     def test_mmap_hack64(self):
         ctypes = types.reload_ctypes(8, 8, 16)
         real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
@@ -86,10 +89,8 @@ class TestMappingsLinux(SrcTests):
         self.mappings = dump_loader.load('test/dumps/ssh/ssh.1')
 
     def tearDown(self):
-        import haystack
-        from haystack import model
-        haystack.model.reset()
-        pass
+        self.mappings = None
+        model.reset()
 
     def test_get_context(self):
         # print ''.join(['%s\n'%(m) for m in mappings])
@@ -187,10 +188,9 @@ class TestMappingsLinuxAddresses(SrcTests):
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
 
     def tearDown(self):
-        import haystack
-        from haystack import model
-        haystack.model.reset()
-        pass
+        super(SrcTests,self).tearDown()
+        self.mappings = None
+        model.reset()
 
     def test_is_valid_address(self):
         from test.src import ctypes5_gen32
@@ -224,12 +224,10 @@ class TestMappingsWin32(unittest.TestCase):
     def setUp(self):
         model.reset()
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
-        pass
 
     def tearDown(self):
-        # we need to close all these files.
         self.mappings = None
-        pass
+        model.reset()
 
     def test_get_context(self):
         '''FIXME: maybe not the best idea to use a reverser in a 
@@ -357,8 +355,8 @@ class TestReferenceBook(unittest.TestCase):
         self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
 
     def tearDown(self):
-        # self.mappings.reset()
-        pass
+        self.mappings = None
+        model.reset()
 
     def test_keepRef(self):
         self.assertEquals(len(self.mappings.getRefByAddr(0xcafecafe)), 0)
