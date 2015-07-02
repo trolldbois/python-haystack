@@ -34,18 +34,16 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
 
     def __init__(self, pid=None, mmap=True, memfile=None,
                  baseOffset=None, dumpname=None, volname=None):
-        # args are checked by the parser
-        self.config = config.ConfigClass()
-        mappings = None
+        memory_handler = None
         if not (volname is None) and not (pid is None):
-            mappings = self._init_volatility(dumpname, pid)
+            memory_handler = self._init_volatility(dumpname, pid)
         if not (pid is None):
-            mappings = self._init_pid(pid, mmap)
+            memory_handler = self._init_pid(pid, mmap)
         elif not (memfile is None):
-            mappings = self._init_memfile(memfile, baseOffset)
+            memory_handler = self._init_memfile(memfile, baseOffset)
         elif not (dumpname is None):
-            mappings = self._init_process_dumpfile(dumpname)
-        self.mappings = mappings
+            memory_handler = self._init_process_dumpfile(dumpname)
+        self.__memory_handler = memory_handler
         return
 
     def make_memory_handler(self):
@@ -53,16 +51,16 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
 
         :rtype : IMemoryHandler
         """
-        return self.mappings
+        return self.__memory_handler
 
     @staticmethod
-    def _init_process_dumpfile(self, dumpname):
+    def _init_process_dumpfile(dumpname):
         loader = dump_loader.ProcessMemoryDumpLoader(dumpname)
-        mappings = loader.getMappings()
+        mappings = loader.make_memory_handler()
         return mappings
 
     @staticmethod
-    def _init_memfile(self, memfile, baseOffset):
+    def _init_memfile(memfile, baseOffset):
         size = os.fstat(memfile.fileno()).st_size
         if size > config.MAX_MAPPING_SIZE_FOR_MMAP:
             mem = FileBackedMemoryMapping(
@@ -82,7 +80,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
         return mappings
 
     @staticmethod
-    def _init_pid(self, pid, mmap):
+    def _init_pid(pid, mmap):
         if not isinstance(pid, (int, long)):
             raise TypeError('PID should be a number')
         dbg = PtraceDebugger()
@@ -107,7 +105,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
         return mappings
 
     @staticmethod
-    def _init_volatility(self, volname, pid):
+    def _init_volatility(volname, pid):
         mapper = VolatilityProcessMapper(volname, pid)
         mappings = mapper.getMappings()
         return mappings

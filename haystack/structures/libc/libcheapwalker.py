@@ -53,14 +53,6 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
 class LibcHeapFinder(heapwalker.HeapFinder):
 
-    def __init__(self):#, ctypes):
-        import ctypes
-        from haystack.structures.libc import ctypes_malloc
-        ctypes_malloc = reload(ctypes_malloc)
-        self.heap_type = ctypes_malloc.malloc_chunk
-        self.walker_class = LibcHeapWalker
-        self.heap_validation_depth = 20
-
     # def is_heap(self, mappings, mapping):
     #    """test if a mapping is a heap - at least one allocation."""
     #    if not super(LibcHeapFinder,self).is_heap(mappings, mapping):
@@ -70,6 +62,17 @@ class LibcHeapFinder(heapwalker.HeapFinder):
     #    for x in iter_user_allocations(mappings, mapping):
     #        return True
     #    return False
+
+    # FIXME load unload ctypes
+    def _init_heap_type(self):
+        from haystack.structures.libc import ctypes_malloc
+        ctypes_malloc = reload(ctypes_malloc)
+        return ctypes_malloc.malloc_chunk
+
+    def _init_walker_class(self):
+        # FIXME
+        self.heap_validation_depth = 20
+        return LibcHeapWalker
 
     def get_heap_mappings(self, mappings):
         """Prioritize heaps with [heap]"""

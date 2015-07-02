@@ -4,13 +4,13 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 import logging
-
+from haystack.abc import interfaces
 log = logging.getLogger('heapwalker')
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 
-class HeapWalker(object):
+class HeapWalker(interfaces.IHeapWalker):
 
     def __init__(self, mappings, mapping, offset=0):
         self._mappings = mappings
@@ -35,15 +35,31 @@ class HeapWalker(object):
 # or in the context ?
 
 
-class HeapFinder(object):
+class HeapFinder(interfaces.IHeapFinder):
 
-    def __init__(self):#, ctypes):
-        #ctypes = types.set_ctypes(ctypes)
-        self.heap_type = None
-        self.walker_class = callable()
+    def __init__(self, target):
+        """
+        :param target: ITargetPlatform
+        :return:
+        """
+        self._target = target
+        self._ctypes = self._target.get_target_ctypes()
+        self.__heap_type = self._init_heap_type()
+        self.__walker_class = self._init_walker_class()
+        # FIXME to method
         self.heap_validation_depth = 1
-        raise NotImplementedError(
-            'Please fix your self.heap_type and self.walker_class')
+
+    def _init_heap_type(self):
+        """returns the internal heap structure type
+        :rtype: ctypes heap structure type
+        """
+        raise NotImplementedError(self)
+
+    def _init_walker_class(self):
+        """returns the heap walker type
+        :rtype: IHeapWalker
+        """
+        raise NotImplementedError(self)
 
     def is_heap(self, mappings, mapping):
         """test if a mapping is a heap"""
@@ -58,7 +74,7 @@ class HeapFinder(object):
     def read_heap(self, mapping):
         """ return a ctypes heap struct mapped at address on the mapping"""
         addr = mapping.start
-        heap = mapping.read_struct(addr, self.heap_type)
+        heap = mapping.read_struct(addr, self.__heap_type)
         return heap
 
     def get_heap_mappings(self, mappings):
@@ -77,26 +93,40 @@ class HeapFinder(object):
         heap_mappings.sort(key=lambda m: m.start)
         return heap_mappings
 
+    def get_heap_type(self):
+        """
+        return the ctype of the heap structure
+
+        :return: ctypes
+        """
+        return self.__heap_type
+
     def get_walker_for_heap(self, mappings, heap):
-        return self.walker_class(mappings, heap, 0)
+        return self.__walker_class(mappings, heap, 0)
 
 
-def make_heap_walker(mappings):
-    """try to find what type of heaps are """
-    from haystack.mappings import base
-    if not isinstance(mappings, base.MemoryHandler):
-        raise TypeError('Feed me a Mappings')
+
+def make_heap_finder(target):
+    """
+    Build a heap_finder for this target
+
+    :param target: ITargetPlatform
+    :return: a heap walker for that platform
+    :rtype: IHeapWalker
+    """
+    if not isinstance(target, interfaces.ITargetPlatform):
+        raise TypeError('target should be an ITargetPlatform')
     # ctypes is preloaded with proper arch
-    os_name = mappings.get_os_name()
+    os_name = target.get_os_name()
     if os_name == 'linux':
         from haystack.structures.libc import libcheapwalker
-        return libcheapwalker.LibcHeapFinder()
+        return libcheapwalker.LibcHeapFinder(target)
     elif os_name == 'winxp':
         from haystack.structures.win32 import winheapwalker
-        return winheapwalker.WinHeapFinder()
+        return winheapwalker.WinHeapFinder(target)
     elif os_name == 'win7':
         from haystack.structures.win32 import win7heapwalker
-        return win7heapwalker.Win7HeapFinder()
+        return win7heapwalker.Win7HeapFinder(target)
     else:
         raise NotImplementedError(
             'Heap Walker not found for os %s' %

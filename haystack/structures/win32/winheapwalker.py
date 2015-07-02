@@ -197,17 +197,16 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
 class WinHeapFinder(heapwalker.HeapFinder):
 
-    def __init__(self):#, ctypes):
-        #ctypes = types.set_ctypes(ctypes)
-        # clean the iport module to remove any rpevious loading with a different
-        # ctypes proxy class
-        #if 'winheap' in sys.modules:
-        #    del sys.modules['winheap']
+    # FIXME load unload ctypes
+    def _init_heap_type(self):
         from haystack.structures.win32 import winheap
         winheap = reload(winheap)
-        self.heap_type = winheap.HEAP
-        self.walker_class = WinHeapWalker
+        return winheap.HEAP
+
+    def _init_walker_class(self):
+        # FIXME
         self.heap_validation_depth = 1
+        return WinHeapWalker
 
     def get_heap_mappings(self, mappings):
         """return the list of mappings that load as heaps"""

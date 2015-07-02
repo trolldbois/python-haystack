@@ -31,12 +31,7 @@ import logging
 
 # haystack
 from haystack import utils
-from haystack import config
 from haystack.abc import interfaces
-import haystack.dump_loader
-
-from haystack.structures import heapwalker
-import haystack.structures.heapwalker
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -183,36 +178,56 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         raise NotImplementedError(self)
 
 class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
+    """
+    Handler for the concept of process memory.
 
-    """List of memory mappings for one process"""
+    Parse a process memory mappings from a storage concept,
+    then identify its ITargetPlatform characteristics
+    and produce an IMemoryHandler for this process memory dump """
 
-    # FIXME move out. ZERO code here.
-    def __init__(self, mappings, target, name='noname'):
+    def __init__(self, mappings, target, heap_finder, name='noname'):
         """Set the list of IMemoryMapping and the ITargetPlatform
 
         :param mappings: list of IMemoryMapping
         :param target: the ITargetPlatform
+        :param heap_finder: the IHeapWalker
         :return: IMemoryHandler, self
         :rtype: IMemoryHandler
         """
         if not isinstance(mappings, list):
-            raise TypeError('Please feed me a list')
-        self.__mappings = mappings
+            raise TypeError('Please feed me a list of IMemoryMapping')
+        if not isinstance(target, interfaces.ITargetPlatform):
+            raise TypeError('Please feed me a list of IMemoryMapping')
+        if not isinstance(heap_finder, interfaces.IHeapFinder):
+            raise TypeError('Please feed me a list of IMemoryMapping')
+        self._mappings = mappings
         self._target = target
-        self.config = None
+        self._heap_finder = heap_finder
         self.name = name
-        self.__heaps = None
-        self.__heap_finder = None
-        self.__os_name = None
-        self.__cpu_bits = None
+        # FIXME config
+        self.config = None
+        # FIXME book keeper
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
-        # set the word size in this config.
-        self.__wordsize = None
+        # FIXME reduce open files.
         self.__required_maps = []
-        # self._init_word_size()
 
-    # remove
+    def get_target_platform(self):
+        """Returns the ITargetPlatform for that process memory."""
+        return self._target
+
+    def get_heap_finder(self):
+        """Returns the IHeapWalker for that process memory."""
+        return self._heap_finder
+
+    def get_heap_walker(self, heap):
+        """Returns the IHeapWalker for that process memory."""
+        if not isinstance(heap,interfaces.IMemoryMapping):
+            raise TypeError("heap should be a IMemoryMapping")
+        return self._heap_finder.get_heap_walker(heap)
+
+
+    # FIXME remove/move to subclass
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
         """
@@ -246,49 +261,26 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         mmap._context = ctx
         return ctx
 
+    # FIXME DELETE, move to heap walker
     def get_user_allocations(self, heap, filterInUse=True):
-        """changed when the dump is loaded"""
-        assert isinstance(heap, AMemoryMapping)
-        if self.__heap_finder is None:
-            self.get_heaps()
-
-        walker = self.__heap_finder.get_walker_for_heap(self, heap)
+        walker = self._heap_finder.get_walker_for_heap(self, heap)
         return walker.get_user_allocations()
 
     # FIXME incorrect API
     def _get_mapping(self, pathname):
         mmap = None
-        if len(self.__mappings) >= 1:
-            mmap = [m for m in self.__mappings if m.pathname == pathname]
+        if len(self._mappings) >= 1:
+            mmap = [m for m in self._mappings if m.pathname == pathname]
         if len(mmap) < 1:
             raise IndexError('No mmap of pathname %s' % (pathname))
         return mmap
 
     def get_mapping_for_address(self, vaddr):
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
-        for m in self.__mappings:
+        for m in self._mappings:
             if vaddr in m:
                 return m
         return False
-
-    def init_config(self, cpu=None, os_name=None):
-        """Pre-populate cpu and os_name"""
-        if os_name is not None and os_name not in ['linux', 'winxp', 'win7']:
-            raise NotImplementedError('OS not implemented: %s' % (os_name))
-        if cpu is not None and cpu not in ['32', '64']:
-            raise NotImplementedError('CPU bites not implemented: %s' % (cpu))
-        self.__os_name = os_name
-        self.__cpu_bits = cpu
-        # the config init should NOT load heaps as a way to determine the
-        # memory dump arch
-        # self.get_heaps()
-        # but
-        os_name = self.get_os_name()
-        cpu = self.get_cpu_bits()
-        # Change ctypes now
-        #from haystack import config
-        self.config = config.make_config(cpu=cpu, os_name=os_name)
-        self._reset_config()
 
     def get_heap(self):
         """Returns the first Heap"""
@@ -296,29 +288,12 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     def get_heaps(self):
         """Find heap type and returns mappings with heaps"""
-        if self.__heaps is None:
-            self.__heap_finder = haystack.structures.heapwalker.make_heap_walker(self)
-            self.__heaps = self.__heap_finder.get_heap_mappings(self)
-            # if len(self.__heaps) == 0:
-            #    raise RuntimeError("No heap found")
-        return self.__heaps
-
-    def _reset_config(self):
-        # This is where the config is set for all maps.
-        for m in self.__mappings:
-            m.config = self.config
-        return
+        return self._heap_finder.get_heap_mappings(self)
 
     def get_stack(self):
         # FIXME wont work on windows.
         stack = self._get_mapping('[stack]')[0]
         return stack
-
-    def append(self, m):
-        assert isinstance(m, AMemoryMapping)
-        self.__mappings.append(m)
-        if self.config is not None:
-            m.config = self.config
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
@@ -359,22 +334,22 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         return False
 
     def __contains__(self, vaddr):
-        for m in self.__mappings:
+        for m in self._mappings:
             if vaddr in m:
                 return True
         return False
 
     def __len__(self):
-        return len(self.__mappings)
+        return len(self._mappings)
 
     def __getitem__(self, i):
-        return self.__mappings[i]
+        return self._mappings[i]
 
     def __setitem__(self, i, val):
         raise NotImplementedError()
 
     def __iter__(self):
-        return iter(self.__mappings)
+        return iter(self._mappings)
 
     def reset(self):
         """Clean the book"""

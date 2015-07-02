@@ -50,9 +50,9 @@ class TestWalkers(unittest.TestCase):
                 f = getattr(t, fi)
                 print fi, ' : ', hex(f.offset), hex(f.size)
 
-            self.assertEquals(ctypes.sizeof(libc_x32.heap_type), 8)
-            self.assertEquals(ctypes.sizeof(winxp_x32.heap_type), 1430)
-            self.assertEquals(ctypes.sizeof(win7_x32.heap_type), 312)  # 0x138
+            self.assertEquals(ctypes.sizeof(libc_x32.__heap_type), 8)
+            self.assertEquals(ctypes.sizeof(winxp_x32.__heap_type), 1430)
+            self.assertEquals(ctypes.sizeof(win7_x32.__heap_type), 312)  # 0x138
 
         # set the arch
         model.reset()
@@ -63,16 +63,16 @@ class TestWalkers(unittest.TestCase):
 
         #import code
         #code.interact(local=locals())
-        self.assertEquals(ctypes.sizeof(libc_x64.heap_type), 16)
+        self.assertEquals(ctypes.sizeof(libc_x64.__heap_type), 16)
         # who knows...
-        self.assertEquals(ctypes.sizeof(win7_x64.heap_type), 520)
+        self.assertEquals(ctypes.sizeof(win7_x64.__heap_type), 520)
         # BUG FIXME, what is the size of winxp64 HEAP ?
-        self.assertEquals(ctypes.sizeof(winxp_x64.heap_type), 2792) #   0xae8
+        self.assertEquals(ctypes.sizeof(winxp_x64.__heap_type), 2792) #   0xae8
 
         # try x32 while there
-        #self.assertEquals(ctypes.sizeof(libc_x32.heap_type), 8)
-        #self.assertEquals(ctypes.sizeof(winxp_x32.heap_type), 1430)
-        #self.assertEquals(ctypes.sizeof(win7_x32.heap_type), 312)
+        #self.assertEquals(ctypes.sizeof(libc_x32.__heap_type), 8)
+        #self.assertEquals(ctypes.sizeof(winxp_x32.__heap_type), 1430)
+        #self.assertEquals(ctypes.sizeof(win7_x32.__heap_type), 312)
 
 
 if __name__ == '__main__':
