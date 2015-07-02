@@ -40,7 +40,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
         #    del sys.modules['winheap']
         #import ctypes
         from haystack.structures.win32 import winheap
-        self._heap = self._mapping.readStruct(
+        self._heap = self._mapping.read_struct(
             self._mapping.start +
             self._offset,
             winheap.HEAP)

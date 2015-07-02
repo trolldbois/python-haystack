@@ -78,7 +78,7 @@ class TestMapper(unittest.TestCase):
         from haystack.structures.win32 import winheap
         for mstart in heaps:
             heap = mappings.get_mapping_for_address(mstart)
-            res = heap.readStruct(heap.start,winheap.HEAP)
+            res = heap.read_struct(heap.start,winheap.HEAP)
             self.assertTrue(res.is_valid(mappings))
 
         # testing that the list of heaps is always the same
@@ -99,10 +99,10 @@ class TestMapper(unittest.TestCase):
         import pefile
         import code
         for m in mappings.mappings:
-            data = m.readWord(m.start + 8)
+            data = m.read_word(m.start + 8)
             if data == 0xeeffeeff:
                 # we have a heap
-                x = m.readStruct(m.start, winheap.HEAP)
+                x = m.read_struct(m.start, winheap.HEAP)
                 print x
 
         self.assertEquals( ctypes.sizeof(x), 1430)

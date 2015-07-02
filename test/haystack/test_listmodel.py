@@ -40,7 +40,7 @@ class TestListStruct(unittest.TestCase):
         from haystack.structures.win32 import win7heap
         offset = 0x1ef0000
         self.m = self.mappings.get_mapping_for_address(offset)
-        self.heap = self.m.readStruct(offset, win7heap.HEAP)
+        self.heap = self.m.read_struct(offset, win7heap.HEAP)
 
         self.assertTrue(self.heap.loadMembers(self.mappings, 10))
 
@@ -88,7 +88,7 @@ class TestListStruct(unittest.TestCase):
         for addr in heaps:
             m = self.mappings.get_mapping_for_address(addr)
             # print '\n+ Heap @%x size: %d'%(addr, len(m))
-            heap = m.readStruct(addr, win7heap.HEAP)
+            heap = m.read_struct(addr, win7heap.HEAP)
             self.assertTrue(heap.loadMembers(self.mappings, 10))
             segments = [
                 segment for segment in heap.iterateListField(
@@ -120,7 +120,7 @@ class TestListStructTest6(SrcTests):
         ctypes6.populate(self.mappings.config)
         self.offset = self.offsets['test1'][0]
         self.m = self.mappings.get_mapping_for_address(self.offset)
-        self.usual = self.m.readStruct(self.offset, ctypes6.struct_usual)
+        self.usual = self.m.read_struct(self.offset, ctypes6.struct_usual)
 
     def tearDown(self):
         self.mappings = None
@@ -137,7 +137,7 @@ class TestListStructTest6(SrcTests):
                 self.mappings)]
         # test that we have a list of two structures in a list
         self.assertEquals(len(nodes_addrs), 2)
-        
+
         return
 
 

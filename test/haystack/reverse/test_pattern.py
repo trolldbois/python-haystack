@@ -13,7 +13,7 @@ import struct
 
 from haystack.reverse import pattern
 from haystack import config
-from haystack.mappings.base import Memory, AMemoryMapping
+from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
 '''
@@ -87,7 +87,7 @@ class SignatureTests(unittest.TestCase):
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap, values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = Memory([mmap], 'test')
+        mappings = MemoryHandler([mmap], 'test')
         mappings.config = self.config
         mappings._reset_config() # set it again
         sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
@@ -249,7 +249,7 @@ class TestAnonymousStructRange(SignatureTests):
         self.assertEqual(len(ret), len(addrs))
         # pointer value is the pointer vaddr on first test case
         for addr, val in zip(addrs, ret):
-            memval = self.sig.mmap.readWord(addr)
+            memval = self.sig.mmap.read_word(addr)
             self.assertEqual(memval, val)
             self.assertEqual(addr, val)
 

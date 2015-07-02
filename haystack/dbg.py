@@ -81,7 +81,7 @@ else:
             def readArray(vaddr, typ, s):
                 # print 'HIHIHI',proc, vaddr, typ, s
                 return proc.read_structure(vaddr, typ * s)
-            proc.readArray = readArray
+            proc.read_array = readArray
             proc.cont = proc.resume
             return proc
 
@@ -217,9 +217,9 @@ else:
         memoryMap = process.get_memory_map()
         mappedFilenames = process.get_mapped_filenames()
         if fileName:
-            log.debug("Memory map for %d (%s):" % (pid, fileName))
+            log.debug("MemoryHandler map for %d (%s):" % (pid, fileName))
         else:
-            log.debug("Memory map for %d:" % pid)
+            log.debug("MemoryHandler map for %d:" % pid)
         log.debug('%d filenames' % len(mappedFilenames))
         log.debug('')
         log.debug('%d memorymap' % len(memoryMap))

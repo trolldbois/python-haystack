@@ -415,7 +415,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         # return
         # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.get_word_size()]
         m = ctx.mappings.get_mapping_for_address(st_addr + offset)
-        return m.readBytes(st_addr + offset, 2 * ctx.config.get_word_size())
+        return m.read_bytes(st_addr + offset, 2 * ctx.config.get_word_size())
 
     def unpack(self, context, ptr_value):
         """we want to read both pointers"""

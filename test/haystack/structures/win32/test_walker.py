@@ -166,7 +166,7 @@ class TestAllocator(unittest.TestCase):
 
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.readStruct(chunk_addr, win7heap.HEAP_ENTRY)
+                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY)
                 # st.UnusedBytes == 0x5    ?
                 if st._0._1.UnusedBytes == 0x05:
                     prev_header_addr -= 8 * st._0._1._0.SegmentOffset
@@ -200,7 +200,7 @@ class TestAllocator(unittest.TestCase):
                     self.assertIn(m, heap_children)
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.readStruct(chunk_addr, win7heap.HEAP_ENTRY)
+                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY)
                 # NextOffset in userblock gives same answer
 
             for addr, s in allocs:
@@ -371,7 +371,7 @@ class TestAllocator(unittest.TestCase):
         found = []
         for mapping in self._mappings:
             addr = mapping.start
-            heap = mapping.readStruct(addr, win7heap.HEAP)
+            heap = mapping.read_struct(addr, win7heap.HEAP)
             if addr in map(lambda x: x[0], self._known_heaps):
                 self.assertTrue(
                     heap.loadMembers(

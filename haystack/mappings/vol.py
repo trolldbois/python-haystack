@@ -15,7 +15,7 @@ import struct
 from functools import partial
 
 # haystack
-from haystack.mappings.base import Memory, AMemoryMapping
+from haystack.mappings.base import MemoryHandler, AMemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -47,7 +47,7 @@ class VolatilityProcessMappingA(AMemoryMapping):
             pathname)
         self._backend = address_space
 
-    def readWord(self, addr):
+    def read_word(self, addr):
         ws = self.config.get_word_size()
         data = self._backend.zread(addr, ws)
         if ws == 4:
@@ -55,16 +55,16 @@ class VolatilityProcessMappingA(AMemoryMapping):
         elif ws == 8:
             return struct.unpack('Q', data)[0]
 
-    def readBytes(self, addr, size):
+    def read_bytes(self, addr, size):
         return self._backend.zread(addr, size)
 
-    def readStruct(self, addr, struct):
+    def read_struct(self, addr, struct):
         size = self.config.ctypes.sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
         instance._orig_address_ = addr
         return instance
 
-    def readArray(self, addr, basetype, count):
+    def read_array(self, addr, basetype, count):
         size = self.config.ctypes.sizeof(basetype * count)
         array = (
             basetype *
@@ -184,7 +184,7 @@ def my_render_text(mapper, cmd, outfd, data):
 
             maps.append(pmap)
 
-    mappings = Memory(maps)
+    mappings = MemoryHandler(maps)
     # print mappings
     mappings.init_config()
     mapper.mappings = mappings

@@ -8,7 +8,7 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __doc__ = '''
 Search for struct in memory.
-Memory can be a file dump or a live process.
+MemoryHandler can be a file dump or a live process.
 
 Output offset and values of possible matches.
 Output type can be txt, json, pickled.
@@ -37,7 +37,7 @@ def argparser():
   rootparser.add_argument('--nommap', dest='mmap', action='store_const', const=False, default=True, help='disable mmap()-ing')
   rootparser.add_argument('structName', type=str, help='Structure type name')
   rootparser.add_argument('--baseOffset', type=str, help='base offset of the memory map in the dump file.')
-  
+
   target = rootparser.add_mutually_exclusive_group(required=True)
   target.add_argument('--pid', type=int, help='Target PID')
   target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
@@ -46,12 +46,12 @@ def argparser():
 
   #FIXME
   rootparser.add_argument('--volpid', type=int, help='Target PID for the OS --volname memory parser')
-  
+
   output = rootparser.add_mutually_exclusive_group(required=True)
   output.add_argument('--string', dest='human', action='store_const', const=True, help='Print results as human readable string')
   output.add_argument('--json', dest='json', action='store_const', const=True, help='Print results as json readable string')
   output.add_argument('--pickled', dest='pickled', action='store_const', const=True, help='Print results as pickled string')
-    
+
   subparsers = rootparser.add_subparsers(help='sub-command help')
   search_parser = subparsers.add_parser('search', help='search help')
   search_parser.add_argument('--fullscan', action='store_const', const=True, default=False, help='do a full memory scan, otherwise, restrict to the heap')
@@ -72,7 +72,7 @@ def argparser():
 
 
 def main(argv):
-  
+
   parser = argparser()
   opts = parser.parse_args(argv)
 
@@ -85,7 +85,7 @@ def main(argv):
   if opts.debug :
     flog = os.path.normpath('log')
     logging.basicConfig(level=level, filename=flog, filemode='w')
-    print ('[+] **** COMPLETE debug log to %s'%(flog))    
+    print ('[+] **** COMPLETE debug log to %s'%(flog))
   else:
     logging.basicConfig(level=level)
 
@@ -105,7 +105,7 @@ def main(argv):
     log.error('sys.path is %s'%sys.path)
     print e
 
-  if opts.pid:  
+  if opts.pid:
     log.debug("done for pid %d"%opts.pid)
   elif opts.memfile:
     log.debug("done for file %s"%opts.memfile.name)

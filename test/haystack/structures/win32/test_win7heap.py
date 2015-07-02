@@ -79,7 +79,7 @@ class TestWin7Heap(unittest.TestCase):
                           '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals(addr, 6029312)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
 
         # check that haystack memory_mapping works
         self.assertEquals(ctypes.addressof(h._local_mmap_content),
@@ -97,7 +97,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             # check heap.Signature
             self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
             load = heap.loadMembers(self._mappings, 10)
@@ -113,7 +113,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
 
         ucrs = heap.get_free_UCR_segment_list(self._mappings)
@@ -138,7 +138,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
             self.assertTrue(walker.is_heap(self._mappings, h))
             # get free UCRS from heap
@@ -162,7 +162,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
 
         segments = heap.get_segment_list(self._mappings)
@@ -193,7 +193,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
             self.assertTrue(walker.is_heap(self._mappings, h))
 
@@ -226,7 +226,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
 
         allocated, free = heap.get_chunks(self._mappings)
@@ -267,7 +267,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
             self.assertTrue(walker.is_heap(self._mappings, h))
 
@@ -301,7 +301,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
 
         allocated, free = heap.get_chunks(self._mappings)
@@ -317,7 +317,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = win7heapwalker.Win7HeapFinder()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
             self.assertTrue(walker.is_heap(self._mappings, h))
 
@@ -335,14 +335,14 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
 
         fth_committed, fth_free = heap.get_frontend_chunks(self._mappings)
         # SizeInCache : 59224L,
 
         # not much to check...
-        lfh = h.readStruct(heap.FrontEndHeap.value, win7heap.LFH_HEAP)
+        lfh = h.read_struct(heap.FrontEndHeap.value, win7heap.LFH_HEAP)
         self.assertEquals(lfh.Heap.value, addr)
         # FIXME: check more.
 
@@ -352,7 +352,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
-        heap = h.readStruct(addr, win7heap.HEAP)
+        heap = h.read_struct(addr, win7heap.HEAP)
         load = heap.loadMembers(self._mappings, 10)
         valloc_committed = heap.get_virtual_allocated_blocks_list(
             self._mappings)
@@ -367,7 +367,7 @@ class TestWin7Heap(unittest.TestCase):
         ctypes = self._mappings.config.ctypes
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
-            heap = h.readStruct(addr, win7heap.HEAP)
+            heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
             valloc_committed = heap.get_virtual_allocated_blocks_list(
                 self._mappings)

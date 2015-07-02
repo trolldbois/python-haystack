@@ -38,7 +38,7 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
     # allocations = [] # index, size
     orig_addr = heap.start
 
-    chunk = heap.readStruct(orig_addr, malloc_chunk)
+    chunk = heap.read_struct(orig_addr, malloc_chunk)
     assert hasattr(chunk, '_orig_address_')
     ret = chunk.loadMembers(mappings, 10)
     if not ret:
@@ -80,7 +80,7 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
     free = []
 
     orig_addr = heap.start
-    chunk = heap.readStruct(orig_addr, malloc_chunk)
+    chunk = heap.read_struct(orig_addr, malloc_chunk)
     ret = chunk.loadMembers(mappings, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
@@ -199,7 +199,7 @@ struct malloc_chunk {
         if not mmap:
             return 0
             #raise ValueError()
-        next_size = mmap.readWord(next_addr)
+        next_size = mmap.read_word(next_addr)
         return next_size & PREV_INUSE
 
     def isValid(self, mappings):
@@ -288,7 +288,7 @@ struct malloc_chunk {
                 raise ValueError('STOP: prev_addr invalid: 0x%x' % (prev_addr))
             # if prev_addr not in mmap:
             #    mmap = mappings.is_valid_address_value(prev_addr)
-            prev_chunk = mmap.readStruct(prev_addr, malloc_chunk)
+            prev_chunk = mmap.read_struct(prev_addr, malloc_chunk)
             mappings.keepRef(prev_chunk, malloc_chunk, prev_addr)
             # load
             if depth > 0:
@@ -318,7 +318,7 @@ struct malloc_chunk {
                 log.debug('Last chunk: size: 0x%x' % (self.real_size()))
                 return None, None
             raise ValueError('STOP: next_addr invalid: 0x%x' % (next_addr))
-        next_chunk = mmap.readStruct(next_addr, malloc_chunk)
+        next_chunk = mmap.read_struct(next_addr, malloc_chunk)
         mappings.keepRef(next_chunk, malloc_chunk, next_addr)
         if depth > 0:
             ret = next_chunk.loadMembers(mappings, depth)

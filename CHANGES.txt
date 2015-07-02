@@ -6,14 +6,15 @@ Ongoing:
  - move interfaces into an interfaces module, maybe use abc.
 
 Changes to architecture.txt:
- - IMemory: there is a memory dump concept. 
- - IMemoryLoader: a memory_loader helper reads the dump and creates a IMemory instance
-    + sets the ITargetPlatform information (cpu, wordsize)
+ - IMemoryHandler: there is a process memory concept (dump, live, vol, rekall) that need a handler.
+ - IMemoryLoader: a memory loader is a helper class reads the dump and creates a IMemoryHandler instance
+    + figures out the ITargetPlatform information (cpu, wordsize)
         + the ITargetPlatform wraps a CTypesProxy instance
-    + sets the list of IMemoryMapping
- - the IMemory instance is the one way access to:
+    + figures out the list of IMemoryMapping
+    + creates a IMemoryHandler with both previous element
+ - the IMemoryHandler instance is the one way access to:
     + the list of IMemoryMapping
-    + the CTypesProxy ctypes proxy object for this Memory host
+    + the CTypesProxy ctypes proxy object for this MemoryHandler host
     + the IHeapWalker helpers
  - the memory l
 
@@ -30,7 +31,7 @@ Changes to architecture.txt:
  - FIX OverflowError: Python int too large to convert to C long on ptrace file.seek - ignore vsyscall mmap that is in the higher mmap reagion
     + this is a temporary bugfix.
  - add memory dumps test case to a dropbox
- - fix the heap structures used by haystack for win7. 
+ - fix the heap structures used by haystack for win7.
     + Constraints: Ignore HEAP_ENTRY SubSegmentCode pointer as it is encoded.
     + fix some ctypeslib bugs
  - fix the generation process for HEAP structures. ctypeslib and clang do not like circular dependencies.

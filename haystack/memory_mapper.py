@@ -9,12 +9,10 @@ import time
 import os
 
 from haystack.dbg import PtraceDebugger
-
-
-# local
 from haystack import config
 from haystack import dump_loader
-from haystack.mappings.base import Memory
+from haystack.abc import interfaces
+from haystack.mappings import base
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import MemoryDumpMemoryMapping
 from haystack.mappings.process import readProcessMappings
@@ -30,7 +28,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 
-class MemoryMapper:
+class MemoryHandlerFactory(interfaces.IMemoryLoader):
 
     """Build MemoryMappings from a PID or a haystack memory dump."""
 
@@ -38,28 +36,35 @@ class MemoryMapper:
                  baseOffset=None, dumpname=None, volname=None):
         # args are checked by the parser
         self.config = config.ConfigClass()
+        mappings = None
         if not (volname is None) and not (pid is None):
-            mappings = self.initVolatility(dumpname, pid)
+            mappings = self._init_volatility(dumpname, pid)
         if not (pid is None):
-            mappings = self.initPid(pid, mmap)
+            mappings = self._init_pid(pid, mmap)
         elif not (memfile is None):
-            mappings = self.initMemfile(memfile, baseOffset)
+            mappings = self._init_memfile(memfile, baseOffset)
         elif not (dumpname is None):
-            mappings = self.initProcessDumpfile(dumpname)
+            mappings = self._init_process_dumpfile(dumpname)
         self.mappings = mappings
         return
 
-    def getMappings(self):
+    def make_memory_handler(self):
+        """Creates a MemoryHandler
+
+        :rtype : IMemoryHandler
+        """
         return self.mappings
 
-    def initProcessDumpfile(self, dumpname):
+    @staticmethod
+    def _init_process_dumpfile(self, dumpname):
         loader = dump_loader.ProcessMemoryDumpLoader(dumpname)
         mappings = loader.getMappings()
         return mappings
 
-    def initMemfile(self, memfile, baseOffset):
+    @staticmethod
+    def _init_memfile(self, memfile, baseOffset):
         size = os.fstat(memfile.fileno()).st_size
-        if size > self.config.MAX_MAPPING_SIZE_FOR_MMAP:
+        if size > config.MAX_MAPPING_SIZE_FOR_MMAP:
             mem = FileBackedMemoryMapping(
                 memfile,
                 baseOffset,
@@ -73,10 +78,11 @@ class MemoryMapper:
                 baseOffset,
                 baseOffset +
                 size)  # is that valid ?
-        mappings = Memory([mem], memfile.name)
+        mappings = base.MemoryHandler([mem], memfile.name)
         return mappings
 
-    def initPid(self, pid, mmap):
+    @staticmethod
+    def _init_pid(self, pid, mmap):
         if not isinstance(pid, (int, long)):
             raise TypeError('PID should be a number')
         dbg = PtraceDebugger()
@@ -96,11 +102,12 @@ class MemoryMapper:
             # mmap done, we can release process...
             process.cont()
             log.info(
-                'Memory mmaped, process released after %02.02f secs' %
+                'MemoryHandler mmaped, process released after %02.02f secs' %
                 (time.time() - t0))
         return mappings
 
-    def initVolatility(self, volname, pid):
+    @staticmethod
+    def _init_volatility(self, volname, pid):
         mapper = VolatilityProcessMapper(volname, pid)
         mappings = mapper.getMappings()
         return mappings

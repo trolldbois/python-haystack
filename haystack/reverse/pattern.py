@@ -519,7 +519,7 @@ class AnonymousStructRange:
         if self.pointersValues is None:
             mmap = self.pinnedPointer.sig.mmap
             self.pointersValues = [
-                mmap.readWord(addr) for addr in self.getPointersAddr()]
+                mmap.read_word(addr) for addr in self.getPointersAddr()]
         return self.pointersValues
 
     def setPointerType(self, number, anonStruct):

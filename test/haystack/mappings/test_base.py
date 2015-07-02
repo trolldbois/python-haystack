@@ -196,7 +196,7 @@ class TestMappingsLinuxAddresses(SrcTests):
         from test.src import ctypes5_gen32
         offset = self.offsets['struct_d'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        d = m.read_struct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(self.mappings, 10)
 
         self.assertTrue(self.mappings.is_valid_address(d.a))
@@ -209,7 +209,7 @@ class TestMappingsLinuxAddresses(SrcTests):
         from test.src import ctypes5_gen32
         offset = self.offsets['struct_d'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        d = m.read_struct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(self.mappings, 10)
 
         self.assertTrue(self.mappings.is_valid_address(d.a.value))
@@ -276,7 +276,7 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals(self.mappings.get_heap().start, 0x005c0000)
         self.assertEquals(self.mappings.get_heap().pathname, 'None')
         m = self.mappings.get_heap()
-        buf = m.readBytes(m.start, 500)
+        buf = m.read_bytes(m.start, 500)
         from haystack.structures.win32 import win7heap
         x = win7heap.HEAP.from_buffer_copy(buf)
         # print win7heap.HEAP.Signature

@@ -13,7 +13,7 @@ import json
 import os
 
 from haystack import basicmodel
-from haystack.memory_mapper import MemoryMapper as MemoryMapper
+from haystack.memory_mapper import MemoryHandlerFactory
 from haystack.outputters import text
 from haystack.outputters import python
 from haystack.utils import xrange
@@ -154,7 +154,7 @@ class StructFinder:
         """
         log.debug("Loading %s from 0x%lx " % (structType, offset))
         # instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
-        instance = memoryMap.readStruct(offset, structType)
+        instance = memoryMap.read_struct(offset, structType)
         # check if data matches
         if (instance.loadMembers(self.mappings, depth)):
             log.info("found instance %s @ 0x%lx" % (structType, offset))
@@ -442,7 +442,7 @@ def search_struct_process(structName, pid, mmap=True, **kwargs):
     :rtype either string, pickle object or json string or ( False, None )
     """
     structType = getKlass(structName)
-    mappings = MemoryMapper(pid=pid, mmap=mmap).getMappings()
+    mappings = MemoryHandlerFactory(pid=pid, mmap=mmap).make_memory_handler()
     return _search(mappings, structType, **kwargs)
 
 
@@ -463,9 +463,9 @@ def search_struct_memfile(structName, memfile, baseOffset, **kwargs):
     :rtype either string, pickle object or json string or ( False, None )
     """
     structType = getKlass(structName)
-    mappings = MemoryMapper(
+    mappings = MemoryHandlerFactory(
         memfile=memfile,
-        baseOffset=baseOffset).getMappings()
+        baseOffset=baseOffset).make_memory_handler()
     return _search(mappings, structType, **kwargs)
 
 
@@ -484,24 +484,24 @@ def search_struct_dumpname(structName, dumpname, **kwargs):
     :rtype either string, pickle object or json string or ( False, None )
     """
     structType = getKlass(structName)
-    mappings = MemoryMapper(dumpname=dumpname).getMappings()
+    mappings = MemoryHandlerFactory(dumpname=dumpname).make_memory_handler()
     return _search(mappings, structType, **kwargs)
 
 
 def _search_cmdline(args):
     """ Internal cmdline mojo. """
     if args.volname is not None:
-        mappings = MemoryMapper(
+        mappings = MemoryHandlerFactory(
             pid=args.pid,
-            volname=args.volname).getMappings()
+            volname=args.volname).make_memory_handler()
     elif args.pid is not None:
-        mappings = MemoryMapper(pid=args.pid, mmap=args.mmap).getMappings()
+        mappings = MemoryHandlerFactory(pid=args.pid, mmap=args.mmap).make_memory_handler()
     elif args.dumpname is not None:
-        mappings = MemoryMapper(dumpname=args.dumpname).getMappings()
+        mappings = MemoryHandlerFactory(dumpname=args.dumpname).make_memory_handler()
     elif args.memfile is not None:
-        mappings = MemoryMapper(
+        mappings = MemoryHandlerFactory(
             memfile=args.memfile,
-            baseOffset=args.baseOffset).getMappings()
+            baseOffset=args.baseOffset).make_memory_handler()
     else:
         log.error('Nor PID, not memfile, not dumpname. What do you expect ?')
         raise RuntimeError(
@@ -634,11 +634,11 @@ def refresh(args):
 
     addr = int(args.addr, 16)
 
-    mappings = MemoryMapper(
+    mappings = MemoryHandlerFactory(
         pid=args.pid,
         memfile=args.memfile,
         dumpname=args.dumpname,
-        volname=args.volname).getMappings()
+        volname=args.volname).make_memory_handler()
     finder = StructFinder(mappings)
 
     memoryMap = finder.mappings.is_valid_address_value(addr)

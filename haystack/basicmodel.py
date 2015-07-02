@@ -76,7 +76,7 @@ class LoadableMembers(object):
         import ctypes
         haystack_addr = ctypes.addressof(self)
         m = mappings._get_mmap_for_haystack_addr(haystack_addr)
-        return m.ptov(haystack_addr)
+        return m._ptov(haystack_addr)
 
     def is_valid(self, mappings):
         """
@@ -400,7 +400,7 @@ class LoadableMembers(object):
             log.debug('%s %s is defined as a CString, loading %d bytes from 0x%lx '
                       'is_valid_address %s' % (attrname, attr, max_size, attr_obj_address,
                                                mappings.is_valid_address_value(attr_obj_address)))
-            txt, truncated = memoryMap.readCString(attr_obj_address, max_size)
+            txt, truncated = memoryMap.read_cstring(attr_obj_address, max_size)
             if truncated:
                 log.warning(
                     'buffer size was too small for this CString: %d' %
@@ -444,7 +444,7 @@ class LoadableMembers(object):
             # ERRROR
             # attr.contents=_attrType.from_buffer_copy(memoryMap.readStruct(attr_obj_address,
             # _attrType ))
-            contents = memoryMap.readStruct(attr_obj_address, _attrType)
+            contents = memoryMap.read_struct(attr_obj_address, _attrType)
 
             # save that validated and loaded ref and original addr so we dont
             # need to recopy it later

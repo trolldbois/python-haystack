@@ -317,7 +317,7 @@ def HEAP_get_frontend_chunks(self, mappings):
         for x in range(128):
             log.debug('finding lookaside %d at @%x' % (x, addr))
             m = mappings.get_mapping_for_address(addr)
-            st = m.readStruct(addr, HEAP_LOOKASIDE)
+            st = m.read_struct(addr, HEAP_LOOKASIDE)
             # load members on self.FrontEndHeap car c'est un void *
             for free in st.iterateList('ListHead'):  # single link list.
                 # TODO delete this free from the heap-segment entries chunks
@@ -328,7 +328,7 @@ def HEAP_get_frontend_chunks(self, mappings):
     elif self.FrontEndHeapType == 2:  # win7 per default
         log.debug('finding frontend at @%x' % (addr))
         m = mappings.get_mapping_for_address(addr)
-        st = m.readStruct(addr, LFH_HEAP)
+        st = m.read_struct(addr, LFH_HEAP)
         # LFH is a big chunk allocated by the backend allocator, called subsegment
         # but rechopped as small chunks of a heapbin.
         # Active subsegment hold that big chunk.
@@ -350,7 +350,7 @@ def HEAP_get_frontend_chunks(self, mappings):
                     #log.debug('NULL pointer items')
                     continue
                 m = mappings.get_mapping_for_address(items_addr)
-                subsegment = m.readStruct(items_addr, HEAP_SUBSEGMENT)
+                subsegment = m.read_struct(items_addr, HEAP_SUBSEGMENT)
                 # log.debug(subsegment)
                 # TODO current subsegment.SFreeListEntry is on error at some depth.
                 # bad pointer value on the second subsegment
@@ -500,7 +500,7 @@ def HEAP_getFreeLists_by_blocksindex(self, mappings):
     while bi_addr != 0:
         log.debug('BLocksIndex is at %x' % (bi_addr))
         m = mappings.get_mapping_for_address(bi_addr)
-        bi = m.readStruct(bi_addr, HEAP_LIST_LOOKUP)
+        bi = m.read_struct(bi_addr, HEAP_LIST_LOOKUP)
         """
             ('ExtendedLookup', POINTER(HEAP_LIST_LOOKUP)),
             ('ArraySize', __uint32_t),
@@ -536,7 +536,7 @@ def HEAP_ENTRY_decode(chunk_header, heap):
     """returns a decoded copy """
     # contains the Size
     # 32 bits: struct__HEAP_ENTRY_0_0
-    # FIXME BUG, we need to use _0_0_0_0 for 64 bits, otherwise 
+    # FIXME BUG, we need to use _0_0_0_0 for 64 bits, otherwise
     # we are reading bad data
     # 64 bits: struct__HEAP_ENTRY_0_0_0_0
     chunk_len = ctypes.sizeof(struct__HEAP_ENTRY_0_0)
@@ -568,7 +568,7 @@ HEAP_ENTRY.decode = HEAP_ENTRY_decode
 
 def _get_chunk(mappings, heap, entry_addr):
     m = mappings.get_mapping_for_address(entry_addr)
-    chunk_header = m.readStruct(entry_addr, HEAP_ENTRY)
+    chunk_header = m.read_struct(entry_addr, HEAP_ENTRY)
     mappings.keepRef(chunk_header, HEAP_ENTRY, entry_addr)
     chunk_header._orig_address_ = entry_addr
     return chunk_header

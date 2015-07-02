@@ -33,7 +33,7 @@ class TestMemoryDumper(unittest.TestCase):
         if not os.geteuid() == 0:
             #raise RuntimeError(
             raise unittest.SkipTest(
-                "Memory dump test can only be run as root. Please sudo")
+                "MemoryHandler dump test can only be run as root. Please sudo")
 
     def get_folder_size(self, folder):
         folder_size = 0
@@ -161,7 +161,7 @@ class TestMemoryDumper32(TestMemoryDumper):
 
         # test opening by dump_loader
         from haystack import dump_loader
-        from haystack.mappings.base import Memory
+        from haystack.mappings.base import MemoryHandler
         # PYDOC
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
@@ -169,7 +169,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             out1,
             cpu=self.cpu_bits,
             os_name=self.os_name)
-        self.assertIsInstance(mappings1, Memory)
+        self.assertIsInstance(mappings1, MemoryHandler)
 
         mappings2 = dump_loader.load(
             out2,

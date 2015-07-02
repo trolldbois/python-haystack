@@ -191,7 +191,7 @@ class PointerSearcher(AbstractSearcher):
     """
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word in self.getTargetMapping():
             return True
         return False
@@ -223,7 +223,7 @@ class AbstractEnumerator(AbstractSearcher):
 class PointerEnumerator(AbstractEnumerator):
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word in self.getTargetMapping():
             return True, word
         return False, None
@@ -236,7 +236,7 @@ class NullSearcher(AbstractSearcher):
     """
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word == 0:
             return True
         return False

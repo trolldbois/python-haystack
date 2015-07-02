@@ -672,7 +672,7 @@ class AnonymousStructInstance():
     def bytes(self):
         if self._bytes is None:
             m = self._mappings.get_mapping_for_address(self._vaddr)
-            self._bytes = m.readBytes(
+            self._bytes = m.read_bytes(
                 self._vaddr,
                 self._size)  # TODO re_string.Nocopy
         return self._bytes

@@ -222,7 +222,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         searcher = pointerfinder.PointerSearcher(self.mapping)
         for vaddr in searcher:
             # searcher should return [(offset, value)]
-            word = self.mapping.readWord(vaddr)
+            word = self.mapping.read_word(vaddr)
             offset = vaddr - start
             self.pointers.addToGroup(
                 widgets.Word(

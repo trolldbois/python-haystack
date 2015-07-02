@@ -32,9 +32,11 @@ import logging
 # haystack
 from haystack import utils
 from haystack import config
-from haystack.abc import base
+from haystack.abc import interfaces
+import haystack.dump_loader
 
 from haystack.structures import heapwalker
+import haystack.structures.heapwalker
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -48,7 +50,7 @@ log = logging.getLogger('base')
 
 
 
-class AMemoryMapping(base.IMemoryMapping):
+class AMemoryMapping(interfaces.IMemoryMapping):
 
     """
     Just the metadata.
@@ -118,7 +120,7 @@ class AMemoryMapping(base.IMemoryMapping):
                 requested = buf_len
             else:
                 requested = remaining
-            data = self.readBytes(covered, requested)
+            data = self.read_bytes(covered, requested)
             if data == "":
                 break
             offset = data.find(bytestr)
@@ -131,14 +133,14 @@ class AMemoryMapping(base.IMemoryMapping):
             remaining -= skip
         return
 
-    def readCString(self, address, max_size, chunk_length=256):
+    def read_cstring(self, address, max_size, chunk_length=256):
         ''' identic to process.readCString '''
         string = []
         size = 0
         truncated = False
         while True:
             done = False
-            data = self.readBytes(address, chunk_length)
+            data = self.read_bytes(address, chunk_length)
             if '\0' in data:
                 done = True
                 data = data[:data.index('\0')]
@@ -154,7 +156,7 @@ class AMemoryMapping(base.IMemoryMapping):
             address += chunk_length
         return ''.join(string), truncated
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start
         if ret < 0 or ret > len(self):
             raise ValueError(
@@ -162,35 +164,41 @@ class AMemoryMapping(base.IMemoryMapping):
                 (vaddr, ret))
         return ret
 
-    def ptov(self, paddr):
-        pstart = self.vtop(self.start)
+    def _ptov(self, paddr):
+        pstart = self._vtop(self.start)
         vaddr = paddr - pstart
         return vaddr
 
     # ---- to implement if needed
-    def readWord(self, address):
+    def read_word(self, address):
         raise NotImplementedError(self)
 
-    def readBytes(self, address, size):
+    def read_bytes(self, address, size):
         raise NotImplementedError(self)
 
-    def readStruct(self, address, struct):
+    def read_struct(self, address, struct):
         raise NotImplementedError(self)
 
-    def readArray(self, address, basetype, count):
+    def read_array(self, address, basetype, count):
         raise NotImplementedError(self)
 
-class Memory(base.IMemory,base.IMemoryCache):
+class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     """List of memory mappings for one process"""
 
-    def __init__(self, lst, name='noname'):
-        if lst is None:
-            self.mappings = []
-        elif not isinstance(lst, list):
+    # FIXME move out. ZERO code here.
+    def __init__(self, mappings, target, name='noname'):
+        """Set the list of IMemoryMapping and the ITargetPlatform
+
+        :param mappings: list of IMemoryMapping
+        :param target: the ITargetPlatform
+        :return: IMemoryHandler, self
+        :rtype: IMemoryHandler
+        """
+        if not isinstance(mappings, list):
             raise TypeError('Please feed me a list')
-        else:
-            self.mappings = list(lst)
+        self.__mappings = mappings
+        self._target = target
         self.config = None
         self.name = name
         self.__heaps = None
@@ -250,15 +258,15 @@ class Memory(base.IMemory,base.IMemoryCache):
     # FIXME incorrect API
     def _get_mapping(self, pathname):
         mmap = None
-        if len(self.mappings) >= 1:
-            mmap = [m for m in self.mappings if m.pathname == pathname]
+        if len(self.__mappings) >= 1:
+            mmap = [m for m in self.__mappings if m.pathname == pathname]
         if len(mmap) < 1:
             raise IndexError('No mmap of pathname %s' % (pathname))
         return mmap
 
     def get_mapping_for_address(self, vaddr):
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
-        for m in self.mappings:
+        for m in self.__mappings:
             if vaddr in m:
                 return m
         return False
@@ -289,7 +297,7 @@ class Memory(base.IMemory,base.IMemoryCache):
     def get_heaps(self):
         """Find heap type and returns mappings with heaps"""
         if self.__heaps is None:
-            self.__heap_finder = heapwalker.make_heap_walker(self)
+            self.__heap_finder = haystack.structures.heapwalker.make_heap_walker(self)
             self.__heaps = self.__heap_finder.get_heap_mappings(self)
             # if len(self.__heaps) == 0:
             #    raise RuntimeError("No heap found")
@@ -297,7 +305,7 @@ class Memory(base.IMemory,base.IMemoryCache):
 
     def _reset_config(self):
         # This is where the config is set for all maps.
-        for m in self.mappings:
+        for m in self.__mappings:
             m.config = self.config
         return
 
@@ -308,21 +316,9 @@ class Memory(base.IMemory,base.IMemoryCache):
 
     def append(self, m):
         assert isinstance(m, AMemoryMapping)
-        self.mappings.append(m)
+        self.__mappings.append(m)
         if self.config is not None:
             m.config = self.config
-
-    def get_os_name(self):
-        if self.__os_name is not None:
-            return self.__os_name
-        self.__os_name = heapwalker.detect_os(self.mappings)
-        return self.__os_name
-
-    def get_cpu_bits(self):
-        if self.__cpu_bits is not None:
-            return self.__cpu_bits
-        self.__cpu_bits = heapwalker.detect_cpu(self.mappings, self.__os_name)
-        return self.__cpu_bits
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
@@ -363,22 +359,22 @@ class Memory(base.IMemory,base.IMemoryCache):
         return False
 
     def __contains__(self, vaddr):
-        for m in self.mappings:
+        for m in self.__mappings:
             if vaddr in m:
                 return True
         return False
 
     def __len__(self):
-        return len(self.mappings)
+        return len(self.__mappings)
 
     def __getitem__(self, i):
-        return self.mappings[i]
+        return self.__mappings[i]
 
     def __setitem__(self, i, val):
         raise NotImplementedError()
 
     def __iter__(self):
-        return iter(self.mappings)
+        return iter(self.__mappings)
 
     def reset(self):
         """Clean the book"""

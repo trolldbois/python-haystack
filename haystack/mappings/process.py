@@ -16,7 +16,7 @@ from weakref import ref
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
 from haystack import types
 from haystack import utils
-from haystack.mappings.base import Memory, AMemoryMapping
+from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
 __author__ = "Loic Jaquemet"
@@ -82,21 +82,21 @@ class ProcessMemoryMapping(AMemoryMapping):
         #self._base = self._process()
         self._base = process
 
-    def readWord(self, address):
-        word = self._base.readWord(address)
+    def read_word(self, address):
+        word = self._base.read_word(address)
         return word
 
-    def readBytes(self, address, size):
-        data = self._base.readBytes(address, size)
+    def read_bytes(self, address, size):
+        data = self._base.read_bytes(address, size)
         return data
 
-    def readStruct(self, address, struct):
-        struct = self._base.readStruct(address, struct)
+    def read_struct(self, address, struct):
+        struct = self._base.read_struct(address, struct)
         struct._orig_address_ = address
         return struct
 
-    def readArray(self, address, basetype, count):
-        array = self._base.readArray(address, basetype, count)
+    def read_array(self, address, basetype, count):
+        array = self._base.read_array(address, basetype, count)
         return array
 
     def isMmaped(self):
@@ -115,7 +115,7 @@ class ProcessMemoryMapping(AMemoryMapping):
             # self._local_mmap_content = self._process().readArray(self.start,
             # ctypes.c_ubyte, len(self) ) # keep ref
             self._local_mmap_content = utils.bytes2array(
-                self._process().readBytes(
+                self._process().read_bytes(
                     self.start,
                     len(self)),
                 ctypes.c_ubyte)
@@ -159,7 +159,7 @@ def readProcessMappings(process):
 
     before = None
     # save the current ctypes module.
-    mappings = Memory(None)
+    mappings = MemoryHandler(None)
     # FIXME Debug, but probably useless now that ctypes is in config
     if True:
         import ctypes

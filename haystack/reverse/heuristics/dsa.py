@@ -488,7 +488,7 @@ class EnrichedPointerFields(StructureAnalyser):
                 log.debug(
                     'there is no child structure enclosing pointed value %0.8x - %s' %
                     (value, e))
-                field.set_child_desc('Memory management space')
+                field.set_child_desc('MemoryHandler management space')
                 field.set_child_ctype('void')
                 field.set_name('ptr_void')
                 continue

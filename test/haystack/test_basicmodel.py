@@ -44,7 +44,7 @@ class TestLoadMembers(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_a'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        a = m.readStruct(offset, ctypes5_gen32.struct_a)
+        a = m.read_struct(offset, ctypes5_gen32.struct_a)
         ret = a.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
         import ctypes
@@ -61,7 +61,7 @@ class TestLoadMembers(SrcTests):
 
         offset = self.offsets['union_au'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        au = m.readStruct(offset, ctypes5_gen32.union_au)
+        au = m.read_struct(offset, ctypes5_gen32.union_au)
         ret = au.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
         self.assertEquals(int(self.sizes['union_au']), ctypes.sizeof(au))
@@ -76,7 +76,7 @@ class TestLoadMembers(SrcTests):
         # struct a - basic types
         offset = self.offsets['union_b'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        b = m.readStruct(offset, ctypes5_gen32.union_b)
+        b = m.read_struct(offset, ctypes5_gen32.union_b)
         ret = b.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
         import ctypes
@@ -96,7 +96,7 @@ class TestLoadMembers(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_c'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        c = m.readStruct(offset, ctypes5_gen32.struct_c)
+        c = m.read_struct(offset, ctypes5_gen32.struct_c)
         ret = c.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
 
@@ -120,7 +120,7 @@ class TestLoadMembers(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
         m = self.mappings.get_mapping_for_address(offset)
-        d = m.readStruct(offset, ctypes5_gen32.struct_d)
+        d = m.read_struct(offset, ctypes5_gen32.struct_d)
         ret = d.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
 
@@ -155,7 +155,7 @@ class TestRealSSH(unittest.TestCase):
         from sslsnoop import ctypes_openssh
         from sslsnoop import ctypes_openssl
         m = self.mappings.get_mapping_for_address(self.known_offset)
-        ss = m.readStruct(self.known_offset, ctypes_openssh.session_state)
+        ss = m.read_struct(self.known_offset, ctypes_openssh.session_state)
         ret = ss.loadMembers(self.mappings, 10)
         self.assertTrue(ret)
 

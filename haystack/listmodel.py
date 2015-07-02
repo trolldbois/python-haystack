@@ -117,7 +117,7 @@ class ListModel(object):
                         (self.__class__.__name__, fieldname))
                     raise ValueError('error while validating address 0x%x type:%s @end:0x%x' % (link,
                                                                                                 structType.__name__, link + ctypes.sizeof(structType)))
-                st = memoryMap.readStruct(
+                st = memoryMap.read_struct(
                     link,
                     structType)  # point at the right offset
                 st._orig_address_ = link
@@ -289,7 +289,7 @@ def declare_double_linked_list_type(structType, forward, backward):
                     log.error(
                         "ValueError: 'the link of this linked list has a bad value'")
                     raise StopIteration
-                st = memoryMap.readStruct(addr, structType)
+                st = memoryMap.read_struct(addr, structType)
                 st._orig_address_ = addr
                 mappings.keepRef(st, structType, addr)
                 log.debug(

@@ -78,7 +78,7 @@ class LocalMemoryMapping(AMemoryMapping):
         # self._vbase = self.start + self._address # shit, thats wraps up...
         self._bytebuffer = None
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start + self._address
         if ret < self._address or ret > (self._address + len(self)):
             raise ValueError(
@@ -89,15 +89,15 @@ class LocalMemoryMapping(AMemoryMapping):
     def mmap(self):
         return self
 
-    def readWord(self, vaddr):
+    def read_word(self, vaddr):
         """Address have to be aligned!"""
-        laddr = self.vtop(vaddr)
+        laddr = self._vtop(vaddr)
         word = self.config.get_word_type().from_address(
             long(laddr)).value  # is non-aligned a pb ?, indianess is at risk
         return word
 
     def readBytes1(self, vaddr, size):
-        laddr = self.vtop(vaddr)
+        laddr = self._vtop(vaddr)
         #data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
         data = ctypes.string_at(laddr, size)  # real 0.5 % perf
         return data
@@ -107,15 +107,15 @@ class LocalMemoryMapping(AMemoryMapping):
         return self._bytebuffer[laddr:laddr + size]
     readBytes = readBytes1
 
-    def readStruct(self, vaddr, struct):
-        laddr = self.vtop(vaddr)
+    def read_struct(self, vaddr, struct):
+        laddr = self._vtop(vaddr)
         struct = struct.from_address(int(laddr))
         #struct = struct.from_buffer_copy(struct.from_address(int(laddr)))
         struct._orig_address_ = vaddr
         return struct
 
-    def readArray(self, vaddr, basetype, count):
-        laddr = self.vtop(vaddr)
+    def read_array(self, vaddr, basetype, count):
+        laddr = self._vtop(vaddr)
         array = (basetype * count).from_address(int(laddr))
         return array
 
@@ -186,7 +186,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
         # toddo use bitstring
         self._mmap().getByteBuffer()  # XXX FIXME buggy
         # force readBytes update
-        self.readBytes = self._base.readBytes
+        self.readBytes = self._base.read_bytes
 
     def getByteBuffer(self):
         return self._mmap().getByteBuffer()
@@ -233,7 +233,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                         ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
                 else:  # fallback with no creepy hacks
                     log.warning(
-                        'Memory Mapping content mmap-ed() (double copy of %s) : %s' %
+                        'MemoryHandler Mapping content mmap-ed() (double copy of %s) : %s' %
                         (self._memdump.__class__, self))
                     # we have the bytes
                     local_mmap_bytebuffer = mmap.mmap(
@@ -251,7 +251,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     ctypes.c_ubyte)
                 self._memdump.close()
                 log.warning(
-                    'Memory Mapping content copied to ctypes array : %s' %
+                    'MemoryHandler Mapping content copied to ctypes array : %s' %
                     (self))
             # make that _base
             self._base = LocalMemoryMapping.fromAddress(
@@ -259,23 +259,23 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     self._local_mmap_content))
             log.debug('LocalMemoryMapping done.')
         # redirect stuff
-        self.readWord = self._base.readWord
-        self.readArray = self._base.readArray
+        self.readWord = self._base.read_word
+        self.readArray = self._base.read_array
         self.readBytes = self._base.readBytes
-        self.readStruct = self._base.readStruct
+        self.readStruct = self._base.read_struct
         return self._base
 
-    def readWord(self, vaddr):
-        return self._mmap().readWord(vaddr)
+    def read_word(self, vaddr):
+        return self._mmap().read_word(vaddr)
 
-    def readBytes(self, vaddr, size):
+    def read_bytes(self, vaddr, size):
         return self._mmap().readBytes(vaddr, size)
 
-    def readStruct(self, vaddr, structType):
-        return self._mmap().readStruct(vaddr, structType)
+    def read_struct(self, vaddr, structType):
+        return self._mmap().read_struct(vaddr, structType)
 
-    def readArray(self, vaddr, basetype, count):
-        return self._mmap().readArray(vaddr, basetype, count)
+    def read_array(self, vaddr, basetype, count):
+        return self._mmap().read_array(vaddr, basetype, count)
 
     def __getstate__(self):
         d = dict(self.__dict__)
@@ -333,7 +333,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         """ returns self to force super() to read through us    """
         return self
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start
         if ret < 0 or ret > len(self):
             raise ValueError(
@@ -341,15 +341,15 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
                 (vaddr, ret))
         return ret
 
-    def readBytes(self, vaddr, size):
-        laddr = self.vtop(vaddr)
+    def read_bytes(self, vaddr, size):
+        laddr = self._vtop(vaddr)
         size = ctypes.sizeof((ctypes.c_ubyte * size))
         data = b''.join([struct.pack('B', x)
                          for x in self._local_mmap[laddr:laddr + size]])
         return data
 
-    def readStruct(self, vaddr, structType):
-        laddr = self.vtop(vaddr)
+    def read_struct(self, vaddr, structType):
+        laddr = self._vtop(vaddr)
         size = ctypes.sizeof(structType)
         # YES you DO need to have a copy, otherwise you finish with a allocated
         # struct in a read-only mmaped file. Not good if you want to changed members pointers after that.
@@ -362,9 +362,9 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         struct._orig_address_ = vaddr
         return struct
 
-    def readWord(self, vaddr):
+    def read_word(self, vaddr):
         """Address have to be aligned!"""
-        laddr = self.vtop(vaddr)
+        laddr = self._vtop(vaddr)
         word = self.config.get_word_type().from_buffer_copy(
             self._local_mmap[
                 laddr:laddr +
@@ -372,8 +372,8 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
             0).value  # is non-aligned a pb ?
         return word
 
-    def readArray(self, address, basetype, count):
-        laddr = self.vtop(address)
+    def read_array(self, address, basetype, count):
+        laddr = self._vtop(address)
         size = ctypes.sizeof((basetype * count))
         array = (
             basetype *

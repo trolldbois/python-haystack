@@ -23,7 +23,7 @@ PAGE_SIZE = 4096
 class MemoryMappingScene(QtGui.QGraphicsScene):
 
     '''
-    Binds a Memory mapping to a QGraphicsScene
+    Binds a MemoryHandler mapping to a QGraphicsScene
     '''
 
     def __init__(self, mapping, parent=None):
@@ -185,7 +185,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
             if self.mapping:
                 # read mapping value
                 addr = event.pos().y() * LINE_SIZE + event.pos().x()
-                value = self.mapping.readWord(self.mapping.start + addr)
+                value = self.mapping.read_word(self.mapping.start + addr)
                 log.debug('@0x%x: 0x%x' % (self.mapping.start + addr, value))
         else:
             # parent item, check for haystack types

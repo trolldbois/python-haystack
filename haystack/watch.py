@@ -67,7 +67,7 @@ def watch(opt):
         if not check_varname_for_type(varname, structType):
             return False
     # load the struct
-    mappings = memory_mapper.MemoryMapper(opt).getMappings()
+    mappings = memory_mapper.MemoryHandlerFactory(opt).make_memory_handler()
     finder = abouchet.StructFinder(mappings)
     # get the target memory map
     memoryMap = finder.mappings.is_valid_address_value(addr)

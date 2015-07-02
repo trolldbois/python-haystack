@@ -8,7 +8,7 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import unittest
 
-from haystack.mappings.base import Memory
+from haystack.mappings.base import MemoryHandler
 from haystack.reverse import pointerfinder
 import test_pattern
 
@@ -32,7 +32,7 @@ class TestPointer(test_pattern.SignatureTests):
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap,values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = Memory([mmap], 'test')
+        mappings = MemoryHandler([mmap], 'test')
         mappings.config = self.config
         mappings._reset_config()
         return mmap, values
