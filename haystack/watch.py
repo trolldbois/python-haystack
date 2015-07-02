@@ -33,12 +33,12 @@ def check_varname_for_type(varname, structType):
     import ctypes
     for v in varname:
         if not hasattr(st, v):
-            fields = ["%s: %s" % (n, t) for n, t in st.getFields()]
+            fields = ["%s: %s" % (n, t) for n, t in st.get_fields()]
             log.error(
                 '(%s.)%s does not exists in type %s\n\t%s' %
                 ('.'.join(done), v, st, '\n\t'.join(fields)))
             return False
-        st = st.getFieldType(v)
+        st = st.get_field_type(v)
         if ctypes.is_pointer_type(st):  # accept pointers
             st = model.get_subtype(st)
         done.append(v)

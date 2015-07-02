@@ -161,7 +161,7 @@ class TestMemoryDumper32(TestMemoryDumper):
 
         # test opening by dump_loader
         from haystack import dump_loader
-        from haystack.mappings.base import Mappings
+        from haystack.mappings.base import Memory
         # PYDOC
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
@@ -169,7 +169,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             out1,
             cpu=self.cpu_bits,
             os_name=self.os_name)
-        self.assertIsInstance(mappings1, Mappings)
+        self.assertIsInstance(mappings1, Memory)
 
         mappings2 = dump_loader.load(
             out2,

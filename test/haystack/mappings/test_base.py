@@ -15,7 +15,7 @@ from haystack import model
 from haystack import dump_loader
 from haystack import utils
 from haystack import types
-from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import readLocalProcessMappings
 
 log = logging.getLogger('test_memory_mapping')
@@ -110,8 +110,8 @@ class TestMappingsLinux(SrcTests):
         self.assertEquals(len(allocs), 2568)
 
     def test_get_mapping(self):
-        self.assertEquals(len(self.mappings.get_mapping('[heap]')), 1)
-        self.assertEquals(len(self.mappings.get_mapping('None')), 9)
+        self.assertEquals(len(self.mappings._get_mapping('[heap]')), 1)
+        self.assertEquals(len(self.mappings._get_mapping('None')), 9)
 
     def test_get_mapping_for_address(self):
         self.assertEquals(
@@ -119,7 +119,7 @@ class TestMappingsLinux(SrcTests):
             self.mappings.get_mapping_for_address(0xb84e02d3))
 
     def test_get_heap(self):
-        self.assertTrue(isinstance(self.mappings.get_heap(), MemoryMapping))
+        self.assertTrue(isinstance(self.mappings.get_heap(), AMemoryMapping))
         self.assertEquals(self.mappings.get_heap().start, 0xb84e0000)
         self.assertEquals(self.mappings.get_heap().pathname, '[heap]')
 
@@ -139,9 +139,9 @@ class TestMappingsLinux(SrcTests):
         self.assertEquals(len(self.mappings), 70)
 
     def test_getitem(self):
-        self.assertTrue(isinstance(self.mappings[0], MemoryMapping))
+        self.assertTrue(isinstance(self.mappings[0], AMemoryMapping))
         self.assertTrue(
-            isinstance(self.mappings[len(self.mappings) - 1], MemoryMapping))
+            isinstance(self.mappings[len(self.mappings) - 1], AMemoryMapping))
         with self.assertRaises(IndexError):
             self.mappings[0x0005c000]
 
@@ -230,7 +230,7 @@ class TestMappingsWin32(unittest.TestCase):
         model.reset()
 
     def test_get_context(self):
-        '''FIXME: maybe not the best idea to use a reverser in a 
+        '''FIXME: maybe not the best idea to use a reverser in a
         haystack.base test unit'''
         from haystack.reverse import context
         self.putty = context.get_context('test/dumps/putty/putty.1.dump')
@@ -262,8 +262,8 @@ class TestMappingsWin32(unittest.TestCase):
 
     def test_get_mapping(self):
         with self.assertRaises(IndexError):
-            self.assertEquals(len(self.mappings.get_mapping('[heap]')), 1)
-        self.assertEquals(len(self.mappings.get_mapping('None')), 71)
+            self.assertEquals(len(self.mappings._get_mapping('[heap]')), 1)
+        self.assertEquals(len(self.mappings._get_mapping('None')), 71)
 
     def test_get_mapping_for_address(self):
         m = self.mappings.get_mapping_for_address(0x005c0000)
@@ -272,7 +272,7 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals(m.end, 0x00619000)
 
     def test_get_heap(self):
-        self.assertTrue(isinstance(self.mappings.get_heap(), MemoryMapping))
+        self.assertTrue(isinstance(self.mappings.get_heap(), AMemoryMapping))
         self.assertEquals(self.mappings.get_heap().start, 0x005c0000)
         self.assertEquals(self.mappings.get_heap().pathname, 'None')
         m = self.mappings.get_heap()
@@ -306,9 +306,9 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals(len(self.mappings), 403)
 
     def test_getitem(self):
-        self.assertTrue(isinstance(self.mappings[0], MemoryMapping))
+        self.assertTrue(isinstance(self.mappings[0], AMemoryMapping))
         self.assertTrue(
-            isinstance(self.mappings[len(self.mappings) - 1], MemoryMapping))
+            isinstance(self.mappings[len(self.mappings) - 1], AMemoryMapping))
         with self.assertRaises(IndexError):
             self.mappings[0x0005c000]
 

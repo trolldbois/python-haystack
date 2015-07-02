@@ -3,16 +3,18 @@
 
 """Gets memory mappings from a PID or a haystack dump."""
 
-import mmap
 import logging
-import os
 import time
 
+import os
+
 from haystack.dbg import PtraceDebugger
+
+
 # local
 from haystack import config
 from haystack import dump_loader
-from haystack.mappings.base import Mappings
+from haystack.mappings.base import Memory
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import MemoryDumpMemoryMapping
 from haystack.mappings.process import readProcessMappings
@@ -71,7 +73,7 @@ class MemoryMapper:
                 baseOffset,
                 baseOffset +
                 size)  # is that valid ?
-        mappings = Mappings([mem], memfile.name)
+        mappings = Memory([mem], memfile.name)
         return mappings
 
     def initPid(self, pid, mmap):

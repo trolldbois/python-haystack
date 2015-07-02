@@ -3,23 +3,19 @@
 
 """Search for a known structure type in a process memory. """
 
-import argparse
 import logging
-import os
 import pickle
 import sys
 import time
 import subprocess
 import json
 
-from haystack import model
-from haystack import argparse_utils
-from haystack import utils
+import os
+
 from haystack import basicmodel
 from haystack.memory_mapper import MemoryMapper as MemoryMapper
 from haystack.outputters import text
 from haystack.outputters import python
-
 from haystack.utils import xrange
 
 __author__ = "Loic Jaquemet"

@@ -3,6 +3,25 @@ Ongoing:
  - Volatility memorymap
  - merge in master
 
+ - move interfaces into an interfaces module, maybe use abc.
+
+Changes to architecture.txt:
+ - IMemory: there is a memory dump concept. 
+ - IMemoryLoader: a memory_loader helper reads the dump and creates a IMemory instance
+    + sets the ITargetPlatform information (cpu, wordsize)
+        + the ITargetPlatform wraps a CTypesProxy instance
+    + sets the list of IMemoryMapping
+ - the IMemory instance is the one way access to:
+    + the list of IMemoryMapping
+    + the CTypesProxy ctypes proxy object for this Memory host
+    + the IHeapWalker helpers
+ - the memory l
+
+
+ - model should be an instance.
+ - mapping should represent the memory dump entity
+ - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
+
 
 2015-06:
  - keep track of changes in this file

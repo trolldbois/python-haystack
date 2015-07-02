@@ -11,8 +11,6 @@ This specific plugin handles basic types.
 """
 
 import logging
-import numbers
-import sys
 
 from haystack import utils
 from haystack import constraints
@@ -40,21 +38,21 @@ class LoadableMembers(object):
     # contraints on values TODO rename _expectedValues_
     expectedValues = dict()
 
-    def getFields(self):
+    def get_fields(self):
         """         Iterate over the fields and types of this structure, including inherited ones."""
-        return type(self).getFields()
+        return type(self).get_fields()
 
     @classmethod
-    def getFieldType(cls, fieldname):
+    def get_field_type(cls, fieldname):
         """ return a members type"""
         ret = [(n, fieldtype)
-               for n, fieldtype in cls.getFields() if n == fieldname]
+               for n, fieldtype in cls.get_fields() if n == fieldname]
         if len(ret) != 1:
             raise TypeError('No such field name %s in %s' % (fieldname, cls))
         return ret[0][1]
 
     @classmethod
-    def getFields(cls):
+    def get_fields(cls):
         mro = cls.mro()[:-3]  # cut Structure, _CData and object
         mro.reverse()
         me = mro.pop(-1)
@@ -62,7 +60,7 @@ class LoadableMembers(object):
         for typ in mro:  # firsts are first, cls is in here in [-1]
             if not hasattr(typ, '_fields_'):
                 continue
-            for name, vtyp in typ.getFields():
+            for name, vtyp in typ.get_fields():
                 yield (name, vtyp)
                 #ret.append((name, vtyp))
         # print mines.
@@ -80,7 +78,7 @@ class LoadableMembers(object):
         m = mappings._get_mmap_for_haystack_addr(haystack_addr)
         return m.ptov(haystack_addr)
 
-    def isValid(self, mappings):
+    def is_valid(self, mappings):
         """
         Checks if each members has coherent data
 
@@ -104,14 +102,14 @@ class LoadableMembers(object):
                      check get_pointee_address against is_valid_address()
                             if False, return False, else continue
         """
-        valid = self._isValid(mappings)
+        valid = self._is_valid(mappings)
         log.debug('-- <%s> isValid = %s' % (self.__class__.__name__, valid))
         return valid
 
-    def _isValid(self, mappings):
+    def _is_valid(self, mappings):
         """ real implementation.    check expectedValues first, then the other fields """
         log.debug(' -- <%s> isValid --' % (self.__class__.__name__))
-        _fieldsTuple = self.getFields()
+        _fieldsTuple = self.get_fields()
         myfields = dict(_fieldsTuple)
         done = []
         # check expectedValues first
@@ -122,19 +120,19 @@ class LoadableMembers(object):
             attr = getattr(self, attrname)
             if expected is constraints.IgnoreMember:
                 continue
-            if not self._isValidAttr(attr, attrname, attrtype, mappings):
+            if not self._is_valid_attr(attr, attrname, attrtype, mappings):
                 return False
         # check the rest for validation
         todo = [(name, typ)
-                for name, typ in self.getFields() if name not in done]
+                for name, typ in self.get_fields() if name not in done]
         for attrname, attrtype, in todo:
             attr = getattr(self, attrname)
-            if not self._isValidAttr(attr, attrname, attrtype, mappings):
+            if not self._is_valid_attr(attr, attrname, attrtype, mappings):
                 return False
         # validation done
         return True
 
-    def _isValidAttr(self, attr, attrname, attrtype, mappings):
+    def _is_valid_attr(self, attr, attrname, attrtype, mappings):
         """ Validation of a single member """
         import ctypes
         # a)
@@ -154,7 +152,7 @@ class LoadableMembers(object):
         elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
             # do i need to load it first ? becaus it should be memcopied with
             # the super()..
-            if not attr.isValid(mappings):
+            if not attr.is_valid(mappings):
                 log.debug(
                     'structType: %s %s %s isValid FALSE' %
                     (attrname, attrtype, repr(attr)))
@@ -187,7 +185,7 @@ class LoadableMembers(object):
             for i in range(0, attrLen):
                 # FIXME BUG DOES NOT WORK - offsetof("%s[%d]") is called,
                 # and %s exists, not %s[%d]
-                if not self._isValidAttr(attr[i], "%s[%d]" % (attrname, i), elType,
+                if not self._is_valid_attr(attr[i], "%s[%d]" % (attrname, i), elType,
                                          mappings):
                     return False
             return True
@@ -306,12 +304,12 @@ class LoadableMembers(object):
                 self.__class__.__name__))
             return True
         maxDepth -= 1
-        if not self.isValid(mappings):
+        if not self.is_valid(mappings):
             return False
         log.debug('- <%s> do loadMembers -' % (self.__class__.__name__))
         # go through all members. if they are pointers AND not null AND in
         # valid memorymapping AND a struct type, load them as struct pointers
-        for attrname, attrtype in self.getFields():
+        for attrname, attrtype in self.get_fields():
             attr = getattr(self, attrname)
             # shorcut ignores
             if attrname in self.expectedValues:
@@ -495,7 +493,7 @@ class LoadableMembers(object):
         else:
             s = "# <%s at @???>\n" % (self.__class__.__name__)
         # we need to ensure _mappings_ is defined in all children.
-        for field, attrtype in self.getFields():
+        for field, attrtype in self.get_fields():
             attr = getattr(self, field)
             if ctypes.is_basic_type(attrtype):
                 # basic type, ctypes or python

@@ -60,3 +60,14 @@ search_struct_memfile = abouchet.search_struct_memfile
 search_struct_dumpname = abouchet.search_struct_dumpname
 refresh = abouchet.refresh
 show_dumpname = abouchet.show_dumpname
+
+
+# TODO remove from config & abc.config
+def _set_rlimits():
+    """set rlimits to maximum allowed"""
+    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(
+        resource.RLIMIT_NOFILE,
+        (maxnofile[1],
+         maxnofile[1]))
+    return

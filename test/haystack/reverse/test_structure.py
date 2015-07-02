@@ -4,14 +4,10 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
-import sys
 
-from haystack import model
+import os
+
 from haystack.reverse import context
 
 __author__ = "Loic Jaquemet"
@@ -46,13 +42,13 @@ class TestStructure(unittest.TestCase):
         for s in self.context.listStructures():
             self.dsa.analyze_fields(s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
-                self.assertEqual(len(s.getFields()), 3)  # 1, 2 and padding
+                self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
                 self.assertEqual(len(s.getPointerFields()), 1)
             elif len(s) == 20:  # test3, 1 pointer on create
                 # fields, no heuristic to detect medium sized int
                 # TODO untyped of size < 8 == int * x
                 # print s.toString()
-                self.assertEqual(len(s.getFields()), 3)  # discutable
+                self.assertEqual(len(s.get_fields()), 3)  # discutable
                 self.assertEqual(len(s.getPointerFields()), 1)
         return
 
@@ -69,7 +65,7 @@ class TestStructure(unittest.TestCase):
             log.debug('RESOLVATION: %s' % (s.is_resolved()))
             self.pta.analyze_fields(s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
-                self.assertEqual(len(s.getFields()), 3)  # 1, 2 and padding
+                self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
                 self.assertEqual(len(s.getPointerFields()), 1)
 
     def test_reset(self):

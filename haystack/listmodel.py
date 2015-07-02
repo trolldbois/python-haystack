@@ -21,9 +21,9 @@ You have to use one of the Helpers function:
 
 
 """
-from haystack import utils
-
 import logging
+
+from haystack import utils
 
 log = logging.getLogger('listmodel')
 
@@ -260,7 +260,7 @@ def declare_double_linked_list_type(structType, forward, backward):
     # test existence
     flinkType = getattr(structType, forward)
     blinkType = getattr(structType, backward)
-    d = dict(structType.getFields())
+    d = dict(structType.get_fields())
     flinkType = d[forward]
     blinkType = d[backward]
     if not ctypes.is_pointer_type(flinkType):

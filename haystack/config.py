@@ -4,10 +4,11 @@
 """Default configuration for filenames, output directories and such."""
 
 import logging
-import os
 import platform
 import resource
 import shutil
+
+import os
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -181,7 +182,6 @@ def make_config(cpu=None, os_name=None):
 
 def make_config_win_32():
     """    """
-    from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(4, 4, 8)
     return cfg
@@ -189,7 +189,6 @@ def make_config_win_32():
 
 def make_config_win_64():
     """    """
-    from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(8, 8, 8)
     return cfg
@@ -197,7 +196,6 @@ def make_config_win_64():
 
 def make_config_linux_32():
     """    """
-    from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(4, 4, 12)
     return cfg
@@ -205,7 +203,6 @@ def make_config_linux_32():
 
 def make_config_linux_64():
     """    """
-    from haystack import types
     cfg = ConfigClass()
     cfg.set_word_size(8, 8, 16)
     return cfg

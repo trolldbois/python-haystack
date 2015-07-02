@@ -26,7 +26,6 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 import logging
-import sys
 
 log = logging.getLogger('model')
 
@@ -87,7 +86,7 @@ def copyGeneratedClasses(src, dst):
     :param me : dst module
     :param src : src module, generated
     """
-    #FIXME - definively required. 
+    #FIXME - definively required.
     # pylint: disable=reimported
     import ctypes
     log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
@@ -118,7 +117,7 @@ def __createPOPOClasses(targetmodule):
     #FIXME maybe required
     # pylint: disable=reimported
     import ctypes
-    from haystack import basicmodel
+
     _created = 0
     for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
         if issubclass(

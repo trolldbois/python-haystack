@@ -52,7 +52,7 @@ class RecursiveTextOutputter(Outputter):
                 obj.__class__.__name__, obj._orig_address_)
         else:
             s = "{ # <%s at 0x???>" % (obj.__class__.__name__)
-        for field, typ in obj.getFields():
+        for field, typ in obj.get_fields():
             attr = getattr(obj, field)
             s += '\n%s"%s": %s' % (prefix,
                                    field,

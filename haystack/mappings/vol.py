@@ -10,16 +10,12 @@ http://computer.forensikblog.de/en/2007/05/walking-the-vad-tree.html
 http://www.dfrws.org/2007/proceedings/p62-dolan-gavitt.pdf
 """
 
-import os
 import logging
 import struct
-#import mmap
 from functools import partial
 
 # haystack
-from haystack import utils
-from haystack.mappings.base import MemoryMapping
-from haystack.mappings.base import Mappings
+from haystack.mappings.base import Memory, AMemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -32,14 +28,14 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('volmapping')
 
 
-class VolatilityProcessMapping(MemoryMapping):
+class VolatilityProcessMappingA(AMemoryMapping):
 
     """Process memory mapping using volatility.
     """
 
     def __init__(self, address_space, start, end, permissions='r--',
                  offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,
@@ -96,7 +92,7 @@ class VolatilityProcessMapper:
         for mod in sys.modules.keys():
             if 'volatility' in mod:
                 del sys.modules[mod]
-    
+
 
     def _init_volatility(self):
         #import sys
@@ -176,7 +172,7 @@ def my_render_text(mapper, cmd, outfd, data):
             elif vad.FileObject:
                 pathname = str(vad.FileObject.FileName or '')
 
-            pmap = VolatilityProcessMapping(
+            pmap = VolatilityProcessMappingA(
                 address_space,
                 start,
                 end,
@@ -188,7 +184,7 @@ def my_render_text(mapper, cmd, outfd, data):
 
             maps.append(pmap)
 
-    mappings = Mappings(maps)
+    mappings = Memory(maps)
     # print mappings
     mappings.init_config()
     mapper.mappings = mappings

@@ -21,16 +21,14 @@ Functions:
 
 import logging
 import argparse
-import os
 import sys
-import tarfile
 import zipfile  # relatively useless
 
+import os
+
 from haystack import config
-from haystack import utils
 from haystack import argparse_utils
-from haystack.mappings.base import MemoryMapping
-from haystack.mappings.base import Mappings
+from haystack.mappings.base import Memory, AMemoryMapping
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import FilenameBackedMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
@@ -154,7 +152,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
     def _load_memory_mappings(self):
         """ make the python objects"""
-        self.mappings = Mappings(None, self.dumpname)
+        self.mappings = Memory(None, self.dumpname)
         for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
             start, end = int(_start, 16), int(_end, 16)
             offset = int(offset, 16)
@@ -173,7 +171,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                     mmap_pathname)
             except (IOError, KeyError) as e:
                 log.debug('Ignore absent file : %s' % (e))
-                mmap = MemoryMapping(start, end, permissions, offset,
+                mmap = AMemoryMapping(start, end, permissions, offset,
                                      major_device, minor_device, inode, pathname=mmap_pathname)
                 self.mappings.append(mmap)
                 continue
@@ -192,7 +190,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             if isinstance(self.archive, zipfile.ZipFile):  # ZipExtFile is lame
                 log.warning(
                     'Using a local memory mapping . Zipfile sux. thx ruby.')
-                mmap = MemoryMapping(start, end, permissions, offset,
+                mmap = AMemoryMapping(start, end, permissions, offset,
                                      major_device, minor_device, inode, pathname=mmap_pathname)
                 mmap = LocalMemoryMapping.fromBytebuffer(
                     mmap,
@@ -283,7 +281,7 @@ class KCoreDumpLoader(MemoryDumpLoader):
         end = 0xc090d000
         kmap = MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0,
                                                       major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpname)
-        self.mappings = Mappings([kmap], self.dumpname)
+        self.mappings = Memory([kmap], self.dumpname)
 
 
 """Order of attempted loading"""
@@ -305,8 +303,6 @@ def _heap(opt):
     """find the heap in a haystack dump."""
     # FIXME TU
     mappings = load(opt.dumpname)
-    from haystack.structures import libc as linux
-    from haystack.structures import win32
     for m in mappings:
         pass
 

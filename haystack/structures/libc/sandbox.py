@@ -183,7 +183,7 @@ def test3():
         m = mappings.get_mapping_for_address(ptr)
         if m.pathname not in IGNORES:
             # find the right localmmap
-            localmaps = localmappings.get_mapping(m.pathname)
+            localmaps = localmappings._get_mapping(m.pathname)
             found = False
             for localm in localmaps:
                 if localm.offset == m.offset and localm.permissions == m.permissions:

@@ -10,17 +10,13 @@ Classes:
 import os
 import logging
 import re
-import struct
-import mmap
 from weakref import ref
 
 # haystack
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
 from haystack import types
 from haystack import utils
-from haystack import config
-from haystack.mappings.base import MemoryMapping
-from haystack.mappings.base import Mappings
+from haystack.mappings.base import Memory, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
 __author__ = "Loic Jaquemet"
@@ -48,7 +44,7 @@ PROC_MAP_REGEX = re.compile(
     r'(?: +(.*))?')
 
 
-class ProcessMemoryMapping(MemoryMapping):
+class ProcessMemoryMapping(AMemoryMapping):
 
     """
     Process memory mapping (metadata about the mapping).
@@ -69,7 +65,7 @@ class ProcessMemoryMapping(MemoryMapping):
 
     def __init__(self, process, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,
@@ -163,7 +159,7 @@ def readProcessMappings(process):
 
     before = None
     # save the current ctypes module.
-    mappings = Mappings(None)
+    mappings = Memory(None)
     # FIXME Debug, but probably useless now that ctypes is in config
     if True:
         import ctypes

@@ -38,7 +38,7 @@ import ctypes
 # haystack
 from haystack import utils
 from haystack import config  # MMAP_HACK
-from haystack.mappings.base import MemoryMapping
+from haystack.mappings.base import AMemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -51,7 +51,7 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('filemappings')
 
 
-class LocalMemoryMapping(MemoryMapping):
+class LocalMemoryMapping(AMemoryMapping):
 
     """
     Local memory mapping.
@@ -60,7 +60,7 @@ class LocalMemoryMapping(MemoryMapping):
 
     def __init__(self, address, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,
@@ -154,7 +154,7 @@ class LocalMemoryMapping(MemoryMapping):
         return el
 
 
-class MemoryDumpMemoryMapping(MemoryMapping):
+class MemoryDumpMemoryMapping(AMemoryMapping):
 
     """
     A memoryMapping wrapper around a memory file dump.
@@ -166,7 +166,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
 
     def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0,
                  major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,

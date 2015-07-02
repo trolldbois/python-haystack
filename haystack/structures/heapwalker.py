@@ -99,7 +99,7 @@ def _detect_cpu_arch_pe(mappings):
         try:
             head = m.readBytes(m.start, 0x1000)
             pe = pefile.PE(data=head, fast_load=True)
-            # only get the dirst one that works
+            # only get the First one that works
             if pe is None:
                 continue
             break
@@ -140,7 +140,7 @@ def _detect_cpu_arch_elf(mappings):
 def make_heap_walker(mappings):
     """try to find what type of heaps are """
     from haystack.mappings import base
-    if not isinstance(mappings, base.Mappings):
+    if not isinstance(mappings, base.Memory):
         raise TypeError('Feed me a Mappings')
     # ctypes is preloaded with proper arch
     os_name = mappings.get_os_name()
@@ -172,7 +172,7 @@ class HeapFinder(object):
     def is_heap(self, mappings, mapping):
         """test if a mapping is a heap"""
         from haystack.mappings import base
-        if not isinstance(mappings, base.Mappings):
+        if not isinstance(mappings, base.Memory):
             raise TypeError('Feed me a Mappings object')
         heap = self.read_heap(mapping)
         load = heap.loadMembers(mappings, self.heap_validation_depth)
@@ -188,7 +188,7 @@ class HeapFinder(object):
     def get_heap_mappings(self, mappings):
         """return the list of heaps that load as heaps"""
         from haystack.mappings import base
-        if not isinstance(mappings, base.Mappings):
+        if not isinstance(mappings, base.Memory):
             raise TypeError('Feed me a Mappings object')
         heap_mappings = []
         for mapping in mappings:

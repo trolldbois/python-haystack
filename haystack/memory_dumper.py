@@ -5,21 +5,17 @@
 
 import logging
 import argparse
-import os
-import pickle
 import shutil
 import sys
-import tarfile
 import tempfile
-import time
-import zipfile
 
+import os
 
 from haystack import dbg
 from haystack import utils
 from haystack import argparse_utils
-from haystack import config
 from haystack.mappings.process import readProcessMappings
+
 
 
 #import code

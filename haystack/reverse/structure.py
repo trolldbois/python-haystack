@@ -4,27 +4,20 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-import collections
 import logging
-import os
 import pickle
 import itertools
 import numbers
-import math
 import weakref
+import ctypes
+
+import os
 
 from haystack.config import ConfigClass as Config
-from haystack import dump_loader
-from haystack import model
-
-import fieldtypes
 from fieldtypes import Field, FieldType, makeArrayField
 import pattern
 import utils
-
 import lrucache
-
-import ctypes
 
 log = logging.getLogger('structure')
 
@@ -183,6 +176,7 @@ class StructureNotResolvedError(Exception):
     pass
 
 
+# should not be a new style class
 class AnonymousStructInstance():
 
     '''
@@ -645,7 +639,7 @@ class AnonymousStructInstance():
         #  return False
         return field._target_field.isString()
 
-    def getFields(self):
+    def get_fields(self):
         return [f for f in self._fields]
 
     def getPointerFields(self):
@@ -790,7 +784,7 @@ class ReversedType(ctypes.Structure):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:
-        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.getFields()]
+        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()

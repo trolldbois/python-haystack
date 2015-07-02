@@ -32,6 +32,7 @@ import logging
 # haystack
 from haystack import utils
 from haystack import config
+from haystack.abc import base
 
 from haystack.structures import heapwalker
 
@@ -46,7 +47,8 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('base')
 
 
-class MemoryMapping:
+
+class AMemoryMapping(base.IMemoryMapping):
 
     """
     Just the metadata.
@@ -178,8 +180,7 @@ class MemoryMapping:
     def readArray(self, address, basetype, count):
         raise NotImplementedError(self)
 
-
-class Mappings:
+class Memory(base.IMemory,base.IMemoryCache):
 
     """List of memory mappings for one process"""
 
@@ -203,6 +204,7 @@ class Mappings:
         self.__required_maps = []
         # self._init_word_size()
 
+    # remove
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
         """
@@ -238,14 +240,15 @@ class Mappings:
 
     def get_user_allocations(self, heap, filterInUse=True):
         """changed when the dump is loaded"""
-        assert isinstance(heap, MemoryMapping)
+        assert isinstance(heap, AMemoryMapping)
         if self.__heap_finder is None:
             self.get_heaps()
 
         walker = self.__heap_finder.get_walker_for_heap(self, heap)
         return walker.get_user_allocations()
 
-    def get_mapping(self, pathname):
+    # FIXME incorrect API
+    def _get_mapping(self, pathname):
         mmap = None
         if len(self.mappings) >= 1:
             mmap = [m for m in self.mappings if m.pathname == pathname]
@@ -300,11 +303,11 @@ class Mappings:
 
     def get_stack(self):
         # FIXME wont work on windows.
-        stack = self.get_mapping('[stack]')[0]
+        stack = self._get_mapping('[stack]')[0]
         return stack
 
     def append(self, m):
-        assert isinstance(m, MemoryMapping)
+        assert isinstance(m, AMemoryMapping)
         self.mappings.append(m)
         if self.config is not None:
             m.config = self.config
@@ -467,3 +470,4 @@ class _book(object):
 
     def delRef(self, typ, addr):
         del self.refs[(typ, addr)]
+

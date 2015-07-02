@@ -10,13 +10,13 @@ import unittest
 from haystack import model
 from haystack import types
 from haystack.mappings.vol import VolatilityProcessMapper
-from haystack.mappings.vol import VolatilityProcessMapping
+from haystack.mappings.vol import VolatilityProcessMappingA
 
 log = logging.getLogger('test_vol')
 
 @unittest.skip("travis-ci does not like me - bouhouhou")
 class TestMapper(unittest.TestCase):
-    '''load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples 
+    '''load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples
     The malware analysis cookbook'''
 
     def setUp(self):
@@ -28,10 +28,10 @@ class TestMapper(unittest.TestCase):
 
 
     def test_init(self):
-        ''' check vad numbers with 
-        vol.py -f /home/jal/outputs/vol/zeus.vmem -p 856 vadwalk |wc -l 
+        ''' check vad numbers with
+        vol.py -f /home/jal/outputs/vol/zeus.vmem -p 856 vadwalk |wc -l
         5 headers lines to be removed from count
-        
+
         analysis here:
         https://malwarereversing.wordpress.com/2011/09/23/zeus-analysis-in-volatility-2-0/
         '''
@@ -79,7 +79,7 @@ class TestMapper(unittest.TestCase):
         for mstart in heaps:
             heap = mappings.get_mapping_for_address(mstart)
             res = heap.readStruct(heap.start,winheap.HEAP)
-            self.assertTrue(res.isValid(mappings))
+            self.assertTrue(res.is_valid(mappings))
 
         # testing that the list of heaps is always the same
         self.assertEquals(set(heaps), set([m.start for m in mappings.get_heaps()]))

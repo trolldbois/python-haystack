@@ -8,15 +8,12 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import operator
-import os
 import unittest
 import struct
 
-from haystack import model
 from haystack.reverse import pattern
 from haystack import config
-from haystack.mappings.base import MemoryMapping
-from haystack.mappings.base import Mappings
+from haystack.mappings.base import Memory, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
 '''
@@ -71,7 +68,7 @@ class SignatureTests(unittest.TestCase):
                 'error 2 on length dump %d dump2 %d' %
                 (len(dump), len(dump2)))
         stop = mstart + len(dump2)
-        mmap = MemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
+        mmap = AMemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
         mmap2.init_config(self.config)
         return mmap2, values
@@ -90,7 +87,7 @@ class SignatureTests(unittest.TestCase):
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap, values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = Mappings([mmap], 'test')
+        mappings = Memory([mmap], 'test')
         mappings.config = self.config
         mappings._reset_config() # set it again
         sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
