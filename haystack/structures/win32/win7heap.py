@@ -214,7 +214,7 @@ def HEAP_get_free_UCR_segment_list(self, mappings):
     HEAP.UCRList is a linked list to all UCRSegments
 
     """
-    # TODO: exclude UCR segment from valid pointer values in mappings.
+    # TODO: exclude UCR segment from valid pointer values in _memory_handler.
     ucrs = list()
     for ucr in self.iterateListField(mappings, 'UCRList'):
         ucr_struct_addr = ucr._orig_address_
@@ -578,7 +578,7 @@ def HEAP_get_freelists(self, mappings):
     """Returns the list of free chunks.
 
     This method is very important because its used by memory_mappings to
-    load mappings that contains subsegment of a heap.
+    load _memory_handler that contains subsegment of a heap.
 
     Understanding_the_LFH.pdf page 18 ++
     We iterate on HEAP.FreeLists to get ALL free blocks.
@@ -600,7 +600,7 @@ def HEAP_get_freelists(self, mappings):
 # pylint: disable=undefined-variable
 HEAP.get_freelists = HEAP_get_freelists
 
-# def HEAP_getFreeListsWinXP(self, mappings):
+# def HEAP_getFreeListsWinXP(self, _memory_handler):
 # Understanding_the_LFH.pdf page 17 """
 
 

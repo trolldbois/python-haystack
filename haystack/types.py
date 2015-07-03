@@ -68,14 +68,14 @@ def check_arg_is_type(func):
 
 class CTypesProxy(object):
 
-    """# TODO: set types in config.Types
-    # ctypeslib generate python code based on config.Types.*
-    # never import ctypes, but proxy always through instance of config.
+    """# TODO: set types in _target_platform.Types
+    # ctypeslib generate python code based on _target_platform.Types.*
+    # never import ctypes, but proxy always through instance of _target_platform.
     # flow:
-    # a) init config with size/etc.
-    # b) init model instance with config instance
+    # a) init _target_platform with size/etc.
+    # b) init model instance with _target_platform instance
     # c) create structure & Union proxied in model instance
-    # d) refer to config through dynamically generated Structure/Union classes.
+    # d) refer to _target_platform through dynamically generated Structure/Union classes.
 
     # sys.modules['ctypes'] = proxymodule/instance
 
@@ -375,7 +375,7 @@ class CTypesProxy(object):
         # we need model to be initialised.
         self.Structure = LoadableMembersStructure
         self.Union = LoadableMembersUnion
-        
+
         return
 
     def __set_utils_types(self):
@@ -458,7 +458,7 @@ class CTypesProxy(object):
 
     def _p_type(s):
         ''' ??? '''
-        #FIXME: Something about self reference in structure fields from 
+        #FIXME: Something about self reference in structure fields from
         #ctypeslib.
         #Check if still used
         import inspect

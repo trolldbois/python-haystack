@@ -7,15 +7,11 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
-import sys
+import ctypes
 
 import numpy
-from haystack import model
-from haystack import types
 
 from haystack.structures import heapwalker
-
-import ctypes
 
 log = logging.getLogger('win7heapwalker')
 
@@ -210,7 +206,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         return Win7HeapWalker
 
     def get_heap_mappings(self, mappings):
-        """return the list of mappings that load as heaps"""
+        """return the list of _memory_handler that load as heaps"""
         heap_mappings = super(Win7HeapFinder, self).get_heap_mappings(mappings)
         # FIXME PYDOC  cant remember why we do this.
         for mapping in heap_mappings:

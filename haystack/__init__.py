@@ -62,7 +62,7 @@ refresh = abouchet.refresh
 show_dumpname = abouchet.show_dumpname
 
 
-# TODO remove from config & abc.config
+# TODO remove from _target_platform & abc._target_platform
 def _set_rlimits():
     """set rlimits to maximum allowed"""
     maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)

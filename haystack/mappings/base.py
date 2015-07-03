@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Provides basic memory mappings helpers.
+"""Provides basic memory _memory_handler helpers.
 
 Short story, the memory of a process is segmented in several memory
 zones called memory mapping,
@@ -24,13 +24,14 @@ Classes:
 - FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
 
 This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
-Its intended to be retrofittable with ptrace's memory mappings.
+Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
 import logging
 
 # haystack
 from haystack import utils
+from haystack import target
 from haystack.abc import interfaces
 
 __author__ = "Loic Jaquemet"
@@ -76,7 +77,8 @@ class AMemoryMapping(interfaces.IMemoryMapping):
 
     def __init__(self, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        self.config = None
+        self._target_platform = target.TargetPlatform.make_target_platform_local()
+        self._utils = self._target_platform.get_target_ctypes_utils()
         self.start = start
         self.end = end
         self.permissions = permissions
@@ -86,15 +88,25 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         self.inode = inode
         self.pathname = str(pathname)  # fix None
 
-    def init_config(self, config):
-        self.config = config
+    def get_target_platform(self):
+        """
+        :rtype: ITargetPlatform
+        """
+        return self._target_platform
+
+    def set_target_platform(self, target):
+        """
+        :param target: ITargetPlatform
+        """
+        self._target_platform = target
+        self._utils = self._target_platform.get_target_ctypes_utils()
         return
 
     def __contains__(self, address):
         return self.start <= address < self.end
 
     def __str__(self):
-        text = ' '.join([utils.formatAddress(self.start), utils.formatAddress(self.end), self.permissions,
+        text = ' '.join([utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
                          '0x%0.8x' % (self.offset), '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % (self.inode), str(self.pathname)])
         return text
 
@@ -181,7 +193,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
     """
     Handler for the concept of process memory.
 
-    Parse a process memory mappings from a storage concept,
+    Parse a process memory _memory_handler from a storage concept,
     then identify its ITargetPlatform characteristics
     and produce an IMemoryHandler for this process memory dump """
 
@@ -202,9 +214,12 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
             raise TypeError('Please feed me a list of IMemoryMapping')
         self._mappings = mappings
         self._target = target
+        for m in self._mappings:
+            m.set_target_platform(self._target)
         self._heap_finder = heap_finder
+        self._utils = self._target.get_target_ctypes_utils()
         self.name = name
-        # FIXME config
+        # FIXME _target_platform
         self.config = None
         # FIXME book keeper
         # book register to keep references to ctypes memory buffers
@@ -226,6 +241,9 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
             raise TypeError("heap should be a IMemoryMapping")
         return self._heap_finder.get_heap_walker(heap)
 
+    def get_ctypes_utils(self):
+        """Returns the Utils toolkit."""
+        return self._utils
 
     # FIXME remove/move to subclass
     def get_context(self, addr):
@@ -263,7 +281,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     # FIXME DELETE, move to heap walker
     def get_user_allocations(self, heap, filterInUse=True):
-        walker = self._heap_finder.get_walker_for_heap(self, heap)
+        walker = self._heap_finder.get_heap_walker(self, heap)
         return walker.get_user_allocations()
 
     # FIXME incorrect API
@@ -274,6 +292,9 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         if len(mmap) < 1:
             raise IndexError('No mmap of pathname %s' % (pathname))
         return mmap
+
+    def get_mappings(self):
+        return list(self._mappings)
 
     def get_mapping_for_address(self, vaddr):
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
@@ -287,7 +308,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         return self.get_heaps()[0]
 
     def get_heaps(self):
-        """Find heap type and returns mappings with heaps"""
+        """Find heap type and returns _memory_handler with heaps"""
         return self._heap_finder.get_heap_mappings(self)
 
     def get_stack(self):
@@ -306,7 +327,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         Returns the mapping in which the object stands otherwise.
         """
         # check for null pointers
-        addr = utils.get_pointee_address(obj)
+        addr = self._utils.get_pointee_address(obj)
         if addr == 0:
             return False
         return self.is_valid_address_value(addr, structType)
@@ -422,7 +443,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 class _book(object):
 
     """The book registers all registered ctypes modules and keeps
-    some pointer refs to buffers allocated in memory mappings.
+    some pointer refs to buffers allocated in memory _memory_handler.
 
     # see also ctypes._pointer_type_cache , _reset_cache()
     """

@@ -175,13 +175,13 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     def loadMapping(self, mapping, mappings):
         '''
         update the widget with a new mapping
-        we also have to keep a reference to all mappings to be able to search for structures..
+        we also have to keep a reference to all _memory_handler to be able to search for structures..
         '''
         self._init()  # pass if not self._dirty
         self.mapping = mapping
         self.mappings = mappings
         # FIXME : useless?
-        # if self.mapping not in self.mappings:
+        # if self.mapping not in self._memory_handler:
         #  raise ValueError('mapping not in mapping list.')
         # init the view
         self.graphicsView.loadMapping(mapping)
@@ -462,10 +462,10 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
         mappings = dump_loader.load(dumpname)
         # TODO : make a mapping chooser
         heap = mappings.get_heap()
-        # if len(mappings) > 1:
-        #  heap = [m for m in mappings if m.pathname == '[heap]'][0]
+        # if len(_memory_handler) > 1:
+        #  heap = [m for m in _memory_handler if m.pathname == '[heap]'][0]
         # else:
-        #  heap = mappings[0]
+        #  heap = _memory_handler[0]
         return self.make_memory_tab(
             os.path.sep.join([os.path.basename(dumpname), heap.pathname]), heap, mappings)
 
@@ -512,7 +512,7 @@ def dropToInteractive():
 def gui(opt):
     app = QtGui.QApplication(sys.argv)
 
-    #mappings = dump_loader.load(opt)
+    #_memory_handler = dump_loader.load(opt)
     mappings = None
     root = MyMain(opt)
     root.show()

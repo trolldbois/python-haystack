@@ -93,7 +93,7 @@ class TestMappingsLinux(SrcTests):
         model.reset()
 
     def test_get_context(self):
-        # print ''.join(['%s\n'%(m) for m in mappings])
+        # print ''.join(['%s\n'%(m) for m in _memory_handler])
         with self.assertRaises(ValueError):
             self.mappings.get_context(0x0)
         with self.assertRaises(ValueError):
@@ -155,7 +155,7 @@ class TestMappingsLinux(SrcTests):
             self.mappings[0x0005c000] = 1
 
     def test_init_config(self):
-        x = self.mappings.init_config()
+        x = self.mappings.set_target_platform()
         cfg = self.mappings.config
         self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
         self.assertEquals(cfg.get_word_size(), 4)
@@ -235,7 +235,7 @@ class TestMappingsWin32(unittest.TestCase):
         from haystack.reverse import context
         self.putty = context.get_context('test/dumps/putty/putty.1.dump')
         mappings = self.putty.mappings
-        # print ''.join(['%s\n'%(m) for m in mappings])
+        # print ''.join(['%s\n'%(m) for m in _memory_handler])
         with self.assertRaises(ValueError):
             mappings.get_context(0x0)
         with self.assertRaises(ValueError):
@@ -282,7 +282,7 @@ class TestMappingsWin32(unittest.TestCase):
         # print win7heap.HEAP.Signature
         # print repr(buf[100:104])
         # print hex(x.Signature)
-        # print mappings.config.ctypes.sizeof(x)
+        # print _memory_handler._target_platform.ctypes.sizeof(x)
 
     def test_get_heaps(self):
         self.assertEquals(len(self.mappings.get_heaps()), 12)
@@ -290,8 +290,8 @@ class TestMappingsWin32(unittest.TestCase):
     @unittest.skip("TODO win32 get_stack code") # expectedFailure  # FIXME
     def test_get_stack(self):
         # TODO win32 get_stack code
-        # print ''.join(['%s\n'%(m) for m in mappings])
-        # print mappings.get_stack() # no [stack]
+        # print ''.join(['%s\n'%(m) for m in _memory_handler])
+        # print _memory_handler.get_stack() # no [stack]
         self.assertEquals(self.mappings.get_stack().start, 0x00400000)
         self.assertEquals(
             self.mappings.get_stack().pathname,
@@ -322,7 +322,7 @@ class TestMappingsWin32(unittest.TestCase):
             self.mappings[0x0005c000] = 1
 
     def test_init_config(self):
-        x = self.mappings.init_config()
+        x = self.mappings.set_target_platform()
         cfg = self.mappings.config
         self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
         self.assertEquals(cfg.get_word_size(), 4)

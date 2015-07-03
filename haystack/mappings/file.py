@@ -24,7 +24,7 @@ Classes:
 - FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
 
 This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
-Its intended to be retrofittable with ptrace's memory mappings.
+Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
 import os
@@ -92,7 +92,7 @@ class LocalMemoryMapping(AMemoryMapping):
     def read_word(self, vaddr):
         """Address have to be aligned!"""
         laddr = self._vtop(vaddr)
-        word = self.config.get_word_type().from_address(
+        word = self._target_platform.get_word_type().from_address(
             long(laddr)).value  # is non-aligned a pb ?, indianess is at risk
         return word
 
@@ -139,7 +139,7 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.init_config(memoryMapping.config)
+        el.set_target_platform(memoryMapping.get_target_platform())
         return el
 
     @classmethod
@@ -149,7 +149,7 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.init_config(memoryMapping.config)
+        el.set_target_platform(memoryMapping.get_target_platform())
         el.content_array_save_me_from_gc = content_array
         return el
 
@@ -226,7 +226,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     self._memdump = None
                     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
                     # this is a local memory hack, so
-                    # self.config.get_word_type() is not involved.
+                    # self._target_platform.get_word_type() is not involved.
                     heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(
                         id(self._local_mmap_bytebuffer) + 2 * (ctypes.sizeof(ctypes.c_ulong))))[0]
                     self._local_mmap_content = (
@@ -365,10 +365,10 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     def read_word(self, vaddr):
         """Address have to be aligned!"""
         laddr = self._vtop(vaddr)
-        word = self.config.get_word_type().from_buffer_copy(
+        word = self._target_platform.get_word_type().from_buffer_copy(
             self._local_mmap[
                 laddr:laddr +
-                self.config.get_word_size()],
+                self._target_platform.get_word_size()],
             0).value  # is non-aligned a pb ?
         return word
 

@@ -158,7 +158,7 @@ def test3():
                 IGNORES.append(m.pathname)
 
     print '[+] context loaded'
-    # mmap_libdl = [ m for m in mappings if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
+    # mmap_libdl = [ m for m in _memory_handler if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
     #hptrs = ctx._pointers_values_heap
     # print '[+] %d pointers in heap to heap '%( len(hptrs) )
 
@@ -168,7 +168,7 @@ def test3():
 
     localmappings = getMappings()
 
-    #crypto = mappings.get_mapping('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
+    #crypto = _memory_handler.get_mapping('/lib/i386-linux-gnu/libcrypto.so.1.0.0')
     # for lm in crypto:
     #  print lm
 

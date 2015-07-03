@@ -7,15 +7,16 @@ Classes:
 - ProcessMemoryMapping: memory space from a live process with the possibility to mmap the memspace at any moment.
 """
 
-import os
 import logging
-import re
 from weakref import ref
 
-# haystack
+import os
+import re
+
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
-from haystack import types
 from haystack import utils
+from haystack import target
+from haystack.structures import heapwalker
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -90,10 +91,10 @@ class ProcessMemoryMapping(AMemoryMapping):
         data = self._base.read_bytes(address, size)
         return data
 
-    def read_struct(self, address, struct):
-        struct = self._base.read_struct(address, struct)
-        struct._orig_address_ = address
-        return struct
+    def read_struct(self, address, _struct):
+        _struct = self._base.read_struct(address, _struct)
+        _struct._orig_address_ = address
+        return _struct
 
     def read_array(self, address, basetype, count):
         array = self._base.read_array(address, basetype, count)
@@ -109,7 +110,7 @@ class ProcessMemoryMapping(AMemoryMapping):
         # probably a bad cast statement on c_char_p
         # FIXME: the big perf increase is now gone. Howto cast pointer to bytes
         # into ctypes array ?
-        ctypes = self.config.ctypes
+        ctypes = self._target_platform.get_target_ctypes()
         if not self.isMmaped():
             # self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
             # self._local_mmap_content = self._process().readArray(self.start,
@@ -142,10 +143,10 @@ class ProcessMemoryMapping(AMemoryMapping):
 
 def readProcessMappings(process):
     """
-    Read all memory mappings of the specified process.
+    Read all memory _memory_handler of the specified process.
 
     Return a list of MemoryMapping objects, or empty list if it's not possible
-    to read the mappings.
+    to read the _memory_handler.
 
     May raise a ProcessError.
     """
@@ -157,13 +158,13 @@ def readProcessMappings(process):
     except ProcError as err:
         raise ProcessError(process, "Unable to read process maps: %s" % err)
 
-    before = None
+    #before = None
     # save the current ctypes module.
-    mappings = MemoryHandler(None)
-    # FIXME Debug, but probably useless now that ctypes is in config
-    if True:
-        import ctypes
-        before = ctypes
+    mappings = []
+    # FIXME Debug, but probably useless now that ctypes is in _target_platform
+    #if True:
+    #    import ctypes
+    #    before = ctypes
     try:
         for line in mapsfile:
             line = line.rstrip()
@@ -190,9 +191,12 @@ def readProcessMappings(process):
         if isinstance(mapsfile, file):
             mapsfile.close()
     # reposition the previous ctypes module.
-    if True:
-        ctypes = types.set_ctypes(before)
-    return mappings
+    #if True:
+    #    ctypes = types.set_ctypes(before)
+    _target_platform = target.TargetPlatform.make_target_platform_local()
+    _heap_finder = heapwalker.make_heap_finder(_target_platform)
+    _memory_handler = MemoryHandler(mappings, _target_platform,_heap_finder)
+    return _memory_handler
 
 
 def readLocalProcessMappings():

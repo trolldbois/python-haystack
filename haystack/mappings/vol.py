@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Volatility backed mappings.
+Volatility backed _memory_handler.
 
 - VolatilityProcessMapping: a wrapper around volatility addresspace
-- VolatilityProcessMapper: the mappings builder.
+- VolatilityProcessMapper: the _memory_handler builder.
 
 http://computer.forensikblog.de/en/2007/05/walking-the-vad-tree.html
 http://www.dfrws.org/2007/proceedings/p62-dolan-gavitt.pdf
@@ -14,8 +14,8 @@ import logging
 import struct
 from functools import partial
 
-# haystack
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
+from haystack.abc import interfaces
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -48,7 +48,7 @@ class VolatilityProcessMappingA(AMemoryMapping):
         self._backend = address_space
 
     def read_word(self, addr):
-        ws = self.config.get_word_size()
+        ws = self._target_platform.get_word_size()
         data = self._backend.zread(addr, ws)
         if ws == 4:
             return struct.unpack('I', data)[0]
@@ -59,13 +59,13 @@ class VolatilityProcessMappingA(AMemoryMapping):
         return self._backend.zread(addr, size)
 
     def read_struct(self, addr, struct):
-        size = self.config.ctypes.sizeof(struct)
+        size = self._target_platform.ctypes.sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
         instance._orig_address_ = addr
         return instance
 
     def read_array(self, addr, basetype, count):
-        size = self.config.ctypes.sizeof(basetype * count)
+        size = self._target_platform.ctypes.sizeof(basetype * count)
         array = (
             basetype *
             count).from_buffer_copy(
@@ -77,12 +77,12 @@ class VolatilityProcessMappingA(AMemoryMapping):
 import sys
 
 
-class VolatilityProcessMapper:
+class VolatilityProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, imgname, pid):
         self.pid = pid
         self.imgname = imgname
-        self.mappings = None
+        self._memory_handler = None
         self._unload_volatility()
         self._init_volatility()
 
@@ -105,7 +105,6 @@ class VolatilityProcessMapper:
         #    #sys.args=[sys.args[3]]
         #    sys.argv=[sys.argv[0],'-f',sys.argv[3]]
         # print 'after modif',sys.argv
-        import volatility
         import volatility.conf as conf
         import volatility.registry as registry
         registry.PluginImporter()
@@ -116,27 +115,27 @@ class VolatilityProcessMapper:
         registry.register_global_options(config, addrspace.BaseAddressSpace)
         config.parse_options()
         config.PROFILE = "WinXPSP2x86"
-        #config.LOCATION = "file:///media/memory/private/image.dmp"
+        #_target_platform.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s" % self.imgname
         config.PID = str(self.pid)
 
         import volatility.plugins.vadinfo as vadinfo
 
         #import code
-        #print config.__dict__
+        #print _target_platform.__dict__
         # code.interact(local=locals())
 
         command = vadinfo.VADWalk(config)
         command.render_text = partial(my_render_text, self, command)
         command.execute()
         # works now.
-        # for x in self.mappings:
+        # for x in self._memory_handler:
         #    print x
         #import code
         # code.interact(local=locals())
 
-    def getMappings(self):
-        return self.mappings
+    def make_memory_handler(self):
+        return self._memory_handler
 
 
 PERMS_PROTECTION = dict(enumerate([
@@ -185,6 +184,6 @@ def my_render_text(mapper, cmd, outfd, data):
             maps.append(pmap)
 
     mappings = MemoryHandler(maps)
-    # print mappings
+    # print _memory_handler
     mappings.init_config()
     mapper.mappings = mappings

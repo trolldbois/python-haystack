@@ -4,15 +4,15 @@
 """This module offers several classes in charge of loading the memory
 mapping dumps into a MemoryMappings list of MemoryMapping, given a
 previously saved format ( file, archive, ... ).
-Basically MemoryMappings are in archive of all the mappings dumped to
-file + a special 'mappings' index file that give all metadata about
-thoses mappings.
+Basically MemoryMappings are in archive of all the _memory_handler dumped to
+file + a special '_memory_handler' index file that give all metadata about
+thoses _memory_handler.
 
 Classes:
  - MemoryDumpLoader:    abstract loader for a memory dump loader
  - ProcessMemoryDumpLoader: handles memory load from several recognized
         format.
- - KCoreDumpLoader: Mapping loader for kernel memory mappings dumps.
+ - KCoreDumpLoader: Mapping loader for kernel memory _memory_handler dumps.
 
 Functions:
  - load: load MemoryMappings from the source dumpname.
@@ -105,7 +105,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             self.archive = self.dumpname
             members = os.listdir(self.archive)
             if self.indexFilename not in members:
-                log.error('no mappings index file in the directory.')
+                log.error('no _memory_handler index file in the directory.')
                 return False
             self.filePrefix = ''
             self.mmaps = [m for m in members if '-0x' in m]
@@ -119,15 +119,15 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
         return self._open_file(self.archive, self.filePrefix + mmap_fname)
 
     def _load_mappings(self):
-        """Loads the mappings content from the dump to a MemoryMappings.
+        """Loads the _memory_handler content from the dump to a MemoryMappings.
 
         If an underlying file containing a memory dump does not exists, still
         create a MemoryMap for metadata purposes.
-        If the memory map is > config.MAX_MAPPING_SIZE_FOR_MMAP, use a slow FileBackedMemoryMapping.
+        If the memory map is > _target_platform.MAX_MAPPING_SIZE_FOR_MMAP, use a slow FileBackedMemoryMapping.
         Else, load the mapping in memory.
         """
         self._load_metadata()
-        self._load_memory_mappings()  # set self.mappings
+        self._load_memory_mappings()  # set self._memory_handler
         return
 
     def _load_metadata(self):
@@ -179,7 +179,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             #    log.debug('Ignore useless file : %s'%(e))
             #    mmap = MemoryMapping(start, end, permissions, offset,
             #                                                    major_device, minor_device, inode,pathname=mmap_pathname)
-            #    self.mappings.append(mmap)
+            #    self._memory_handler.append(mmap)
             #    continue
             except LazyLoadingException as e:
                 mmap = FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset,
@@ -207,7 +207,6 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             _mappings.append(mmap)
         _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
-        # TODO create a IHeapWalker
         _heap_finder = heapwalker.make_heap_finder(_target_platform)
         self._memory_handler = MemoryHandler(_mappings, _target_platform, _heap_finder, self.dumpname)
         return
@@ -244,7 +243,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
 
 class KCoreDumpLoader(MemoryDumpLoader):
 
-    """Mapping loader for kernel memory mappings."""
+    """Mapping loader for kernel memory _memory_handler."""
 
     def isValid(self):
         # debug we need a system map to validate...... probably

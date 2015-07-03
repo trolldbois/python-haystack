@@ -101,7 +101,7 @@ class HeapFinder(interfaces.IHeapFinder):
         """
         return self.__heap_type
 
-    def get_walker_for_heap(self, mappings, heap):
+    def get_heap_walker(self, mappings, heap):
         return self.__walker_class(mappings, heap, 0)
 
 

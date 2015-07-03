@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Gets memory mappings from a PID or a haystack dump."""
+"""Gets memory _memory_handler from a PID or a haystack dump."""
 
 import logging
 import time
@@ -89,9 +89,9 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
             log.error("Error initializing Process debugging for %d" % pid)
             raise IOError
             # ptrace exception is raised before that
-        mappings = readProcessMappings(process)
+        _memory_handler = readProcessMappings(process)
         t0 = time.time()
-        for m in mappings:
+        for m in _memory_handler:
             if mmap:
                 # mmap memory in local space
                 m.mmap()
@@ -102,10 +102,10 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
             log.info(
                 'MemoryHandler mmaped, process released after %02.02f secs' %
                 (time.time() - t0))
-        return mappings
+        return _memory_handler
 
     @staticmethod
     def _init_volatility(volname, pid):
         mapper = VolatilityProcessMapper(volname, pid)
-        mappings = mapper.getMappings()
-        return mappings
+        _memory_handler = mapper.getMappings()
+        return _memory_handler

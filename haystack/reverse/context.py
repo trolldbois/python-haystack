@@ -45,15 +45,15 @@ class ReverserContext():
         ructures = None
 
         log.info('[+] Fetching cached structures addresses list')
-        #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
+        #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self._memory_handler)
 
         # FIXME: no use I think
-        ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
+        ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self._memory_handler)
         ##self._pointers_values_heap = heap_values
         ##self._pointers_offsets_heap = heap_offsets
 
         # test with all mmap in target
-        ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings)
+        ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self._memory_handler)
         ##self._pointers_values = all_values
         ##self._pointers_offsets = all_offsets
 
@@ -208,7 +208,7 @@ class ReverserContext():
         return context
 
     def save(self):
-        # we only need dumpfilename to reload mappings, addresses to reload
+        # we only need dumpfilename to reload _memory_handler, addresses to reload
         # cached structures
         context_cache = self.config.getCacheFilename(
             self.config.CACHE_CONTEXT,
@@ -246,10 +246,10 @@ class ReverserContext():
                _heap_start
            Ignore the rest
         """
-        
+
         # FIXME, double check and delete
         #d = self.__dict__.copy()
-        #del d['mappings']
+        #del d['_memory_handler']
         #del d['heap']
         #del d['_structures']
         #del d['_structures_addresses']

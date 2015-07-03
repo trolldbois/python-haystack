@@ -12,9 +12,7 @@ This specific plugin handles basic types.
 
 import logging
 
-from haystack import utils
 from haystack import constraints
-from haystack.utils import get_subtype
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -71,14 +69,14 @@ class LoadableMembers(object):
         raise StopIteration
         # return ret
 
-    def get_orig_addr(self, mappings):
+    def get_orig_addr(self, memory_handler):
         """ returns the vaddr of this instance."""
-        import ctypes
-        haystack_addr = ctypes.addressof(self)
-        m = mappings._get_mmap_for_haystack_addr(haystack_addr)
+        target_ctypes = memory_handler.get_target_platform().get_target_ctypes()
+        haystack_addr = target_ctypes.addressof(self)
+        m = memory_handler._get_mmap_for_haystack_addr(haystack_addr)
         return m._ptov(haystack_addr)
 
-    def is_valid(self, mappings):
+    def is_valid(self, memory_handler):
         """
         Checks if each members has coherent data
 
@@ -102,11 +100,12 @@ class LoadableMembers(object):
                      check get_pointee_address against is_valid_address()
                             if False, return False, else continue
         """
-        valid = self._is_valid(mappings)
+        self._memory_handler = memory_handler
+        valid = self._is_valid(memory_handler)
         log.debug('-- <%s> isValid = %s' % (self.__class__.__name__, valid))
         return valid
 
-    def _is_valid(self, mappings):
+    def _is_valid(self, memory_handler):
         """ real implementation.    check expectedValues first, then the other fields """
         log.debug(' -- <%s> isValid --' % (self.__class__.__name__))
         _fieldsTuple = self.get_fields()
@@ -120,24 +119,25 @@ class LoadableMembers(object):
             attr = getattr(self, attrname)
             if expected is constraints.IgnoreMember:
                 continue
-            if not self._is_valid_attr(attr, attrname, attrtype, mappings):
+            if not self._is_valid_attr(attr, attrname, attrtype, memory_handler):
                 return False
         # check the rest for validation
         todo = [(name, typ)
                 for name, typ in self.get_fields() if name not in done]
         for attrname, attrtype, in todo:
             attr = getattr(self, attrname)
-            if not self._is_valid_attr(attr, attrname, attrtype, mappings):
+            if not self._is_valid_attr(attr, attrname, attrtype, memory_handler):
                 return False
         # validation done
         return True
 
-    def _is_valid_attr(self, attr, attrname, attrtype, mappings):
+    def _is_valid_attr(self, attr, attrname, attrtype, memory_handler):
         """ Validation of a single member """
-        import ctypes
+        target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        utils = self._memory_handler.get_ctypes_utils()
         # a)
         log.debug('valid: %s, %s' % (attrname, attrtype))
-        if ctypes.is_basic_type(attrtype):
+        if target_ctypes.is_basic_type(attrtype):
             if attrname in self.expectedValues:
                 if attr not in self.expectedValues[attrname]:
                     log.debug(
@@ -149,10 +149,10 @@ class LoadableMembers(object):
                 (attrname, attrtype, repr(attr)))
             return True
         # b)
-        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
+        elif target_ctypes.is_struct_type(attrtype) or target_ctypes.is_union_type(attrtype):
             # do i need to load it first ? becaus it should be memcopied with
             # the super()..
-            if not attr.is_valid(mappings):
+            if not attr.is_valid(memory_handler):
                 log.debug(
                     'structType: %s %s %s isValid FALSE' %
                     (attrname, attrtype, repr(attr)))
@@ -162,7 +162,7 @@ class LoadableMembers(object):
                 (attrname, attrtype, repr(attr)))
             return True
         # c)
-        elif ctypes.is_array_of_basic_type(attrtype):
+        elif target_ctypes.is_array_of_basic_type(attrtype):
             if attrname in self.expectedValues:
                 if attr not in self.expectedValues[attrname]:
                     log.debug(
@@ -175,7 +175,7 @@ class LoadableMembers(object):
                 type(attr))
             return True
         # d)
-        elif ctypes.is_array_type(attrtype):
+        elif target_ctypes.is_array_type(attrtype):
             log.debug('array: %s is arraytype %s recurse validate' % (attrname,
                                                                       repr(attr)))
             attrLen = len(attr)
@@ -186,11 +186,11 @@ class LoadableMembers(object):
                 # FIXME BUG DOES NOT WORK - offsetof("%s[%d]") is called,
                 # and %s exists, not %s[%d]
                 if not self._is_valid_attr(attr[i], "%s[%d]" % (attrname, i), elType,
-                                         mappings):
+                                         memory_handler):
                     return False
             return True
         # e)
-        elif ctypes.is_cstring_type(attrtype):
+        elif target_ctypes.is_cstring_type(attrtype):
             myaddress = utils.get_pointee_address(attr.ptr)
             if attrname in self.expectedValues:
                 # test if NULL is an option
@@ -205,7 +205,7 @@ class LoadableMembers(object):
                     # e.1)
                     return True
             if (myaddress != 0 and
-                    not mappings.is_valid_address_value(myaddress)):
+                    not memory_handler.is_valid_address_value(myaddress)):
                 log.debug('str: %s %s %s 0x%lx INVALID' % (attrname, attrtype,
                                                            repr(attr), myaddress))
                 # e.2)
@@ -215,11 +215,11 @@ class LoadableMembers(object):
             # e.3)
             return True
         # f)
-        elif ctypes.is_pointer_type(attrtype):
+        elif target_ctypes.is_pointer_type(attrtype):
             myaddress = utils.get_pointee_address(attr)
             if attrname in self.expectedValues:
                 # test if NULL is an option
-                log.debug('ctypes.is_pointer_type: bool(attr):%s attr:%s' % (
+                log.debug('target_ctypes.is_pointer_type: bool(attr):%s attr:%s' % (
                     bool(attr), attr))
                 if not bool(myaddress):
                     if not ((None in self.expectedValues[attrname]) or
@@ -233,25 +233,25 @@ class LoadableMembers(object):
                     # f.2) expectedValues specifies NULL to be valid
                     return True
             _attrType = None
-            if (ctypes.is_pointer_to_void_type(attrtype) or
-                    ctypes.is_function_type(attrtype)):
+            if (target_ctypes.is_pointer_to_void_type(attrtype) or
+                    target_ctypes.is_function_type(attrtype)):
                 log.debug(
-                    'Its a simple type. Checking mappings only. attr=%s' %
+                    'Its a simple type. Checking _memory_handler only. attr=%s' %
                     (attr))
                 if (myaddress != 0 and
-                        not mappings.is_valid_address_value(myaddress)):
+                        not memory_handler.is_valid_address_value(myaddress)):
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer' % (
                         attrname, attrtype, repr(attr), myaddress))
                     # f.3) address must be valid, no type requirement
                     return False
             else:
                 # test valid address mapping
-                _attrType = get_subtype(attrtype)
+                _attrType = utils.get_subtype(attrtype)
             if (myaddress != 0 and
-                    not mappings.is_valid_address(attr, _attrType)):
+                    not memory_handler.is_valid_address(attr, _attrType)):
                 log.debug('ptr: %s %s %s 0x%lx INVALID' % (attrname, attrtype,
                                                            repr(attr), utils.get_pointee_address(attr)))
-                # f.4) its a pointer, but not valid in our mappings for this
+                # f.4) its a pointer, but not valid in our _memory_handler for this
                 # pointee type.
                 return False
             log.debug('ptr: name:%s repr:%s address:0x%lx OK' % (attrname,
@@ -271,17 +271,17 @@ class LoadableMembers(object):
         AND (pointee is a struct type OR pointee is a union type)
         ) OR struct type OR union type
         """
-        ctypes = self._mappings_.config.ctypes
-        return ((bool(attr) and not ctypes.is_pointer_to_void_type(attrtype)))
+        target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        return ((bool(attr) and not target_ctypes.is_pointer_to_void_type(attrtype)))
         # return ( (bool(attr) and
-        #    (ctypes.is_pointer_to_struct_type(attrtype) or
-        #     ctypes.is_pointer_to_union_type(attrtype) or
-        #     ctypes.is_pointer_to_basic_type(attrtype) or
-        #     ctypes.is_pointer_to_array_type(attrtype)
+        #    (target_ctypes.is_pointer_to_struct_type(attrtype) or
+        #     target_ctypes.is_pointer_to_union_type(attrtype) or
+        #     target_ctypes.is_pointer_to_basic_type(attrtype) or
+        #     target_ctypes.is_pointer_to_array_type(attrtype)
         #    )) or
-        #    ctypes.is_union_type(attrtype) or ctypes.is_struct_type(attrtype) or
-        #    ctypes.is_cstring_type(attrtype) or
-        #    (ctypes.is_array_type(attrtype) and not ctypes.is_array_of_basic_type(attrtype)))
+        #    target_ctypes.is_union_type(attrtype) or target_ctypes.is_struct_type(attrtype) or
+        #    target_ctypes.is_cstring_type(attrtype) or
+        #    (target_ctypes.is_array_type(attrtype) and not target_ctypes.is_array_of_basic_type(attrtype)))
         # should we iterate on Basictypes ? no
 
     def loadMembers(self, mappings, maxDepth):
@@ -297,7 +297,7 @@ class LoadableMembers(object):
         @returns True if everything has been loaded, False if something went
         wrong.
         """
-        self._mappings_ = mappings
+        self._mappings_= mappings
         if maxDepth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug('Struct partially LOADED. %s not loaded' % (
@@ -328,14 +328,15 @@ class LoadableMembers(object):
         return True
 
     def _loadMember(self, attr, attrname, attrtype, mappings, maxDepth):
-        ctypes = self._mappings_.config.ctypes
+        target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        utils = self._memory_handler.get_ctypes_utils()
         # skip static void_p data members
         if not self._isLoadableMember(attr, attrname, attrtype):
             log.debug("%s %s not loadable bool(attr) = %s" % (attrname, attrtype,
                                                               bool(attr)))
             return True
         # load it, fields are valid
-        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
+        elif target_ctypes.is_struct_type(attrtype) or target_ctypes.is_union_type(attrtype):
             # its an embedded record. Bytes are already loaded.
             offset = utils.offsetof(type(self), attrname)
             log.debug('st: %s %s is STRUCT at @%x' % (attrname, attrtype,
@@ -350,9 +351,9 @@ class LoadableMembers(object):
                 return False
             log.debug("st: %s %s inner struct LOADED " % (attrname, attrtype))
             return True
-        elif ctypes.is_array_of_basic_type(attrtype):
+        elif target_ctypes.is_array_of_basic_type(attrtype):
             return True
-        elif ctypes.is_array_type(attrtype):
+        elif target_ctypes.is_array_type(attrtype):
             log.debug('a: %s is arraytype %s recurse load' % (attrname,
                                                               repr(attr)))
             attrLen = len(attr)
@@ -363,21 +364,21 @@ class LoadableMembers(object):
                 # FIXME BUG DOES NOT WORK
                 # offsetof("%s[%d]") is called, and %s exists, not %s[%d]
                 # if not self._loadMember(attr[i], "%s[%d]"%(attrname,i),
-                # elType, mappings, maxDepth):
+                # elType, _memory_handler, maxDepth):
                 if not self._loadMember(
                         attr[i], attrname, elType, mappings, maxDepth):
                     return False
             return True
         # we have PointerType here . Basic or complex
         # exception cases
-        elif ctypes.is_function_type(attrtype):
+        elif target_ctypes.is_function_type(attrtype):
             pass
             # FIXME
-        elif ctypes.is_cstring_type(attrtype):
+        elif target_ctypes.is_cstring_type(attrtype):
             # can't use basic c_char_p because we can't load in foreign memory
             # FIXME, you need to keep a ref to this ctring if
             # your want _mappings_ to exists
-            # or just mandate mappings in toString
+            # or just mandate _memory_handler in toString
             attr_obj_address = utils.get_pointee_address(attr.ptr)
             if not bool(attr_obj_address):
                 log.debug('%s %s is a CString, the pointer is null (validation '
@@ -388,10 +389,10 @@ class LoadableMembers(object):
                 log.warning('Error on addr while fetching a CString.'
                             'should not happen')
                 return False
-            ref = mappings.getRef(ctypes.CString, attr_obj_address)
+            ref = mappings.getRef(target_ctypes.CString, attr_obj_address)
             if ref:
                 log.debug("%s %s loading from references cache %s/0x%lx" % (attrname,
-                                                                            attr, ctypes.CString, attr_obj_address))
+                                                                            attr, target_ctypes.CString, attr_obj_address))
                 return True
             max_size = min(
                 self.MAX_CSTRING_SIZE,
@@ -407,14 +408,14 @@ class LoadableMembers(object):
                     (max_size))
 
             # that will SEGFAULT attr.string = txt - instead keepRef to String
-            mappings.keepRef(txt, ctypes.CString, attr_obj_address)
+            mappings.keepRef(txt, target_ctypes.CString, attr_obj_address)
             log.debug(
                 'kept CString ref for "%s" at @%x' %
                 (txt, attr_obj_address))
             return True
         # not functionType, it's not loadable
-        elif ctypes.is_pointer_type(attrtype):
-            _attrType = get_subtype(attrtype)
+        elif target_ctypes.is_pointer_type(attrtype):
+            _attrType = utils.get_subtype(attrtype)
             attr_obj_address = utils.get_pointee_address(attr)
             ####
             # memcpy and save objet ref + pointer in attr
@@ -466,12 +467,12 @@ class LoadableMembers(object):
                 return True
             # go and load the pointed struct members recursively
             subtype = utils.get_subtype(attrtype)
-            if (ctypes.is_basic_type(subtype) or
-                    ctypes.is_array_of_basic_type(subtype)):
+            if (target_ctypes.is_basic_type(subtype) or
+                    target_ctypes.is_array_of_basic_type(subtype)):
                 # do nothing
                 return True
-            elif (ctypes.is_array_type(subtype) or
-                  ctypes.is_pointer_type(subtype)):
+            elif (target_ctypes.is_array_type(subtype) or
+                  target_ctypes.is_pointer_type(subtype)):
                 return self._loadMember(
                     contents, 'pointee', subtype, mappings, maxDepth - 1)
 
@@ -486,7 +487,8 @@ class LoadableMembers(object):
 
     def __str__(self):
         """Print the direct members values. Never tries to recurse."""
-        import ctypes
+        target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        utils = self._memory_handler.get_ctypes_utils()
         if hasattr(self, '_orig_address_'):
             s = "# <%s at @%x>\n" % (
                 self.__class__.__name__, self._orig_address_)
@@ -495,45 +497,45 @@ class LoadableMembers(object):
         # we need to ensure _mappings_ is defined in all children.
         for field, attrtype in self.get_fields():
             attr = getattr(self, field)
-            if ctypes.is_basic_type(attrtype):
-                # basic type, ctypes or python
+            if target_ctypes.is_basic_type(attrtype):
+                # basic type, target_ctypes or python
                 s += '%s : %s, \n' % (field, repr(attr))
-            elif (ctypes.is_struct_type(attrtype) or
-                  ctypes.is_union_type(attrtype)):
+            elif (target_ctypes.is_struct_type(attrtype) or
+                  target_ctypes.is_union_type(attrtype)):
                 # you can print a inner struct content
                 s += '%s (@0x%lx) : {\t%s}\n' % (field,
-                                                 ctypes.addressof(attr),
+                                                 target_ctypes.addressof(attr),
                                                  attr)
-            elif ctypes.is_function_type(attrtype):
+            elif target_ctypes.is_function_type(attrtype):
                 # only print address in target space
                 s += '%s (@0x%lx) : 0x%lx (FIELD NOT LOADED: function type)\n' % (
-                    field, ctypes.addressof(attr),
+                    field, target_ctypes.addressof(attr),
                     utils.get_pointee_address(attr))
-            elif ctypes.is_array_of_basic_type(attrtype):
+            elif target_ctypes.is_array_of_basic_type(attrtype):
                 try:
-                    s += '%s (@0x%lx) : %s\n' % (field, ctypes.addressof(attr),
+                    s += '%s (@0x%lx) : %s\n' % (field, target_ctypes.addressof(attr),
                                                  repr(utils.array2bytes(attr)))
                 except IndexError as e:
                     log.error('error while reading %s %s' % (repr(attr),
                                                              type(attr)))
                     # FIXME
-            elif ctypes.is_array_type(attrtype):
+            elif target_ctypes.is_array_type(attrtype):
                 # array of something else than int
-                s += '%s (@0x%lx)    :[' % (field, ctypes.addressof(attr))
+                s += '%s (@0x%lx)    :[' % (field, target_ctypes.addressof(attr))
                 s += ','.join(["%s" % (val) for val in attr])
                 s += '],\n'
-            elif ctypes.is_cstring_type(attrtype):
+            elif target_ctypes.is_cstring_type(attrtype):
                 # only print address/null
-                s += '%s (@0x%lx) : 0x%lx\n' % (field, ctypes.addressof(attr),
+                s += '%s (@0x%lx) : 0x%lx\n' % (field, target_ctypes.addressof(attr),
                                                 utils.get_pointee_address(attr.ptr))
-            elif ctypes.is_pointer_type(attrtype):  # and
-                # not ctypes.is_pointer_to_void_type(attrtype)):
+            elif target_ctypes.is_pointer_type(attrtype):  # and
+                # not target_ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.
                 if attr is None:
                     attr = 0
                     s += '%s (@????) : 0x0\n' % (field)
                 else:
-                    s += '%s (@0x%lx) : 0x%lx\n' % (field, ctypes.addressof(attr),
+                    s += '%s (@0x%lx) : 0x%lx\n' % (field, target_ctypes.addressof(attr),
                                                 utils.get_pointee_address(attr))
             elif (isinstance(attr, long)) or (isinstance(attr, int)):
                 s += '%s : %s\n' % (field, hex(attr))

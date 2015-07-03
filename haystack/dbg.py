@@ -3,7 +3,7 @@
 # #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
-# Windows mappings code stolen from winappdbg
+# Windows _memory_handler code stolen from winappdbg
 #
 # Copyright (c) 2009-2010, Mario Vilas
 # All rights reserved.

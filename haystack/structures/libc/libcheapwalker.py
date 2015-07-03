@@ -53,13 +53,13 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
 class LibcHeapFinder(heapwalker.HeapFinder):
 
-    # def is_heap(self, mappings, mapping):
+    # def is_heap(self, _memory_handler, mapping):
     #    """test if a mapping is a heap - at least one allocation."""
-    #    if not super(LibcHeapFinder,self).is_heap(mappings, mapping):
+    #    if not super(LibcHeapFinder,self).is_heap(_memory_handler, mapping):
     #        return False
     #    # try to get at least one alloc.
     #    from haystack.structures.libc.ctypes_malloc import iter_user_allocations
-    #    for x in iter_user_allocations(mappings, mapping):
+    #    for x in iter_user_allocations(_memory_handler, mapping):
     #        return True
     #    return False
 

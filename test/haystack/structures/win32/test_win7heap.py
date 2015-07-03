@@ -4,15 +4,10 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
 import sys
 
 from haystack import model
-from haystack import types
 from haystack import utils
 from haystack import dump_loader
 
@@ -47,9 +42,9 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_ctypes_sizes(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
+        from haystack.structures.win32 import win7heap
 
-        ctypes = self._mappings.config.ctypes
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
 
         self.assertEquals(ctypes.sizeof(win7heap.HEAP_SEGMENT), 64)
         self.assertEquals(ctypes.sizeof(win7heap.HEAP_ENTRY), 8)
@@ -73,7 +68,7 @@ class TestWin7Heap(unittest.TestCase):
     def test_is_heap(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         h = self._mappings.get_mapping_for_address(0x005c0000)
         self.assertEquals(h.getByteBuffer()[0:10],
                           '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
@@ -87,14 +82,14 @@ class TestWin7Heap(unittest.TestCase):
         # check heap.Signature
         self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
         load = heap.loadMembers(self._mappings, 10)
-        walker = win7heapwalker.Win7HeapFinder()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         self.assertTrue(walker.is_heap(self._mappings, h))
 
     def test_is_heap_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
-        walker = win7heapwalker.Win7HeapFinder()
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
@@ -109,8 +104,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_UCR_segment_list(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -134,8 +129,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_UCR_segment_list_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
-        walker = win7heapwalker.Win7HeapFinder()
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
@@ -158,8 +153,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_segment_list(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -189,8 +184,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_segment_list_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
-        walker = win7heapwalker.Win7HeapFinder()
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
@@ -222,8 +217,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -263,8 +258,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_chunks_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
-        walker = win7heapwalker.Win7HeapFinder()
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
@@ -297,8 +292,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_freelists(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -313,8 +308,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_freelists_all(self):
         from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
-        walker = win7heapwalker.Win7HeapFinder()
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
+        walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
@@ -331,8 +326,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_frontend_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -348,8 +343,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_vallocs(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         addr = 0x005c0000
         h = self._mappings.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
@@ -363,8 +358,8 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_vallocs_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        ctypes = self._mappings.config.ctypes
+        from haystack.structures.win32 import win7heap
+        ctypes = self._mappings.get_target_platform().get_target_ctypes()
         for addr, size in self._known_heaps:
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)

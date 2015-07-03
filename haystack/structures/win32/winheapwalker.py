@@ -209,7 +209,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         return WinHeapWalker
 
     def get_heap_mappings(self, mappings):
-        """return the list of mappings that load as heaps"""
+        """return the list of _memory_handler that load as heaps"""
         heap_mappings = super(WinHeapFinder, self).get_heap_mappings(mappings)
         # FIXME PYDOC  cant remember why we do this.
         for mapping in heap_mappings:

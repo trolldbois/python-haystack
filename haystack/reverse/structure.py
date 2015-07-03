@@ -87,7 +87,7 @@ def remapLoad(context, addr, newmappings):
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
-    # YES we do want to over-write mappings and bytes
+    # YES we do want to over-write _memory_handler and bytes
     p.setContext(context)
     return p
 
@@ -413,7 +413,7 @@ class AnonymousStructInstance():
                         undecoded += 1
                         #log.debug('target %x is unresolvable in a field'%(field.value))
                     pass
-                elif field.value in self._mappings:  # other mappings
+                elif field.value in self._mappings:  # other _memory_handler
                     inMappings += 1
                     tgt = 'ext_lib_%d' % (field.offset)
                     field._ptr_to_ext_lib = True
@@ -440,7 +440,7 @@ class AnonymousStructInstance():
     # , structs_addrs, structCache):
     def _resolvePointerToStructField(self, field):
         raise NotImplementedError('Obselete')
-        # TODO DEBUG, i got gaps in my memory mappings structures
+        # TODO DEBUG, i got gaps in my memory _memory_handler structures
         #  struct_add16e8 -> struct_add173c
         # if len(structs_addrs) == 0:
         if len(self._context._malloc_addresses) == 0:
@@ -737,7 +737,7 @@ class %s(ctypes.Structure):  # %s
         try:
             d['dumpname'] = os.path.normpath(self._mappings.name)
         except AttributeError as e:
-            #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
+            #log.error('no _memory_handler name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
             d['dumpname'] = None
         d['_context'] = None
         d['_bytes'] = None

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Utils to diff two heap memory mappings."""
+"""Utils to diff two heap memory _memory_handler."""
 
 import argparse
 import logging
@@ -51,7 +51,7 @@ def make(opts):
                 ctx.structures)))
 
     heap1 = ctx.mappings.get_heap()
-    log.info('[+] Loading mappings of %s' % (opts.dump2))
+    log.info('[+] Loading _memory_handler of %s' % (opts.dump2))
     newmappings = dump_loader.load(opts.dump2)
     heap2 = newmappings.get_heap()
     log.info('[+] finding diff values with %s' % (opts.dump2))

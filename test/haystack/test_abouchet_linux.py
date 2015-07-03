@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Tests haystack.utils ."""
@@ -6,12 +5,9 @@
 import logging
 import unittest
 
-import haystack
-
 from haystack import abouchet
 from haystack import model
 from haystack import types
-
 from test.haystack import SrcTests
 
 
@@ -203,7 +199,6 @@ class Test6_x32(SrcTests):
     """
 
     def setUp(self):
-        import sys
         model.reset()
         types.reload_ctypes(4, 4, 8)
         class MyConfig:
@@ -604,8 +599,8 @@ class TestApiLinuxDump(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
-    #logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     # logging.getLogger('basicmodel').setLevel(level=logging.DEBUG)
     # logging.getLogger('model').setLevel(level=logging.DEBUG)
     # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

@@ -71,10 +71,10 @@ class TestMemoryDumper32(TestMemoryDumper):
         dump the heap and stack
         kill the process
         launch a process
-        dump all the memory mappings
+        dump all the memory _memory_handler
         kill the process
         compare size which should be incremental
-        compare mappings files which should be the same
+        compare _memory_handler files which should be the same
     """
 
     def setUp(self):
@@ -113,16 +113,16 @@ class TestMemoryDumper32(TestMemoryDumper):
         time.sleep(0.1)
 
     def test_mappings_file(self):
-        '''Checks if memory_dumper make a mappings index file'''
+        '''Checks if memory_dumper make a _memory_handler index file'''
         tgt1 = self._make_tgt_dir()
         self.devnull = file('/dev/null')
         self.process = self.run_app_test('test1', stdout=self.devnull.fileno())
         time.sleep(0.1)
         # FIXME, heaponly is breaking machine detection.
         out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
-        self.assertIsNotNone(file('%s/mappings' % out1))
+        self.assertIsNotNone(file('%s/_memory_handler' % out1))
         self.assertGreater(len(
-            file('%s/mappings' % out1).readlines()), 15, 'the mappings file looks too small')
+            file('%s/_memory_handler' % out1).readlines()), 15, 'the _memory_handler file looks too small')
 
     def test_dumptype_dir(self):
         '''Checks if dumping to folder works'''
@@ -149,14 +149,14 @@ class TestMemoryDumper32(TestMemoryDumper):
         size3 = self.get_folder_size(tgt3)
 
         self.assertGreater(size1, 500)  # not a null archive
-        # self.assertGreater(size2, size1) # more mappings
-        self.assertGreater(size3, size2)  # more mappings
+        # self.assertGreater(size2, size1) # more _memory_handler
+        self.assertGreater(size3, size2)  # more _memory_handler
         # print size1, size2, size3
-        # print file(out1+'/mappings').read()
+        # print file(out1+'/_memory_handler').read()
         # print '-'*80
-        # print file(out2+'/mappings').read()
+        # print file(out2+'/_memory_handler').read()
         # print '-'*80
-        # print file(out3+'/mappings').read()
+        # print file(out3+'/_memory_handler').read()
         # print '-'*80
 
         # test opening by dump_loader

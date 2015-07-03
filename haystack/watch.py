@@ -75,7 +75,7 @@ def watch(opt):
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
     instance, validated = finder.loadAt(memoryMap, addr, structType)
-    # instance.loadMembers(mappings)
+    # instance.loadMembers(_memory_handler)
 
     pyObj = instance.toPyObject()
     # print pyObj

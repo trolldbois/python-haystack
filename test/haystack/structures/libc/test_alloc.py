@@ -37,7 +37,7 @@ class TestAllocator(unittest.TestCase):
         model.reset()
 
     def test_search(self):
-        """ def search(mappings, heap, filterInuse=False ):"""
+        """ def search(_memory_handler, heap, filterInuse=False ):"""
         self.skipTest('notready')
         return
 

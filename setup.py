@@ -24,7 +24,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
     description = 'Run tests and dumps memory'
     user_options = []
     #    # The format is (long option, short option, description).
-    #    ('pylint-rcfile=', None, 'path to Pylint config file'),
+    #    ('pylint-rcfile=', None, 'path to Pylint _target_platform file'),
     #]
 
     def initialize_options(self):
@@ -37,7 +37,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         """Post-process options."""
     #  if self.pylint_rcfile:
     #    assert os.path.exists(self.pylint_rcfile), (
-    #        'Pylint config file %s does not exist.' % self.pylint_rcfile)
+    #        'Pylint _target_platform file %s does not exist.' % self.pylint_rcfile)
         pass
 
     def run(self):
@@ -65,7 +65,7 @@ setup(name="haystack",
         "Topic :: System :: Networking",
         "Topic :: Security",
         "Environment :: Console",
-        "Environment :: X11 Applications :: Qt",        
+        "Environment :: X11 Applications :: Qt",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",
@@ -75,11 +75,11 @@ setup(name="haystack",
     keywords=["memory","analysis","forensics","struct","ptrace","reverse","heap"],
     author="Loic Jaquemet",
     author_email="loic.jaquemet+python@gmail.com",
-    packages = ["haystack", "haystack.gui", "haystack.reverse", 
+    packages = ["haystack", "haystack.gui", "haystack.reverse",
                 "haystack.structures", "haystack.outputters",
                 "haystack.structures.libc", "haystack.structures.win32"],
     #package_dir={"haystack.reverse": 'haystack/reverse'},
-    package_data={"haystack.reverse": ['data/words.100'], 
+    package_data={"haystack.reverse": ['data/words.100'],
                   "haystack.structures.win32": ['profiles']},
     scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
     setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434

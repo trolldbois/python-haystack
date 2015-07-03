@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Tests haystack.utils ."""
@@ -11,12 +10,12 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 # init ctypes with a controlled type size
+import logging
+import unittest
+
 from haystack import model
 from haystack import utils
 from haystack import types
-
-import logging
-import unittest
 
 
 class TestHelpers(unittest.TestCase):
@@ -26,8 +25,12 @@ class TestHelpers(unittest.TestCase):
     def setUp(self):
         model.reset()
 
+    def tearDown(self):
+        model.reset()
+
     def test_is_address_local(self):
         ctypes = types.load_ctypes_default()
+        myutils = utils.Utils(ctypes)
         from test.src import ctypes5_gen64
         # kinda chicken and egg here...
         from haystack.mappings.process import readProcessMappings
@@ -41,7 +44,7 @@ class TestHelpers(unittest.TestCase):
                 return ctypes.string_at(addr, size)
 
         mappings = readProcessMappings(P())
-        m = mappings.mappings[0]
+        m = mappings.get_mappings()[0]
         # struct a - basic types
         s = ctypes.sizeof(ctypes5_gen64.struct_a)
 
@@ -57,43 +60,44 @@ class TestHelpers(unittest.TestCase):
         pc = ctypes.c_void_p(m.end - 1)
         ptr_c = ctypes.POINTER(ctypes5_gen64.struct_a)(c)
 
-        self.assertTrue(utils.is_address_local(pa, structType=None))
+        self.assertTrue(myutils.is_address_local(pa, structType=None))
         self.assertTrue(
-            utils.is_address_local(
+            myutils.is_address_local(
                 pa,
                 structType=ctypes5_gen64.struct_a))
-        self.assertTrue(utils.is_address_local(ptr_a, structType=None))
+        self.assertTrue(myutils.is_address_local(ptr_a, structType=None))
         self.assertTrue(
-            utils.is_address_local(
+            myutils.is_address_local(
                 ptr_a,
                 structType=ctypes5_gen64.struct_a))
 
-        self.assertTrue(utils.is_address_local(pb, structType=None))
+        self.assertTrue(myutils.is_address_local(pb, structType=None))
         self.assertTrue(
-            utils.is_address_local(
+            myutils.is_address_local(
                 pb,
                 structType=ctypes5_gen64.struct_a))
-        self.assertTrue(utils.is_address_local(ptr_b, structType=None))
+        self.assertTrue(myutils.is_address_local(ptr_b, structType=None))
         self.assertTrue(
-            utils.is_address_local(
+            myutils.is_address_local(
                 ptr_b,
                 structType=ctypes5_gen64.struct_a))
 
-        self.assertTrue(utils.is_address_local(pc, structType=None))
+        self.assertTrue(myutils.is_address_local(pc, structType=None))
         self.assertFalse(
-            utils.is_address_local(
+            myutils.is_address_local(
                 pc,
                 structType=ctypes5_gen64.struct_a))
-        self.assertTrue(utils.is_address_local(ptr_c, structType=None))
+        self.assertTrue(myutils.is_address_local(ptr_c, structType=None))
         self.assertFalse(
-            utils.is_address_local(
+            myutils.is_address_local(
                 ptr_c,
                 structType=ctypes5_gen64.struct_a))
 
     def test_pointer2bytes(self):
-        # utils.pointer2bytes(attr,nbElement)
+        # myutils.pointer2bytes(attr,nbElement)
         # FIXME: requires is_address_local
         ctypes = types.load_ctypes_default()
+        myutils = utils.Utils(ctypes)
 
         class X(ctypes.Structure):
             _fields_ = [('a', ctypes.c_long)]
@@ -101,7 +105,7 @@ class TestHelpers(unittest.TestCase):
         x = (nb * X)()
         x[2].a = 42
         ptr = ctypes.POINTER(X)(x[0])
-        bytes_x = utils.pointer2bytes(ptr, nb)
+        bytes_x = myutils.pointer2bytes(ptr, nb)
         self.assertEquals(len(bytes_x), ctypes.sizeof(x))
         self.assertEquals(
             bytes_x,
@@ -109,35 +113,40 @@ class TestHelpers(unittest.TestCase):
         pass
 
     def test_formatAddress(self):
-        types.reload_ctypes(8, 8, 16)
-        x = utils.formatAddress(0x12345678)
+        ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
+
+        x = myutils.formatAddress(0x12345678)
         self.assertEquals('0x0000000012345678', x)
         # 32b
         types.reload_ctypes(4, 4, 8)
-        x = utils.formatAddress(0x12345678)
+        x = myutils.formatAddress(0x12345678)
         self.assertEquals('0x12345678', x)
 
     def test_unpackWord(self):
         # 64b
-        types.reload_ctypes(8, 8, 16)
+        ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
+
         one = b'\x01' + 7 * b'\x00'
-        x = utils.unpackWord(one)
+        x = myutils.unpackWord(one)
         self.assertEquals(x, 1)
         # 32b
         types.reload_ctypes(4, 4, 8)
         one32 = b'\x01' + 3 * b'\x00'
-        x = utils.unpackWord(one32)
+        x = myutils.unpackWord(one32)
         self.assertEquals(x, 1)
         pass
         # endianness
         two32 = 3 * b'\x00' + '\x02'
-        x = utils.unpackWord(two32, '>')
+        x = myutils.unpackWord(two32, '>')
         self.assertEquals(x, 2)
         pass
 
     def test_get_pointee_address(self):
         """tests get_pointee_address on host ctypes POINTER and haystack POINTER"""
         ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
 
         class X(ctypes.Structure):
             _pack_ = True
@@ -152,7 +161,7 @@ class TestHelpers(unittest.TestCase):
             8 *
             '\x11' +
             '\xCC')
-        a = utils.get_pointee_address(i.p)
+        a = myutils.get_pointee_address(i.p)
         self.assertEquals(ctypes.sizeof(i.p), 8)
         self.assertNotEquals(a, 0)
         self.assertEquals(a, 0x1111111111111111)  # 8*'\x11'
@@ -164,8 +173,8 @@ class TestHelpers(unittest.TestCase):
             8 *
             '\x00' +
             '\xCC')
-        pnull = utils.get_pointee_address(i.p)
-        self.assertEquals(utils.get_pointee_address(pnull), 0)
+        pnull = myutils.get_pointee_address(i.p)
+        self.assertEquals (myutils.get_pointee_address(pnull), 0)
 
         # change arch, and retry
         ctypes = types.reload_ctypes(4, 4, 8)
@@ -177,44 +186,46 @@ class TestHelpers(unittest.TestCase):
                         ('b', ctypes.c_ubyte)]
         self.assertEquals(ctypes.sizeof(Y), 9)
         i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x11' + '\xCC')
-        a = utils.get_pointee_address(i.p)
+        a = myutils.get_pointee_address(i.p)
         self.assertEquals(ctypes.sizeof(i.p), 4)
         self.assertNotEquals(a, 0)
         self.assertEquals(a, 0x11111111)  # 4*'\x11'
         # null pointer
         i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x00' + '\xCC')
-        pnull = utils.get_pointee_address(i.p)
-        self.assertEquals(utils.get_pointee_address(pnull), 0)
+        pnull = myutils.get_pointee_address(i.p)
+        self.assertEquals (myutils.get_pointee_address(pnull), 0)
 
         # non-pointer, and void null pointer
         ctypes = types.load_ctypes_default()
         i = ctypes.c_int(69)
-        self.assertEquals(utils.get_pointee_address(i), 0)
+        self.assertEquals (myutils.get_pointee_address(i), 0)
         pnull = ctypes.c_void_p(0)
-        self.assertEquals(utils.get_pointee_address(pnull), 0)
+        self.assertEquals (myutils.get_pointee_address(pnull), 0)
 
         pass
 
     def test_offsetof(self):
         """returns the offset of a member fields in a record"""
         ctypes = types.reload_ctypes(4, 4, 8)
+        myutils = utils.Utils(ctypes)
 
         class Y(ctypes.Structure):
             _pack_ = True
             _fields_ = [('a', ctypes.c_long),
                         ('p', ctypes.POINTER(ctypes.c_int)),
                         ('b', ctypes.c_ubyte)]
-        o = utils.offsetof(Y, 'b')
+        o = myutils.offsetof(Y, 'b')
         self.assertEquals(o, 8)
 
         ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
 
         class X(ctypes.Structure):
             _pack_ = True
             _fields_ = [('a', ctypes.c_long),
                         ('p', ctypes.POINTER(ctypes.c_int)),
                         ('b', ctypes.c_ubyte)]
-        o = utils.offsetof(X, 'b')
+        o = myutils.offsetof(X, 'b')
         self.assertEquals(o, 16)
 
         class X2(ctypes.Union):
@@ -222,7 +233,7 @@ class TestHelpers(unittest.TestCase):
             _fields_ = [('a', ctypes.c_long),
                         ('p', ctypes.POINTER(ctypes.c_int)),
                         ('b', ctypes.c_ubyte)]
-        o = utils.offsetof(X2, 'b')
+        o = myutils.offsetof(X2, 'b')
         self.assertEquals(o, 0)
         pass
 
@@ -230,6 +241,7 @@ class TestHelpers(unittest.TestCase):
         """From a pointer to a member, returns the parent struct"""
         # depends on offsetof
         ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
 
         class X(ctypes.Structure):
             _pack_ = True
@@ -240,10 +252,11 @@ class TestHelpers(unittest.TestCase):
         x.a = 1
         x.b = 2
         addr_b = ctypes.addressof(x) + 16  # a + p
-        o = utils.container_of(addr_b, X, 'b')
+        o = myutils.container_of(addr_b, X, 'b')
         self.assertEquals(ctypes.addressof(o), ctypes.addressof(x))
 
         ctypes = types.reload_ctypes(4, 4, 8)
+        myutils = utils.Utils(ctypes)
 
         class Y(ctypes.Structure):
             _pack_ = True
@@ -254,15 +267,17 @@ class TestHelpers(unittest.TestCase):
         y.a = 1
         y.b = 2
         addr_b = ctypes.addressof(y) + 8  # a + p
-        o = utils.container_of(addr_b, Y, 'b')
+        o = myutils.container_of(addr_b, Y, 'b')
         self.assertEquals(ctypes.addressof(o), ctypes.addressof(y))
         pass
 
     def test_array2bytes(self):
         """array to bytes"""
         ctypes = types.reload_ctypes(4, 4, 8)
+        myutils = utils.Utils(ctypes)
+
         a = (ctypes.c_long * 12)(4, 1, 1, 1, 2)
-        x = utils.array2bytes(a)
+        x = myutils.array2bytes(a)
         self.assertEquals(b'\x04' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
@@ -271,8 +286,10 @@ class TestHelpers(unittest.TestCase):
                           7 * 4 * '\x00', x)
 
         ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
+
         a = (ctypes.c_long * 12)(4, 1, 1, 1, 2)
-        x = utils.array2bytes(a)
+        x = myutils.array2bytes(a)
         self.assertEquals(b'\x04' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
@@ -281,46 +298,51 @@ class TestHelpers(unittest.TestCase):
                           7 * 8 * '\x00', x)
 
         a = (ctypes.c_char * 12).from_buffer_copy('1234567890AB')
-        x = utils.array2bytes(a)
+        x = myutils.array2bytes(a)
         self.assertEquals(b'1234567890AB', x)
 
         # mimics what ctypes gives us on memory loading.
         a = b'1234567890AB'
-        x = utils.array2bytes(a)
+        x = myutils.array2bytes(a)
         self.assertEquals(b'1234567890AB', x)
         pass
 
     def test_bytes2array(self):
         """bytes to ctypes array"""
         ctypes = types.reload_ctypes(4, 4, 8)
+        myutils = utils.Utils(ctypes)
+
         bytes = 4 * b'\xAA' + 4 * b'\xBB' + 4 * b'\xCC' + \
             4 * b'\xDD' + 4 * b'\xEE' + 4 * b'\xFF'
-        array = utils.bytes2array(bytes, ctypes.c_ulong)
+        array = myutils.bytes2array(bytes, ctypes.c_ulong)
         self.assertEquals(array[0], 0xAAAAAAAA)
         self.assertEquals(len(array), 6)
 
         ctypes = types.reload_ctypes(8, 8, 16)
+        myutils = utils.Utils(ctypes)
+
         bytes = 4 * b'\xAA' + 4 * b'\xBB' + 4 * b'\xCC' + \
             4 * b'\xDD' + 4 * b'\xEE' + 4 * b'\xFF'
-        array = utils.bytes2array(bytes, ctypes.c_ulong)
+        array = myutils.bytes2array(bytes, ctypes.c_ulong)
         self.assertEquals(array[0], 0xBBBBBBBBAAAAAAAA)
         self.assertEquals(len(array), 3)
         pass
 
     def test_get_subtype(self):
         ctypes = types.reset_ctypes()
+        myutils = utils.Utils(ctypes)
 
         class X(ctypes.Structure):
             _fields_ = [('p', ctypes.POINTER(ctypes.c_long))]
         PX = ctypes.POINTER(X)
-        self.assertEquals(utils.get_subtype(PX), X)
+        self.assertEquals(myutils.get_subtype(PX), X)
 
         ctypes = types.reload_ctypes(4, 4, 8)  # different arch
 
         class Y(ctypes.Structure):
             _fields_ = [('p', ctypes.POINTER(ctypes.c_long))]
         PY = ctypes.POINTER(Y)
-        self.assertEquals(utils.get_subtype(PY), Y)
+        self.assertEquals(myutils.get_subtype(PY), Y)
 
     def test_xrange(self):
         """tests home made xrange that handles big ints.

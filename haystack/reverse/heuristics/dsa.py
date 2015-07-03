@@ -46,16 +46,16 @@ class ZeroFields(FieldAnalyser):
         # print 'offset:%x blen:%d'%(offset, len(bytes))
         # print repr(bytes)
         assert((offset) % self.config.get_word_size() == 0)
-        #aligned_off = (offset)%self.config.get_word_size()
+        #aligned_off = (offset)%self._target_platform.get_word_size()
         start = offset
         # if aligned_off != 0: # align to next
-        #    start += (self.config.get_word_size() - aligned_off)
-        #    size    -= (self.config.get_word_size() - aligned_off)
+        #    start += (self._target_platform.get_word_size() - aligned_off)
+        #    size    -= (self._target_platform.get_word_size() - aligned_off)
         # iterate
         matches = array.array('i')
         for i in range(start, start + size, self.config.get_word_size()):
             # PERF TODO: bytes or struct test ?
-            # print repr(bytes[start+i:start+i+self.config.get_word_size()])
+            # print repr(bytes[start+i:start+i+self._target_platform.get_word_size()])
             if bytes[
                     start + i:start + i + self.config.get_word_size()] == self._zeroes:
                 matches.append(start + i)
@@ -189,7 +189,7 @@ class PointerFields(FieldAnalyser):
 
     def make_fields(self, structure, offset, size):
         # iterate on all offsets . NOT assert( size ==
-        # self.config.get_word_size())
+        # self._target_platform.get_word_size())
         assert(
             offset %
             self.config.get_word_size() == 0)  # vaddr and offset should be aligned
@@ -201,7 +201,7 @@ class PointerFields(FieldAnalyser):
                 bytes[
                     offset:offset +
                     self.config.get_word_size()])
-            # check if pointer value is in range of mappings and set self.comment to pathname value of pointer
+            # check if pointer value is in range of _memory_handler and set self.comment to pathname value of pointer
             # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
             if value not in structure._mappings:
                 size -= self.config.get_word_size()
@@ -235,7 +235,7 @@ class IntegerFields(FieldAnalyser):
 
     def make_fields(self, structure, offset, size):
         # iterate on all offsets . NOT assert( size ==
-        # self.config.get_word_size())
+        # self._target_platform.get_word_size())
         assert(
             offset %
             self.config.get_word_size() == 0)  # vaddr and offset should be aligned
@@ -443,9 +443,9 @@ class EnrichedPointerFields(StructureAnalyser):
     def analyze_fields(self, structure):
         """ @returns structure, with enriched info on pointer fields.
         For pointer fields value:
-        (-) if pointer value is in mappings ( well it is... otherwise it would not be a pointer.)
+        (-) if pointer value is in _memory_handler ( well it is... otherwise it would not be a pointer.)
         + if value is unaligned, mark it as cheesy
-        + ask mappings for the context for that value
+        + ask _memory_handler for the context for that value
             - if context covers a data lib, it would give function names, .data , .text ( CodeContext )
             - if context covers a HEAP/heap extension (one context for multiple mmap possible) it would give structures
         + ask context for the target structure or code info
@@ -463,7 +463,7 @@ class EnrichedPointerFields(StructureAnalyser):
             # + if value is unaligned, mark it as cheesy
             if value % self.config.get_word_size():
                 field.set_uncertainty('Unaligned pointer value')
-            # + ask mappings for the context for that value
+            # + ask _memory_handler for the context for that value
             try:
                 ctx = mappings.get_context(value)  # no error expected.
                 #log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))

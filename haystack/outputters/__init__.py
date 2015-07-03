@@ -13,8 +13,11 @@ class Outputter(object):
 
     """ Outputter interface """
 
-    def __init__(self, mappings):
-        self.mappings = mappings
+    def __init__(self, memory_handler):
+        self._memory_handler = memory_handler
+        self._ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        self._utils = self._memory_handler.get_ctypes_utils()
+
 
     def parse(self, obj, prefix='', depth=10):
         raise NotImplementedError('Please define parse')

@@ -11,7 +11,7 @@ import struct
 import sys
 import time
 
-#from haystack.config import ConfigClass as Config
+#from haystack._target_platform import ConfigClass as Config
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.structures import libc
@@ -156,7 +156,7 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
             ##log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
             # optimise insertion
             # if len(my_pointers_addrs) > 0:
-            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, config.get_word_size(), False)
+            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, _target_platform.get_word_size(), False)
             # cache to disk
             mystruct.saveme()
             # next
@@ -330,9 +330,9 @@ class PointerFieldReverser(StructureOrientedReverser):
                 fromcache += 1
             else:
                 decoded += 1
-                # if not hasattr(anon, 'mappings'):
-                #  log.error('damned, no mappings in %x'%(ptr_value))
-                #  anon.mappings = context.mappings
+                # if not hasattr(anon, '_memory_handler'):
+                #  log.error('damned, no _memory_handler in %x'%(ptr_value))
+                #  anon._memory_handler = context._memory_handler
                 pfa.analyze_fields(anon)
                 anon.saveme()
             if time.time() - tl > 30:
@@ -364,7 +364,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         lists = []
         for ptr_value in context.listStructuresAddresses():
             '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
-            if context.pointers_offsets[i-1]+context.config.get_word_size() != context.pointers_offsets[i]:
+            if context.pointers_offsets[i-1]+context._target_platform.get_word_size() != context.pointers_offsets[i]:
               done+=1
               continue
             ptr_value = context._pointers_values[i-1]
@@ -413,7 +413,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     def twoWords(self, ctx, st_addr, offset=0):
         """we want to read both pointers"""
         # return
-        # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.get_word_size()]
+        # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context._target_platform.get_word_size()]
         m = ctx.mappings.get_mapping_for_address(st_addr + offset)
         return m.read_bytes(st_addr + offset, 2 * ctx.config.get_word_size())
 
@@ -421,7 +421,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         """we want to read both pointers"""
         fmt = context.config.get_word_type_char()*2
         # FIXME check and delete
-        #if context.config.get_word_size() == 8:
+        #if context._target_platform.get_word_size() == 8:
         #    return struct.unpack('QQ', self.twoWords(context, ptr_value))
         #else:
         #    return struct.unpack('LL', self.twoWords(context, ptr_value))

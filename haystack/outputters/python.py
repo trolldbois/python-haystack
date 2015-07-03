@@ -8,9 +8,6 @@ import logging
 import numbers
 import sys
 
-from haystack import utils
-from haystack import constraints
-from haystack.utils import get_subtype
 from haystack.outputters import Outputter
 
 __author__ = "Loic Jaquemet"
@@ -25,15 +22,14 @@ log = logging.getLogger('python')
 
 class PythonOutputter(Outputter):
 
-    """ Parse a ctypes structure and outputs a pure python object."""
+    """ Parse a self._ctypes structure and outputs a pure python object."""
 
     def parse(self, obj, prefix='', depth=50):
         """
-        Returns a Plain Old python object as a perfect copy of this ctypes object.
+        Returns a Plain Old python object as a perfect copy of this self._ctypes object.
         array would be lists, pointers, inner structures, and circular
         reference should be handled nicely.
         """
-        import ctypes
         # get self class.
         try:
             my_class = getattr(
@@ -45,12 +41,12 @@ class PythonOutputter(Outputter):
             log.warning('did you forget to register your python structures ?')
             raise
         my_self = my_class()
-        my_address = ctypes.addressof(obj)
+        my_address = self._ctypes.addressof(obj)
         # keep ref of the POPO too.
-        if self.mappings.hasRef(my_class, my_address):
-            return self.mappings.getRef(my_class, my_address)
+        if self._memory_handler.hasRef(my_class, my_address):
+            return self._memory_handler.getRef(my_class, my_address)
         # save our POPO in a partially resolved state, to keep from loops.
-        self.mappings.keepRef(my_self, my_class, my_address)
+        self._memory_handler.keepRef(my_self, my_class, my_address)
         for field, typ in obj.get_fields():
             attr = getattr(obj, field)
             try:
@@ -64,49 +60,48 @@ class PythonOutputter(Outputter):
         return my_self
 
     def _attrToPyObject(self, attr, field, attrtype):
-        import ctypes
-        if ctypes.is_basic_type(attrtype):
-            if ctypes.is_basic_ctype(type(attr)):
+        if self._ctypes.is_basic_type(attrtype):
+            if self._ctypes.is_basic_ctype(type(attr)):
                 obj = attr.value
             else:
                 obj = attr
-        elif ctypes.is_struct_type(attrtype) or ctypes.is_union_type(attrtype):
-            attr._mappings_ = self.mappings
+        elif self._ctypes.is_struct_type(attrtype) or self._ctypes.is_union_type(attrtype):
+            attr._mappings_ = self._memory_handler
             obj = self.parse(attr)
-        elif ctypes.is_array_of_basic_type(attrtype):
+        elif self._ctypes.is_array_of_basic_type(attrtype):
             # return a list of int, float, or a char[] to str
             obj = utils.ctypes_to_python_array(attr)
-        elif ctypes.is_array_type(attrtype):
+        elif self._ctypes.is_array_type(attrtype):
             # array of something else than int/byte
             obj = []
             eltyp = type(attr[0])
             for i in range(0, len(attr)):
                 obj.append(self._attrToPyObject(attr[i], i, eltyp))
-        elif ctypes.is_cstring_type(attrtype):
-            obj = self.mappings.getRef(
-                ctypes.CString,
+        elif self._ctypes.is_cstring_type(attrtype):
+            obj = self._memory_handler.getRef(
+                self._ctypes.CString,
                 utils.get_pointee_address(
                     attr.ptr))
-        elif ctypes.is_function_type(attrtype):
+        elif self._ctypes.is_function_type(attrtype):
             obj = repr(attr)
-        elif ctypes.is_pointer_type(attrtype):
+        elif self._ctypes.is_pointer_type(attrtype):
             # get the cached Value of the LP.
             _subtype = get_subtype(attrtype)
             _address = utils.get_pointee_address(attr)
             if _address == 0:
                 # Null pointer
                 obj = None
-            elif ctypes.is_pointer_to_void_type(attrtype):
+            elif self._ctypes.is_pointer_to_void_type(attrtype):
                 # TODO: make a prototype for c_void_p loading
                 # void types a rereturned as None
                 obj = None
-            elif ctypes.is_array_of_basic_type(attrtype):
+            elif self._ctypes.is_array_of_basic_type(attrtype):
                 log.error('basic Type array - %s' % (field))
                 obj = 'BasicType array'
             else:
                 # get the cached Value of the LP.
-                _subtype = get_subtype(attrtype)
-                cache = self.mappings.getRef(_subtype, _address)
+                _subtype = self._utils.get_subtype(attrtype)
+                cache = self._memory_handler.getRef(_subtype, _address)
                 if cache is not None:  # struct, union...
                     obj = self._attrToPyObject(cache, field, _subtype)
                 else:
@@ -116,7 +111,7 @@ class PythonOutputter(Outputter):
                     #  is that a linked list ?
                     #  is it a invalid instance ?
                     log.debug('Pointer for field:%s %s/%s not in cache '
-                              '0x%x' % (field, attrtype, get_subtype(attrtype),
+                              '0x%x' % (field, attrtype, self._utils.get_subtype(attrtype),
                                         _address))
                     return (None, None)
         elif isinstance(attr, numbers.Number):
@@ -147,7 +142,7 @@ class pyObj(object):
     Operations :
         - toString(self, prefix):    print a nicely formatted data structure
                 :param prefix: str to insert before each line (\t after that)
-        - findCtypes(self) : checks if a ctypes is to be found somewhere is the object.
+        - findCtypes(self) : checks if a self._ctypes is to be found somewhere is the object.
                                             Useful to check if the object can be pickled.
     """
 
@@ -196,7 +191,7 @@ class pyObj(object):
         return self._len_
 
     def findCtypes(self, cache=None):
-        """ recurse on members to check for ctypes object. """
+        """ recurse on members to check for self._ctypes object. """
         if cache is None:
             cache = set()
         ret = False
@@ -211,12 +206,11 @@ class pyObj(object):
             attr = getattr(self, attrname)
             log.debug('findCtypes on attr %s' % attrname)
             if self._attrFindCtypes(attr, attrname, typ, cache):
-                log.warning('Found a ctypes in %s' % (attrname))
+                log.warning('Found a self._ctypes in %s' % (attrname))
                 ret = True
         return ret
 
     def _attrFindCtypes(self, attr, attrname, typ, cache):
-        import ctypes
         ret = False
         cache.add(id(attr))
         if hasattr(attr, '_ctype_'):  # a pyobj
@@ -224,10 +218,10 @@ class pyObj(object):
         elif isinstance(attr, tuple) or isinstance(attr, list):
             for el in attr:
                 if self._attrFindCtypes(el, 'element', None, cache):
-                    log.warning('Found a ctypes in array/tuple')
+                    log.warning('Found a self._ctypes in array/tuple')
                     return True
-        elif ctypes.is_ctypes_instance(attr):
-            log.warning('Found a ctypes in self %s' % (attr))
+        elif self._ctypes.is_ctypes_instance(attr):
+            log.warning('Found a self._ctypes in self %s' % (attr))
             return True
         else:  # int, long, str ...
             ret = False
@@ -241,19 +235,17 @@ class pyObj(object):
         pass
 
 
-def findCtypesInPyObj(obj):
+def findCtypesInPyObj(memory_handler, obj):
     """ check function to help in unpickling errors correction """
-    import ctypes
-    ret = False
     if hasattr(obj, 'findCtypes'):
         if obj.findCtypes():
-            log.warning('Found a ctypes in array/tuple')
+            log.warning('Found a self._ctypes in array/tuple')
             return True
     elif isinstance(obj, tuple) or isinstance(obj, list):
         for el in obj:
-            if findCtypesInPyObj(el):
-                log.warning('Found a ctypes in array/tuple')
+            if findCtypesInPyObj(memory_handler, el):
+                log.warning('Found a self._ctypes in array/tuple')
                 return True
-    elif ctypes.is_ctypes_instance(obj):
+    elif memory_handler.get_target_platform().get_target_ctypes().is_ctypes_instance(obj):
         return True
     return False

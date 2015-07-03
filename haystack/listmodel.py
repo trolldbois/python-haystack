@@ -236,7 +236,7 @@ class ListModel(object):
     # def getListFieldIterator(self):
     #    """ returns [(fieldname, iterator), .. ] """
     #    for fieldname in self._listMember_:
-    #        yield (fieldname, self.getFieldIterator(mappings, fieldname ) )
+    #        yield (fieldname, self.getFieldIterator(_memory_handler, fieldname ) )
 
 
 def declare_double_linked_list_type(structType, forward, backward):
@@ -325,6 +325,6 @@ def declare_double_linked_list_type(structType, forward, backward):
     #structType._attrToPyObject = attrToPyObject
 
     log.debug(
-        '%s has been fitted with a list iterator self._iterateList(mappings)' %
+        '%s has been fitted with a list iterator self._iterateList(_memory_handler)' %
         (structType))
     return

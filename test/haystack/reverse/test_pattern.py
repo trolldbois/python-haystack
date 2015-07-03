@@ -70,7 +70,7 @@ class SignatureTests(unittest.TestCase):
         stop = mstart + len(dump2)
         mmap = AMemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
-        mmap2.init_config(self.config)
+        mmap2.set_target_platform(self.config)
         return mmap2, values
 
     def _make_signature(self, intervals, struct_offset=None):
@@ -98,7 +98,7 @@ class TestSignature(SignatureTests):
 
     def setUp(self):
         # Do not force ctypes to another platform, its useless
-        #self.config = config.make_config_linux_32()
+        #self._target_platform = _target_platform.make_target_linux_32()
         #self.seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
         self.name = 'test_dump_1'
         self.sig = self._make_signature(self.seq)
@@ -137,7 +137,7 @@ class TestPinnedPointers(SignatureTests):
     def setUp(self):
         # PP.P...[..].PP.PPP..P
         # forcing it on these unittest
-        #self.config = config.make_config_linux_32()
+        #self._target_platform = _target_platform.make_target_linux_32()
         #self.seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
         self.offset = 1  # offset of the pinned pointer sequence in the sig
         self.name = 'test_dump_1'
@@ -214,7 +214,7 @@ class TestAnonymousStructRange(SignatureTests):
     def setUp(self):
         # .....PP.P...[..].PP.PPP..P
         # forcing it on these unittest
-        #self.config = config.make_config_linux_32()
+        #self._target_platform = _target_platform.make_target_linux_32()
         #self.seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
         self.offset = 1  # we need to skip the start -> first pointer part
         self.name = 'struct_1'

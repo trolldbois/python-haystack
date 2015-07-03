@@ -154,21 +154,21 @@ def getDiff(d1, d2):
     log.debug('Building hashes for %s' % (d2.name))
     m2 = dict(buildMappingsHashes(mappings2))
 
-    # new mappings in d2
+    # new _memory_handler in d2
     pnames1 = set([m.pathname for m in m1.values()])
     pnames2 = set([m.pathname for m in m2.values()])
     new2 = pnames2 - pnames1
     news = []
     for pathname in new2:
         news.extend(mappings2._get_mapping(pathname))
-    print 'new mappings in %s:' % (d2.name)
+    print 'new _memory_handler in %s:' % (d2.name)
     for n in news:
         print n
     # believe in hash funcs.
     diff2 = set(m2.keys()) - set(m1.keys())
     diffs = []
     revm1 = dict((v, k) for k, v in m1.items())
-    print 'modified mappings in %s:' % (d2.name)
+    print 'modified _memory_handler in %s:' % (d2.name)
     for h2 in diff2:
         m = m2[h2]
         if m.pathname in pnames1:

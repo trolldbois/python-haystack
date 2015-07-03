@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Tests haystack.abouchet on Windows memory dump ."""
@@ -6,15 +5,8 @@
 import logging
 import unittest
 
-import haystack
-
 from haystack import abouchet
 from haystack import model
-from haystack import types
-
-from test.haystack import SrcTests
-
-#@unittest.skip('win32 memory is broken right now')
 
 
 class TestApiWin32Dump(unittest.TestCase):

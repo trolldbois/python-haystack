@@ -17,7 +17,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-log = logging.getLogger('config')
+log = logging.getLogger('_target_platform')
 
 # bad bad idea...
 MMAP_HACK_ACTIVE = True
@@ -35,14 +35,14 @@ TARGET_TRIPLETS = [
 
 class ConfigClass():
 
-    """Project-wide config class. """
+    """Project-wide _target_platform class. """
 
     def __init__(self):
         #self.cacheDir = os.path.normpath(outputDir)
         #self.imgCacheDir = os.path.sep.join([self.cacheDir,'img'])
         self.commentMaxSize = 64
         #
-        self.DUMPNAME_INDEX_FILENAME = 'mappings'
+        self.DUMPNAME_INDEX_FILENAME = '_memory_handler'
         self.CACHE_NAME = 'cache'
         self.CACHE_STRUCT_DIR = 'structs'
         # cache file names

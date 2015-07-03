@@ -10,10 +10,7 @@ import logging
 import sys
 
 from haystack import model
-
 # FIXME: ctypes = types.reload_ctyps(4,4,8) #?
-
-import struct
 import ctypes
 
 log = logging.getLogger('ctypes_malloc')
@@ -110,7 +107,7 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
 
 def is_malloc_heap(mappings, mapping):
     """test if a mapping is a malloc generated heap"""
-    config = mappings.config
+    target_platform = mappings.get_target_platform()
     try:
         # i'm lazy. Heap validation could be 10 chunks deep.
         # but we validate is_heap by looking at the mapping size
@@ -129,13 +126,13 @@ def is_malloc_heap(mappings, mapping):
         log.debug(e)
         return False
     # FIXME: is malloc word size dependent
-    if size != (len(mapping) - config.get_word_size() * len(sizes)):
+    if size != (len(mapping) - target_platform.get_word_size() * len(sizes)):
         log.debug(
             'expected %d/%d bytes, got %d' %
             (len(mapping),
              len(mapping) -
                 2 *
-                config.get_word_size() *
+                target_platform.get_word_size() *
                 len(sizes),
                 size))
         return False
@@ -173,10 +170,10 @@ struct malloc_chunk {
     """
 
     def get_mem_addr(self, orig_addr):
-        return orig_addr + 2 * self.config.get_word_size()
+        return orig_addr + 2 * self._mappings.get_target_platform().get_word_size()
 
     def get_mem_size(self):
-        return self.real_size() - self.config.get_word_size()
+        return self.real_size() - self._mappings.get_target_platform().get_word_size()
 
     def real_size(self):
         return (self.size & ~SIZE_BITS)
@@ -194,7 +191,7 @@ struct malloc_chunk {
         """extract p's inuse bit
         doesnt not work on the top one
         """
-        next_addr = self.next_addr(orig_addr) + self.config.get_word_size()
+        next_addr = self.next_addr(orig_addr) + self._mappings.get_target_platform().get_word_size()
         mmap = mappings.is_valid_address_value(next_addr)
         if not mmap:
             return 0
@@ -203,27 +200,36 @@ struct malloc_chunk {
         return next_size & PREV_INUSE
 
     def isValid(self, mappings):
+        """
 
+        :param mappings:
+        :return:
+        """
+        self._mappings = mappings
         # get the real data headers. size of fields of based on struct definition
         #    (self.prev_size,    self.size) = struct.unpack_from("<II", mem, 0x0)
         real_size = self.real_size()
+        #import code
+        #code.interact(local=locals())
         if real_size == 0:
             log.debug('real_size is 0')
             return False
-        if False:
+        if True:
             log.debug('self.prev_size %d' % self.prev_size)
             log.debug('self.size %d' % self.size)
             log.debug('real_size %d' % real_size)
 
         # inuse : to know if inuse, you have to look at next_chunk.size &
         # PREV_SIZE bit
-        try:
-            inuse = self.check_inuse(mappings, self._orig_address_)
-        except Exception:
-            return False
+        #try:
+        inuse = self.check_inuse(mappings, self._orig_address_)
+        #except Exception,e:
+        #    log.error("Exception while checking inuse:"+str(e))
+        #    raise e
+        #    return False
         log.debug('is chunk in use ?: %s' % bool(inuse))
 
-        if real_size % self.config.get_word_size() != 0:
+        if real_size % self._mappings.get_target_platform().get_word_size() != 0:
             # not a good value
             log.debug('real_size is not a WORD SIZE moduli')
             return False
@@ -231,6 +237,13 @@ struct malloc_chunk {
         return True
 
     def loadMembers(self, mappings, maxDepth):
+        """
+
+        :param mappings:
+        :param maxDepth:
+        :return:
+        """
+        self._mappings = mappings
         if maxDepth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug(
@@ -251,14 +264,14 @@ struct malloc_chunk {
                 prev, prev_addr = self.getPrevChunk(
                     mappings, self._orig_address_, maxDepth)
                 if prev_addr is not None:
-                    log.debug('prevchunk: 0x%x' % (prev_addr))
+                    log.debug('prevchunk: 0x%x',prev_addr)
 
             # update virtual fields
             if self.size != 0:
                 next, next_addr = self.getNextChunk(
                     mappings, self._orig_address_, maxDepth)
                 if next_addr is not None:
-                    log.debug('nextchunk: 0x%x' % (next_addr))
+                    log.debug('nextchunk: 0x%x',next_addr)
 
             # if next_addr is None: #most of the time its not
             #    return True
@@ -275,19 +288,19 @@ struct malloc_chunk {
         if not mmap:
             raise ValueError(
                 'STOP: prev orig_addr invalid: 0x%x' %
-                (orig_addr))
+                orig_addr)
         # FIXME: check if this is correct. No prev to start of maps
         if mmap.start == orig_addr:
             log.debug(
                 'STOP: prev orig_addr is same as mapping.start: 0x%x' %
-                (orig_addr))
+                orig_addr)
             return None, None
         if self.prev_size > 0:
             prev_addr = orig_addr - self.prev_size
             if not mappings.is_valid_address_value(prev_addr):
-                raise ValueError('STOP: prev_addr invalid: 0x%x' % (prev_addr))
+                raise ValueError('STOP: prev_addr invalid: 0x%x' % prev_addr)
             # if prev_addr not in mmap:
-            #    mmap = mappings.is_valid_address_value(prev_addr)
+            #    mmap = _memory_handler.is_valid_address_value(prev_addr)
             prev_chunk = mmap.read_struct(prev_addr, malloc_chunk)
             mappings.keepRef(prev_chunk, malloc_chunk, prev_addr)
             # load
@@ -296,7 +309,7 @@ struct malloc_chunk {
                 if not ret:
                     raise ValueError('next_chunk not loaded')
             return prev_chunk, prev_addr
-        raise ValueError('STOP: prev_size <=0: 0x%x' % (self.prev_size))
+        raise ValueError('STOP: prev_size <=0: 0x%x'%self.prev_size)
 
     def getNextChunk(self, mappings, orig_addr, depth):
         # do next_chunk
@@ -311,7 +324,7 @@ struct malloc_chunk {
             (next_addr, self.real_size()))
         if next_addr == orig_addr:
             return None, None
-        # check if its in mappings
+        # check if its in _memory_handler
         if not mappings.is_valid_address_value(next_addr):
             current_heap = mappings.get_mapping_for_address(orig_addr)
             if next_addr == current_heap.end:

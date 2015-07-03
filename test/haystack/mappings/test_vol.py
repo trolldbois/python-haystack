@@ -37,7 +37,7 @@ class TestMapper(unittest.TestCase):
         '''
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        # PID 856 has 176 mappings
+        # PID 856 has 176 _memory_handler
         mapper = VolatilityProcessMapper(f, pid)
         mappings = mapper.getMappings()
         self.assertEquals(len(mappings), 176)
@@ -45,7 +45,7 @@ class TestMapper(unittest.TestCase):
         # testing that we can use the Mapper twice in a row, without breaking
         # volatility
         pid = 676
-        # PID 676 has 118 mappings
+        # PID 676 has 118 _memory_handler
         mapper = VolatilityProcessMapper(f, pid)
         mappings = mapper.getMappings()
         self.assertEquals(len(mappings), 118)
@@ -53,7 +53,7 @@ class TestMapper(unittest.TestCase):
 
     def test_heaps(self):
         ''' look for heaps in pid 856'''
-        ''' for x in mappings:
+        ''' for x in _memory_handler:
                 res = x.readStruct(x.start,winheap.HEAP)
                 if res.Signature == 0xeeffeeffL:
                     print x.start, "Signature:", hex(res.Signature)
@@ -71,7 +71,7 @@ class TestMapper(unittest.TestCase):
                  0xd60000L,0xe20000L,0xe80000L,0x7f6f0000L]
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        # PID 856 has 176 mappings
+        # PID 856 has 176 _memory_handler
         mapper = VolatilityProcessMapper(f, pid)
         mappings = mapper.getMappings()
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Dumps a process memory mappings to a haystack dump format."""
+"""Dumps a process memory _memory_handler to a haystack dump format."""
 
 import logging
 import argparse
@@ -14,6 +14,7 @@ import os
 from haystack import dbg
 from haystack import utils
 from haystack import argparse_utils
+from haystack import target
 from haystack.mappings.process import readProcessMappings
 
 
@@ -54,7 +55,7 @@ class MemoryDumper:
         return self.mappings
 
     def connectProcess(self):
-        """Connect the debugguer to the process and gets the memory mappings
+        """Connect the debugguer to the process and gets the memory _memory_handler
         metadata."""
         self.dbg = dbg.PtraceDebugger()
         self.process = self.dbg.addProcess(self._pid, is_attached=False)
@@ -65,8 +66,9 @@ class MemoryDumper:
             raise IOError
             # ptrace exception is raised before that
         self.mappings = readProcessMappings(self.process)
-        log.debug('mappings read. Dropping ptrace on pid.')
-        self.mappings.init_config()
+        log.debug('_memory_handler read. Dropping ptrace on pid.')
+        _target_platform = target.make_target_platform()
+        self.mappings.set_target_platform()
         return
 
     def dump(self, dest=None):
@@ -80,7 +82,7 @@ class MemoryDumper:
         return self._dest
 
     def _dump_to_dir(self):
-        """Dump memory mappings to files in a directory."""
+        """Dump memory _memory_handler to files in a directory."""
         if os.path.isfile(self._dest):
             raise TypeError('target is a file. You asked for a directory dump. '
                             'Please delete the file.')
@@ -91,7 +93,7 @@ class MemoryDumper:
         return
 
     def _dump_to_file(self):
-        """Dump memory mappings to an archive."""
+        """Dump memory _memory_handler to an archive."""
         if os.path.isdir(self._dest):
             raise TypeError('Target is a dir. You asked for a file dump. '
                             'Please delete the dir.')
@@ -103,7 +105,7 @@ class MemoryDumper:
 
     def _dump_all_mappings_winapp(self, destdir):
         # winappdbg
-        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
+        self.index = file(os.path.join(destdir, '_memory_handler'), 'w+')
         # test dump only the heap
         err = 0
         memory_maps = self.process.generate_memory_snaphost()
@@ -120,11 +122,11 @@ class MemoryDumper:
         return
 
     def _dump_all_mappings(self, destdir):
-        """Iterates on all mappings and dumps them to file."""
-        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
+        """Iterates on all _memory_handler and dumps them to file."""
+        self.index = file(os.path.join(destdir, '_memory_handler'), 'w+')
         # test dump only the heap
         err = 0
-        # print '\n'.join([str(m) for m in self.mappings])
+        # print '\n'.join([str(m) for m in self._memory_handler])
         if self._compact_dump:
             self.__required = self.mappings.get_heaps()
             self.__required.append(self.mappings.get_stack())
@@ -191,17 +193,17 @@ class MemoryDumper:
 
 
 def dump(pid, outfile, typ="dir", compact=False):
-    """Dumps a process memory mappings to Haystack dump format."""
+    """Dumps a process memory _memory_handler to Haystack dump format."""
     dumper = MemoryDumper(pid, outfile, typ, compact)
     dumper.connectProcess()
     destname = dumper.dump()
-    log.info('Process %d memory mappings dumped to file %s' % (dumper._pid,
+    log.info('Process %d memory _memory_handler dumped to file %s' % (dumper._pid,
                                                                destname))
     return destname
 
 
 def _dump(opt):
-    """Dumps a process memory mappings to Haystack dump format."""
+    """Dumps a process memory _memory_handler to Haystack dump format."""
     return dump(opt.pid, opt.dumpname, opt.type)
 
 

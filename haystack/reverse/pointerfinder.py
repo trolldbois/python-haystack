@@ -49,7 +49,7 @@ def _openDumpfile(dumpfile):
 
 
 def mergeDump(dumpFile):
-    log.info('Loading the mappings in the memory dump file.')
+    log.info('Loading the _memory_handler in the memory dump file.')
     mappings = _openDumpfile(dumpFile)
     if mappings is None:
         return
@@ -118,7 +118,7 @@ class AbstractSearcher(FeedbackGiver):
     """ Search for something in memspace.
         feedback(step, val) will be called each step
     """
-    WORDSIZE = ctypes.sizeof(ctypes.c_void_p)  # config
+    WORDSIZE = ctypes.sizeof(ctypes.c_void_p)  # _target_platform
 
     def __init__(self, searchMapping, steps=10, feedback=None):
         """

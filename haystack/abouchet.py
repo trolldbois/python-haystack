@@ -37,12 +37,12 @@ class StructFinder:
 
     """ Generic structure finder.
     Will search a structure defined by it's pointer and other constraints.
-    Address space is defined by    mappings.
+    Address space is defined by    _memory_handler.
     Target memory perimeter is defined by targetMappings.
-    targetMappings is included in mappings.
+    targetMappings is included in _memory_handler.
 
     :param mappings: address space
-    :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+    :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
     """
 
     def __init__(self, mappings, targetMappings=None, updateCb=None):
@@ -53,7 +53,7 @@ class StructFinder:
         if targetMappings is None:
             self.targetMappings = mappings
         log.debug(
-            'StructFinder on %d memorymappings. Search Perimeter on %d mappings.' %
+            'StructFinder on %d memorymappings. Search Perimeter on %d _memory_handler.' %
             (len(
                 self.mappings), len(
                 self.targetMappings)))
@@ -100,7 +100,7 @@ class StructFinder:
             returns POINTERS to structType instances.
         """
         import ctypes
-        # update process mappings
+        # update process _memory_handler
         log.debug(
             "scanning 0x%lx --> 0x%lx %s" %
             (memoryMap.start, memoryMap.end, memoryMap.pathname))
@@ -170,12 +170,12 @@ class VerboseStructFinder(StructFinder):
 
     """ structure finder with a update callback to be more verbose.
     Will search a structure defined by it's pointer and other constraints.
-    Address space is defined by    mappings.
+    Address space is defined by    _memory_handler.
     Target memory perimeter is defined by targetMappings.
-    targetMappings is included in mappings.
+    targetMappings is included in _memory_handler.
 
     :param mappings: address space
-    :param targetMappings: search perimeter. If None, all mappings are used in the search perimeter.
+    :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
     :param updateCb: callback func. for periodic status update
     """
 
@@ -288,7 +288,7 @@ def _find_struct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1
         # live PID. with mmap or not
         cmd_line.extend(["--pid", "%d" % pid])
     elif memfile:
-        # proc mappings dump file
+        # proc _memory_handler dump file
         cmd_line.extend(["--memfile", memfile])
     cmd_line.append('--pickled')
     # always add search
@@ -362,7 +362,7 @@ def refresh_struct_process(pid, structType, offset, debug=False, nommap=False):
         # live PID. with mmap or not
         cmd_line.extend(["--pid", "%d" % pid])
     #elif memfile:
-    #    # proc mappings dump file
+    #    # proc _memory_handler dump file
     #    cmd_line.extend(["--memfile", memfile])
     cmd_line.append('--pickled')
     # always add search
@@ -401,11 +401,11 @@ def search_struct_mem(structName, mappings, targetMappings=None, maxNum=-1):
     """
         Search a structure in a specific memory mapping.
 
-        if targetMappings is not specified, the search will occur in each memory mappings
-         in mappings.
+        if targetMappings is not specified, the search will occur in each memory _memory_handler
+         in _memory_handler.
 
         :param structName the structure name.
-        :param mappings the memory mappings list.
+        :param mappings the memory _memory_handler list.
         :param targetMappings the list of specific mapping to look into.
         :param maxNum the maximum number of results expected. -1 for infinite.
     """
@@ -561,23 +561,23 @@ def _search(mappings, structType, fullscan=False, hint=0,
     return _output(mappings, outs, rtype)
 
 
-def _output(mappings, outs, rtype):
+def _output(memory_handler, outs, rtype):
     """ Return results in the rtype format"""
     if len(outs) == 0:
         log.info('Found no occurence.')
         return None
     if rtype == 'string':
-        outputter = text.RecursiveTextOutputter(mappings)
+        outputter = text.RecursiveTextOutputter(memory_handler)
         ret = '['
         for ss, addr in outs:
             ret += "# --------------- 0x%lx \n%s" % (addr, outputter.parse(ss))
             pass
         ret += ']'
         return ret
-    parser = python.PythonOutputter(mappings)
+    parser = python.PythonOutputter(memory_handler)
     ret = [(parser.parse(ss), addr) for ss, addr in outs]
     # last check to clean the structure from any ctypes Structure
-    if python.findCtypesInPyObj(ret):
+    if python.findCtypesInPyObj(memory_handler,ret):
         raise HaystackError(
             'Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     # finally
@@ -591,7 +591,7 @@ def _output(mappings, outs, rtype):
     return None
 
 
-def _show_output(mappings, instance, validated, rtype):
+def _show_output(memory_handler, instance, validated, rtype):
     """ Return results in the rtype format.
     Results of non validated instance are not very interesting.
     """
@@ -600,14 +600,14 @@ def _show_output(mappings, instance, validated, rtype):
         if not validated:
             str_fn = lambda x: str(x)
         else:
-            outputter = text.RecursiveTextOutputter(mappings)
+            outputter = text.RecursiveTextOutputter(memory_handler)
             str_fn = lambda x: outputter.parse(x)
         return "(%s\n, %s)" % (str_fn(instance), validated)
     # else {'json', 'pickled', 'python'} : # cast in pyObject
-    parser = python.PythonOutputter(mappings)
+    parser = python.PythonOutputter(memory_handler)
     pyObj = parser.parse(instance)
     # last check to clean the structure from any ctypes Structure
-    if python.findCtypesInPyObj(pyObj):
+    if python.findCtypesInPyObj(memory_handler,pyObj):
         raise HaystackError(
             'Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     # finally
