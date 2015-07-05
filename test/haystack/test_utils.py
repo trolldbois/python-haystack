@@ -113,14 +113,13 @@ class TestHelpers(unittest.TestCase):
         pass
 
     def test_formatAddress(self):
-        ctypes = types.reload_ctypes(8, 8, 16)
-        myutils = utils.Utils(ctypes)
+        myutils64 = utils.Utils(types.reload_ctypes(8, 8, 16))
+        myutils32 = utils.Utils(types.reload_ctypes(4, 4, 8))
 
-        x = myutils.formatAddress(0x12345678)
+        x = myutils64.formatAddress(0x12345678)
         self.assertEquals('0x0000000012345678', x)
         # 32b
-        types.reload_ctypes(4, 4, 8)
-        x = myutils.formatAddress(0x12345678)
+        x = myutils32.formatAddress(0x12345678)
         self.assertEquals('0x12345678', x)
 
     def test_unpackWord(self):

@@ -152,7 +152,13 @@ class Utils(interfaces.ICTypesUtils):
             return sb
 
     def bytes2array(self, bytes, typ):
-        """Converts a bytestring in a self.__ctypes array of typ() elements."""
+        """
+        Converts a bytestring in a self.__ctypes array of typ() elements.
+
+        :param bytes: str
+        :param typ: ctypes
+        :return: array
+        """
         typLen = self.__ctypes.sizeof(typ)
         if len(bytes) % typLen != 0:
             raise ValueError('thoses bytes are not an array of %s' % (typ))

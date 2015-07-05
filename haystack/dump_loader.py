@@ -84,7 +84,7 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
 class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
     """ Handles memory load from several recognized format."""
-    indexFilename = 'mappings'
+    indexFilename = '_memory_mappings'
     filePrefix = './'
 
     def _is_valid(self):

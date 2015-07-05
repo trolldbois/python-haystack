@@ -7,53 +7,63 @@ import logging
 import sys
 
 log = logging.getLogger('types')
+
+# let's use a chache
 __PROXIES = {}
 
-
-def reset_ctypes():
-    """Reset sys.module to import the host ctypes module."""
-    # we want to keep a unique ref to a unique instanciation of the real ctypes
-    # Deletion of the real module is bad for the health.
-    # import the current ctypes
-    import ctypes
-    if isinstance(ctypes, CTypesProxy):
-        ctypes = set_ctypes(__PROXIES['real'])
-    elif 'real' not in __PROXIES.keys():
-        # do nothing and save it
-        __PROXIES['real'] = ctypes
-    else:
-        ctypes = set_ctypes(__PROXIES['real'])
-    log.debug('reset: ctypes changed to %s ' % (ctypes))
-    return ctypes
-
-
-def load_ctypes_default():
-    """Load sys.module with a default host-mimicking ctypes module proxy."""
-    ctypes = reset_ctypes()
-    # get the hosts' types
-    longsize = ctypes.sizeof(ctypes.c_long)
-    pointersize = ctypes.sizeof(ctypes.c_void_p)
-    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
-    return reload_ctypes(longsize, pointersize, longdoublesize)
-
-
-def reload_ctypes(longsize, pointersize, longdoublesize):
-    """Load sys.modle with a tuned ctypes module proxy."""
+def build_ctypes_proxy(longsize, pointersize, longdoublesize):
+    """Make a ctypes proxy with these charateristics."""
     if (longsize, pointersize, longdoublesize) in __PROXIES:
         instance = __PROXIES[(longsize, pointersize, longdoublesize)]
-        set_ctypes(instance)
         return instance
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
-    return set_ctypes(instance)
+    return instance
 
-
-def set_ctypes(_ctypes):
-    """Load Change the global ctypes module to a specific proxy instance"""
-    sys.modules['ctypes'] = _ctypes
-    log.debug('set: ctypes changed to %s' % (_ctypes))
-    return sys.modules['ctypes']
-
+#def reset_ctypes():
+#    """Reset sys.module to import the host ctypes module."""
+#    # we want to keep a unique ref to a unique instanciation of the real ctypes
+#    # Deletion of the real module is bad for the health.
+#    # import the current ctypes
+#    import ctypes
+#    if isinstance(ctypes, CTypesProxy):
+#        ctypes = set_ctypes(__PROXIES['real'])
+#    elif 'real' not in __PROXIES.keys():
+#        # do nothing and save it
+#        __PROXIES['real'] = ctypes
+#    else:
+#        ctypes = set_ctypes(__PROXIES['real'])
+#    log.debug('reset: ctypes changed to %s ' % (ctypes))
+#    return ctypes
+#
+#
+#def load_ctypes_default():
+#    """Load sys.module with a default host-mimicking ctypes module proxy."""
+#    ctypes = reset_ctypes()
+#    # get the hosts' types
+#    longsize = ctypes.sizeof(ctypes.c_long)
+#    pointersize = ctypes.sizeof(ctypes.c_void_p)
+#    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
+#    return reload_ctypes(longsize, pointersize, longdoublesize)
+#
+#
+#def reload_ctypes(longsize, pointersize, longdoublesize):
+#    """Load sys.modle with a tuned ctypes module proxy."""
+#    if (longsize, pointersize, longdoublesize) in __PROXIES:
+#        instance = __PROXIES[(longsize, pointersize, longdoublesize)]
+#        set_ctypes(instance)
+#        return instance
+#    instance = CTypesProxy(longsize, pointersize, longdoublesize)
+#    __PROXIES[(longsize, pointersize, longdoublesize)] = instance
+#    return set_ctypes(instance)
+#
+#
+#def set_ctypes(_ctypes):
+#    """Load Change the global ctypes module to a specific proxy instance"""
+#    sys.modules['ctypes'] = _ctypes
+#    log.debug('set: ctypes changed to %s' % (_ctypes))
+#    return sys.modules['ctypes']
+#
 
 def check_arg_is_type(func):
     def check_arg(self, objtype):

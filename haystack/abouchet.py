@@ -41,21 +41,21 @@ class StructFinder:
     Target memory perimeter is defined by targetMappings.
     targetMappings is included in _memory_handler.
 
-    :param mappings: address space
+    :param _memory_mappings: address space
     :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
     """
 
-    def __init__(self, mappings, targetMappings=None, updateCb=None):
-        self.mappings = mappings
-        if isinstance(mappings, bool):
+    def __init__(self, memory_handler, targetMappings=None, updateCb=None):
+        self._memory_mappings = memory_handler
+        if isinstance(memory_handler, bool):
             raise TypeError()
         self.targetMappings = targetMappings
         if targetMappings is None:
-            self.targetMappings = mappings
+            self.targetMappings = memory_handler
         log.debug(
             'StructFinder on %d memorymappings. Search Perimeter on %d _memory_handler.' %
             (len(
-                self.mappings), len(
+                self._memory_mappings), len(
                 self.targetMappings)))
         return
 
@@ -99,7 +99,7 @@ class StructFinder:
 
             returns POINTERS to structType instances.
         """
-        import ctypes
+        my_ctypes = self._memory_mappings.get_target_platform().get_target_ctypes()
         # update process _memory_handler
         log.debug(
             "scanning 0x%lx --> 0x%lx %s" %
@@ -108,8 +108,8 @@ class StructFinder:
         # where do we look
         start = memoryMap.start
         end = memoryMap.end
-        plen = ctypes.sizeof(ctypes.c_void_p)  # use aligned words only
-        structlen = ctypes.sizeof(structType)
+        plen = my_ctypes.sizeof(my_ctypes.c_void_p)  # use aligned words only
+        structlen = my_ctypes.sizeof(structType)
         # ret vals
         outputs = []
         # alignement
@@ -156,7 +156,7 @@ class StructFinder:
         # instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
         instance = memoryMap.read_struct(offset, structType)
         # check if data matches
-        if (instance.loadMembers(self.mappings, depth)):
+        if (instance.loadMembers(self._memory_mappings, depth)):
             log.info("found instance %s @ 0x%lx" % (structType, offset))
             # do stuff with it.
             validated = True
@@ -174,13 +174,13 @@ class VerboseStructFinder(StructFinder):
     Target memory perimeter is defined by targetMappings.
     targetMappings is included in _memory_handler.
 
-    :param mappings: address space
+    :param _memory_mappings: address space
     :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
     :param updateCb: callback func. for periodic status update
     """
 
-    def __init__(self, mappings, targetMappings=None, updateCb=None):
-        StructFinder.__init__(self, mappings, targetMappings)
+    def __init__(self, memory_handler, targetMappings=None, updateCb=None):
+        StructFinder.__init__(self, memory_handler, targetMappings)
         self.updateCb = updateCb
         self._updateCb_init()
 
@@ -272,8 +272,8 @@ def _find_struct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1
         :param debug if True, activate debug logs.
         :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
     """
-    import ctypes
-    if not isinstance(structType, type(ctypes.Structure)):
+    my_ctypes = self._memory_mappings.get_target_platform().get_target_ctypes()
+    if not isinstance(structType, type(my_ctypes.Structure)):
         raise TypeError('structType arg must be a ctypes.Structure')
     structName = checkModulePath(structType)  # add to sys.path
     cmd_line = [getMainFile(), "%s" % structName]
@@ -348,8 +348,8 @@ def refresh_struct_process(pid, structType, offset, debug=False, nommap=False):
         :param debug if True, activate debug logs.
         :param nommap if True, do not use mmap when mapping the memory
     """
-    import ctypes
-    if not isinstance(structType, type(ctypes.Structure)):
+    my_ctypes = self._memory_mappings.get_target_platform().get_target_ctypes()
+    if not isinstance(structType, type(my_ctypes.Structure)):
         raise TypeError('structType arg must be a ctypes.Structure')
     structName = checkModulePath(structType)  # add to sys.path
     cmd_line = [getMainFile(), '%s' % structName]
@@ -641,7 +641,7 @@ def refresh(args):
         volname=args.volname).make_memory_handler()
     finder = StructFinder(mappings)
 
-    memoryMap = finder.mappings.is_valid_address_value(addr)
+    memoryMap = finder._memory_mappings.is_valid_address_value(addr)
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
@@ -688,7 +688,7 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     structType = getKlass(structname)
     finder = StructFinder(mappings)
     # validate the input address.
-    memoryMap = finder.mappings.is_valid_address_value(address)
+    memoryMap = finder._memory_mappings.is_valid_address_value(address)
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")

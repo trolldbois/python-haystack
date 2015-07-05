@@ -70,7 +70,7 @@ def watch(opt):
     mappings = memory_mapper.MemoryHandlerFactory(opt).make_memory_handler()
     finder = abouchet.StructFinder(mappings)
     # get the target memory map
-    memoryMap = finder.mappings.is_valid_address_value(addr)
+    memoryMap = finder._memory_mappings.is_valid_address_value(addr)
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")

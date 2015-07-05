@@ -7,14 +7,11 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 # init ctypes with a controlled type size
+import logging
+import unittest
+
 from haystack import model
 from haystack import types
-
-import operator
-import os
-import logging
-import struct
-import unittest
 
 
 class TestWalkers(unittest.TestCase):
@@ -27,7 +24,6 @@ class TestWalkers(unittest.TestCase):
     def tearDown(self):
         model.reset()
 
-    @unittest.skip('we do not support that right now')
     def test_walker_after_arch_change(self):
         x32 = types.reload_ctypes(4, 4, 8)
         x64 = types.reload_ctypes(8, 8, 16)
