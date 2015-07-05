@@ -3,12 +3,13 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import ctypes
 import logging
 import sys
 
 log = logging.getLogger('types')
 
-# let's use a chache
+# let's use a cache
 __PROXIES = {}
 
 def build_ctypes_proxy(longsize, pointersize, longdoublesize):
@@ -98,11 +99,8 @@ class CTypesProxy(object):
         self.__longsize = longsize
         self.__pointersize = pointersize
         self.__longdoublesize = longdoublesize
-        # remove all refs to the ctypes modules or proxies
-        ctypes = reset_ctypes()
-        # import the real one
-        #import ctypes
         self.__real_ctypes = ctypes
+        # TODO delete
         if hasattr(ctypes, 'proxy'):
             raise RuntimeError('base ctype should not be a proxy')
         # copy every members from ctypes to our proxy instance
@@ -112,10 +110,6 @@ class CTypesProxy(object):
             elif not name.startswith('__'):
                 setattr(self, name, getattr(ctypes, name))
                 # print name
-        del ctypes
-        # replace it. We want ctypes to be self for the rest of init.
-        sys.modules['ctypes'] = self
-        log.debug('init: ctypes changed to %s' % (self))
         self.__init_types()
         self.__name__ = "CTypesProxy-%d:%d:%d" % (self.__longsize,
                                                   self.__pointersize,
