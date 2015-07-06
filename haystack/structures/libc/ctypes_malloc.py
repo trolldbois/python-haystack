@@ -110,7 +110,7 @@ def is_malloc_heap(mappings, mapping):
     target_platform = mappings.get_target_platform()
     try:
         # i'm lazy. Heap validation could be 10 chunks deep.
-        # but we validate is_heap by looking at the mapping size
+        # but we validate _is_heap by looking at the mapping size
         sizes = [
             size for (
                 addr,

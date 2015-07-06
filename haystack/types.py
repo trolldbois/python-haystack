@@ -4,6 +4,7 @@
 #
 
 import ctypes
+import importlib
 import logging
 import sys
 
@@ -11,6 +12,14 @@ log = logging.getLogger('types')
 
 # let's use a cache
 __PROXIES = {}
+
+def load_ctypes_default():
+    """Load a wrapper around the ctypes local platform."""
+    # get the hosts' types
+    longsize = ctypes.sizeof(ctypes.c_long)
+    pointersize = ctypes.sizeof(ctypes.c_void_p)
+    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
+    return build_ctypes_proxy(longsize, pointersize, longdoublesize)
 
 def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     """Make a ctypes proxy with these charateristics."""
@@ -20,6 +29,26 @@ def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
+
+def import_module_for_target_platform(module_name, target):
+    # save ctypes
+    real_ctypes = sys.modules['ctypes']
+    sys.modules['ctypes'] = target.get_target_ctypes()
+    if module_name in sys.modules:
+        del sys.modules[module_name]
+    my_module = None
+    try:
+        # try to load that module with our ctypes proxy
+        my_module = importlib.import_module(module_name)
+        # FIXME debug and TU this to be sure it is removed from modules
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+    finally:
+        # always clean up
+        sys.modules['ctypes'] = real_ctypes
+    return my_module
+
+
 
 #def reset_ctypes():
 #    """Reset sys.module to import the host ctypes module."""
@@ -45,10 +74,10 @@ def build_ctypes_proxy(longsize, pointersize, longdoublesize):
 #    longsize = ctypes.sizeof(ctypes.c_long)
 #    pointersize = ctypes.sizeof(ctypes.c_void_p)
 #    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
-#    return reload_ctypes(longsize, pointersize, longdoublesize)
+#    return build_ctypes_proxy(longsize, pointersize, longdoublesize)
 #
 #
-#def reload_ctypes(longsize, pointersize, longdoublesize):
+#def load_ctypes(longsize, pointersize, longdoublesize):
 #    """Load sys.modle with a tuned ctypes module proxy."""
 #    if (longsize, pointersize, longdoublesize) in __PROXIES:
 #        instance = __PROXIES[(longsize, pointersize, longdoublesize)]
@@ -114,7 +143,7 @@ class CTypesProxy(object):
         self.__name__ = "CTypesProxy-%d:%d:%d" % (self.__longsize,
                                                   self.__pointersize,
                                                   self.__longdoublesize)
-        log.info("types: %s %s",str(self.c_void_p),id(self.c_void_p))
+        log.debug("types: %s %s",str(self.c_void_p),id(self.c_void_p))
         pass
 
     def __init_types(self):
@@ -429,12 +458,10 @@ class CTypesProxy(object):
         # obj and next_type have to be our instances
         if not isinstance(obj, self._T_Simple):
             raise TypeError(
-                '%s is not a haystack ctypes pointer' %
-                (type(obj)))
+                '%s is not a haystack ctypes pointer', type(obj))
         if not issubclass(next_type, self._T_Simple):
             raise TypeError(
-                '%s is not a haystack ctypes pointer' %
-                (next_type))
+                '%s is not a haystack ctypes pointer', next_type)
         instance = next_type()
         instance.value = obj.value
         return instance

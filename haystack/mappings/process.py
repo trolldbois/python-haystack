@@ -194,8 +194,7 @@ def readProcessMappings(process):
     #if True:
     #    ctypes = types.set_ctypes(before)
     _target_platform = target.TargetPlatform.make_target_platform_local()
-    _heap_finder = heapwalker.make_heap_finder(_target_platform)
-    _memory_handler = MemoryHandler(mappings, _target_platform,_heap_finder)
+    _memory_handler = MemoryHandler(mappings, _target_platform)
     return _memory_handler
 
 

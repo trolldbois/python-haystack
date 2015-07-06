@@ -60,7 +60,7 @@ class TestAllocator(unittest.TestCase):
         for heap in self._memory_handler.get_heaps():
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
-                (finder.read_heap(heap).ProcessHeapsListIndex, heap.start))
+                (finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
             walker = win7heapwalker.Win7HeapWalker(self._memory_handler, heap, 0)
             for x, s in walker._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
@@ -78,7 +78,7 @@ class TestAllocator(unittest.TestCase):
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
             finder = win7heapwalker.Win7HeapFinder(self._memory_handler.get_target_platform())
-            cheap = finder.read_heap(heap)
+            cheap = finder._read_heap(heap)
             log.debug(
                 '-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x' %
                 (heap.start, free_size, cheap.TotalFreeSize))
@@ -96,7 +96,7 @@ class TestAllocator(unittest.TestCase):
             log.debug('     \= total: \t\t free:%0.5x ' % (total))
 
             maxlen = len(heap)
-            cheap = finder.read_heap(heap)
+            cheap = finder._read_heap(heap)
             self.assertEquals(cheap.TotalFreeSize * 8, total)
             log.debug(
                 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x' %
@@ -111,9 +111,9 @@ class TestAllocator(unittest.TestCase):
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler.get_target_platform())
         for i, m in enumerate(self._memory_handler.get_heaps()):
-            # print '%d @%0.8x'%(finder.read_heap(m).ProcessHeapsListIndex,
+            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex,
             # m.start)
-            self.assertEquals(finder.read_heap(m).ProcessHeapsListIndex, i + 1,
+            self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
                               'ProcessHeaps should have correct indexes')
         return
 

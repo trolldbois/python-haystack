@@ -83,8 +83,8 @@ class TestReload(unittest.TestCase):
         # we keep the cache
         self.assertIn(X, ctypes._pointer_type_cache.keys())
 
-        c4 = types.reload_ctypes(4, 4, 8)
-        c8 = types.reload_ctypes(8, 8, 16)
+        c4 = types.build_ctypes_proxy(4, 4, 8)
+        c8 = types.build_ctypes_proxy(8, 8, 16)
         cd = types.load_ctypes_default()
         if c4 != cd:
             newarch = c4
@@ -115,7 +115,7 @@ class TestReload(unittest.TestCase):
     def test_reset_ctypes(self):
         """Test if reset gives the original types"""
         import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         proxy = ctypes
         for name, value in make_types().items():
             globals()[name] = value
@@ -132,7 +132,7 @@ class TestReload(unittest.TestCase):
     def test_load_ctypes_default(self):
         """Test if the default proxy works"""
         import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         self.assertTrue(ctypes.proxy)
         # test
         ctypes = types.load_ctypes_default()
@@ -160,7 +160,7 @@ class TestReload(unittest.TestCase):
     def test_reload_ctypes(self):
         """Tests loading of specific arch ctypes."""
         import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         for name, value in make_types().items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
@@ -169,7 +169,7 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(4, 8, 8)
+        ctypes = types.build_ctypes_proxy(4, 8, 8)
         for name, value in make_types().items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
@@ -178,7 +178,7 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(8, 4, 8)
+        ctypes = types.build_ctypes_proxy(8, 4, 8)
         for name, value in make_types().items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
@@ -187,7 +187,7 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(8, 4, 16)
+        ctypes = types.build_ctypes_proxy(8, 4, 16)
         for name, value in make_types().items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
@@ -196,15 +196,15 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 16)
 
         # other arch
-        self.assertRaises(NotImplementedError, types.reload_ctypes, 16, 8, 16)
+        self.assertRaises(NotImplementedError, types.build_ctypes_proxy, 16, 8, 16)
         return
 
     def test_set_ctypes(self):
         """Test reloading of previous defined arch-ctypes."""
         import ctypes
-        x32 = types.reload_ctypes(4, 4, 8)
-        x64 = types.reload_ctypes(8, 8, 16)
-        win = types.reload_ctypes(8, 8, 8)
+        x32 = types.build_ctypes_proxy(4, 4, 8)
+        x64 = types.build_ctypes_proxy(8, 8, 16)
+        win = types.build_ctypes_proxy(8, 8, 8)
         ctypes = types.reset_ctypes()
 
         ctypes = types.set_ctypes(x32)
@@ -410,7 +410,7 @@ class TestProxyCTypesAPI(unittest.TestCase):
         # print
         #import code
         # code.interact(local=locals())
-        
+
     def test_cfunctype(self):
         #verify this is our proxy module
         self.assertTrue(hasattr(ctypes,'get_real_ctypes_member'))
@@ -428,7 +428,7 @@ class TestBasicFunctions32(TestBasicFunctions):
         # use the host ctypes with modif
         model.reset()
         import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         self.assertTrue(ctypes.proxy)
         for name, value in make_types().items():
             globals()[name] = value
@@ -468,7 +468,7 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         # use the host ctypes with modif
         model.reset()
         import ctypes
-        ctypes = types.reload_ctypes(8, 8, 8)
+        ctypes = types.build_ctypes_proxy(8, 8, 8)
         self.assertTrue(ctypes.proxy)
         for name, value in make_types().items():
             globals()[name] = value
@@ -506,7 +506,7 @@ class TestBasicFunctions64(TestBasicFunctions):
         # use the host ctypes with modif
         model.reset()
         import ctypes
-        ctypes = types.reload_ctypes(8, 8, 16)
+        ctypes = types.build_ctypes_proxy(8, 8, 16)
         self.assertTrue(ctypes.proxy)
         for name, value in make_types().items():
             globals()[name] = value

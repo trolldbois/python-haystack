@@ -15,6 +15,7 @@ from struct import pack
 import os
 
 from haystack.abc import interfaces
+from haystack import types
 
 # never use ctypes import
 
@@ -24,6 +25,8 @@ class Utils(interfaces.ICTypesUtils):
 
     def __init__(self, _target_ctypes):
         self.__ctypes = _target_ctypes
+        assert isinstance(_target_ctypes, types.CTypesProxy)
+        self.__local_process_memory_handler = None
 
     def formatAddress(self, addr):
         if self.__ctypes.sizeof(self.__ctypes.c_void_p) == 8:
@@ -44,8 +47,16 @@ class Utils(interfaces.ICTypesUtils):
         False, otherwise.
         """
         addr = self.get_pointee_address(obj)
+        log.debug('get_pointee_address returned %x',addr)
         if addr == 0:
             return False
+        # maintain a cache to improve performance.
+        # if not found in cache, try to reload local process memory space.
+        # the calling function is most certainly going to fail anyway
+        if self.__local_process_memory_handler is not None:
+            ret = self.__local_process_memory_handler.is_valid_address(obj, structType)
+            if ret:
+                return ret
 
         class P:
             pid = os.getpid()
@@ -56,9 +67,9 @@ class Utils(interfaces.ICTypesUtils):
 
         # loading dependencies
         from haystack.mappings.process import readProcessMappings
-        mappings = readProcessMappings(P())  # memory_mapping
-        ret = mappings.is_valid_address(obj, structType)
-        return ret
+        memory_handler = readProcessMappings(P())  # memory_mapping
+        self.__local_process_memory_handler = memory_handler
+        return self.__local_process_memory_handler.is_valid_address(obj, structType)
 
     def get_pointee_address(self, obj):
         """
@@ -67,8 +78,10 @@ class Utils(interfaces.ICTypesUtils):
         :param obj: a pointer.
         """
         # check for homebrew POINTER
+        #import pdb
+        #pdb.set_trace()
         if hasattr(obj, '_sub_addr_'):
-            # print 'obj._sub_addr_', hex(obj._sub_addr_)
+            log.debug('obj._sub_addr_: 0x%x', obj._sub_addr_)
             return obj._sub_addr_
         elif isinstance(obj, int) or isinstance(obj, long):
             # basictype pointers are created as int.
@@ -177,18 +190,18 @@ class Utils(interfaces.ICTypesUtils):
             raise e
         return array
 
-    def pointer2bytes(self, attr, nbElement):
+    def pointer2bytes(self, attr, nb_element):
         """
         Returns an array from a self.__ctypes POINTER, given the number of elements.
 
         :param attr: the structure member.
-        :param nbElement: the number of element in the array.
+        :param nb_element: the number of element in the array.
         """
         # attr is a pointer and we want to read elementSize of type(attr.contents))
         if not self.is_address_local(attr):
-            return 'POINTER NOT LOCAL'
-        firstElementAddr = self.get_pointee_address(attr)
-        array = (type(attr.contents) * nbElement).from_address(firstElementAddr)
+            raise TypeError('POINTER NOT LOCAL: %x', attr)
+        first_element_addr = self.get_pointee_address(attr)
+        array = (type(attr.contents) * nb_element).from_address(first_element_addr)
         # we have an array type starting at attr.contents[0]
         return self.array2bytes(array)
 

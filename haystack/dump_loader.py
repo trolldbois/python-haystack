@@ -207,8 +207,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             _mappings.append(mmap)
         _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
-        _heap_finder = heapwalker.make_heap_finder(_target_platform)
-        self._memory_handler = MemoryHandler(_mappings, _target_platform, _heap_finder, self.dumpname)
+        self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
         return
 
 

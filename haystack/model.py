@@ -51,13 +51,13 @@ def reset():
     """Clean the book"""
     log.info('RESET MODEL')
     __book.modules = set()
-    from haystack import types
-    ctypes = types.load_ctypes_default()
+    #from haystack import types
+    #ctypes = types.load_ctypes_default()
     for mod in sys.modules.keys():
         if 'haystack.reverse' in mod:
             del sys.modules[mod]
             log.debug('de-imported %s',mod)
-    log.info("MODEL: %s %s",str(ctypes.c_void_p),id(ctypes.c_void_p))
+    #log.info("MODEL: %s %s",str(ctypes.c_void_p),id(ctypes.c_void_p))
 
 
 def registeredModules():
@@ -75,6 +75,8 @@ class LoadException(Exception):
 import inspect
 import sys
 
+
+## FIXME: remove
 
 def copyGeneratedClasses(src, dst):
     """Copies the ctypes Records of a module into another module.
@@ -107,7 +109,7 @@ def copyGeneratedClasses(src, dst):
             src.__name__))
     return
 
-
+## FIXME: move to class
 def __createPOPOClasses(targetmodule):
     """ Load all model classes and create a similar non-ctypes Python class
         thoses will be used to translate non pickable ctypes into POPOs.
@@ -154,7 +156,7 @@ def __createPOPOClasses(targetmodule):
         (_created, targetmodule.__name__))
     return _created
 
-
+## FIXME: move to class
 def registerModule(targetmodule):
     """Registers a module that contains ctypes records.
 
@@ -180,11 +182,3 @@ def registerModule(targetmodule):
     __book.addModule(targetmodule)
     log.debug('registered %d module total' % (len(__book.getModules())))
     return
-
-# only load ctypes at the end.
-import ctypes
-if not hasattr(ctypes, 'proxy'):  # its not a proxy
-    global ctypes
-    # we need to switch to a ctypes proxy (CString, LoadableMembers...)
-    from haystack import types
-    ctypes = types.load_ctypes_default()

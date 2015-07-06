@@ -32,7 +32,7 @@ class TestMmapHack(unittest.TestCase):
         model.reset()
 
     def test_mmap_hack64(self):
-        ctypes = types.reload_ctypes(8, 8, 16)
+        ctypes = types.build_ctypes_proxy(8, 8, 16)
         real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
         fin = file(fname)
@@ -57,7 +57,7 @@ class TestMmapHack(unittest.TestCase):
         self.assertIn('CTypesProxy-8:8:16', str(ctypes))
 
     def test_mmap_hack32(self):
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         real_ctypes_long = ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
         fin = file(fname)

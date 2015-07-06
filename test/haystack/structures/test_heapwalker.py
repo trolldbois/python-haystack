@@ -25,8 +25,8 @@ class TestWalkers(unittest.TestCase):
         model.reset()
 
     def test_walker_after_arch_change(self):
-        x32 = types.reload_ctypes(4, 4, 8)
-        x64 = types.reload_ctypes(8, 8, 16)
+        x32 = types.build_ctypes_proxy(4, 4, 8)
+        x64 = types.build_ctypes_proxy(8, 8, 16)
 
         from haystack.structures.libc import libcheapwalker
         from haystack.structures.win32 import winheapwalker
@@ -66,9 +66,9 @@ class TestWalkers(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(winxp_x64.__heap_type), 2792) #   0xae8
 
         # try x32 while there
-        #self.assertEquals(ctypes.sizeof(libc_x32.__heap_type), 8)
-        #self.assertEquals(ctypes.sizeof(winxp_x32.__heap_type), 1430)
-        #self.assertEquals(ctypes.sizeof(win7_x32.__heap_type), 312)
+        #self.assertEquals(ctypes.sizeof(libc_x32._heap_type), 8)
+        #self.assertEquals(ctypes.sizeof(winxp_x32._heap_type), 1430)
+        #self.assertEquals(ctypes.sizeof(win7_x32._heap_type), 312)
 
 
 if __name__ == '__main__':

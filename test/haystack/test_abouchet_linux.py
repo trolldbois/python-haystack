@@ -18,7 +18,7 @@ class Test7_x32(SrcTests):
 
     def setUp(self):
         model.reset()
-        types.reload_ctypes(4, 4, 8)
+        types.build_ctypes_proxy(4, 4, 8)
         self.memdumpname = 'test/src/test-ctypes7.32.dump'
         self.classname = 'test.src.ctypes7.struct_Node'
         self._load_offsets_values(self.memdumpname)
@@ -105,7 +105,7 @@ class Test7_x64(SrcTests):
 
     def setUp(self):
         model.reset()
-        types.reload_ctypes(8, 8, 16)
+        types.build_ctypes_proxy(8, 8, 16)
         self.memdumpname = 'test/src/test-ctypes7.64.dump'
         self.classname = 'test.src.ctypes7.struct_Node'
         self._load_offsets_values(self.memdumpname)
@@ -200,7 +200,7 @@ class Test6_x32(SrcTests):
 
     def setUp(self):
         model.reset()
-        types.reload_ctypes(4, 4, 8)
+        types.build_ctypes_proxy(4, 4, 8)
         class MyConfig:
             def get_word_size(self):
                 return 4
@@ -362,7 +362,7 @@ class Test6_x64(SrcTests):
 
     def setUp(self):
         model.reset()
-        types.reload_ctypes(8, 8, 16)
+        types.build_ctypes_proxy(8, 8, 16)
         class MyConfig:
             def get_word_size(self):
                 return 8

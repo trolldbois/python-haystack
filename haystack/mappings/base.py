@@ -30,9 +30,9 @@ Its intended to be retrofittable with ptrace's memory _memory_handler.
 import logging
 
 # haystack
-from haystack import utils
 from haystack import target
 from haystack.abc import interfaces
+from haystack.structures import heapwalker
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -106,7 +106,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         return self.start <= address < self.end
 
     def __str__(self):
-        text = ' '.join([utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
+        text = ' '.join([self._utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
                          '0x%0.8x' % (self.offset), '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % (self.inode), str(self.pathname)])
         return text
 
@@ -197,26 +197,22 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
     then identify its ITargetPlatform characteristics
     and produce an IMemoryHandler for this process memory dump """
 
-    def __init__(self, mappings, target, heap_finder, name='noname'):
+    def __init__(self, mapping_list, _target, name='noname'):
         """Set the list of IMemoryMapping and the ITargetPlatform
 
-        :param mappings: list of IMemoryMapping
-        :param target: the ITargetPlatform
-        :param heap_finder: the IHeapWalker
+        :param mapping_list: list of IMemoryMapping
+        :param _target: the ITargetPlatform
         :return: IMemoryHandler, self
         :rtype: IMemoryHandler
         """
-        if not isinstance(mappings, list):
+        if not isinstance(mapping_list, list):
             raise TypeError('Please feed me a list of IMemoryMapping')
-        if not isinstance(target, interfaces.ITargetPlatform):
+        if not isinstance(_target, interfaces.ITargetPlatform):
             raise TypeError('Please feed me a list of IMemoryMapping')
-        if not isinstance(heap_finder, interfaces.IHeapFinder):
-            raise TypeError('Please feed me a list of IMemoryMapping')
-        self._mappings = mappings
-        self._target = target
+        self._mappings = mapping_list
+        self._target = _target
         for m in self._mappings:
             m.set_target_platform(self._target)
-        self._heap_finder = heap_finder
         self._utils = self._target.get_target_ctypes_utils()
         self.name = name
         # FIXME _target_platform
@@ -226,13 +222,19 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         self.__book = _book()
         # FIXME reduce open files.
         self.__required_maps = []
+        # finish initialization
+        self._heap_finder = self._set_heap_finder()
+
+    def _set_heap_finder(self):
+        """set the IHeapFinder for that process memory."""
+        return heapwalker.make_heap_finder(self)
 
     def get_target_platform(self):
         """Returns the ITargetPlatform for that process memory."""
         return self._target
 
     def get_heap_finder(self):
-        """Returns the IHeapWalker for that process memory."""
+        """Returns the IHeapFinder for that process memory."""
         return self._heap_finder
 
     def get_heap_walker(self, heap):
@@ -343,11 +345,11 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
         Returns the mapping in which the address stands otherwise.
         """
-        import ctypes
+        ctypes = self._target.get_target_ctypes()
         m = self.get_mapping_for_address(addr)
         log.debug('is_valid_address_value = %x %s' % (addr, m))
         if m:
-            if (structType is not None):
+            if structType is not None:
                 s = ctypes.sizeof(structType)
                 if (addr + s) < m.start or (addr + s) > m.end:
                     return False

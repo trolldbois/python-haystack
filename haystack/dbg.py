@@ -36,11 +36,6 @@ import logging
 
 log = logging.getLogger("gbd")
 
-from haystack import types
-import ctypes
-if hasattr(ctypes, 'proxy'):
-    types.reset_ctypes()
-
 import platform
 if platform.system() != 'Windows':
     # ptrace debugguer
@@ -65,8 +60,7 @@ if platform.system() != 'Windows':
 
 else:
     # TODO Test unit
-    import winappdbg
-    from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
+    from winappdbg import win32, Process, System, HexDump
 
     class WinAppDebugger:
 
@@ -263,5 +257,3 @@ else:
     class ProcessError(Exception):
         pass
     ProcError = ProcessError
-
-types.load_ctypes_default()

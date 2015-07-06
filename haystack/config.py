@@ -115,7 +115,7 @@ class ConfigClass():
         # win  32 bits, 4,4,8
         # linux 32 bits, 4,4,12
         # linux 64 bits, 8,8,16
-        self.ctypes = types.reload_ctypes(wordsize, ptrsize, ldsize)
+        self.ctypes = types.build_ctypes_proxy(wordsize, ptrsize, ldsize)
         return
 
     # FUNCTIONS FOR REVERSE

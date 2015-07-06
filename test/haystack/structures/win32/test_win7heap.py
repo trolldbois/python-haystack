@@ -83,7 +83,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
         load = heap.loadMembers(self._mappings, 10)
         walker = win7heapwalker.Win7HeapFinder(self._mappings.get_target_platform())
-        self.assertTrue(walker.is_heap(self._mappings, h))
+        self.assertTrue(walker._is_heap(self._mappings, h))
 
     def test_is_heap_all(self):
         # You have to import after ctypes has been tuned ( mapping loader )
@@ -96,7 +96,7 @@ class TestWin7Heap(unittest.TestCase):
             # check heap.Signature
             self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(walker.is_heap(self._mappings, h))
+            self.assertTrue(walker._is_heap(self._mappings, h))
 
         heaps = sorted([(h.start, len(h)) for h in self._mappings.get_heaps()])
         self.assertEquals(heaps, self._known_heaps)
@@ -135,7 +135,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(walker.is_heap(self._mappings, h))
+            self.assertTrue(walker._is_heap(self._mappings, h))
             # get free UCRS from heap
             reserved_ucrs = heap.get_free_UCR_segment_list(self._mappings)
             all_ucrs = []
@@ -190,7 +190,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(walker.is_heap(self._mappings, h))
+            self.assertTrue(walker._is_heap(self._mappings, h))
 
             segments = heap.get_segment_list(self._mappings)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
@@ -264,7 +264,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(walker.is_heap(self._mappings, h))
+            self.assertTrue(walker._is_heap(self._mappings, h))
 
             allocated, free = heap.get_chunks(self._mappings)
             s_allocated = sum([c[1] for c in allocated])
@@ -314,7 +314,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self._mappings.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             load = heap.loadMembers(self._mappings, 10)
-            self.assertTrue(walker.is_heap(self._mappings, h))
+            self.assertTrue(walker._is_heap(self._mappings, h))
 
             allocated, free = heap.get_chunks(self._mappings)
             freelists = heap.get_freelists(self._mappings)
