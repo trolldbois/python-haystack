@@ -28,12 +28,10 @@ class TestListStruct(unittest.TestCase):
     """
 
     def setUp(self):
-        model.reset()
         self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
 
     def tearDown(self):
         self.mappings = None
-        model.reset()
 
     def test_iter(self):
         #offset = 0x390000
@@ -107,7 +105,6 @@ class TestListStructTest6(SrcTests):
     """
 
     def setUp(self):
-        model.reset()
         self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
         self.memdumpname = 'test/src/test-ctypes6.32.dump'
         self._load_offsets_values(self.memdumpname)
@@ -126,7 +123,6 @@ class TestListStructTest6(SrcTests):
         self.mappings = None
         self.m = None
         self.usual = None
-        model.reset()
 
     def test_iter(self):
 

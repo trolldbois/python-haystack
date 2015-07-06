@@ -17,7 +17,6 @@ class Test7_x32(SrcTests):
     Mainly tests cross-arch c_void_p."""
 
     def setUp(self):
-        model.reset()
         types.build_ctypes_proxy(4, 4, 8)
         self.memdumpname = 'test/src/test-ctypes7.32.dump'
         self.classname = 'test.src.ctypes7.struct_Node'
@@ -36,7 +35,6 @@ class Test7_x32(SrcTests):
         self.memdumpname = None
         self.classname = None
         self.address = None
-        model.reset()
 
     def test_refresh(self):
         from test.src import ctypes7
@@ -104,7 +102,6 @@ class Test7_x64(SrcTests):
     Mainly tests cross-arch c_void_p."""
 
     def setUp(self):
-        model.reset()
         types.build_ctypes_proxy(8, 8, 16)
         self.memdumpname = 'test/src/test-ctypes7.64.dump'
         self.classname = 'test.src.ctypes7.struct_Node'
@@ -123,7 +120,6 @@ class Test7_x64(SrcTests):
         self.memdumpname = None
         self.classname = None
         self.address = None
-        model.reset()
 
     def test_refresh(self):
         import ctypes

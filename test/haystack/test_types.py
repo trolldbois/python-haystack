@@ -11,16 +11,12 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 # init ctypes with a controlled type size
-from haystack import model
+import logging
+import unittest
+import ctypes
+
 from haystack import types
 
-import operator
-import os
-import logging
-import struct
-import unittest
-
-import ctypes
 
 def make_types():
     import ctypes
@@ -62,7 +58,7 @@ class TestReload(unittest.TestCase):
     """Tests sizes after ctypes changes."""
 
     def setUp(self):
-        model.reset()
+        pass
 
     # test ctypes._pointer_type_cache
     def test_pointer_type_cache(self):
@@ -251,8 +247,6 @@ class TestBasicFunctions(unittest.TestCase):
     """Tests basic haystack.types functions on base types."""
 
     def setUp(self):
-        model.reset()
-        import ctypes
         ctypes = types.load_ctypes_default()
         for name, value in make_types().items():
             globals()[name] = value
@@ -359,7 +353,6 @@ class TestProxyCTypesAPI(unittest.TestCase):
     """Tests that the ctypes API is respected."""
 
     def setUp(self):
-        model.reset()
         ctypes = types.load_ctypes_default()
         for name, value in make_types().items():
             globals()[name] = value
@@ -426,7 +419,6 @@ class TestBasicFunctions32(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        model.reset()
         import ctypes
         ctypes = types.build_ctypes_proxy(4, 4, 8)
         self.assertTrue(ctypes.proxy)
@@ -466,7 +458,6 @@ class TestBasicFunctionsWin(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        model.reset()
         import ctypes
         ctypes = types.build_ctypes_proxy(8, 8, 8)
         self.assertTrue(ctypes.proxy)
@@ -504,7 +495,6 @@ class TestBasicFunctions64(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        model.reset()
         import ctypes
         ctypes = types.build_ctypes_proxy(8, 8, 16)
         self.assertTrue(ctypes.proxy)

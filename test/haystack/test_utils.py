@@ -25,16 +25,15 @@ class TestHelpers(unittest.TestCase):
     """Tests helpers functions."""
 
     def setUp(self):
-        model.reset()
+        pass
 
     def tearDown(self):
-        model.reset()
+        pass
 
     def test_is_address_local(self):
         my_target = target.TargetPlatform.make_target_platform_local()
         my_ctypes = my_target.get_target_ctypes()
         my_utils = my_target.get_target_ctypes_utils()
-        # from test.src import ctypes5_gen64
         ctypes5_gen64 = types.import_module_for_target_platform("test.src.ctypes5_gen64", my_target)
         # kinda chicken and egg here...
         from haystack.mappings.process import readProcessMappings
@@ -359,6 +358,6 @@ class TestHelpers(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    #logging.basicConfig(level=logging.INFO)
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)

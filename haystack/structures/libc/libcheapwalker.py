@@ -69,6 +69,7 @@ class LibcHeapFinder(heapwalker.HeapFinder):
             del sys.modules[module_name]
         from haystack.structures.libc import ctypes_malloc
         self._ctypes_malloc_module = ctypes_malloc
+        self._memory_handler.get_model().registerModule(sys.modules[__name__])
         # FIXME debug and TU this to be sure it is removed from modules
         if module_name in sys.modules:
             del sys.modules[module_name]

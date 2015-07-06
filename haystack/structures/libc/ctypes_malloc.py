@@ -10,6 +10,7 @@ import logging
 import sys
 
 from haystack import model
+
 # FIXME: ctypes = types.reload_ctyps(4,4,8) #?
 import ctypes
 
@@ -28,7 +29,7 @@ NON_MAIN_ARENA = 4
 SIZE_BITS = (PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
 
 
-def iter_user_allocations(mappings, heap, filterInuse=False):
+def iter_user_allocations(memory_handler, heap, filterInuse=False):
     """
     Lists all (addr, size) of allocated space by malloc_chunks.
     """
@@ -37,7 +38,7 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
 
     chunk = heap.read_struct(orig_addr, malloc_chunk)
     assert hasattr(chunk, '_orig_address_')
-    ret = chunk.loadMembers(mappings, 10)
+    ret = chunk.loadMembers(memory_handler, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
     addr, size = (chunk.get_mem_addr(orig_addr), chunk.get_mem_size())
@@ -45,20 +46,20 @@ def iter_user_allocations(mappings, heap, filterInuse=False):
         raise StopIteration
 
     if filterInuse:
-        if chunk.check_inuse(mappings, orig_addr):
+        if chunk.check_inuse(memory_handler, orig_addr):
             yield (addr, size)
     else:
         yield (addr, size)
 
     while True:
-        next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
+        next, next_addr = chunk.getNextChunk(memory_handler, orig_addr, 0)
         if next_addr is None:
             break
-        ret = next.loadMembers(mappings, 10)
+        ret = next.loadMembers(memory_handler, 10)
         if not ret:
             raise ValueError
         if filterInuse:
-            if next.check_inuse(mappings, next_addr):
+            if next.check_inuse(memory_handler, next_addr):
                 yield (next.get_mem_addr(next_addr), next.get_mem_size())
         else:
             yield (next.get_mem_addr(next_addr), next.get_mem_size())
@@ -355,4 +356,3 @@ malloc_chunk._fields_ = [
 malloc_chunk.expectedValues = {}
 
 
-model.registerModule(sys.modules[__name__])

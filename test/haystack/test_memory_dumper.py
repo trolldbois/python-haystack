@@ -3,7 +3,6 @@
 
 """Tests haystack.utils ."""
 
-import os
 import unittest
 import logging
 import shutil
@@ -11,6 +10,8 @@ import tempfile
 import time
 import subprocess
 import sys
+
+import os
 
 from haystack import model
 from haystack import memory_dumper
@@ -29,7 +30,7 @@ class TestMemoryDumper(unittest.TestCase):
     def setUpClass(cls):
         # run make.py
         import os
-        import sys
+
         if not os.geteuid() == 0:
             #raise RuntimeError(
             raise unittest.SkipTest(
@@ -78,7 +79,6 @@ class TestMemoryDumper32(TestMemoryDumper):
     """
 
     def setUp(self):
-        model.reset()
         from haystack import types
         types.build_ctypes_proxy(4, 4, 8)
         self.cpu_bits = '32'

@@ -31,6 +31,7 @@ import logging
 
 # haystack
 from haystack import target
+from haystack import model
 from haystack.abc import interfaces
 from haystack.structures import heapwalker
 
@@ -220,10 +221,12 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         # FIXME book keeper
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
+        self.__model = model.Model(self)
         # FIXME reduce open files.
         self.__required_maps = []
         # finish initialization
         self._heap_finder = self._set_heap_finder()
+
 
     def _set_heap_finder(self):
         """set the IHeapFinder for that process memory."""
@@ -246,6 +249,10 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
     def get_ctypes_utils(self):
         """Returns the Utils toolkit."""
         return self._utils
+
+    def get_model(self):
+        """Returns the Model cache."""
+        return self.__model
 
     # FIXME remove/move to subclass
     def get_context(self, addr):

@@ -16,7 +16,6 @@ class TestApiWin32Dump(unittest.TestCase):
     """
 
     def setUp(self):
-        model.reset()
         self.memdumpname = 'test/dumps/putty/putty.1.dump'
         self.classname = 'haystack.structures.win32.win7heap.HEAP'
         self.known_heaps = [(0x00390000, 8956), (0x00540000, 868),
@@ -33,7 +32,6 @@ class TestApiWin32Dump(unittest.TestCase):
         self.memdumpname = None
         self.classname = None
         self.known_heaps = None
-        model.reset()
 
     def test_show(self):
         instance, validated = abouchet.show_dumpname(

@@ -84,7 +84,7 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
 class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
     """ Handles memory load from several recognized format."""
-    indexFilename = '_memory_mappings'
+    indexFilename = 'mappings'
     filePrefix = './'
 
     def _is_valid(self):
@@ -96,6 +96,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 self._open_file = lambda archive, name: file(
                     os.path.sep.join([archive, name]), 'rb')
                 return True
+            log.error("_test_dir returned False")
         else:
             raise IOError('%s is not a directory' % (self.dumpname))
         return False
@@ -105,7 +106,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             self.archive = self.dumpname
             members = os.listdir(self.archive)
             if self.indexFilename not in members:
-                log.error('no _memory_handler index file in the directory.')
+                log.error('no mappings index file in the directory.')
                 return False
             self.filePrefix = ''
             self.mmaps = [m for m in members if '-0x' in m]

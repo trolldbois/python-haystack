@@ -18,8 +18,6 @@ class TestCopyModule(unittest.TestCase):
 
     def test_registerModule(self):
         from haystack import model
-        model.reset()
-
         try:
             from test.structures import good
             from test.structures import good_gen
