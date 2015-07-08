@@ -11,14 +11,11 @@ This module holds some basic constraint class for the Haystack model.
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import ConfigParser
-import os
 import logging
 import sys
-import re
-import token
-import tokenize
-import StringIO
 
+import os
+import re
 
 log = logging.getLogger('constraints')
 
@@ -37,9 +34,9 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
 
     """
     valid_names = ['IgnoreMember', 'NotNull', 'RangeValue', 'PerfectMatch']
-    _rv = re.compile(r'''[\s,](RangeValue\([^)]+\))''')
-    _pm = re.compile(r'''[\s,](PerfectMatch\('[^']+'\))''')
-    _nn = re.compile(r'''[\s,](NotNull)[,]*,?''')
+    _rv = re.compile(r'''(?P<fn>RangeValue\((?P<args>[^)]+)\))''')
+    _pm = re.compile(r'''(?P<fn>PerfectMatch\((?P<args>'[^']+')\))''')
+    _nn = re.compile(r'''(?P<fn>NotNull)[,]*,?''')
 
     def read(self, filename):
         """
@@ -81,78 +78,80 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             _args = []
             # check for functions in the list
             for fn in [self._rv, self._pm, self._nn]:
-                res = self._search_for(fn, remnant)
+                res = []
+                # find all fn
+                for x in fn.finditer(remnant):
+                    log.debug("Found fn %s", x.group('fn'))
+                    res.append(x.group('fn'))
+                # now parse each fn
                 for match in res:
                     _args.append(self._parse_c(match))
                     # remove them from the parsing lefts
-                    remnant = remnant.replace(match,"")
+                    remnant = remnant.replace(match, "")
                     log.debug("remnant is %s", remnant)
+            # now handle other element in list, like integers and floats
             _class_type = list
             args = remnant.split(',')
             for x in args:
                 if '' == x.strip():
                     continue
-                #if 'ValueRange' in x:
-                #    _args.append(self._parse_c(x))
-                #elif 'PerfectMatch' in x:
-                #    _args.append(self._parse_c(x))
-                #elif 'NotNull' in x:
-                #    _args.append(self._parse_c(x))
                 else:
                     try:
                         # try an int
                         _args.append(int(x))
                     except ValueError, e:
                         # try a float
-                        _args.append(float(x))
-            # FIXME dont put ',' in PerfectMatch
+                        try:
+                            _args.append(float(x))
+                        except ValueError, e:
+                            # fallback to string
+                            _args.append(str(x))
             return _class_type(_args)
         else:
             return self._parse_c(value)
 
     def _search_for(self, reg, txt):
-        search = reg.findall(txt)
-        res = []
-        for x in search:
-            log.debug("Found rv %s", x)
-            res.append(x)
+        """
+        Do a regex search for known functions.
+
+        :param reg: the regex for that function.
+        :param txt: the list of found functions with args.
+        :return:
+        """
         return res
 
-
     def _parse_c(self, value):
-        tokens = list(tokenize.generate_tokens(StringIO.StringIO(value).readline))
-        if token.NAME != tokens[0][0]:
-            log.error("config file has issue")
-            raise ValueError("config file has issue")
-        elif 'NotNull' == tokens[0][1]:
+        """
+        Parse the function and args for a known function.
+
+        :param value:
+        :return:
+        """
+        if 'NotNull' in value:
             return NotNull
-        # else its a RangeValue or a PerfectMatch
-        log.debug('we have a IConstraint %s', tokens[0][1])
+        # get the function name
         _t = value.split('(')
         _class_name = _t[0]
-        if _class_name not in self.valid_names:
-            log.error('invalid constraints near %s', _class_name)
+        args = _t[1][:-1]
+        # else its a RangeValue or a PerfectMatch
+        log.debug('we have a IConstraint %s', _class_name)
+        if _class_name not in ['RangeValue', 'PerfectMatch']:
             raise ValueError('invalid constraints near %s', _class_name)
-        log.debug('_class_name: %s', _class_name)
-        remnant = _t[1][:-1]
-        log.debug('args: %s', remnant)
-        if not hasattr(sys.modules[__name__], _class_name):
-            raise TypeError("constraint %s of unknown type", _class_name)
         # we know the constraint
         _class_type = getattr(sys.modules[__name__], _class_name)
-
+        log.debug('args: %s', args)
         # look at the args
         _args = None
         if _class_name == 'RangeValue':
-            _args = remnant.split(',')
+            _args = self._rv.search(value).group('args').split(',')
+            assert len(_args) == 2
             _args = [int(x) for x in _args]
             return _class_type(*_args)
         elif _class_name == 'PerfectMatch':
-            _args = remnant[1:-1]
+            _args = args[1:-1]
             return _class_type(_args)
         else:
             raise RuntimeError('no such constraint %s',_class_name)
-
 
     def apply_to_module(self, constraints,module):
         """
