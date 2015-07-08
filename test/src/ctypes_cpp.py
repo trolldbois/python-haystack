@@ -62,7 +62,7 @@ class E(D, C):
 ################ START copy generated classes ##########################
 
 # copy generated classes (gen.*) to this module as wrapper
-###model.copyGeneratedClasses(gen, sys.modules[__name__])
+###model.copy_generated_classes(gen, sys.modules[__name__])
 
 # register all classes (gen.*, locally defines, and local duplicates) to haystack
 # create plain old python object from ctypes.Structure's, to picke them

@@ -16,7 +16,11 @@ import ConfigParser
 class TestCopyModule(unittest.TestCase):
 
 
-    def test_registerModule(self):
+    def test_register_module(self):
+        """
+        Register module allows for python types to be created next to ctypes structures.
+        :return:
+        """
         _memory_handler= process.readLocalProcessMappings()
         my_target = _memory_handler.get_target_platform()
         my_model = model.Model(_memory_handler)
@@ -28,8 +32,8 @@ class TestCopyModule(unittest.TestCase):
             good_gen = types.import_module_for_target_platform("test.structures.good_gen", my_target)
             bad_gen = types.import_module_for_target_platform("test.structures.bad_gen", my_target)
             # copy bad_gen in good
-            my_model.copyGeneratedClasses(bad_gen, good)
-            my_model.copyGeneratedClasses(good_gen, good)
+            my_model.copy_generated_classes(bad_gen, good)
+            my_model.copy_generated_classes(good_gen, good)
             self.assertIn('Struct1', good.__dict__.keys())
             self.assertIn('Struct2', good.__dict__)
             self.assertNotIn('Struct1_py', good.__dict__)
@@ -49,7 +53,7 @@ class TestCopyModule(unittest.TestCase):
             self.fail(e)
 
         # test if register works (creates POPO)
-        my_model.registerModule(bad)
+        my_model.register_module(bad)
         self.assertIn('Struct1_py', bad.__dict__)
         self.assertIn('expectedValues', bad.Struct1.__dict__)
         # POPO is not create in good
@@ -57,7 +61,7 @@ class TestCopyModule(unittest.TestCase):
         self.assertIn('expectedValues', good.Struct1.__dict__)
         self.assertNotIn('expectedValues', good.Struct2.__dict__)
 
-        my_model.registerModule(good)  # creates POPO for the rest
+        my_model.register_module(good)  # creates POPO for the rest
         self.assertIn('Struct2_py', good.__dict__)
         self.assertIn('expectedValues', good.Struct1.__dict__)
         # expectedValues is in a function

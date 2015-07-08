@@ -4,7 +4,7 @@ from haystack import model
 from haystack.constraints import RangeValue, NotNull, IgnoreMember
 
 #from test.src.ctypes7_gen64 import *
-# model.registerModule(sys.module[__name__])
+# model.register_module(sys.module[__name__])
 
 
 def populate():

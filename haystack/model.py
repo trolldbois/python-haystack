@@ -82,18 +82,16 @@ class Model(object):
                 log.debug('de-imported %s',mod)
         #log.info("MODEL: %s %s",str(ctypes.c_void_p),id(ctypes.c_void_p))
 
-    def copyGeneratedClasses(self, src, dst):
+    def copy_generated_classes(self, src, dst):
         """Copies the ctypes Records of a module into another module.
         Is equivalent to "from src import *" but with less clutter.
         E.g.: Enum, variable and functions will not be imported.
 
         Calling this method is facultative.
 
-        :param me : dst module
         :param src : src module, generated
+        :param dst : dst module
         """
-        #FIXME - definively required.
-        # pylint: disable=reimported
         log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
         copied = 0
         for (name, klass) in inspect.getmembers(src, inspect.isclass):
@@ -112,16 +110,12 @@ class Model(object):
                 src.__name__))
         return
 
-    ## FIXME: move to class
-    def __createPOPOClasses(self, targetmodule):
+    def __create_POPO_classes(self, targetmodule):
         """ Load all model classes and create a similar non-ctypes Python class
             thoses will be used to translate non pickable ctypes into POPOs.
 
             Mandatory.
         """
-        #FIXME maybe required
-        # pylint: disable=reimported
-
         _created = 0
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
             if issubclass(
@@ -146,7 +140,7 @@ class Model(object):
                 setattr(
                     sys.modules[__name__], '%s.%s_py' %
                     (targetmodule.__name__, name), kpy)
-                #setattr(sys.modules[__name__], '%s_py'%(name), kpy )
+                # setattr(sys.modules[__name__], '%s_py'%(name), kpy )
                 setattr(targetmodule, '%s_py' % (name), kpy)
                 _created += 1
                 # copy also to generated
@@ -158,8 +152,7 @@ class Model(object):
             (_created, targetmodule.__name__))
         return _created
 
-    ## FIXME: move to class
-    def registerModule(self, targetmodule):
+    def register_module(self, targetmodule):
         """Registers a module that contains ctypes records.
 
         Mandatory call that will be done by haystack scripts.
@@ -172,18 +165,18 @@ class Model(object):
         pickle/unpickle them later.
         """
         log.debug('registering module %s' % (targetmodule))
-        if targetmodule in self.registeredModules():
-            log.warning('Module %s already registered. Skipping.' % (targetmodule))
+        if targetmodule in self.get_registered_modules():
+            log.warning('Module %s already registered. Skipping.', targetmodule)
             return
-        _registered = self.__createPOPOClasses(targetmodule)
+        _registered = self.__create_POPO_classes(targetmodule)
         if _registered == 0:
             log.warning(
-                'No class found. Maybe you need to model.copyGeneratedClasses ?')
+                'No class found. Maybe you need to model.copy_generated_classes ?')
         # register once per session.
         self.__book.addModule(targetmodule)
-        log.debug('registered %d module total' % (len(self.__book.getModules())))
+        log.debug('registered %d modules total', len(self.__book.getModules()))
         return
 
-    def registeredModules(self):
+    def get_registered_modules(self):
         return self.__book.getModules()
 

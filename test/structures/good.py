@@ -15,5 +15,6 @@ class Struct2(ctypes.Structure):
 
     def fromPyObj(self, pyobj):
         self.field1 = pyobj.field1
+        # FIXME self._memory_handler.get_ctypes_utils().bytes2array
         self.field2 = bytes2array(pyobj.field2, ctypes.c_ubyte)
         return self

@@ -143,15 +143,22 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         else:
             raise RuntimeError('no such constraint %s',_class_name)
 
-    def apply_to_module(self, constraints,module):
+    def apply_to_module(self, constraints, module):
         """
         Apply the list of constraints to a module
 
         :param constraints: list of IConstraint
         :param module:
-        :return:
+        :return: module
         """
-        pass
+        for st, stc in constraints.items():
+            if not hasattr(module, st):
+                log.debug('module %s has no type %s', module, st)
+                continue
+            member = getattr(module, st)
+            log.debug("setting constraint on structure: %s %s", st, member)
+            setattr(member, 'expectedValues', stc)
+        return None
 
 class IgnoreMember(interfaces.IConstraint):
 
