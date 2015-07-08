@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+#
+
+[Struct2]
+# fieldC:       [-2,-3]
+field0:       [-2,-3]
+field1: RangeValue(1, 16)
+field2: IgnoreMember
+field3: [0,1]
+field4: PerfectMatch('qwklqwfnkl\x20+++[po-09')
+field5: NotNull
+field6: [-1,RangeValue(2,3),NotNull,1,PerfectMatch('plop'),RangeValue(4,5)]
+field7: [-1,0,0.0,1.02]
+
+
+# possible values
+#  python object with contains
+#  IgnoreMember
+#  RangeValue
+#  NotNull
+#  PerfectMatch

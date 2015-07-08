@@ -5,34 +5,39 @@
 
 import logging
 import unittest
-import sys
-
-from haystack import dump_loader
 from haystack import model
+from haystack import target
 from haystack import types
-from haystack import utils
-from haystack.structures.win32 import win7heapwalker
+from haystack.mappings import process
+
+import ConfigParser
 
 
 class TestCopyModule(unittest.TestCase):
 
+
     def test_registerModule(self):
-        from haystack import model
+        _memory_handler= process.readLocalProcessMappings()
+        my_target = _memory_handler.get_target_platform()
+        my_model = model.Model(_memory_handler)
+        config = ConfigParser.RawConfigParser()
+        config.read('test/structures/good.constraints')
+
         try:
-            from test.structures import good
-            from test.structures import good_gen
-            from test.structures import bad_gen
+            good = types.import_module_for_target_platform("test.structures.good", my_target)
+            good_gen = types.import_module_for_target_platform("test.structures.good_gen", my_target)
+            bad_gen = types.import_module_for_target_platform("test.structures.bad_gen", my_target)
             # copy bad_gen in good
-            model.copyGeneratedClasses(bad_gen, good)
-            model.copyGeneratedClasses(good_gen, good)
-            self.assertIn('Struct1', good.__dict__)
+            my_model.copyGeneratedClasses(bad_gen, good)
+            my_model.copyGeneratedClasses(good_gen, good)
+            self.assertIn('Struct1', good.__dict__.keys())
             self.assertIn('Struct2', good.__dict__)
             self.assertNotIn('Struct1_py', good.__dict__)
             self.assertNotIn('expectedValues', good.Struct1.__dict__)
         except ImportError as e:
             self.fail(e)
         try:
-            from test.structures import bad
+            bad = types.import_module_for_target_platform("test.structures.bad", my_target)
             # test if module has members
             self.assertEquals(bad.BLOCK_SIZE, 16)
             self.assertIn('Struct1', bad.__dict__)
@@ -44,7 +49,7 @@ class TestCopyModule(unittest.TestCase):
             self.fail(e)
 
         # test if register works (creates POPO)
-        model.registerModule(bad)
+        my_model.registerModule(bad)
         self.assertIn('Struct1_py', bad.__dict__)
         self.assertIn('expectedValues', bad.Struct1.__dict__)
         # POPO is not create in good
@@ -52,7 +57,7 @@ class TestCopyModule(unittest.TestCase):
         self.assertIn('expectedValues', good.Struct1.__dict__)
         self.assertNotIn('expectedValues', good.Struct2.__dict__)
 
-        model.registerModule(good)  # creates POPO for the rest
+        my_model.registerModule(good)  # creates POPO for the rest
         self.assertIn('Struct2_py', good.__dict__)
         self.assertIn('expectedValues', good.Struct1.__dict__)
         # expectedValues is in a function
@@ -65,7 +70,7 @@ class TestCopyModule(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     #logging.basicConfig( stream=sys.stderr, level=logging.INFO )
     # logging.getLogger("listmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)

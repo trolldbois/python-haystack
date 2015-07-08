@@ -1,4 +1,5 @@
 
+- use ASN.1 for constraints.
 
 - FIX get_heap on windows XP/zeus demo
 - add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
