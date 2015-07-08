@@ -24,6 +24,13 @@ Changes to architecture.txt:
  - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
 
 
+2015-07:
+ - Ran 212 tests in 58.233s
+FAILED (failures=1, errors=106, skipped=6, expected failures=1)
+ - move constraints to config flat file instead of python code
+ - refactor to ctypes proxy class in instances instead of module.
+ - clean TU state, 0 errors
+
 2015-06:
  - keep track of changes in this file
  - use travis-ci to compile
