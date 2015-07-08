@@ -35,7 +35,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
     """
     valid_names = ['IgnoreMember', 'NotNull', 'RangeValue', 'PerfectMatch']
     _rv = re.compile(r'''(?P<fn>RangeValue\((?P<args>[^)]+)\))''')
-    _pm = re.compile(r'''(?P<fn>PerfectMatch\((?P<args>'[^']+')\))''')
+    _pm = re.compile(r'''(?P<fn>PerfectMatch\('(?P<args>[^']+)'\))''')
     _nn = re.compile(r'''(?P<fn>NotNull)[,]*,?''')
 
     def read(self, filename):
@@ -138,7 +138,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             _args = [int(x) for x in _args]
             return _class_type(*_args)
         elif _class_name == 'PerfectMatch':
-            _args = args[1:-1]
+            _args = self._pm.search(value).group('args')
             return _class_type(_args)
         else:
             raise RuntimeError('no such constraint %s',_class_name)
