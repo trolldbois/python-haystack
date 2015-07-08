@@ -110,16 +110,6 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         else:
             return self._parse_c(value)
 
-    def _search_for(self, reg, txt):
-        """
-        Do a regex search for known functions.
-
-        :param reg: the regex for that function.
-        :param txt: the list of found functions with args.
-        :return:
-        """
-        return res
-
     def _parse_c(self, value):
         """
         Parse the function and args for a known function.
