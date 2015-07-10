@@ -106,7 +106,7 @@ C structures that should be done following the next 4 steps :
 #) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure
 #) *Optional* You can add an expectedValues dict() to your ctype classes to add some constraints.
 #) *Optional* You can override isValid and loadMembers to implement advanced constraints validation.
-#) call model.register_module(sys.modules[__name__])
+#) call model.build_python_class_clones(sys.modules[__name__])
 
 Easy 'creation':
   use h2xml and xml2py binaries, shipped with ctypeslib to generate a python module from
@@ -266,7 +266,7 @@ Pseudo Example for extension :
 |    return True
 |
 |# register to haystack
-|model.register_module(sys.modules[__name__])
+|model.build_python_class_clones(sys.modules[__name__])
 |
 |#EOF
 

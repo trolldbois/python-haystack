@@ -4,7 +4,9 @@
 #
 import logging
 
+import haystack
 from haystack.abc import interfaces
+from haystack import constraints
 
 log = logging.getLogger('heapwalker')
 
@@ -40,21 +42,51 @@ class HeapFinder(interfaces.IHeapFinder):
         assert isinstance(memory_handler, interfaces.IMemoryHandler)
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
-        self._ctypes = self._target.get_target_ctypes()
-        self._heap_type = self._init_heap_type()
+        self._heap_module_name, self._heap_class_name, self._heap_constraint_filename = self._init()
+        self._heap_module = self._import_heap_module()
+        self._load_heap_constraints()
         self._heap_validation_depth = self._init_heap_validation_depth()
+        self._heap_type = self._init_heap_type()
+
+    def _init(self):
+        """
+        Return the heap configuration information
+        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        """
+        raise NotImplementedError(self)
+
+    def _import_heap_module(self):
+        """
+        Load the module for this target arch
+        :param _target: ITargetPlatform
+        :return: module
+        """
+        heap_module = haystack.import_module(self._heap_module_name, self._target)
+        # FIXME, is that necessary for memory allocation structs ?
+        self._memory_handler.get_model().build_python_class_clones(heap_module)
+        return heap_module
+
+    def _load_heap_constraints(self):
+        """
+        Init the constraints on the heap module
+        :return:
+        """
+        parser = constraints.ConstraintsConfigHandler()
+        cons = parser.read(self._heap_constraint_filename)
+        parser.apply_to_module(cons, self._heap_module)
+        return None
 
     def _init_heap_type(self):
         """init the internal heap structure type
         :rtype: ctypes heap structure type
         """
-        raise NotImplementedError(self)
+        return getattr(self._heap_module, self._heap_class_name)
 
     def _init_heap_validation_depth(self):
         """init the internal heap structure type
         :rtype: ctypes heap structure type
         """
-        raise NotImplementedError(self)
+        return 1
 
     def _read_heap(self, mapping):
         """ return a ctypes heap struct mapped at address on the mapping"""
@@ -64,8 +96,7 @@ class HeapFinder(interfaces.IHeapFinder):
 
     def _is_heap(self, mapping):
         """test if a mapping is a heap"""
-        from haystack.mappings import base
-        if not isinstance(self._memory_handler, base.MemoryHandler):
+        if not isinstance(self._memory_handler, interfaces.IMemoryLoader):
             raise TypeError('Feed me a Mappings object')
         heap = self._read_heap(mapping)
         load = heap.loadMembers(self._memory_handler, self._heap_validation_depth)

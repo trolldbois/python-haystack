@@ -195,7 +195,7 @@ class Test6_x32(SrcTests):
     """
 
     def setUp(self):
-        model.reset()
+
         types.build_ctypes_proxy(4, 4, 8)
         class MyConfig:
             def get_word_size(self):
@@ -223,7 +223,7 @@ class Test6_x32(SrcTests):
         self.address1 = None
         self.address2 = None
         self.address3 = None
-        model.reset()
+
 
     def test_refresh(self):
         # if you delete the Heap memorymap,
@@ -357,8 +357,7 @@ class Test6_x64(SrcTests):
     Mainly tests cross-arch POINTER to structs and c_char_p."""
 
     def setUp(self):
-        model.reset()
-        types.build_ctypes_proxy(8, 8, 16)
+        x64 = types.build_ctypes_proxy(8, 8, 16)
         class MyConfig:
             def get_word_size(self):
                 return 8
@@ -385,7 +384,6 @@ class Test6_x64(SrcTests):
         self.address1 = None
         self.address2 = None
         self.address3 = None
-        model.reset()
 
     def test_refresh(self):
         from test.src import ctypes6
@@ -486,7 +484,7 @@ class Test6_x64(SrcTests):
             rtype='python')
         self.assertEquals(len(results), 1)
 
-        # python nultiple results
+        # python multiple results
         results = abouchet.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
@@ -511,7 +509,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
     """Validate API on a linux x64 dump of SSH."""
 
     def setUp(self):
-        model.reset()
+
         self.validAddress = '0x7f724c90d740'
         self.memdumpname = 'test/dumps/ssh/ssh.x64.6653.dump'
         self.classname = 'sslsnoop.ctypes_openssh.session_state'
@@ -528,7 +526,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
         self.validAddress = None
         self.classname = None
         self.known_heap = None
-        model.reset()
+
 
     def test_show(self):
         instance, validated = abouchet.show_dumpname(
@@ -549,7 +547,7 @@ class TestApiLinuxDump(unittest.TestCase):
     """ test is the python API works. """
 
     def setUp(self):
-        model.reset()
+
         self.memdumpname = 'test/dumps/ssh/ssh.1'
         self.classname = 'sslsnoop.ctypes_openssh.session_state'
         self.known_heaps = [(0xb84ee318, 0)
@@ -565,7 +563,7 @@ class TestApiLinuxDump(unittest.TestCase):
         self.memdumpname = None
         self.classname = None
         self.known_heap = None
-        model.reset()
+
 
     def test_show(self):
         instance, validated = abouchet.show_dumpname(

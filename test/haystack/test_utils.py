@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Tests haystack.utils ."""
+import haystack.model
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2013 Loic Jaquemet"
@@ -34,7 +35,7 @@ class TestHelpers(unittest.TestCase):
         my_target = target.TargetPlatform.make_target_platform_local()
         my_ctypes = my_target.get_target_ctypes()
         my_utils = my_target.get_target_ctypes_utils()
-        ctypes5_gen64 = types.import_module_for_target_platform("test.src.ctypes5_gen64", my_target)
+        ctypes5_gen64 = haystack.model.import_module("test.src.ctypes5_gen64", my_target)
         # kinda chicken and egg here...
         from haystack.mappings.process import readProcessMappings
         import os

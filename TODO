@@ -1,4 +1,7 @@
 
+
+- Model should not depends on ctypes or LoadablesMembers. It could do it on Ctypes.Structure/Union.
+
 - use ASN.1 for constraints.
 
 - FIX get_heap on windows XP/zeus demo
@@ -33,7 +36,7 @@ Attribute packed is not correct in ctypeslib
     # B - then apply the classes to a dynamic module if needed
     from test.src import ctypes6
     model.copy_generated_classes(ctypes6_gen32, ctypes6)
-    model.register_module(ctypes6)
+    model.build_python_class_clones(ctypes6)
     # C - then apply constraints on objects.
     ctypes6.populate(self.mappings.config)
 

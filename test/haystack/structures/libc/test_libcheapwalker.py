@@ -4,15 +4,8 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
-import sys
 
-
-from haystack import model
 from haystack import dump_loader
 
 __author__ = "Loic Jaquemet"
@@ -22,13 +15,38 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-log = logging.getLogger("test_alloc")
+log = logging.getLogger("test_libcheapwalker")
+
+
+class TestLibcHeapFinder(unittest.TestCase):
+
+    def setUp(self):
+        self._memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
+
+    def tearDownClass(self):
+        self._memory_handler = None
+        return
+
+    def test_ctypes6(self):
+        heaps = self._memory_handler.get_heaps()
+        self.assertEquals(len(heaps), 1)
+
+        heap = heaps[0]
+        self.assertTrue(ctypes_alloc.is_malloc_heap(self.mappings, heap))
+
+        walker = libcheapwalker.LibcHeapWalker(self.mappings, heap, 0)
+        # we should have 3 structures + 1 empty chunks
+        allocs = walker.get_user_allocations()
+        self.assertEquals(len(allocs), 3)
+
+        # the empty chunk
+        free = walker.get_free_chunks()
+        self.assertEquals(len(free), 1)
 
 
 class TestAllocator(unittest.TestCase):
 
     def setUp(self):
-        model.reset()
         self.mappings = dump_loader.load('test/dumps/ssh/ssh.1')
 
     def tearDown(self):
@@ -67,37 +85,6 @@ class TestAllocator(unittest.TestCase):
         self.assertEquals(size, 19252)
 
         return
-
-
-class TestAllocatorSimple(unittest.TestCase):
-
-    def setUp(self):
-        model.reset()
-        self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
-
-    @classmethod
-    def tearDownClass(self):
-        self.mappings = None
-        model.reset()
-        return
-
-    def test_ctypes6(self):
-        from haystack.structures.libc import ctypes_malloc as ctypes_alloc
-        from haystack.structures.libc import libcheapwalker
-        heaps = self.mappings.get_heaps()
-        self.assertEquals(len(heaps), 1)
-
-        heap = heaps[0]
-        self.assertTrue(ctypes_alloc.is_malloc_heap(self.mappings, heap))
-
-        walker = libcheapwalker.LibcHeapWalker(self.mappings, heap, 0)
-        # we should have 3 structures + 1 empty chunks
-        allocs = walker.get_user_allocations()
-        self.assertEquals(len(allocs), 3)
-
-        # the empty chunk
-        free = walker.get_free_chunks()
-        self.assertEquals(len(free), 1)
 
 
 if __name__ == '__main__':

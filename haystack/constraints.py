@@ -96,16 +96,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
                 if '' == x.strip():
                     continue
                 else:
-                    try:
-                        # try an int
-                        _args.append(int(x))
-                    except ValueError, e:
-                        # try a float
-                        try:
-                            _args.append(float(x))
-                        except ValueError, e:
-                            # fallback to string
-                            _args.append(str(x))
+                    _args.append(self._try_numbers(x))
             return _class_type(_args)
         else:
             return self._parse_c(value)
@@ -135,13 +126,29 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         if _class_name == 'RangeValue':
             _args = self._rv.search(value).group('args').split(',')
             assert len(_args) == 2
-            _args = [int(x) for x in _args]
+            _args = [self._try_numbers(x) for x in _args]
             return _class_type(*_args)
         elif _class_name == 'PerfectMatch':
             _args = self._pm.search(value).group('args')
             return _class_type(_args)
         else:
             raise RuntimeError('no such constraint %s',_class_name)
+
+    def _try_numbers(self, _arg):
+        ret = None
+        try:
+            if '0x' in _arg.lower():
+                # try an hex
+                ret = int(_arg, 16)
+            elif '.' in _arg:
+                # try a float
+                ret = float(_arg)
+            else:
+                # try an int
+                ret = int(_arg)
+        except ValueError, e:
+            ret = str(_arg)
+        return ret
 
     def apply_to_module(self, constraints, module):
         """

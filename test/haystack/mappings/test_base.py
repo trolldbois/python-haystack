@@ -16,6 +16,7 @@ from haystack import types
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import readLocalProcessMappings
+import haystack.model
 
 log = logging.getLogger('test_memory_mapping')
 
@@ -191,7 +192,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         self.my_target = self.memory_handler.get_target_platform()
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
-        self.ctypes5_gen32 = types.import_module_for_target_platform("test.src.ctypes5_gen32", self.my_target)
+        self.ctypes5_gen32 = haystack.model.import_module("test.src.ctypes5_gen32", self.my_target)
 
     def tearDown(self):
         super(SrcTests, self).tearDown()

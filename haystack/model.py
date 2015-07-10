@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2011,2012,2013 Loic Jaquemet loic.jaquemet+python@gmail.com
@@ -17,6 +16,8 @@ Plain Old Python Objects from ctypes structures modules.
     NotValid(Exception)
     LoadException(Exception)
 """
+import importlib
+from haystack import target
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2013 Loic Jaquemet"
@@ -25,6 +26,8 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+import inspect
+import sys
 import logging
 
 log = logging.getLogger('model')
@@ -44,23 +47,14 @@ class _book(object):
     def getModules(self):
         return set(self.modules)
 
-#__book = _book()
-
-
-
 class NotValid(Exception):
     pass
-
 
 class LoadException(Exception):
     pass
 
-
-import inspect
-import sys
-
-
 # FIXME
+# this all class is useless. the create_POPO_classes should be a static helper somewhere else.
 class Model(object):
 
     def __init__(self, memory_handler):
@@ -70,45 +64,12 @@ class Model(object):
 
     def reset(self):
         """Clean the book"""
-        #return
-        # FIXME
         log.info('RESET MODEL')
         self.__book.modules = set()
-        #from haystack import types
-        #ctypes = types.load_ctypes_default()
         for mod in sys.modules.keys():
             if 'haystack.reverse' in mod:
                 del sys.modules[mod]
                 log.debug('de-imported %s',mod)
-        #log.info("MODEL: %s %s",str(ctypes.c_void_p),id(ctypes.c_void_p))
-
-    def copy_generated_classes(self, src, dst):
-        """Copies the ctypes Records of a module into another module.
-        Is equivalent to "from src import *" but with less clutter.
-        E.g.: Enum, variable and functions will not be imported.
-
-        Calling this method is facultative.
-
-        :param src : src module, generated
-        :param dst : dst module
-        """
-        log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
-        copied = 0
-        for (name, klass) in inspect.getmembers(src, inspect.isclass):
-            if issubclass(klass, self._ctypes.LoadableMembers):
-                log.debug("setattr(%s,%s,%s)" % (dst.__name__, name, klass))
-                setattr(dst, name, klass)
-                copied += 1
-            else:
-                log.debug("drop %s - %s" % (name, klass))
-                pass
-        log.debug('Loaded %d C structs from src %s' % (copied, src.__name__))
-        log.debug(
-            'There is %d members in src %s' %
-            (len(
-                src.__dict__),
-                src.__name__))
-        return
 
     def __create_POPO_classes(self, targetmodule):
         """ Load all model classes and create a similar non-ctypes Python class
@@ -152,7 +113,7 @@ class Model(object):
             (_created, targetmodule.__name__))
         return _created
 
-    def register_module(self, targetmodule):
+    def build_python_class_clones(self, targetmodule):
         """Registers a module that contains ctypes records.
 
         Mandatory call that will be done by haystack scripts.
@@ -180,3 +141,59 @@ class Model(object):
     def get_registered_modules(self):
         return self.__book.getModules()
 
+    # FIXME remove ?
+    def copy_generated_classes(self, src, dst):
+        """Copies the ctypes Records of a module into another module.
+        Is equivalent to "from src import *" but with less clutter.
+        E.g.: Enum, variable and functions will not be imported.
+
+        Calling this method is facultative.
+
+        :param src : src module, generated
+        :param dst : dst module
+        """
+        log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
+        copied = 0
+        for (name, klass) in inspect.getmembers(src, inspect.isclass):
+            if issubclass(klass, self._ctypes.LoadableMembers):
+                log.debug("setattr(%s,%s,%s)" % (dst.__name__, name, klass))
+                setattr(dst, name, klass)
+                copied += 1
+            else:
+                log.debug("drop %s - %s" % (name, klass))
+                pass
+        log.debug('Loaded %d C structs from src %s' % (copied, src.__name__))
+        log.debug(
+            'There is %d members in src %s' %
+            (len(
+                src.__dict__),
+                src.__name__))
+        return
+
+
+def import_module(module_name, _target=None):
+    """
+    Import the python ctypes module.
+
+    :param module_name:
+    :param _target:
+    :return:
+    """
+    if _target is None:
+        _target = target.TargetPlatform.make_target_platform_local()
+    # save ctypes
+    real_ctypes = sys.modules['ctypes']
+    sys.modules['ctypes'] = _target.get_target_ctypes()
+    if module_name in sys.modules:
+        del sys.modules[module_name]
+    my_module = None
+    try:
+        # try to load that module with our ctypes proxy
+        my_module = importlib.import_module(module_name)
+        # FIXME debug and TU this to be sure it is removed from modules
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+    finally:
+        # always clean up
+        sys.modules['ctypes'] = real_ctypes
+    return my_module

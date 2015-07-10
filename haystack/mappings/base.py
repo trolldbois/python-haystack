@@ -227,7 +227,6 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         # finish initialization
         self._heap_finder = self._set_heap_finder()
 
-
     def _set_heap_finder(self):
         """set the IHeapFinder for that process memory."""
         return heapwalker.make_heap_finder(self)
@@ -242,7 +241,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     def get_heap_walker(self, heap):
         """Returns the IHeapWalker for that process memory."""
-        if not isinstance(heap,interfaces.IMemoryMapping):
+        if not isinstance(heap, interfaces.IMemoryMapping):
             raise TypeError("heap should be a IMemoryMapping")
         return self._heap_finder.get_heap_walker(heap)
 
@@ -380,6 +379,9 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     def __iter__(self):
         return iter(self._mappings)
+
+    def __str__(self):
+        return "<MemoryHandler for %s with %d mappings>" % (self.name, len(self.get_mappings()))
 
     def reset(self):
         """Clean the book"""

@@ -4,5 +4,5 @@
 #
 
 [Struct1]
-field1: RangeValue(1, 16)
+field1: RangeValue(1, 16)]
 

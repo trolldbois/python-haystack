@@ -19,10 +19,15 @@ class TestWalkers(unittest.TestCase):
     """Tests walkers after ctypes changes."""
 
     def setUp(self):
-        model.reset()
+        self.linux32_dumpname = 'test/src/test-ctypes3.32.dump'
+        self.linux64_dumpname = 'test/src/test-ctypes3.64.dump'
+        self.node_structname = 'test.src.ctypes6.struct_Node'
+        self.usual_structname = 'test.src.ctypes6.struct_usual'
+
+        pass
 
     def tearDown(self):
-        model.reset()
+        pass
 
     def test_walker_after_arch_change(self):
         x32 = types.build_ctypes_proxy(4, 4, 8)
@@ -34,7 +39,6 @@ class TestWalkers(unittest.TestCase):
 
         if False:
             # set the arch
-            ctypes = types.set_ctypes(x32)
             libc_x32 = libcheapwalker.LibcHeapFinder(x32)
             winxp_x32 = winheapwalker.WinHeapFinder(x32)
             win7_x32 = win7heapwalker.Win7HeapFinder(x32)
@@ -51,8 +55,7 @@ class TestWalkers(unittest.TestCase):
             self.assertEquals(ctypes.sizeof(win7_x32.__heap_type), 312)  # 0x138
 
         # set the arch
-        model.reset()
-        ctypes = types.set_ctypes(x64)
+
         libc_x64 = libcheapwalker.LibcHeapFinder(x64)
         winxp_x64 = winheapwalker.WinHeapFinder(x64)
         win7_x64 = win7heapwalker.Win7HeapFinder(x64)

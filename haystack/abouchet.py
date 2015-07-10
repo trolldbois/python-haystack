@@ -3,6 +3,7 @@
 
 """Search for a known structure type in a process memory. """
 
+import ctypes
 import logging
 import pickle
 import sys
@@ -272,8 +273,7 @@ def _find_struct(pid=None, memfile=None, memdump=None, structType=None, maxNum=1
         :param debug if True, activate debug logs.
         :param maxNum the maximum number of expected results. Searching will stop after that many findings. -1 is unlimited.
     """
-    my_ctypes = self._memory_mappings.get_target_platform().get_target_ctypes()
-    if not isinstance(structType, type(my_ctypes.Structure)):
+    if not isinstance(structType, type(ctypes.Structure)):
         raise TypeError('structType arg must be a ctypes.Structure')
     structName = checkModulePath(structType)  # add to sys.path
     cmd_line = [getMainFile(), "%s" % structName]

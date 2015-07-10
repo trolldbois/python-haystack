@@ -48,6 +48,8 @@ else:
 # in any haystack import, we need to ensure the model is loaded.
 import model
 
+import_module = model.import_module
+
 # DEFINE the API.
 import abouchet
 
@@ -60,7 +62,6 @@ search_struct_memfile = abouchet.search_struct_memfile
 search_struct_dumpname = abouchet.search_struct_dumpname
 refresh = abouchet.refresh
 show_dumpname = abouchet.show_dumpname
-
 
 # TODO remove from _target_platform & abc._target_platform
 def _set_rlimits():

@@ -4,7 +4,6 @@
 #
 
 import ctypes
-import importlib
 import logging
 import sys
 
@@ -29,25 +28,6 @@ def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
-
-def import_module_for_target_platform(module_name, target):
-    # save ctypes
-    real_ctypes = sys.modules['ctypes']
-    sys.modules['ctypes'] = target.get_target_ctypes()
-    if module_name in sys.modules:
-        del sys.modules[module_name]
-    my_module = None
-    try:
-        # try to load that module with our ctypes proxy
-        my_module = importlib.import_module(module_name)
-        # FIXME debug and TU this to be sure it is removed from modules
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-    finally:
-        # always clean up
-        sys.modules['ctypes'] = real_ctypes
-    return my_module
-
 
 
 #def reset_ctypes():

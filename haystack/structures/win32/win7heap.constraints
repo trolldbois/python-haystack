@@ -1,0 +1,52 @@
+[HEAP_SEGMENT]
+SegmentSignature: [0xffeeffee]
+# Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+LastValidEntry: IgnoreMember
+
+
+# HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
+# HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
+
+# HEAP_ENTRY
+
+#only 32bits
+# SubSegmentCode is a encoded c_void_p, ignore its value
+[struct__HEAP_ENTRY_0_1]
+SubSegmentCode: IgnoreMember
+
+
+#only 32bits
+# another to ignore because of encoded pointer.
+[struct__HEAP_FREE_ENTRY_0_1]
+SubSegmentCode': IgnoreMember
+
+# HEAP
+# HEAP CommitRoutine encoded by a global key
+# The HEAP handle data structure includes a function pointer field called
+# CommitRoutine that is called when memory regions within the heap are committed.
+# Starting with Windows Vista, this field was encoded using a random value that
+# was also stored as a field in the HEAP handle data structure.
+
+[HEAP]
+Signature: [0xeeffeeff]
+FrontEndHeapType: [0, 1, 2]
+CommitRoutine: IgnoreMember
+# HEAP segment was aggregated into HEAP
+# Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+LastValidEntry: constraints.IgnoreMember
+
+
+# HEAP_UCR_DESCRIPTOR per definition, reserved space is not maped.
+[HEAP_UCR_DESCRIPTOR]
+Address: IgnoreMember
+
+# HEAP_LOCAL_SEGMENT_INFO
+# HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
+# HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
+[HEAP_LOCAL_SEGMENT_INFO]
+LocalData: IgnoreMember
+
+# TODO current subsegment.SFreeListEntry is on error at some depth.
+# bad pointer value on the second subsegment
+[HEAP_SUBSEGMENT]
+SFreeListEntry: IgnoreMember

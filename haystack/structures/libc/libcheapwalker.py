@@ -5,6 +5,7 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import pkgutil
 import logging
 import sys
 
@@ -60,21 +61,16 @@ class LibcHeapFinder(heapwalker.HeapFinder):
     #        return True
     #    return False
 
-    # FIXME load unload ctypes
-    def _init_heap_type(self):
+    def _init(self):
+        """
+        Return the heap configuration information
+        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        """
         module_name = 'haystack.structures.libc.ctypes_malloc'
-        real_ctypes = sys.modules['ctypes']
-        sys.modules['ctypes'] = self._ctypes
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-        from haystack.structures.libc import ctypes_malloc
-        self._ctypes_malloc_module = ctypes_malloc
-        self._memory_handler.get_model().register_module(sys.modules[__name__])
-        # FIXME debug and TU this to be sure it is removed from modules
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-        sys.modules['ctypes'] = real_ctypes
-        return self._ctypes_malloc_module.malloc_chunk
+        heap_name = 'malloc_chunk'
+        constraint_filename  = pkgutil.get_data('haystack.structures.libc', 'libc.constraints')
+        log.debug('constraint_filename :%s',constraint_filename )
+        return module_name, heap_name, constraint_filename
 
     def _init_heap_validation_depth(self):
         return 20
@@ -105,4 +101,4 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        raise LibcHeapWalker(self._memory_handler, heap, self._ctypes_malloc_module)
+        raise LibcHeapWalker(self._memory_handler, heap, self._heap_module)

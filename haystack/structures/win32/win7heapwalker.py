@@ -26,6 +26,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     Virtual allocation
     """
 
+
     def _init_heap(self):
         self._allocs = None
         self._free_chunks = None
