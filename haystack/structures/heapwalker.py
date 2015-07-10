@@ -39,7 +39,8 @@ class HeapFinder(interfaces.IHeapFinder):
         :param memory_handler: IMemoryHandler
         :return: HeapFinder
         """
-        assert isinstance(memory_handler, interfaces.IMemoryHandler)
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError('Feed me a IMemoryHandlerobject')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
         self._heap_module_name, self._heap_class_name, self._heap_constraint_filename = self._init()
@@ -96,8 +97,8 @@ class HeapFinder(interfaces.IHeapFinder):
 
     def _is_heap(self, mapping):
         """test if a mapping is a heap"""
-        if not isinstance(self._memory_handler, interfaces.IMemoryLoader):
-            raise TypeError('Feed me a Mappings object')
+        if not isinstance(mapping, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
         heap = self._read_heap(mapping)
         load = heap.loadMembers(self._memory_handler, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))

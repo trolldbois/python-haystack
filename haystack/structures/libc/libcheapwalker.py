@@ -5,7 +5,7 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import pkgutil
+import os
 import logging
 import sys
 
@@ -68,8 +68,8 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         """
         module_name = 'haystack.structures.libc.ctypes_malloc'
         heap_name = 'malloc_chunk'
-        constraint_filename  = pkgutil.get_data('haystack.structures.libc', 'libc.constraints')
-        log.debug('constraint_filename :%s',constraint_filename )
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__),'libcheap.constraints')
+        log.debug('constraint_filename :%s', constraint_filename)
         return module_name, heap_name, constraint_filename
 
     def _init_heap_validation_depth(self):
@@ -101,4 +101,4 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        raise LibcHeapWalker(self._memory_handler, heap, self._heap_module)
+        return LibcHeapWalker(self._memory_handler, heap, self._heap_module)

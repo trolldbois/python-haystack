@@ -21,24 +21,41 @@ log = logging.getLogger("test_libcheapwalker")
 class TestLibcHeapFinder(unittest.TestCase):
 
     def setUp(self):
-        self._memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
+        pass
 
-    def tearDownClass(self):
-        self._memory_handler = None
-        return
+    def tearDown(self):
+        pass
 
-    def test_ctypes6(self):
-        heaps = self._memory_handler.get_heaps()
-        self.assertEquals(len(heaps), 1)
+    def test_get_heap_mappings(self):
+        memory_handler = dump_loader.load('test/src/test-ctypes1.64.dump')
+        heap_finder = memory_handler.get_heap_finder()
+        mappings = heap_finder.get_heap_mappings()
+        self.assertEqual(len(mappings), 1)
+        self.assertEqual(mappings[0].pathname, '[heap]')
 
-        heap = heaps[0]
-        self.assertTrue(ctypes_alloc.is_malloc_heap(self.mappings, heap))
+        memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
+        heap_finder = memory_handler.get_heap_finder()
+        mappings = heap_finder.get_heap_mappings()
+        self.assertEqual(len(mappings), 1)
+        self.assertEqual(mappings[0].pathname, '[heap]')
 
-        walker = libcheapwalker.LibcHeapWalker(self.mappings, heap, 0)
+        memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
+        heap_finder = memory_handler.get_heap_finder()
+        mappings = heap_finder.get_heap_mappings()
+        self.assertEqual(len(mappings), 1)
+        self.assertEqual(mappings[0].pathname, '[heap]')
+
+    def test_get_heap_walker(self):
+
+        memory_handler = dump_loader.load('test/src/test-ctypes6.64.dump')
+        heap_finder = memory_handler.get_heap_finder()
+        mappings = heap_finder.get_heap_mappings()
+        self.assertEqual(len(mappings), 1)
+        self.assertEqual(mappings[0].pathname, '[heap]')
+        walker = heap_finder.get_heap_walker(mappings[0])
         # we should have 3 structures + 1 empty chunks
         allocs = walker.get_user_allocations()
         self.assertEquals(len(allocs), 3)
-
         # the empty chunk
         free = walker.get_free_chunks()
         self.assertEquals(len(free), 1)
@@ -88,9 +105,9 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger('basicmodel').setLevel(level=logging.INFO)
-    logging.getLogger('base').setLevel(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
+    # logging.getLogger('basicmodel').setLevel(level=logging.INFO)
+    # logging.getLogger('base').setLevel(level=logging.INFO)
     # logging.getLogger('model').setLevel(level=logging.DEBUG)
     # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
     unittest.main(verbosity=2)
