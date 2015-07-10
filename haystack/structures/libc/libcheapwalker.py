@@ -18,15 +18,15 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
     """Helper class that returns heap allocations and free chunks in a standard libc process heap """
 
-    def __init__(self, memory_handler, heap_mapping, ctypes_malloc):
-        super(LibcHeapWalker, self).__init__(memory_handler, heap_mapping)
-        self._ctypes_malloc = ctypes_malloc
-
     def _init_heap(self):
         log.debug('+ Heap @%x size: %d # %s' %
                   (self._mapping.start, len(self._mapping), self._mapping))
         self._allocs = None
         self._free_chunks = None
+        assert hasattr(self._heap_module, 'iter_user_allocations')
+        assert hasattr(self._heap_module, 'get_user_allocations')
+        assert hasattr(self._heap_module, 'is_malloc_heap')
+        assert hasattr(self._heap_module, 'mallocStruct')
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
@@ -45,7 +45,7 @@ class LibcHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        self._allocs, self._free_chunks = self._ctypes_malloc.get_user_allocations(
+        self._allocs, self._free_chunks = self._heap_module.get_user_allocations(
             self._memory_handler, self._mapping)
 
 
@@ -101,4 +101,4 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        return LibcHeapWalker(self._memory_handler, heap, self._heap_module)
+        return LibcHeapWalker(self._memory_handler, self._heap_module, heap)

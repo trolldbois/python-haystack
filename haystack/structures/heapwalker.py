@@ -15,8 +15,9 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 class HeapWalker(interfaces.IHeapWalker):
 
-    def __init__(self, memory_handler, heap_mapping):
+    def __init__(self, memory_handler, heap_module, heap_mapping):
         self._memory_handler = memory_handler
+        self._heap_module = heap_module
         self._mapping = heap_mapping
         self._init_heap()
 
