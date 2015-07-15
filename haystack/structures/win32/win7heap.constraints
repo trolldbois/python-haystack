@@ -33,7 +33,7 @@ FrontEndHeapType: [0, 1, 2]
 CommitRoutine: IgnoreMember
 # HEAP segment was aggregated into HEAP
 # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
-LastValidEntry: constraints.IgnoreMember
+LastValidEntry: IgnoreMember
 
 
 # HEAP_UCR_DESCRIPTOR per definition, reserved space is not maped.

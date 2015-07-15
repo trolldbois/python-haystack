@@ -239,7 +239,7 @@ class ListModel(object):
     #        yield (fieldname, self.getFieldIterator(_memory_handler, fieldname ) )
 
 
-def declare_double_linked_list_type(structType, forward, backward):
+def declare_double_linked_list_type(my_ctypes, structType, forward, backward):
     """Declares a list iterator on structType, as used by ListModel.
 
     declare_double_linked_list_type(struct_A, 'next', 'previous')
@@ -263,9 +263,9 @@ def declare_double_linked_list_type(structType, forward, backward):
     d = dict(structType.get_fields())
     flinkType = d[forward]
     blinkType = d[backward]
-    if not ctypes.is_pointer_type(flinkType):
+    if not my_ctypes.is_pointer_type(flinkType):
         raise TypeError('The %s field is not a pointer.' % (forward))
-    if not ctypes.is_pointer_type(blinkType):
+    if not my_ctypes.is_pointer_type(blinkType):
         raise TypeError('The %s field is not a pointer.' % (backward))
 
     def iterateList(self, mappings):

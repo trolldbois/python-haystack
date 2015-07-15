@@ -14,6 +14,7 @@ field5: NotNull
 field6: [-1,RangeValue(2,3),NotNull,1,PerfectMatch('plop'),RangeValue(4,5)]
 field7: [-1,0,0.0,1.02]
 field8: [0x0,0x1,0xff,0xffeeffee, -0x20]
+FiELD9: [ 'a', 'B' ]
 
 # possible values
 #  python object with contains

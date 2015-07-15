@@ -16,8 +16,6 @@ Plain Old Python Objects from ctypes structures modules.
     NotValid(Exception)
     LoadException(Exception)
 """
-import importlib
-from haystack import target
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2013 Loic Jaquemet"
@@ -26,9 +24,13 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
+import ctypes
 import inspect
 import sys
 import logging
+import importlib
+
+from haystack import target
 
 log = logging.getLogger('model')
 
@@ -99,14 +101,14 @@ class Model(object):
                 # and another ref on the real module for the basic type, because,
                 # that is probably were it's gonna be used.
                 setattr(
-                    sys.modules[__name__], '%s.%s_py' %
+                    targetmodule, '%s.%s_py' %
                     (targetmodule.__name__, name), kpy)
                 # setattr(sys.modules[__name__], '%s_py'%(name), kpy )
                 setattr(targetmodule, '%s_py' % (name), kpy)
                 _created += 1
                 # copy also to generated
                 if klass.__module__ != targetmodule.__name__:
-                    setattr(sys.modules[klass.__module__], '%s_py' % (name), kpy)
+                    setattr(targetmodule, '%s_py' % (name), kpy)
                     #log.debug("Created %s_py"%klass)
         log.debug(
             'created %d POPO types in %s' %
@@ -141,35 +143,34 @@ class Model(object):
     def get_registered_modules(self):
         return self.__book.getModules()
 
-    # FIXME remove ?
-    def copy_generated_classes(self, src, dst):
-        """Copies the ctypes Records of a module into another module.
-        Is equivalent to "from src import *" but with less clutter.
-        E.g.: Enum, variable and functions will not be imported.
 
-        Calling this method is facultative.
+def copy_generated_classes(src_module, dst_module):
+    """Copies the ctypes Records of a module into another module.
+    Is equivalent to "from src import *" but with less clutter.
+    E.g.: Enum, variable and functions will not be imported.
 
-        :param src : src module, generated
-        :param dst : dst module
-        """
-        log.debug('copy classes %s -> %s' % (src.__name__, dst.__name__))
-        copied = 0
-        for (name, klass) in inspect.getmembers(src, inspect.isclass):
-            if issubclass(klass, self._ctypes.LoadableMembers):
-                log.debug("setattr(%s,%s,%s)" % (dst.__name__, name, klass))
-                setattr(dst, name, klass)
-                copied += 1
-            else:
-                log.debug("drop %s - %s" % (name, klass))
-                pass
-        log.debug('Loaded %d C structs from src %s' % (copied, src.__name__))
-        log.debug(
-            'There is %d members in src %s' %
-            (len(
-                src.__dict__),
-                src.__name__))
-        return
+    Calling this method is facultative.
 
+    :param src_module : src module, generated
+    :param dst_module : dst module
+    """
+    log.debug('copy classes %s -> %s' % (src_module.__name__, dst_module.__name__))
+    copied = 0
+    for (name, klass) in inspect.getmembers(src_module, inspect.isclass):
+        if issubclass(klass, ctypes.Structure) or issubclass(klass, ctypes.Union):
+            log.debug("setattr(%s,%s,%s)" % (dst_module.__name__, name, klass))
+            setattr(dst_module, name, klass)
+            copied += 1
+        else:
+            log.debug("drop %s - %s" % (name, klass))
+            pass
+    log.debug('Loaded %d C structs from src %s' % (copied, src_module.__name__))
+    log.debug(
+        'There is %d members in src %s' %
+        (len(
+            src_module.__dict__),
+            src_module.__name__))
+    return
 
 def import_module(module_name, _target=None):
     """

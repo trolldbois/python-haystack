@@ -6,11 +6,15 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import os
+import sys
 import logging
 import ctypes
 
 import numpy
 
+import haystack
+from haystack import model
 from haystack.structures import heapwalker
 
 log = logging.getLogger('win7heapwalker')
@@ -26,30 +30,19 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     Virtual allocation
     """
 
-
     def _init_heap(self):
         self._allocs = None
         self._free_chunks = None
         self._child_heaps = None
-        # unload win7heap
-        # clean the iport module to remove any rpevious loading with a different
-        # ctypes proxy class
-        #if 'win7heap' in sys.modules:
-        #    del sys.modules['win7heap']
-        #import ctypes
-        from haystack.structures.win32 import win7heap
+
         self._heap = self._mapping.read_struct(
-            self._mapping.start +
-            self._offset,
-            win7heap.HEAP)
+            self._mapping.start,
+            self._heap_module.HEAP)
         if not self._heap.loadMembers(self._memory_handler, 1):
             raise TypeError('HEAP.loadMembers returned False')
 
         log.debug('+ Heap @%0.8x size: %d # %s' %
-                  (self._mapping.start +
-                   self._offset, len(self._mapping), self._mapping))
-        # print '+ Heap @%0.8x size:%d FTH_Type:0x%x maskFlag:0x%x index:0x%x'%(self._mapping.start+self._offset,
-        #                            len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex)
+                  (self._mapping.start, len(self._mapping), self._mapping))
         # placeholders
         self._backend_committed = None
         self._backend_free = None
@@ -76,8 +69,7 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        from haystack.structures.win32 import win7heap
-        sublen = ctypes.sizeof(win7heap.HEAP_ENTRY)
+        sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
         # get all chunks
         vallocs, va_free = self._get_virtualallocations()
         chunks, free_chunks = self._get_chunks()
@@ -194,28 +186,56 @@ class Win7HeapWalker(heapwalker.HeapWalker):
 
 
 class Win7HeapFinder(heapwalker.HeapFinder):
+    """
+    _init_heap_validation_depth = 1
+    """
 
-    # FIXME load unload ctypes
-    def _init_heap_type(self):
-        from haystack.structures.win32 import win7heap
-        win7heap = reload(win7heap)
-        return win7heap.HEAP
+    def _init(self):
+        """
+        Return the heap configuration information
+        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        """
+        module_name = 'haystack.structures.win32.win7heap'
+        heap_name = 'HEAP'
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'win7heap.constraints')
+        log.debug('constraint_filename :%s', constraint_filename)
+        return module_name, heap_name, constraint_filename
 
-    def _init_heap_validation_depth(self):
-        return 1
+    def _import_heap_module(self):
+        """
+        Load the module for this target arch
+        :return: module
+        """
+        # replace the heapwalker version because we need to copy generated classes into the
+        # normal module, for a specific target platform.
+        # the win7heap module should not appears in sys.modules.
+        if 64 == self._target.get_cpu_bits():
+            gen_module_name = 'haystack.structures.win32.win7_64'
+        else:
+            gen_module_name = 'haystack.structures.win32.win7_32'
+        gen_heap_module = haystack.import_module(gen_module_name, self._target)
+        heap_module = haystack.import_module(self._heap_module_name, self._target)
+        model.copy_generated_classes(gen_heap_module, heap_module)
+        heap_module.patch()
+        heap_module.patch_listmodel(self._target.get_target_ctypes())
+        # FIXME, is that necessary for memory allocation structs ?
+        self._memory_handler.get_model().build_python_class_clones(heap_module)
+        return heap_module
 
-    def get_heap_mappings(self, mappings):
+    def get_heap_mappings(self):
         """return the list of _memory_handler that load as heaps"""
-        heap_mappings = super(Win7HeapFinder, self).get_heap_mappings(mappings)
+        heap_mappings = super(Win7HeapFinder, self).get_heap_mappings()
         # FIXME PYDOC  cant remember why we do this.
+        # we sort by Process HeapsListIndex
         for mapping in heap_mappings:
             mapping._children = Win7HeapWalker(
-                mappings,
-                mapping,
-                0).get_heap_children_mmaps()
+                self._memory_handler,
+                self._heap_module,
+                mapping).get_heap_children_mmaps()
         heap_mappings.sort(
             key=lambda m: self._read_heap(m).ProcessHeapsListIndex)
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        raise NotImplementedError(self)
+        return Win7HeapWalker(self._memory_handler, self._heap_module, heap)
+

@@ -31,6 +31,7 @@ FAILED (failures=1, errors=106, skipped=6, expected failures=1)
  - refactor to ctypes proxy class in instances instead of module.
  - design with abc ready interfaces
  - clean TU state, 0 errors
+ - constraints config is case sensitive
 
 2015-06:
  - keep track of changes in this file

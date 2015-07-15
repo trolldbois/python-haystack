@@ -8,24 +8,18 @@ import unittest
 import sys
 
 from haystack import dump_loader
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
-
+from haystack.structures.win32 import win7heapwalker
 
 log = logging.getLogger('testwalker')
 
 
-class TestAllocator(unittest.TestCase):
+class TestWin7HeapWalker(unittest.TestCase):
 
-    def setUp(self):
-        # putty 1 was done under winxp 32 bits ?
-        self._memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
-        self._known_heaps = [(0x00390000, 8956), (0x00540000, 868),
+    @classmethod
+    def setUpClass(cls):
+        # putty 1 was done under win7 32 bits ?
+        cls._memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls._known_heaps = [(0x00390000, 8956), (0x00540000, 868),
                              (0x00580000, 111933), (0x005c0000, 1704080),
                              (0x01ef0000, 604), (0x02010000, 61348),
                              (0x02080000, 474949), (0x021f0000, 18762),
@@ -36,32 +30,35 @@ class TestAllocator(unittest.TestCase):
                              ]
         return
 
+    @classmethod
+    def tearDownClass(cls):
+        cls._memory_handler = None
+        return
+
+    def setUp(self):
+        self._heap_finder = self._memory_handler.get_heap_finder()
+        return
+
     def tearDown(self):
-        from haystack import model
-        model.reset()
-        self._memory_handler = None
+        self._heap_finder = None
         return
 
     def test_freelists(self):
         """ List all free blocks """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker
 
         # TODO test 0x0061a000 for overflow
 
-        #self.skipTest('known ok')
         self.assertNotEqual(self._memory_handler, None)
-
+        # test the heaps
+        _heaps = self._heap_finder.get_heap_mappings()
         heap_sums = dict([(heap, list())
-                          for heap in self._memory_handler.get_heaps()])
+                          for heap in _heaps])
         child_heaps = dict()
-        # append addr and size to each mmaps
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler.get_target_platform())
-        for heap in self._memory_handler.get_heaps():
+        for heap in _heaps:
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
-                (finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
-            walker = win7heapwalker.Win7HeapWalker(self._memory_handler, heap, 0)
+                (self._heap_finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
+            walker = self._heap_finder.get_heap_walker(heap)
             for x, s in walker._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
                 # Found new mmap outside of heaps mmaps
@@ -415,7 +412,7 @@ class TestAllocator(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

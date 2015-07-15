@@ -49,6 +49,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             raise IOError("File not found")
         # read the constraint file
         parser = ConfigParser.RawConfigParser()
+        parser.optionxform = str
         parser.read(filename)
         # prepare the return object
         _constraints = dict()
@@ -56,13 +57,17 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         for struct_name in parser.sections():
             log.debug('handling structure %s', struct_name)
             if struct_name not in _constraints:
-                _constraints[struct_name] = []
+                _constraints[struct_name] = dict()
             # each config entry is a field and its IConstraint
             for field, value in parser.items(struct_name):
                 log.debug('%s: field %s ::= %s', struct_name, field, value)
-                value = self._parse(value)
+                try:
+                    value = self._parse(value)
+                except ValueError, e:
+                    raise ValueError("%s: struct_name: %s Field: %s constraint: %s" % (
+                                     e.message, struct_name, field, value))
                 # each field can only have one IConstraint (which can be a list of)
-                _constraints[struct_name].append((field, value))
+                _constraints[struct_name][field] = value
         return _constraints
 
     def _parse(self, value):

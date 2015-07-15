@@ -60,7 +60,6 @@ class HeapFinder(interfaces.IHeapFinder):
     def _import_heap_module(self):
         """
         Load the module for this target arch
-        :param _target: ITargetPlatform
         :return: module
         """
         heap_module = haystack.import_module(self._heap_module_name, self._target)
@@ -76,6 +75,8 @@ class HeapFinder(interfaces.IHeapFinder):
         parser = constraints.ConstraintsConfigHandler()
         cons = parser.read(self._heap_constraint_filename)
         parser.apply_to_module(cons, self._heap_module)
+        import code
+        code.interact(local=locals())
         return None
 
     def _init_heap_type(self):

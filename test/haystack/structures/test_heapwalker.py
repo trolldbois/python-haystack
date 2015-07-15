@@ -10,70 +10,86 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 import logging
 import unittest
 
-from haystack import model
-from haystack import types
+from haystack import dump_loader
+from haystack.structures import heapwalker
 
 
 class TestWalkers(unittest.TestCase):
 
     """Tests walkers after ctypes changes."""
 
-    def setUp(self):
-        self.linux32_dumpname = 'test/src/test-ctypes3.32.dump'
-        self.linux64_dumpname = 'test/src/test-ctypes3.64.dump'
-        self.node_structname = 'test.src.ctypes6.struct_Node'
-        self.usual_structname = 'test.src.ctypes6.struct_usual'
+    @classmethod
+    def setUpClass(cls):
+        cls.libc_mh_64 = dump_loader.load('test/src/test-ctypes3.64.dump')
+        cls.libc_mh_32 = dump_loader.load('test/src/test-ctypes3.32.dump')
+        # cls.winxp_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls.win7_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
+
+    @classmethod
+    def tearDownClass(self):
+        pass
+
+    def test_make_heap_finder(self):
+        libc_hf_64 = heapwalker.make_heap_finder(self.libc_mh_64)
+        self.assertEqual(libc_hf_64._memory_handler.pathname, 'test/src/test-ctypes3.64.dump')
+        target = libc_hf_64._memory_handler.get_target_platform()
+        self.assertEqual(target.get_os_name(), 'linux')
+        self.assertEqual(target.get_cpu_bits(), 64)
+
+        libc_hf_32 = heapwalker.make_heap_finder(self.libc_mh_32)
+        target = libc_hf_32._memory_handler.get_target_platform()
+        self.assertEqual(target.get_os_name(), 'linux')
+        self.assertEqual(target.get_cpu_bits(), 32)
+
+        win7_hf_32 = heapwalker.make_heap_finder(self.win7_mh_32)
+        target = win7_hf_32._memory_handler.get_target_platform()
+        self.assertEqual(target.get_os_name(), 'win7')
+        self.assertEqual(target.get_cpu_bits(), 32)
 
         pass
 
-    def tearDown(self):
+    def test_get_heap_mappings(self):
         pass
 
-    def test_walker_after_arch_change(self):
-        x32 = types.build_ctypes_proxy(4, 4, 8)
-        x64 = types.build_ctypes_proxy(8, 8, 16)
+    def test__is_heap(self):
+        pass
 
-        from haystack.structures.libc import libcheapwalker
-        from haystack.structures.win32 import winheapwalker
-        from haystack.structures.win32 import win7heapwalker
+    def test_init(self):
+        # test constraints applied
+        # test heap module present
+        pass
 
-        if False:
-            # set the arch
-            libc_x32 = libcheapwalker.LibcHeapFinder(x32)
-            winxp_x32 = winheapwalker.WinHeapFinder(x32)
-            win7_x32 = win7heapwalker.Win7HeapFinder(x32)
+    def test__init_heap_type(self):
+        libc_hf_64 = heapwalker.make_heap_finder(self.libc_mh_64)
+        libc_64_ctypes = self.libc_mh_64.get_target_platform().get_target_ctypes()
 
-            from haystack.structures.win32 import win7heap
-            t = win7heap.HEAP_ENTRY
+        libc_hf_32 = heapwalker.make_heap_finder(self.libc_mh_32)
+        libc_32_ctypes = self.libc_mh_32.get_target_platform().get_target_ctypes()
 
-            for fi, tp in t._fields_:
-                f = getattr(t, fi)
-                print fi, ' : ', hex(f.offset), hex(f.size)
+        # winxp_hf_32 = heapwalker.make_heap_finder(self.winxp_mh_32)
+        # winxp_32_ctypes = self.winxp_mh_32.get_target_platform().get_target_ctypes()
 
-            self.assertEquals(ctypes.sizeof(libc_x32.__heap_type), 8)
-            self.assertEquals(ctypes.sizeof(winxp_x32.__heap_type), 1430)
-            self.assertEquals(ctypes.sizeof(win7_x32.__heap_type), 312)  # 0x138
+        # winxp_hf_64 = heapwalker.make_heap_finder(self.winxp_mh_64)
+        # winxp_64_ctypes = self.winxp_mh_64.get_target_platform().get_target_ctypes()
 
-        # set the arch
+        win7_hf_32 = heapwalker.make_heap_finder(self.win7_mh_32)
+        win7_32_ctypes = self.win7_mh_32.get_target_platform().get_target_ctypes()
 
-        libc_x64 = libcheapwalker.LibcHeapFinder(x64)
-        winxp_x64 = winheapwalker.WinHeapFinder(x64)
-        win7_x64 = win7heapwalker.Win7HeapFinder(x64)
+        # win7_hf_64 = heapwalker.make_heap_finder(self.win7_mh_64)
+        # win7_64_ctypes = self.win7_mh_64.get_target_platform().get_target_ctypes()
 
-        #import code
-        #code.interact(local=locals())
-        self.assertEquals(ctypes.sizeof(libc_x64.__heap_type), 16)
-        # who knows...
-        self.assertEquals(ctypes.sizeof(win7_x64.__heap_type), 520)
-        # BUG FIXME, what is the size of winxp64 HEAP ?
-        self.assertEquals(ctypes.sizeof(winxp_x64.__heap_type), 2792) #   0xae8
+        # 32 bits
+        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._init_heap_type(), 8))
+        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._init_heap_type(), 312)) # 0x138
+        #self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._init_heap_type(), 1430))
 
-        # try x32 while there
-        #self.assertEquals(ctypes.sizeof(libc_x32._heap_type), 8)
-        #self.assertEquals(ctypes.sizeof(winxp_x32._heap_type), 1430)
-        #self.assertEquals(ctypes.sizeof(win7_x32._heap_type), 312)
+        # 64 bits
+        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._init_heap_type(), 16))
+        # self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._init_heap_type(), 520))
+        # self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._init_heap_type(), 2792)) #   0xae8
+
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)
