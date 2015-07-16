@@ -23,8 +23,6 @@ You have to use one of the Helpers function:
 """
 import logging
 
-from haystack import utils
-
 log = logging.getLogger('listmodel')
 
 
@@ -75,7 +73,7 @@ class ListModel(object):
     _listMember_ = []  # members that are the 2xpointer of same type linl
     _listHead_ = []  # head structure of a linkedlist
 
-    def _loadListEntries(self, fieldname, mappings, maxDepth):
+    def _loadListEntries(self, fieldname, memory_handler, maxDepth):
         """
         we need to load the pointed entry as a valid struct at the right offset,
         and parse it.
@@ -83,15 +81,15 @@ class ListModel(object):
         When does it stop following FLink/BLink ?
             sentinel is headAddr only
         """
-        import ctypes
+        ctypes_utils = self._memory_handler.get_ctypes_utils()
         structType, offset = self._getListFieldInfo(fieldname)
         # FIXME offset == utils.offsetof(type(self), fieldname)
         # DO NOT think HEAD is a valid entry.
         # if its a ListEntries, self has already been loaded anyway.
-        headAddr = self._orig_address_ + utils.offsetof(type(self), fieldname)
+        headAddr = self._orig_address_ + ctypes_utils.offsetof(type(self), fieldname)
         head = getattr(self, fieldname)
 
-        for entry in head._iterateList(mappings):
+        for entry in head._iterateList(memory_handler):
             # DO NOT think HEAD is a valid entry
             if entry == headAddr:
                 continue
@@ -100,7 +98,7 @@ class ListModel(object):
                 'got a element of list at %s 0x%x/0x%x offset:%d' %
                 (fieldname, entry, link, offset))
             # use cache if possible, avoid loops.
-            ref = mappings.getRef(structType, link)
+            ref = memory_handler.getRef(structType, link)
             if ref:  # struct has already been loaded, bail out
                 log.debug(
                     "%s loading from references cache %s/0x%lx" %
@@ -108,7 +106,7 @@ class ListModel(object):
                 continue  # do not reload
             else:
                 # OFFSET read, specific to a LIST ENTRY model
-                memoryMap = mappings.is_valid_address_value(link, structType)
+                memoryMap = memory_handler.is_valid_address_value(link, structType)
                 if memoryMap is False:
                     log.error('error while validating address 0x%x type:%s @end:0x%x' % (link,
                                                                                          structType.__name__, link + ctypes.sizeof(structType)))
@@ -121,10 +119,10 @@ class ListModel(object):
                     link,
                     structType)  # point at the right offset
                 st._orig_address_ = link
-                mappings.keepRef(st, structType, link)
+                memory_handler.keepRef(st, structType, link)
                 log.debug("keepRef %s.%s @%x" % (structType, fieldname, link))
                 # load the list entry structure members
-                if not st.loadMembers(mappings, maxDepth - 1):
+                if not st.loadMembers(memory_handler, maxDepth - 1):
                     log.error(
                         'Error while loading members on %s' %
                         (self.__class__.__name__))
@@ -151,7 +149,7 @@ class ListModel(object):
         # return False
         return True
 
-    def loadMembers(self, mappings, maxDepth):
+    def loadMembers(self, memory_handler, maxDepth):
         """
         load basic types members,
         then load list elements members recursively,
@@ -160,10 +158,11 @@ class ListModel(object):
         log.debug(
             '-+ <%s> loadMembers +- @%x' %
             (self.__class__.__name__, self._orig_address_))
+        self._memory_handler = memory_handler
 
         #log.debug('load list elements at 0x%x'%(ctypes.addressof(self)))
         # call basicmodel
-        if not super(ListModel, self).loadMembers(mappings, maxDepth):
+        if not super(ListModel, self).loadMembers(memory_handler, maxDepth):
             return False
 
         log.debug(
@@ -171,27 +170,29 @@ class ListModel(object):
             (type(self).__name__, self._orig_address_))
         log.debug('listmember %s' % self.__class__._listMember_)
         for fieldname in self._listMember_:
-            self._loadListEntries(fieldname, mappings, maxDepth - 1)
+            self._loadListEntries(fieldname, memory_handler, maxDepth - 1)
 
         log.debug(
             'load list head elements members recursively on %s' %
             (type(self).__name__))
         for fieldname, structType, structFieldname, offset in self._listHead_:
-            self._loadListEntries(fieldname, mappings, maxDepth - 1)
+            self._loadListEntries(fieldname, memory_handler, maxDepth - 1)
 
         log.debug('-+ <%s> loadMembers END +-' % (self.__class__.__name__))
         return True
 
-    def iterateListField(self, mappings, fieldname, sentinels=None):
+    def iterateListField(self, memory_handler, fieldname, sentinels=None):
         """
         start from the field    and iterate a list.
         does not return self."""
         if sentinels is None:
             sentinels = []
+        self._memory_handler = memory_handler
+        ctypes_utils = self._memory_handler.get_ctypes_utils()
         structType, offset = self._getListFieldInfo(fieldname)
 
         # @ of the field
-        headAddr = self._orig_address_ + utils.offsetof(type(self), fieldname)
+        headAddr = self._orig_address_ + ctypes_utils.offsetof(type(self), fieldname)
         #log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
         head = getattr(self, fieldname)
 
@@ -200,7 +201,7 @@ class ListModel(object):
                 'Not an iterable field. Probably not declared as a list.')
 
         done = [s for s in sentinels] + [headAddr]
-        for entry in head._iterateList(mappings):
+        for entry in head._iterateList(memory_handler):
             # DO NOT think HEAD is a valid entry - FIXME
             if entry in done:
                 continue
@@ -210,7 +211,7 @@ class ListModel(object):
             link = entry + offset
             #log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
             # use cache if possible, avoid loops.
-            st = mappings.getRef(structType, link)
+            st = memory_handler.getRef(structType, link)
             #st._orig_address_ = link
             if st:
                 yield st
@@ -225,8 +226,9 @@ class ListModel(object):
         if fieldname is in listmember, return offset of fieldname.
         if fieldname is in listhead, return offset of target field.
         """
+        ctypes_utils = self._memory_handler.get_ctypes_utils()
         if fieldname in self._listMember_:
-            return type(self), utils.offsetof(type(self), fieldname)
+            return type(self), ctypes_utils.offsetof(type(self), fieldname)
         for fname, typ, typFieldname, offset in self._listHead_:
             if fieldname == fname:
                 # FIXME: offset is also == utils.offsetof( typ, typFieldname)
@@ -256,7 +258,6 @@ def declare_double_linked_list_type(my_ctypes, structType, forward, backward):
     at what point, address validation of both forward and backward pointer
     occurs before loading of pointee.
     """
-    import ctypes
     # test existence
     flinkType = getattr(structType, forward)
     blinkType = getattr(structType, backward)
@@ -268,14 +269,16 @@ def declare_double_linked_list_type(my_ctypes, structType, forward, backward):
     if not my_ctypes.is_pointer_type(blinkType):
         raise TypeError('The %s field is not a pointer.' % (backward))
 
-    def iterateList(self, mappings):
+    def iterateList(self, memory_handler):
         """ iterate forward, then backward, until null or duplicate """
+        self._memory_handler = memory_handler
+        ctypes_utils = self._memory_handler.get_ctypes_utils()
         done = [0]
         obj = self
         # print 'going forward '
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
-            addr = utils.get_pointee_address(link)
+            addr = ctypes_utils.get_pointee_address(link)
             # print fieldname,addr,hex(addr)
             log.debug(
                 'iterateList got a <%s>/0x%x' %
@@ -284,25 +287,25 @@ def declare_double_linked_list_type(my_ctypes, structType, forward, backward):
             while addr not in done:
                 # print '%x %s'%(addr, addr in done)
                 done.append(addr)
-                memoryMap = mappings.is_valid_address_value(addr, structType)
+                memoryMap = memory_handler.is_valid_address_value(addr, structType)
                 if memoryMap == False:
                     log.error(
                         "ValueError: 'the link of this linked list has a bad value'")
                     raise StopIteration
                 st = memoryMap.read_struct(addr, structType)
                 st._orig_address_ = addr
-                mappings.keepRef(st, structType, addr)
+                memory_handler.keepRef(st, structType, addr)
                 log.debug(
                     "keepRefx2 %s.%s: @%x" %
                     (structType.__name__, fieldname, addr))
                 yield addr
                 # next
                 link = getattr(st, fieldname)
-                addr = utils.get_pointee_address(link)
+                addr = ctypes_utils.get_pointee_address(link)
             # print 'going backward after %x'%(addr)
         raise StopIteration
 
-    def loadMembers(self, mappings, depth):
+    def loadMembers(self, memory_handler, depth):
         # voluntary blockade of loadMembers.
         # we do not want to validate members or pointees of this struct.
         log.debug('- <%s> loadMembers return TRUE' % (structType.__name__))

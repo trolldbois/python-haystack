@@ -1,6 +1,9 @@
 
 
 - Model should not depends on ctypes or LoadablesMembers. It could do it on Ctypes.Structure/Union.
+- basicmodel should not be methods of the target class. We should have a worker 
+class assessing a "normal" ctypes.Structure instance (modulo target arch)
+- a working str() on Ctypes.loadableMembers requires no instanciated utils
 
 - use ASN.1 for constraints.
 

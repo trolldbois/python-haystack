@@ -18,7 +18,7 @@ SubSegmentCode: IgnoreMember
 #only 32bits
 # another to ignore because of encoded pointer.
 [struct__HEAP_FREE_ENTRY_0_1]
-SubSegmentCode': IgnoreMember
+SubSegmentCode: IgnoreMember
 
 # HEAP
 # HEAP CommitRoutine encoded by a global key

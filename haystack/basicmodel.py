@@ -113,6 +113,10 @@ class LoadableMembers(object):
         done = []
         # check expectedValues first
         for attrname, expected in self.expectedValues.iteritems():
+            if attrname not in myfields:
+                log.warning('constraint check: field %s does not exists in record for %s',
+                            attrname, self.__class__.__name__)
+                continue
             done.append(attrname)
             log.debug(' +++ %s %s ' % (attrname, expected))
             attrtype = myfields[attrname]
@@ -284,27 +288,27 @@ class LoadableMembers(object):
         #    (target_ctypes.is_array_type(attrtype) and not target_ctypes.is_array_of_basic_type(attrtype)))
         # should we iterate on Basictypes ? no
 
-    def loadMembers(self, mappings, maxDepth):
+    def loadMembers(self, memory_handler, maxDepth):
         """
         The validity of the members will be assessed.
         Each members that can be ( structures, pointers), will be evaluated for
         validity and loaded recursively.
 
-        :param mappings: list of memoryMappings for the process.
+        :param memory_handler: list of memoryMappings for the process.
         :param maxDepth: limitation of depth after which the loading/validation
         will stop and return results.
 
         @returns True if everything has been loaded, False if something went
         wrong.
         """
-        self._mappings_= mappings
+        self._memory_handler = memory_handler
         if maxDepth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
             log.debug('Struct partially LOADED. %s not loaded' % (
                 self.__class__.__name__))
             return True
         maxDepth -= 1
-        if not self.is_valid(mappings):
+        if not self.is_valid(memory_handler):
             return False
         log.debug('- <%s> do loadMembers -' % (self.__class__.__name__))
         # go through all members. if they are pointers AND not null AND in
@@ -317,7 +321,7 @@ class LoadableMembers(object):
                 if self.expectedValues[attrname] is constraints.IgnoreMember:
                     return True
             try:
-                if not self._loadMember(attr, attrname, attrtype, mappings,
+                if not self._loadMember(attr, attrname, attrtype, memory_handler,
                                         maxDepth):
                     return False
             except ValueError as e:

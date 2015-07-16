@@ -213,6 +213,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
             gen_module_name = 'haystack.structures.win32.win7_64'
         else:
             gen_module_name = 'haystack.structures.win32.win7_32'
+        log.debug('the heap module loaded is %s', gen_module_name)
         gen_heap_module = haystack.import_module(gen_module_name, self._target)
         heap_module = haystack.import_module(self._heap_module_name, self._target)
         model.copy_generated_classes(gen_heap_module, heap_module)

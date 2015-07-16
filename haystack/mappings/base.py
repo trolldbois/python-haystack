@@ -317,7 +317,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     def get_heaps(self):
         """Find heap type and returns _memory_handler with heaps"""
-        return self._heap_finder.get_heap_mappings(self)
+        return self._heap_finder.get_heap_mappings()
 
     def get_stack(self):
         # FIXME wont work on windows.
