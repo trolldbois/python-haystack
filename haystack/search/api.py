@@ -58,7 +58,7 @@ def output_to_python(memory_handler, results):
     # also generate POPOs
     my_model = memory_handler.get_model()
     pythoned_modules = my_model.get_pythoned_modules().keys()
-    for module_name, module in my_model.get_imported_modules():
+    for module_name, module in my_model.get_imported_modules().items():
         if module_name not in pythoned_modules:
             my_model.build_python_class_clones(module)
     # parse and generate instances

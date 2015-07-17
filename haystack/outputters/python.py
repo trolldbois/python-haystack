@@ -8,6 +8,7 @@ import logging
 import numbers
 
 from haystack.outputters import Outputter
+from haystack import types
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
