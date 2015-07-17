@@ -104,6 +104,10 @@ class IMemoryLoader(object):
 class IMemoryHandler(object):
     """Interface for the MemoryHandler class."""
 
+    def get_name(self):
+        """Returns the name of the process memory dump we are analysing"""
+        raise NotImplementedError(self)
+
     def get_target_platform(self):
         """Returns the ITargetPlatform for that process memory."""
         raise NotImplementedError(self)
@@ -415,6 +419,25 @@ class IConstraintsConfigHandler(object):
         :param module:
         :return:
         """
+class IConstraintDict(object):
+    """Defines the constraints configuration for a number of records.
+    Each structure is associated to a list of constraint per field of that record.
+    x = IConstraintDict()
+    [...[
+
+    x['struct_1'] contains a dict()
+    x['struct_1']['field1'] contains a list of contraints.
+    """
+
+    def get_record_names(self):
+        """get the list of record names."""
+        raise NotImplementedError('Please implement all methods')
+
+    def get_constraints_for_record(self, record_name):
+        """get the list of IConstraint for all fields of
+        """
+        raise NotImplementedError('Please implement all methods')
+
 
 class IConstraint(object):
     """

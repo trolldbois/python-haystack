@@ -215,10 +215,8 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         for m in self._mappings:
             m.set_target_platform(self._target)
         self._utils = self._target.get_target_ctypes_utils()
-        self.name = name
-        # FIXME _target_platform
-        self.config = None
-        # FIXME book keeper
+        self.__name = name
+        # FIXME book keeper move to context
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
         self.__model = model.Model(self)
@@ -230,6 +228,10 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
     def _set_heap_finder(self):
         """set the IHeapFinder for that process memory."""
         return heapwalker.make_heap_finder(self)
+
+    def get_name(self):
+        """Returns the name of the process memory dump we are analysing"""
+        return self.__name
 
     def get_target_platform(self):
         """Returns the ITargetPlatform for that process memory."""

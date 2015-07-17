@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-"""Search for a known structure type in a process memory. """
 
 import ctypes
 import logging
@@ -14,187 +11,13 @@ import json
 import os
 
 from haystack import basicmodel
+from haystack.abc import interfaces
 from haystack.memory_mapper import MemoryHandlerFactory
 from haystack.outputters import text
 from haystack.outputters import python
 from haystack.utils import xrange
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
-log = logging.getLogger('abouchet')
-
-if not sys.platform.startswith('win'):
-    environSep = ':'
-else:
-    environSep = ';'
-
-
-class StructFinder:
-
-    """ Generic structure finder.
-    Will search a structure defined by it's pointer and other constraints.
-    Address space is defined by    _memory_handler.
-    Target memory perimeter is defined by targetMappings.
-    targetMappings is included in _memory_handler.
-
-    :param _memory_mappings: address space
-    :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
-    """
-
-    def __init__(self, memory_handler, targetMappings=None, updateCb=None):
-        self._memory_mappings = memory_handler
-        if isinstance(memory_handler, bool):
-            raise TypeError()
-        self.targetMappings = targetMappings
-        if targetMappings is None:
-            self.targetMappings = memory_handler
-        log.debug(
-            'StructFinder on %d memorymappings. Search Perimeter on %d _memory_handler.' %
-            (len(
-                self._memory_mappings), len(
-                self.targetMappings)))
-        return
-
-    def find_struct(self, structType, hintOffset=0, maxNum=10, maxDepth=10):
-        """ Iterate on all targetMappings to find a structure. """
-        log.info(
-            "Restricting search to %d memory mapping." %
-            (len(
-                self.targetMappings)))
-        outputs = []
-        for m in self.targetMappings:
-            # debug, most structures are on head
-            log.info("Looking at %s (%d bytes)" % (m, len(m)))
-            # if not hasValidPermissions(m):
-            #    log.warning("Invalid permission for memory %s. Stil looking at it"%m)
-            #    #continue
-            # else:
-            #    log.debug("%s,%s"%(m,m.permissions))
-            log.debug('look for %s' % (structType))
-            outputs.extend(
-                self.find_struct_in(
-                    m,
-                    structType,
-                    hintOffset=hintOffset,
-                    maxNum=maxNum,
-                    maxDepth=maxDepth))
-            # check out
-            if len(outputs) >= maxNum:
-                log.debug('Found enough instance. returning results.')
-                break
-        # if we mmap, we could yield
-        return outputs
-
-    def find_struct_in(
-            self, memoryMap, structType, hintOffset=0, maxNum=10, maxDepth=99):
-        """
-            Looks for structType instances in memory, using :
-                hints from structType (default values, and such)
-                guessing validation with instance(structType)().isValid()
-                and confirming with instance(structType)().loadMembers()
-
-            returns POINTERS to structType instances.
-        """
-        my_ctypes = self._memory_mappings.get_target_platform().get_target_ctypes()
-        # update process _memory_handler
-        log.debug(
-            "scanning 0x%lx --> 0x%lx %s" %
-            (memoryMap.start, memoryMap.end, memoryMap.pathname))
-
-        # where do we look
-        start = memoryMap.start
-        end = memoryMap.end
-        plen = my_ctypes.sizeof(my_ctypes.c_void_p)  # use aligned words only
-        structlen = my_ctypes.sizeof(structType)
-        # ret vals
-        outputs = []
-        # alignement
-        if hintOffset in memoryMap:  # absolute offset
-            align = hintOffset % plen
-            start = hintOffset - align
-        elif hintOffset != 0 and hintOffset < end - start:  # relative offset
-            align = hintOffset % plen
-            start = start + (hintOffset - align)
-
-        # parse for structType on each aligned word
-        log.debug(
-            "checking 0x%lx-0x%lx by increment of %d" %
-            (start, (end - structlen), plen))
-        instance = None
-        t0 = time.time()
-        p = 0
-        # xrange sucks. long int not ok
-        for offset in xrange(start, end - structlen, plen):
-            if offset % (1024 << 6) == 0:
-                p2 = offset - start
-                log.debug('processed %d bytes    - %02.02f test/sec' %
-                          (p2, (p2 - p) / (plen * (time.time() - t0))))
-                t0 = time.time()
-                p = p2
-            instance, validated = self.loadAt(
-                memoryMap, offset, structType, maxDepth)
-            if validated:
-                log.debug("found instance @ 0x%lx" % (offset))
-                # do stuff with it.
-                outputs.append((instance, offset))
-            if len(outputs) >= maxNum:
-                log.debug(
-                    'Found enough instance. returning results. find_struct_in')
-                break
-        return outputs
-
-    def loadAt(self, memoryMap, offset, structType, depth=99):
-        """
-            loads a haystack ctypes structure from a specific offset.
-                return (instance,validated) with instance being the haystack ctypes structure instance and validated a boolean True/False.
-        """
-        log.debug("Loading %s from 0x%lx " % (structType, offset))
-        # instance=structType.from_buffer_copy(memoryMap.readStruct(offset,structType))
-        instance = memoryMap.read_struct(offset, structType)
-        # check if data matches
-        if (instance.loadMembers(self._memory_mappings, depth)):
-            log.info("found instance %s @ 0x%lx" % (structType, offset))
-            # do stuff with it.
-            validated = True
-        else:
-            log.debug("Address not validated")
-            validated = False
-        return instance, validated
-
-
-class VerboseStructFinder(StructFinder):
-
-    """ structure finder with a update callback to be more verbose.
-    Will search a structure defined by it's pointer and other constraints.
-    Address space is defined by    _memory_handler.
-    Target memory perimeter is defined by targetMappings.
-    targetMappings is included in _memory_handler.
-
-    :param _memory_mappings: address space
-    :param targetMappings: search perimeter. If None, all _memory_handler are used in the search perimeter.
-    :param updateCb: callback func. for periodic status update
-    """
-
-    def __init__(self, memory_handler, targetMappings=None, updateCb=None):
-        StructFinder.__init__(self, memory_handler, targetMappings)
-        self.updateCb = updateCb
-        self._updateCb_init()
-
-    def _updateCb_init(self):
-        # approximation
-        nb = lambda x: ((x.end - x.start) / 4)
-        self._update_nb_steps = sum([nb(m) for m in self.targetMappings])
-        self._update_i = 0
-
-    def loadAt(self, memoryMap, offset, structType, depth=99):
-        self._update_i += 1
-        self.updateCb(self._update_i)
-        StructFinder.loadAt(memoryMap, offset, structType, depth=depth)
+log = logging.getLogger('api')
 
 
 def hasValidPermissions(memmap):
@@ -413,7 +236,7 @@ def search_struct_mem(structName, mappings, targetMappings=None, maxNum=-1):
     structType = getKlass(structName)
     finder = StructFinder(mappings, targetMappings)
     # find all possible structType instance
-    outs = finder.find_struct(structType, maxNum=maxNum)
+    outs = finder.find_struct(structType, max_num=maxNum)
     # prepare outputs
     parser = python.PythonOutputter(mappings)
     ret = [(parser.parse(ss), addr) for ss, addr in outs]
@@ -552,7 +375,7 @@ def _search(mappings, structType, fullscan=False, hint=0,
             targetMappings = mappings
     # find the structure
     finder = StructFinder(mappings, targetMappings)
-    outs = finder.find_struct(structType, hintOffset=hint, maxNum=maxnum)
+    outs = finder.find_struct(structType, hint_offset=hint, max_num=maxnum)
     # DEBUG
     if interactive:
         import code
@@ -641,7 +464,7 @@ def refresh(args):
         volname=args.volname).make_memory_handler()
     finder = StructFinder(mappings)
 
-    memoryMap = finder._memory_mappings.is_valid_address_value(addr)
+    memoryMap = finder.__memory_mappings.is_valid_address_value(addr)
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")
@@ -688,7 +511,7 @@ def show_dumpname(structname, dumpname, address, rtype='python'):
     structType = getKlass(structname)
     finder = StructFinder(mappings)
     # validate the input address.
-    memoryMap = finder._memory_mappings.is_valid_address_value(address)
+    memoryMap = finder.__memory_mappings.is_valid_address_value(address)
     if not memoryMap:
         log.error("the address is not accessible in the memoryMap")
         raise ValueError("the address is not accessible in the memoryMap")

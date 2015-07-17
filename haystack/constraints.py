@@ -172,6 +172,18 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             setattr(member, 'expectedValues', stc)
         return None
 
+class Constraints(interfaces.IConstraintDict, dict):
+    def get_record_names(self):
+        """get the list of record names."""
+        return self.keys()
+
+    def get_constraints_for_record(self, record_name):
+        """get the list of IConstraint for all fields of
+        """
+        return self[record_name]
+
+
+
 class IgnoreMember(interfaces.IConstraint):
 
     """
