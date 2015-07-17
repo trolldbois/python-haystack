@@ -378,7 +378,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         return iter(self._mappings)
 
     def __str__(self):
-        return "<MemoryHandler for %s with %d mappings>" % (self.name, len(self.get_mappings()))
+        return "<MemoryHandler for %s with %d mappings>" % (self.get_name(), len(self.get_mappings()))
 
     def reset(self):
         """Clean the book"""

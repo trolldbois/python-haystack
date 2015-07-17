@@ -98,7 +98,7 @@ class TestConstraints(unittest.TestCase):
         # we did not apply constraints
         self.assertNotIn('expectedValues', good.Struct2.__dict__.keys())
         # apply constraints
-        c_handler.apply_to_module(good_constraints, good)
+        constraints.apply_to_module(good_constraints, good)
         self.assertIn('expectedValues', good.Struct2.__dict__.keys())
 
         bad = haystack.model.import_module_for_target_ctypes("test.structures.bad", my_ctypes)
@@ -107,7 +107,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIn('Struct1', bad.__dict__)
         self.assertNotIn('expectedValues', bad.Struct1.__dict__)
         # apply constraints
-        c_handler.apply_to_module(bad_constraints, bad)
+        constraints.apply_to_module(bad_constraints, bad)
         self.assertIn('expectedValues', bad.Struct1.__dict__)
 
 

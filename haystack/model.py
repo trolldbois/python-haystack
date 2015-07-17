@@ -41,13 +41,12 @@ class NotValid(Exception):
 class LoadException(Exception):
     pass
 
-# FIXME
-# this all class is useless. the create_POPO_classes should be a static helper somewhere else.
 class Model(object):
 
     def __init__(self, memory_handler):
         self._memory_handler = memory_handler
         self.__book = dict()
+        self.__modules = dict()
 
     def reset(self):
         """Clean the book"""
@@ -115,11 +114,11 @@ class Model(object):
         pickle/unpickle them later.
         """
         log.debug('registering module %s', targetmodule)
-        if targetmodule in self.get_registered_modules().values():
+        if targetmodule in self.get_pythoned_modules().values():
             log.warning('Module %s already registered. Skipping.', targetmodule)
             return
         module_name = targetmodule.__name__
-        if module_name in self.get_registered_modules().keys():
+        if module_name in self.get_pythoned_modules().keys():
             log.warning('Module %s already registered. Skipping.', module_name)
             return
         _registered = self.__create_POPO_classes(targetmodule)
@@ -131,10 +130,10 @@ class Model(object):
         log.debug('registered %d modules total', len(self.__book.keys()))
         return
 
-    def get_registered_modules(self):
+    def get_pythoned_modules(self):
         return self.__book
 
-    def get_registered_module(self, name):
+    def get_pythoned_module(self, name):
         return self.__book[name]
 
     def import_module(self, module_name):
@@ -145,7 +144,21 @@ class Model(object):
         :return:
         """
         _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        return import_module_for_target_ctypes(module_name, _ctypes)
+        mod = import_module_for_target_ctypes(module_name, _ctypes)
+        self.__modules[module_name] = mod
+        return mod
+
+    def get_imported_modules(self):
+        """
+        :return: the module that have been imported
+        """
+        return self.__modules
+
+    def get_imported_module(self, name):
+        """
+        :return: the module that have been imported
+        """
+        return self.__modules[name]
 
 def copy_generated_classes(src_module, dst_module):
     """Copies the ctypes Records of a module into another module.

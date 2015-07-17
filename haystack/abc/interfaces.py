@@ -411,14 +411,6 @@ class IConstraintsConfigHandler(object):
         :return:
         """
 
-    def apply_to_module(self, constraints,module):
-        """
-        Apply the list of constraints to a module
-
-        :param constraints: list of IConstraint
-        :param module:
-        :return:
-        """
 class IConstraintDict(object):
     """Defines the constraints configuration for a number of records.
     Each structure is associated to a list of constraint per field of that record.

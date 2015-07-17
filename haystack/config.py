@@ -17,7 +17,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-log = logging.getLogger('_target_platform')
+log = logging.getLogger('config')
 
 # bad bad idea...
 MMAP_HACK_ACTIVE = True
@@ -31,7 +31,6 @@ TARGET_TRIPLETS = [
     ('i386-pc-win', (4, 4, 8)),
     ('x86_64-pc-win', (8, 8, 8)),
 ]
-
 
 class ConfigClass():
 

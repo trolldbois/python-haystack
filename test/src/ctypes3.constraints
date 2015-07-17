@@ -1,0 +1,11 @@
+
+[struct_test3]
+val1: [0xdeadbeef]
+al1b: [0xdeadbeef]
+val2: [0x10101010]
+val2b: [0x10101010]
+
+
+[struct_Node]
+val1: [0xdeadbeef]
+ptr2: [NotNull]

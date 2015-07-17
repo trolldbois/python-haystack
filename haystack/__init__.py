@@ -20,15 +20,9 @@ reverse
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __all__ = [
-    'find_struct_process',
-    'find_struct_memfile',
-    'refresh_struct_process',
-    'search_struct_process',
-    'search_struct_memfile',
-    'search_struct_dumpname',
-    'refresh'
 ]
 
+# verify the version
 from pkg_resources import get_distribution, DistributionNotFound
 import os.path
 
@@ -45,25 +39,8 @@ except DistributionNotFound:
 else:
     __version__ = _dist.version
 
-# DEFINE the API.
-import api
-
-find_struct_process = api.find_struct_process
-find_struct_memfile = api.find_struct_memfile
-refresh_struct_process = api.refresh_struct_process
-
-search_struct_process = api.search_struct_process
-search_struct_memfile = api.search_struct_memfile
-search_struct_dumpname = api.search_struct_dumpname
-refresh = api.refresh
-show_dumpname = api.show_dumpname
-
-def _set_rlimits():
-    """set rlimits to maximum allowed"""
-    import resource
-    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-    resource.setrlimit(
-        resource.RLIMIT_NOFILE,
-        (maxnofile[1],
-         maxnofile[1]))
-    return
+# search API
+from haystack.search import api
+search_record = api.search_record
+output_to_string = api.output_to_string
+output_to_python = api.output_to_python

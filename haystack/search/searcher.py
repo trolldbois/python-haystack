@@ -9,8 +9,9 @@ from haystack import utils
 log = logging.getLogger('searcher')
 
 class RecordSearcher(object):
-    """ Generic structure finder.
-    Will search a structure defined by it's pointer and other constraints.
+    """
+    Generic record type searcher.
+    Will search a record (Structure, Union) defined by it's member types, pointer and other constraints.
     """
 
     def __init__(self, memory_handler, target_mappings=None, update_cb=None):
@@ -30,12 +31,12 @@ class RecordSearcher(object):
         elif target_mappings is None:
             # default to all heaps
             target_mappings = memory_handler.get_heap_finder().get_heap_mappings()
-        self.__memory_handler = memory_handler
+        self._memory_handler = memory_handler
         self.__target_mappings = target_mappings
         self.__update_cb = update_cb
         log.debug(
             'StructFinder created for %s. Search Perimeter on %d mappings.',
-            self.__memory_handler.name,
+            self._memory_handler.get_name(),
             len(self.__target_mappings))
         return
 
@@ -78,9 +79,9 @@ class RecordSearcher(object):
         start = mem_map.start
         end = mem_map.end
         # check the word size to use aligned words only
-        plen = self.__memory_handler.get_target_platform().get_word_size()
+        plen = self._memory_handler.get_target_platform().get_word_size()
         # the struct cannot fit after that point.
-        my_ctypes = self.__memory_handler.get_target_platform().get_target_ctypes()
+        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         end = end - my_ctypes.sizeof(struct_type)
         if end <= start:
             raise ValueError("The record is too big for this memory mapping")
@@ -105,7 +106,8 @@ class RecordSearcher(object):
             if validated:
                 log.debug("found instance @ 0x%lx", offset)
                 # do stuff with it.
-                self.__update_cb(instance, offset)
+                if self.__update_cb is not None:
+                    self.__update_cb(instance, offset)
                 outputs.append((instance, offset))
                 # stop when time to stop
                 if len(outputs) >= nb:
@@ -113,20 +115,33 @@ class RecordSearcher(object):
                     break
         return outputs
 
-    def _load_at(self, mem_map, offset, struct_type, depth=99):
+    def _load_at(self, mem_map, address, struct_type, depth=99):
         """
             loads a haystack ctypes structure from a specific offset.
                 return (instance,validated) with instance being the
                 haystack ctypes structure instance and validated a boolean True/False.
         """
-        log.debug("Loading %s from 0x%lx " % (struct_type, offset))
-        instance = mem_map.read_struct(offset, struct_type)
+        log.debug("Loading %s from 0x%lx " % (struct_type, address))
+        instance = mem_map.read_struct(address, struct_type)
         # check if data matches
-        if instance.loadMembers(self.__memory_handler, depth):
-            log.info("found instance %s @ 0x%lx", struct_type, offset)
+        if instance.loadMembers(self._memory_handler, depth):
+            log.info("found instance %s @ 0x%lx", struct_type, address)
             # do stuff with it.
             validated = True
         else:
             log.debug("Address not validated")
             validated = False
         return instance, validated
+
+class RecordLoader(RecordSearcher):
+    """
+    Generic record loader.
+    Will load a record from a specific address.
+    """
+
+    def load(self, struct_type, memory_address):
+        # get the heap
+        mem_map = self._memory_handler.get_mapping_for_address(memory_address)
+        return self._load_at(mem_map, memory_address, struct_type)
+
+

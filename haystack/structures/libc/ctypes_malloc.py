@@ -251,7 +251,6 @@ struct malloc_chunk {
                 'Struct partially LOADED. %s not loaded' %
                 (self.__class__.__name__))
             return True
-        self.config = mappings.config
         maxDepth -= 1
         log.debug('%s loadMembers' % (self.__class__.__name__))
         if not self.isValid(mappings):

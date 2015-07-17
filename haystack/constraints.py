@@ -21,6 +21,23 @@ log = logging.getLogger('constraints')
 
 from haystack.abc import interfaces
 
+def apply_to_module(constraints, module):
+    """
+    Apply the list of constraints to a module
+
+    :param constraints: list of IConstraint
+    :param module:
+    :return: module
+    """
+    for st, stc in constraints.items():
+        if not hasattr(module, st):
+            log.debug('module %s has no type %s', module, st)
+            continue
+        member = getattr(module, st)
+        log.debug("setting constraint on structure: %s %s", st, member)
+        setattr(member, 'expectedValues', stc)
+    return None
+
 
 class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
     """
@@ -155,22 +172,6 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             ret = str(_arg)
         return ret
 
-    def apply_to_module(self, constraints, module):
-        """
-        Apply the list of constraints to a module
-
-        :param constraints: list of IConstraint
-        :param module:
-        :return: module
-        """
-        for st, stc in constraints.items():
-            if not hasattr(module, st):
-                log.debug('module %s has no type %s', module, st)
-                continue
-            member = getattr(module, st)
-            log.debug("setting constraint on structure: %s %s", st, member)
-            setattr(member, 'expectedValues', stc)
-        return None
 
 class Constraints(interfaces.IConstraintDict, dict):
     def get_record_names(self):

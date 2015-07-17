@@ -39,34 +39,34 @@ class TestCopyModule(unittest.TestCase):
         good = self.my_model.import_module("test.structures.good")
 
         # register the module
-        self.assertNotIn(good, self.my_model.get_registered_modules().values())
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
         self.assertNotIn('Struct2_py', good.__dict__.keys())
         self.my_model.build_python_class_clones(good)
-        self.assertIn(good, self.my_model.get_registered_modules().values())
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
-        self.assertNotIn(bad, self.my_model.get_registered_modules().values())
+        self.assertNotIn(bad, self.my_model.get_pythoned_modules().values())
         self.assertNotIn('Struct1_py', bad.__dict__.keys())
         self.my_model.build_python_class_clones(bad)
-        self.assertIn(bad, self.my_model.get_registered_modules().values())
-        self.assertIn(good, self.my_model.get_registered_modules().values())
+        self.assertIn(bad, self.my_model.get_pythoned_modules().values())
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
         self.assertIn('Struct1_py', bad.__dict__.keys())
 
     def test_reset(self):
         """Reset the model cache. All classes should have been removed."""
         good = self.my_model.import_module("test.structures.good")
 
-        self.assertNotIn("test.structures.good", self.my_model.get_registered_modules().keys())
-        self.assertNotIn(good, self.my_model.get_registered_modules().values())
+        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
         self.assertNotIn('Struct2_py', good.__dict__.keys())
         self.my_model.build_python_class_clones(good)
-        self.assertIn("test.structures.good", self.my_model.get_registered_modules().keys())
-        self.assertIn(good, self.my_model.get_registered_modules().values())
+        self.assertIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
         self.my_model.reset()
-        self.assertNotIn(good, self.my_model.get_registered_modules().values())
-        self.assertNotIn("test.structures.good", self.my_model.get_registered_modules().keys())
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
 

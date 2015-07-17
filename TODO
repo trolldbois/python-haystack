@@ -1,5 +1,14 @@
 
 
+- separated expectedValues from the record type. It should be in a separate dict, 
+that is passed to the basicmodel searcher at search time.
+
+- the module of a struct_type should have been imported to the model
+caught between the need to avoid confusion and the need to import module with haystack.
+Its imported.
+It should be in the model.
+
+
 - Model should not depends on ctypesProxy or LoadablesMembers. It could do it on Ctypes.Structure/Union.
 - basicmodel should not be monkey patching ctypes.Structure for the sole purpose
 to add methods. Only cross arch helper is authorised. We should have a worker 

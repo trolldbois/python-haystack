@@ -33,7 +33,7 @@ class PythonOutputter(Outputter):
         try:
             obj_module_name = obj.__class__.__module__
             obj_class_name = obj.__class__.__name__
-            obj_module = self._model.get_registered_module(obj_module_name)
+            obj_module = self._model.get_pythoned_module(obj_module_name)
             my_class = getattr(obj_module, "%s_py" % obj_class_name)
         except AttributeError as e:
             log.warning('did you forget to register your python structures ?')

@@ -74,7 +74,7 @@ class HeapFinder(interfaces.IHeapFinder):
         """
         parser = constraints.ConstraintsConfigHandler()
         cons = parser.read(self._heap_constraint_filename)
-        parser.apply_to_module(cons, self._heap_module)
+        constraints.apply_to_module(cons, self._heap_module)
         return None
 
     def _init_heap_type(self):
