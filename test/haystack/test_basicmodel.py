@@ -31,7 +31,8 @@ class TestLoadMembers(SrcTests):
         self.my_target = target.TargetPlatform.make_target_linux_32()
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
-        self.ctypes_gen32 = haystack.model.import_module("test.src.ctypes5_gen32", self.my_target)
+        self.my_model = self.memory_handler.get_model()
+        self.ctypes_gen32 = self.my_model.import_module("test.src.ctypes5_gen32")
 
     def tearDown(self):
         super(SrcTests, self).tearDown()
@@ -136,8 +137,9 @@ class TestRealSSH(unittest.TestCase):
         self.my_target = self.memory_handler.get_target_platform()
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
+        self.my_model = self.memory_handler.get_model()
         try:
-            self.sslsnoop = haystack.model.import_module("sslsnoop", self.my_target)
+            self.sslsnoop = self.my_model.import_module("sslsnoop")
         except ImportError:
             self.skipTest('sslsnoop not present')
         self.classname = 'sslsnoop.ctypes_openssh.session_state'

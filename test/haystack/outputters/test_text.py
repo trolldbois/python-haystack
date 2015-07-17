@@ -9,10 +9,7 @@ import sys
 
 from haystack import model
 from haystack import dump_loader
-from haystack import utils
 from haystack.outputters import text
-from haystack.outputters import python
-
 from test.haystack import SrcTests
 
 __author__ = "Loic Jaquemet"
@@ -28,26 +25,25 @@ class TestTextOutput(SrcTests):
     """Basic types"""
 
     def setUp(self):
-        model.reset()
-        self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+        self.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
+        sys.path.append('test/src/')
+        my_model = self.memory_handler.get_model()
+        self.ctypes5_gen32 = my_model.import_module("ctypes5_gen32")
+        my_model.build_python_class_clones(self.ctypes5_gen32)
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
-        self.mappings = None
-        pass
+        self.memory_handler = None
+        self.ctypes5_gen32 = None
 
     def test_complex_text(self):
-        from test.src import ctypes5_gen32
-        model.registerModule(ctypes5_gen32)
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        d = m.read_struct(offset, ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.mappings, 10)
+        m = self.memory_handler.get_mapping_for_address(offset)
+        d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
+        ret = d.loadMembers(self.memory_handler, 10)
         self.assertTrue(ret)
-        parser = text.RecursiveTextOutputter(self.mappings)
+        parser = text.RecursiveTextOutputter(self.memory_handler)
         out = parser.parse(d)
         # should not fail
         x = eval(out)

@@ -6,7 +6,6 @@
 
 import logging
 import numbers
-import sys
 
 from haystack.outputters import Outputter
 
@@ -32,11 +31,10 @@ class PythonOutputter(Outputter):
         """
         # get self class.
         try:
-            my_class = getattr(
-                sys.modules[
-                    obj.__class__.__module__],
-                "%s_py" %
-                (obj.__class__.__name__))
+            obj_module_name = obj.__class__.__module__
+            obj_class_name = obj.__class__.__name__
+            obj_module = self._model.get_registered_module(obj_module_name)
+            my_class = getattr(obj_module, "%s_py" % obj_class_name)
         except AttributeError as e:
             log.warning('did you forget to register your python structures ?')
             raise
@@ -70,7 +68,7 @@ class PythonOutputter(Outputter):
             obj = self.parse(attr)
         elif self._ctypes.is_array_of_basic_type(attrtype):
             # return a list of int, float, or a char[] to str
-            obj = utils.ctypes_to_python_array(attr)
+            obj = self._utils.ctypes_to_python_array(attr)
         elif self._ctypes.is_array_type(attrtype):
             # array of something else than int/byte
             obj = []
@@ -80,14 +78,14 @@ class PythonOutputter(Outputter):
         elif self._ctypes.is_cstring_type(attrtype):
             obj = self._memory_handler.getRef(
                 self._ctypes.CString,
-                utils.get_pointee_address(
+                self._utils.get_pointee_address(
                     attr.ptr))
         elif self._ctypes.is_function_type(attrtype):
             obj = repr(attr)
         elif self._ctypes.is_pointer_type(attrtype):
             # get the cached Value of the LP.
-            _subtype = get_subtype(attrtype)
-            _address = utils.get_pointee_address(attr)
+            _subtype = self._utils.get_subtype(attrtype)
+            _address = self._utils.get_pointee_address(attr)
             if _address == 0:
                 # Null pointer
                 obj = None
@@ -220,7 +218,7 @@ class pyObj(object):
                 if self._attrFindCtypes(el, 'element', None, cache):
                     log.warning('Found a self._ctypes in array/tuple')
                     return True
-        elif self._ctypes.is_ctypes_instance(attr):
+        elif types.is_ctypes_instance(attr):
             log.warning('Found a self._ctypes in self %s' % (attr))
             return True
         else:  # int, long, str ...
@@ -246,6 +244,6 @@ def findCtypesInPyObj(memory_handler, obj):
             if findCtypesInPyObj(memory_handler, el):
                 log.warning('Found a self._ctypes in array/tuple')
                 return True
-    elif memory_handler.get_target_platform().get_target_ctypes().is_ctypes_instance(obj):
+    elif types.is_ctypes_instance(obj):
         return True
     return False

@@ -282,6 +282,13 @@ class IHeapFinder(object):
         """
         raise NotImplementedError(self)
 
+    def get_heap_module(self):
+        """
+        Returns the heap module.
+        :return: module
+        """
+        raise NotImplementedError(self)
+
     def get_heap_walker(self, heap):
         """
          return a IHeapWalker for that heap

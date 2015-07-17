@@ -32,6 +32,10 @@ FAILED (failures=1, errors=106, skipped=6, expected failures=1)
  - design with abc ready interfaces
  - clean TU state, 0 errors
  - constraints config is case sensitive
+ - fixed win7heapfinder and walker
+ - adjusted basicmodel to use memeory_handler properly.
+ - Ran 213 tests in 149.355s
+FAILED (failures=2, errors=31, skipped=8, expected failures=2)
 
 2015-06:
  - keep track of changes in this file

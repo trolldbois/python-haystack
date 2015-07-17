@@ -7,9 +7,7 @@ import logging
 import unittest
 
 from haystack import model
-from haystack import types
 from haystack.mappings import process
-import haystack.model
 
 
 class TestCopyModule(unittest.TestCase):
@@ -26,40 +24,49 @@ class TestCopyModule(unittest.TestCase):
         cls.my_target = None
         cls.my_model = None
 
+    def setUp(self):
+        self.my_model.reset()
+
+    def tearDown(self):
+        self.my_model.reset()
+
     def test_register_module(self):
         """
         Register module allows for python types to be created as a python friendly
         clone to ctypes structures.
         """
-        bad = haystack.model.import_module("test.structures.bad", self.my_target)
-        good = haystack.model.import_module("test.structures.good", self.my_target)
+        bad = self.my_model.import_module("test.structures.bad")
+        good = self.my_model.import_module("test.structures.good")
 
         # register the module
-        self.assertNotIn(good, self.my_model.get_registered_modules())
+        self.assertNotIn(good, self.my_model.get_registered_modules().values())
         self.assertNotIn('Struct2_py', good.__dict__.keys())
         self.my_model.build_python_class_clones(good)
-        self.assertIn(good, self.my_model.get_registered_modules())
+        self.assertIn(good, self.my_model.get_registered_modules().values())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
-        self.assertNotIn(bad, self.my_model.get_registered_modules())
+        self.assertNotIn(bad, self.my_model.get_registered_modules().values())
         self.assertNotIn('Struct1_py', bad.__dict__.keys())
         self.my_model.build_python_class_clones(bad)
-        self.assertIn(bad, self.my_model.get_registered_modules())
-        self.assertIn(good, self.my_model.get_registered_modules())
+        self.assertIn(bad, self.my_model.get_registered_modules().values())
+        self.assertIn(good, self.my_model.get_registered_modules().values())
         self.assertIn('Struct1_py', bad.__dict__.keys())
 
     def test_reset(self):
         """Reset the model cache. All classes should have been removed."""
-        good = haystack.model.import_module("test.structures.good", self.my_target)
+        good = self.my_model.import_module("test.structures.good")
 
-        self.assertNotIn(good, self.my_model.get_registered_modules())
+        self.assertNotIn("test.structures.good", self.my_model.get_registered_modules().keys())
+        self.assertNotIn(good, self.my_model.get_registered_modules().values())
         self.assertNotIn('Struct2_py', good.__dict__.keys())
         self.my_model.build_python_class_clones(good)
-        self.assertIn(good, self.my_model.get_registered_modules())
+        self.assertIn("test.structures.good", self.my_model.get_registered_modules().keys())
+        self.assertIn(good, self.my_model.get_registered_modules().values())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
         self.my_model.reset()
-        self.assertNotIn(good, self.my_model.get_registered_modules())
+        self.assertNotIn(good, self.my_model.get_registered_modules().values())
+        self.assertNotIn("test.structures.good", self.my_model.get_registered_modules().keys())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
 

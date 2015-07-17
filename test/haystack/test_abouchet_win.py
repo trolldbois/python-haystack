@@ -5,7 +5,7 @@
 import logging
 import unittest
 
-from haystack import abouchet
+from haystack import api
 from haystack import model
 
 
@@ -34,7 +34,7 @@ class TestApiWin32Dump(unittest.TestCase):
         self.known_heaps = None
 
     def test_show(self):
-        instance, validated = abouchet.show_dumpname(
+        instance, validated = api.show_dumpname(
             self.classname, self.memdumpname, self.known_heaps[0][0])
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)
@@ -43,7 +43,7 @@ class TestApiWin32Dump(unittest.TestCase):
         self.assertEquals(instance.FrontEndHeapType, 0)
 
         if True:
-            instance, validated = abouchet.show_dumpname(
+            instance, validated = api.show_dumpname(
                 self.classname, self.memdumpname, self.known_heaps[0][0] + 1)
             self.assertFalse(validated)
             self.assertIsInstance(instance, object)

@@ -9,8 +9,6 @@ import sys
 
 from haystack import model
 from haystack import dump_loader
-from haystack import utils
-
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -28,75 +26,78 @@ class TestListStruct(unittest.TestCase):
     """
 
     def setUp(self):
-        self.mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
+        self.memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
+        self.finder = self.memory_handler.get_heap_finder()
 
     def tearDown(self):
-        self.mappings = None
+        self.memory_handler = None
+        self.finder = None
 
     def test_iter(self):
         #offset = 0x390000
-        from haystack.structures.win32 import win7heap
+        win7heap = self.finder._heap_module
         offset = 0x1ef0000
-        self.m = self.mappings.get_mapping_for_address(offset)
+        self.m = self.memory_handler.get_mapping_for_address(offset)
         self.heap = self.m.read_struct(offset, win7heap.HEAP)
 
-        self.assertTrue(self.heap.loadMembers(self.mappings, 10))
+        self.assertTrue(self.heap.loadMembers(self.memory_handler, 10))
 
         segments = [
             segment for segment in self.heap.iterateListField(
-                self.mappings,
+                self.memory_handler,
                 'SegmentList')]
         self.assertEquals(len(segments), 1)
 
         ucrs = [
             ucr for ucr in segment.iterateListField(
-                self.mappings,
+                self.memory_handler,
                 'UCRSegmentList') for segment in segments]
         self.assertEquals(len(ucrs), 1)
 
         logging.getLogger('root').debug('VIRTUAL')
         allocated = [
             block for block in self.heap.iterateListField(
-                self.mappings,
+                self.memory_handler,
                 'VirtualAllocdBlocks')]
         self.assertEquals(len(allocated), 0)  # 'No vallocated blocks'
 
         for block in self.heap.iterateListField(
-                self.mappings, 'VirtualAllocdBlocks'):
+                self.memory_handler, 'VirtualAllocdBlocks'):
             print 'commit %x reserve %x' % (block.CommitSize, block.ReserveSize)
 
         return
 
     def test_getListFieldInfo(self):
-        from haystack.structures.win32 import win7heap
+        win7heap = self.finder._heap_module
 
         heap = win7heap.HEAP()
+        heap._memory_handler = self.memory_handler
         self.assertEquals(
             heap._getListFieldInfo('SegmentList'), (win7heap.HEAP_SEGMENT, -16))
 
         seg = win7heap.HEAP_SEGMENT()
+        seg._memory_handler = self.memory_handler
         self.assertEquals(
             seg._getListFieldInfo('UCRSegmentList'), (win7heap.HEAP_UCR_DESCRIPTOR, -8))
 
     def test_otherHeap(self):
-        #self.skipTest('not ready')
-        from haystack.structures.win32 import win7heap
+        win7heap = self.finder._heap_module
 
         heaps = [0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000]
         for addr in heaps:
-            m = self.mappings.get_mapping_for_address(addr)
+            m = self.memory_handler.get_mapping_for_address(addr)
             # print '\n+ Heap @%x size: %d'%(addr, len(m))
             heap = m.read_struct(addr, win7heap.HEAP)
-            self.assertTrue(heap.loadMembers(self.mappings, 10))
+            self.assertTrue(heap.loadMembers(self.memory_handler, 10))
             segments = [
                 segment for segment in heap.iterateListField(
-                    self.mappings,
+                    self.memory_handler,
                     'SegmentList')]
             self.assertEquals(len(segments), 1)
 
             allocated = [
                 block for block in heap.iterateListField(
-                    self.mappings,
+                    self.memory_handler,
                     'VirtualAllocdBlocks')]
             self.assertEquals(len(allocated), 0)
 
@@ -105,32 +106,35 @@ class TestListStructTest6(SrcTests):
     """
 
     def setUp(self):
-        self.mappings = dump_loader.load('test/src/test-ctypes6.32.dump')
+        self.memory_handler = dump_loader.load('test/src/test-ctypes6.32.dump')
         self.memdumpname = 'test/src/test-ctypes6.32.dump'
         self._load_offsets_values(self.memdumpname)
         sys.path.append('test/src/')
-        from test.src import ctypes6
-        from test.src import ctypes6_gen32
-        model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
-        model.registerModule(ctypes6)
+
+        my_model = self.memory_handler.get_model()
+        self.ctypes6_gen32 = my_model.import_module("ctypes6_gen32")
+        self.ctypes6 = my_model.import_module("ctypes6")
+        model.copy_generated_classes(self.ctypes6_gen32, self.ctypes6)
+
         # apply constraints
-        ctypes6.populate(self.mappings.config)
+        self.ctypes6.populate(self.memory_handler.get_target_platform())
         self.offset = self.offsets['test1'][0]
-        self.m = self.mappings.get_mapping_for_address(self.offset)
-        self.usual = self.m.read_struct(self.offset, ctypes6.struct_usual)
+        self.m = self.memory_handler.get_mapping_for_address(self.offset)
+        self.usual = self.m.read_struct(self.offset, self.ctypes6.struct_usual)
 
     def tearDown(self):
-        self.mappings = None
+        self.memory_handler = None
         self.m = None
         self.usual = None
+        self.ctypes6 = None
 
     def test_iter(self):
 
-        self.assertTrue(self.usual.loadMembers(self.mappings, 10))
+        self.assertTrue(self.usual.loadMembers(self.memory_handler, 10))
 
         nodes_addrs = [
             el for el in self.usual.root._iterateList(
-                self.mappings)]
+                self.memory_handler)]
         # test that we have a list of two structures in a list
         self.assertEquals(len(nodes_addrs), 2)
 

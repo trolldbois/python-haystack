@@ -280,12 +280,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         '''
         return size of structure and list of addresses and values )
         '''
-        from haystack import abouchet
+        from haystack import api
         import ctypes
         # import sslsnoop #?
         # self.mapping.unmmap()
         # DEBUG stop at the first instance, lazy me
-        instances = abouchet.searchIn(
+        instances = api.searchIn(
             structType,
             mappings=self.mappings,
             targetMappings=[

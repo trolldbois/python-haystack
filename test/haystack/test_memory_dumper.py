@@ -205,9 +205,9 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_1:
-            instance, found = haystack.abouchet.show_dumpname(
+            instance, found = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_Node', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
@@ -216,7 +216,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             pass
 
         for offset in offsets_3:
-            instance, found = haystack.abouchet.show_dumpname(
+            instance, found = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_test3', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
@@ -234,9 +234,9 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_3:
-            ret = haystack.abouchet.show_dumpname(
+            ret = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_test3', self.out, int(
                     offset, 16), rtype='string')
             self.assertIn('"val1": 3735928559L', ret)
@@ -254,10 +254,10 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_3:
             self.assertRaises(ValueError,
-                              haystack.abouchet.show_dumpname,
+                              haystack.api.show_dumpname,
                               'test.src.ctypes3.struct_test3',
                               self.out,
                               int(offset,

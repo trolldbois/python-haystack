@@ -42,14 +42,12 @@ class TestStructureSizes(unittest.TestCase):
         #    ('me', [constraints.NotNull])])
 
     def setUp(self):
-        model.reset()
         # os.chdir()
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
         self.dsa = dsa.DSASimple(self.context.config)
 
     def tearDown(self):
         self.context = None
-        model.reset()
 
     @unittest.skip('DEBUGging the other one')
     def test_sizes(self):
@@ -70,7 +68,7 @@ class TestStructureSizes(unittest.TestCase):
         # our compiler put a padding at the end of struct_Node
         # struct_node should be 8, no padding, but its 12.
         self.assertEqual(sizes, [12,20])
-        
+
         #st = ctypes3.Node()
         # print st.toString(), st._expectedValues_
 
@@ -95,10 +93,10 @@ class TestStructureSizes(unittest.TestCase):
 class TestFullReverse(unittest.TestCase):
 
     def setUp(self):
-        model.reset()
+        pass
 
     def tearDown(self):
-        model.reset()
+        pass
 
     def test_reverseInstances(self):
         log.info('START test test_reverseInstances')

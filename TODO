@@ -1,13 +1,14 @@
 
 
-- Model should not depends on ctypes or LoadablesMembers. It could do it on Ctypes.Structure/Union.
-- basicmodel should not be methods of the target class. We should have a worker 
+- Model should not depends on ctypesProxy or LoadablesMembers. It could do it on Ctypes.Structure/Union.
+- basicmodel should not be monkey patching ctypes.Structure for the sole purpose
+to add methods. Only cross arch helper is authorised. We should have a worker 
 class assessing a "normal" ctypes.Structure instance (modulo target arch)
 - a working str() on Ctypes.loadableMembers requires no instanciated utils
 
 - use ASN.1 for constraints.
 
-- FIX get_heap on windows XP/zeus demo
+- FIX get_heap on windows XP/zeus demo. Extract a process from a vol dump to make a test case.
 - add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
 
 - make a listmodel method for arrays of structures
@@ -17,16 +18,11 @@ class assessing a "normal" ctypes.Structure instance (modulo target arch)
     - unloading all reverse module is crude.
     - resetting some haystack sub modules (reverse) seems to work
 
-- never import ctypes anywhere !
-    - always rely on a model.py/config.py ctypes singleton
-
 - too many open files
     - close mappings file in memory mappings.???
     - clean all TU to clean memory mappings in bringDown
 
-
 - use heapwalker plugins from rekall/volatility to create a proxy heapwalker ?
-
 
 
 Attribute packed is not correct in ctypeslib
@@ -43,16 +39,8 @@ Attribute packed is not correct in ctypeslib
     # C - then apply constraints on objects.
     ctypes6.populate(self.mappings.config)
 
-Step C) would be nicer is a yara format is applied, and gen that into the module
-itself.
-    -> model.apply_constraints("yaraconstraintsfilename")
-format yara constraints as
-
-
 
 Todo:
- - Put constraints in yara form ? at least in separate folder/
- - Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
  - Add a struct beautifier for the string formatting. (hex vs int)
  - easy API
  - documented example

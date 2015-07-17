@@ -5,7 +5,7 @@
 import logging
 import unittest
 
-from haystack import abouchet
+from haystack import api
 from haystack import model
 from haystack import types
 from test.haystack import SrcTests
@@ -22,13 +22,6 @@ class Test7_x32(SrcTests):
         self.classname = 'test.src.ctypes7.struct_Node'
         self._load_offsets_values(self.memdumpname)
         self.address = self.offsets['test1'][0]  # 0x8f40008
-        # load layout in x32
-        from test.src import ctypes7
-        from test.src import ctypes7_gen32
-        model.copyGeneratedClasses(ctypes7_gen32, ctypes7)
-        model.registerModule(ctypes7)
-        # apply constraints
-        ctypes7.populate()
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -37,10 +30,8 @@ class Test7_x32(SrcTests):
         self.address = None
 
     def test_refresh(self):
-        from test.src import ctypes7
-        self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
         # string
-        retstr = abouchet.show_dumpname(
+        retstr = api.show_dumpname(
             self.classname,
             self.memdumpname,
             self.address,
@@ -50,7 +41,7 @@ class Test7_x32(SrcTests):
         self.assertIn('"ptr2": 0x%08x' % (self.address), retstr)
 
         # python
-        node, validated = abouchet.show_dumpname(
+        node, validated = api.show_dumpname(
             self.classname, self.memdumpname, self.address, rtype='python')
         self.assertEquals(validated, True)
         self.assertEquals(node.val1, 0xdeadbeef)
@@ -58,10 +49,8 @@ class Test7_x32(SrcTests):
         self.assertIsNone(node.ptr2)
 
     def test_search(self):
-        from test.src import ctypes7
-        self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
 
-        retstr = abouchet.search_struct_dumpname(
+        retstr = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             rtype='string')
@@ -70,7 +59,7 @@ class Test7_x32(SrcTests):
         self.assertIn('"ptr2": 0x%08x' % (self.address), retstr)
 
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             rtype='python')
@@ -82,7 +71,7 @@ class Test7_x32(SrcTests):
             self.assertIsNone(node.ptr2)
 
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             maxnum=10,
@@ -107,13 +96,6 @@ class Test7_x64(SrcTests):
         self.classname = 'test.src.ctypes7.struct_Node'
         self._load_offsets_values(self.memdumpname)
         self.address = self.offsets['test1'][0]  # 0x000000001b1e010
-        # load layout in x64
-        from test.src import ctypes7
-        from test.src import ctypes7_gen64
-        model.copyGeneratedClasses(ctypes7_gen64, ctypes7)
-        model.registerModule(ctypes7)
-        # apply constraints
-        ctypes7.populate()
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -123,11 +105,9 @@ class Test7_x64(SrcTests):
 
     def test_refresh(self):
         import ctypes
-        from test.src import ctypes7
-        self.assertEquals(ctypes.sizeof(ctypes7.struct_Node), 16)
-        self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
+
         # string
-        retstr = abouchet.show_dumpname(
+        retstr = api.show_dumpname(
             self.classname,
             self.memdumpname,
             self.address,
@@ -137,7 +117,7 @@ class Test7_x64(SrcTests):
         self.assertIn('"ptr2": 0x%016x' % (self.address), retstr)
 
         # python
-        node, validated = abouchet.show_dumpname(
+        node, validated = api.show_dumpname(
             self.classname, self.memdumpname, self.address, rtype='python')
         self.assertEquals(validated, True)
         self.assertEquals(node.val1, 0xdeadbeef)
@@ -146,11 +126,8 @@ class Test7_x64(SrcTests):
 
     def test_search(self):
         import ctypes
-        from test.src import ctypes7
-        self.assertEquals(ctypes.sizeof(ctypes7.struct_Node), 16)
-        self.assertEquals(len(ctypes7.struct_Node.expectedValues.keys()), 2)
 
-        retstr = abouchet.search_struct_dumpname(
+        retstr = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             rtype='string')
@@ -159,7 +136,7 @@ class Test7_x64(SrcTests):
         self.assertIn('"ptr2": 0x%016x' % (self.address), retstr)
 
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             rtype='python')
@@ -172,7 +149,7 @@ class Test7_x64(SrcTests):
 
         return
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.classname,
             self.memdumpname,
             maxnum=10,
@@ -197,9 +174,6 @@ class Test6_x32(SrcTests):
     def setUp(self):
 
         types.build_ctypes_proxy(4, 4, 8)
-        class MyConfig:
-            def get_word_size(self):
-                return 4
         self.memdumpname = 'test/src/test-ctypes6.32.dump'
         self.node_structname = 'test.src.ctypes6.struct_Node'
         self.usual_structname = 'test.src.ctypes6.struct_usual'
@@ -207,13 +181,6 @@ class Test6_x32(SrcTests):
         self.address1 = self.offsets['test1'][0]  # struct_usual
         self.address2 = self.offsets['test2'][0]  # struct_Node
         self.address3 = self.offsets['test3'][0]  # struct_Node
-        # load layout in x32
-        from test.src import ctypes6
-        from test.src import ctypes6_gen32
-        model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
-        model.registerModule(ctypes6)
-        # apply constraints
-        ctypes6.populate(MyConfig())
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -224,7 +191,6 @@ class Test6_x32(SrcTests):
         self.address2 = None
         self.address3 = None
 
-
     def test_refresh(self):
         # if you delete the Heap memorymap,
         # all references in the model are invalided
@@ -232,11 +198,10 @@ class Test6_x32(SrcTests):
         # real problem: references left over by previous search.
         # solution: move the book into memory_mappings,
 
-        from test.src import ctypes6
-        self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
+        # FIXME: API needs a change anyway.
 
         # string
-        retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
+        retstr = api.show_dumpname(self.usual_structname, self.memdumpname,
                                         self.address1, rtype='string')
         if True:
             import ctypes
@@ -260,7 +225,7 @@ class Test6_x32(SrcTests):
             retstr)
 
         # python
-        usual, validated = abouchet.show_dumpname(self.usual_structname,
+        usual, validated = api.show_dumpname(self.usual_structname,
                                                   self.memdumpname,
                                                   self.address1, rtype='python')
         self.assertEquals(validated, True)
@@ -282,14 +247,14 @@ class Test6_x32(SrcTests):
         self.assertIsNone(usual.root.blink.flink.flink)
 
         # python 2 struct Node
-        node1, validated = abouchet.show_dumpname(self.node_structname,
+        node1, validated = api.show_dumpname(self.node_structname,
                                                   self.memdumpname,
                                                   self.address2, rtype='python')
         self.assertEquals(validated, True)
         self.assertEquals(node1.val1, 0xdeadbeef)
         self.assertEquals(node1.val2, 0xffffffff)
 
-        node2, validated = abouchet.show_dumpname(self.node_structname,
+        node2, validated = api.show_dumpname(self.node_structname,
                                                   self.memdumpname,
                                                   self.address3, rtype='python')
         self.assertEquals(validated, True)
@@ -318,7 +283,7 @@ class Test6_x32(SrcTests):
         from test.src import ctypes6
         self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
 
-        retstr = abouchet.search_struct_dumpname(
+        retstr = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             rtype='string')
@@ -326,14 +291,14 @@ class Test6_x32(SrcTests):
         self.assertIn(hex(self.address2), retstr)
 
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             rtype='python')
         self.assertEquals(len(results), 1)
 
         # python nultiple results
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             maxnum=10,
@@ -358,9 +323,6 @@ class Test6_x64(SrcTests):
 
     def setUp(self):
         x64 = types.build_ctypes_proxy(8, 8, 16)
-        class MyConfig:
-            def get_word_size(self):
-                return 8
         self.memdumpname = 'test/src/test-ctypes6.64.dump'
         self.node_structname = 'test.src.ctypes6.struct_Node'
         self.usual_structname = 'test.src.ctypes6.struct_usual'
@@ -368,13 +330,6 @@ class Test6_x64(SrcTests):
         self.address1 = self.offsets['test1'][0]  # struct_usual
         self.address2 = self.offsets['test2'][0]  # struct_Node
         self.address3 = self.offsets['test3'][0]  # struct_Node
-        # load layout in x64
-        from test.src import ctypes6
-        from test.src import ctypes6_gen64
-        model.copyGeneratedClasses(ctypes6_gen64, ctypes6)
-        model.registerModule(ctypes6)
-        # apply constraints
-        ctypes6.populate(MyConfig())
 
     def tearDown(self):
         super(SrcTests,self).tearDown()
@@ -386,10 +341,11 @@ class Test6_x64(SrcTests):
         self.address3 = None
 
     def test_refresh(self):
-        from test.src import ctypes6
-        self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
+
+        # FIXME API change & contraints
+
         # string
-        retstr = abouchet.show_dumpname(self.usual_structname, self.memdumpname,
+        retstr = api.show_dumpname(self.usual_structname, self.memdumpname,
                                         self.address1, rtype='string')
         if True:
             import ctypes
@@ -414,7 +370,7 @@ class Test6_x64(SrcTests):
             retstr)
 
         # python
-        usual, validated = abouchet.show_dumpname(self.usual_structname,
+        usual, validated = api.show_dumpname(self.usual_structname,
                                                   self.memdumpname,
                                                   self.address1, rtype='python')
         self.assertEquals(validated, True)
@@ -436,14 +392,14 @@ class Test6_x64(SrcTests):
         self.assertIsNone(usual.root.blink.flink.flink)
 
         # python 2 struct Node
-        node1, validated = abouchet.show_dumpname(self.node_structname,
+        node1, validated = api.show_dumpname(self.node_structname,
                                                   self.memdumpname,
                                                   self.address2, rtype='python')
         self.assertEquals(validated, True)
         self.assertEquals(node1.val1, 0xdeadbeef)
         self.assertEquals(node1.val2, 0xffffffff)
 
-        node2, validated = abouchet.show_dumpname(self.node_structname,
+        node2, validated = api.show_dumpname(self.node_structname,
                                                   self.memdumpname,
                                                   self.address3, rtype='python')
         self.assertEquals(validated, True)
@@ -470,7 +426,7 @@ class Test6_x64(SrcTests):
         from test.src import ctypes6
         self.assertEquals(len(ctypes6.struct_Node.expectedValues.keys()), 2)
 
-        retstr = abouchet.search_struct_dumpname(
+        retstr = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             rtype='string')
@@ -478,14 +434,14 @@ class Test6_x64(SrcTests):
         self.assertIn(hex(self.address2), retstr)
 
         # python
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             rtype='python')
         self.assertEquals(len(results), 1)
 
         # python multiple results
-        results = abouchet.search_struct_dumpname(
+        results = api.search_struct_dumpname(
             self.node_structname,
             self.memdumpname,
             maxnum=10,
@@ -529,7 +485,7 @@ class TestApiLinuxDumpX64(unittest.TestCase):
 
 
     def test_show(self):
-        instance, validated = abouchet.show_dumpname(
+        instance, validated = api.show_dumpname(
             self.classname, self.memdumpname, long(
                 self.validAddress, 16))
         self.assertIsInstance(instance, object)
@@ -566,7 +522,7 @@ class TestApiLinuxDump(unittest.TestCase):
 
 
     def test_show(self):
-        instance, validated = abouchet.show_dumpname(
+        instance, validated = api.show_dumpname(
             self.classname, self.memdumpname, self.known_heaps[0][0])
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)

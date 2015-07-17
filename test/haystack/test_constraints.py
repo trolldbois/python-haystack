@@ -7,7 +7,6 @@ import logging
 import unittest
 
 from haystack import constraints
-from haystack import types
 from haystack import target
 import haystack.model
 
@@ -83,15 +82,15 @@ class TestConstraints(unittest.TestCase):
         field8 = s2c['field8']
         self.assertEquals(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
 
-
     def test_apply_to_module(self):
         c_handler = constraints.ConstraintsConfigHandler()
         good_constraints = c_handler.read('test/structures/good.constraints')
         bad_constraints = c_handler.read('test/structures/bad.constraints')
 
         my_target = target.TargetPlatform.make_target_platform_local()
+        my_ctypes = my_target.get_target_ctypes()
 
-        good = haystack.model.import_module("test.structures.good", my_target)
+        good = haystack.model.import_module_for_target_ctypes("test.structures.good", my_ctypes)
 
         self.assertIn('Struct2', good.__dict__.keys())
         # we did not register this module
@@ -102,7 +101,7 @@ class TestConstraints(unittest.TestCase):
         c_handler.apply_to_module(good_constraints, good)
         self.assertIn('expectedValues', good.Struct2.__dict__.keys())
 
-        bad = haystack.model.import_module("test.structures.bad", my_target)
+        bad = haystack.model.import_module_for_target_ctypes("test.structures.bad", my_ctypes)
         # test if module has members
         self.assertEquals(bad.BLOCK_SIZE, 16)
         self.assertIn('Struct1', bad.__dict__)

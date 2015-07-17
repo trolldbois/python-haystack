@@ -4,13 +4,11 @@
 """Tests haystack.utils ."""
 
 import logging
-import sys
 import unittest
 
 from haystack import model
 from haystack import types
 from haystack.mappings.vol import VolatilityProcessMapper
-from haystack.mappings.vol import VolatilityProcessMappingA
 
 log = logging.getLogger('test_vol')
 
@@ -20,12 +18,10 @@ class TestMapper(unittest.TestCase):
     The malware analysis cookbook'''
 
     def setUp(self):
-        model.reset()
+        pass
 
     def tearDown(self):
-        model.reset()
-        types.load_ctypes_default()
-
+        pass
 
     def test_init(self):
         ''' check vad numbers with
@@ -96,8 +92,6 @@ class TestMapper(unittest.TestCase):
         ctypes = mappings.config.ctypes
         from haystack.structures.win32 import winheap
         #print ctypes
-        import pefile
-        import code
         for m in mappings.mappings:
             data = m.read_word(m.start + 8)
             if data == 0xeeffeeff:

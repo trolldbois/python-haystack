@@ -8,7 +8,7 @@ import os
 import sys
 import time
 
-from haystack import abouchet
+from haystack import api
 from haystack import memory_mapper
 
 
@@ -60,7 +60,7 @@ def watch(opt):
     refresh = opt.refresh_rate
     varname = opt.varname
     # get structure class
-    structType = abouchet.getKlass(opt.structName)
+    structType = api.getKlass(opt.structName)
     # verify target compliance
     if varname is not None:
         varname = varname.split('.')
@@ -68,7 +68,7 @@ def watch(opt):
             return False
     # load the struct
     mappings = memory_mapper.MemoryHandlerFactory(opt).make_memory_handler()
-    finder = abouchet.StructFinder(mappings)
+    finder = api.StructFinder(mappings)
     # get the target memory map
     memoryMap = finder._memory_mappings.is_valid_address_value(addr)
     if not memoryMap:

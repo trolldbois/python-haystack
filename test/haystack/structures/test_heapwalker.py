@@ -13,6 +13,9 @@ import unittest
 from haystack import dump_loader
 from haystack.structures import heapwalker
 
+# FIXME move user_allocation test ssh.1 self.assertEquals(len(allocs), 2568)
+# FIXME move user_allocation test putty.1 self.assertEquals(len(allocs), 1733)
+
 
 class TestWalkers(unittest.TestCase):
 
@@ -31,7 +34,7 @@ class TestWalkers(unittest.TestCase):
 
     def test_make_heap_finder(self):
         libc_hf_64 = heapwalker.make_heap_finder(self.libc_mh_64)
-        self.assertEqual(libc_hf_64._memory_handler.pathname, 'test/src/test-ctypes3.64.dump')
+        self.assertEqual(libc_hf_64._memory_handler.name, 'test/src/test-ctypes3.64.dump')
         target = libc_hf_64._memory_handler.get_target_platform()
         self.assertEqual(target.get_os_name(), 'linux')
         self.assertEqual(target.get_cpu_bits(), 64)
@@ -79,17 +82,17 @@ class TestWalkers(unittest.TestCase):
         # win7_64_ctypes = self.win7_mh_64.get_target_platform().get_target_ctypes()
 
         # 32 bits
-        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._init_heap_type(), 8))
-        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._init_heap_type(), 312)) # 0x138
+        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_type), 8)
+        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_type), 312) # 0x138
         #self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._init_heap_type(), 1430))
 
         # 64 bits
-        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._init_heap_type(), 16))
+        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._heap_type), 16)
         # self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._init_heap_type(), 520))
         # self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._init_heap_type(), 2792)) #   0xae8
 
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)

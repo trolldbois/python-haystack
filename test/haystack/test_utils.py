@@ -35,7 +35,7 @@ class TestHelpers(unittest.TestCase):
         my_target = target.TargetPlatform.make_target_platform_local()
         my_ctypes = my_target.get_target_ctypes()
         my_utils = my_target.get_target_ctypes_utils()
-        ctypes5_gen64 = haystack.model.import_module("test.src.ctypes5_gen64", my_target)
+        ctypes5_gen64 = haystack.model.import_module_for_target_ctypes("test.src.ctypes5_gen64", my_ctypes)
         # kinda chicken and egg here...
         from haystack.mappings.process import readProcessMappings
         import os

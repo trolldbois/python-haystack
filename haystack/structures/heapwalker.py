@@ -62,7 +62,7 @@ class HeapFinder(interfaces.IHeapFinder):
         Load the module for this target arch
         :return: module
         """
-        heap_module = haystack.import_module(self._heap_module_name, self._target)
+        heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
         # FIXME, is that necessary for memory allocation structs ?
         self._memory_handler.get_model().build_python_class_clones(heap_module)
         return heap_module
@@ -103,6 +103,13 @@ class HeapFinder(interfaces.IHeapFinder):
         load = heap.loadMembers(self._memory_handler, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
         return load
+
+    def get_heap_module(self):
+        """
+        Returns the heap module.
+        :return:
+        """
+        return self._heap_module
 
     def get_heap_mappings(self):
         """return the list of heaps that load as heaps"""

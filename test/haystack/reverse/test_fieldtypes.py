@@ -35,7 +35,6 @@ class TestField(unittest.TestCase):
         self.st = self.context6.listStructures()[0]
 
     def setUp(self):
-        model.reset()
         pass
 
     def tearDown(self):

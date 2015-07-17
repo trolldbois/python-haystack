@@ -45,27 +45,22 @@ except DistributionNotFound:
 else:
     __version__ = _dist.version
 
-# in any haystack import, we need to ensure the model is loaded.
-import model
-
-import_module = model.import_module
-
 # DEFINE the API.
-import abouchet
+import api
 
-find_struct_process = abouchet.find_struct_process
-find_struct_memfile = abouchet.find_struct_memfile
-refresh_struct_process = abouchet.refresh_struct_process
+find_struct_process = api.find_struct_process
+find_struct_memfile = api.find_struct_memfile
+refresh_struct_process = api.refresh_struct_process
 
-search_struct_process = abouchet.search_struct_process
-search_struct_memfile = abouchet.search_struct_memfile
-search_struct_dumpname = abouchet.search_struct_dumpname
-refresh = abouchet.refresh
-show_dumpname = abouchet.show_dumpname
+search_struct_process = api.search_struct_process
+search_struct_memfile = api.search_struct_memfile
+search_struct_dumpname = api.search_struct_dumpname
+refresh = api.refresh
+show_dumpname = api.show_dumpname
 
-# TODO remove from _target_platform & abc._target_platform
 def _set_rlimits():
     """set rlimits to maximum allowed"""
+    import resource
     maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(
         resource.RLIMIT_NOFILE,

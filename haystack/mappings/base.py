@@ -287,11 +287,6 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         mmap._context = ctx
         return ctx
 
-    # FIXME DELETE, move to heap walker
-    def get_user_allocations(self, heap, filterInUse=True):
-        walker = self._heap_finder.get_heap_walker(self, heap)
-        return walker.get_user_allocations()
-
     # FIXME incorrect API
     def _get_mapping(self, pathname):
         mmap = None

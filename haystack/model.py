@@ -35,20 +35,6 @@ from haystack import target
 log = logging.getLogger('model')
 
 
-class _book(object):
-
-    """The book registers all registered ctypes modules """
-
-    def __init__(self):
-        self.modules = set()
-    """holds registered modules."""
-
-    def addModule(self, mod):
-        self.modules.add(mod)
-
-    def getModules(self):
-        return set(self.modules)
-
 class NotValid(Exception):
     pass
 
@@ -61,13 +47,13 @@ class Model(object):
 
     def __init__(self, memory_handler):
         self._memory_handler = memory_handler
-        self._ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        self.__book = _book()
+        self.__book = dict()
 
     def reset(self):
         """Clean the book"""
         log.info('RESET MODEL')
-        self.__book.modules = set()
+        self.__book = dict()
+        # FIXME: that is probably useless now.
         for mod in sys.modules.keys():
             if 'haystack.reverse' in mod:
                 del sys.modules[mod]
@@ -79,10 +65,11 @@ class Model(object):
 
             Mandatory.
         """
+        _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         _created = 0
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
             if issubclass(
-                    klass, self._ctypes.LoadableMembers) and klass is not self._ctypes.LoadableMembers:
+                    klass, _ctypes.LoadableMembers) and klass is not _ctypes.LoadableMembers:
                 # Why restrict on module name ?
                 # we only need to register loadablemembers (and basic ctypes ? )
                 # if klass.__module__.startswith(targetmodule.__name__):
@@ -91,9 +78,9 @@ class Model(object):
                     '%s.%s_py' %
                     (targetmodule.__name__, name), (python.pyObj,), {})
                 # add the structure size to the class
-                if issubclass(klass, self._ctypes.LoadableMembers):
+                if issubclass(klass, _ctypes.LoadableMembers):
                     log.debug(klass)
-                    setattr(kpy, '_len_', self._ctypes.sizeof(klass))
+                    setattr(kpy, '_len_', _ctypes.sizeof(klass))
                 else:
                     setattr(kpy, '_len_', None)
                 # we have to keep a local (model) ref because the class is being created here.
@@ -127,22 +114,38 @@ class Model(object):
         - Creates Plain old python object for each ctypes record to be able to
         pickle/unpickle them later.
         """
-        log.debug('registering module %s' % (targetmodule))
-        if targetmodule in self.get_registered_modules():
+        log.debug('registering module %s', targetmodule)
+        if targetmodule in self.get_registered_modules().values():
             log.warning('Module %s already registered. Skipping.', targetmodule)
+            return
+        module_name = targetmodule.__name__
+        if module_name in self.get_registered_modules().keys():
+            log.warning('Module %s already registered. Skipping.', module_name)
             return
         _registered = self.__create_POPO_classes(targetmodule)
         if _registered == 0:
             log.warning(
                 'No class found. Maybe you need to model.copy_generated_classes ?')
         # register once per session.
-        self.__book.addModule(targetmodule)
-        log.debug('registered %d modules total', len(self.__book.getModules()))
+        self.__book[module_name] = targetmodule
+        log.debug('registered %d modules total', len(self.__book.keys()))
         return
 
     def get_registered_modules(self):
-        return self.__book.getModules()
+        return self.__book
 
+    def get_registered_module(self, name):
+        return self.__book[name]
+
+    def import_module(self, module_name):
+        """
+        Import the python ctypes module with this target ctypes platform.
+
+        :param module_name:
+        :return:
+        """
+        _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        return import_module_for_target_ctypes(module_name, _ctypes)
 
 def copy_generated_classes(src_module, dst_module):
     """Copies the ctypes Records of a module into another module.
@@ -172,19 +175,17 @@ def copy_generated_classes(src_module, dst_module):
             src_module.__name__))
     return
 
-def import_module(module_name, _target=None):
+def import_module_for_target_ctypes(module_name, target_ctypes):
     """
-    Import the python ctypes module.
+    Import the python ctypes module for a specific ctypes platform.
 
-    :param module_name:
-    :param _target:
+    :param module_name: module
+    :param _target: ICTypesProxy
     :return:
     """
-    if _target is None:
-        _target = target.TargetPlatform.make_target_platform_local()
     # save ctypes
     real_ctypes = sys.modules['ctypes']
-    sys.modules['ctypes'] = _target.get_target_ctypes()
+    sys.modules['ctypes'] = target_ctypes
     if module_name in sys.modules:
         del sys.modules[module_name]
     my_module = None

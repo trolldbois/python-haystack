@@ -10,7 +10,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-# init ctypes with a controlled type size
+
 import logging
 import unittest
 
@@ -83,6 +83,8 @@ class TestReload(unittest.TestCase):
             newarch = c4
         elif c8 != cd:
             newarch = c4
+        else:
+            raise RuntimeError("unmanaged case")
 
         # cd and ctypes share a cache
         self.assertIn(X, cd._pointer_type_cache.keys())
@@ -336,7 +338,7 @@ class TestBasicFunctions(unittest.TestCase):
     def test_is_ctypes(self):
         valids = [St(), St2(), SubSt2()]
         invalids = [v for v in self.tests if v not in valids]
-        self._testMe(ctypes.is_ctypes_instance, valids, invalids)
+        self._testMe(types.is_ctypes_instance, valids, invalids)
         return
 
 

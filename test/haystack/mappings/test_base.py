@@ -10,13 +10,10 @@ import struct
 
 import os
 
-from haystack import model
 from haystack import dump_loader
-from haystack import types
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import readLocalProcessMappings
-import haystack.model
 
 log = logging.getLogger('test_memory_mapping')
 
@@ -26,10 +23,10 @@ from test.haystack import SrcTests
 class TestMmapHack(unittest.TestCase):
 
     def setUp(self):
-        model.reset()
+        pass
 
     def tearDown(self):
-        model.reset()
+        pass
 
     def test_mmap_hack64(self):
         my_target = target.TargetPlatform.make_target_linux_64()
@@ -83,35 +80,18 @@ class TestMmapHack(unittest.TestCase):
         # heapmap is a pointer value to this executable?
         self.assertEquals(ret[0].pathname, fname)
 
-        self.assertIn('CTypesProxy-4:4:8', str(my_ctypes))
+        self.assertIn('CTypesProxy-4:4:12', str(my_ctypes))
 
 
 class TestMappingsLinux(SrcTests):
 
-    def setUp(self):
-        model.reset()
-        self.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
 
-    def tearDown(self):
-        self.memory_handler = None
-        model.reset()
-
-    def test_get_context(self):
-        # print ''.join(['%s\n'%(m) for m in _memory_handler])
-        with self.assertRaises(ValueError):
-            self.memory_handler.get_context(0x0)
-        with self.assertRaises(ValueError):
-            self.memory_handler.get_context(0xb76e12d3)
-        #[heap]
-        self.assertEquals(
-            self.memory_handler.get_context(0xb84e02d3).heap,
-            self.memory_handler.get_mapping_for_address(0xb84e02d3))
-
-    def test_get_user_allocations(self):
-        allocs = list(
-            self.memory_handler.get_user_allocations(
-                self.memory_handler.get_heap()))
-        self.assertEquals(len(allocs), 2568)
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler = None
 
     def test_get_mapping(self):
         self.assertEquals(len(self.memory_handler._get_mapping('[heap]')), 1)
@@ -151,61 +131,47 @@ class TestMappingsLinux(SrcTests):
 
     def test_iter(self):
         mps = [m for m in self.memory_handler]
-        mps2 = [m for m in self.memory_handler.mappings]
+        mps2 = [m for m in self.memory_handler.get_mappings()]
         self.assertEquals(mps, mps2)
 
     def test_setitem(self):
         with self.assertRaises(NotImplementedError):
             self.memory_handler[0x0005c000] = 1
 
-    def test_init_config(self):
-        x = self.memory_handler.set_target_platform()
-        cfg = self.memory_handler.config
-        self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
-        self.assertEquals(cfg.get_word_size(), 4)
-        self.assertEquals(cfg.get_word_type_char(), 'I')
-        for m in self.memory_handler:
-            self.assertEquals(self.memory_handler.config, m.config)
-        pass
-
     def test_get_os_name(self):
-        x = self.memory_handler.get_os_name()
+        x = self.memory_handler.get_target_platform().get_os_name()
         self.assertEquals(x, 'linux')
 
     def test_get_cpu_bits(self):
-        x = self.memory_handler.get_cpu_bits()
-        self.assertEquals(x, '32')
-
-    def test__reset_config(self):
-        self.memory_handler.config = 1
-        self.memory_handler._reset_config()
-        for m in self.memory_handler:
-            self.assertEquals(1, m.config)
+        x = self.memory_handler.get_target_platform().get_cpu_bits()
+        self.assertEquals(x, 32)
 
 
 class TestMappingsLinuxAddresses32(SrcTests):
 
-    def setUp(self):
-        model.reset()
-        self.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
-        self._load_offsets_values('test/src/test-ctypes5.32.dump')
-        self.my_target = self.memory_handler.get_target_platform()
-        self.my_ctypes = self.my_target.get_target_ctypes()
-        self.my_utils = self.my_target.get_target_ctypes_utils()
-        self.ctypes5_gen32 = haystack.model.import_module("test.src.ctypes5_gen32", self.my_target)
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
+        cls.my_target = cls.memory_handler.get_target_platform()
+        cls.my_ctypes = cls.my_target.get_target_ctypes()
+        cls.my_utils = cls.my_target.get_target_ctypes_utils()
+        cls.my_model = cls.memory_handler.get_model()
+        cls.ctypes5_gen32 = cls.my_model.import_module("test.src.ctypes5_gen32")
 
-    def tearDown(self):
-        super(SrcTests, self).tearDown()
-        self.memory_handler = None
-        self.my_target = None
-        self.my_ctypes = None
-        self.my_utils = None
-        self.ctypes5_gen32 = None
-        model.reset()
+    def setUp(self):
+        self._load_offsets_values('test/src/test-ctypes5.32.dump')
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler = None
+        cls.my_target = None
+        cls.my_ctypes = None
+        cls.my_utils = None
+        cls.my_model = None
+        cls.ctypes5_gen32 = None
         pass
 
     def test_is_valid_address(self):
-
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
@@ -233,49 +199,19 @@ class TestMappingsLinuxAddresses32(SrcTests):
 
 class TestMappingsWin32(unittest.TestCase):
 
-    def setUp(self):
-        model.reset()
-        self.memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
-        self.my_target = self.memory_handler.get_target_platform()
-        self.my_ctypes = self.my_target.get_target_ctypes()
-        self.my_utils = self.my_target.get_target_ctypes_utils()
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls.my_target = cls.memory_handler.get_target_platform()
+        cls.my_ctypes = cls.my_target.get_target_ctypes()
+        cls.my_utils = cls.my_target.get_target_ctypes_utils()
 
-
-
-    def tearDown(self):
-        self.memory_handler = None
-        model.reset()
-
-    def test_get_context(self):
-        '''FIXME: maybe not the best idea to use a reverser in a
-        haystack.base test unit'''
-        from haystack.reverse import context
-        self.putty = context.get_context('test/dumps/putty/putty.1.dump')
-        mappings = self.putty.mappings
-        # print ''.join(['%s\n'%(m) for m in _memory_handler])
-        with self.assertRaises(ValueError):
-            mappings.get_context(0x0)
-        with self.assertRaises(ValueError):
-            mappings.get_context(0xb76e12d3)
-        #[heap] children
-        self.assertEquals(
-            mappings.get_context(0x0062d000).heap,
-            mappings.get_mapping_for_address(0x005c0000))
-        self.assertEquals(
-            mappings.get_context(0x0063e123).heap,
-            mappings.get_mapping_for_address(0x005c0000))
-        self.putty.reset()
-        self.putty = None
-
-    def test_get_user_allocations(self):
-        allocs = list(
-            self.memory_handler.get_user_allocations(
-                self.memory_handler.get_heap()))
-        # test was previously setup with 2273
-        #self.assertEquals(len(allocs), 2273)
-        # in 2015 it only finds 1733
-        self.assertEquals(len(allocs), 1733)
-        self.skipTest("to be reviewed")
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler = None
+        cls.my_target = None
+        cls.my_ctypes = None
+        cls.my_utils = None
 
     def test_get_mapping(self):
         with self.assertRaises(IndexError):
@@ -294,7 +230,8 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertEquals(self.memory_handler.get_heap().pathname, 'None')
         m = self.memory_handler.get_heap()
         buf = m.read_bytes(m.start, 500)
-        from haystack.structures.win32 import win7heap
+        finder = self.memory_handler.get_heap_finder()
+        win7heap = finder.get_heap_module()
         x = win7heap.HEAP.from_buffer_copy(buf)
         # print win7heap.HEAP.Signature
         # print repr(buf[100:104])
@@ -331,36 +268,21 @@ class TestMappingsWin32(unittest.TestCase):
 
     def test_iter(self):
         mps = [m for m in self.memory_handler]
-        mps2 = [m for m in self.memory_handler.mappings]
+        mps2 = [m for m in self.memory_handler.get_mappings()]
         self.assertEquals(mps, mps2)
 
     def test_setitem(self):
         with self.assertRaises(NotImplementedError):
             self.memory_handler[0x0005c000] = 1
 
-    def test_init_config(self):
-        x = self.memory_handler.set_target_platform()
-        cfg = self.memory_handler.config
-        self.assertEquals(cfg.get_word_type(), cfg.ctypes.c_uint32)
-        self.assertEquals(cfg.get_word_size(), 4)
-        self.assertEquals(cfg.get_word_type_char(), 'I')
-        for m in self.memory_handler:
-            self.assertEquals(self.memory_handler.config, m.config)
-        pass
-
     def test_get_os_name(self):
-        x = self.memory_handler.get_os_name()
+        x = self.memory_handler.get_target_platform().get_os_name()
         self.assertEquals(x, 'win7')
 
     def test_get_cpu_bits(self):
-        x = self.memory_handler.get_cpu_bits()
-        self.assertEquals(x, '32')
+        x = self.memory_handler.get_target_platform().get_cpu_bits()
+        self.assertEquals(x, 32)
 
-    def test__reset_config(self):
-        self.memory_handler.config = 1
-        self.memory_handler._reset_config()
-        for m in self.memory_handler:
-            self.assertEquals(1, m.config)
 
 
 class TestReferenceBook(unittest.TestCase):
@@ -368,12 +290,10 @@ class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
 
     def setUp(self):
-        model.reset()
         self.memory_handler = dump_loader.load('test/src/test-ctypes6.32.dump')
 
     def tearDown(self):
         self.memory_handler = None
-        model.reset()
 
     def test_keepRef(self):
         self.assertEquals(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)

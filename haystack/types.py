@@ -29,51 +29,9 @@ def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
 
-
-#def reset_ctypes():
-#    """Reset sys.module to import the host ctypes module."""
-#    # we want to keep a unique ref to a unique instanciation of the real ctypes
-#    # Deletion of the real module is bad for the health.
-#    # import the current ctypes
-#    import ctypes
-#    if isinstance(ctypes, CTypesProxy):
-#        ctypes = set_ctypes(__PROXIES['real'])
-#    elif 'real' not in __PROXIES.keys():
-#        # do nothing and save it
-#        __PROXIES['real'] = ctypes
-#    else:
-#        ctypes = set_ctypes(__PROXIES['real'])
-#    log.debug('reset: ctypes changed to %s ' % (ctypes))
-#    return ctypes
-#
-#
-#def load_ctypes_default():
-#    """Load sys.module with a default host-mimicking ctypes module proxy."""
-#    ctypes = reset_ctypes()
-#    # get the hosts' types
-#    longsize = ctypes.sizeof(ctypes.c_long)
-#    pointersize = ctypes.sizeof(ctypes.c_void_p)
-#    longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
-#    return build_ctypes_proxy(longsize, pointersize, longdoublesize)
-#
-#
-#def load_ctypes(longsize, pointersize, longdoublesize):
-#    """Load sys.modle with a tuned ctypes module proxy."""
-#    if (longsize, pointersize, longdoublesize) in __PROXIES:
-#        instance = __PROXIES[(longsize, pointersize, longdoublesize)]
-#        set_ctypes(instance)
-#        return instance
-#    instance = CTypesProxy(longsize, pointersize, longdoublesize)
-#    __PROXIES[(longsize, pointersize, longdoublesize)] = instance
-#    return set_ctypes(instance)
-#
-#
-#def set_ctypes(_ctypes):
-#    """Load Change the global ctypes module to a specific proxy instance"""
-#    sys.modules['ctypes'] = _ctypes
-#    log.debug('set: ctypes changed to %s' % (_ctypes))
-#    return sys.modules['ctypes']
-#
+def is_ctypes_instance(obj):
+    """Checks if an object is a ctypes type object"""
+    return issubclass(type(obj), ctypes.Structure) or issubclass(type(obj), ctypes.Union)
 
 def check_arg_is_type(func):
     def check_arg(self, objtype):
@@ -492,12 +450,6 @@ class CTypesProxy(object):
         _bytes = (self.c_byte*(_ofs+_size)).from_buffer_copy(record)[_ofs:]
         return _bytes
 
-    # migration from utils.
-    def is_ctypes_instance(self, obj):
-        """Checks if an object is a ctypes type object"""
-        # FIXME. is it used for loadablemembers detection or for ctypes VS POPO
-        return issubclass(type(obj), self.get_real_ctypes_member('Structure'))
-
     def is_array_of_basic_instance(self, obj):
         """Checks if an object is a array of basic types.
         It checks the type of the first element.
@@ -634,3 +586,4 @@ class CTypesProxy(object):
             self.__longsize, self.__pointersize, self.__longdoublesize, id(self))
 
     # TODO implement haystack.utils.bytestr_fmt here
+
