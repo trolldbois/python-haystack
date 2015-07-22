@@ -29,12 +29,12 @@ class TestWalkers(unittest.TestCase):
         cls.win7_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         pass
 
     def test_make_heap_finder(self):
         libc_hf_64 = heapwalker.make_heap_finder(self.libc_mh_64)
-        self.assertEqual(libc_hf_64._memory_handler.name, 'test/src/test-ctypes3.64.dump')
+        self.assertEqual(libc_hf_64._memory_handler.get_name(), 'test/src/test-ctypes3.64.dump')
         target = libc_hf_64._memory_handler.get_target_platform()
         self.assertEqual(target.get_os_name(), 'linux')
         self.assertEqual(target.get_cpu_bits(), 64)
@@ -83,8 +83,9 @@ class TestWalkers(unittest.TestCase):
 
         # 32 bits
         self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_type), 8)
-        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_type), 312) # 0x138
-        #self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._init_heap_type(), 1430))
+        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_type), 312)# 0x138
+        # FIXME dump a winxp?
+        # self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._init_heap_type(), 1430))
 
         # 64 bits
         self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._heap_type), 16)
