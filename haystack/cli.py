@@ -4,14 +4,11 @@
 """Search for a known structure type in a process memory. """
 
 import logging
-import pickle
-import json
+import time
 
-from haystack import basicmodel, constraints
+from haystack import constraints
 from haystack.search import api
 from haystack.memory_mapper import MemoryHandlerFactory
-from haystack.outputters import text
-from haystack.outputters import python
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -100,7 +97,7 @@ def refresh(args):
     See the command line --help .
     """
     # we need an int
-    memory_address = int(args.addr, 16)
+    memory_address = args.addr
     # get the memory handler adequate for the type requested
     memory_handler = _get_memory_handler(args)
     # print output on stdout
@@ -134,3 +131,85 @@ def refresh(args):
         raise ValueError('unknown output format')
     print ret
     return
+
+def check_varname_for_type(memory_handler, varname, struct_type):
+    done = []
+    st = struct_type
+    model = memory_handler.get_model()
+    ctypes = memory_handler.get_target_platform().get_target_ctypes()
+    for v in varname:
+        if not hasattr(st, v):
+            fields = ["%s: %s" % (n, t) for n, t in st.get_fields()]
+            log.error(
+                '(%s.)%s does not exists in type %s\n\t%s' %
+                ('.'.join(done), v, st, '\n\t'.join(fields)))
+            return False
+        st = st.get_field_type(v)
+        if ctypes.is_pointer_type(st):  # accept pointers
+            st = model.get_subtype(st)
+        done.append(v)
+    return True
+
+
+def get_varname_value(varname, instance):
+    done = []
+    var = instance
+    for v in varname:
+        var = getattr(var, v)
+        done.append(v)
+    return '%s = \n%s' % ('.'.join(done), var)
+
+
+def watch(args):
+    """
+    structname watch vaddr [refreshrate] [varname]
+    :param opt:
+    :return:
+    """
+    memory_address = args.addr
+    refresh = args.refresh_rate
+    varname = args.varname
+    # we need an int
+    # get the memory handler adequate for the type requested
+    memory_handler = _get_memory_handler(args)
+    # check the validity of the address
+    heap = memory_handler.is_valid_address_value(memory_address)
+    if not heap:
+        log.error("the address is not accessible in the memoryMap")
+        raise ValueError("the address is not accessible in the memoryMap")
+    # get the structure name
+    modulename, sep, classname = args.struct_name.rpartition('.')
+    module = memory_handler.get_model().import_module(modulename)
+    struct_type = getattr(module, classname)
+
+    # verify target fieldcompliance
+    if varname is not None:
+        varname = varname.split('.')
+        if not check_varname_for_type(memory_handler, varname, struct_type):
+            return False
+
+    # load the record
+    result = api.load_record(memory_handler, struct_type, memory_address)
+    results = [result]
+    # output handling
+    output = api.output_to_python(memory_handler, results)
+    py_obj = output[0][0]
+    # print pyObj
+    # print as asked every n secs.
+    while True:
+        # clear terminal
+        print chr(27) + "[2J"
+        #
+        if varname is None:
+            print py_obj
+        else:
+            print get_varname_value(varname, py_obj)
+
+        if refresh == 0:
+            break
+        time.sleep(refresh)
+        result = api.load_record(memory_handler, struct_type, memory_address)
+        results = [result]
+        # output handling
+        output = api.output_to_python(memory_handler, results)
+        py_obj = output[0][0]

@@ -16,8 +16,9 @@ Output type can be txt, json, pickled.
 
 import argparse
 import logging
-import os
 import sys
+
+import os
 
 from haystack import argparse_utils
 from haystack import cli, watch
@@ -58,7 +59,7 @@ def argparser():
     #
     refresh_parser = subparsers.add_parser('refresh', help='refresh help')
     refresh_parser.add_argument('struct_name', type=str, help='Structure type name')
-    refresh_parser.add_argument('addr', type=str, help='Structure memory address')
+    refresh_parser.add_argument('addr', type=argparse_utils.int16, help='Structure memory address')
     refresh_parser.set_defaults(func=cli.refresh)
     #
     watch_parser = subparsers.add_parser('watch', help='watch a structure in a live process')
@@ -66,7 +67,7 @@ def argparser():
     watch_parser.add_argument('addr', type=argparse_utils.int16, help='Structure memory address')
     watch_parser.add_argument('refresh_rate', type=int, action='store', default=0, help='Seconds between refresh')
     watch_parser.add_argument('varname', type=str, action='store', default=None, help='structure member name (eg. pointername.valuename)')
-    watch_parser.set_defaults(func=watch.watch)
+    watch_parser.set_defaults(func=cli.watch)
     return rootparser
 
 
