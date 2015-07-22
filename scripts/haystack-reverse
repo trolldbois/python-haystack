@@ -12,8 +12,9 @@ __doc__ = '''
 
 import argparse
 import logging
-import os
 import sys
+
+import os
 
 log = logging.getLogger('haystack-reverse')
 
@@ -21,42 +22,39 @@ from haystack import argparse_utils
 
 def make_config(opts):
   #make out wordsize.
-  from haystack import config
+  from haystack.reverse import config
+
   config.make_config_from_memdump( opts.dumpname )
 
 def reverseInstances(opt):
-  import haystack
   from haystack.reverse import reversers
   context = reversers.reverseInstances(opt.dumpname)
   return
 
 def writeReversedTypes(opt):
   '''reverse types from a memorydump, and write structure definition to file '''
-  import haystack
-  from haystack.config import Config
+  from haystack.reverse.config import Config
   from haystack.reverse import signature
-  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)
   context = signature.makeReversedTypes(context, sizeCache)
   outfile = file(Config.getCacheFilename(Config.REVERSED_TYPES_FILENAME, context.dumpname),'w')
   for revStructType in context.listReversedTypes():
     outfile.write(revStructType.toString())
   outfile.close()
   log.info('[+] Wrote to %s'%(outfile.name))
-  return 
+  return
 
 def groupStructures(opt):
   ''' show sorted structure instances groups to stdout '''
-  import haystack
   from haystack.reverse import signature
-  context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  context, sizeCache = signature.makeSizeCaches(opt.dumpname)
   for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
     signature.printStructureGroups(context, chains, opt.address )
   return
-  
+
 def saveSignatures(opt):
   ''' translate a memdump into a signature based file NULL,POINTERS,OTHERS'''
-  import haystack
-  from haystack.config import Config
+  from haystack.reverse.config import Config
   from haystack.reverse import signature
   context, sig = signature.makeSignatures(opt.dumpname)
   outfile = Config.getCacheFilename(Config.SIGNATURES_FILENAME, context.dumpname)
@@ -67,8 +65,6 @@ def saveSignatures(opt):
 
 def show(opt):
   ''' Show a structure '''
-  import haystack
-  from haystack.reverse import signature
   log.info('[+] Load context')
   context = reversers.getContext(opt.dumpname)
   log.info('[+] Find Structure at: @%x'%(opt.address))
@@ -83,7 +79,6 @@ def show(opt):
 
 def printParents(opt):
   ''' print the parental structures '''
-  import haystack
   from haystack.reverse import reversers
   log.info('[+] Load context')
   context = reversers.getContext(opt.dumpname)
@@ -111,15 +106,15 @@ def clean(opt):
 def graph(opt):
   ''' show sorted structure instances groups to gefx '''
   #log.info('[+] Graphing')
-  #context, sizeCache = signature.makeSizeCaches(opt.dumpname)  
+  #context, sizeCache = signature.makeSizeCaches(opt.dumpname)
   #for chains in signature.buildStructureGroup(context, sizeCache, opt.size ):
   #  signature.graphStructureGroups(context, chains, opt.address )
   # TODO change to generic fn, and output graph
   return
 
-  
+
 def argparser():
-  rootparser = argparse.ArgumentParser(prog='haystack-reverser', 
+  rootparser = argparse.ArgumentParser(prog='haystack-reverser',
     description='Several tools to reverse engineer structures on the heap.')
 
   rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
@@ -127,44 +122,44 @@ def argparser():
 
   subparsers = rootparser.add_subparsers(help='sub-command help')
 
-  instances = subparsers.add_parser('instances', 
+  instances = subparsers.add_parser('instances',
     help='List all structures instances with virtual address, member types guess and info.')
-  instances.set_defaults(func=reverseInstances)  
+  instances.set_defaults(func=reverseInstances)
 
-  typemap = subparsers.add_parser('typemap', 
+  typemap = subparsers.add_parser('typemap',
         help='Try to reverse generic types from instances\' similarities.')
-  typemap.set_defaults(func=writeReversedTypes)  
+  typemap.set_defaults(func=writeReversedTypes)
 
   groupparser = subparsers.add_parser('group', help='Show structure instances groups by size and signature.')
-  groupparser.add_argument('--size', type=int, action='store', default=None, 
+  groupparser.add_argument('--size', type=int, action='store', default=None,
         help='Limit to a specific structure size')
-  groupparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
+  groupparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None,
         help='Limit to structure similar to the structure pointed at <address>')
-  groupparser.set_defaults(func=groupStructures)  
+  groupparser.set_defaults(func=groupStructures)
 
   parent = subparsers.add_parser('parent', help='Print the parent structures pointing to the structure located at this address.')
-  parent.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
+  parent.add_argument('address', type=argparse_utils.int16, action='store', default=None,
         help='Hex address of the child structure.')
-  parent.set_defaults(func=printParents)  
+  parent.set_defaults(func=printParents)
 
   graphparser = subparsers.add_parser('graph', help='DISABLED - Show sorted structure instances groups by size and signature in a graph.')
-  graphparser.add_argument('--size', type=int, action='store', default=None, 
+  graphparser.add_argument('--size', type=int, action='store', default=None,
         help='Limit to a specific structure size')
-  graphparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None, 
+  graphparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None,
         help='Limit to structure similar to the structure pointed at <address>')
-  graphparser.set_defaults(func=graph)  
+  graphparser.set_defaults(func=graph)
 
   showparser = subparsers.add_parser('show', help='Show one structure instance.')
-  showparser.add_argument('address', type=argparse_utils.int16, action='store', default=None, 
+  showparser.add_argument('address', type=argparse_utils.int16, action='store', default=None,
         help='Specify the address of the structure, or of a structure member.')
-  showparser.set_defaults(func=show)  
+  showparser.set_defaults(func=show)
 
   # XXX delete ?
   makesig = subparsers.add_parser('makesig', help='Create a simple signature file of the heap - NULL, POINTERS, OTHER VALUES.')
-  makesig.set_defaults(func=saveSignatures)  
+  makesig.set_defaults(func=saveSignatures)
 
   cleanp = subparsers.add_parser('clean', help='Clean the memory dump from cached info.')
-  cleanp.set_defaults(func=clean)  
+  cleanp.set_defaults(func=clean)
 
 
   return rootparser
@@ -182,7 +177,7 @@ def main(argv):
     logging.getLogger('haystack-reverse').setLevel(logging.DEBUG)
     logging.getLogger('signature').setLevel(logging.DEBUG)
     logging.getLogger('reversers').setLevel(logging.DEBUG)
-    print ('[+] **** COMPLETE debug log to %s'%(flog))    
+    print ('[+] **** COMPLETE debug log to %s'%(flog))
   else:
     logging.getLogger('haystack-reverse').setLevel(logging.INFO)
     logging.getLogger('signature').setLevel(logging.INFO)
@@ -195,7 +190,7 @@ def main(argv):
 
   make_config(opts)
   opts.func(opts)
-  
+
 
 
 

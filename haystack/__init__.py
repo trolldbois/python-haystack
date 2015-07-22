@@ -25,6 +25,7 @@ __all__ = [
 # verify the version
 from pkg_resources import get_distribution, DistributionNotFound
 import os.path
+import resource
 
 try:
     _dist = get_distribution('haystack')
@@ -44,3 +45,15 @@ from haystack.search import api
 search_record = api.search_record
 output_to_string = api.output_to_string
 output_to_python = api.output_to_python
+
+# augment our file limit capacity to max
+maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(
+    resource.RLIMIT_NOFILE,
+    (maxnofile[1],
+     maxnofile[1]))
+
+# bad bad idea...
+MMAP_HACK_ACTIVE = True
+# do not load huge mmap
+MAX_MAPPING_SIZE_FOR_MMAP = 1024 * 1024 * 20

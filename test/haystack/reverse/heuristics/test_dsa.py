@@ -5,8 +5,7 @@
 
 import unittest
 
-from haystack import config
-from haystack.reverse import structure
+from haystack.reverse import structure, config
 from haystack.reverse import context
 from haystack.reverse.heuristics.dsa import *
 

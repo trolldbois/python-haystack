@@ -11,8 +11,8 @@ log = logging.getLogger('heuristics.model')
 
 class FieldAnalyser(object):
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, target):
+        self.target = target
 
     def make_fields(self, structure, offset, size):
         """
@@ -32,8 +32,8 @@ class StructureAnalyser(object):
     full structure-view.
     """
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, target):
+        self.target = target
 
     def analyze_fields(self, structure):
         """

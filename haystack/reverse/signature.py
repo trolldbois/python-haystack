@@ -3,23 +3,16 @@
 
 """Tools around structure signature"""
 
-import logging
-import argparse
-import os
-import sys
+import itertools
+
 import re
 import Levenshtein  # seqmatcher ?
 import networkx
-import itertools
 
-import haystack
-from haystack import model
-from haystack import dump_loader
-from haystack import argparse_utils
-from haystack.config import Config
+from haystack.reverse.config import Config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
-from haystack.reverse import utils
+
 
 #FIXME
 from haystack.reverse.reversers import *

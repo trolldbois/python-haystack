@@ -3,22 +3,9 @@
 
 """Utils to diff two heap memory _memory_handler."""
 
-import argparse
-import logging
-import os
-import sys
-import difflib
-import mmap
-import timeit
-from collections import defaultdict
-
-from haystack import config
-from haystack import argparse_utils
-from haystack.reverse import utils
-from haystack.reverse import context, reversers  # TODO DELTE reversers
+from haystack.reverse import config
+from haystack.reverse import context
 from haystack.reverse.reversers import *
-
-import code
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

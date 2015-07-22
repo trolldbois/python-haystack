@@ -27,17 +27,16 @@ This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor 
 Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
-import os
 import logging
 import struct
 import mmap
 
-# FIXME
+import os
 import ctypes
 
 # haystack
 from haystack import utils
-from haystack import config  # MMAP_HACK
+import haystack
 from haystack.mappings.base import AMemoryMapping
 
 __author__ = "Loic Jaquemet"
@@ -214,7 +213,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
             if hasattr(self._memdump, 'fileno'):  # normal file.
                 # XXX that is the most fucked up, non-portable fuck I ever
                 # wrote.
-                if config.MMAP_HACK_ACTIVE:
+                if haystack.MMAP_HACK_ACTIVE:
                     # print 'mmap_hack', self
                     # if self.pathname.startswith('/usr/lib'):
                     #    raise Exception

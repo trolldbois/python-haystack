@@ -6,25 +6,16 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import argparse
-import logging
-import os
-import sys
 from collections import defaultdict
+
 import networkx
+
 import matplotlib.pyplot as plt
-
-
-from haystack.config import ConfigClass
-from haystack import argparse_utils
-from haystack.reverse import utils
+from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse.reversers import *  # by the pickle of my thumb
 
 log = logging.getLogger('graph')
-
-# FIXME, use objects.
-config = ConfigClass()
 
 
 def printGraph(G, gname):
@@ -187,7 +178,6 @@ def clean(digraph):
 
 
 def printImportant(ctx, digraph, degreesList, ind, bigGraph):
-    import structure
     nb, saddr = degreesList[ind]
     addr = int(saddr, 16)
     s1 = ctx.structures[addr]  # TODO FIXME RAISES

@@ -5,22 +5,17 @@
 
 import logging
 import argparse
-import os
 import pickle
-import time
 import sys
-import re
 import struct
-import ctypes
-import array
 import itertools
 import collections
 import numbers
 
-from haystack import model
-from haystack.config import ConfigClass as Config
-from haystack import dump_loader
+import os
 
+from haystack import dump_loader
+from haystack.reverse import config
 from haystack.reverse import utils
 from haystack.reverse import pointerfinder
 
@@ -40,7 +35,7 @@ class Dummy(object):
 
 
 def findPatternText(sequence, elSize=1, minNbGroup=2):
-    '''
+    """
     returns a regexp grouping repetitive patterns.
 
     @param sequence: a sequence (str/bstr) with rfind() method.
@@ -48,6 +43,7 @@ def findPatternText(sequence, elSize=1, minNbGroup=2):
     @param minNbGroup: the minimum number of repetition before trying to group the pattern.
 
     Examples:
+      >>> import pattern
       >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
       >>> pattern.findPatternText(s,1)
       ' (a){5} (1){4} (b){3} (c){2} d (a2){5} (b1c){4} (abcd){4} p (o){2} (i){3} (u){4} (y){5} '
@@ -55,7 +51,7 @@ def findPatternText(sequence, elSize=1, minNbGroup=2):
       >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
       >>> pattern.findPatternText(s,1,5)
       ' (a){5} 1111bbbccd (a2){5} b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu (y){5} '
-    '''
+    """
     ret = findPattern(sequence, elSize, minNbGroup)
     s = ''
     for nb, txt in ret:
@@ -67,7 +63,7 @@ def findPatternText(sequence, elSize=1, minNbGroup=2):
 
 
 def findPattern(sequence, elSize=1, minNbGroup=2):
-    '''
+    """
     returns a regexp grouping repetitive patterns.
 
     @param sequence: a sequence (str/bstr) with rfind() method.
@@ -75,6 +71,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
     @param minNbGroup: the minimum number of repetition before trying to group the pattern.
 
     Examples:
+      >>> import pattern
       >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
       >>> pattern.findPattern(s,1)
       [(5, 'a'), (4, '1'), (3, 'b'), (2, 'c'), (1, 'd'), (5, 'a2'), (4, 'b1c'), (4, 'abcd'), (1, 'p'), (2, 'o'), (3, 'i'), (4, 'u'), (5, 'y')]
@@ -83,7 +80,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
       >>> pattern.findPattern(s,1,5)
       [(5, 'a'), (1, '1111bbbccd'), (5, 'a2'), (1, 'b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu'), (5, 'y')]
 
-    '''
+    """
     if (len(sequence) % elSize) != 0:
         pass  # DEBUG TODO DELETE bypass needed for textprintout
         #raise ValueError('your sequence length:%d has to be a multiple of element size:%d'%(len(sequence),elSize))
@@ -206,8 +203,8 @@ def make(opts):
     log.info('Make the signature.')
     ppMapper = PinnedPointersMapper()
     for dumpfile in opts.dumpfiles:
-        mappings = dump_loader.load(dumpfile, lazy=True)
-        heap_sig = PointerIntervalSignature(mappings, '[heap]')
+        memory_handler = dump_loader.load(dumpfile)
+        heap_sig = PointerIntervalSignature(memory_handler, '[heap]')
         log.info('pinning offset list created for heap %s.' % (heap_sig))
         ppMapper.addSignature(heap_sig)
 
@@ -235,13 +232,12 @@ class PointerIntervalSignature:
     It abstracts the memory contents to its signature.
     '''
 
-    def __init__(self, mappings, pathname='[heap]'):
+    def __init__(self, memory_handler, pathname='[heap]'):
         self.mmap = None
         self.mmap_pathname = pathname
-        self.mappings = mappings
-        self.config = mappings.config
-        self.name = mappings.name
-        self.cacheFilenamePrefix = self.config.getCacheName(self.name)
+        self.memory_handler = memory_handler
+        self.name = memory_handler.get_name()
+        self.cacheFilenamePrefix = config.getCacheName(self.name)
         self.addressCache = {}
         self.sig = None
         self._get_mapping()
@@ -249,7 +245,7 @@ class PointerIntervalSignature:
 
     def _get_mapping(self):
         # XXX todo this is getHeap...
-        self.mmap = self.mappings._get_mapping(self.mmap_pathname)[0]
+        self.mmap = self.memory_handler._get_mapping(self.mmap_pathname)[0]
         return
 
     def _load(self):

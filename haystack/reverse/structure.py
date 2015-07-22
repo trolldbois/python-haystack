@@ -13,7 +13,7 @@ import ctypes
 
 import os
 
-from haystack.config import ConfigClass as Config
+from haystack.reverse import config
 from fieldtypes import Field, FieldType, makeArrayField
 import pattern
 import utils
@@ -41,7 +41,7 @@ DEBUG_ADDRS = []
 # Compare sruct type from parent with multiple pointer (
 
 def makeFilename(context, st):
-    sdir = context.config.getStructsCacheDir(context.dumpname)
+    sdir = config.getStructsCacheDir(context.dumpname)
     if not os.path.isdir(sdir):
         os.mkdir(sdir)
     return os.path.sep.join([sdir, str(st)])
@@ -177,7 +177,7 @@ class StructureNotResolvedError(Exception):
 
 
 # should not be a new style class
-class AnonymousStructInstance():
+class AnonymousStructInstance(object):
 
     '''
     AnonymousStruct in absolute address space.
@@ -186,6 +186,7 @@ class AnonymousStructInstance():
 
     def __init__(self, context, vaddr, size, prefix=None):
         self._context = context
+        self.target = self._context.memory_handler.get_target_platform()
         self._vaddr = vaddr
         self._size = size
         self.reset()  # set fields
@@ -295,7 +296,7 @@ class AnonymousStructInstance():
     def saveme(self):
         if not self._dirty:
             return
-        sdir = self._context.config.getStructsCacheDir(self._context.dumpname)
+        sdir = config.getStructsCacheDir(self._context.dumpname)
         if not os.path.isdir(sdir):
             os.mkdir(sdir)
         fname = makeFilename(self._context, self)
@@ -451,7 +452,7 @@ class AnonymousStructInstance():
             field.value, self._context._malloc_addresses)
         log.debug('nearest_addr:%x ind:%d' % (nearest_addr, ind))
         tgt_st = self._context.getStructureForAddr(nearest_addr)
-        if field.value % Config.WORDSIZE != 0:
+        if field.value % self.target.get_word_size() != 0:
             # non aligned, nothing could match
             return tgt_st, None
         log.debug('tgt_st %s' % tgt_st)

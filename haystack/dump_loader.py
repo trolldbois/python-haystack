@@ -24,14 +24,13 @@ import zipfile  # relatively useless
 
 import os
 
-from haystack import config
+import haystack
 from haystack.abc import interfaces
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import FilenameBackedMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 from haystack.mappings.file import MemoryDumpMemoryMapping
-from haystack.structures import heapwalker
 from haystack.target import TargetPlatform
 
 __author__ = "Loic Jaquemet"
@@ -197,7 +196,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                     mmap,
                     mmap_content_file.read())
             # use file mmap when file is too big
-            elif end - start > config.MAX_MAPPING_SIZE_FOR_MMAP:
+            elif end - start > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (mmap_pathname) +
                             ' Search will fail. Buffer is needed.')
                 mmap = FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset,

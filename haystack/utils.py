@@ -8,6 +8,7 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import ctypes
 import logging
 import struct
 from struct import pack
@@ -143,7 +144,7 @@ class Utils(interfaces.ICTypesUtils):
             return [long(el) for el in array]
         if array._type_ in [self.__ctypes.c_float, self.__ctypes.c_double, self.__ctypes.c_longdouble]:
             return [float(el) for el in array]
-        sb = ''.join([pack(array._type_._type_, el) for el in array])
+        sb = ''.join([struct.pack(array._type_._type_, el) for el in array])
         return sb
 
     def array2bytes(self, array):
@@ -156,12 +157,12 @@ class Utils(interfaces.ICTypesUtils):
             # special case for c_char[]
             return array
         if self.__ctypes.is_array_of_basic_instance(array):
-            sb = b''.join([pack(array._type_._type_, el) for el in array])
+            sb = b''.join([struct.pack(array._type_._type_, el) for el in array])
             return sb
         else:
             c_size = self.__ctypes.sizeof(array)
             a2 = (self.__ctypes.c_ubyte * c_size).from_address(self.__ctypes.addressof(array))
-            sb = b''.join([pack('B', el) for el in a2])
+            sb = b''.join([struct.pack('B', el) for el in a2])
             return sb
 
     def bytes2array(self, bytes, typ):
@@ -225,3 +226,30 @@ try:
 except NameError as e:
     # Python 3
     xrange = range
+
+
+def bytes2array(bytes, typ):
+    """
+    Converts a bytestring in a ctypes array of typ() elements.
+
+    :param bytes: str
+    :param typ: ctypes
+    :return: array
+    """
+    typLen = ctypes.sizeof(typ)
+    if len(bytes) % typLen != 0:
+        raise ValueError('thoses bytes are not an array of %s' % (typ))
+    arrayLen = len(bytes) / typLen
+    array = (typ * arrayLen)()
+    if arrayLen == 0:
+        return array
+    fmt = typ._type_
+    try:
+        for i in range(0, arrayLen):
+            array[i] = struct.unpack(
+                fmt, bytes[typLen * i:typLen * (i + 1)])[0]
+    except struct.error as e:
+        log.error('format:%s typLen*i:typLen*(i+1) = %d:%d' %
+                  (fmt, typLen * i, typLen * (i + 1)))
+        raise e
+    return array

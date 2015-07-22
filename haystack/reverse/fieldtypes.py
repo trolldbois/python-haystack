@@ -5,23 +5,13 @@
 #
 
 import logging
-import os
-import collections
-import struct
-import itertools
-
-from haystack.config import ConfigClass
-from haystack.reverse import re_string
-
 import ctypes
+
+from haystack.reverse import config
 
 log = logging.getLogger('field')
 
 # Field related functions and classes
-# FIXME, use objects.
-config = ConfigClass()
-
-
 def findFirstNot(s, c):
     for i in xrange(len(s)):
         if s[i] != c:

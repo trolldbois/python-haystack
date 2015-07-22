@@ -1,24 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import argparse
 import logging
-import numpy
-import os
-import pickle
-import shelve
 import struct
 import sys
 import time
 
-#from haystack._target_platform import ConfigClass as Config
-from haystack import dump_loader
-from haystack import argparse_utils
-from haystack.structures import libc
+import os
 
-import structure
-import fieldtypes
-import utils
+from haystack.reverse import config
+from haystack.reverse import structure
+from haystack.reverse import fieldtypes
+from haystack.reverse import utils
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -30,28 +23,22 @@ __status__ = "Production"
 
 log = logging.getLogger('reversers')
 
+class StructureOrientedReverser(object):
 
-'''
-Inherits this class when you are delivering a controller that target structure-based elements and :
-  * check consistency between structures,
-  * aggregate structures based on a heuristic,
-'''
+    """
+    Inherits this class when you are delivering a controller that target structure-based elements and :
+      * check consistency between structures,
+      * aggregate structures based on a heuristic,
+          Apply heuristics on context.heap
+    """
 
-
-class StructureOrientedReverser():
-
-    '''
-      Apply heuristics on context.heap
-    '''
-
-    def __init__(self):
+    def __init__(self, _context):
         self.cacheFilenames = []
         # self.cacheDict
 
-    ''' Improve the reversing process
-  '''
-
     def reverse(self, ctx, cacheEnabled=True):
+        ''' Improve the reversing process
+        '''
         skip = False
         if cacheEnabled:
             ctx, skip = self._getCache(ctx)
@@ -273,14 +260,14 @@ class FieldReverser(StructureOrientedReverser):
         fromcache = 0
         # writing to file
         fout = file(
-            context.config.getCacheFilename(
-                context.config.CACHE_GENERATED_PY_HEADERS_VALUES,
+            config.getCacheFilename(
+                config.CACHE_GENERATED_PY_HEADERS_VALUES,
                 context.dumpname),
             'w')
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
         log.debug('Run heuristics structure fields type discovery')
-        dsa = DSASimple(context.config)
+        dsa = DSASimple(context.memory_handler.get_target_platform())
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
@@ -290,7 +277,8 @@ class FieldReverser(StructureOrientedReverser):
             else:
                 decoded += 1
                 dsa.analyze_fields(anon)
-                log.info("_reverse: %s %s",str(context.config.ctypes.c_void_p),id(context.config.ctypes.c_void_p))
+                my_ctypes = context.memory_handler.get_target_platform().get_target_ctypes()
+                log.info("_reverse: %s %s",str(my_ctypes.c_void_p),id(my_ctypes.c_void_p))
                 anon.saveme()
             # output headers
             towrite.append(anon.toString())
@@ -323,7 +311,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         decoded = 0
         fromcache = 0
         from haystack.reverse.heuristics.dsa import EnrichedPointerFields
-        pfa = EnrichedPointerFields(context.config)
+        pfa = EnrichedPointerFields(context.memory_handle.get_target_platform())
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
             if anon.is_resolvedPointers():

@@ -7,19 +7,17 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import argparse
-import os
 import time
 import sys
+
+import os
 import numpy
 
-from haystack.config import ConfigClass as Config
+from haystack.reverse.config import ConfigClass as Config
 from haystack import dump_loader
-
 from fieldtypes import FieldType
-import signature
 import structure
 import utils
-
 
 log = logging.getLogger('progressive')
 

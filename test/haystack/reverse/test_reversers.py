@@ -7,16 +7,14 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
-import os
 import sys
 import unittest
 
-from haystack import config
-
-from haystack import model, constraints
+from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics import dsa
+
 
 #import ctypes
 
@@ -44,14 +42,14 @@ class TestStructureSizes(unittest.TestCase):
     def setUp(self):
         # os.chdir()
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
-        self.dsa = dsa.DSASimple(self.context.config)
+        self.dsa = dsa.DSASimple(self.context.memory_handler.get_target_platform())
 
     def tearDown(self):
         self.context = None
 
     @unittest.skip('DEBUGging the other one')
     def test_sizes(self):
-        ctypes = self.context.config.ctypes
+        ctypes = self.context.memory_handler.get_target_platform().get_target_ctypes()
         structs = self.context.listStructures()
         sizes = sorted(set([len(s) for s in structs]))
         import ctypes3
@@ -102,7 +100,7 @@ class TestFullReverse(unittest.TestCase):
         log.info('START test test_reverseInstances')
         ctx = context.get_context('test/dumps/ssh/ssh.1')
         dumpname = 'test/dumps/ssh/ssh.1'
-        ctx = ctx.config.cleanCache(dumpname)
+        ctx = config.cleanCache(dumpname)
         ctx = reversers.reverseInstances(dumpname)
 
 

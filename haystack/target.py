@@ -10,6 +10,16 @@ __author__ = 'jal'
 
 log = logging.getLogger("target")
 
+# triplet = getattr(sys, 'implementation', sys)._multiarch
+# arch vendor os
+# FIXME use it
+TARGET_TRIPLETS = [
+    ('i386-linux-gnu', (4, 4, 12)),
+    ('x86_64-linux-gnu', (8, 8, 16)),
+    ('i386-pc-win', (4, 4, 8)),
+    ('x86_64-pc-win', (8, 8, 8)),
+]
+
 class TargetPlatform(interfaces.ITargetPlatform):
     """The guest platform information for the process memory handled by IMemoryHandler.
     Immutable, its characteristics should be set once at creation time.

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 This module holds some basic utils function.
-'''
-
+"""
 
 import itertools
 import logging
@@ -13,13 +12,7 @@ import os
 import struct
 import sys
 
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+from haystack.reverse import config
 
 log = logging.getLogger('utils')
 
@@ -103,7 +96,6 @@ def getHeapPointers(dumpfilename, mappings):
         records values and pointers address in heap.
     '''
     import pointerfinder
-    config = mappings.config
     #F_VALUES = _target_platform.getCacheFilename(_target_platform.CACHE_HS_POINTERS_VALUES, dumpfilename)
     F_HEAP_O = config.getCacheFilename(config.CACHE_HEAP_ADDRS, dumpfilename)
     F_HEAP_V = config.getCacheFilename(config.CACHE_HEAP_VALUES, dumpfilename)
@@ -160,7 +152,6 @@ def getAllPointers(dumpfilename, mappings):
         records values and pointers address in heap.
     '''
     import pointerfinder
-    config = mappings.config
     F_HEAP_O = config.getCacheFilename(
         config.CACHE_ALL_PTRS_ADDRS,
         dumpfilename)
@@ -197,7 +188,6 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
     # TODO if linux
     # TODO from haystack.reverse import heapwalker
     # from haystack.structures.libc  import libc.ctypes_malloc
-    config = mappings.config
     f_addrs = config.getCacheFilename(
         '%x.%s' %
         (heap.start,
@@ -222,7 +212,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
         # in case of a pointer ( bad allocation ) out of a mmapping space.
         # But that is not possible, because we are reporting factual reference to existing address space.
         # OK. heap.start should be deleted from the cache name.
-        allocations = mappings.get_user_allocations(heap)
+        allocations = mappings.get_heap_walker(heap).get_user_allocations()
         addrs, sizes = zip(*allocations)
         int_array_save(f_addrs, addrs)
         int_array_save(f_sizes, sizes)

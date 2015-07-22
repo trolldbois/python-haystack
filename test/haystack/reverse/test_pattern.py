@@ -8,11 +8,12 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import operator
+import os
 import unittest
 import struct
 
+from haystack import target
 from haystack.reverse import pattern
-from haystack import config
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -28,8 +29,11 @@ class SignatureTests(unittest.TestCase):
 
     # a example pattern of interval between pointers
     #seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
-    seq = [8, 8, 16, 256, 8, 16, 8, 8, 24]
-    config = config.make_config(os_name='linux')
+
+    def setUp(self):
+        # x64
+        self.seq = [8, 8, 16, 256, 8, 16, 8, 8, 24]
+        self.target = target.TargetPlatform.make_target_platform_local()
 
     def _accumulate(self, iterable, func=operator.add):
         '''Translate an interval sequence to a absolute offset sequence'''
@@ -49,7 +53,7 @@ class SignatureTests(unittest.TestCase):
         indices = [i for i in self._accumulate(nsig)]
         dump = []  # b''
         values = []
-        fmt = self.config.get_word_type_char()
+        fmt = self.target.get_word_type_char()
         # write a memory map with valid pointer address in specifics offsets.
         for i in range(0, mlength, word_size):
             if i in indices:
@@ -70,7 +74,7 @@ class SignatureTests(unittest.TestCase):
         stop = mstart + len(dump2)
         mmap = AMemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
-        mmap2.set_target_platform(self.config)
+        mmap2.set_target_platform(self.target)
         return mmap2, values
 
     def _make_signature(self, intervals, struct_offset=None):
@@ -80,16 +84,19 @@ class SignatureTests(unittest.TestCase):
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)
         # could be 8, it doesn't really matter
-        self.word_size = self.config.get_word_size()
+        self.word_size = self.target.get_word_size()
         if struct_offset is not None:
             self._struct_offset = struct_offset
         else:
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap, values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = MemoryHandler([mmap], 'test')
-        mappings.config = self.config
-        mappings._reset_config() # set it again
+        # amke a fake dir
+        try:
+            os.mkdir('test/reverse/fakedump')
+        except OSError,e:
+            pass
+        mappings = MemoryHandler([mmap], self.target, 'test/reverse/fakedump')
         sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
         return sig
 
@@ -97,6 +104,7 @@ class SignatureTests(unittest.TestCase):
 class TestSignature(SignatureTests):
 
     def setUp(self):
+        super(TestSignature, self).setUp()
         # Do not force ctypes to another platform, its useless
         #self._target_platform = _target_platform.make_target_linux_32()
         #self.seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
@@ -135,6 +143,7 @@ class TestSignature(SignatureTests):
 class TestPinnedPointers(SignatureTests):
 
     def setUp(self):
+        super(TestPinnedPointers, self).setUp()
         # PP.P...[..].PP.PPP..P
         # forcing it on these unittest
         #self._target_platform = _target_platform.make_target_linux_32()
@@ -212,6 +221,7 @@ class TestPinnedPointers(SignatureTests):
 class TestAnonymousStructRange(SignatureTests):
 
     def setUp(self):
+        super(TestAnonymousStructRange, self).setUp()
         # .....PP.P...[..].PP.PPP..P
         # forcing it on these unittest
         #self._target_platform = _target_platform.make_target_linux_32()

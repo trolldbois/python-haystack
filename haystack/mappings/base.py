@@ -198,7 +198,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
     then identify its ITargetPlatform characteristics
     and produce an IMemoryHandler for this process memory dump """
 
-    def __init__(self, mapping_list, _target, name='noname'):
+    def __init__(self, mapping_list, _target, name):
         """Set the list of IMemoryMapping and the ITargetPlatform
 
         :param mapping_list: list of IMemoryMapping
@@ -209,7 +209,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         if not isinstance(mapping_list, list):
             raise TypeError('Please feed me a list of IMemoryMapping')
         if not isinstance(_target, interfaces.ITargetPlatform):
-            raise TypeError('Please feed me a list of IMemoryMapping')
+            raise TypeError('Please feed me a ITargetPlatform')
         self._mappings = mapping_list
         self._target = _target
         for m in self._mappings:

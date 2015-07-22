@@ -4,14 +4,8 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
-import sys
 
-from haystack import model
 from haystack.reverse import context
 
 __author__ = "Loic Jaquemet"
@@ -31,7 +25,7 @@ class TestField(unittest.TestCase):
         #self.context3 = context.get_context('test/src/test-ctypes3.dump')
         self.context6 = context.get_context('test/src/test-ctypes6.32.dump')
         from haystack.reverse.heuristics import dsa
-        self.dsa = dsa.DSASimple(self.context6.mappings)
+        self.dsa = dsa.DSASimple(self.context6.memory_handler)
         self.st = self.context6.listStructures()[0]
 
     def setUp(self):

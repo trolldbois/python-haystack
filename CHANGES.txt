@@ -36,7 +36,11 @@ FAILED (failures=1, errors=106, skipped=6, expected failures=1)
  - adjusted basicmodel to use memeory_handler properly.
  - Ran 213 tests in 149.355s
 FAILED (failures=2, errors=31, skipped=8, expected failures=2)
-
+ - fixed the search API to a simple one
+ - fixed the haystack search cli to the new API
+ - Ran 213 tests in 169.886s
+FAILED (errors=22, skipped=6, expected failures=2)
+ 
 2015-06:
  - keep track of changes in this file
  - use travis-ci to compile

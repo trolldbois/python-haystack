@@ -43,7 +43,6 @@ class MemoryDumper:
         self._dest = os.path.normpath(dest)
         self._archive_type = archiveType
         self._compact_dump = compact
-        self._config = None
 
     def getMappings(self):
         """Returns the MemoryMappings."""

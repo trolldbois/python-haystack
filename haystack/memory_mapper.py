@@ -8,8 +8,8 @@ import time
 
 import os
 
+import haystack
 from haystack.dbg import PtraceDebugger
-from haystack import config
 from haystack import dump_loader
 from haystack.abc import interfaces
 from haystack.mappings import base
@@ -62,7 +62,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
     @staticmethod
     def _init_memfile(memfile, baseOffset):
         size = os.fstat(memfile.fileno()).st_size
-        if size > config.MAX_MAPPING_SIZE_FOR_MMAP:
+        if size > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
             mem = FileBackedMemoryMapping(
                 memfile,
                 baseOffset,
@@ -107,5 +107,5 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
     @staticmethod
     def _init_volatility(volname, pid):
         mapper = VolatilityProcessMapper(volname, pid)
-        _memory_handler = mapper.getMappings()
+        _memory_handler = mapper.make_memory_handler()
         return _memory_handler
