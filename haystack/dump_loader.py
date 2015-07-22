@@ -53,11 +53,11 @@ class LazyLoadingException(Exception):
 
 
 class MemoryDumpLoader(interfaces.IMemoryLoader):
-
-    ''' Abstract interface to a memory dump loader.
+    """
+    Abstract interface to a memory dump loader.
 
     isValid and loadMapping should be implemented.
-    '''
+    """
 
     def __init__(self, dumpname, cpu=None, os_name=None):
         self._cpu_bits = cpu
@@ -239,56 +239,6 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
             raise LazyLoadingException(
                 os.path.sep.join([self.archive, self.filePrefix + mmap_fname]))
             # TODO FIX with name only, not file()
-
-
-class KCoreDumpLoader(MemoryDumpLoader):
-
-    """Mapping loader for kernel memory _memory_handler."""
-
-    def isValid(self):
-        # debug we need a system map to validate...... probably
-        return True
-
-    def getBaseOffset(self, systemmap):
-        systemmap.seek(0)
-        for l in systemmap.readlines():
-            if 'T startup_32' in l:
-                addr, d, n = l.split()
-                log.info('found base_offset @ %s' % (addr))
-                return int(addr, 16)
-        return None
-
-    def getInitTask(self, systemmap):
-        systemmap.seek(0)
-        for l in systemmap.readlines():
-            if 'D init_task' in l:
-                addr, d, n = l.split()
-                log.info('found init_task @ %s' % (addr))
-                return int(addr, 16)
-        return None
-
-    def getDTB(self, systemmap):
-        systemmap.seek(0)
-        for l in systemmap.readlines():
-            if '__init_end' in l:
-                addr, d, n = l.split()
-                log.info('found __init_end @ %s' % (addr))
-                return int(addr, 16)
-        return None
-
-    def loadMappings(self):
-        # DEBUG
-        #start = 0xc0100000
-        start = 0xc0000000
-        end = 0xc090d000
-        kmap = MemoryDumpMemoryMapping(file(self.dumpname), start, end, permissions='rwx-', offset=0x0,
-                                                      major_device=0x0, minor_device=0x0, inode=0x0, pathname=self.dumpname)
-        self._memory_handler = MemoryHandler([kmap], self.dumpname)
-
-
-"""Order of attempted loading"""
-loaders = [ProcessMemoryDumpLoader, KCoreDumpLoader]
-
 
 def load(dumpname, cpu=None, os_name=None):
     """Loads a haystack dump."""
