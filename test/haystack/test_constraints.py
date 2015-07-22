@@ -110,7 +110,6 @@ class TestConstraints(unittest.TestCase):
         constraints.apply_to_module(bad_constraints, bad)
         self.assertIn('expectedValues', bad.Struct1.__dict__)
 
-
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)

@@ -12,14 +12,9 @@ import tempfile
 import os
 
 from haystack import dbg
-from haystack import utils
 from haystack import argparse_utils
-from haystack import target
 from haystack.mappings.process import readProcessMappings
 
-
-
-#import code
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -67,8 +62,6 @@ class MemoryDumper:
             # ptrace exception is raised before that
         self.mappings = readProcessMappings(self.process)
         log.debug('_memory_handler read. Dropping ptrace on pid.')
-        _target_platform = target.make_target_platform()
-        self.mappings.set_target_platform()
         return
 
     def dump(self, dest=None):
@@ -105,7 +98,7 @@ class MemoryDumper:
 
     def _dump_all_mappings_winapp(self, destdir):
         # winappdbg
-        self.index = file(os.path.join(destdir, '_memory_handler'), 'w+')
+        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
         # test dump only the heap
         err = 0
         memory_maps = self.process.generate_memory_snaphost()
@@ -123,7 +116,7 @@ class MemoryDumper:
 
     def _dump_all_mappings(self, destdir):
         """Iterates on all _memory_handler and dumps them to file."""
-        self.index = file(os.path.join(destdir, '_memory_handler'), 'w+')
+        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
         # test dump only the heap
         err = 0
         # print '\n'.join([str(m) for m in self._memory_handler])
@@ -150,6 +143,7 @@ class MemoryDumper:
 
     def _dump_mapping(self, m, tmpdir):
         """Dump one mapping to one file in one tmpdir."""
+        my_utils = self.mappings.get_ctypes_utils()
         if m.permissions[0] != 'r':
             log.debug('Ignore read protected mapping %s' % (m))
             return
@@ -158,8 +152,8 @@ class MemoryDumper:
             return
         # make filename
         # We don't really care about the filename but we need to be coherent.
-        mname = b'%s-%s' % (utils.formatAddress(m.start),
-                            utils.formatAddress(m.end))
+        mname = b'%s-%s' % (my_utils.formatAddress(m.start),
+                            my_utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)
         # dumping the memorymap content if required.
         if self._compact_dump:

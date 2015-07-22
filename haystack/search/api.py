@@ -30,7 +30,9 @@ def search_record(memory_handler, struct_type, search_constraints=None):
     """
     my_searcher = searcher.RecordSearcher(memory_handler)
     if search_constraints is not None:
-        constraints.apply_to_module(search_constraints, struct_type.__module__)
+        # get module from module name struct_type.__module__ from model.
+        module = memory_handler.get_model().get_imported_module(struct_type.__module__)
+        constraints.apply_to_module(search_constraints, module)
     return my_searcher.search(struct_type)
 
 def output_to_string(memory_handler, results):
@@ -40,6 +42,8 @@ def output_to_string(memory_handler, results):
     :param results: results from the search_record
     :return:
     """
+    if not isinstance(results, list):
+        raise TypeError('Feed me a list of results')
     parser = text.RecursiveTextOutputter(memory_handler)
     ret = '['
     for ss, addr in results:
@@ -55,6 +59,8 @@ def output_to_python(memory_handler, results):
     :param results: results from the search_record
     :return:
     """
+    if not isinstance(results, list):
+        raise TypeError('Feed me a list of results')
     # also generate POPOs
     my_model = memory_handler.get_model()
     pythoned_modules = my_model.get_pythoned_modules().keys()
@@ -77,6 +83,8 @@ def output_to_json(memory_handler, results):
     :param results: results from the search_record
     :return:
     """
+    if not isinstance(results, list):
+        raise TypeError('Feed me a list of results')
     ret = output_to_python(memory_handler, results)
     # cirular refs kills it check_circular=False,
     return json.dumps(ret, default=python.json_encode_pyobj)
@@ -88,6 +96,8 @@ def output_to_pickle(memory_handler, results):
     :param results: results from the search_record
     :return:
     """
+    if not isinstance(results, list):
+        raise TypeError('Feed me a list of results')
     ret = output_to_python(memory_handler, results)
     return pickle.dumps(ret)
 
@@ -99,7 +109,7 @@ def load_record(memory_handler, struct_type, memory_address):
     :param memory_handler: IMemoryHandler
     :param struct_type: a ctypes.Structure or ctypes.Union
     :param memory_address: long
-    :return:
+    :return: (ctypes record instance, validated_boolean)
     """
     if not isinstance(memory_address, long) and not isinstance(memory_address, int):
         raise TypeError('Feed me a long memory_address')

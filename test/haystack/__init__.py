@@ -20,7 +20,8 @@ class SrcTests(unittest.TestCase):
         self.offsets = None
         self.sizes = None
 
-    def _load_offsets_values(self, dumpname):
+    @classmethod
+    def _load_offsets_values(cls, dumpname):
         """read <dumpname>.stdout to get offsets given by the binary."""
         offsets = dict()
         values = dict()
@@ -49,9 +50,9 @@ class SrcTests(unittest.TestCase):
                 fields = line[3:].split(' ')
                 k, v = fields[0], fields[1].strip()
                 sizes[name] = v
-        self.values = values
-        self.offsets = offsets
-        self.sizes = sizes
+        cls.values = values
+        cls.offsets = offsets
+        cls.sizes = sizes
         return
 
 if __name__ == '__main__':

@@ -14,9 +14,7 @@ import os
 import re
 
 from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
-from haystack import utils
 from haystack import target
-from haystack.structures import heapwalker
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -111,12 +109,13 @@ class ProcessMemoryMapping(AMemoryMapping):
         # FIXME: the big perf increase is now gone. Howto cast pointer to bytes
         # into ctypes array ?
         ctypes = self._target_platform.get_target_ctypes()
+        my_utils = self._target_platform.get_target_ctypes_utils()
         if not self.isMmaped():
             # self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
             # self._local_mmap_content = self._process().readArray(self.start,
             # ctypes.c_ubyte, len(self) ) # keep ref
-            self._local_mmap_content = utils.bytes2array(
-                self._process().read_bytes(
+            self._local_mmap_content = my_utils.bytes2array(
+                self._process().readBytes(
                     self.start,
                     len(self)),
                 ctypes.c_ubyte)

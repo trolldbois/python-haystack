@@ -71,48 +71,55 @@ class RecordSearcher(object):
                 guessing validation with instance(structType)().isValid()
                 and confirming with instance(structType)().loadMembers()
 
+            we only look for user memory allocation chunks matching the
+            size of the structure.
+
             returns POINTERS to structType instances.
         """
         log.debug('Looking at %s (%x bytes)', mem_map, len(mem_map))
         log.debug('look for %s', str(struct_type))
-        # where do we look
-        start = mem_map.start
-        end = mem_map.end
-        # check the word size to use aligned words only
-        plen = self._memory_handler.get_target_platform().get_word_size()
-        # the struct cannot fit after that point.
-        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        end = end - my_ctypes.sizeof(struct_type)
-        if end <= start:
-            raise ValueError("The record is too big for this memory mapping")
-        log.debug("scanning 0x%lx --> 0x%lx %s every %d bytes", start, end, mem_map.pathname, plen)
         # prepare return values
         outputs = []
-        # parse for structType on each aligned word
-        t0 = time.time()
-        p = 0
-        # python 2.7 xrange doesn't handle long int. replace with ours.
-        for offset in utils.xrange(start, end, plen):
-            # print a debug message every now and then
-            if offset % (1024 << 6) == 0:
-                p2 = offset - start
-                log.debug('processed %d bytes    - %02.02f test/sec',
-                          p2, (p2 - p) / (plen * (time.time() - t0)))
-                t0 = time.time()
-                p = p2
-            # a - load and validate the record
-            instance, validated = self._load_at(
-                mem_map, offset, struct_type, depth)
-            if validated:
-                log.debug("found instance @ 0x%lx", offset)
-                # do stuff with it.
-                if self.__update_cb is not None:
-                    self.__update_cb(instance, offset)
-                outputs.append((instance, offset))
-                # stop when time to stop
-                if len(outputs) >= nb:
-                    log.debug('_search_in: Found enough instance.')
-                    break
+        # check the word size to use aligned words only
+        plen = self._memory_handler.get_target_platform().get_word_size()
+        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        # where do we look for that structure
+        walker = self._memory_handler.get_heap_walker(mem_map)
+        struct_size = my_ctypes.sizeof(struct_type)
+        # get all allocated chunks
+        for addr, size in walker.get_user_allocations():
+            # FIXME, heap walker should give a hint
+            # minimum chunk size varies...
+            #if size != struct_size:
+            if size < struct_size:
+                log.debug("size %d < struct_size %d", size, struct_size)
+                continue
+            log.debug("testing 0x%lx", addr)
+            # try every aligned offset from there to the end of chunk
+            start = addr
+            end = start + size - struct_size + 1
+            # check if there is room (if size < struct_size)
+            if end < start:
+                log.debug('end < start')
+                continue
+            log.debug('xrange(%d, %d, %d) ', start, end, plen)
+            for offset in utils.xrange(start, end, plen):
+                # a - load and validate the record
+                # DEBUG
+                #offset = addr
+                log.debug('load_at(%d) ', offset)
+                instance, validated = self._load_at(
+                    mem_map, offset, struct_type, depth)
+                if validated:
+                    log.debug("found instance @ 0x%lx", offset)
+                    # do stuff with it.
+                    if self.__update_cb is not None:
+                        self.__update_cb(instance, offset)
+                    outputs.append((instance, offset))
+                    # stop when time to stop
+                    if len(outputs) >= nb:
+                        log.debug('_search_in: Found enough instance.')
+                        break
         return outputs
 
     def _load_at(self, mem_map, address, struct_type, depth=99):
@@ -145,3 +152,59 @@ class RecordLoader(RecordSearcher):
         return self._load_at(mem_map, memory_address, struct_type)
 
 
+class AnyOffsetRecordSearcher(RecordSearcher):
+    """
+    This searcher will not use heap helpers and search will not be restricted to
+    allocated chunks of memory.
+    """
+
+    def _search_in(self, mem_map, struct_type, nb=10, depth=99):
+        """
+            Looks for structType instances in memory, using :
+                hints from structType (default values, and such)
+                guessing validation with instance(structType)().isValid()
+                and confirming with instance(structType)().loadMembers()
+
+            returns POINTERS to structType instances.
+        """
+        log.debug('Looking at %s (%x bytes)', mem_map, len(mem_map))
+        log.debug('look for %s', str(struct_type))
+        # where do we look
+        start = mem_map.start
+        end = mem_map.end
+        # check the word size to use aligned words only
+        plen = self._memory_handler.get_target_platform().get_word_size()
+        # the struct cannot fit after that point.
+        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        end = end - my_ctypes.sizeof(struct_type) + 1
+        if end <= start:
+            raise ValueError("The record is too big for this memory mapping")
+        log.debug("scanning 0x%lx --> 0x%lx %s every %d bytes", start, end, mem_map.pathname, plen)
+        # prepare return values
+        outputs = []
+        # parse for structType on each aligned word
+        t0 = time.time()
+        p = 0
+        # python 2.7 xrange doesn't handle long int. replace with ours.
+        for offset in utils.xrange(start, end, plen):
+            # print a debug message every now and then
+            if offset % (1024 << 6) == 0:
+                p2 = offset - start
+                log.debug('processed %d bytes    - %02.02f test/sec',
+                          p2, (p2 - p) / (plen * (time.time() - t0)))
+                t0 = time.time()
+                p = p2
+            # a - load and validate the record
+            instance, validated = self._load_at(
+                mem_map, offset, struct_type, depth)
+            if validated:
+                log.debug("found instance @ 0x%lx", offset)
+                # do stuff with it.
+                if self.__update_cb is not None:
+                    self.__update_cb(instance, offset)
+                outputs.append((instance, offset))
+                # stop when time to stop
+                if len(outputs) >= nb:
+                    log.debug('_search_in: Found enough instance.')
+                    break
+        return outputs

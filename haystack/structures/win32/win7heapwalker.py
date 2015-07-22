@@ -220,7 +220,8 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         heap_module.patch()
         heap_module.patch_listmodel(self._target.get_target_ctypes())
         # FIXME, is that necessary for memory allocation structs ?
-        self._memory_handler.get_model().build_python_class_clones(heap_module)
+        # not needed
+        # self._memory_handler.get_model().build_python_class_clones(heap_module)
         return heap_module
 
     def get_heap_mappings(self):

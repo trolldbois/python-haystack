@@ -3,10 +3,10 @@
 - separated expectedValues from the record type. It should be in a separate dict, 
 that is passed to the basicmodel searcher at search time.
 
-- the module of a struct_type should have been imported to the model
-caught between the need to avoid confusion and the need to import module with haystack.
-Its imported.
-It should be in the model.
+- change the searcher default beahvior to look in each chunk that is big enough
+to contain it. ( field record type)
+
+- add an searcher configuration for padding value == 0 ( to be forwarded to basicmodel)
 
 
 - Model should not depends on ctypesProxy or LoadablesMembers. It could do it on Ctypes.Structure/Union.
@@ -37,16 +37,16 @@ class assessing a "normal" ctypes.Structure instance (modulo target arch)
 Attribute packed is not correct in ctypeslib
 
  - proper way to load constraints and bit-dependant modules is side by side
- like ctypes6.py
-
+ 
     # A - the caller has to load the proper bit-dependant python code,
-    from test.src import ctypes6_gen32
-    # B - then apply the classes to a dynamic module if needed
-    from test.src import ctypes6
-    model.copy_generated_classes(ctypes6_gen32, ctypes6)
-    model.build_python_class_clones(ctypes6)
-    # C - then apply constraints on objects.
-    ctypes6.populate(self.mappings.config)
+    ctypes3 = cls.my_model.import_module("test.src.ctypes3_gen64")
+    # my_model is alreadytarget dependant
+
+    # B - then apply constraints on module.
+    handler = constraints.ConstraintsConfigHandler()
+    my_constraints = handler.read('test/src/ctypes3.constraints')
+    results = haystack.search_record(self.memory_handler, self.ctypes3.struct_test3, my_constraints)
+
 
 
 Todo:

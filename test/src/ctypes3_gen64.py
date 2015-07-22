@@ -72,6 +72,7 @@ class struct_Node(ctypes.Structure):
     _fields_ = [
     ('val1', ctypes.c_uint32),
     ('PADDING_0', ctypes.c_ubyte * 4),
+    ('ptr1', POINTER_T(None)),
     ('ptr2', POINTER_T(None)),
      ]
 

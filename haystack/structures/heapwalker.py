@@ -64,7 +64,8 @@ class HeapFinder(interfaces.IHeapFinder):
         """
         heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
         # FIXME, is that necessary for memory allocation structs ?
-        self._memory_handler.get_model().build_python_class_clones(heap_module)
+        # not needed
+        # self._memory_handler.get_model().build_python_class_clones(heap_module)
         return heap_module
 
     def _load_heap_constraints(self):

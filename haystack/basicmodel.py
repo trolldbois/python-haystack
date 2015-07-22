@@ -526,21 +526,21 @@ class LoadableMembers(object):
             elif target_ctypes.is_array_type(attrtype):
                 # array of something else than int
                 s += '%s (@0x%lx)    :[' % (field, target_ctypes.addressof(attr))
-                s += ','.join(["%s" % (val) for val in attr])
+                s += ','.join(["%s" % val for val in attr])
                 s += '],\n'
             elif target_ctypes.is_cstring_type(attrtype):
                 # only print address/null
-                s += '%s (@0x%lx) : 0x%lx\n' % (field, target_ctypes.addressof(attr),
+                s += '%s : 0x%lx\n' % (field,
                                                 utils.get_pointee_address(attr.ptr))
             elif target_ctypes.is_pointer_type(attrtype):  # and
                 # not target_ctypes.is_pointer_to_void_type(attrtype)):
                 # do not recurse.
                 if attr is None:
                     attr = 0
-                    s += '%s (@????) : 0x0\n' % (field)
+                    s += '%s : 0x0\n' % field
                 else:
-                    s += '%s (@0x%lx) : 0x%lx\n' % (field, target_ctypes.addressof(attr),
-                                                utils.get_pointee_address(attr))
+                    print attr, type(attr), attrtype
+                    s += '%s : 0x%lx\n' % (field, utils.get_pointee_address(attr))
             elif (isinstance(attr, long)) or (isinstance(attr, int)):
                 s += '%s : %s\n' % (field, hex(attr))
             else:
