@@ -11,10 +11,12 @@ from haystack.search import api
 from test.haystack import SrcTests
 
 
-class TestCTypes3_x64(SrcTests):
-
-    memdumpname = 'test/src/test-ctypes3.64.dump'
-    modulename = "test.src.ctypes3_gen64"
+class _ApiTest(SrcTests):
+    """
+    Basic loading of a memory dump and offsets values for all tests.
+    """
+    memdumpname = ''
+    modulename = ""
 
     @classmethod
     def setUpClass(cls):
@@ -25,7 +27,6 @@ class TestCTypes3_x64(SrcTests):
         cls.my_model = cls.memory_handler.get_model()
         # load offsets
         cls._load_offsets_values(cls.memdumpname)
-        cls.ctypes3 = cls.my_model.import_module(cls.modulename)
 
     @classmethod
     def tearDownClass(cls):
@@ -35,9 +36,20 @@ class TestCTypes3_x64(SrcTests):
         cls.my_ctypes = None
         cls.my_utils = None
         cls.my_model = None
-        cls.py_class = None
-        cls.ctypes3 = None
-        cls.py_class = None
+
+    # inherit def tearDown(self):
+
+
+class TestCTypes3_x64(_ApiTest):
+
+    memdumpname = 'test/src/test-ctypes3.64.dump'
+    modulename = "test.src.ctypes3_gen64"
+
+    def setUp(self):
+        self.ctypes3 = self.my_model.import_module(self.modulename)
+
+    def tearDown(self):
+        self.ctypes3 = None
 
     def test_search(self):
         results = haystack.search_record(self.memory_handler, self.ctypes3.struct_test3)
@@ -105,8 +117,7 @@ class TestCTypes3_x32(TestCTypes3_x64):
             self.assertIn(addr, valid)
 
 
-
-class Test6_x32(SrcTests):
+class Test6_x32(_ApiTest):
 
     """Validate abouchet API on a linux x32 dump of ctypes6.
     Mainly tests cross-arch POINTER to structs and c_char_p.
@@ -117,40 +128,17 @@ class Test6_x32(SrcTests):
     memdumpname = 'test/src/test-ctypes6.32.dump'
     modulename = "test.src.ctypes6_gen32"
 
-    @classmethod
-    def setUpClass(cls):
-        cls.memory_handler = dump_loader.load(cls.memdumpname)
-        cls.my_target = cls.memory_handler.get_target_platform()
-        cls.my_ctypes = cls.my_target.get_target_ctypes()
-        cls.my_utils = cls.my_target.get_target_ctypes_utils()
-        cls.my_model = cls.memory_handler.get_model()
-        # load offsets
-        cls._load_offsets_values(cls.memdumpname)
-        cls.ctypes6 = cls.my_model.import_module(cls.modulename)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.memdumpname = None
-        cls.memory_handler = None
-        cls.my_target = None
-        cls.my_ctypes = None
-        cls.my_utils = None
-        cls.my_model = None
-        cls.py_class = None
-        cls.ctypes6 = None
-        cls.py_class = None
-
     def setUp(self):
+        self.ctypes6 = self.my_model.import_module(self.modulename)
         self.node = self.ctypes6.struct_Node
         self.usual = self.ctypes6.struct_usual
-        self._load_offsets_values(self.memdumpname)
         self.address1 = self.offsets['test1'][0]  # struct_usual
         self.address2 = self.offsets['test2'][0]  # struct_Node
         self.address3 = self.offsets['test3'][0]  # struct_Node
 
     def tearDown(self):
-        super(SrcTests, self).tearDown()
-        self.memdumpname = None
+        super(Test6_x32, self).tearDown()
+        self.ctypes6 = None
         self.node = None
         self.usual = None
         self.address1 = None
