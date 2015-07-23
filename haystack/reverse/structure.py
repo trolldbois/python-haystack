@@ -414,11 +414,11 @@ class AnonymousStructInstance(object):
                         undecoded += 1
                         #log.debug('target %x is unresolvable in a field'%(field.value))
                     pass
-                elif field.value in self._mappings:  # other _memory_handler
+                elif field.value in self._memory_handler:  # other _memory_handler
                     inMappings += 1
                     tgt = 'ext_lib_%d' % (field.offset)
                     field._ptr_to_ext_lib = True
-                    field.target_struct_addr = self._mappings.get_mapping_for_address(
+                    field.target_struct_addr = self._memory_handler.get_mapping_for_address(
                         field.value).start
                     pass
             #
@@ -662,17 +662,17 @@ class AnonymousStructInstance(object):
         self._context = context
 
     @property
-    def _mappings(self):
-        return self._context.mappings
+    def _memory_handler(self):
+        return self._context.memory_handler
 
     @property
     def _heap(self):
-        return self._context.mappings.get_heap()
+        return self._context.memory_handler.get_heap_mappings()
 
     @property  # TODO add a cache property ?
     def bytes(self):
         if self._bytes is None:
-            m = self._mappings.get_mapping_for_address(self._vaddr)
+            m = self._memory_handler.get_mapping_for_address(self._vaddr)
             self._bytes = m.read_bytes(
                 self._vaddr,
                 self._size)  # TODO re_string.Nocopy
@@ -736,7 +736,7 @@ class %s(ctypes.Structure):  # %s
         """
         d = self.__dict__.copy()
         try:
-            d['dumpname'] = os.path.normpath(self._mappings.name)
+            d['dumpname'] = os.path.normpath(self._memory_handler.name)
         except AttributeError as e:
             #log.error('no _memory_handler name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
             d['dumpname'] = None

@@ -26,8 +26,9 @@ class TestStructure(unittest.TestCase):
     def setUpClass(self):
         from haystack.reverse.heuristics import dsa
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
-        self.dsa = dsa.DSASimple(self.context.config)
-        self.pta = dsa.EnrichedPointerFields(self.context.config)
+        self.target = self.context.memory_handler.get_target_platform()
+        self.dsa = dsa.DSASimple(self.target)
+        self.pta = dsa.EnrichedPointerFields(self.target)
         pass
 
     def setUp(self):

@@ -142,10 +142,10 @@ class ProcessMemoryMapping(AMemoryMapping):
 
 def readProcessMappings(process):
     """
-    Read all memory _memory_handler of the specified process.
+    Read all memory mappings of the specified process.
 
     Return a list of MemoryMapping objects, or empty list if it's not possible
-    to read the _memory_handler.
+    to read the memory mappings.
 
     May raise a ProcessError.
     """
@@ -193,7 +193,7 @@ def readProcessMappings(process):
     #if True:
     #    ctypes = types.set_ctypes(before)
     _target_platform = target.TargetPlatform.make_target_platform_local()
-    _memory_handler = MemoryHandler(mappings, _target_platform)
+    _memory_handler = MemoryHandler(mappings, _target_platform, 'localhost-%d'% process.pid)
     return _memory_handler
 
 

@@ -347,7 +347,7 @@ class LoadableMembers(object):
                                                       self._orig_address_ + offset))
             # TODO pydoc for impl.
             attr._orig_address_ = self._orig_address_ + offset
-            attr._mappings = mappings
+            attr._memory_handler = mappings
             if not attr.loadMembers(mappings, maxDepth - 1):
                 log.debug(
                     "st: %s %s not valid, error while loading inner struct" %

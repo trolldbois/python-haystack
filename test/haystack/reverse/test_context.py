@@ -62,18 +62,18 @@ class TestMappingsWindows(SrcTests):
         haystack.base test unit'''
         from haystack.reverse import context
         self.putty = context.get_context('test/dumps/putty/putty.1.dump')
-        mappings = self.putty.mappings
+        memory_handler = self.putty.memory_handler
         # print ''.join(['%s\n'%(m) for m in _memory_handler])
         with self.assertRaises(ValueError):
-            mappings.get_context(0x0)
+            memory_handler.get_context(0x0)
         with self.assertRaises(ValueError):
-            mappings.get_context(0xb76e12d3)
+            memory_handler.get_context(0xb76e12d3)
         #[heap] children
         self.assertEquals(
-            mappings.get_context(0x0062d000).heap,
-            mappings.get_mapping_for_address(0x005c0000))
+            memory_handler.get_context(0x0062d000).heap,
+            memory_handler.get_mapping_for_address(0x005c0000))
         self.assertEquals(
-            mappings.get_context(0x0063e123).heap,
-            mappings.get_mapping_for_address(0x005c0000))
+            memory_handler.get_context(0x0063e123).heap,
+            memory_handler.get_mapping_for_address(0x005c0000))
         self.putty.reset()
         self.putty = None

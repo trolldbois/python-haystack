@@ -199,7 +199,7 @@ class PointerFields(FieldAnalyser):
                     self.target.get_word_size()])
             # check if pointer value is in range of _memory_handler and set self.comment to pathname value of pointer
             # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
-            if value not in structure._mappings:
+            if value not in structure._memory_handler:
                 size -= self.target.get_word_size()
                 offset += self.target.get_word_size()
                 continue
@@ -214,10 +214,10 @@ class PointerFields(FieldAnalyser):
             field.value = value
             # TODO: leverage the context._function_names
             if value in structure._context._function_names:
-                field.comment = ' %s::%s' % (os.path.basename(structure._mappings.get_mapping_for_address(value).pathname),
+                field.comment = ' %s::%s' % (os.path.basename(structure._memory_handler.get_mapping_for_address(value).pathname),
                                              structure._context._function_names[value])
             else:
-                field.comment = structure._mappings.get_mapping_for_address(
+                field.comment = structure._memory_handler.get_mapping_for_address(
                     value).pathname
             fields.append(field)
             size -= self.target.get_word_size()

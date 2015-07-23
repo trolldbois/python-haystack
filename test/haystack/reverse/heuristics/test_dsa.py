@@ -5,7 +5,9 @@
 
 import unittest
 
-from haystack.reverse import structure, config
+from haystack import target
+from haystack.reverse import structure
+from haystack.reverse import fieldtypes
 from haystack.reverse import context
 from haystack.reverse.heuristics.dsa import *
 
@@ -38,11 +40,11 @@ class TestFieldAnalyser(unittest.TestCase):
         #
         self.test8 = FS(
             'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00Y\x00')
-        self.config = config.make_config_linux_32()
-        self.zeroes = ZeroFields(self.config)
-        self.utf16 = UTF16Fields(self.config)
-        self.ascii = PrintableAsciiFields(self.config)
-        self.ints = IntegerFields(self.config)
+        self.target = target.TargetPlatform.make_target_linux_32()
+        self.zeroes = ZeroFields(self.target)
+        self.utf16 = UTF16Fields(self.target)
+        self.ascii = PrintableAsciiFields(self.target)
+        self.ints = IntegerFields(self.target)
         pass
 
     def setUp(self):
@@ -154,7 +156,7 @@ class TestDSA(unittest.TestCase):
         self.context = None
         self.putty7124 = context.get_context(
             'test/dumps/putty/putty.7124.dump')
-        self.dsa = DSASimple(self.putty7124.mappings.config)
+        self.dsa = DSASimple(self.putty7124.memory_handler.get_target_platform())
 
     def setUp(self):
         pass

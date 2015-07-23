@@ -15,6 +15,7 @@ import test_pattern
 class TestPointer(test_pattern.SignatureTests):
 
     def setUp(self):
+        super(TestPointer, self).setUp()
         self.mmap, self.values = self._make_mmap_with_values(self.seq)
         self.name = 'test_dump_1'
 
@@ -25,16 +26,14 @@ class TestPointer(test_pattern.SignatureTests):
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)
         # could be 8, it doesn't really matter
-        self.word_size = self.config.get_word_size()
+        self.word_size = self.target.get_word_size()
         if struct_offset is not None:
             self._struct_offset = struct_offset
         else:
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap,values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = MemoryHandler([mmap], 'test')
-        mappings.config = self.config
-        mappings._reset_config()
+        self.memory_handler = MemoryHandler([mmap], self.target, 'test')
         return mmap, values
 
 
