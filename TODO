@@ -1,19 +1,19 @@
 
-
-- separated expectedValues from the record type. It should be in a separate dict, 
-that is passed to the basicmodel searcher at search time.
-
-- change the searcher default beahvior to look in each chunk that is big enough
-to contain it. ( field record type)
-
-- add an searcher configuration for padding value == 0 ( to be forwarded to basicmodel)
-
+- separate basicmodel from ctypes structures record. That will fix all the serialization errors.
 
 - Model should not depends on ctypesProxy or LoadablesMembers. It could do it on Ctypes.Structure/Union.
 - basicmodel should not be monkey patching ctypes.Structure for the sole purpose
 to add methods. Only cross arch helper is authorised. We should have a worker 
 class assessing a "normal" ctypes.Structure instance (modulo target arch)
 - a working str() on Ctypes.loadableMembers requires no instanciated utils
+
+- separated expectedValues from the record type. It should be in a separate dict, 
+that is passed to the basicmodel searcher at search time.
+constraints should not be applied on module/structure.
+
+- add an searcher configuration for padding value == 0 ( to be forwarded to basicmodel)
+- padding value should be 0 most of the time. make it configurable/monkeypatchable
+
 
 - use ASN.1 for constraints.
 

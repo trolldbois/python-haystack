@@ -111,7 +111,7 @@ class ReverserContext(object):
                              set(self._structures)))
                 self.parsed = set()
             # use GenericHeapAllocationReverser to get user blocks
-            mallocRev = reversers.GenericHeapAllocationReverser()
+            mallocRev = reversers.GenericHeapAllocationReverser(self)
             context = mallocRev.reverse(self)
             # mallocRev.check_inuse(self)
             log.info(
