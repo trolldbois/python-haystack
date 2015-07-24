@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from haystack.constraints import NotNull
+from haystack import listmodel
 
+class CTypes6Validator(listmodel.ListModel):
 
-def populate(target):
-    # FIXME : put in constraints file.
-    # classes copy from ctypes6_genXX is done from unittest setUp
+    def __init__(self, memory_handler, my_constraints, my_module):
+        super(CTypes6Validator, self).__init__(memory_handler, my_constraints)
+        self.ctypes6 = my_module
+        # double linked list management structure type
+        self.register_double_linked_list_type(self.ctypes6.struct_entry, 'flink', 'blink')
+        # heads
+        if self._target.get_word_size() == 4:
+            self.register_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'XXXX', -4)
+        elif self._target.get_word_size() == 8:
+            self.register_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'XXXX', -8)
 
-    # x32 -4.
-    #import ctypes
-    if target.get_word_size() == 4:
-        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -4),]
-    elif target.get_word_size() == 8:
-        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -8),]
-    #                           #('list', struct_Node, 'qwd', -4)]
-    from haystack import listmodel
-    listmodel.declare_double_linked_list_type(target.get_target_ctypes(), struct_entry, 'flink', 'blink')

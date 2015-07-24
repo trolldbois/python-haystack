@@ -44,8 +44,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
             self._mapping.start +
             self._offset,
             winheap.HEAP)
-        if not self._heap.loadMembers(self._memory_handler, 1):
-            raise TypeError('HEAP.loadMembers returned False')
+        if not self._heap.load_members(self._memory_handler, 1):
+            raise TypeError('HEAP.load_members returned False')
 
         log.debug('+ Heap @%0.8x size: %d # %s' %
                   (self._mapping.start +

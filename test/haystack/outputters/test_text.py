@@ -41,7 +41,7 @@ class TestTextOutput(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.memory_handler, 10)
+        ret = d.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
         parser = text.RecursiveTextOutputter(self.memory_handler)
         out = parser.parse(d)

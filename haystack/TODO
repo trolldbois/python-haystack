@@ -8,7 +8,7 @@ use pynsource to print the graph of structs.
 
 upgrade the signature-sort by graph-signature with the following equality evaluation fn:
 * %-tage of same pointer offset
-* %-tage of same size comparaison of children structs 
+* %-tage of same size comparaison of children structs
 
 
 Would it be possible that struct_a558e88 is the root instance ?
@@ -47,50 +47,50 @@ si untyped.size == 4 -> ctypes.c_uint
 ada29ff
 
 
-SIG:P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336 
+SIG:P4I4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u4z4P4I4u172z4I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12I4T8z4I4z12u4z26336
 -> to reg == P4I4 (I4u4z4P4)*32
 
-class AnonymousStruct_544_ad90d00(LoadableMembers):  # resolved:True pointerResolved:False
+class AnonymousStruct_544_ad90d00(CTypesRecordConstraintValidator):  # resolved:True pointerResolved:False
 
 
-class AnonymousStruct_264_ad6cef0(LoadableMembers):  # resolved:True pointerResolved:True
+class AnonymousStruct_264_ad6cef0(CTypesRecordConstraintValidator):  # resolved:True pointerResolved:True
 tableaux de pointers termine par NULL
 
 
 
 Unicode :
-class AnonymousStruct_8080_ad68898(LoadableMembers):  # resolved:True pointerResolved:False
-  _fields_ = [ 
-	( 'int_0' , ctypes.c_uint ), #  24  
+class AnonymousStruct_8080_ad68898(CTypesRecordConstraintValidator):  # resolved:True pointerResolved:False
+  _fields_ = [
+	( 'int_0' , ctypes.c_uint ), #  24
 	( 'untyped_4' , ctypes.c_ubyte * 16 ), #   bytes:'\x89\x1f\x00\x00ERCP\x80\x1f\x00\x00\x01\x08\x00\x00'
 	( 'zerroes_20' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
-	( 'int_24' , ctypes.c_uint ), #  4  
+	( 'int_24' , ctypes.c_uint ), #  4
 	( 'zerroes_28' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
-	( 'int_32' , ctypes.c_uint ), #  40  
+	( 'int_32' , ctypes.c_uint ), #  40
 	( 'zerroes_36' , ctypes.c_ubyte * 12 ), #   bytes:'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 	( 'array_48' , ctypes.c_ubyte * 644 ), #   bytes:None
-	( 'ptr_692' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'ptr_692' , ctypes.c_void_p ), # @ b005329 [heap]
 	( 'array_696' , ctypes.c_ubyte * 5836 ), #   bytes:None
-	( 'ptr_6532' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'ptr_6532' , ctypes.c_void_p ), # @ b005329 [heap]
 	( 'untyped_6536' , ctypes.c_ubyte * 84 ), #   bytes:'\x1c(\x1cm\x1cm\x1c)S\x00\r\x1c(\x1cm\x1cm\x1cm\x1c)S\x00\x0f\x...
-	( 'ptr_6620' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'ptr_6620' , ctypes.c_void_p ), # @ b005329 [heap]
 	( 'array_6624' , ctypes.c_ubyte * 920 ), #   bytes:None
-	( 'ptr_7544' , ctypes.c_void_p ), # @ b005329 [heap] 
+	( 'ptr_7544' , ctypes.c_void_p ), # @ b005329 [heap]
 	( 'untyped_7548' , ctypes.c_ubyte * 256 ), #   bytes:'\x1c\\\x1c:\x1cd\x1c/S\x00\x0b\x1c\\\x1c:\x1cd\x1c/S\x00\t\x1c\...
-	( 'ptr_7804' , ctypes.c_void_p ), # @ b005e03 [heap] 
+	( 'ptr_7804' , ctypes.c_void_p ), # @ b005e03 [heap]
 	( 'array_7808' , ctypes.c_ubyte * 264 ), #   bytes:None
 	( 'zerroes_8072' , ctypes.c_ubyte * 4 ), #   bytes:'\x00\x00\x00\x00'
-	( 'int_8076' , ctypes.c_uint ), #  17  
+	( 'int_8076' , ctypes.c_uint ), #  17
  ]
 
 --------------------------
 #probably glib iconv BUILTIN_ALIAS
-class AnonymousStruct_40_ad87be8(LoadableMembers):  # resolved:True
-  _fields_ = [ 
+class AnonymousStruct_40_ad87be8(CTypesRecordConstraintValidator):  # resolved:True
+  _fields_ = [
 	( 'text_0' , ctypes.c_char * 14 ), #   bytes:u'OSF00010020//\x00'
 	( 'text_14' , ctypes.c_char * 17 ), #   bytes:u'ANSI_X3.4-1968//\x00'
 	( 'zerroes_31' , ctypes.c_ubyte * 5 ), #   bytes:'\x00\x00\x00\x00\x00'
-	( 'int_36' , ctypes.c_uint ), #  25  
+	( 'int_36' , ctypes.c_uint ), #  25
  ]
 
 #iconv/iconvconfig.c
@@ -106,13 +106,13 @@ static struct
   int cost;
 } builtin_trans[] =
   {
-  
-  
+
+
 -------------
 Perfs
 
 Mappings __contains__:493
-24.678/212  
+24.678/212
 8/127  with any()
 >>> 24.678/212
 0.1164056603773585
@@ -150,7 +150,7 @@ done 50.00 struct/secs 9885.00 bytes/sec 40004 structs
 -----
 
 regroup char[][] in one struct
-see class AnonymousStruct_544_ad90d00(LoadableMembers)
+see class AnonymousStruct_544_ad90d00(CTypesRecordConstraintValidator)
 members[3:] are all char[][]
 
 bug :

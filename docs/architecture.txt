@@ -30,7 +30,7 @@ haystack.abouchet.StructFinder:
     b) try to load struct on each aligned offset
         MemoryMapping.readStruct -> load x bytes
     c) validates constraints from structure declaration
-        "struct instance".loadMembers
+        "struct instance".load_members
     d) iterate.
 
 

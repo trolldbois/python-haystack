@@ -5,6 +5,7 @@ import time
 
 from haystack.abc import interfaces
 from haystack import utils
+from haystack import listmodel
 
 log = logging.getLogger('searcher')
 
@@ -14,24 +15,28 @@ class RecordSearcher(object):
     Will search a record (Structure, Union) defined by it's member types, pointer and other constraints.
     """
 
-    def __init__(self, memory_handler, target_mappings=None, update_cb=None):
+    def __init__(self, memory_handler, my_constraints, target_mappings=None, update_cb=None):
         """
         if target_mappings is not specified, the search perimeter will include
         only heap mapping.
 
-        :param memory_handler: IMemoryHandler
-        :param target_mappings: list of IMemoryMapping.
+        :param memory_handler: interfaces.IMemoryHandler
+        :param target_mappings: list of interfaces.IMemoryMapping.
+        :param my_constraints: interfaces.IModuleConstraints
         :param update_cb: callback function to call for each valid result
         :return:
         """
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError("Feed me a IMemoryHandler")
+        if not isinstance(my_constraints, interfaces.IModuleConstraints):
+            raise TypeError("Feed me a IModuleConstraints")
         if target_mappings is not None and not isinstance(target_mappings, list):
             raise TypeError("Feed me a list of IMemoryMapping")
         elif target_mappings is None:
             # default to all heaps
             target_mappings = memory_handler.get_heap_finder().get_heap_mappings()
         self._memory_handler = memory_handler
+        self._my_constraints = my_constraints
         self.__target_mappings = target_mappings
         self.__update_cb = update_cb
         log.debug(
@@ -68,8 +73,8 @@ class RecordSearcher(object):
         """
             Looks for structType instances in memory, using :
                 hints from structType (default values, and such)
-                guessing validation with instance(structType)().isValid()
-                and confirming with instance(structType)().loadMembers()
+                guessing validation with Validator.isValid(instance)
+                and confirming with a Validator.load_members(instance)
 
             we only look for user memory allocation chunks matching the
             size of the structure.
@@ -130,8 +135,10 @@ class RecordSearcher(object):
         """
         log.debug("Loading %s from 0x%lx " % (struct_type, address))
         instance = mem_map.read_struct(address, struct_type)
+        # FIXME why not basicmodel ?
+        validator = listmodel.ListModel(self._memory_handler, self._my_constraints)
         # check if data matches
-        if instance.loadMembers(self._memory_handler, depth):
+        if validator.load_members(instance, depth):
             log.info("found instance %s @ 0x%lx", struct_type, address)
             # do stuff with it.
             validated = True
@@ -162,8 +169,8 @@ class AnyOffsetRecordSearcher(RecordSearcher):
         """
             Looks for structType instances in memory, using :
                 hints from structType (default values, and such)
-                guessing validation with instance(structType)().isValid()
-                and confirming with instance(structType)().loadMembers()
+                guessing validation with Validator.isValid(instance)
+                and confirming with a Validator.load_members(instance)
 
             returns POINTERS to structType instances.
         """

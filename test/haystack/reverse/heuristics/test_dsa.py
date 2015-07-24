@@ -174,7 +174,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertEquals(len(fields), 5)  # TODO should be 6 fields lllttp
         self.assertEquals(fields[2].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[2].isString())
@@ -192,7 +192,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertEquals(len(fields), 2)
         self.assertEquals(fields[1].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[1].isString())
@@ -206,7 +206,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertEquals(len(fields), 5)
         self.assertEquals(fields[3].typename, fieldtypes.FieldType.STRINGNULL)
         self.assertTrue(fields[3].isString())
@@ -220,7 +220,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertEquals(len(fields), 2)  # should be 3 Lt0?
         self.assertEquals(fields[0].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[0].isString())
@@ -234,11 +234,11 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertLess(len(fields), 879)
         #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
         #self.assertTrue( fields[35].isString())
-        strfields = [f for f in st.get_fields() if f.isString()]
+        strfields = [f for f in st._get_fields() if f.isString()]
         # for f in strfields:
         #  print f.toString(),
         self.assertGreater(len(strfields), 30)
@@ -252,7 +252,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertEquals(len(fields), 3)
         self.assertEquals(fields[1].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[1].isString())
@@ -268,11 +268,11 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = st.get_fields()
+        fields = st._get_fields()
         self.assertLess(len(fields), 890)
         #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
         #self.assertTrue( fields[35].isString())
-        fields = [f for f in st.get_fields() if f.isString()]
+        fields = [f for f in st._get_fields() if f.isString()]
         # for f in fields:
         #  print f.toString(),
 

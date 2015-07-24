@@ -105,7 +105,7 @@ C structures that should be done following the next 4 steps :
 #) Your class must extend haystack.model.LoadableMembersStructure.
 #) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure
 #) *Optional* You can add an expectedValues dict() to your ctype classes to add some constraints.
-#) *Optional* You can override isValid and loadMembers to implement advanced constraints validation.
+#) *Optional* You can override isValid and load_members to implement advanced constraints validation.
 #) call model.build_python_class_clones(sys.modules[__name__])
 
 Easy 'creation':
@@ -113,7 +113,7 @@ Easy 'creation':
   a C header.
 
 Advanced use:
-  You can override methods isValid and loadMembers to implements
+  You can override methods isValid and load_members to implements
   advanced data loading and constraints validation.
 
   See sslsnoop for loading cipher structures from void pointers
@@ -121,7 +121,7 @@ Advanced use:
 The global algorithm :
   #) The ctypes structure is mapped at the first offset of the memory
      mapping.
-  #) The method loadMembers is called.
+  #) The method load_members is called.
   #) The method isValid is called on self.
   #) A validation test is done for each members, constraints and
      memory space validity (pointers) are tested.
@@ -258,9 +258,9 @@ Pseudo Example for extension :
 |    "dmq1": [NotNull],
 |    "iqmp": [NotNull]
 |  }
-|  def loadMembers(self, mappings, maxDepth):
+|  def load_members(self, mappings, maxDepth):
 |    print 'example'
-|    if not LoadableMembersStructure.loadMembers(self, mappings, maxDepth):
+|    if not LoadableMembersStructure.load_members(self, mappings, maxDepth):
 |      log.debug('RSA not loaded')
 |      return False
 |    return True

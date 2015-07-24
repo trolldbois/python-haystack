@@ -365,8 +365,8 @@ class TestProxyCTypesAPI(unittest.TestCase):
         self.assertTrue(
             issubclass(
                 ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.LoadableMembers))
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertTrue(issubclass(ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(ctypes.CString, ctypes.__dict__.values())
 
     def test_cast(self):
@@ -442,8 +442,8 @@ class TestBasicFunctions32(TestBasicFunctions):
         self.assertTrue(
             issubclass(
                 self._ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.LoadableMembers))
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
@@ -479,8 +479,8 @@ class TestBasicFunctionsWin(TestBasicFunctions):
         self.assertTrue(
             issubclass(
                 self._ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.LoadableMembers))
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
@@ -516,8 +516,8 @@ class TestBasicFunctions64(TestBasicFunctions):
         self.assertTrue(
             issubclass(
                 self._ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.LoadableMembers))
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 

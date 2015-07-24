@@ -43,7 +43,7 @@ class TestToPyObject(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.memory_handler, 10)
+        ret = d.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
 
         import ctypes
@@ -70,7 +70,7 @@ class TestToPyObject(SrcTests):
         offset = self.offsets['struct_a'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         a = m.read_struct(offset, self.ctypes5_gen32.struct_a)
-        ret = a.loadMembers(self.memory_handler, 10)
+        ret = a.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
         import ctypes
         self.assertEquals(int(self.sizes['struct_a']), ctypes.sizeof(a))
@@ -90,7 +90,7 @@ class TestToPyObject(SrcTests):
         offset = self.offsets['union_au'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         au = m.read_struct(offset, self.ctypes5_gen32.union_au)
-        ret = au.loadMembers(self.memory_handler, 10)
+        ret = au.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
         au = parser.parse(au)
         self.assertEquals(int(self.values['union_au.d']), au.d)
@@ -104,7 +104,7 @@ class TestToPyObject(SrcTests):
         offset = self.offsets['union_b'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         b = m.read_struct(offset, self.ctypes5_gen32.union_b)
-        ret = b.loadMembers(self.memory_handler, 10)
+        ret = b.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
 
         parser = python.PythonOutputter(self.memory_handler)
@@ -125,7 +125,7 @@ class TestToPyObject(SrcTests):
         offset = self.offsets['struct_c'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         c = m.read_struct(offset, self.ctypes5_gen32.struct_c)
-        ret = c.loadMembers(self.memory_handler, 10)
+        ret = c.load_members(self.memory_handler, 10)
         self.assertTrue(ret)
 
         import ctypes

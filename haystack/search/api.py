@@ -25,14 +25,10 @@ def search_record(memory_handler, struct_type, search_constraints=None):
 
     :param memory_handler: IMemoryHandler
     :param struct_type: a ctypes.Structure or ctypes.Union from a module imported by haystack
-    :param search_constraints: IConstraintDict to be considered during the search
+    :param search_constraints: IModuleConstraints to be considered during the search
     :rtype a list of (ctypes records, memory offset)
     """
-    my_searcher = searcher.RecordSearcher(memory_handler)
-    if search_constraints is not None:
-        # get module from module name struct_type.__module__ from model.
-        module = memory_handler.get_model().get_imported_module(struct_type.__module__)
-        constraints.apply_to_module(search_constraints, module)
+    my_searcher = searcher.RecordSearcher(memory_handler, search_constraints)
     return my_searcher.search(struct_type)
 
 def output_to_string(memory_handler, results):
@@ -101,7 +97,7 @@ def output_to_pickle(memory_handler, results):
     ret = output_to_python(memory_handler, results)
     return pickle.dumps(ret)
 
-def load_record(memory_handler, struct_type, memory_address):
+def load_record(memory_handler, struct_type, memory_address, load_constraints=None):
     """
     Load a record from a specific address in memory.
     You could use that function to monitor a specific record from memory after a refresh.
@@ -109,10 +105,11 @@ def load_record(memory_handler, struct_type, memory_address):
     :param memory_handler: IMemoryHandler
     :param struct_type: a ctypes.Structure or ctypes.Union
     :param memory_address: long
+    :param load_constraints: IModuleConstraints to be considered during loading
     :return: (ctypes record instance, validated_boolean)
     """
     if not isinstance(memory_address, long) and not isinstance(memory_address, int):
         raise TypeError('Feed me a long memory_address')
-    my_loader = searcher.RecordLoader(memory_handler)
+    my_loader = searcher.RecordLoader(memory_handler, load_constraints)
     return my_loader.load(struct_type, memory_address)
 

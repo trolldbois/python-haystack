@@ -349,7 +349,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
     def test_search(self):
         """    Testing the loading of _HEAP in each memory mapping.
-        Compare loadMembers results with known offsets. expect failures otherwise. """
+        Compare load_members results with known offsets. expect failures otherwise. """
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
         # helper
         win7heap = finder._heap_module
@@ -360,7 +360,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             heap = mapping.read_struct(addr, win7heap.HEAP)
             if addr in map(lambda x: x[0], self._known_heaps):
                 self.assertTrue(
-                    heap.loadMembers(
+                    heap.load_members(
                         self._memory_handler,
                         1000),
                     "We expected a valid hit at @ 0x%0.8x" %
@@ -368,7 +368,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                 found.append(addr, )
             else:
                 try:
-                    ret = heap.loadMembers(self._memory_handler, 1)
+                    ret = heap.load_members(self._memory_handler, 1)
                     self.assertFalse(
                         ret,
                         "We didnt expected a valid hit at @%x" %

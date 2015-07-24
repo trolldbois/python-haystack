@@ -192,7 +192,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
             for cls, typ in inspect.getmembers(mod, inspect.isclass):
                 fullname = '.'.join([mod.__name__, cls])
                 # FIXME: isRegistered deprecated. The intent is to filter on
-                # LoadableMembers ?
+                # CTypesRecordConstraintValidator ?
                 if (typ.__module__.startswith(mod.__name__) and model.isRegistered(typ)
                         and txt in fullname):
                     it = QtGui.QTreeWidgetItem(root, [cls])

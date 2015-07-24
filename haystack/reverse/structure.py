@@ -785,7 +785,7 @@ class ReversedType(ctypes.Structure):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:
-        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.get_fields()]
+        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root._get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()

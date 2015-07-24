@@ -292,7 +292,7 @@ class CTypesProxy(object):
         return
 
     def __set_records(self):
-        """Replaces ctypes.Structure and ctypes.Union with their LoadableMembers
+        """Replaces ctypes.Structure and ctypes.Union with their CTypesRecordConstraintValidator
         counterparts. Add a CString type.
         MAYBE FIXME: These root types will only be valid when the ctypes record is
         used with the adequate CTypesProxy.
@@ -315,15 +315,15 @@ class CTypesProxy(object):
         # and there we have it. We can load basicmodel
         self.CString = CString
 
-        # change LoadableMembers structure given the loaded plugins
+        # change CTypesRecordConstraintValidator structure given the loaded plugins
         import basicmodel
         if True:
             import listmodel
             heritance = tuple(
-                [listmodel.ListModel, basicmodel.LoadableMembers])
+                [listmodel.ListModel, basicmodel.CTypesRecordConstraintValidator])
         else:
-            heritance = tuple([basicmodel.LoadableMembers])
-        self.LoadableMembers = type('LoadableMembers', heritance, {})
+            heritance = tuple([basicmodel.CTypesRecordConstraintValidator])
+        self.LoadableMembers = type('CTypesRecordConstraintValidator', heritance, {})
 
         class LoadableMembersUnion(
                 self.__real_ctypes.Union, self.LoadableMembers):
@@ -341,7 +341,7 @@ class CTypesProxy(object):
         self.LoadableMembersUnion_py = type(
             '%s.%s_py' %
             (__name__, LoadableMembersUnion), (python.pyObj,), {})
-        # register LoadableMembers
+        # register CTypesRecordConstraintValidator
 
         # we need model to be initialised.
         self.Structure = LoadableMembersStructure

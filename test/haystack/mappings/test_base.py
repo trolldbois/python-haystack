@@ -175,7 +175,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.memory_handler, 10)
+        ret = d.load_members(self.memory_handler, 10)
 
         self.assertTrue(self.memory_handler.is_valid_address(d.a))
         self.assertTrue(self.memory_handler.is_valid_address(d.b))
@@ -188,7 +188,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.memory_handler, 10)
+        ret = d.load_members(self.memory_handler, 10)
 
         self.assertTrue(self.memory_handler.is_valid_address(d.a.value))
         self.assertTrue(self.memory_handler.is_valid_address(d.b.value))

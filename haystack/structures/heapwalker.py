@@ -4,7 +4,6 @@
 #
 import logging
 
-import haystack
 from haystack.abc import interfaces
 from haystack import constraints
 
@@ -15,10 +14,11 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 class HeapWalker(interfaces.IHeapWalker):
 
-    def __init__(self, memory_handler, heap_module, heap_mapping):
+    def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
         self._memory_handler = memory_handler
         self._heap_module = heap_module
         self._mapping = heap_mapping
+        self._heap_module_constraints = heap_module_constraints
         self._init_heap()
 
     def _init_heap(self):
@@ -46,7 +46,7 @@ class HeapFinder(interfaces.IHeapFinder):
         self._target = self._memory_handler.get_target_platform()
         self._heap_module_name, self._heap_class_name, self._heap_constraint_filename = self._init()
         self._heap_module = self._import_heap_module()
-        self._load_heap_constraints()
+        self._heap_module_constraints = self._load_heap_constraints()
         self._heap_validation_depth = self._init_heap_validation_depth()
         self._heap_type = self._init_heap_type()
 
@@ -74,9 +74,7 @@ class HeapFinder(interfaces.IHeapFinder):
         :return:
         """
         parser = constraints.ConstraintsConfigHandler()
-        cons = parser.read(self._heap_constraint_filename)
-        constraints.apply_to_module(cons, self._heap_module)
-        return None
+        return parser.read(self._heap_constraint_filename)
 
     def _init_heap_type(self):
         """init the internal heap structure type
@@ -101,7 +99,7 @@ class HeapFinder(interfaces.IHeapFinder):
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
         heap = self._read_heap(mapping)
-        load = heap.loadMembers(self._memory_handler, self._heap_validation_depth)
+        load = heap.load_members(self._memory_handler, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
         return load
 

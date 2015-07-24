@@ -40,6 +40,10 @@ FAILED (failures=2, errors=31, skipped=8, expected failures=2)
  - fixed the haystack search cli to the new API
  - Ran 213 tests in 169.886s
 FAILED (errors=22, skipped=6, expected failures=2)
+ - pretty much refactored haytack core and search in reverse.
+ - Ran 229 tests in 347.116s
+FAILED (errors=7, skipped=7, expected failures=3)
+
  
 2015-06:
  - keep track of changes in this file

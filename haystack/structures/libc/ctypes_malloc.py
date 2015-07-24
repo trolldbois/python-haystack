@@ -38,7 +38,7 @@ def iter_user_allocations(memory_handler, heap, filterInuse=False):
 
     chunk = heap.read_struct(orig_addr, malloc_chunk)
     assert hasattr(chunk, '_orig_address_')
-    ret = chunk.loadMembers(memory_handler, 10)
+    ret = chunk.load_members(memory_handler, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
     addr, size = (chunk.get_mem_addr(orig_addr), chunk.get_mem_size())
@@ -55,7 +55,7 @@ def iter_user_allocations(memory_handler, heap, filterInuse=False):
         next, next_addr = chunk.getNextChunk(memory_handler, orig_addr, 0)
         if next_addr is None:
             break
-        ret = next.loadMembers(memory_handler, 10)
+        ret = next.load_members(memory_handler, 10)
         if not ret:
             raise ValueError
         if filterInuse:
@@ -79,7 +79,7 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
 
     orig_addr = heap.start
     chunk = heap.read_struct(orig_addr, malloc_chunk)
-    ret = chunk.loadMembers(mappings, 10)
+    ret = chunk.load_members(mappings, 10)
     if not ret:
         raise ValueError('heap does not start with an malloc_chunk')
     addr, size = (chunk.get_mem_addr(orig_addr), chunk.get_mem_size())
@@ -92,7 +92,7 @@ def get_user_allocations(mappings, heap, filterOnUsed=False):
         next, next_addr = chunk.getNextChunk(mappings, orig_addr, 0)
         if next_addr is None:
             break
-        ret = next.loadMembers(mappings, 10)
+        ret = next.load_members(mappings, 10)
         if not ret:
             raise ValueError
         if next.check_inuse(mappings, next_addr):
@@ -252,7 +252,7 @@ struct malloc_chunk {
                 (self.__class__.__name__))
             return True
         maxDepth -= 1
-        log.debug('%s loadMembers' % (self.__class__.__name__))
+        log.debug('%s load_members' % (self.__class__.__name__))
         if not self.isValid(mappings):
             return False
         try:
@@ -305,7 +305,7 @@ struct malloc_chunk {
             mappings.keepRef(prev_chunk, malloc_chunk, prev_addr)
             # load
             if depth > 0:
-                ret = prev_chunk.loadMembers(mappings, depth)
+                ret = prev_chunk.load_members(mappings, depth)
                 if not ret:
                     raise ValueError('next_chunk not loaded')
             return prev_chunk, prev_addr
@@ -334,7 +334,7 @@ struct malloc_chunk {
         next_chunk = mmap.read_struct(next_addr, malloc_chunk)
         mappings.keepRef(next_chunk, malloc_chunk, next_addr)
         if depth > 0:
-            ret = next_chunk.loadMembers(mappings, depth)
+            ret = next_chunk.load_members(mappings, depth)
             if not ret:
                 raise ValueError('next_chunk not loaded')
         return next_chunk, next_addr

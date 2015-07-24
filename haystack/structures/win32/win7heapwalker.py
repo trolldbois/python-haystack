@@ -6,14 +6,13 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import os
 import sys
 import logging
 import ctypes
 
+import os
 import numpy
 
-import haystack
 from haystack import model
 from haystack.structures import heapwalker
 
@@ -38,11 +37,12 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         self._heap = self._mapping.read_struct(
             self._mapping.start,
             self._heap_module.HEAP)
-        if not self._heap.loadMembers(self._memory_handler, 1):
-            raise TypeError('HEAP.loadMembers returned False')
+        self._validator = self._heap_module.Win7HeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
+        if not self._validator.load_members(self._heap, 1):
+            raise TypeError('load_members(HEAP) returned False')
 
-        log.debug('+ Heap @%0.8x size: %d # %s' %
-                  (self._mapping.start, len(self._mapping), self._mapping))
+        log.debug('+ Heap @%0.8x size: %d # %s',
+                  self._mapping.start, len(self._mapping), self._mapping)
         # placeholders
         self._backend_committed = None
         self._backend_free = None
@@ -216,12 +216,8 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         log.debug('the heap module loaded is %s', gen_module_name)
         gen_heap_module = self._memory_handler.get_model().import_module(gen_module_name)
         heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
+        # copy the generated module for x32 or x64 in a 'win7heap' module
         model.copy_generated_classes(gen_heap_module, heap_module)
-        heap_module.patch()
-        heap_module.patch_listmodel(self._target.get_target_ctypes())
-        # FIXME, is that necessary for memory allocation structs ?
-        # not needed
-        # self._memory_handler.get_model().build_python_class_clones(heap_module)
         return heap_module
 
     def get_heap_mappings(self):
@@ -239,5 +235,5 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        return Win7HeapWalker(self._memory_handler, self._heap_module, heap)
+        return Win7HeapWalker(self._memory_handler, self._heap_module, heap,self._heap_module_constraints)
 

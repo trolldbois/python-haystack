@@ -411,17 +411,17 @@ class IConstraintsConfigHandler(object):
         :return:
         """
 
-class IConstraintDict(object):
+class IModuleConstraints(object):
     """Defines the constraints configuration for a number of records.
     Each structure is associated to a list of constraint per field of that record.
-    x = IConstraintDict()
+    x = IModuleConstraints()
     [...[
 
     x['struct_1'] contains a dict()
     x['struct_1']['field1'] contains a list of contraints.
     """
 
-    def get_record_names(self):
+    def get_records(self):
         """get the list of record names."""
         raise NotImplementedError('Please implement all methods')
 
@@ -430,6 +430,17 @@ class IConstraintDict(object):
         """
         raise NotImplementedError('Please implement all methods')
 
+class IRecordConstraints(object):
+    """
+    Holds the constraints for fields of a specific record type.
+    """
+    def get_fields(self):
+        """get the list of field names."""
+        raise NotImplementedError('Please implement all methods')
+
+    def get_constraints_for_field(self, field_name):
+        """get the list of IConstraint for a field"""
+        raise NotImplementedError('Please implement all methods')
 
 class IConstraint(object):
     """
@@ -438,5 +449,45 @@ class IConstraint(object):
 
     The test is : "if attr not in <IConstraint instance>"
     """
+    def __contains__(self, obj):
+        raise NotImplementedError('Please implement all methods')
 
+class IRecordConstraintsValidator(object):
+    """
+    The worker class that validates all cp
+    """
+    def is_valid(self, record):
+        """
+        Checks if each member field of record has coherent data
+        with the constraints that exists for this record
 
+        For each Field, check on of the three case,
+            a) basic types (check for expectedValues),
+                if field as some expected values in expectedValues
+                     check field value against expectedValues[fieldname]
+                     if False, return False, else continue
+
+            b) struct(check isValid)
+                check if the inner struct isValid()
+                if False, return False, else continue
+
+            c) is an array , recurse validation
+
+            d) Pointer(check valid_address or expectedValues is None == NULL )
+                if field as some expected values in expectedValues
+                    ( None or 0 ) are the only valid options to design NULL pointers
+                     check field get_pointee_address() value against expectedValues[fieldname] // if NULL
+                            if True(address is NULL and it's a valid value), continue
+                     check get_pointee_address against is_valid_address()
+                            if False, return False, else continue
+        """
+        raise NotImplementedError('Please implement all methods')
+
+    def load_members(self, record, max_depth):
+        """
+
+        :param record:
+        :param max_depth:
+        :return:
+        """
+        raise NotImplementedError('Please implement all methods')

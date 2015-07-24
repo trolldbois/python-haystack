@@ -1,4 +1,7 @@
 
+- find out why its getting super slow in overall tests
+- separate listmodel in a constraints like config file ?
+
 - separate basicmodel from ctypes structures record. That will fix all the serialization errors.
 
 - Model should not depends on ctypesProxy or LoadablesMembers. It could do it on Ctypes.Structure/Union.

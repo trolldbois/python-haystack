@@ -81,7 +81,7 @@ class TestWin7Heap(unittest.TestCase):
                           my_ctypes.addressof(heap))
         # check heap.Signature
         self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
         self.assertTrue(finder._is_heap(h))
 
     def test_is_heap_all(self):
@@ -92,7 +92,7 @@ class TestWin7Heap(unittest.TestCase):
             heap = h.read_struct(addr, win7heap.HEAP)
             # check heap.Signature
             self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             self.assertTrue(finder._is_heap(h))
 
         heaps = sorted([(h.start, len(h)) for h in self.memory_handler.get_heaps()])
@@ -107,7 +107,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
 
         ucrs = heap.get_free_UCR_segment_list(self.memory_handler)
         self.assertEquals(heap.UCRIndex.value, 0x5c0590)
@@ -132,7 +132,7 @@ class TestWin7Heap(unittest.TestCase):
         for addr, size in self._known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             self.assertTrue(finder._is_heap(h))
             # get free UCRS from heap
             reserved_ucrs = heap.get_free_UCR_segment_list(self.memory_handler)
@@ -156,7 +156,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
 
         segments = heap.get_segment_list(self.memory_handler)
         self.assertEquals(heap.Counters.TotalSegments, 1)
@@ -187,7 +187,7 @@ class TestWin7Heap(unittest.TestCase):
         for addr, size in self._known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             self.assertTrue(finder._is_heap(h))
 
             segments = heap.get_segment_list(self.memory_handler)
@@ -221,7 +221,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
 
         allocated, free = heap.get_chunks(self.memory_handler)
         s_allocated = sum([c[1] for c in allocated])
@@ -262,7 +262,7 @@ class TestWin7Heap(unittest.TestCase):
         for addr, size in self._known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             self.assertTrue(finder._is_heap(h))
 
             allocated, free = heap.get_chunks(self.memory_handler)
@@ -297,7 +297,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
 
         allocated, free = heap.get_chunks(self.memory_handler)
         freelists = heap.get_freelists(self.memory_handler)
@@ -313,7 +313,7 @@ class TestWin7Heap(unittest.TestCase):
         for addr, size in self._known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             self.assertTrue(finder._is_heap(h))
 
             allocated, free = heap.get_chunks(self.memory_handler)
@@ -331,7 +331,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
 
         fth_committed, fth_free = heap.get_frontend_chunks(self.memory_handler)
         # SizeInCache : 59224L,
@@ -348,7 +348,7 @@ class TestWin7Heap(unittest.TestCase):
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
-        load = heap.loadMembers(self.memory_handler, 10)
+        load = heap.load_members(self.memory_handler, 10)
         valloc_committed = heap.get_virtual_allocated_blocks_list(
             self.memory_handler)
 
@@ -363,7 +363,7 @@ class TestWin7Heap(unittest.TestCase):
         for addr, size in self._known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
-            load = heap.loadMembers(self.memory_handler, 10)
+            load = heap.load_members(self.memory_handler, 10)
             valloc_committed = heap.get_virtual_allocated_blocks_list(
                 self.memory_handler)
             size = sum([x.ReserveSize for x in valloc_committed])
@@ -371,7 +371,7 @@ class TestWin7Heap(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     # logging.getLogger('testwin7heap').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

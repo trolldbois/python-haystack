@@ -6,10 +6,9 @@
 import logging
 import unittest
 
+from haystack import basicmodel
 from haystack import dump_loader
 from haystack import target
-from haystack import types
-import haystack.model
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -32,6 +31,7 @@ class TestLoadMembers(SrcTests):
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
         self.my_model = self.memory_handler.get_model()
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, dict())
         self.ctypes_gen32 = self.my_model.import_module("test.src.ctypes5_gen32")
 
     def tearDown(self):
@@ -48,7 +48,7 @@ class TestLoadMembers(SrcTests):
         offset = self.offsets['struct_a'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         a = m.read_struct(offset, self.ctypes_gen32.struct_a)
-        ret = a.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(a, 10)
         self.assertTrue(ret)
 
         self.assertEquals(int(self.sizes['struct_a']), self.my_ctypes.sizeof(a))
@@ -65,7 +65,7 @@ class TestLoadMembers(SrcTests):
         offset = self.offsets['union_au'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         au = m.read_struct(offset, self.ctypes_gen32.union_au)
-        ret = au.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(au, 10)
         self.assertTrue(ret)
         self.assertEquals(int(self.sizes['union_au']), self.my_ctypes.sizeof(au))
         self.assertEquals(int(self.values['union_au.d']), au.d)
@@ -79,7 +79,7 @@ class TestLoadMembers(SrcTests):
         offset = self.offsets['union_b'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         b = m.read_struct(offset, self.ctypes_gen32.union_b)
-        ret = b.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(b, 10)
         self.assertTrue(ret)
 
         self.assertEquals(int(self.sizes['union_b']), self.my_ctypes.sizeof(b))
@@ -98,7 +98,7 @@ class TestLoadMembers(SrcTests):
         offset = self.offsets['struct_c'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         c = m.read_struct(offset, self.ctypes_gen32.struct_c)
-        ret = c.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(c, 10)
         self.assertTrue(ret)
 
         self.assertEquals(int(self.sizes['struct_c']), self.my_ctypes.sizeof(c))
@@ -120,7 +120,7 @@ class TestLoadMembers(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes_gen32.struct_d)
-        ret = d.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(d, 10)
         self.assertTrue(ret)
 
         self.assertEquals(int(self.sizes['struct_d']), self.my_ctypes.sizeof(d))
@@ -138,6 +138,7 @@ class TestRealSSH(unittest.TestCase):
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
         self.my_model = self.memory_handler.get_model()
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler,dict())
         try:
             self.sslsnoop = self.my_model.import_module("sslsnoop")
         except ImportError:
@@ -156,7 +157,7 @@ class TestRealSSH(unittest.TestCase):
 
         m = self.memory_handler.get_mapping_for_address(self.known_offset)
         ss = m.read_struct(self.known_offset, ctypes_openssh.session_state)
-        ret = ss.loadMembers(self.memory_handler, 10)
+        ret = self.validator.load_members(ss, 10)
         self.assertTrue(ret)
 
         self.assertEquals(ss.connection_in, 3)

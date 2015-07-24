@@ -5,7 +5,7 @@
 
 """
 Defines
-        LoadableMembers
+        CTypesRecordConstraintValidator
         LoadableMembersStructure
         LoadableMembersUnion
         CString.

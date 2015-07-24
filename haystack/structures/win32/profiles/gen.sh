@@ -35,7 +35,7 @@ clang2py --target i386-win -o win7_32.py Win7SP1X86.32.h
 #yeah that wont work. You need to generate a valid Header file with no double declaration.
 #clang2py --target i386-win -o win7_32.py Win7SP1X86._000160E.32.h Win7SP1X86._00003BA.32.h
 # instead, grep declaration missing from 160E and use them as -d argument of pdbparse.
-# then include 
+# then include
 # or use a preprocessor
 
 

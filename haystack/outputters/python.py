@@ -46,7 +46,7 @@ class PythonOutputter(Outputter):
             return self._memory_handler.getRef(my_class, my_address)
         # save our POPO in a partially resolved state, to keep from loops.
         self._memory_handler.keepRef(my_self, my_class, my_address)
-        for field, typ in obj.get_fields():
+        for field, typ in obj._get_fields():
             attr = getattr(obj, field)
             try:
                 member = self._attrToPyObject(attr, field, typ)
@@ -150,7 +150,7 @@ class pyObj(object):
             return '#(- not printed by Excessive recursion - )'
         s = '{\n'
         if hasattr(self, '_ctype_'):
-            items = [n for n, t in self._ctype_.get_fields()]
+            items = [n for n, t in self._ctype_._get_fields()]
         else:
             log.warning('no _ctype_')
             items = [n for n in self.__dict__.keys() if n != '_ctype_']
@@ -228,7 +228,7 @@ class pyObj(object):
 
     def __iter__(self):
         """ iterate on a instance's type's _fields_ members following the original type field order """
-        for k, typ in self._ctype_.get_fields():
+        for k, typ in self._ctype_._get_fields():
             v = getattr(self, k)
             yield (k, v, typ)
         pass

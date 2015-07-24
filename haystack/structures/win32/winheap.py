@@ -72,7 +72,7 @@ def HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     Some may have Size == 0.
     """
     ucrs = list()
-    for ucr in self.iterateListField(mappings, 'UCRSegmentList'):
+    for ucr in self.iterate_list_field(mappings, 'UCRSegmentList'):
         ucr_struct_addr = ucr._orig_address_
         ucr_addr = utils.get_pointee_address(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
@@ -115,7 +115,7 @@ def HEAP_get_virtual_allocated_blocks_list(self, mappings):
     TODO: need some working on.
     """
     vallocs = list()
-    for valloc in self.iterateListField(mappings, 'VirtualAllocdBlocks'):
+    for valloc in self.iterate_list_field(mappings, 'VirtualAllocdBlocks'):
         vallocs.append(valloc)
         log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
             valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
@@ -131,7 +131,7 @@ def HEAP_get_free_UCR_segment_list(self, mappings):
     """
     # TODO: exclude UCR segment from valid pointer values in _memory_handler.
     ucrs = list()
-    for ucr in self.iterateListField(mappings, 'UCRList'):
+    for ucr in self.iterate_list_field(mappings, 'UCRList'):
         ucr_struct_addr = ucr._orig_address_
         ucr_addr = utils.get_pointee_address(ucr.Address)
         # UCR.Size are not chunks sizes. NOT *8
@@ -257,7 +257,7 @@ def HEAP_get_frontend_chunks(self, mappings):
         #
         #
         # load members on self.FrontEndHeap car c'est un void *
-        if not st.loadMembers(mappings, 1):
+        if not st.load_members(mappings, 1):
             log.error('Error on loading frontend')
             raise model.NotValid('Frontend load at @%x is not valid' % (addr))
 
@@ -516,7 +516,7 @@ def HEAP_get_freelists(self, mappings):
     # todo iterate on the 128 list_entry, which are pointing to HEAP_ENTRY
     # FIXME
     return res
-    for freeblock in self.iterateListField(mappings, 'FreeLists'):
+    for freeblock in self.iterate_list_field(mappings, 'FreeLists'):
         if self.EncodeFlagMask:
             chunk_header = HEAP_ENTRY_decode(freeblock, self)
         # size = header + freespace

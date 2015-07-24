@@ -21,23 +21,6 @@ log = logging.getLogger('constraints')
 
 from haystack.abc import interfaces
 
-def apply_to_module(constraints, module):
-    """
-    Apply the list of constraints to a module
-
-    :param constraints: list of IConstraint
-    :param module:
-    :return: module
-    """
-    for st, stc in constraints.items():
-        if not hasattr(module, st):
-            log.debug('module %s has no type %s', module, st)
-            continue
-        member = getattr(module, st)
-        log.debug("setting constraint on structure: %s %s", st, member)
-        setattr(member, 'expectedValues', stc)
-    return None
-
 
 class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
     """
@@ -69,12 +52,12 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         parser.optionxform = str
         parser.read(filename)
         # prepare the return object
-        _constraints = dict()
+        _constraints = ModuleConstraints()
         # each section anem is the name of the target structure
         for struct_name in parser.sections():
             log.debug('handling structure %s', struct_name)
             if struct_name not in _constraints:
-                _constraints[struct_name] = dict()
+                _constraints[struct_name] = RecordConstraints()
             # each config entry is a field and its IConstraint
             for field, value in parser.items(struct_name):
                 log.debug('%s: field %s ::= %s', struct_name, field, value)
@@ -173,8 +156,11 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         return ret
 
 
-class Constraints(interfaces.IConstraintDict, dict):
-    def get_record_names(self):
+class ModuleConstraints(interfaces.IModuleConstraints, dict):
+    """
+    Holds the constraints for all record types of a module.
+    """
+    def get_records(self):
         """get the list of record names."""
         return self.keys()
 
@@ -183,7 +169,18 @@ class Constraints(interfaces.IConstraintDict, dict):
         """
         return self[record_name]
 
+class RecordConstraints(interfaces.IRecordConstraints, dict):
+    """
+    Holds the constraints for fields of a specific record type.
+    """
+    def get_fields(self):
+        """get the list of field names."""
+        return self.keys()
 
+    def get_constraints_for_field(self, field_name):
+        """get the list of IConstraint for a field
+        """
+        return self[field_name]
 
 class IgnoreMember(interfaces.IConstraint):
 
