@@ -131,6 +131,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         return
 
     # FIXME: offset is redundant. It should be calculated vy target_ctypes.offsetof(list_entry_field_name)
+    # FIXME offset == utils.offsetof(type(self), fieldname)
     def register_list_field_and_type(self, record_type, field_name, list_entry_type, list_entry_field_name, offset):
         """
         Register the member <field_name> of a <struct_type> record type,
