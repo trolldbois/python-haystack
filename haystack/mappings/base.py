@@ -43,7 +43,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 __credits__ = ["Victor Skinner"]
 
-log = logging.getLogger('base')
+log = logging.getLogger('memorybase')
 
 
 

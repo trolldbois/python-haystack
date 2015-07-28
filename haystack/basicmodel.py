@@ -37,7 +37,10 @@ def get_field_type(record, fieldname):
 def get_fields(record):
     if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
         raise TypeError('Feed me a ctypes record instance')
-    mro = list(type(record).__mro__[:-3]) # cut Structure, _CData and object
+    return get_record_type_fields(type(record))
+
+def get_record_type_fields(record_type):
+    mro = list(record_type.__mro__[:-3]) # cut Structure, _CData and object
     mro.reverse()
     me = mro.pop(-1)
     for typ in mro:  # firsts are first, cls is in here in [-1]
@@ -114,7 +117,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
             raise TypeError('Feed me a record')
         valid = self._is_valid(record, self._get_constraints_for(record))
-        log.debug('-- <%s> isValid = %s', self.__class__.__name__, valid)
+        log.debug('-- <%s> isValid = %s', record.__class__.__name__, valid)
         return valid
 
     def _is_valid(self, record, record_constraints):
@@ -123,6 +126,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         _fieldsTuple = get_fields(record)
         myfields = dict(_fieldsTuple)
         done = []
+        log.debug("constraints are on %s", record_constraints)
         # check expectedValues first
         for attrname, expected in record_constraints.iteritems():
             if attrname not in myfields:
@@ -136,7 +140,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             # FIXME : contains IgnoreMember ?
             if expected is constraints.IgnoreMember:
                 continue
-            if not self._is_valid_attr(attr, attrname, attrtype):
+            if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):
                 return False
         # check the rest for validation
         todo = [(name, typ)
@@ -251,7 +255,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             if (self._ctypes.is_pointer_to_void_type(attrtype) or
                     self._ctypes.is_function_type(attrtype)):
                 log.debug(
-                    'Its a simple type. Checking _memory_handler only. attr=%s', attr)
+                    'Its a simple type. Checking address only. attr=%s', attr)
                 if (myaddress != 0 and
                         not self._memory_handler.is_valid_address_value(myaddress)):
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer',

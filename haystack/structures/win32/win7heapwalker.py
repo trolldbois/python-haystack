@@ -235,5 +235,9 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        return Win7HeapWalker(self._memory_handler, self._heap_module, heap,self._heap_module_constraints)
+        return Win7HeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
 
+    def _init_heap_validator(self):
+        return self._heap_module.Win7HeapValidator(self._memory_handler,
+                                                   self._heap_module_constraints,
+                                                   self._heap_module)

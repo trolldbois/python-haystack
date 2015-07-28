@@ -102,3 +102,8 @@ class LibcHeapFinder(heapwalker.HeapFinder):
 
     def get_heap_walker(self, heap):
         return LibcHeapWalker(self._memory_handler, self._heap_module, heap)
+
+    def _init_heap_validator(self):
+        return self._heap_module.LibcHeapValidator(self._memory_handler,
+                                                   self._heap_module_constraints,
+                                                   self._heap_module)

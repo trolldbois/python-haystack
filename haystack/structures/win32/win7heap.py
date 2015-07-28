@@ -86,18 +86,25 @@ log = logging.getLogger('win7heap')
 # constraints are in constraints files
 
 class Win7HeapValidator(listmodel.ListModel):
+    """
+    this listmodel Validator will register know important list fields
+    in the win7 HEAP,
+    [ FIXME TODO and apply constraints ? ]
+    and be used to validate the loading of these structures.
+    This class contains all helper functions used to parse the win7heap structures.
+    """
 
     def __init__(self, memory_handler, my_constraints, win7heap_module):
         super(Win7HeapValidator, self).__init__(memory_handler, my_constraints)
         self.win7heap = win7heap_module
         # LIST_ENTRY
-        listmodel.declare_double_linked_list_type(self._ctypes, self.win7heap.LIST_ENTRY, 'Flink', 'Blink')
+        self.register_double_linked_list_record_type(self.win7heap.LIST_ENTRY, 'Flink', 'Blink')
 
         # HEAP_SEGMENT
         # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
         # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
         # FIXME, use offset size base on self._target.get_word_size()
-        self.register_list_field_and_type(self.win7heap.HEAP_SEGMENT, 'UCRSegmentList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP_SEGMENT, 'UCRSegmentList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)
         #HEAP_SEGMENT._listHead_ = [
         #        ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
         #HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
@@ -113,11 +120,11 @@ class Win7HeapValidator(listmodel.ListModel):
         #                   # for get_freelists. offset is sizeof(HEAP_ENTRY)
         #                   ('FreeLists', HEAP_FREE_ENTRY, 'FreeList', -8),
         #                   ('VirtualAllocdBlocks', HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)]
-        self.register_list_field_and_type(self.win7heap.HEAP, 'SegmentList', self.win7heap.HEAP_SEGMENT, 'SegmentListEntry', -16)
-        self.register_list_field_and_type(self.win7heap.HEAP, 'UCRList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', 0)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'SegmentList', self.win7heap.HEAP_SEGMENT, 'SegmentListEntry', -16)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'UCRList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', 0)
         # for get_freelists. offset is sizeof(HEAP_ENTRY)
-        self.register_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.HEAP_FREE_ENTRY, 'FreeList', -8)
-        self.register_list_field_and_type(self.win7heap.HEAP, 'VirtualAllocdBlocks', self.win7heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.HEAP_FREE_ENTRY, 'FreeList', -8)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'VirtualAllocdBlocks', self.win7heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)
 
         # HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
         # SEGMENT.SegmentListEntry. points to HEAP.SegmentList.

@@ -8,94 +8,11 @@ import unittest
 import sys
 
 from haystack import model
-from haystack import listmodel
+from haystack import constraints
 from haystack import dump_loader
 
 from test.src import ctypes6
 from test.haystack import SrcTests
-
-class TestListStruct(unittest.TestCase):
-
-    """
-    haystack --dumpname putty.1.dump --string haystack.structures.win32.win7heap.HEAP refresh 0x390000
-    """
-
-    def setUp(self):
-        self.memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
-        self.finder = self.memory_handler.get_heap_finder()
-
-    def tearDown(self):
-        self.memory_handler = None
-        self.finder = None
-
-    def test_iter(self):
-        #offset = 0x390000
-        win7heap = self.finder._heap_module
-        offset = 0x1ef0000
-        self.m = self.memory_handler.get_mapping_for_address(offset)
-        self.heap = self.m.read_struct(offset, win7heap.HEAP)
-        self.validator = listmodel.ListModel(self.memory_handler, None)
-        self.assertTrue(self.validator.load_members(self.heap, 10))
-
-        segments = [
-            segment for segment in self.heap.iterate_list_field(
-                self.memory_handler,
-                'SegmentList')]
-        self.assertEquals(len(segments), 1)
-
-        ucrs = [
-            ucr for ucr in segment.iterate_list_field(
-                self.memory_handler,
-                'UCRSegmentList') for segment in segments]
-        self.assertEquals(len(ucrs), 1)
-
-        logging.getLogger('root').debug('VIRTUAL')
-        allocated = [
-            block for block in self.heap.iterate_list_field(
-                self.memory_handler,
-                'VirtualAllocdBlocks')]
-        self.assertEquals(len(allocated), 0)  # 'No vallocated blocks'
-
-        for block in self.heap.iterate_list_field(
-                self.memory_handler, 'VirtualAllocdBlocks'):
-            print 'commit %x reserve %x' % (block.CommitSize, block.ReserveSize)
-
-        return
-
-    def test_getListFieldInfo(self):
-        win7heap = self.finder._heap_module
-
-        heap = win7heap.HEAP()
-        heap._memory_handler = self.memory_handler
-        self.assertEquals(
-            heap._getListFieldInfo('SegmentList'), (win7heap.HEAP_SEGMENT, -16))
-
-        seg = win7heap.HEAP_SEGMENT()
-        seg._memory_handler = self.memory_handler
-        self.assertEquals(
-            seg._getListFieldInfo('UCRSegmentList'), (win7heap.HEAP_UCR_DESCRIPTOR, -8))
-
-    def test_otherHeap(self):
-        win7heap = self.finder._heap_module
-
-        heaps = [0x390000, 0x00540000, 0x005c0000, 0x1ef0000, 0x21f0000]
-        for addr in heaps:
-            m = self.memory_handler.get_mapping_for_address(addr)
-            # print '\n+ Heap @%x size: %d'%(addr, len(m))
-            heap = m.read_struct(addr, win7heap.HEAP)
-            self.validator = listmodel.ListModel(self.memory_handler, None)
-            self.assertTrue(self.validator.load_members(heap, 10))
-            segments = [
-                segment for segment in heap.iterate_list_field(
-                    self.memory_handler,
-                    'SegmentList')]
-            self.assertEquals(len(segments), 1)
-
-            allocated = [
-                block for block in heap.iterate_list_field(
-                    self.memory_handler,
-                    'VirtualAllocdBlocks')]
-            self.assertEquals(len(allocated), 0)
 
 class TestListStructTest6(SrcTests):
     """
@@ -110,7 +27,10 @@ class TestListStructTest6(SrcTests):
         my_model = self.memory_handler.get_model()
         self.ctypes6_gen32 = my_model.import_module("ctypes6_gen32")
 
-        self.x32_validator = ctypes6.CTypes6Validator
+        handler = constraints.ConstraintsConfigHandler()
+        my_constraints = handler.read('test/src/ctypes6.constraints')
+
+        self.x32_validator = ctypes6.CTypes6Validator(self.memory_handler, my_constraints, self.ctypes6_gen32)
         self.offset = self.offsets['test1'][0]
         self.m = self.memory_handler.get_mapping_for_address(self.offset)
         self.usual = self.m.read_struct(self.offset, self.ctypes6_gen32.struct_usual)
@@ -122,11 +42,10 @@ class TestListStructTest6(SrcTests):
         self.ctypes6_gen32 = None
 
     def test_iter(self):
-        self.validator = listmodel.ListModel(self.memory_handler, None)
-        self.assertTrue(self.validator.load_members(self.usual, 10))
+        self.assertTrue(self.x32_validator.load_members(self.usual, 10))
         # we know its a double linked list, so we can iterate it.
         nodes_addrs = [
-            el for el in self.validator._iterate_list(self.usual.root)]
+            el for el in self.x32_validator.iterate_list(self.usual.root)]
         # test that we have a list of two structures in a list
         self.assertEquals(len(nodes_addrs), 2)
 
@@ -134,7 +53,7 @@ class TestListStructTest6(SrcTests):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     # logging.getLogger("listmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("root").setLevel(level=logging.DEBUG)
