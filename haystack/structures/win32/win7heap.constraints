@@ -1,8 +1,9 @@
-[HEAP_SEGMENT]
+[struct__HEAP_SEGMENT]
 SegmentSignature: [0xffeeffee]
 # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
 LastValidEntry: IgnoreMember
-
+# points of end of mapping -0xf, need to ignore at validation time.
+UCRSegmentList: [ListLimitDepthValidation(5)]
 
 # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
 # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.

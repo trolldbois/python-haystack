@@ -25,6 +25,7 @@ import ctypes
 import logging
 
 from haystack import basicmodel
+from haystack import constraints
 
 log = logging.getLogger('listmodel')
 
@@ -42,7 +43,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
     # register for record/field part of a linked list
     _list_fields = dict()
 
-    def register_double_linked_list_record_type(self, record_type, forward, backward):
+    def register_double_linked_list_record_type(self, record_type, forward, backward, sentinels=None):
         """
         Declares a structure to be a double linked list management structure.
 
@@ -89,8 +90,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             raise TypeError('The %s field is not a pointer.', forward)
         if not self._ctypes.is_pointer_type(blink_type):
             raise TypeError('The %s field is not a pointer.', backward)
+        if sentinels is None:
+            sentinels = [0] # Null pointer
         # ok - save that structure information
-        self._double_link_list_types[record_type] = (forward, backward)
+        self._double_link_list_types[record_type] = (forward, backward, sentinels)
         return
 
     def is_double_linked_list_type(self, record_type):
@@ -100,7 +103,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         """
         return the registered double linked list information.
         :param record_type:
-        :return: (forward, backward) fieldnames
+        :return: (forward, backward, sentinels) fieldnames
         """
         return self._double_link_list_types[record_type]
 
@@ -175,10 +178,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         return True
 
     def get_list_info_for_field_for(self, record_type, fieldname):
-        import code
-        code.interact(local=locals())
         for x in self.get_list_fields(record_type):
-            print x
             if x[0] == fieldname:
                 return x
         raise ValueError('No such registered field')
@@ -230,10 +230,22 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             return True
 
         try:
+            record_constraints = self._get_constraints_for(record)
             # we look at the list we know about
             for link_info in self.get_list_fields(type(record)):
+                attrname = link_info[0]
+                # shorcut ignores
+                if attrname in record_constraints:
+                    for constraint in record_constraints[attrname]:
+                        if constraint is constraints.IgnoreMember:
+                            log.debug('ignoring %s as requested', attrname)
+                            continue
+                        elif isinstance(constraint, constraints.ListLimitDepthValidation):
+                            max_depth = constraint.max_depth
+                            log.debug('setting max_depth %d as requested', max_depth)
+                    continue
                 log.debug('checking listmember %s for %s', link_info[0], record.__class__.__name__)
-                entry_iterator = self.iterate_list_from_field(record, link_info, sentinels=None)
+                entry_iterator = self.iterate_list_from_field(record, link_info)
                 self._load_list_entries(record, entry_iterator, max_depth - 1)
         #except ValueError, e:
         except RuntimeError,e: # for DEBUG
@@ -242,20 +254,17 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         log.debug('-+ <%s> load_members END +-', record.__class__.__name__)
         return True
 
-    def iterate_list_from_field(self, record, link_info, sentinels=None):
+    def iterate_list_from_field(self, record, link_info):
         """
          iterates over all entry of a double linked list.
          we do not return record in the list.
 
         :param record:
         :param link_info:
-        :param sentinels:
         :return:
         """
         if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
             raise TypeError('Feed me a ctypes record instance')
-        if sentinels is None:
-            sentinels = []
         fieldname, pointee_record_type, lefn, offset = link_info
         # get the double linked list field name
         head = getattr(record, fieldname)
@@ -270,10 +279,12 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # @ of the fieldname in record. This can be different from offset.
         head_address = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
         # stop at the first sign of a previously found list entry
+        _, _, sentinels = self.get_double_linked_list_type(type(head))
         done = [s for s in sentinels] + [head_address]
         # log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
         # we get all addresses for the instances of the double linked list record_type
         # not, the list_member itself. Only the address of the double linked list field.
+        log.debug("iterate_list_from_field from %s at offset %d->%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
         for entry in self.iterate_list(head):
             # entry is not null. We also ignore record (head_address).
             if entry in done:
@@ -292,7 +303,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             else:
                 memoryMap = self._memory_handler.is_valid_address_value(list_member_address, pointee_record_type)
                 if memoryMap == False:
-                    log.error("ValueError: 'the link of this linked list has a bad value'")
+                    log.error("iterate_list_from_field: the link of this linked list has a bad value")
                     raise ValueError('ValueError: the link of this linked list has a bad value')
                 st = memoryMap.read_struct(list_member_address, pointee_record_type)
                 st._orig_address_ = list_member_address
@@ -312,18 +323,18 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         done = [0]
         obj = record
         record_type = type(record)
-        forward, backward = self.get_double_linked_list_type(record_type)
-        # log.debug('going forward ')
+        forward, backward, sentinels = self.get_double_linked_list_type(record_type)
+        # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = self._utils.get_pointee_address(link)
-            log.debug('iterateList got a <%s>/0x%x', link.__class__.__name__, addr)
+            log.debug('iterate_list got a <%s>/0x%x', link.__class__.__name__, addr)
             nb = 0
-            while addr not in done:
+            while addr not in done and addr not in sentinels:
                 done.append(addr)
                 memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
                 if memoryMap == False:
-                    log.error("ValueError: 'the link of this linked list has a bad value'")
+                    log.error("iterate_list: the link of this linked list has a bad value")
                     raise ValueError('ValueError: the link of this linked list has a bad value')
                 st = memoryMap.read_struct(addr, record_type)
                 st._orig_address_ = addr

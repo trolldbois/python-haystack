@@ -195,6 +195,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
         Return the heap configuration information
         :return: (heap_module_name, heap_class_name, heap_constraint_filename)
         """
+        self._heap_validator = None
         module_name = 'haystack.structures.win32.win7heap'
         heap_name = 'HEAP'
         constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'win7heap.constraints')
@@ -238,7 +239,9 @@ class Win7HeapFinder(heapwalker.HeapFinder):
     def get_heap_walker(self, heap):
         return Win7HeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
 
-    def _init_heap_validator(self):
-        return self._heap_module.Win7HeapValidator(self._memory_handler,
+    def _get_heap_validator(self):
+        if self._heap_validator is None:
+            self._heap_validator = self._heap_module.Win7HeapValidator(self._memory_handler,
                                                    self._heap_module_constraints,
                                                    self._heap_module)
+        return self._heap_validator

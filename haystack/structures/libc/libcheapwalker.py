@@ -66,6 +66,7 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         Return the heap configuration information
         :return: (heap_module_name, heap_class_name, heap_constraint_filename)
         """
+        self._heap_validator = None
         module_name = 'haystack.structures.libc.ctypes_malloc'
         heap_name = 'malloc_chunk'
         constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__),'libcheap.constraints')
@@ -103,7 +104,9 @@ class LibcHeapFinder(heapwalker.HeapFinder):
     def get_heap_walker(self, heap):
         return LibcHeapWalker(self._memory_handler, self._heap_module, heap)
 
-    def _init_heap_validator(self):
-        return self._heap_module.LibcHeapValidator(self._memory_handler,
+    def _get_heap_validator(self):
+        if self._heap_validator is None:
+            self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler,
                                                    self._heap_module_constraints,
                                                    self._heap_module)
+        return self._heap_validator

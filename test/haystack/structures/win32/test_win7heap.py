@@ -109,8 +109,9 @@ class TestWin7Heap(unittest.TestCase):
         heap = h.read_struct(addr, win7heap.HEAP)
         # a load_member by validator occurs in heapwalker._is_heap
         self.assertTrue(finder._is_heap(h))
+        validator = finder._get_heap_validator()
 
-        ucrs = heap.get_free_UCR_segment_list(self.memory_handler)
+        ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
         self.assertEquals(heap.UCRIndex.value, 0x5c0590)
         self.assertEquals(heap.Counters.TotalUCRs, 1)
         # in this example, there is one UCR in 1 segment.
@@ -127,6 +128,8 @@ class TestWin7Heap(unittest.TestCase):
         self.assertEquals(ucr.Size, ucr_size)
 
     def test_get_UCR_segment_list_all(self):
+        # FIXME: look at previous version to debug what was going on with UCR
+        # get an UCR refresher too. is it linked to holes in memory mappings?
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         win7heap = finder._heap_module
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
@@ -134,12 +137,13 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
+            validator = finder._get_heap_validator()
             # get free UCRS from heap
-            reserved_ucrs = heap.get_free_UCR_segment_list(self.memory_handler)
+            reserved_ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
             all_ucrs = []
             # UCR size should add on all UCR for all segments
-            for segment in heap.get_segment_list(self.memory_handler):
-                all_ucrs.extend(segment.get_UCR_segment_list(self.memory_handler))
+            for segment in validator.HEAP_get_segment_list(heap):
+                all_ucrs.extend(validator.HEAP_SEGMENT_get_UCR_segment_list(segment))
             total_ucr_size = sum([ucr.Size for ucr in all_ucrs])
             # sum of all existing UCR. not just free UCR
             self.assertEquals(len(all_ucrs), heap.Counters.TotalUCRs)
@@ -157,8 +161,9 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
+        validator = finder._get_heap_validator()
 
-        segments = heap.get_segment_list(self.memory_handler)
+        segments = validator.HEAP_get_segment_list(heap)
         self.assertEquals(heap.Counters.TotalSegments, 1)
         self.assertEquals(len(segments), heap.Counters.TotalSegments)
         segment = segments[0]
@@ -188,8 +193,9 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
+            validator = finder._get_heap_validator()
 
-            segments = heap.get_segment_list(self.memory_handler)
+            segments = validator.HEAP_get_segment_list(heap)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
             pages = 0
             total_size = 0
@@ -221,8 +227,9 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
+        validator = finder._get_heap_validator()
 
-        allocated, free = heap.get_chunks(self.memory_handler)
+        allocated, free = validator.HEAP_get_chunks(heap)
         s_allocated = sum([c[1] for c in allocated])
         s_free = sum([c[1] for c in free])
         total = sorted(allocated + free)
@@ -262,8 +269,9 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
+            validator = finder._get_heap_validator()
 
-            allocated, free = heap.get_chunks(self.memory_handler)
+            allocated, free = validator.HEAP_get_chunks(heap)
             s_allocated = sum([c[1] for c in allocated])
             s_free = sum([c[1] for c in free])
             total = sorted(allocated + free)
@@ -277,7 +285,7 @@ class TestWin7Heap(unittest.TestCase):
             chunks_size = sum([chunk[1] for chunk in total])
             # chunks are in all segments
             alloc_size = 0
-            for segment in heap.get_segment_list(self.memory_handler):
+            for segment in validator.HEAP_get_segment_list(heap):
                 valid_alloc_size = (segment.LastValidEntry.value
                                     - segment.FirstEntry.value)
                 alloc_size += valid_alloc_size
@@ -296,9 +304,10 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
+        validator = finder._get_heap_validator()
 
-        allocated, free = heap.get_chunks(self.memory_handler)
-        freelists = heap.get_freelists(self.memory_handler)
+        allocated, free = validator.HEAP_get_chunks(heap)
+        freelists = validator.HEAP_get_freelists(heap)
         free_size = sum([x[1] for x in [(hex(x[0]), x[1]) for x in freelists]])
         free_size2 = sum([x[1] for x in free])
         self.assertEquals(heap.TotalFreeSize * 8, free_size)
@@ -312,9 +321,10 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
+            validator = finder._get_heap_validator()
 
-            allocated, free = heap.get_chunks(self.memory_handler)
-            freelists = heap.get_freelists(self.memory_handler)
+            allocated, free = validator.HEAP_get_chunks(heap)
+            freelists = validator.HEAP_get_freelists(heap)
             free_size = sum([x[1] for x in
                              [(hex(x[0]), x[1]) for x in freelists]])
             free_size2 = sum([x[1] for x in free])
@@ -329,8 +339,9 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
+        validator = finder._get_heap_validator()
 
-        fth_committed, fth_free = heap.get_frontend_chunks(self.memory_handler)
+        fth_committed, fth_free = validator.HEAP_get_frontend_chunks(heap)
         # SizeInCache : 59224L,
 
         # not much to check...
@@ -346,8 +357,9 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        valloc_committed = heap.get_virtual_allocated_blocks_list(
-            self.memory_handler)
+        validator = finder._get_heap_validator()
+
+        valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
 
         size = sum([x.ReserveSize for x in valloc_committed])
         # FIXME Maybe ??
@@ -361,8 +373,9 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            valloc_committed = heap.get_virtual_allocated_blocks_list(
-                self.memory_handler)
+            validator = finder._get_heap_validator()
+
+            valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
             size = sum([x.ReserveSize for x in valloc_committed])
             self.assertEquals(heap.Counters.TotalSizeInVirtualBlocks, size)
 

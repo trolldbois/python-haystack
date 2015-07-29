@@ -33,10 +33,11 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
       PerfectMatch('bytestr')
 
     """
-    valid_names = ['IgnoreMember', 'NotNull', 'RangeValue', 'PerfectMatch']
+    valid_names = ['IgnoreMember', 'NotNull', 'RangeValue', 'PerfectMatch', 'ListLimitDepthValidation']
     _rv = re.compile(r'''(?P<fn>RangeValue\((?P<args>[^)]+)\))''')
     _pm = re.compile(r'''(?P<fn>PerfectMatch\('(?P<args>[^']+)'\))''')
     _nn = re.compile(r'''(?P<fn>NotNull)[,]*,?''')
+    _ld = re.compile(r'''(?P<fn>ListLimitDepthValidation\((?P<args>[^)]+)\))''')
 
     def read(self, filename):
         """
@@ -121,7 +122,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         args = _t[1][:-1]
         # else its a RangeValue or a PerfectMatch
         log.debug('we have a IConstraint %s', _class_name)
-        if _class_name not in ['RangeValue', 'PerfectMatch']:
+        if _class_name not in ['RangeValue', 'PerfectMatch', 'ListLimitDepthValidation']:
             raise ValueError('invalid constraints near %s', _class_name)
         # we know the constraint
         _class_type = getattr(sys.modules[__name__], _class_name)
@@ -135,6 +136,11 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             return _class_type(*_args)
         elif _class_name == 'PerfectMatch':
             _args = self._pm.search(value).group('args')
+            return _class_type(_args)
+        elif _class_name == 'ListLimitDepthValidation':
+            _args = self._ld.search(value).group('args')
+            assert ',' not in _args
+            _args = self._try_numbers(_args)
             return _class_type(_args)
         else:
             raise RuntimeError('no such constraint %s',_class_name)
@@ -189,6 +195,20 @@ class IgnoreMember(interfaces.IConstraint):
     If this constraints is applied on a Structure member,
     the member will be ignored by the validation engine.
     """
+
+    def __contains__(self, obj):
+        return True
+
+class ListLimitDepthValidation(interfaces.IConstraint):
+
+    """
+    Constraint class for the Haystack model.
+    If this constraints is applied on a Record  member,
+    the member will be ignored by the listmodel validation engine.
+    """
+
+    def __init__(self, max_depth):
+        self.max_depth = max_depth
 
     def __contains__(self, obj):
         return True

@@ -102,7 +102,10 @@ class Win7HeapValidator(listmodel.ListModel):
         super(Win7HeapValidator, self).__init__(memory_handler, my_constraints)
         self.win7heap = win7heap_module
         # LIST_ENTRY
-        self.register_double_linked_list_record_type(self.win7heap.LIST_ENTRY, 'Flink', 'Blink')
+        # the lists usually use end of mapping as a sentinel.
+        # we have to use all mappings instead of heaps, because of a circular dependency
+        sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
+        self.register_double_linked_list_record_type(self.win7heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
 
         # HEAP_SEGMENT
         # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
@@ -148,7 +151,6 @@ class Win7HeapValidator(listmodel.ListModel):
         Some may have Size == 0.
         """
         ucrs = list()
-        self._utils = self._memory_handler.get_ctypes_utils()
         link_info = self.get_list_info_for_field_for(type(record), 'UCRSegmentList')
         for ucr in self.iterate_list_from_field(record, link_info):
             ucr_struct_addr = ucr._orig_address_
@@ -214,23 +216,40 @@ class Win7HeapValidator(listmodel.ListModel):
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
             # create the skip list for each segment.
             skiplist = dict()
-            for ucr in segment.get_UCR_segment_list(record):
+            for ucr in self.HEAP_SEGMENT_get_UCR_segment_list(segment):
                 ucr_addr = self._utils.get_pointee_address(ucr.Address)
                 # UCR.Size are not chunks sizes. NOT *8
                 skiplist[ucr_addr] = ucr.Size
+                log.debug('adding skiplist from %x to %x', ucr_addr, ucr_addr+ucr.Size)
             #
+            log.debug('skiplist has %d items', len(skiplist))
+
             chunk_addr = first_addr
+            log.debug('reading chunk from %x to %x', first_addr, last_addr)
             while (chunk_addr < last_addr):
                 if chunk_addr in skiplist:
                     size = skiplist[chunk_addr]
                     log.debug(
-                        'Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x' %
-                        (chunk_addr, size, chunk_addr + size))
+                        'Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x',
+                        chunk_addr, size, chunk_addr + size)
                     chunk_addr += size
                     continue
                 chunk_header = self._memory_handler.getRef(self.win7heap.HEAP_ENTRY, chunk_addr)
                 if chunk_header is None:  # force read it
-                    chunk_header = self._get_chunk(chunk_addr)
+                    log.debug('reading chunk from %x', chunk_addr)
+                    m = self._memory_handler.get_mapping_for_address(chunk_addr)
+                    # FIXME
+                    # in some case, we have the last chunk pointing to the first byte
+                    # of the next unallocated mapping offset_X.
+                    # in some case, there is a non allocated gap between offset_X and last_addr
+                    # FIXME, the skiplist above should address that.
+                    if not m:
+                        log.debug("found a non valid chunk pointer at %x", chunk_addr)
+                        break
+                    chunk_header = m.read_struct(chunk_addr, self.win7heap.HEAP_ENTRY)
+                    self._memory_handler.keepRef(chunk_header, self.win7heap.HEAP_ENTRY, chunk_addr)
+                    # FIXME what is this hack
+                    chunk_header._orig_address_ = chunk_addr
                 if record.EncodeFlagMask:  # heap.EncodeFlagMask
                     chunk_header = self.HEAP_ENTRY_decode(chunk_header, record)
                 #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
@@ -311,8 +330,8 @@ class Win7HeapValidator(listmodel.ListModel):
                     # log.debug(subsegment)
                     # TODO current subsegment.SFreeListEntry is on error at some depth.
                     # bad pointer value on the second subsegment
-                    chunks = subsegment.get_userblocks(self._memory_handler)
-                    free = subsegment.get_freeblocks(self._memory_handler)
+                    chunks = self.HEAP_SUBSEGMENT_get_userblocks(subsegment)
+                    free = self.HEAP_SUBSEGMENT_get_freeblocks(subsegment)
                     committed = set(chunks) - set(free)
                     all_free.extend(free)
                     all_committed.extend(committed)

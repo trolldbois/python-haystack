@@ -245,7 +245,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
         """Returns the IHeapWalker for that process memory."""
         if not isinstance(heap, interfaces.IMemoryMapping):
             raise TypeError("heap should be a IMemoryMapping")
-        return self._heap_finder.get_heap_walker(heap)
+        return self.get_heap_finder().get_heap_walker(heap)
 
     def get_ctypes_utils(self):
         """Returns the Utils toolkit."""
@@ -314,7 +314,7 @@ class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
 
     def get_heaps(self):
         """Find heap type and returns _memory_handler with heaps"""
-        return self._heap_finder.get_heap_mappings()
+        return self.get_heap_finder().get_heap_mappings()
 
     def get_stack(self):
         # FIXME wont work on windows.
