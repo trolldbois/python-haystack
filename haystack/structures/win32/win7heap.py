@@ -47,7 +47,7 @@ import logging
 
 from haystack import model
 from haystack import listmodel
-
+from haystack.abc import interfaces
 
 
 # pylint: disable=pointeless-string-statement
@@ -95,6 +95,10 @@ class Win7HeapValidator(listmodel.ListModel):
     """
 
     def __init__(self, memory_handler, my_constraints, win7heap_module):
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError("Feed me a IMemoryHandler")
+        if not isinstance(my_constraints, interfaces.IModuleConstraints):
+            raise TypeError("Feed me a IModuleConstraints")
         super(Win7HeapValidator, self).__init__(memory_handler, my_constraints)
         self.win7heap = win7heap_module
         # LIST_ENTRY
@@ -104,7 +108,7 @@ class Win7HeapValidator(listmodel.ListModel):
         # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
         # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
         # FIXME, use offset size base on self._target.get_word_size()
-        self.register_double_linked_list_field_and_type(self.win7heap.HEAP_SEGMENT, 'UCRSegmentList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP_SEGMENT, 'UCRSegmentList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = -8
         #HEAP_SEGMENT._listHead_ = [
         #        ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
         #HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
@@ -120,11 +124,15 @@ class Win7HeapValidator(listmodel.ListModel):
         #                   # for get_freelists. offset is sizeof(HEAP_ENTRY)
         #                   ('FreeLists', HEAP_FREE_ENTRY, 'FreeList', -8),
         #                   ('VirtualAllocdBlocks', HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)]
-        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'SegmentList', self.win7heap.HEAP_SEGMENT, 'SegmentListEntry', -16)
-        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'UCRList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry', 0)
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'SegmentList', self.win7heap.HEAP_SEGMENT, 'SegmentListEntry') # offset = -16
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'UCRList', self.win7heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = 0
         # for get_freelists. offset is sizeof(HEAP_ENTRY)
-        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.HEAP_FREE_ENTRY, 'FreeList', -8)
-        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'VirtualAllocdBlocks', self.win7heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)
+        ## self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.HEAP_FREE_ENTRY, 'FreeList') # offset =  -8
+        if self._target.get_word_size() == 4:
+            self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.struct__HEAP_FREE_ENTRY_0_5, 'FreeList') # offset =  -8
+        else:
+            self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'FreeLists', self.win7heap.struct__HEAP_FREE_ENTRY_0_2, 'FreeList') # offset =  -8
+        self.register_double_linked_list_field_and_type(self.win7heap.HEAP, 'VirtualAllocdBlocks', self.win7heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
 
         # HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
         # SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
@@ -134,14 +142,15 @@ class Win7HeapValidator(listmodel.ListModel):
         #HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
         #HEAP_UCR_DESCRIPTOR._listHead_ = [    ('SegmentEntry', HEAP_SEGMENT, 'SegmentListEntry'),    ]
 
-    def HEAP_SEGMENT_get_UCR_segment_list(self):
+    def HEAP_SEGMENT_get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
         ucrs = list()
         self._utils = self._memory_handler.get_ctypes_utils()
-        for ucr in self.iterate_list_field(self._memory_handler, 'UCRSegmentList'):
+        link_info = self.get_list_info_for_field_for(type(record), 'UCRSegmentList')
+        for ucr in self.iterate_list_from_field(record, link_info):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -157,7 +166,8 @@ class Win7HeapValidator(listmodel.ListModel):
         TODO: need some working on.
         """
         vallocs = list()
-        for valloc in self.iterate_list_field(record, 'VirtualAllocdBlocks'):
+        link_info = self.get_list_info_for_field_for(type(record), 'VirtualAllocdBlocks')
+        for valloc in self.iterate_list_from_field(record, link_info):
             vallocs.append(valloc)
             log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
                 valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
@@ -170,7 +180,8 @@ class Win7HeapValidator(listmodel.ListModel):
         """
         # TODO: exclude UCR segment from valid pointer values in _memory_handler.
         ucrs = list()
-        for ucr in self.iterate_list_field(record, 'UCRList'):
+        link_info = self.get_list_info_for_field_for(type(record), 'UCRList')
+        for ucr in self.iterate_list_from_field(record, link_info):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -182,7 +193,8 @@ class Win7HeapValidator(listmodel.ListModel):
     def HEAP_get_segment_list(self, record):
         """returns a list of all segment attached to one Heap structure."""
         segments = list()
-        for segment in self.iterate_list_field(record, 'SegmentList'):
+        link_info = self.get_list_info_for_field_for(type(record), 'SegmentList')
+        for segment in self.iterate_list_from_field(record, link_info):
             segment_addr = segment._orig_address_
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
@@ -263,7 +275,8 @@ class Win7HeapValidator(listmodel.ListModel):
                 m = self._memory_handler.get_mapping_for_address(addr)
                 st = m.read_struct(addr, self.win7heap.HEAP_LOOKASIDE)
                 # load members on self.FrontEndHeap car c'est un void *
-                for free in st.iterateList('ListHead'):  # single link list.
+                #for free in st.iterateList('ListHead'):  # single link list.
+                for free in self.iterateList(st):
                     # TODO delete this free from the heap-segment entries chunks
                     log.debug('free')
                     res.append(free)  # ???
@@ -493,7 +506,8 @@ class Win7HeapValidator(listmodel.ListModel):
         # FIXME: we should use get_segmentlist to coallescce segment in one heap
         # memory mapping. Not free chunks.
         res = list()
-        for freeblock in self.iterate_list_field(record, 'FreeLists'):
+        link_info = self.get_list_info_for_field_for(type(record), 'FreeLists')
+        for freeblock in self.iterate_list_from_field(record, link_info):
             if record.EncodeFlagMask:
                 chunk_header = self.HEAP_ENTRY_decode(freeblock, record)
             # size = header + freespace

@@ -292,7 +292,9 @@ class CTypesProxy(object):
         return
 
     def __set_records(self):
-        """Replaces ctypes.Structure and ctypes.Union with their CTypesRecordConstraintValidator
+        """
+        DO NOT DO :Replaces ctypes.Structure and ctypes.Union with their CTypesRecordConstraintValidator
+
         counterparts. Add a CString type.
         MAYBE FIXME: These root types will only be valid when the ctypes record is
         used with the adequate CTypesProxy.
@@ -316,36 +318,37 @@ class CTypesProxy(object):
         self.CString = CString
 
         # change CTypesRecordConstraintValidator structure given the loaded plugins
-        import basicmodel
-        if True:
-            import listmodel
-            heritance = tuple(
-                [listmodel.ListModel, basicmodel.CTypesRecordConstraintValidator])
-        else:
-            heritance = tuple([basicmodel.CTypesRecordConstraintValidator])
-        self.LoadableMembers = type('CTypesRecordConstraintValidator', heritance, {})
+        #import basicmodel
+        #if True:
+        #    import listmodel
+        #    heritance = tuple(
+        #        [listmodel.ListModel, basicmodel.CTypesRecordConstraintValidator])
+        #else:
+        #    heritance = tuple([basicmodel.CTypesRecordConstraintValidator])
+        #self.LoadableMembers = type('CTypesRecordConstraintValidator', heritance, {})
 
-        class LoadableMembersUnion(
-                self.__real_ctypes.Union, self.LoadableMembers):
-            pass
+        #class LoadableMembersUnion(
+        #        self.__real_ctypes.Union, self.LoadableMembers):
+        #    pass
 
-        class LoadableMembersStructure(
-                self.__real_ctypes.Structure, self.LoadableMembers):
-            pass
+        #class LoadableMembersStructure(
+        #        self.__real_ctypes.Structure, self.LoadableMembers):
+        #    pass
+
         # create local POPO ( lodableMembers )
         #createPOPOClasses(sys.modules[__name__] )
-        from haystack.outputters import python
-        self.LoadableMembersStructure_py = type(
-            '%s.%s_py' %
-            (__name__, LoadableMembersStructure), (python.pyObj,), {})
-        self.LoadableMembersUnion_py = type(
-            '%s.%s_py' %
-            (__name__, LoadableMembersUnion), (python.pyObj,), {})
+        #from haystack.outputters import python
+        #self.LoadableMembersStructure_py = type(
+        #    '%s.%s_py' %
+        #    (__name__, LoadableMembersStructure), (python.pyObj,), {})
+        #self.LoadableMembersUnion_py = type(
+        #    '%s.%s_py' %
+        #    (__name__, LoadableMembersUnion), (python.pyObj,), {})
         # register CTypesRecordConstraintValidator
 
         # we need model to be initialised.
-        self.Structure = LoadableMembersStructure
-        self.Union = LoadableMembersUnion
+        #self.Structure = LoadableMembersStructure
+        #self.Union = LoadableMembersUnion
 
         return
 

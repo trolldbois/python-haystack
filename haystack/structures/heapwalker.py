@@ -96,7 +96,11 @@ class HeapFinder(interfaces.IHeapFinder):
         return heap
 
     def _is_heap(self, mapping):
-        """test if a mapping is a heap"""
+        """
+        test if a mapping is a heap
+        :param mapping: IMemoryMapping
+        :return:
+        """
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
         heap = self._read_heap(mapping)

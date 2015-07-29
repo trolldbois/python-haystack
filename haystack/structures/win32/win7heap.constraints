@@ -27,7 +27,8 @@ SubSegmentCode: IgnoreMember
 # Starting with Windows Vista, this field was encoded using a random value that
 # was also stored as a field in the HEAP handle data structure.
 
-[HEAP]
+#[HEAP]
+[struct__HEAP]
 Signature: [0xeeffeeff]
 FrontEndHeapType: [0, 1, 2]
 CommitRoutine: IgnoreMember
@@ -37,16 +38,16 @@ LastValidEntry: IgnoreMember
 
 
 # HEAP_UCR_DESCRIPTOR per definition, reserved space is not maped.
-[HEAP_UCR_DESCRIPTOR]
+[struct__HEAP_UCR_DESCRIPTOR]
 Address: IgnoreMember
 
 # HEAP_LOCAL_SEGMENT_INFO
 # HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
 # HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
-[HEAP_LOCAL_SEGMENT_INFO]
+[struct__HEAP_LOCAL_SEGMENT_INFO]
 LocalData: IgnoreMember
 
 # TODO current subsegment.SFreeListEntry is on error at some depth.
 # bad pointer value on the second subsegment
-[HEAP_SUBSEGMENT]
+[struct__HEAP_SUBSEGMENT]
 SFreeListEntry: IgnoreMember

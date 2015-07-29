@@ -119,8 +119,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     def _get_virtualallocations(self):
         """ returns addr,size of committed,free vallocs heap entries"""
         if (self._valloc_committed, self._valloc_free) == (None, None):
-            self._valloc_committed = self._heap.get_virtual_allocated_blocks_list(
-                self._memory_handler)
+            self._valloc_committed = self._validator.HEAP_get_virtual_allocated_blocks_list(
+                self._heap)
             self._valloc_free = []  # FIXME TODO
             log.debug(
                 '\t+ %d vallocated blocks' %
@@ -134,8 +134,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     def _get_chunks(self):
         """ returns addr,size of committed,free heap entries in blocksindex"""
         if (self._backend_committed, self._backend_free) == (None, None):
-            self._backend_committed, self._backend_free = self._heap.get_chunks(
-                self._memory_handler)
+            self._backend_committed, self._backend_free = self._validator.HEAP_get_chunks(
+                self._heap)
             # HEAP_ENTRY.Size is in chunk size. (8 bytes )
             allocsize = sum([c[1] for c in self._backend_committed])
             freesize = sum([c[1] for c in self._backend_free])
@@ -149,8 +149,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
     def _get_frontend_chunks(self):
         """ returns addr,size of committed,free heap entries in fth heap"""
         if (self._fth_committed, self._fth_free) == (None, None):
-            self._fth_committed, self._fth_free = self._heap.get_frontend_chunks(
-                self._memory_handler)
+            self._fth_committed, self._fth_free = self._validator.HEAP_get_frontend_chunks(
+                self._heap)
             fth_commitsize = sum([c[1] for c in self._fth_committed])
             fth_freesize = sum([c[1] for c in self._fth_free])
             log.debug(
@@ -173,8 +173,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         free_lists = [
             (freeblock_addr,
              size) for freeblock_addr,
-            size in self._heap.get_freelists(
-                self._memory_handler)]
+            size in self._validator.HEAP_get_freelists(
+                self._heap)]
         freesize = sum([c[1] for c in free_lists])
         log.debug(
             '\t+ freeLists: free: %0.4d [%0.5d B]' %
@@ -229,7 +229,8 @@ class Win7HeapFinder(heapwalker.HeapFinder):
             mapping._children = Win7HeapWalker(
                 self._memory_handler,
                 self._heap_module,
-                mapping).get_heap_children_mmaps()
+                mapping,
+                self._heap_module_constraints).get_heap_children_mmaps()
         heap_mappings.sort(
             key=lambda m: self._read_heap(m).ProcessHeapsListIndex)
         return heap_mappings

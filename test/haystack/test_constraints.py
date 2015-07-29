@@ -82,34 +82,6 @@ class TestConstraints(unittest.TestCase):
         field8 = s2c['field8']
         self.assertEquals(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
 
-    def test_apply_to_module(self):
-        c_handler = constraints.ConstraintsConfigHandler()
-        good_constraints = c_handler.read('test/structures/good.constraints')
-        bad_constraints = c_handler.read('test/structures/bad.constraints')
-
-        my_target = target.TargetPlatform.make_target_platform_local()
-        my_ctypes = my_target.get_target_ctypes()
-
-        good = haystack.model.import_module_for_target_ctypes("test.structures.good", my_ctypes)
-
-        self.assertIn('Struct2', good.__dict__.keys())
-        # we did not register this module
-        self.assertNotIn('Struct2_py', good.__dict__.keys())
-        # we did not apply constraints
-        self.assertNotIn('expectedValues', good.Struct2.__dict__.keys())
-        # apply constraints
-        constraints.apply_to_module(good_constraints, good)
-        self.assertIn('expectedValues', good.Struct2.__dict__.keys())
-
-        bad = haystack.model.import_module_for_target_ctypes("test.structures.bad", my_ctypes)
-        # test if module has members
-        self.assertEquals(bad.BLOCK_SIZE, 16)
-        self.assertIn('Struct1', bad.__dict__)
-        self.assertNotIn('expectedValues', bad.Struct1.__dict__)
-        # apply constraints
-        constraints.apply_to_module(bad_constraints, bad)
-        self.assertIn('expectedValues', bad.Struct1.__dict__)
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)

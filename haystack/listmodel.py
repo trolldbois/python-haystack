@@ -152,7 +152,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if record_type not in self._list_fields:
             self._list_fields[record_type] = dict()
         # care offset is now positive
-        offset = self._utils.offsetof(record_type, list_entry_field_name)
+        offset = self._utils.offsetof(list_entry_type, list_entry_field_name)
         self._list_fields[record_type][field_name] = (list_entry_type, list_entry_field_name, offset)
 
     # FIXME, the basicmodel name is _is_loadable_member
@@ -174,6 +174,15 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # return False
         return True
 
+    def get_list_info_for_field_for(self, record_type, fieldname):
+        import code
+        code.interact(local=locals())
+        for x in self.get_list_fields(record_type):
+            print x
+            if x[0] == fieldname:
+                return x
+        raise ValueError('No such registered field')
+
     def get_list_fields(self, record_type):
         """
         return the field in record_type that are part of a linked list.
@@ -186,9 +195,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             raise TypeError('Feed me a type not an instance')
         if not issubclass(record_type, ctypes.Structure) and not issubclass(record_type, ctypes.Union):
             raise TypeError('Feed me a record type')
+        # FIXME, ctypes.Structure should not be modified
         mro = list(record_type.__mro__[:-3]) # cut Structure, _CData and object
         mro.reverse()
-        me = mro.pop(-1)
+        #me = mro.pop(-1)
         ret = []
         for typ in mro:  # firsts are first, cls is in here in [-1]
             if typ not in self._list_fields:
@@ -219,12 +229,16 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # we cannot devine what the element of the list are gonna be.
             return True
 
-        # we look at the list we know about
-        for link_info in self.get_list_fields(type(record)):
-            log.debug('checking listmember %s for %s', link_info[0], record.__class__.__name__)
-            entry_iterator = self.iterate_list_from_field(record, link_info, sentinels=None)
-            self._load_list_entries(record, entry_iterator, max_depth - 1)
-
+        try:
+            # we look at the list we know about
+            for link_info in self.get_list_fields(type(record)):
+                log.debug('checking listmember %s for %s', link_info[0], record.__class__.__name__)
+                entry_iterator = self.iterate_list_from_field(record, link_info, sentinels=None)
+                self._load_list_entries(record, entry_iterator, max_depth - 1)
+        #except ValueError, e:
+        except RuntimeError,e: # for DEBUG
+            log.debug(e)
+            return False
         log.debug('-+ <%s> load_members END +-', record.__class__.__name__)
         return True
 
@@ -276,8 +290,14 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 # we return
                 yield st
             else:
-                raise ValueError(
-                    'the structure has not been loaded, please use load_members.')
+                memoryMap = self._memory_handler.is_valid_address_value(list_member_address, pointee_record_type)
+                if memoryMap == False:
+                    log.error("ValueError: 'the link of this linked list has a bad value'")
+                    raise ValueError('ValueError: the link of this linked list has a bad value')
+                st = memoryMap.read_struct(list_member_address, pointee_record_type)
+                st._orig_address_ = list_member_address
+                self._memory_handler.keepRef(st, pointee_record_type, list_member_address)
+                yield st
 
         raise StopIteration
 
@@ -304,7 +324,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
                 if memoryMap == False:
                     log.error("ValueError: 'the link of this linked list has a bad value'")
-                    raise StopIteration
+                    raise ValueError('ValueError: the link of this linked list has a bad value')
                 st = memoryMap.read_struct(addr, record_type)
                 st._orig_address_ = addr
                 self._memory_handler.keepRef(st, record_type, addr)
@@ -335,52 +355,15 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         """
         if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
             raise TypeError('Feed me a ctypes record instance')
-        fieldname, pointee_record_type, lefn, offset = link_info
-        # DO NOT think HEAD is a valid entry.
-        # if its a ListEntries, self has already been loaded anyway.
-        # pointers are pointing to where ? start of structure or pointer itself ?
-        headAddr = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
-        head = getattr(record, fieldname)
 
-        for entry in self.iterate_list(head):
-            # DO NOT think HEAD is a valid entry
-            if entry == headAddr:
-                continue
-            link = entry + offset
-            log.debug(
-                'got a element of list at %s 0x%x/0x%x offset:%d',
-                fieldname, entry, link, offset)
-            # use cache if possible, avoid loops.
-            ref = self._memory_handler.getRef(pointee_record_type, link)
-            if ref:  # struct has already been loaded, bail out
-                log.debug(
-                    "%s loading from references cache %s/0x%lx",
-                    fieldname, pointee_record_type, link)
-                continue  # do not reload
-            else:
-                # OFFSET read, specific to a LIST ENTRY model
-                memoryMap = self._memory_handler.is_valid_address_value(link, pointee_record_type)
-                if memoryMap is False:
-                    log.error('error while validating address 0x%x type:%s @end:0x%x', link,
-                                                                                         pointee_record_type.__name__, link + ctypes.sizeof(pointee_record_type))
-                    log.error(
-                        'self : %s , fieldname : %s',
-                        record.__class__.__name__, fieldname)
-                    raise ValueError('error while validating address 0x%x type:%s @end:0x%x', link,
-                                                                                                pointee_record_type.__name__, link + ctypes.sizeof(pointee_record_type))
-                st = memoryMap.read_struct(
-                    link,
-                    pointee_record_type)  # point at the right offset
-                st._orig_address_ = link
-                self._memory_handler.keepRef(st, pointee_record_type, link)
-                log.debug("keepRef %s.%s @%x", pointee_record_type, fieldname, link)
-                # load the list entry structure members
-                if not self.load_members(st, max_depth - 1):
-                    log.error(
-                        'Error while loading members on %s',
-                        record.__class__.__name__)
-                    # print st
-                    raise ValueError('error while loading members')
+        for list_member in link_iterator:
+            # load the list entry structure members
+            if not self.load_members(list_member, max_depth - 1):
+                log.error(
+                    'Error while loading members on %s',
+                    record.__class__.__name__)
+                # print st
+                raise ValueError('error while loading members')
 
         return True
 
