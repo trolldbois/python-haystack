@@ -190,7 +190,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
     def read_array(self, address, basetype, count):
         raise NotImplementedError(self)
 
-class MemoryHandler(interfaces.IMemoryHandler,interfaces.IMemoryCache):
+class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     """
     Handler for the concept of process memory.
 

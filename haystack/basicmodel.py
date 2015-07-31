@@ -72,7 +72,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         """
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError("Feed me a IMemoryHandler")
-        if not isinstance(my_constraints, interfaces.IModuleConstraints):
+        if my_constraints and not isinstance(my_constraints, interfaces.IModuleConstraints):
             raise TypeError("Feed me a IModuleConstraints")
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()

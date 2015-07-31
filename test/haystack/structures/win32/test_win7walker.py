@@ -112,12 +112,6 @@ class TestWin7HeapWalker(unittest.TestCase):
                               'ProcessHeaps should have correct indexes')
         return
 
-    def test_is_heap(self):
-        """ check if the isHeap fn perform correctly."""
-        self.assertEquals(self._memory_handler.get_target_platform().get_os_name(), 'win7')
-        heaps = self._memory_handler.get_heaps()
-        self.assertEquals(len(heaps), 12)
-        return
 
     def test_get_frontendheap(self):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
@@ -127,7 +121,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         # for heap in self._memory_handler.get_heaps():
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
-            walker = win7heapwalker.Win7HeapWalker(self._memory_handler, finder._heap_module, heap)
+            walker = finder.get_heap_walker(heap)
             heap_children = walker.get_heap_children_mmaps()
             committed, free = walker._get_frontend_chunks()
             # page 37
@@ -205,7 +199,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         # for heap in self._memory_handler.get_heaps():
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
-            walker = win7heapwalker.Win7HeapWalker(self._memory_handler, finder._heap_module, heap)
+            walker = finder.get_heap_walker(heap)
             allocated, free = walker._get_chunks()
             for chunk_addr, chunk_size in allocated:
                 # self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
@@ -256,7 +250,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
         full = list()
         for heap in self._memory_handler.get_heaps():
-            walker = win7heapwalker.Win7HeapWalker(self._memory_handler, finder._heap_module, heap)
+            walker = finder.get_heap_walker(heap)
             my_chunks = list()
 
             vallocs, va_free = walker._get_virtualallocations()
@@ -353,6 +347,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
         # helper
         win7heap = finder._heap_module
+        validator = finder.get_heap_validator()
 
         found = []
         for mapping in self._memory_handler:
@@ -360,24 +355,24 @@ class TestWin7HeapWalker(unittest.TestCase):
             heap = mapping.read_struct(addr, win7heap.HEAP)
             if addr in map(lambda x: x[0], self._known_heaps):
                 self.assertTrue(
-                    heap.load_members(
-                        self._memory_handler,
+                    validator.load_members(
+                        heap,
                         1000),
                     "We expected a valid hit at @ 0x%0.8x" %
                     (addr))
                 found.append(addr, )
             else:
                 try:
-                    ret = heap.load_members(self._memory_handler, 1)
+                    ret = validator.load_members(heap, 1)
                     self.assertFalse(
                         ret,
                         "We didnt expected a valid hit at @%x" %
-                        (addr))
+                        addr)
                 except Exception as e:
                     # should not raise an error
                     self.fail(
                         'Haystack should not raise an Exception. %s' %
-                        (e))
+                        e)
 
         found.sort()
         self.assertEquals(map(lambda x: x[0], self._known_heaps), found)
@@ -390,7 +385,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
         for m in self._memory_handler.get_heaps():
             #
-            walker = win7heapwalker.Win7HeapWalker(self._memory_handler, finder._heap_module, m)
+            walker = finder.get_heap_walker(m)
             total = 0
             for chunk_addr, chunk_size in walker.get_user_allocations():
                 self.assertTrue(chunk_addr in self._memory_handler)

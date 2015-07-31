@@ -1,4 +1,7 @@
 
+
+***** heap walker validator is not a validator all by itself.
+
 - add a depth parameter to constraints loading on list fields.
 - find out why its getting super slow in overall tests
 - separate listmodel in a constraints like config file ?

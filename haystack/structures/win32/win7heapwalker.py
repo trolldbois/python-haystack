@@ -34,15 +34,15 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         self._free_chunks = None
         self._child_heaps = None
 
-        self._heap = self._mapping.read_struct(
-            self._mapping.start,
+        self._heap = self._heap_mapping.read_struct(
+            self._heap_mapping.start,
             self._heap_module.HEAP)
         self._validator = self._heap_module.Win7HeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
         if not self._validator.load_members(self._heap, 1):
             raise TypeError('load_members(HEAP) returned False')
 
         log.debug('+ Heap @%0.8x size: %d # %s',
-                  self._mapping.start, len(self._mapping), self._mapping)
+                  self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
         # placeholders
         self._backend_committed = None
         self._backend_free = None
@@ -106,10 +106,10 @@ class Win7HeapWalker(heapwalker.HeapWalker):
             child_heaps = set()
             for x, s in self._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
-                if (m != self._mapping) and (m not in child_heaps):
+                if (m != self._heap_mapping) and (m not in child_heaps):
                     log.debug(
                         'mmap 0x%0.8x is extended heap space from 0x%0.8x' %
-                        (m.start, self._mapping.start))
+                        (m.start, self._heap_mapping.start))
                     child_heaps.add(m)
                     pass
             self._child_heaps = child_heaps
@@ -239,7 +239,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
     def get_heap_walker(self, heap):
         return Win7HeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
 
-    def _get_heap_validator(self):
+    def get_heap_validator(self):
         if self._heap_validator is None:
             self._heap_validator = self._heap_module.Win7HeapValidator(self._memory_handler,
                                                    self._heap_module_constraints,

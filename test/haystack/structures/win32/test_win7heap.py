@@ -109,7 +109,7 @@ class TestWin7Heap(unittest.TestCase):
         heap = h.read_struct(addr, win7heap.HEAP)
         # a load_member by validator occurs in heapwalker._is_heap
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
         self.assertEquals(heap.UCRIndex.value, 0x5c0590)
@@ -137,7 +137,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            validator = finder._get_heap_validator()
+            validator = finder.get_heap_validator()
             # get free UCRS from heap
             reserved_ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
             all_ucrs = []
@@ -161,7 +161,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         segments = validator.HEAP_get_segment_list(heap)
         self.assertEquals(heap.Counters.TotalSegments, 1)
@@ -193,7 +193,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            validator = finder._get_heap_validator()
+            validator = finder.get_heap_validator()
 
             segments = validator.HEAP_get_segment_list(heap)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
@@ -227,7 +227,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         allocated, free = validator.HEAP_get_chunks(heap)
         s_allocated = sum([c[1] for c in allocated])
@@ -269,7 +269,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            validator = finder._get_heap_validator()
+            validator = finder.get_heap_validator()
 
             allocated, free = validator.HEAP_get_chunks(heap)
             s_allocated = sum([c[1] for c in allocated])
@@ -304,7 +304,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         allocated, free = validator.HEAP_get_chunks(heap)
         freelists = validator.HEAP_get_freelists(heap)
@@ -321,7 +321,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            validator = finder._get_heap_validator()
+            validator = finder.get_heap_validator()
 
             allocated, free = validator.HEAP_get_chunks(heap)
             freelists = validator.HEAP_get_freelists(heap)
@@ -339,7 +339,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         fth_committed, fth_free = validator.HEAP_get_frontend_chunks(heap)
         # SizeInCache : 59224L,
@@ -357,7 +357,7 @@ class TestWin7Heap(unittest.TestCase):
         h = self.memory_handler.get_mapping_for_address(addr)
         heap = h.read_struct(addr, win7heap.HEAP)
         self.assertTrue(finder._is_heap(h))
-        validator = finder._get_heap_validator()
+        validator = finder.get_heap_validator()
 
         valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
 
@@ -373,7 +373,7 @@ class TestWin7Heap(unittest.TestCase):
             h = self.memory_handler.get_mapping_for_address(addr)
             heap = h.read_struct(addr, win7heap.HEAP)
             self.assertTrue(finder._is_heap(h))
-            validator = finder._get_heap_validator()
+            validator = finder.get_heap_validator()
 
             valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
             size = sum([x.ReserveSize for x in valloc_committed])

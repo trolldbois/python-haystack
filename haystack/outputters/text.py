@@ -12,6 +12,7 @@ This class produce a textual output.
 import logging
 
 from haystack.outputters import Outputter
+from haystack import basicmodel
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2014 Loic Jaquemet"
@@ -47,7 +48,7 @@ class RecursiveTextOutputter(Outputter):
                 obj.__class__.__name__, obj._orig_address_)
         else:
             s = "{ # <%s at 0x???>" % (obj.__class__.__name__)
-        for field, typ in obj._get_fields():
+        for field, typ in basicmodel.get_fields(obj):
             attr = getattr(obj, field)
             s += '\n%s"%s": %s' % (prefix,
                                    field,

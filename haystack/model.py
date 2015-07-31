@@ -67,21 +67,15 @@ class Model(object):
         _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         _created = 0
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
-            if issubclass(
-                    klass, _ctypes.LoadableMembers) and klass is not _ctypes.LoadableMembers:
+            if issubclass(klass, _ctypes.Structure) or issubclass(klass, _ctypes.Union):
                 # Why restrict on module name ?
-                # we only need to register loadablemembers (and basic ctypes ? )
-                # if klass.__module__.startswith(targetmodule.__name__):
+                # we only need to register records
                 from haystack.outputters import python
                 kpy = type(
                     '%s.%s_py' %
                     (targetmodule.__name__, name), (python.pyObj,), {})
                 # add the structure size to the class
-                if issubclass(klass, _ctypes.LoadableMembers):
-                    log.debug(klass)
-                    setattr(kpy, '_len_', _ctypes.sizeof(klass))
-                else:
-                    setattr(kpy, '_len_', None)
+                setattr(kpy, '_len_', _ctypes.sizeof(klass))
                 # we have to keep a local (model) ref because the class is being created here.
                 # and we have a targetmodule ref. because it's asked.
                 # and another ref on the real module for the basic type, because,

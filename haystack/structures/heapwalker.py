@@ -17,7 +17,7 @@ class HeapWalker(interfaces.IHeapWalker):
     def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
         self._memory_handler = memory_handler
         self._heap_module = heap_module
-        self._mapping = heap_mapping
+        self._heap_mapping = heap_mapping
         self._heap_module_constraints = heap_module_constraints
         self._init_heap()
 
@@ -103,7 +103,7 @@ class HeapFinder(interfaces.IHeapFinder):
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
         heap = self._read_heap(mapping)
-        load = self._get_heap_validator().load_members(heap, self._heap_validation_depth)
+        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
         return load
 
@@ -126,7 +126,7 @@ class HeapFinder(interfaces.IHeapFinder):
     def get_heap_walker(self, heap):
         raise NotImplementedError(self)
 
-    def _get_heap_validator(self):
+    def get_heap_validator(self):
         raise NotImplementedError(self)
 
 

@@ -20,13 +20,11 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
     def _init_heap(self):
         log.debug('+ Heap @%x size: %d # %s' %
-                  (self._mapping.start, len(self._mapping), self._mapping))
+                  (self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping))
         self._allocs = None
         self._free_chunks = None
-        assert hasattr(self._heap_module, 'iter_user_allocations')
-        assert hasattr(self._heap_module, 'get_user_allocations')
-        assert hasattr(self._heap_module, 'is_malloc_heap')
-        assert hasattr(self._heap_module, 'mallocStruct')
+        assert hasattr(self._heap_module, 'malloc_chunk')
+        self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
@@ -45,8 +43,7 @@ class LibcHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        self._allocs, self._free_chunks = self._heap_module.get_user_allocations(
-            self._memory_handler, self._mapping)
+        self._allocs, self._free_chunks = self._heap_validator.get_user_allocations(self._heap_mapping)
 
 
 class LibcHeapFinder(heapwalker.HeapFinder):
@@ -102,9 +99,9 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         return heap_mappings
 
     def get_heap_walker(self, heap):
-        return LibcHeapWalker(self._memory_handler, self._heap_module, heap)
+        return LibcHeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
 
-    def _get_heap_validator(self):
+    def get_heap_validator(self):
         if self._heap_validator is None:
             self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler,
                                                    self._heap_module_constraints,

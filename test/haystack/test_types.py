@@ -362,11 +362,11 @@ class TestProxyCTypesAPI(unittest.TestCase):
             ctypes.c_char_p.__name__,
             'c_char_p',
             'c_char_p should not be changed')
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
                 ctypes.Structure,
                 basicmodel.CTypesRecordConstraintValidator))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(ctypes.CString, ctypes.__dict__.values())
 
     def test_cast(self):
@@ -439,11 +439,11 @@ class TestBasicFunctions32(TestBasicFunctions):
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
                 self._ctypes.Structure,
                 basicmodel.CTypesRecordConstraintValidator))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
@@ -476,11 +476,11 @@ class TestBasicFunctionsWin(TestBasicFunctions):
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
                 self._ctypes.Structure,
                 basicmodel.CTypesRecordConstraintValidator))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
@@ -513,11 +513,11 @@ class TestBasicFunctions64(TestBasicFunctions):
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
                 self._ctypes.Structure,
                 basicmodel.CTypesRecordConstraintValidator))
-        self.assertTrue(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 

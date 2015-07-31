@@ -40,16 +40,16 @@ class WinHeapWalker(heapwalker.HeapWalker):
         #    del sys.modules['winheap']
         #import ctypes
         from haystack.structures.win32 import winheap
-        self._heap = self._mapping.read_struct(
-            self._mapping.start +
+        self._heap = self._heap_mapping.read_struct(
+            self._heap_mapping.start +
             self._offset,
             winheap.HEAP)
         if not self._heap.load_members(self._memory_handler, 1):
             raise TypeError('HEAP.load_members returned False')
 
         log.debug('+ Heap @%0.8x size: %d # %s' %
-                  (self._mapping.start +
-                   self._offset, len(self._mapping), self._mapping))
+                  (self._heap_mapping.start +
+                   self._offset, len(self._heap_mapping), self._heap_mapping))
         # print '+ Heap @%0.8x size:%d FTH_Type:0x%x maskFlag:0x%x index:0x%x'%(self._mapping.start+self._offset,
         #                            len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex)
         # placeholders
@@ -116,10 +116,10 @@ class WinHeapWalker(heapwalker.HeapWalker):
             child_heaps = set()
             for x, s in self._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
-                if (m != self._mapping) and (m not in child_heaps):
+                if (m != self._heap_mapping) and (m not in child_heaps):
                     log.debug(
                         'mmap 0x%0.8x is extended heap space from 0x%0.8x' %
-                        (m.start, self._mapping.start))
+                        (m.start, self._heap_mapping.start))
                     child_heaps.add(m)
                     pass
             self._child_heaps = child_heaps

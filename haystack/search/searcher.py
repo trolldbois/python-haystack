@@ -15,7 +15,7 @@ class RecordSearcher(object):
     Will search a record (Structure, Union) defined by it's member types, pointer and other constraints.
     """
 
-    def __init__(self, memory_handler, my_constraints, target_mappings=None, update_cb=None):
+    def __init__(self, memory_handler, my_constraints=None, target_mappings=None, update_cb=None):
         """
         if target_mappings is not specified, the search perimeter will include
         only heap mapping.
@@ -28,7 +28,7 @@ class RecordSearcher(object):
         """
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError("Feed me a IMemoryHandler")
-        if not isinstance(my_constraints, interfaces.IModuleConstraints):
+        if my_constraints and not isinstance(my_constraints, interfaces.IModuleConstraints):
             raise TypeError("Feed me a IModuleConstraints")
         if target_mappings is not None and not isinstance(target_mappings, list):
             raise TypeError("Feed me a list of IMemoryMapping")

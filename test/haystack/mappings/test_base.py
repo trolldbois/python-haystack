@@ -11,6 +11,7 @@ import struct
 import os
 
 from haystack import dump_loader
+from haystack import listmodel
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import readLocalProcessMappings
@@ -157,6 +158,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         cls.my_utils = cls.my_target.get_target_ctypes_utils()
         cls.my_model = cls.memory_handler.get_model()
         cls.ctypes5_gen32 = cls.my_model.import_module("test.src.ctypes5_gen32")
+        cls.validator = listmodel.ListModel(cls.memory_handler, None)
 
     def setUp(self):
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
@@ -175,7 +177,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.load_members(self.memory_handler, 10)
+        ret = self.validator.load_members(d, 10)
 
         self.assertTrue(self.memory_handler.is_valid_address(d.a))
         self.assertTrue(self.memory_handler.is_valid_address(d.b))
@@ -188,7 +190,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.load_members(self.memory_handler, 10)
+        ret = self.validator.load_members(d, 10)
 
         self.assertTrue(self.memory_handler.is_valid_address(d.a.value))
         self.assertTrue(self.memory_handler.is_valid_address(d.b.value))

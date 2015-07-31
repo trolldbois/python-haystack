@@ -9,6 +9,7 @@ import numbers
 
 from haystack.outputters import Outputter
 from haystack import types
+from haystack import basicmodel
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -46,7 +47,7 @@ class PythonOutputter(Outputter):
             return self._memory_handler.getRef(my_class, my_address)
         # save our POPO in a partially resolved state, to keep from loops.
         self._memory_handler.keepRef(my_self, my_class, my_address)
-        for field, typ in obj._get_fields():
+        for field, typ in basicmodel.get_fields(obj):
             attr = getattr(obj, field)
             try:
                 member = self._attrToPyObject(attr, field, typ)
