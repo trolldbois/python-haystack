@@ -7,7 +7,7 @@ import logging
 import unittest
 import sys
 
-from haystack import model
+from haystack.search import api
 from haystack import dump_loader
 from haystack.outputters import python
 from test.haystack import SrcTests
@@ -32,7 +32,6 @@ class TestToPyObject(SrcTests):
         self.ctypes5_gen32 = my_model.import_module("ctypes5_gen32")
         my_model.build_python_class_clones(self.ctypes5_gen32)
 
-
     def tearDown(self):
         self.memory_handler = None
         self.ctypes5_gen32 = None
@@ -42,19 +41,20 @@ class TestToPyObject(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
-        d = m.read_struct(offset, self.ctypes5_gen32.struct_d)
-        ret = d.load_members(self.memory_handler, 10)
-        self.assertTrue(ret)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        d, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_d, offset)
+        self.assertTrue(validated)
 
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
+        self.assertEquals(int(self.sizes['struct_d']), my_ctypes.sizeof(d))
 
         parser = python.PythonOutputter(self.memory_handler)
         obj = parser.parse(d)
-
+        # check Ctypes values too
         self.assertEquals(d.a.value, self.offsets['struct_d'][0])
         self.assertEquals(d.b.value, self.offsets['struct_d.b'][0])
         self.assertEquals(d.b2.value, self.offsets['struct_d.b2'][0])
+
+        # check python calues
         for i in range(9):
             self.assertEquals(
                 int(self.values['struct_d.c[%d].a' % i]), obj.c[i].a)
@@ -69,14 +69,14 @@ class TestToPyObject(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_a'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
-        a = m.read_struct(offset, self.ctypes5_gen32.struct_a)
-        ret = a.load_members(self.memory_handler, 10)
-        self.assertTrue(ret)
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_a']), ctypes.sizeof(a))
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        ret, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_a, offset)
+        self.assertTrue(validated)
+
+        self.assertEquals(int(self.sizes['struct_a']), my_ctypes.sizeof(ret))
 
         parser = python.PythonOutputter(self.memory_handler)
-        a = parser.parse(a)
+        a = parser.parse(ret)
 
         self.assertEquals(int(self.values['struct_a.a']), a.a)
         self.assertEquals(int(self.values['struct_a.b']), a.b)
@@ -89,9 +89,8 @@ class TestToPyObject(SrcTests):
 
         offset = self.offsets['union_au'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
-        au = m.read_struct(offset, self.ctypes5_gen32.union_au)
-        ret = au.load_members(self.memory_handler, 10)
-        self.assertTrue(ret)
+        au, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.union_au, offset)
+        self.assertTrue(validated)
         au = parser.parse(au)
         self.assertEquals(int(self.values['union_au.d']), au.d)
         self.assertEquals(float(self.values['union_au.g']), au.g)
@@ -100,15 +99,15 @@ class TestToPyObject(SrcTests):
         return
 
     def test_basic_signed_types(self):
-        # struct a - basic types
+        # union b - basic types
         offset = self.offsets['union_b'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
-        b = m.read_struct(offset, self.ctypes5_gen32.union_b)
-        ret = b.load_members(self.memory_handler, 10)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        ret, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.union_b, offset)
         self.assertTrue(ret)
 
         parser = python.PythonOutputter(self.memory_handler)
-        b = parser.parse(b)
+        b = parser.parse(ret)
 
         self.assertEquals(int(self.values['union_b.a']), b.a)
         self.assertEquals(int(self.values['union_b.b']), b.b)
@@ -124,12 +123,10 @@ class TestToPyObject(SrcTests):
         # struct a - basic types
         offset = self.offsets['struct_c'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
-        c = m.read_struct(offset, self.ctypes5_gen32.struct_c)
-        ret = c.load_members(self.memory_handler, 10)
-        self.assertTrue(ret)
-
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_c']), ctypes.sizeof(c))
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        c, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_c, offset)
+        self.assertTrue(validated)
+        self.assertEquals(int(self.sizes['struct_c']), my_ctypes.sizeof(c))
 
         parser = python.PythonOutputter(self.memory_handler)
         c = parser.parse(c)
