@@ -27,6 +27,7 @@ class TestStructure(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = 'test/src/test-ctypes3.32.dump'
+        config.remove_cache_folder(cls.dumpname)
         cls.context = context.get_context(cls.dumpname)
         cls.target = cls.context.memory_handler.get_target_platform()
         cls.dsa = dsa.DSASimple(cls.context.memory_handler)
