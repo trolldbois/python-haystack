@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import pickle
+
 import numpy
 import os
-import pickle
 
 from haystack import dump_loader
 from haystack.reverse import utils
@@ -42,7 +43,6 @@ class ReverserContext(object):
         # force reload JIT
         self._reversedTypes = dict()
         self._structures = None
-        ructures = None
 
         log.info('[+] Fetching cached structures addresses list')
         #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self._memory_handler)
@@ -59,7 +59,6 @@ class ReverserContext(object):
 
         if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
             log.info('[+] Reversing function pointers names')
-            from haystack.structures.libc import libdl
             # TODO INLINE CACHED
             # dict(libdl.reverseLocalFonctionPointerNames(self) )
             self._function_names = dict()
