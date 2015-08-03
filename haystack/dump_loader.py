@@ -97,7 +97,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 return True
             log.error("_test_dir returned False")
         else:
-            raise IOError('%s is not a directory' % (self.dumpname))
+            raise IOError('%s is not a directory' % self.dumpname)
         return False
 
     def _test_dir(self):

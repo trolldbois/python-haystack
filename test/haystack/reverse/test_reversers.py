@@ -16,7 +16,7 @@ from haystack.reverse.heuristics import dsa
 
 log = logging.getLogger("test_reversers")
 
-
+@unittest.skip
 class TestStructureSizes(unittest.TestCase):
 
     @classmethod
@@ -84,7 +84,7 @@ class TestStructureSizes(unittest.TestCase):
                 ctypes3.struct_Node),
             'There should be a 4 bytes padding here')
 
-
+@unittest.skip
 class TestFullReverse(unittest.TestCase):
 
     @classmethod
