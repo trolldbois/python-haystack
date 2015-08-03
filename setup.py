@@ -98,11 +98,11 @@ setup(name="haystack",
       setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
-      install_requires=["numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
-      dependency_links=['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta',
-                        'https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk',
-                        'https://github.com/google/rekall/tarball/master#egg=rekall-trunk',
-                        'https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk'],
+      install_requires=["pefile", "python-ptrace", "numpy", "networkx", "python-Levenshtein"],
+      dependency_links=["https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
+                        "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
+                        "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
+                        "https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html

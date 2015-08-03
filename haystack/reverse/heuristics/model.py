@@ -11,7 +11,7 @@ log = logging.getLogger('heuristics.model')
 
 class FieldAnalyser(object):
     """
-    
+
     """
     def __init__(self, memory_handler):
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
