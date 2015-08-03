@@ -53,7 +53,15 @@ class TestApiWin32Dump(unittest.TestCase):
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
         res_p = haystack.output_to_python(memory_handler, [res])
         instance, validated = res_p[0]
+        # no constraints loaded, subsegmentcode pointer went to is_valid
+        self.assertFalse(validated)
 
+        # now lets just use the win7heap constraints
+        my_loader = searcher.RecordLoader(memory_handler, heapwalker._heap_module_constraints)
+        res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
+        res_p = haystack.output_to_python(memory_handler, [res])
+        instance, validated = res_p[0]
+        # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)
         self.assertEquals(instance.Signature, 0xeeffeeff)

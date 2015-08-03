@@ -11,12 +11,6 @@ from haystack.outputters import Outputter
 from haystack import types
 from haystack import basicmodel
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
 
 log = logging.getLogger('python')
 

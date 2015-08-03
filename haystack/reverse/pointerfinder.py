@@ -102,7 +102,8 @@ class FeedbackGiver:
     def feedback(self, step, val):
         """ make a feedback"""
         # log.info('processing vaddr 0x%x'%(val))
-        raise NotImplementedError
+        # raise NotImplementedError
+        return
 
 
 class AbstractSearcher(FeedbackGiver):

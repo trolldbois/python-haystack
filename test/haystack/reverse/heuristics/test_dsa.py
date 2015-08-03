@@ -184,7 +184,7 @@ class TestDSA(unittest.TestCase):
         self.context = None
         self.putty7124 = context.get_context(
             'test/dumps/putty/putty.7124.dump')
-        self.dsa = dsa.DSASimple(self.putty7124.memory_handler.get_target_platform())
+        self.dsa = dsa.DSASimple(self.putty7124.memory_handler)
 
     def setUp(self):
         pass

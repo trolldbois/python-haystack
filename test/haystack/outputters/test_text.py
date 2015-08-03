@@ -35,6 +35,7 @@ class TestTextOutput(SrcTests):
     def tearDown(self):
         self.memory_handler = None
         self.ctypes5_gen32 = None
+        sys.path.remove('test/src/')
 
     def test_complex_text(self):
         # struct a - basic types

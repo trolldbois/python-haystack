@@ -40,6 +40,7 @@ class TestListStructTest6(SrcTests):
         self.m = None
         self.usual = None
         self.ctypes6_gen32 = None
+        sys.path.remove('test/src/')
 
     def test_iter(self):
         self.assertTrue(self.x32_validator.load_members(self.usual, 10))
