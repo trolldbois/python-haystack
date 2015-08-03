@@ -3,21 +3,15 @@
 
 """Tests haystack.utils ."""
 
-import unittest
 import logging
-import mmap
-import struct
-
-import os
 
 from haystack import dump_loader
-from haystack import target
-from haystack.mappings.base import AMemoryMapping
-from haystack.mappings.process import readLocalProcessMappings
+from haystack.reverse import context
+from test.haystack import SrcTests
+
 
 log = logging.getLogger('test_memory_mapping')
 
-from test.haystack import SrcTests
 
 class TestMappingsLinux(SrcTests):
 
@@ -36,7 +30,7 @@ class TestMappingsLinux(SrcTests):
             self.memory_handler.get_context(0x0)
         with self.assertRaises(ValueError):
             self.memory_handler.get_context(0xb76e12d3)
-        #[heap]
+        # [heap]
         self.assertEquals(
             self.memory_handler.get_context(0xb84e02d3).heap,
             self.memory_handler.get_mapping_for_address(0xb84e02d3))
@@ -58,9 +52,10 @@ class TestMappingsWindows(SrcTests):
         cls.my_utils = None
 
     def test_get_context(self):
-        '''FIXME: maybe not the best idea to use a reverser in a
-        haystack.base test unit'''
-        from haystack.reverse import context
+        """
+
+        :return:
+        """
         self.putty = context.get_context('test/dumps/putty/putty.1.dump')
         memory_handler = self.putty.memory_handler
         # print ''.join(['%s\n'%(m) for m in _memory_handler])

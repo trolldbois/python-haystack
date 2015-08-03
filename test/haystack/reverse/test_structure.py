@@ -10,6 +10,7 @@ import os
 
 from haystack.reverse import context
 from haystack.reverse import config
+from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
 
 __author__ = "Loic Jaquemet"
@@ -47,7 +48,6 @@ class TestStructure(unittest.TestCase):
         return
 
     def tearDown(self):
-        #self.context = None
         self.context.reset()
         return
 
@@ -82,7 +82,6 @@ class TestStructure(unittest.TestCase):
                 self.assertEqual(len(s.getPointerFields()), 2)
 
     def test_reset(self):
-        from haystack.reverse import structure
         for s in self.context.listStructures():
             s.reset()
             if isinstance(s, structure.CacheWrapper):

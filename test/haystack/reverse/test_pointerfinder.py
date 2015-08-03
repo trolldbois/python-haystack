@@ -20,8 +20,14 @@ class TestPointer(test_pattern.SignatureTests):
         self.name = 'test_dump_1'
 
     def _make_mmap_with_values(self, intervals, struct_offset=None):
-        '''Make a memory map, with a fake structure of pointer pattern inside.
-        Return the pattern signature'''
+        """
+         Make a memory map, with a fake structure of pointer pattern inside.
+        Return the pattern signature
+
+        :param intervals:
+        :param struct_offset:
+        :return:
+        """
         # template of a memory map metadata
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)

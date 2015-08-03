@@ -8,6 +8,8 @@ import unittest
 
 from haystack.reverse import context
 from haystack.reverse import config
+from haystack.reverse.heuristics import dsa
+from haystack.reverse import fieldtypes
 
 log = logging.getLogger('test_fieldtypes')
 
@@ -19,8 +21,7 @@ class TestField(unittest.TestCase):
         #self.context3 = context.get_context('test/src/test-ctypes3.dump')
         cls.dumpname = 'test/src/test-ctypes6.32.dump'
         config.remove_cache_folder(cls.dumpname)
-        cls.context6 = context.get_context()
-        from haystack.reverse.heuristics import dsa
+        cls.context6 = context.get_context(cls.dumpname)
         cls.dsa = dsa.DSASimple(cls.context6.memory_handler)
         cls.st = cls.context6.listStructures()[0]
 
@@ -35,7 +36,6 @@ class TestField(unittest.TestCase):
         pass
 
     def test_is_types(self):
-        from haystack.reverse import fieldtypes
         # def __init__(self, astruct, offset, typename, size, isPadding):
         ptr = fieldtypes.PointerField(
             self.st,

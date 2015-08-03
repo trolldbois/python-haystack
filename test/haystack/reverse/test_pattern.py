@@ -8,13 +8,13 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import operator
-import os
 import unittest
 import struct
 
+import os
+
 from haystack import target
 from haystack.reverse import pattern
-from haystack.reverse import config
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -40,6 +40,10 @@ class SignatureTests(unittest.TestCase):
             pass
         try:
             os.mkdir('test/reverse/fakedump')
+        except OSError,e:
+            pass
+        try:
+            os.mkdir('test/reverse/fakedump/cache')
         except OSError,e:
             pass
 

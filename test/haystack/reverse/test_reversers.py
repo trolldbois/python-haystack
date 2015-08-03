@@ -14,7 +14,6 @@ from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics import dsa
 
-
 log = logging.getLogger("test_reversers")
 
 
