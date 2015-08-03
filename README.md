@@ -5,6 +5,10 @@
 [![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/development)
 [![pypi](https://img.shields.io/pypi/dm/haystack.svg)](https://pypi.python.org/pypi/haystack)
 
+Quick Start:
+============
+[Quick usage guide](docs/docs/Haystack basic usage.ipynb) in the docs/ folder.
+
 Introduction:
 =============
 
