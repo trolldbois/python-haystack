@@ -87,11 +87,18 @@ setup(name="haystack",
                 "haystack.structures.win32"],
       #package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={"haystack.reverse": ['data/words.100'],
-                  "haystack.structures.win32": ['profiles', 'win7heap.constraints', 'winheap.constraints'],
-                  "haystack.structures.libc": ['libcheap.constraints']},
-      scripts = ["scripts/haystack", "scripts/haystack-gui", "scripts/haystack-dump", "scripts/haystack-reverse"],
-      setup_requires=["numpy"], # https://github.com/numpy/numpy/issues/2434
-      install_requires=["ctypeslib2>2.1.3", "numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
+                    "haystack.structures.win32": ['profiles', 'win7heap.constraints', 'winheap.constraints'],
+                    "haystack.structures.libc": ['libcheap.constraints']},
+      scripts=["scripts/haystack",
+               "scripts/haystack-gui",
+               "scripts/haystack-dump",
+               "scripts/haystack-reverse"],
+      # numpy is a dependency for reverse.
+      # https://github.com/numpy/numpy/issues/2434
+      setup_requires=["numpy"],
+      # search: install requires only pefile, python-ptrace for memory-dump
+      # reverse: install requires networkx, numpy, Levenshtein for signatures
+      install_requires=["numpy", "networkx", "pefile", "python-ptrace", "python-Levenshtein"],
       dependency_links=['https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta',
                         'https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk',
                         'https://github.com/google/rekall/tarball/master#egg=rekall-trunk',
@@ -99,7 +106,8 @@ setup(name="haystack",
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
-      tests_require=["volatility"],
+      # test requires ctypeslib2
+      tests_require=["volatility", "ctypeslib2>2.1.3"],
       #entry_points = {'haystack.plugins':['haystack.model:register']},
       cmdclass={
           'preptests': PyPrepTestsCommand,

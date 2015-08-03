@@ -11,10 +11,13 @@ import logging
 import ctypes
 
 import os
-import numpy
 
 from haystack import model
 from haystack.structures import heapwalker
+
+
+# import numpy
+
 
 log = logging.getLogger('win7heapwalker')
 
@@ -83,7 +86,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
                 'NON unique referenced user chunks found. Please enquire. %d != %d' %
                 (len(lst), len(myset)))
         # need to cut sizeof(HEAP_ENTRY) from address and size
-        self._allocs = numpy.asarray(sorted(myset))
+        # self._allocs = numpy.asarray(sorted(myset))
+        self._allocs = sorted(myset)
 
         free_lists = self._get_freelists()
         lst = va_free + free_chunks + fth_free
@@ -94,7 +98,8 @@ class Win7HeapWalker(heapwalker.HeapWalker):
         if len(free_chunks) != len(free_lists):
             log.warning('Weird: len(free_chunks) != len(free_lists)')
         # need to cut sizeof(HEAP_ENTRY) from address and size
-        self._free_chunks = numpy.asarray(sorted(myset))
+        # self._free_chunks = numpy.asarray(sorted(myset))
+        self._free_chunks = sorted(myset)
         return
 
     def get_heap_children_mmaps(self):

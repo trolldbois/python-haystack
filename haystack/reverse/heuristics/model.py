@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2012 Loic Jaquemet loic.jaquemet+python@gmail.com
@@ -11,7 +10,9 @@ log = logging.getLogger('heuristics.model')
 
 
 class FieldAnalyser(object):
-
+    """
+    
+    """
     def __init__(self, memory_handler):
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError('memory_handler should be an IMemoryHandler')
@@ -30,8 +31,8 @@ class FieldAnalyser(object):
 
 
 class StructureAnalyser(object):
-
-    """ StructureAnalyzer should apply heuristics on the structure, all fields included,
+    """
+    StructureAnalyzer should apply heuristics on the structure, all fields included,
     and try to determine specific field types that are identifiable with a
     full structure-view.
     """
