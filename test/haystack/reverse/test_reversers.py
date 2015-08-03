@@ -107,7 +107,7 @@ class TestFullReverse(unittest.TestCase):
         return
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logging.getLogger("ctypes_malloc").setLevel(logging.INFO)
     logging.getLogger("base").setLevel(logging.INFO)
     logging.getLogger("heapwalker").setLevel(logging.INFO)

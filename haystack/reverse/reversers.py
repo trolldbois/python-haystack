@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import logging
@@ -297,7 +296,7 @@ class FieldReverser(StructureOrientedReverser):
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
         log.debug('Run heuristics structure fields type discovery')
-        dsa = DSASimple(context.memory_handler.get_target_platform())
+        dsa = DSASimple(context.memory_handler)
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
@@ -340,7 +339,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         decoded = 0
         fromcache = 0
         from haystack.reverse.heuristics.dsa import EnrichedPointerFields
-        pfa = EnrichedPointerFields(context.memory_handle.get_target_platform())
+        pfa = EnrichedPointerFields(context.memory_handler)
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
             if anon.is_resolvedPointers():
@@ -696,7 +695,4 @@ def reverseInstances(dumpname):
         log.info('[+] %d structs extracted' % (ctx.structuresCount()))
         raise e
         pass
-    pass
-
-if __name__ == '__main__':
     pass
