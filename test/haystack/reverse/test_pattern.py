@@ -14,6 +14,7 @@ import struct
 
 from haystack import target
 from haystack.reverse import pattern
+from haystack.reverse import config
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -29,6 +30,18 @@ class SignatureTests(unittest.TestCase):
 
     # a example pattern of interval between pointers
     #seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
+
+    @classmethod
+    def setUpClass(cls):
+        # make a fake dir
+        try:
+            os.mkdir('test/reverse/')
+        except OSError,e:
+            pass
+        try:
+            os.mkdir('test/reverse/fakedump')
+        except OSError,e:
+            pass
 
     def setUp(self):
         # x64
@@ -91,11 +104,6 @@ class SignatureTests(unittest.TestCase):
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap, values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        # amke a fake dir
-        try:
-            os.mkdir('test/reverse/fakedump')
-        except OSError,e:
-            pass
         mappings = MemoryHandler([mmap], self.target, 'test/reverse/fakedump')
         sig = pattern.PointerIntervalSignature(mappings, 'test_mmap')
         return sig
