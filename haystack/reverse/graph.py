@@ -15,6 +15,12 @@ from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse.reversers import *  # by the pickle of my thumb
 
+"""
+Graph tools to represent allocations in a graph.
+That allows graph algorithms applications.
+"""
+
+
 log = logging.getLogger('graph')
 
 
@@ -51,6 +57,7 @@ def save_graph_headers(ctx, graph, fname):
     for anon in structs:
         anon.decodeFields()
         anon.resolvePointers()
+        # FIXME rework, usage of obselete function
         # anon.pointerResolved=True
         anon._aggregateFields()
         print anon
@@ -158,7 +165,7 @@ def clean(digraph):
     bigGraph.add_edges_from(digraph.edges(subgraphs[0].nodes()))
 
     stack_addrs = utils.int_array_cache(
-        config.getCacheFilename(
+        config.get_cache_filename(
             config.CACHE_STACK_VALUES,
             ctx.dumpname))
     stack_addrs_txt = set(['%x' % (addr)
@@ -202,6 +209,7 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
     for node in impDiGraph.successors(saddr):
         st = ctx.structures[int(node, 16)]
         st.decodeFields()
+        # FIXME rework, usage of obselete function
         st.resolvePointers()
         # st.pointerResolved=True
         # st._aggregateFields()

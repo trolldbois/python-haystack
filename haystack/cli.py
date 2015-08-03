@@ -6,6 +6,7 @@
 import logging
 import time
 
+from haystack import basicmodel
 from haystack import constraints
 from haystack.search import api
 from haystack.memory_mapper import MemoryHandlerFactory
@@ -139,7 +140,7 @@ def check_varname_for_type(memory_handler, varname, struct_type):
     ctypes = memory_handler.get_target_platform().get_target_ctypes()
     for v in varname:
         if not hasattr(st, v):
-            fields = ["%s: %s" % (n, t) for n, t in st._get_fields()]
+            fields = ["%s: %s" % (n, t) for n, t in basicmodel.get_fields(st)]
             log.error(
                 '(%s.)%s does not exists in type %s\n\t%s' %
                 ('.'.join(done), v, st, '\n\t'.join(fields)))

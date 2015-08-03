@@ -40,6 +40,8 @@ def get_fields(record):
     return get_record_type_fields(type(record))
 
 def get_record_type_fields(record_type):
+    if not issubclass(record_type, ctypes.Structure) and not issubclass(record_type, ctypes.Union):
+        raise TypeError('Feed me a ctypes record type')
     mro = list(record_type.__mro__[:-3]) # cut Structure, _CData and object
     mro.reverse()
     me = mro.pop(-1)

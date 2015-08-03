@@ -6,25 +6,17 @@
 
 import logging
 import argparse
-import os
-import pickle
-import time
 import sys
-import re
-import struct
 import ctypes
 
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.utils import xrange
-from haystack.reverse import utils
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+"""
+A few class that can be used to search a portion of memory
+ for specific pattern (null values, pointers)
+"""
 
 log = logging.getLogger('pointerfinder')
 
@@ -101,16 +93,16 @@ see cmp --list
 
 class FeedbackGiver:
 
-    def _initSteps(self, _len, steps=10):
-        pass
+    def _initSteps(self, start, end, steps):
+        raise NotImplementedError
 
-    def _checkSteps(self):
-        pass
+    def _checkSteps(self, step):
+        raise NotImplementedError
 
     def feedback(self, step, val):
         """ make a feedback"""
-        #log.info('processing vaddr 0x%x'%(val))
-        pass
+        # log.info('processing vaddr 0x%x'%(val))
+        raise NotImplementedError
 
 
 class AbstractSearcher(FeedbackGiver):

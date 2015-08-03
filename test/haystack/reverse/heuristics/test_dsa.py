@@ -4,13 +4,14 @@
 """Tests for haystack.reverse.structure."""
 
 import unittest
+import logging
 
 from haystack import target
-from haystack import basicmodel
+from haystack.abc import interfaces
 from haystack.reverse import structure
 from haystack.reverse import fieldtypes
 from haystack.reverse import context
-from haystack.reverse.heuristics.dsa import *
+from haystack.reverse.heuristics import dsa
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -23,29 +24,55 @@ __status__ = "Production"
 log = logging.getLogger('test_field_analyser')
 
 
+class FS:
+    def __init__(self, bytes, vaddr=0):
+        self._bytes = bytes
+        self._vaddr = vaddr
+
+    def __len__(self):
+        return len(self._bytes)
+
+    @property
+    def bytes(self):
+        return self._bytes
+
+class FakeMemoryHandler(interfaces.IMemoryHandler):
+    """Fake memoryhandler for the tests."""
+
+    def __init__(self, target):
+        self.target = target
+
+    def get_name(self):
+        return "test"
+
+    def get_target_platform(self):
+        return self.target
+
+
 class TestFieldAnalyser(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.test1 = FS(
+    def setUpClass(cls):
+        cls.test1 = FS(
             '''\x00\x00\x00\x00....\x00\x00\x00\x00\x00\x00\x00\x00....\x00...\x00\x00\x00.\x00\x00\x00\x00....''')
-        self.test2 = FS(
+        cls.test2 = FS(
             '''....\x00\x00\x00\x00....\x00\x00\x00\x00\x00\x00\x00\x00....\x00...\x00\x00\x00.\x00\x00\x00\x00''')
-        self.test3 = FS('''....1234aaaa.....''')
-        self.test4 = FS(
+        cls.test3 = FS('''....1234aaaa.....''')
+        cls.test4 = FS(
             '''\x00\x00\x00\x00h\x00i\x00 \x00m\x00y\x00 \x00n\x00a\x00m\x00e\x00\x00\x00\xef\x00\x00\x00\x00\x00....''')
-        self.test5 = FS(
+        cls.test5 = FS(
             '\xd8\xf2d\x00P\xf3d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00CryptDllVerifyEncodedSignature\x00\x00')
-        self.test6 = FS(
+        cls.test6 = FS(
             '''edrtfguyiopserdtyuhijo45567890oguiy4e65rtiu\xf1\x07\x08\x09\x00''')
         #
-        self.test8 = FS(
+        cls.test8 = FS(
             'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00Y\x00')
-        self.target = target.TargetPlatform.make_target_linux_32()
-        self.zeroes = ZeroFields(self.target)
-        self.utf16 = UTF16Fields(self.target)
-        self.ascii = PrintableAsciiFields(self.target)
-        self.ints = IntegerFields(self.target)
+        cls.target = target.TargetPlatform.make_target_linux_32()
+        cls.memory_handler = FakeMemoryHandler(cls.target)
+        cls.zeroes = dsa.ZeroFields(cls.memory_handler)
+        cls.utf16 = dsa.UTF16Fields(cls.memory_handler)
+        cls.ascii = dsa.PrintableAsciiFields(cls.memory_handler)
+        cls.ints = dsa.IntegerFields(cls.memory_handler)
         pass
 
     def setUp(self):
@@ -157,7 +184,7 @@ class TestDSA(unittest.TestCase):
         self.context = None
         self.putty7124 = context.get_context(
             'test/dumps/putty/putty.7124.dump')
-        self.dsa = DSASimple(self.putty7124.memory_handler.get_target_platform())
+        self.dsa = dsa.DSASimple(self.putty7124.memory_handler.get_target_platform())
 
     def setUp(self):
         pass
@@ -175,7 +202,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertEquals(len([_ for _ in fields]), 5)  # TODO should be 6 fields lllttp
         self.assertEquals(fields[2].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[2].isString())
@@ -193,7 +220,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertEquals(len([_ for _ in fields]), 2)
         self.assertEquals(fields[1].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[1].isString())
@@ -207,7 +234,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertEquals(len([_ for _ in fields]), 5)
         self.assertEquals(fields[3].typename, fieldtypes.FieldType.STRINGNULL)
         self.assertTrue(fields[3].isString())
@@ -221,7 +248,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertEquals(len([_ for _ in fields]), 2)  # should be 3 Lt0?
         self.assertEquals(fields[0].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[0].isString())
@@ -235,11 +262,11 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertLess(len([_ for _ in fields]), 879)
         #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
         #self.assertTrue( fields[35].isString())
-        strfields = [f for f in basicmodel.get_record_type_fields(st) if f.isString()]
+        strfields = [f for f in st.get_fields() if f.isString()]
         # for f in strfields:
         #  print f.toString(),
         self.assertGreater(len(strfields), 30)
@@ -253,7 +280,7 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertEquals(len([_ for _ in fields]), 3)
         self.assertEquals(fields[1].typename, fieldtypes.FieldType.STRING16)
         self.assertTrue(fields[1].isString())
@@ -269,27 +296,15 @@ class TestDSA(unittest.TestCase):
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.toString())
-        fields = basicmodel.get_record_type_fields(st)
+        fields = st.get_fields()
         self.assertLess(len([_ for _ in fields]), 890)
         #self.assertEquals( fields[35].typename, fieldtypes.FieldType.STRINGNULL)
         #self.assertTrue( fields[35].isString())
-        fields = [f for f in basicmodel.get_record_type_fields(st) if f.isString()]
+        fields = [f for f in st.get_fields() if f.isString()]
         # for f in fields:
         #  print f.toString(),
 
 
-class FS:
-
-    def __init__(self, bytes, vaddr=0):
-        self._bytes = bytes
-        self._vaddr = vaddr
-
-    def __len__(self):
-        return len(self._bytes)
-
-    @property
-    def bytes(self):
-        return self._bytes
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

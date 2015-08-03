@@ -5,6 +5,8 @@
 
 # arch-tag: LRU cache main module
 
+# haystack-comment: used in structure.py:CacheWrapper
+
 """a simple LRU (Least-Recently-Used) cache module
 
 This module provides very simple LRU (Least-Recently-Used) cache

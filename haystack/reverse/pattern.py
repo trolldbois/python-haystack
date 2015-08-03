@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Build pattern out of signatures."""
+"""
+Build pattern out of signatures.
+List of tools designed to create signatures for allocations.
+That should allow to do reverse guesswork of patterns (pointers)
+and therefore identify similar record types allocations.
+"""
 
 import logging
 import argparse
@@ -43,7 +48,7 @@ def findPatternText(sequence, elSize=1, minNbGroup=2):
     @param minNbGroup: the minimum number of repetition before trying to group the pattern.
 
     Examples:
-      >>> import pattern
+      >>> from haystack.reverse import pattern
       >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
       >>> pattern.findPatternText(s,1)
       ' (a){5} (1){4} (b){3} (c){2} d (a2){5} (b1c){4} (abcd){4} p (o){2} (i){3} (u){4} (y){5} '
@@ -71,7 +76,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
     @param minNbGroup: the minimum number of repetition before trying to group the pattern.
 
     Examples:
-      >>> import pattern
+      >>> from haystack.reverse import pattern
       >>> s = 'aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'
       >>> pattern.findPattern(s,1)
       [(5, 'a'), (4, '1'), (3, 'b'), (2, 'c'), (1, 'd'), (5, 'a2'), (4, 'b1c'), (4, 'abcd'), (1, 'p'), (2, 'o'), (3, 'i'), (4, 'u'), (5, 'y')]
@@ -237,7 +242,7 @@ class PointerIntervalSignature:
         self.mmap_pathname = pathname
         self.memory_handler = memory_handler
         self.name = memory_handler.get_name()
-        self.cacheFilenamePrefix = config.getCacheName(self.name)
+        self.cacheFilenamePrefix = config.get_cache_folder_name(self.name)
         self.addressCache = {}
         self.sig = None
         self._get_mapping()

@@ -96,11 +96,11 @@ def getHeapPointers(dumpfilename, mappings):
         records values and pointers address in heap.
     '''
     import pointerfinder
-    #F_VALUES = _target_platform.getCacheFilename(_target_platform.CACHE_HS_POINTERS_VALUES, dumpfilename)
-    F_HEAP_O = config.getCacheFilename(config.CACHE_HEAP_ADDRS, dumpfilename)
-    F_HEAP_V = config.getCacheFilename(config.CACHE_HEAP_VALUES, dumpfilename)
-    #F_STACK_O = _target_platform.getCacheFilename(_target_platform.CACHE_STACK_ADDRS, dumpfilename)
-    #F_STACK_V = _target_platform.getCacheFilename(_target_platform.CACHE_STACK_VALUES, dumpfilename)
+    #F_VALUES = _target_platform.get_cache_filename(_target_platform.CACHE_HS_POINTERS_VALUES, dumpfilename)
+    F_HEAP_O = config.get_cache_filename(config.CACHE_HEAP_ADDRS, dumpfilename)
+    F_HEAP_V = config.get_cache_filename(config.CACHE_HEAP_VALUES, dumpfilename)
+    #F_STACK_O = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_ADDRS, dumpfilename)
+    #F_STACK_V = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_VALUES, dumpfilename)
     #log.debug('reading from %s'%(F_VALUES))
     #values = int_array_cache(F_VALUES)
     heap_addrs = int_array_cache(F_HEAP_O)
@@ -152,10 +152,10 @@ def getAllPointers(dumpfilename, mappings):
         records values and pointers address in heap.
     '''
     import pointerfinder
-    F_HEAP_O = config.getCacheFilename(
+    F_HEAP_O = config.get_cache_filename(
         config.CACHE_ALL_PTRS_ADDRS,
         dumpfilename)
-    F_HEAP_V = config.getCacheFilename(
+    F_HEAP_V = config.get_cache_filename(
         config.CACHE_ALL_PTRS_VALUES,
         dumpfilename)
     heap_addrs = int_array_cache(F_HEAP_O)
@@ -188,12 +188,12 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
     # TODO if linux
     # TODO from haystack.reverse import heapwalker
     # from haystack.structures.libc  import libc.ctypes_malloc
-    f_addrs = config.getCacheFilename(
+    f_addrs = config.get_cache_filename(
         '%x.%s' %
         (heap.start,
          config.CACHE_MALLOC_CHUNKS_ADDRS),
         dumpfilename)
-    f_sizes = config.getCacheFilename(
+    f_sizes = config.get_cache_filename(
         '%x.%s' %
         (heap.start,
          config.CACHE_MALLOC_CHUNKS_SIZES),

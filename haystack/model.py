@@ -200,8 +200,8 @@ def import_module_for_target_ctypes(module_name, target_ctypes):
         # try to load that module with our ctypes proxy
         my_module = importlib.import_module(module_name)
         # FIXME debug and TU this to be sure it is removed from modules
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+        #if module_name in sys.modules:
+        #    del sys.modules[module_name]
     finally:
         # always clean up
         sys.modules['ctypes'] = real_ctypes

@@ -11,12 +11,10 @@ from haystack.reverse import utils
 from haystack.reverse import config
 from haystack.reverse import structure, reversers
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+"""
+This is a controller to parse allocated chunk from memory and
+ guess/reverse the record and its field member types.
+"""
 
 
 log = logging.getLogger('context')
@@ -188,8 +186,8 @@ class ReverserContext(object):
     @classmethod
     def cacheLoad(cls, memory_handler):
         dumpname = os.path.normpath(memory_handler.get_name())
-        config.makeCache(dumpname)
-        context_cache = config.getCacheFilename(config.CACHE_CONTEXT, dumpname)
+        config.create_cache_folder_name(dumpname)
+        context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname)
         try:
             context = pickle.load(file(context_cache, 'r'))
         except EOFError as e:
@@ -209,7 +207,7 @@ class ReverserContext(object):
     def save(self):
         # we only need dumpfilename to reload _memory_handler, addresses to reload
         # cached structures
-        context_cache = config.getCacheFilename(
+        context_cache = config.get_cache_filename(
             config.CACHE_CONTEXT,
             self.dumpname)
         try:
@@ -222,7 +220,7 @@ class ReverserContext(object):
     def reset(self):
         try:
             os.remove(
-                config.getCacheFilename(
+                config.get_cache_filename(
                     config.CACHE_CONTEXT,
                     self.dumpname))
         except OSError as e:
@@ -231,7 +229,7 @@ class ReverserContext(object):
             if not os.access(config.CACHE_STRUCT_DIR, os.F_OK):
                 return
             for r, d, files in os.walk(
-                    config.getCacheFilename(config.CACHE_STRUCT_DIR, self.dumpname)):
+                    config.get_cache_filename(config.CACHE_STRUCT_DIR, self.dumpname)):
                 for f in files:
                     os.remove(os.path.join(r, f))
                 os.rmdir(r)
@@ -277,13 +275,13 @@ def get_context(fname):
     Load a dump file, and create a reverser context object.
     @return context: a ReverserContext
     """
-
     memory_handler = dump_loader.load(fname)
     try:
         context = ReverserContext.cacheLoad(memory_handler)
     except IOError as e:
         context = ReverserContext(memory_handler, memory_handler.get_heap())
     # cache it
+    # FIXME that needs to go away
     context.heap._context = context
     return context
 

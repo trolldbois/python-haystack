@@ -9,6 +9,12 @@ import ctypes
 
 from haystack.reverse import config
 
+"""
+the Python classes to represent the guesswork record and field typing of
+allocations.
+"""
+
+
 log = logging.getLogger('field')
 
 # Field related functions and classes

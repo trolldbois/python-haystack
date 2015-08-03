@@ -24,6 +24,10 @@ Changes to architecture.txt:
  - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
 
 
+2015-08:
+
+
+
 2015-07:
  - Ran 212 tests in 58.233s
 FAILED (failures=1, errors=106, skipped=6, expected failures=1)
@@ -43,6 +47,10 @@ FAILED (errors=22, skipped=6, expected failures=2)
  - pretty much refactored haytack core and search in reverse.
  - Ran 229 tests in 347.116s
 FAILED (errors=7, skipped=7, expected failures=3)
+ - cleaned search API, with matching TU
+ - the constraints model and listmodel are enforced by an MVC model
+ - Ran 224 tests in 317.901s
+FAILED (failures=2, errors=13, skipped=7, expected failures=3)
 
  
 2015-06:

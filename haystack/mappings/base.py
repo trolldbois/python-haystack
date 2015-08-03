@@ -256,6 +256,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         return self.__model
 
     # FIXME remove/move to subclass
+    # move to a IContextHandler
     def get_context(self, addr):
         """Returns the haystack.reverse.context.ReverserContext of this dump.
         """

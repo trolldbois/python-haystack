@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" Old poc code integrated in reversers. """
+""" Old poc code integrated in reversers.
+TODO : Double check if code is used anywhere,
+ then absorb comment and erase all.
+"""
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
@@ -212,6 +215,8 @@ def rewrite(structs_addrs, structCache, dumpname):
             logging.getLogger('progressive').setLevel(logging.INFO)
         anon = structCache[vaddr]
         anon.resolvePointers()
+        # FIXME DELETE MODULE
+        # usage of mystruct.resolvePointers() indicates old code
         towrite.append(anon.toString())
         if len(towrite) >= 10000:
             fout.write('\n'.join(towrite))

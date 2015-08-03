@@ -151,7 +151,7 @@ class pyObj(object):
             return '#(- not printed by Excessive recursion - )'
         s = '{\n'
         if hasattr(self, '_ctype_'):
-            items = [n for n, t in self._ctype_._get_fields()]
+            items = [n for n, t in basicmodel.get_fields(self._ctype_)]
         else:
             log.warning('no _ctype_')
             items = [n for n in self.__dict__.keys() if n != '_ctype_']
@@ -229,7 +229,7 @@ class pyObj(object):
 
     def __iter__(self):
         """ iterate on a instance's type's _fields_ members following the original type field order """
-        for k, typ in self._ctype_._get_fields():
+        for k, typ in basicmodel.get_fields(self._ctype_):
             v = getattr(self, k)
             yield (k, v, typ)
         pass

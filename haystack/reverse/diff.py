@@ -1,11 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Utils to diff two heap memory _memory_handler."""
+"""
+Utils to diff two heap memory record allocations
 
-from haystack.reverse import config
+2015-08-01: does not work. Is not used.
+
+"""
+
+import argparse
+import logging
+import os
+import sys
+
+from haystack import argparse_utils
+from haystack import dump_loader
+from haystack.reverse import reversers
 from haystack.reverse import context
-from haystack.reverse.reversers import *
+from haystack.reverse import config
+from haystack.reverse import structure
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -29,9 +42,9 @@ def make(opts):
             (len(
                 ctx.structures)))
         # FIXME, I think its now an heapwalker, not a reverser
-        mallocRev = MallocReverser()
-        context = mallocRev.reverse(context)
-        mallocRev.check_inuse(context)
+        mallocRev = reversers.MallocReverser()
+        ctx = mallocRev.reverse(ctx)
+        mallocRev.check_inuse(ctx)
         log.info(
             '[+] Final %d structures from malloc blocs' %
             (len(

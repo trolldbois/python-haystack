@@ -41,37 +41,35 @@ REVERSED_TYPES_FILENAME = 'reversed_types.py'
 SIGNATURES_FILENAME = 'signatures'
 WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
 
-def makeCache(dumpname):
-    root = os.path.abspath(dumpname)
-    folder = os.path.sep.join([root, CACHE_NAME])
+def create_cache_folder_name(dumpname):
+    folder = get_cache_folder_name(dumpname)
     if not os.access(folder, os.F_OK):
         os.mkdir(folder)
     return
 
-def cleanCache(dumpname):
-    root = os.path.abspath(dumpname)
-    folder = os.path.sep.join([root, CACHE_NAME])
+def remove_cache_folder(dumpname):
+    folder = get_cache_folder_name(dumpname)
     if os.access(folder, os.F_OK):
         shutil.rmtree(folder)
     return
 
-def getCacheName(dumpname):
+def get_cache_folder_name(dumpname):
     root = os.path.abspath(dumpname)
     return os.path.sep.join([root, CACHE_NAME])
 
-def getCacheFilename(typ, dumpname):
+def get_cache_filename(typ, dumpname):
     '''Returns a filename for caching a type of data based on the dump filename.
 
     typ: one of Config.CACHE_XX types.
     dumpname: the dump file name.
     '''
-    return os.path.sep.join([getCacheName(dumpname), typ])
+    return os.path.sep.join([get_cache_folder_name(dumpname), typ])
 
-def getStructsCacheDir(dumpname):
+def get_record_cache_folder_name(dumpname):
     """
     Returns a dirname for caching the structures based on the dump filename.
 
     dumpname: the dump file name.
     """
     root = os.path.abspath(dumpname)
-    return getCacheFilename(CACHE_STRUCT_DIR, root)
+    return get_cache_filename(CACHE_STRUCT_DIR, root)

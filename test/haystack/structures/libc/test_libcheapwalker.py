@@ -61,7 +61,7 @@ class TestLibcHeapWalker(unittest.TestCase):
         self.mappings = None
 
     def test_get_heap_walker(self):
-        self.assertIn('mallocStruct', self.walker._heap_module.__dict__.keys())
+        self.assertIn('malloc_chunk', self.walker._heap_module.__dict__.keys())
 
     def test_get_user_allocations(self):
         # we should have 3 structures + 1 empty chunks

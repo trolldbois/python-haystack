@@ -41,7 +41,7 @@ DEBUG_ADDRS = []
 # Compare sruct type from parent with multiple pointer (
 
 def makeFilename(context, st):
-    sdir = config.getStructsCacheDir(context.dumpname)
+    sdir = config.get_record_cache_folder_name(context.dumpname)
     if not os.path.isdir(sdir):
         os.mkdir(sdir)
     return os.path.sep.join([sdir, str(st)])
@@ -186,7 +186,7 @@ class AnonymousStructInstance(object):
 
     def __init__(self, context, vaddr, size, prefix=None):
         self._context = context
-        self.target = self._context.memory_handler.get_target_platform()
+        self._target = self._context.memory_handler.get_target_platform()
         self._vaddr = vaddr
         self._size = size
         self.reset()  # set fields
@@ -296,7 +296,7 @@ class AnonymousStructInstance(object):
     def saveme(self):
         if not self._dirty:
             return
-        sdir = config.getStructsCacheDir(self._context.dumpname)
+        sdir = config.get_record_cache_folder_name(self._context.dumpname)
         if not os.path.isdir(sdir):
             os.mkdir(sdir)
         fname = makeFilename(self._context, self)
@@ -742,6 +742,7 @@ class %s(ctypes.Structure):  # %s
             d['dumpname'] = None
         d['_context'] = None
         d['_bytes'] = None
+        d['_target'] = None
         return d
 
     def __setstate__(self, d):
@@ -785,7 +786,7 @@ class ReversedType(ctypes.Structure):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:
-        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root._get_fields()]
+        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()

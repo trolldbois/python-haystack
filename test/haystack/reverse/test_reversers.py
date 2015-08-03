@@ -7,7 +7,6 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
-import sys
 import unittest
 
 from haystack.reverse import config
@@ -16,16 +15,15 @@ from haystack.reverse import reversers
 from haystack.reverse.heuristics import dsa
 
 
-#import ctypes
-
-log=logging.getLogger("test_reversers")
+log = logging.getLogger("test_reversers")
 
 
 class TestStructureSizes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        sys.path.append('test/src/')
+        pass
+        #sys.path.append('test/src/')
         #import ctypes3
         #
         #node = ctypes3.struct_Node
@@ -52,7 +50,7 @@ class TestStructureSizes(unittest.TestCase):
         ctypes = self.context.memory_handler.get_target_platform().get_target_ctypes()
         structs = self.context.listStructures()
         sizes = sorted(set([len(s) for s in structs]))
-        import ctypes3
+        ctypes3 = self.context.memory_handler.get_model().import_module('test.src.ctypes3_32')
         for st in structs:  # [1:2]:
             self.dsa.analyze_fields(st)
             #print st.toString()
@@ -90,19 +88,23 @@ class TestStructureSizes(unittest.TestCase):
 
 class TestFullReverse(unittest.TestCase):
 
-    def setUp(self):
-        pass
+    @classmethod
+    def setUpClass(cls):
+        cls.dumpname = 'test/dumps/ssh/ssh.1'
+        cls.ctx = context.get_context(cls.dumpname)
+        config.remove_cache_folder(cls.dumpname)
+        return
 
-    def tearDown(self):
-        pass
+    @classmethod
+    def tearDownClass(cls):
+        config.remove_cache_folder(cls.dumpname)
+        return
 
     def test_reverseInstances(self):
         log.info('START test test_reverseInstances')
-        ctx = context.get_context('test/dumps/ssh/ssh.1')
-        dumpname = 'test/dumps/ssh/ssh.1'
-        ctx = config.cleanCache(dumpname)
-        ctx = reversers.reverseInstances(dumpname)
-
+        ctx = reversers.reverseInstances(self.dumpname)
+        # FIXME test something.
+        return
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
