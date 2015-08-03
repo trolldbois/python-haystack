@@ -7,10 +7,8 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __doc__ = '''
-  Tools to reverse engineer the memory structures present in a MemoryMapping.
+    Tools to reverse engineer the memory structures present in a MemoryMapping.
 '''
-
-#import pattern
 
 all = [
 ]

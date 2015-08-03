@@ -93,21 +93,22 @@ setup(name="haystack",
                "scripts/haystack-gui",
                "scripts/haystack-dump",
                "scripts/haystack-reverse"],
-      # numpy is a dependency for reverse.
+      # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
-      setup_requires=["numpy"],
+      # setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
-      install_requires=["pefile", "python-ptrace", "numpy", "networkx", "python-Levenshtein"],
+      install_requires=["pefile", "python-ptrace"], #, "numpy", "networkx", "python-Levenshtein"],
       dependency_links=["https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
                         "https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
-      test_suite= "test.alltests",
+       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
       # test requires ctypeslib2
-      tests_require=["volatility", "ctypeslib2>2.1.3"],
+      # tests_require=["volatility", "ctypeslib2>2.1.3"],
+      tests_require=["ctypeslib2>2.1.3"],
       #entry_points = {'haystack.plugins':['haystack.model:register']},
       cmdclass={
           'preptests': PyPrepTestsCommand,

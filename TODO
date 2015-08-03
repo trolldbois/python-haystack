@@ -1,4 +1,5 @@
 
++ fix performance issues on test units
 
 ***** heap walker validator is not a validator all by itself.
 

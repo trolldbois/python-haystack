@@ -22,7 +22,7 @@ __status__ = "Production"
 
 log = logging.getLogger("test_structure")
 
-@unittest.skip
+
 class TestStructure(unittest.TestCase):
 
     @classmethod

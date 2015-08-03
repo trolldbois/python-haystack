@@ -1,7 +1,7 @@
 # python-haystack memory forensics
 
 [![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=development)](https://travis-ci.org/trolldbois/python-haystack)
-[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=development)](https://coveralls.io/r/trolldbois/python-haystack?branch=development)
+[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=development&service=github)](https://coveralls.io/github/trolldbois/python-haystack?branch=development)
 [![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/development)
 [![pypi](https://img.shields.io/pypi/dm/haystack.svg)](https://pypi.python.org/pypi/haystack)
 

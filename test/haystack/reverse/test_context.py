@@ -12,7 +12,7 @@ from test.haystack import SrcTests
 
 log = logging.getLogger('test_memory_mapping')
 
-@unittest.skip
+
 class TestMappingsLinux(SrcTests):
 
     @classmethod
@@ -35,7 +35,7 @@ class TestMappingsLinux(SrcTests):
             self.memory_handler.get_context(0xb84e02d3).heap,
             self.memory_handler.get_mapping_for_address(0xb84e02d3))
 
-@unittest.skip
+
 class TestMappingsWindows(SrcTests):
 
     @classmethod
