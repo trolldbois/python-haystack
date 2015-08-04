@@ -380,8 +380,8 @@ class TestReferenceBook(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
-    # logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     # logging.getLogger('memory_mapping').setLevel(logging.DEBUG)
     # logging.getLogger('basicmodel').setLevel(logging.INFO)
     # logging.getLogger('model').setLevel(logging.INFO)

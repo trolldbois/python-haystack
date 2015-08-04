@@ -235,7 +235,7 @@ class Test6_x64(Test6_x32):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     # logging.getLogger('searcher').setLevel(logging.DEBUG)
     # logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)

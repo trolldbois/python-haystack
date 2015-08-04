@@ -202,8 +202,10 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap = FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             else:
-                log.debug('Using a MemoryDumpMemoryMapping. small size')
-                mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset,
+                # log.debug('Using a MemoryDumpMemoryMapping. small size')
+                # mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset,
+                log.debug('Always use FilenameBackedMemoryMapping. small size')
+                mmap = FilenameBackedMemoryMapping(mmap_content_file, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             _mappings.append(mmap)
         _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
@@ -239,9 +241,37 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
                 os.path.sep.join([self.archive, self.filePrefix + mmap_fname]))
             # TODO FIX with name only, not file()
 
+class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
+    """
+    Always use a filename backed memory mapping.
+    """
+    def _load_memory_mappings(self):
+        """ make the python objects"""
+        _mappings = []
+        for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
+            start, end = int(_start, 16), int(_end, 16)
+            offset = int(offset, 16)
+            inode = int(inode)
+            # rebuild filename
+            mmap_fname = "%s-%s" % (_start, _end)
+            # get devices nums
+            major_device, minor_device = devices.split(':')
+            major_device = int(major_device, 16)
+            minor_device = int(minor_device, 16)
+            log.debug('Loading %s - %s' % (mmap_fname, mmap_pathname))
+            # open the file in the archive
+            fname = os.path.sep.join([self.dumpname, mmap_fname])
+            mmap = FilenameBackedMemoryMapping(fname, start, end, permissions, offset,
+                                               major_device, minor_device, inode, pathname=mmap_pathname)
+            _mappings.append(mmap)
+        _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
+        self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
+        self._memory_handler.reset_mappings()
+        return
+
 def load(dumpname, cpu=None, os_name=None):
     """Loads a haystack dump."""
-    memdump = LazyProcessMemoryDumpLoader(
+    memdump = VeryLazyProcessMemoryDumpLoader( # LazyProcessMemoryDumpLoader(
         os.path.normpath(dumpname),
         cpu=cpu,
         os_name=os_name)

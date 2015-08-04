@@ -47,7 +47,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 __credits__ = ["Victor Skinner"]
 
-log = logging.getLogger('filemappings')
+log = logging.getLogger('file')
 
 
 class LocalMemoryMapping(AMemoryMapping):
@@ -74,7 +74,6 @@ class LocalMemoryMapping(AMemoryMapping):
             len(self)).from_address(
             int(address))  # DEBUG TODO byte or ubyte
         self._address = ctypes.addressof(self._local_mmap)
-        # self._vbase = self.start + self._address # shit, thats wraps up...
         self._bytebuffer = None
 
     def _vtop(self, vaddr):
@@ -95,16 +94,16 @@ class LocalMemoryMapping(AMemoryMapping):
             long(laddr)).value  # is non-aligned a pb ?, indianess is at risk
         return word
 
-    def readBytes1(self, vaddr, size):
+    def _read_bytes(self, vaddr, size):
         laddr = self._vtop(vaddr)
         #data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
         data = ctypes.string_at(laddr, size)  # real 0.5 % perf
         return data
+    read_bytes = _read_bytes
 
-    def readBufferBytes(self, vaddr, size):
+    def read_buffer_bytes(self, vaddr, size):
         laddr = vaddr - self.start
         return self._bytebuffer[laddr:laddr + size]
-    readBytes = readBytes1
 
     def read_struct(self, vaddr, struct):
         laddr = self._vtop(vaddr)
@@ -118,10 +117,10 @@ class LocalMemoryMapping(AMemoryMapping):
         array = (basetype * count).from_address(int(laddr))
         return array
 
-    def getByteBuffer(self):
+    def get_byte_buffer(self):
         if self._bytebuffer is None:
-            self._bytebuffer = self.readBytes(self.start, len(self))
-            self.readBytes = self.readBufferBytes
+            self._bytebuffer = self.read_bytes(self.start, len(self))
+            self.read_bytes = self.read_buffer_bytes
         return self._bytebuffer
 
     def initByteBuffer(self, data=None):
@@ -176,19 +175,18 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
             inode,
             pathname)
         self._memdump = memdump
-        log.debug('memdump %s' % (memdump))
         self._base = None
         if preload:
             self._mmap()
 
     def useByteBuffer(self):
         # toddo use bitstring
-        self._mmap().getByteBuffer()  # XXX FIXME buggy
+        self._mmap().get_byte_buffer()  # XXX FIXME buggy
         # force readBytes update
-        self.readBytes = self._base.read_bytes
+        self.read_bytes = self._base.read_bytes
 
     def getByteBuffer(self):
-        return self._mmap().getByteBuffer()
+        return self._mmap().get_byte_buffer()
 
     def isMmaped(self):
         return not (self._base is None)
@@ -214,7 +212,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                 # XXX that is the most fucked up, non-portable fuck I ever
                 # wrote.
                 if haystack.MMAP_HACK_ACTIVE:
-                    # print 'mmap_hack', self
+                    log.debug('Using MMAP_HACK: %s' % self)
                     # if self.pathname.startswith('/usr/lib'):
                     #    raise Exception
                     self._local_mmap_bytebuffer = mmap.mmap(
@@ -245,6 +243,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                         local_mmap_bytebuffer,
                         ctypes.c_ubyte)
             else:  # dumpfile, file inside targz ... any read() API really
+                print self.__class__
                 self._local_mmap_content = utils.bytes2array(
                     self._memdump.read(),
                     ctypes.c_ubyte)
@@ -256,25 +255,31 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
             self._base = LocalMemoryMapping.fromAddress(
                 self, ctypes.addressof(
                     self._local_mmap_content))
-            log.debug('LocalMemoryMapping done.')
-        # redirect stuff
-        self.readWord = self._base.read_word
-        self.readArray = self._base.read_array
-        self.readBytes = self._base.readBytes
-        self.readStruct = self._base.read_struct
+            log.debug('%s done.' % self.__class__)
+        # redirect function calls
+        self.read_word = self._base.read_word
+        self.read_array = self._base.read_array
+        self.read_bytes = self._base.read_bytes
+        self.read_struct = self._base.read_struct
         return self._base
 
-    def read_word(self, vaddr):
+    def _read_word(self, vaddr):
         return self._mmap().read_word(vaddr)
 
-    def read_bytes(self, vaddr, size):
-        return self._mmap().readBytes(vaddr, size)
+    def _read_bytes(self, vaddr, size):
+        return self._mmap().read_bytes(vaddr, size)
 
-    def read_struct(self, vaddr, structType):
+    def _read_struct(self, vaddr, structType):
         return self._mmap().read_struct(vaddr, structType)
 
-    def read_array(self, vaddr, basetype, count):
+    def _read_array(self, vaddr, basetype, count):
         return self._mmap().read_array(vaddr, basetype, count)
+
+    # set the default
+    read_word = _read_word
+    read_array = _read_array
+    read_bytes = _read_bytes
+    read_struct = _read_struct
 
     def __getstate__(self):
         d = dict(self.__dict__)
@@ -407,7 +412,27 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         #import code
         # code.interact(local=locals())
         self._memdump = file(self._memdumpname, 'rb')
+        # memdump is closed by super()
         return MemoryDumpMemoryMapping._mmap(self)
+
+    def reset(self):
+        """
+        Allows for this lazy-loading mapping wrapper to return
+        to a non-loaded state, closing opened file descriptors.
+        :return:
+        """
+        self._local_mmap_content = None
+        if hasattr(self, '_local_mmap_bytebuffer'):
+            try:
+                self._local_mmap_bytebuffer.close()
+            finally:
+                self._local_mmap_bytebuffer = None
+        self._memdump = None
+        self._base = None
+        self.read_word = self._read_word
+        self.read_array = self._read_array
+        self.read_bytes = self._read_bytes
+        self.read_struct = self._read_struct
 
 
 class LazyMmap:

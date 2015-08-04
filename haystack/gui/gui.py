@@ -190,7 +190,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         # init the hexeditor
         # print type(self.mapping)
         # a=self.mapping.mmap()
-        self.qhexedit.setData(self.mapping.mmap().getByteBuffer())  # beuaaah
+        self.qhexedit.setData(self.mapping.mmap().get_byte_buffer())  # beuaaah
         return
 
     def searchValue(self, value):

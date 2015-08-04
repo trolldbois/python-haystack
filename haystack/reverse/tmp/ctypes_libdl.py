@@ -141,7 +141,7 @@ import md5
 
 
 def buildMappingsHashes(maps):
-    return [(md5.md5(m.mmap().getByteBuffer()).hexdigest(), m.mmap())
+    return [(md5.md5(m.mmap().get_byte_buffer()).hexdigest(), m.mmap())
             for m in maps]
 
 

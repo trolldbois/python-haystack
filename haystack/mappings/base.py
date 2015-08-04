@@ -302,6 +302,14 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     def get_mappings(self):
         return list(self._mappings)
 
+    def reset_mappings(self):
+        """
+        Temporarly closes all file used by this handler.
+        :return:
+        """
+        for m in self.get_mappings():
+            m.reset()
+
     def get_mapping_for_address(self, vaddr):
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
         for m in self._mappings:

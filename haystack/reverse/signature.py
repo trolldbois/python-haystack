@@ -242,7 +242,7 @@ class RegexpSearcher(pointerfinder.AbstractSearcher):
             'search %s mapping for matching values %s' %
             (self.getSearchMapping(), self.regexp))
         for match in self.getSearchMapping().finditer(
-                self.getSearchMapping().mmap().getByteBuffer()):
+                self.getSearchMapping().mmap().get_byte_buffer()):
             offset = match.start()
             # FIXME, TU what is value for?
             value = match.group(0)
@@ -259,7 +259,7 @@ class RegexpSearcher(pointerfinder.AbstractSearcher):
             'iterate %s mapping for matching values' %
             (self.getSearchMapping()))
         for match in self.pattern.finditer(
-                self.getSearchMapping().mmap().getByteBuffer()):
+                self.getSearchMapping().mmap().get_byte_buffer()):
             offset = match.start()
             value = match.group(0)  # [] of int ?
             if isinstance(value, list):

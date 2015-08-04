@@ -159,7 +159,7 @@ class MemoryDumper:
             # only dumps useful ( stack, heap, binary for arch detection
             if (m in self.__required):
                 with open(mmap_fname, 'wb') as mmap_fout:
-                    mmap_fout.write(m.mmap().getByteBuffer())
+                    mmap_fout.write(m.mmap().get_byte_buffer())
                 log.debug('Dump %s' % (m))
             else:
                 log.debug('Ignore %s' % (m))
@@ -167,7 +167,7 @@ class MemoryDumper:
             # dump all the maps
             log.debug('Dump %s' % (m))
             with open(mmap_fname, 'wb') as mmap_fout:
-                mmap_fout.write(m.mmap().getByteBuffer())
+                mmap_fout.write(m.mmap().get_byte_buffer())
         # dump all the metadata
         self.index.write('%s\n' % (m))
         return
