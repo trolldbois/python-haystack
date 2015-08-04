@@ -71,6 +71,8 @@ class ReverserContext(object):
         self._structures_addresses = self._malloc_addresses
         self._user_alloc_addresses = self._malloc_addresses
         self._user_alloc_sizes = self._malloc_sizes
+        # clean a bit
+        self.memory_handler.reset_mappings()
 
         return
 

@@ -30,6 +30,12 @@ class TestWalkers(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.libc_mh_64.reset_mappings()
+        cls.libc_mh_64 = None
+        cls.libc_mh_32.reset_mappings()
+        cls.libc_mh_32 = None
+        cls.win7_mh_32.reset_mappings()
+        cls.win7_mh_32 = None
         pass
 
     def test_make_heap_finder(self):

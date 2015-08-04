@@ -75,6 +75,12 @@ class TestFieldAnalyser(unittest.TestCase):
         cls.ints = dsa.IntegerFields(cls.memory_handler)
         pass
 
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
+        cls.memory_handler = None
+        cls.target = None
+
     def setUp(self):
         pass
 

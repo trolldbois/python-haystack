@@ -20,6 +20,7 @@ class TestCopyModule(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
         cls.my_target = None
         cls.my_model = None

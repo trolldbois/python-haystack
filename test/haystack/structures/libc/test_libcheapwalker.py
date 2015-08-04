@@ -32,18 +32,21 @@ class TestLibcHeapFinder(unittest.TestCase):
         mappings = heap_finder.get_heap_mappings()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
+        memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
         heap_finder = memory_handler.get_heap_finder()
         mappings = heap_finder.get_heap_mappings()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
+        memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
         heap_finder = memory_handler.get_heap_finder()
         mappings = heap_finder.get_heap_mappings()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
+        memory_handler.reset_mappings()
 
 
 
@@ -56,6 +59,7 @@ class TestLibcHeapWalker(unittest.TestCase):
         self.walker = self.heap_finder.get_heap_walker(self.mappings[0])
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.heap_finder = None
         self.mappings = None

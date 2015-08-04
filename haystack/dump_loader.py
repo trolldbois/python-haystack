@@ -71,6 +71,7 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
     def make_memory_handler(self):
         if self._memory_handler is None:
             self._load_mappings()
+        self._memory_handler.reset_mappings()
         return self._memory_handler
 
     def _is_valid(self):

@@ -21,6 +21,7 @@ class TestMappingsLinux(SrcTests):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
 
     def test_get_context(self):
@@ -47,6 +48,7 @@ class TestMappingsWindows(SrcTests):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
         cls.my_target = None
         cls.my_ctypes = None

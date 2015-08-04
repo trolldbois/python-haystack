@@ -33,6 +33,7 @@ class TestTextOutput(SrcTests):
         my_model.build_python_class_clones(self.ctypes5_gen32)
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.ctypes5_gen32 = None
         sys.path.remove('test/src/')

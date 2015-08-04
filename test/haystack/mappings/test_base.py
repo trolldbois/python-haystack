@@ -92,6 +92,7 @@ class TestMappingsLinux(SrcTests):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
 
     def test_get_mapping(self):
@@ -210,6 +211,7 @@ class TestMappingsWin32(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
         cls.my_target = None
         cls.my_ctypes = None
@@ -295,6 +297,7 @@ class TestReferenceBook(unittest.TestCase):
         self.memory_handler = dump_loader.load('test/src/test-ctypes6.32.dump')
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
 
     def test_keepRef(self):

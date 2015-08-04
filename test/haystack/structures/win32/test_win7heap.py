@@ -36,6 +36,7 @@ class TestWin7Heap(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
         cls.memory_handler = None
         return
 

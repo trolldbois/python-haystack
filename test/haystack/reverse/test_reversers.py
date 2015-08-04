@@ -42,6 +42,7 @@ class TestStructureSizes(unittest.TestCase):
         self.dsa = dsa.DSASimple(self.context.memory_handler.get_target_platform())
 
     def tearDown(self):
+        self.context.memory_handler.reset_mappings()
         self.context = None
 
     @unittest.skip('DEBUGging the other one')

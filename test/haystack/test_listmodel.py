@@ -36,6 +36,7 @@ class TestListStructTest6(SrcTests):
         self.usual = self.m.read_struct(self.offset, self.ctypes6_gen32.struct_usual)
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.m = None
         self.usual = None

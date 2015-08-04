@@ -123,7 +123,7 @@ class LocalMemoryMapping(AMemoryMapping):
             self.read_bytes = self.read_buffer_bytes
         return self._bytebuffer
 
-    def initByteBuffer(self, data=None):
+    def init_byte_buffer(self, data=None):
         self._bytebuffer = data
 
     def __getstate__(self):
@@ -179,21 +179,21 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
         if preload:
             self._mmap()
 
-    def useByteBuffer(self):
+    def use_byte_buffer(self):
         # toddo use bitstring
         self._mmap().get_byte_buffer()  # XXX FIXME buggy
         # force readBytes update
         self.read_bytes = self._base.read_bytes
 
-    def getByteBuffer(self):
+    def get_byte_buffer(self):
         return self._mmap().get_byte_buffer()
 
-    def isMmaped(self):
+    def is_mmaped(self):
         return not (self._base is None)
 
     def mmap(self):
         """ mmap-ed access gives a 20% perf increase on by tests """
-        if not self.isMmaped():
+        if not self.is_mmaped():
             self._mmap()
         return self._base
 
@@ -423,9 +423,8 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         """
         self._local_mmap_content = None
         if hasattr(self, '_local_mmap_bytebuffer'):
-            try:
+            if self._local_mmap_bytebuffer:
                 self._local_mmap_bytebuffer.close()
-            finally:
                 self._local_mmap_bytebuffer = None
         self._memdump = None
         self._base = None

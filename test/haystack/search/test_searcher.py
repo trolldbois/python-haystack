@@ -29,8 +29,11 @@ class TestApiWin32Dump(unittest.TestCase):
                             # from free stuf
                             (0x0061a000, 1200),
                             ]
+        self.memory_handler = dump_loader.load(self.memdumpname)
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
+        self.memory_handler = None
         self.memdumpname = None
         self.classname = None
         self.known_heaps = None
@@ -38,28 +41,27 @@ class TestApiWin32Dump(unittest.TestCase):
     def test_load(self):
         # this is kinda stupid, given we are using a heapwalker to
         # find the heap, and testing the heap.
-        memory_handler = dump_loader.load(self.memdumpname)
-        my_target = memory_handler.get_target_platform()
+        my_target = self.memory_handler.get_target_platform()
         my_ctypes = my_target.get_target_ctypes()
         my_utils = my_target.get_target_ctypes_utils()
-        my_model = memory_handler.get_model()
-        finder = memory_handler.get_heap_finder()
+        my_model = self.memory_handler.get_model()
+        finder = self.memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
         my_heap = [ x for x in heaps if x.start == self.known_heaps[0][0]][0]
-        heapwalker = memory_handler.get_heap_walker(heaps[0])
+        heapwalker = self.memory_handler.get_heap_walker(heaps[0])
         win7heap = heapwalker._heap
 
-        my_loader = searcher.RecordLoader(memory_handler)
+        my_loader = searcher.RecordLoader(self.memory_handler)
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
-        res_p = haystack.output_to_python(memory_handler, [res])
+        res_p = haystack.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertFalse(validated)
 
         # now lets just use the win7heap constraints
-        my_loader = searcher.RecordLoader(memory_handler, heapwalker._heap_module_constraints)
+        my_loader = searcher.RecordLoader(self.memory_handler, heapwalker._heap_module_constraints)
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
-        res_p = haystack.output_to_python(memory_handler, [res])
+        res_p = haystack.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertTrue(validated)
@@ -70,7 +72,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
         # try a misalign read
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0] + 1)
-        res_p = haystack.output_to_python(memory_handler, [res])
+        res_p = haystack.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         self.assertFalse(validated)
         self.assertIsInstance(instance, object)

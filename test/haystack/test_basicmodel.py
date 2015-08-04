@@ -36,6 +36,7 @@ class TestLoadMembers(SrcTests):
 
     def tearDown(self):
         super(SrcTests, self).tearDown()
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.my_target = None
         self.my_ctypes = None
@@ -147,6 +148,7 @@ class TestRealSSH(unittest.TestCase):
         self.known_offset = 0xb84ee318
 
     def tearDown(self):
+        self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.classname = None
         self.known_offset = None

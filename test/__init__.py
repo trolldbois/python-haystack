@@ -28,9 +28,9 @@ def alltests():
     #import code
     #code.interact(local=locals())
     #print '*** REMOVING reverse tests ***'
-    for x in ret._tests:
-        if 'reverse' in str(x):
-            ret._tests.remove(x)
+    #for x in ret._tests:
+    #    if 'reverse' in str(x):
+    #        ret._tests.remove(x)
 
     return ret
 
