@@ -104,7 +104,7 @@ setup(name="haystack",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
                         "https://github.com/trolldbois/tarball/master#egg=sslsnoop-trunk"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
-       test_suite= "test.alltests",
+      test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
       # test requires ctypeslib2
       # tests_require=["volatility", "ctypeslib2>2.1.3"],

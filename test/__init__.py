@@ -25,9 +25,9 @@ def alltests():
     # makeTests()
     # run all tests
     ret = unittest.TestLoader().discover('test/haystack/')
-    import code
-    code.interact(local=locals())
-    print '*** REMOVING reverse tests ***'
+    #import code
+    #code.interact(local=locals())
+    #print '*** REMOVING reverse tests ***'
     for x in ret._tests:
         if 'reverse' in str(x):
             ret._tests.remove(x)
