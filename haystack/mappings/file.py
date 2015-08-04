@@ -287,13 +287,6 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
         d['_process'] = None
         return d
 
-    def __del__(self):
-        # we need to clean the mmap mess
-        if hasattr(self, '_local_mmap_bytebuffer'):
-            if hasattr(self._local_mmap_bytebuffer, 'close'):
-                self._local_mmap_bytebuffer.close()
-        pass
-
     @classmethod
     def fromFile(cls, memoryMapping, aFile):
         """

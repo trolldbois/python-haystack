@@ -53,6 +53,7 @@ class Utils(interfaces.ICTypesUtils):
             return False
         # maintain a cache to improve performance.
         # if not found in cache, try to reload local process memory space.
+        # the pointer memory space could have been allocated recently.
         # the calling function is most certainly going to fail anyway
         if self.__local_process_memory_handler is not None:
             ret = self.__local_process_memory_handler.is_valid_address(obj, structType)

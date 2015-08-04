@@ -1,30 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Provides memory mapping wrappers for live processes.
+"""
+Provides memory mapping wrappers for live processes.
 
 Classes:
 - ProcessMemoryMapping: memory space from a live process with the possibility to mmap the memspace at any moment.
 """
 
+import ctypes
 import logging
 from weakref import ref
 
 import os
 import re
 
-from haystack.dbg import openProc, ProcError, ProcessError, HAS_PROC
+from haystack import dbg
 from haystack import target
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-__credits__ = ["Victor Skinner"]
 
 log = logging.getLogger('process')
 
@@ -107,21 +101,21 @@ class ProcessMemoryMapping(AMemoryMapping):
         # It breaks stuff.
         # probably a bad cast statement on c_char_p
         # FIXME: the big perf increase is now gone. Howto cast pointer to bytes
-        # into ctypes array ?
-        ctypes = self._target_platform.get_target_ctypes()
+        # into my_ctypes array ?
+        my_ctypes = self._target_platform.get_target_ctypes()
         my_utils = self._target_platform.get_target_ctypes_utils()
         if not self.isMmaped():
-            # self._process().readArray(self.start, ctypes.c_ubyte, len(self) ) # keep ref
+            # self._process().readArray(self.start, my_ctypes.c_ubyte, len(self) ) # keep ref
             # self._local_mmap_content = self._process().readArray(self.start,
-            # ctypes.c_ubyte, len(self) ) # keep ref
+            # my_ctypes.c_ubyte, len(self) ) # keep ref
             self._local_mmap_content = my_utils.bytes2array(
                 self._process().readBytes(
                     self.start,
                     len(self)),
-                ctypes.c_ubyte)
+                my_ctypes.c_ubyte)
             log.debug('type array %s' % (type(self._local_mmap_content)))
             self._local_mmap = LocalMemoryMapping.fromAddress(
-                self, ctypes.addressof(
+                self, my_ctypes.addressof(
                     self._local_mmap_content))
             self._base = self._local_mmap
         return self._local_mmap
@@ -150,26 +144,21 @@ def readProcessMappings(process):
     May raise a ProcessError.
     """
     maps = []
-    if not HAS_PROC:
+    if not dbg.HAS_PROC:
         return maps
     try:
-        mapsfile = openProc(process.pid)
-    except ProcError as err:
-        raise ProcessError(process, "Unable to read process maps: %s" % err)
+        mapsfile = dbg.openProc(process.pid)
+    except dbg.ProcError as err:
+        raise dbg.ProcessError(process, "Unable to read process maps: %s" % err)
 
-    #before = None
-    # save the current ctypes module.
     mappings = []
-    # FIXME Debug, but probably useless now that ctypes is in _target_platform
-    #if True:
-    #    import ctypes
-    #    before = ctypes
     try:
+        # read the mappings
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
-                raise ProcessError(
+                raise dbg.ProcessError(
                     process,
                     "Unable to parse memory mapping: %r" %
                     line)
@@ -189,21 +178,17 @@ def readProcessMappings(process):
     finally:
         if isinstance(mapsfile, file):
             mapsfile.close()
-    # reposition the previous ctypes module.
-    #if True:
-    #    ctypes = types.set_ctypes(before)
+    # create the memory_handler for self
     _target_platform = target.TargetPlatform.make_target_platform_local()
     _memory_handler = MemoryHandler(mappings, _target_platform, 'localhost-%d'% process.pid)
     return _memory_handler
 
-
-def readLocalProcessMappings():
+def read_local_process_mappings():
     class P:
         pid = os.getpid()
         # we need that for the machine arch read.
 
         def readBytes(self, addr, size):
-            import ctypes
             return ctypes.string_at(addr, size)
 
     return readProcessMappings(P())  # memory_mapping

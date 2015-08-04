@@ -224,7 +224,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
                 (self.__class__))
         if maps_to_load is None:
             self._maps_to_load = ['[heap]', '[stack]']
-        log.debug('Filter on mapping names: %s ' % (self._maps_to_load))
+        log.debug('Filter on mapping names: %s ' % self._maps_to_load)
         return
 
     def _protected_open_file(self, mmap_fname, mmap_pathname):
@@ -245,7 +245,7 @@ def load(dumpname, cpu=None, os_name=None):
         os.path.normpath(dumpname),
         cpu=cpu,
         os_name=os_name)
-    log.debug('%d dump file loaded' % (len(memdump.make_memory_handler())))
+    log.debug('%d dump file loaded' % len(memdump.make_memory_handler()))
     # excep mmap.error - to much openfile - increase ulimit
     return memdump.make_memory_handler()
 

@@ -31,11 +31,12 @@ class _ApiTest(SrcTests):
     @classmethod
     def tearDownClass(cls):
         cls.memdumpname = None
-        cls.memory_handler = None
         cls.my_target = None
         cls.my_ctypes = None
         cls.my_utils = None
         cls.my_model = None
+        del cls.memory_handler
+        cls.memory_handler = None
 
     # inherit def tearDown(self):
 

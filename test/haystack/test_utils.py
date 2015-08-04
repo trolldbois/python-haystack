@@ -14,11 +14,13 @@ __status__ = "Production"
 import ctypes
 import logging
 import unittest
+import os
 
 from haystack import model
 from haystack import utils
 from haystack import types
 from haystack import target
+from haystack.mappings.process import readProcessMappings
 
 
 class TestHelpers(unittest.TestCase):
@@ -37,8 +39,6 @@ class TestHelpers(unittest.TestCase):
         my_utils = my_target.get_target_ctypes_utils()
         ctypes5_gen64 = haystack.model.import_module_for_target_ctypes("test.src.ctypes5_gen64", my_ctypes)
         # kinda chicken and egg here...
-        from haystack.mappings.process import readProcessMappings
-        import os
 
         class P:
             pid = os.getpid()
@@ -46,9 +46,10 @@ class TestHelpers(unittest.TestCase):
             def readBytes(self, addr, size):
                 import ctypes
                 return ctypes.string_at(addr, size)
-
+        # one call
         mappings = readProcessMappings(P())
         m = mappings.get_mappings()[0]
+
         # struct a - basic types
         s = ctypes.sizeof(ctypes5_gen64.struct_a)
 
@@ -359,6 +360,6 @@ class TestHelpers(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     #logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)
