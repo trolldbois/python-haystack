@@ -64,7 +64,8 @@ script:
 # run tests. Need root for memory dumps tests.
 #  - python setup.py test
 # run coverage only on test, not on memory dumps.
-  - coverage run --source=haystack setup.py test
+#  - coverage run --source=haystack setup.py test
+   - python -m cProfile setup.py test
 
 after_success:
   - coveralls
