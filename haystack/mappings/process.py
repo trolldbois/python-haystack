@@ -120,7 +120,12 @@ class ProcessMemoryMapping(AMemoryMapping):
             self._base = self._local_mmap
         return self._local_mmap
 
-    def unmmap(self):
+    def reset(self):
+        """
+        Allows for this lazy-loading mapping wrapper to return
+        to a non-loaded state, closing opened file descriptors.
+        :return:
+        """
         self._base = self._process()
         self._local_mmap = None
         self._local_mmap_content = None
