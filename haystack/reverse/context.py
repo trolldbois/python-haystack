@@ -219,6 +219,7 @@ class ReverserContext(object):
             raise e
 
     def reset(self):
+        self.memory_handler.reset_mappings()
         try:
             os.remove(
                 config.get_cache_filename(
