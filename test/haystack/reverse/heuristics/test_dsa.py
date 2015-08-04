@@ -48,6 +48,9 @@ class FakeMemoryHandler(interfaces.IMemoryHandler):
     def get_target_platform(self):
         return self.target
 
+    def reset_mappings(self):
+        return
+
 
 class TestFieldAnalyser(unittest.TestCase):
 

@@ -131,8 +131,15 @@ class IMemoryHandler(object):
     # helper methods that should maybe be moved
     def get_mappings(self):
         """
-
+        return the list of IMemoryMapping
         :return: list of IMemoryMapping
+        """
+        raise NotImplementedError(self)
+
+    def reset_mappings(self):
+        """
+        Temporarly closes all file used by this handler.
+        :return:
         """
         raise NotImplementedError(self)
 
