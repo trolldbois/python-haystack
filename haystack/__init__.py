@@ -48,13 +48,16 @@ output_to_python = api.output_to_python
 
 # augment our file limit capacity to max
 maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-print 'maxnofile', maxnofile
+# print 'maxnofile', maxnofile
 resource.setrlimit(
     resource.RLIMIT_NOFILE,
     (maxnofile[1],
      maxnofile[1]))
-maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
-print 'maxnofile_after', maxnofile_after
+# maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
+# print 'maxnofile_after', maxnofile_after
+# travis-ci says
+# maxnofile (64000, 64000)
+# maxnofile_after (64000, 64000)
 
 # bad bad idea...
 MMAP_HACK_ACTIVE = True

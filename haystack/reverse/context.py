@@ -95,10 +95,7 @@ class ReverserContext(object):
         log.info('[+] Fetching cached structures list')
         self._structures = dict(
             [(long(vaddr), s) for vaddr, s in structure.cacheLoadAllLazy(self)])
-        log.info(
-            '[+] Fetched %d cached structures addresses from disk' %
-            (len(
-                self._structures)))
+        log.info('[+] Fetched %d cached structures addresses from disk', len(self._structures))
 
         # no all structures yet, make them from MallocReverser
         if len(self._structures) != len(self._malloc_addresses):
@@ -190,7 +187,8 @@ class ReverserContext(object):
         config.create_cache_folder_name(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname)
         try:
-            context = pickle.load(file(context_cache, 'r'))
+            with file(context_cache, 'r') as fin:
+                context = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
             log.error(
@@ -212,7 +210,8 @@ class ReverserContext(object):
             config.CACHE_CONTEXT,
             self.dumpname)
         try:
-            pickle.dump(self, file(context_cache, 'w'))
+            with file(context_cache, 'w') as fout:
+                pickle.dump(self, fout)
         except pickle.PicklingError, e:
             log.error("Pickling error on %s, file removed",context_cache)
             os.remove(context_cache)

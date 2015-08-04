@@ -10,6 +10,7 @@ import itertools
 import numbers
 import weakref
 import ctypes
+import sys
 
 import os
 
@@ -317,7 +318,6 @@ class AnonymousStructInstance(object):
             # clean it, its stale
             os.remove(fname)
             log.warning('removing %s' % (fname))
-            import sys
             ex = sys.exc_info()
             raise ex[1], None, ex[2]
         return
@@ -791,13 +791,13 @@ class ReversedType(ctypes.Structure):
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()
 
-    @classmethod
-    def toString(cls):
-        import ctypes
+    # @classmethod
+    def toString(self):
         fieldsStrings = []
-        for attrname, attrtyp in cls.getFields():  # model
-            if ctypes.is_pointer_type(
-                    attrtyp) and not ctypes.is_pointer_to_void_type(attrtyp):
+        for attrname, attrtyp in self.getFields():  # model
+            # FIXME need ctypesutils.
+            if self.ctypes.is_pointer_type(
+                    attrtyp) and not self.ctypes.is_pointer_to_void_type(attrtyp):
                 fieldsStrings.append(
                     '(%s, ctypes.POINTER(%s) ),\n' %
                     (attrname, attrtyp._type_.__name__))
@@ -807,10 +807,10 @@ class ReversedType(ctypes.Structure):
                     (attrname, attrtyp.__name__))
         fieldsString = '[ \n%s ]' % (''.join(fieldsStrings))
 
-        info = 'size:%d' % (ctypes.sizeof(cls))
+        info = 'size:%d' % (self.ctypes.sizeof(self))
         ctypes_def = '''
 class %s(ctypes.Structure):  # %s
   _fields_ = %s
 
-''' % (cls.__name__, info, fieldsString)
+''' % (self.__name__, info, fieldsString)
         return ctypes_def
