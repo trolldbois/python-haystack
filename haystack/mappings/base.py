@@ -225,6 +225,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # finish initialization
         self._heap_finder = self._set_heap_finder()
         self.__optim_get_mapping_for_address()
+        self.__optim_heaps = None
 
     def _set_heap_finder(self):
         """set the IHeapFinder for that process memory."""
@@ -333,7 +334,12 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
     def get_heaps(self):
         """Find heap type and returns _memory_handler with heaps"""
-        return self.get_heap_finder().get_heap_mappings()
+        if not self.__optim_heaps:
+            # optimize heaps
+            self.__optim_heaps = self.get_heap_finder().get_heap_mappings()
+        return self.__optim_heaps
+
+        return
 
     def get_stack(self):
         # FIXME wont work on windows.
