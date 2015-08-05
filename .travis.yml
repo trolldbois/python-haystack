@@ -73,7 +73,7 @@ after_success:
 
 after_failure:
 # debug versions
-  - python -c"import pstats; p = pstats.Stats('setup.profile'); p.sort_stats('ncalls'); p.print_stats()"
+  - python -c"import pstats; p = pstats.Stats('setup.profile'); p.sort_stats('cumtime'); p.print_stats()"
   - which clang
   - clang --version
   - which gcc
