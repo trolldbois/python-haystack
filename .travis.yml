@@ -65,13 +65,15 @@ script:
 #  - python setup.py test
 # run coverage only on test, not on memory dumps.
 #  - coverage run --source=haystack setup.py test
-   - python -m cProfile setup.py test
+#   - python -m cProfile setup.py test
+  - python -m cProfile -o setup.profile setup.py test
 
 after_success:
   - coveralls
 
 after_failure:
 # debug versions
+  - python -c"import pstats; p = pstats.Stats('setup.profile'); p.sort_stats('ncalls'); p.print_stats()"
   - which clang
   - clang --version
   - which gcc
