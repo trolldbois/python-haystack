@@ -114,4 +114,4 @@ if __name__ == '__main__':
     logging.getLogger("filemappings").setLevel(logging.INFO)
     logging.getLogger("dsa").setLevel(logging.INFO)
     logging.getLogger("dump_loader").setLevel(logging.INFO)
-    unittest.main()
+    unittest.main(verbosity=2)

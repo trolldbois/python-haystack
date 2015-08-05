@@ -108,7 +108,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
 
     def __str__(self):
         text = ' '.join([self._utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
-                         '0x%0.8x' % (self.offset), '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % (self.inode), str(self.pathname)])
+                         '0x%0.8x' % self.offset, '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % self.inode, str(self.pathname)])
         return text
 
     __repr__ = __str__
@@ -224,6 +224,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         self.__required_maps = []
         # finish initialization
         self._heap_finder = self._set_heap_finder()
+        self.__optim_get_mapping_for_address()
 
     def _set_heap_finder(self):
         """set the IHeapFinder for that process memory."""
@@ -311,11 +312,20 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             m.reset()
 
     def get_mapping_for_address(self, vaddr):
+        # TODO: optimization. 127s out of 288s = 40%
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
-        for m in self._mappings:
-            if vaddr in m:
-                return m
+        # check 4 Mo boundaries
+        _boundary_addr = (vaddr >> 12) << 12
+        if _boundary_addr in self.__optim_get_mapping_for_address_cache:
+            return self.__optim_get_mapping_for_address_cache[_boundary_addr]
         return False
+
+    def __optim_get_mapping_for_address(self):
+        self.__optim_get_mapping_for_address_cache = dict()
+        for m in self._mappings:
+            for i in range(m.start, m.end, 0x1000):
+                self.__optim_get_mapping_for_address_cache[i] = m
+        return
 
     def get_heap(self):
         """Returns the first Heap"""
@@ -357,12 +367,12 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
         Returns the mapping in which the address stands otherwise.
         """
-        ctypes = self._target.get_target_ctypes()
+        my_ctypes = self._target.get_target_ctypes()
         m = self.get_mapping_for_address(addr)
         log.debug('is_valid_address_value = %x %s' % (addr, m))
         if m:
             if structType is not None:
-                s = ctypes.sizeof(structType)
+                s = my_ctypes.sizeof(structType)
                 if (addr + s) < m.start or (addr + s) > m.end:
                     return False
             return m

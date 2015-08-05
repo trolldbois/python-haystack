@@ -92,7 +92,7 @@ class StructureOrientedReverser(object):
 
     ''' Subclass implementation of the reversing process '''
 
-    def _reverse(self, ctx, addrs=None):
+    def _reverse(self, ctx):
         raise NotImplementedError
 
     def _getCache(self, ctx):

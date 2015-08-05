@@ -28,6 +28,7 @@ Changes to architecture.txt:
  - Fixes for travis in setup.py
  - Ran 225 tests in 519.059s
 OK (skipped=7, expected failures=4)
+ - Profiling... Ran 225 tests in 160.300s
 
 
 

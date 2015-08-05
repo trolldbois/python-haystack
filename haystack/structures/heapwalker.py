@@ -100,6 +100,7 @@ class HeapFinder(interfaces.IHeapFinder):
         :param mapping: IMemoryMapping
         :return:
         """
+        # TODO: optimization. store heap status in object.
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
         heap = self._read_heap(mapping)
