@@ -209,23 +209,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
 
     @staticmethod
     def make_target_platform_local():
-        """    """
-        cpu = int(platform.architecture()[0].split('bit')[0])
-        if 'linux' in sys.platform:
-            os_name = TargetPlatform.LINUX
-        else:# sys.platform.startswith('win'):
-            os_name = TargetPlatform.WIN7
-        if cpu == 32:
-            if os_name in [TargetPlatform.WINXP, TargetPlatform.WIN7]:
-                return TargetPlatform.make_target_win_32(os_name)
-            elif os_name == TargetPlatform.LINUX:
-                return TargetPlatform.make_target_linux_32()
-        elif cpu == 64:
-            if os_name in [TargetPlatform.WINXP, TargetPlatform.WIN7]:
-                return TargetPlatform.make_target_win_64(os_name)
-            elif os_name == TargetPlatform.LINUX:
-                return TargetPlatform.make_target_linux_64()
-        raise NotImplementedError()
+        return _make_target_platform_local()
 
     @staticmethod
     def make_target_win_32(os_name):
@@ -250,3 +234,28 @@ class TargetPlatform(interfaces.ITargetPlatform):
         """    """
         target = TargetPlatform(None, os_name=TargetPlatform.LINUX, cpu_bits=64, word_size=8, ptr_size=8, ld_size=16)
         return target
+
+
+__LOCAL_PLATFORM = None
+
+def _make_target_platform_local():
+    """    """
+    global __LOCAL_PLATFORM
+    if __LOCAL_PLATFORM:
+        return __LOCAL_PLATFORM
+    cpu = int(platform.architecture()[0].split('bit')[0])
+    if 'linux' in sys.platform:
+        os_name = TargetPlatform.LINUX
+    else: # sys.platform.startswith('win'):
+        os_name = TargetPlatform.WIN7
+    if cpu == 32:
+        if os_name in [TargetPlatform.WINXP, TargetPlatform.WIN7]:
+            __LOCAL_PLATFORM = TargetPlatform.make_target_win_32(os_name)
+        elif os_name == TargetPlatform.LINUX:
+            __LOCAL_PLATFORM = TargetPlatform.make_target_linux_32()
+    elif cpu == 64:
+        if os_name in [TargetPlatform.WINXP, TargetPlatform.WIN7]:
+            __LOCAL_PLATFORM = TargetPlatform.make_target_win_64(os_name)
+        elif os_name == TargetPlatform.LINUX:
+            __LOCAL_PLATFORM = TargetPlatform.make_target_linux_64()
+    return __LOCAL_PLATFORM
