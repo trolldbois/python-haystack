@@ -239,7 +239,10 @@ class TargetPlatform(interfaces.ITargetPlatform):
 __LOCAL_PLATFORM = None
 
 def _make_target_platform_local():
-    """    """
+    """
+    module paltform is very slow. We need to cache the information.
+    The local platform will not change in between calls :)
+    """
     global __LOCAL_PLATFORM
     if __LOCAL_PLATFORM:
         return __LOCAL_PLATFORM

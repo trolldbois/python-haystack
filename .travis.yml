@@ -82,6 +82,7 @@ after_failure:
   - dpkg -l
   - find
   - cat /etc/sudoers
+  - coveralls
 
 # disable email notifications
 notifications:
