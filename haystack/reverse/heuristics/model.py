@@ -4,9 +4,9 @@
 #
 
 import logging
-from haystack.abc import interfaces
+from haystack.abc import interfaces as intf
 
-log = logging.getLogger('heuristics.model')
+log = logging.getLogger('model')
 
 
 class FieldAnalyser(object):
@@ -14,7 +14,7 @@ class FieldAnalyser(object):
 
     """
     def __init__(self, memory_handler):
-        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+        if not isinstance(memory_handler, intf.IMemoryHandler):
             raise TypeError('memory_handler should be an IMemoryHandler')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
@@ -38,7 +38,7 @@ class StructureAnalyser(object):
     """
 
     def __init__(self, memory_handler):
-        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+        if not isinstance(memory_handler, intf.IMemoryHandler):
             raise TypeError('memory_handler should be an IMemoryHandler')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
