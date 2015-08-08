@@ -4,7 +4,7 @@
 #
 
 import logging
-from haystack.abc import interfaces as intf
+from haystack.abc import interfaces
 
 log = logging.getLogger('model')
 
@@ -14,9 +14,8 @@ class FieldAnalyser(object):
 
     """
     def __init__(self, memory_handler):
-        # debug travis-ci
-        # if not isinstance(memory_handler, intf.IMemoryHandler):
-        #    raise TypeError('memory_handler should be an IMemoryHandler')
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError('memory_handler should be an IMemoryHandler')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
 
@@ -39,7 +38,7 @@ class StructureAnalyser(object):
     """
 
     def __init__(self, memory_handler):
-        if not isinstance(memory_handler, intf.IMemoryHandler):
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError('memory_handler should be an IMemoryHandler')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
