@@ -116,7 +116,7 @@ setup(name="haystack",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
                         "https://github.com/trolldbois/sslsnoop/tarball/master#egg=sslsnoop-trunk",
-                        "https://github.com/erocarrera/pefile/tarball/master#egg=pefile-master"],
+                        "https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
