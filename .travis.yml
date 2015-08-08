@@ -49,10 +49,10 @@ before_script:
   - mkdir -p test/dumps/putty
   - mkdir -p test/dumps/ssh
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
-  - unzip putty.1.dump.zip
+  - unzip -q putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.7124.dump.zip
-  - unzip putty.7124.dump.zip
+  - unzip -q putty.7124.dump.zip
   - mv putty.7124.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
   - tar zxf ssh.1.tgz
@@ -64,7 +64,11 @@ before_script:
 # just uncompress the tgz contained in the LFS.
 # the preps tests does not build the binaries on travis-ci anymore.
 # no need for root. No need for install haystack.
-  - python setup.py preptests
+#  - python setup.py preptests
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-20150808.tgz
+  - tar zxf src-20150808.tgz
+  - mv test/src test/src.old
+  - mv src test/
 
 script:
 # run tests. Need root for memory dumps tests.
