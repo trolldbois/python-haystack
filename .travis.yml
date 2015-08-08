@@ -29,8 +29,9 @@ install:
 #  - python setup.py install
   - pip install -r requirements.txt
 # but use the git tree
-  - python setup.py develop
-
+#  - python setup.py develop
+  - python setup.py install
+  
 before_script:
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
 # we also need
