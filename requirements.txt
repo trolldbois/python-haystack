@@ -1,4 +1,4 @@
-pefile==1.2.9.1
+pefile
 python-ptrace
 networkx
 python-Levenshtein
