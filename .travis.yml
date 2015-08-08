@@ -31,11 +31,10 @@ sudo: false
 install:
 ## we need coveralls
   - pip -q install coveralls
-
 ## install with requirements
 #  - python setup.py install
 ## or try the develop way to use the git tree
-#  - pip install -r requirements.txt --use-mirrors
+  - pip install -r requirements.txt --use-mirrors
 #  - python setup.py develop
 
 before_script:
