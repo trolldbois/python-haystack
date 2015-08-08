@@ -4,12 +4,22 @@
 import logging
 import unittest
 
+import dill
+
 import haystack
 from haystack import dump_loader
 from haystack import constraints
 from haystack.search import api
 from test.haystack import SrcTests
 
+class TestFunction(unittest.TestCase):
+    def test_outputs(self):
+        with self.assertRaises(TypeError):
+            api.output_to_json(None, None)
+        with self.assertRaises(TypeError):
+            api.output_to_python(None, None)
+        with self.assertRaises(TypeError):
+            api.output_to_string(None, None)
 
 class _ApiTest(SrcTests):
     """
@@ -162,7 +172,6 @@ class Test6_x32(_ApiTest):
         self.assertIn(str(0x0ffffff0), retstr)
         self.assertIn('"val2b": 0L,', retstr)
         self.assertIn('"val1b": 0L,', retstr)
-        # print retstr
 
         # usual->root.{f,b}link = &node1->list; # offset list is (wordsize) bytes
         node1_list_addr = hex(self.address2 + self.my_target.get_word_size())
@@ -223,6 +232,17 @@ class Test6_x32(_ApiTest):
         self.assertEquals(node1.val2, 0xffffffff)
         self.assertEquals(node2.val1, 0xdeadbabe)
         self.assertEquals(node2.val2, 0xffffffff)
+
+        # FIXME there is a circular reference in json.
+        #with self.assertRaises(ValueError):
+        #    haystack.output_to_json(self.memory_handler, results)
+        #self.assertEquals(node2s['val1'], 0xdeadbabe)
+        #self.assertEquals(node2s['val2'], 0xffffffff)
+        model = self.memory_handler.get_model()
+        #import code
+        #code.interact(local=locals())
+        x = api.output_to_dill(self.memory_handler, results)
+        rest = dill.loads(x)
         return
 
 
