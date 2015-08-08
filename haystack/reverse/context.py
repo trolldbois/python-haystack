@@ -245,7 +245,6 @@ class ReverserContext(object):
                _heap_start
            Ignore the rest
         """
-
         # FIXME, double check and delete
         #d = self.__dict__.copy()
         #del d['_memory_handler']
@@ -256,7 +255,6 @@ class ReverserContext(object):
         ##del d['_pointers_offsets']
         #del d['_malloc_addresses']
         #del d['_malloc_sizes']
-        # print d
         d = dict()
         d['dumpname'] = self.__dict__['dumpname']
         d['parsed'] = self.__dict__['parsed']
