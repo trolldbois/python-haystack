@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import pickle
+# import pickle
+import dill
 
 import numpy
 import os
@@ -188,7 +189,7 @@ class ReverserContext(object):
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname)
         try:
             with file(context_cache, 'r') as fin:
-                context = pickle.load(fin)
+                context = dill.load(fin)
         except EOFError as e:
             os.remove(context_cache)
             log.error(
@@ -211,8 +212,8 @@ class ReverserContext(object):
             self.dumpname)
         try:
             with file(context_cache, 'w') as fout:
-                pickle.dump(self, fout)
-        except pickle.PicklingError, e:
+                dill.dump(self, fout)
+        except dill.PicklingError, e:
             log.error("Pickling error on %s, file removed",context_cache)
             os.remove(context_cache)
             raise e
