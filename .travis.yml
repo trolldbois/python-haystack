@@ -4,20 +4,25 @@ language: python
 
 python:
   - "2.7"
-#  - "3.4"
+#  - "3.5"
+
+# http://danielnouri.org/notes/2012/11/23/use-apt-get-to-install-python-dependencies-for-travis-ci/
+virtualenv:
+  system_site_packages: true
 
 before_install:
 # travis-ci use Ubuntu 12.04.5 LTS (Precise Pangolin) 64bit
 # install snapshot version of libclang1 libclang-common-3.X-dev
   - sudo apt-add-repository "deb http://llvm.org/apt/precise/ llvm-toolchain-precise main" --yes
   - sudo apt-add-repository "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"  --yes
+  - sudo apt-add-repository ppa:scipy/ppa --yes
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -
   - sudo apt-get update -qq
 # we dont need that and it gets upgraded for some reason
   - sudo apt-get remove oracle-java7-installer
 # arrrh... http://docs.travis-ci.com/user/languages/python/.
 # system python package will not be used.
-  - sudo apt-get -qq install libclang1-3.8 --yes --force-yes
+  - sudo apt-get -qq install libclang1-3.8 python-numpy --yes --force-yes
 #permission denied  - sudo echo `echo "/usr/lib/llvm-3.8/lib/" >> /etc/ld.so.conf.d/llvm-dev.conf`
   - sudo ln -v -s /usr/lib/x86_64-linux-gnu/libclang-3.8.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
   - sudo ldconfig
@@ -25,13 +30,12 @@ before_install:
   - pip -q install coveralls
 
 install:
-# install with requirements
-#  - python setup.py install
-  - pip install -r requirements.txt
-# but use the git tree
-#  - python setup.py develop
+## install with requirements
   - python setup.py install
-  
+## or try the develop way to use the git tree
+#  - pip install -r requirements.txt --use-mirrors
+#  - python setup.py develop
+
 before_script:
 # we need the libc6-dev i386 version too to build the tests., but after building all install deps
 # we also need
@@ -85,7 +89,6 @@ after_failure:
   - dpkg -l
   - find
   - cat /etc/sudoers
-  - coveralls
 
 # disable email notifications
 notifications:

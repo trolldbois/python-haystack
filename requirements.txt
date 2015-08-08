@@ -1,6 +1,9 @@
-ctypeslib2
-networkx
-numpy
 pefile
 python-ptrace
+networkx
 python-Levenshtein
+# lets try to use system package
+# numpy
+
+# test requires it, not install
+# ctypeslib2

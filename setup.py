@@ -87,7 +87,7 @@ setup(name="haystack",
                 "haystack.structures.win32"],
       #package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={"haystack.reverse": ['data/words.100'],
-                    "haystack.structures.win32": ['profiles', 'win7heap.constraints', 'winheap.constraints'],
+                    "haystack.structures.win32": ['win7heap.constraints', 'winheap.constraints'],
                     "haystack.structures.libc": ['libcheap.constraints']},
       scripts=["scripts/haystack",
                "scripts/haystack-gui",
@@ -95,7 +95,7 @@ setup(name="haystack",
                "scripts/haystack-reverse"],
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
-      # setup_requires=["numpy"],
+      setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile",
