@@ -4,7 +4,7 @@
 import logging
 import unittest
 
-import dill
+import pickle
 
 import haystack
 from haystack import dump_loader
@@ -241,8 +241,8 @@ class Test6_x32(_ApiTest):
         model = self.memory_handler.get_model()
         #import code
         #code.interact(local=locals())
-        x = api.output_to_dill(self.memory_handler, results)
-        rest = dill.loads(x)
+        x = api.output_to_pickle(self.memory_handler, results)
+        rest = pickle.loads(x)
         return
 
 
@@ -255,7 +255,7 @@ class Test6_x64(Test6_x32):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     # logging.getLogger('searcher').setLevel(logging.DEBUG)
     # logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)

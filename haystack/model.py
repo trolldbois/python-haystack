@@ -67,29 +67,29 @@ class Model(object):
         _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         _created = 0
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
+            # we only need to create python classes for records
             if issubclass(klass, _ctypes.Structure) or issubclass(klass, _ctypes.Union):
-                # Why restrict on module name ?
-                # we only need to register records
                 from haystack.outputters import python
-                kpy = type(
-                    '%s.%s_py' %
-                    (targetmodule.__name__, name), (python.pyObj,), {})
-                # add the structure size to the class
-                setattr(kpy, '_len_', _ctypes.sizeof(klass))
                 # we have to keep a local (model) ref because the class is being created here.
                 # and we have a targetmodule ref. because it's asked.
                 # and another ref on the real module for the basic type, because,
                 # that is probably were it's gonna be used.
-                setattr(
-                    targetmodule, '%s.%s_py' %
-                    (targetmodule.__name__, name), kpy)
-                # setattr(sys.modules[__name__], '%s_py'%(name), kpy )
-                setattr(targetmodule, '%s_py' % (name), kpy)
+                ## full namespace
+                if True:
+                    # that creates a haystack.model.x.x.x.classname_py
+                    kpy = type('%s.%s_py' % (targetmodule.__name__, name), (python.pyObj,), {})
+                    setattr(sys.modules[__name__], '%s.%s_py' % (targetmodule.__name__, name), kpy)
+                    # because we use it from the target module in our code
+                    setattr(targetmodule, '%s_py' % name, kpy)
+                ## partial namespace
+                else:
+                    kpy = type('%s_py' % name, (python.pyObj,), {})
+                    setattr(sys.modules[__name__], '%s_py'% name, kpy )
+                    setattr(targetmodule, '%s_py' % name, kpy)
+
+                # add the structure size to the class
+                setattr(kpy, '_len_', _ctypes.sizeof(klass))
                 _created += 1
-                # copy also to generated
-                if klass.__module__ != targetmodule.__name__:
-                    setattr(targetmodule, '%s_py' % (name), kpy)
-                    #log.debug("Created %s_py"%klass)
         log.debug(
             'created %d POPO types in %s' %
             (_created, targetmodule.__name__))

@@ -228,6 +228,13 @@ class pyObj(object):
             yield (k, v, typ)
         pass
 
+    # the python cannot contain a ref to a ctypes
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        if '_ctype_' in d:
+            d['_ctype_'] = d['_ctype_'].__class__.__name__
+        return d
+
 
 def findCtypesInPyObj(memory_handler, obj):
     """ check function to help in unpickling errors correction """

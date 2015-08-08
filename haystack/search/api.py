@@ -95,6 +95,8 @@ def output_to_pickle(memory_handler, results):
     if not isinstance(results, list):
         raise TypeError('Feed me a list of results')
     ret = output_to_python(memory_handler, results)
+    #import code
+    #code.interact(local=locals())
     return pickle.dumps(ret)
 
 def load_record(memory_handler, struct_type, memory_address, load_constraints=None):
