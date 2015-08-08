@@ -1,5 +1,8 @@
 
-+ fix performance issues on test units
++ use dill instead of pickle.
+
++ look at pathos for reverse caching
+http://trac.mystic.cacr.caltech.edu/project/pathos/wiki/klepto
 
 ***** heap walker validator is not a validator all by itself.
 

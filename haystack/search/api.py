@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import pickle
 import json
 
+import dill
 from haystack.search import searcher
-from haystack import constraints
 from haystack.outputters import text
 from haystack.outputters import python
 
@@ -85,7 +84,7 @@ def output_to_json(memory_handler, results):
     # cirular refs kills it check_circular=False,
     return json.dumps(ret, default=python.json_encode_pyobj)
 
-def output_to_pickle(memory_handler, results):
+def output_to_dill(memory_handler, results):
     """
     Transform ctypes results in a pickled format
     :param memory_handler: IMemoryHandler
@@ -95,7 +94,7 @@ def output_to_pickle(memory_handler, results):
     if not isinstance(results, list):
         raise TypeError('Feed me a list of results')
     ret = output_to_python(memory_handler, results)
-    return pickle.dumps(ret)
+    return dill.dumps(ret)
 
 def load_record(memory_handler, struct_type, memory_address, load_constraints=None):
     """

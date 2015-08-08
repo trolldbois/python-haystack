@@ -10,7 +10,7 @@ and therefore identify similar record types allocations.
 
 import logging
 import argparse
-import pickle
+import dill
 import sys
 import struct
 import itertools
@@ -290,7 +290,7 @@ class PointerIntervalSignature:
         # DO NOT SORT LIST. c'est des sequences. pas des sets.
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
         if os.access(myname, os.F_OK):
-            addressCache = pickle.load(file(myname, 'r'))
+            addressCache = dill.load(file(myname, 'r'))
             log.debug(
                 "%d Signature addresses loaded from cache." %
                 (len(addressCache)))
@@ -303,7 +303,7 @@ class PointerIntervalSignature:
 
     def _saveAddressCache(self):
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
-        pickle.dump(self.addressCache, file(myname, 'w'))
+        dill.dump(self.addressCache, file(myname, 'w'))
 
     def getAddressForPreviousPointer(self, offset):
         '''
@@ -793,7 +793,7 @@ class PinnedPointersMapper:
         # on peut se servir des pointeur en stack pour trouver les vrai
         # start-of-structure.
         caches = self._makeCaches()
-        pickle.dump(
+        dill.dump(
             caches,
             file(
                 '/home/jal/Compil/python-haystack/outputs/caches',

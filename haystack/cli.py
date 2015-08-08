@@ -83,7 +83,7 @@ def search_cmdline(args):
     elif rtype == 'json':
         ret = api.output_to_json(memory_handler, results)
     elif rtype == 'pickled':
-        ret = api.output_to_pickle(memory_handler, results)
+        ret = api.output_to_dill(memory_handler, results)
     else:
         raise ValueError('unknown output format')
     print ret
@@ -127,7 +127,7 @@ def refresh(args):
     elif rtype == 'json':
         ret = api.output_to_json(memory_handler, results)
     elif rtype == 'pickled':
-        ret = api.output_to_pickle(memory_handler, results)
+        ret = api.output_to_dill(memory_handler, results)
     else:
         raise ValueError('unknown output format')
     print ret

@@ -100,6 +100,7 @@ setup(name="haystack",
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile",
                         "python-ptrace",
+                        "dill",
                         # reverse
                         "numpy",
                         "networkx",
