@@ -49,10 +49,10 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         import sys
         os.getcwd()
         # all dump files are in .tgz
-        #makeCmd = ['make', '-d']
-        #p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
-        makeCmd = ['make', '-f', 'Makefile.prep']
+        makeCmd = ['make', '-d']
         p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
+        #makeCmd = ['make', '-f', 'Makefile.prep']
+        #p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
         p.wait()
         return p.returncode
 
@@ -107,7 +107,6 @@ setup(name="haystack",
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile",
                         "python-ptrace",
-                        "dill",
                         # reverse
                         "numpy",
                         "networkx",
