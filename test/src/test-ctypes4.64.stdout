@@ -1,0 +1,6 @@
+START 1445
+ADDR: vector_obj 0x17d5c20 20 10 elements
+ADDR: list_int 0x17d5e40 4 10 elements 
+ADDR: list_obj 0x17d5fa0 20 10 elements
+ADDR: vector_int 0x17d61c0 4 10 elements 
+ADDR: vector_obj 0x17d61e0 20 10 elements

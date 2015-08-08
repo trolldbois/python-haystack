@@ -1,0 +1,14 @@
+START
+ -- structs --
+ a is at 0x88d2a10 size: 4 
+ b is at 0x88d2a20 size: 8 
+ c is at 0x88d2a30 size: 12 
+ d is at 0x88d2a40 size: 12 
+ -- end structs --
+ -- classes --
+ a is at 0x88d2a50 size: 4 
+ b is at 0x88d2a60 size: 8 
+ c is at 0x88d2a70 size: 12 
+ d is at 0x88d2a80 size: 12 
+ e is at 0x88d2a90 size: 28 
+ -- end classes --

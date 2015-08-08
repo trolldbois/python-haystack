@@ -1,0 +1,6 @@
+START 1323
+ADDR: vector_obj 0x9fcfa10 20 10 elements
+ADDR: list_int 0x9fcfb70 4 10 elements 
+ADDR: list_obj 0x9fcfc20 20 10 elements
+ADDR: vector_int 0x9fcfd80 4 10 elements 
+ADDR: vector_obj 0x9fcfda0 20 10 elements

@@ -1,0 +1,81 @@
+s: struct_a
+v: a 97
+v: b 98
+v: c 99
+v: d 1678766150
+v: e 7297314935040984421
+v: f 10.000000
+v: g 0.000100
+v: h 1E-299
+o: struct_a 0x23a2010
+t: sizeof 64
+
+s: union_au
+v: d 7297314935040984421
+v: g 689551851887580425392854829170048810854389375237730582643655742644364158391699747312003669224107871834243458312257082595538218367647735257845376820422259120381817982149734174818304.000000
+v: h 2.66002E-4932
+o: union_au 0x23a2060
+t: sizeof 16
+
+s: union_b
+v: a -5
+v: b -5
+v: c -5
+v: d -5
+v: e -5
+v: f 251
+v: g û
+o: union_b 0x23a2080
+t: sizeof 8
+
+s: struct_c
+v: a1 2863311530
+v: b1 3
+v: c1 8
+v: d1 1
+v: a2 A
+v: b2 3
+v: c2 8
+v: d2 1
+v: h -1
+o: struct_c 0x23a20a0
+t: sizeof 16
+
+s: struct_d.b
+v: e 41
+o: struct_d.b 0x23a20c0
+s: struct_d.b2
+v: e 42
+o: struct_d.b2 0x23a2110
+s: struct_d
+v: a 0x23a21f0
+v: b 0x23a20c0
+v: b2 0x23a2110
+v: c[0].a 0
+v: f[0] 66
+v: c[1].a 1
+v: f[1] 66
+v: c[2].a 2
+v: f[2] 66
+v: c[3].a 3
+v: f[3] 66
+v: c[4].a 4
+v: f[4] 66
+v: c[5].a 5
+v: f[5] 66
+v: c[6].a 6
+v: f[6] 66
+v: c[7].a 7
+v: f[7] 66
+v: c[8].a 8
+v: f[8] 66
+v: c[9].a 9
+v: f[9] 66
+v: e 101
+v: g g
+v: h lorem ipsum
+v: i lorem ipsum 2
+o: struct_d 0x23a21f0
+t: sizeof 1424
+
+pid 1381

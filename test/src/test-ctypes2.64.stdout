@@ -1,0 +1,14 @@
+START
+ -- structs --
+ a is at 0x19eac20 size: 4 
+ b is at 0x19eac40 size: 8 
+ c is at 0x19eac60 size: 12 
+ d is at 0x19eac80 size: 12 
+ -- end structs --
+ -- classes --
+ a is at 0x19eaca0 size: 4 
+ b is at 0x19eacc0 size: 8 
+ c is at 0x19eace0 size: 12 
+ d is at 0x19ead00 size: 12 
+ e is at 0x19ead20 size: 28 
+ -- end classes --
