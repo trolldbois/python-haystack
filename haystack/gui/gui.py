@@ -7,18 +7,22 @@ import logging
 import argparse
 import itertools
 import operator
-import sys
-
 import os
+import pickle
+import time
+import sys
 
 import statushandler
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.reverse import signature
 from haystack.reverse import pointerfinder
+
 from PyQt4 import QtGui, QtCore
+
 from haystack.gui import view
 from haystack.gui import widgets
+from haystack.gui import infomodel
 from haystack.gui import qhexedit
 from haystack.gui.memmaptab import Ui_MemoryMappingWidget
 from haystack.gui.mainwindow import Ui_MainWindow
@@ -277,6 +281,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         return size of structure and list of addresses and values )
         '''
         from haystack import api
+        import ctypes
         # import sslsnoop #?
         # self.mapping.unmmap()
         # DEBUG stop at the first instance, lazy me

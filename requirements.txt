@@ -1,7 +1,6 @@
-dill
-pefile
+ctypeslib2
 networkx
 numpy
+pefile
 python-ptrace
 python-Levenshtein
-ctypeslib2

@@ -8,8 +8,9 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import ctypes
 import logging
-
 import os
+import pickle
+import sys
 
 from haystack.mappings.process import readProcessMappings
 
@@ -122,7 +123,7 @@ def reverseLocalFonctionPointerNames(context):
     for name, lib in ldso.items():
         ret = libdl.dlclose(lib._handle)
 
-    import dill
-    dill.dump(vtable, file(fsave, 'wb'))
+    import pickle
+    pickle.dump(vtable, file(fsave, 'wb'))
 
     raise StopIteration

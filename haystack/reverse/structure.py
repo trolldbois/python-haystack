@@ -5,7 +5,7 @@
 #
 
 import logging
-import dill
+import pickle
 import itertools
 import numbers
 import weakref
@@ -36,7 +36,7 @@ DEBUG_ADDRS = []
 # vivisect ?
 # TODO 1: make an interactive thread on that anon_struct and a struct Comparator to find similar struct.
 #         that is a first step towards structure identification && naming. + caching of info
-#      2: dump ctypes structure into python file + cache (vaddr, Structurectypes ) to dill file ( reloading/continue possible with less recalculation )
+#      2: dump ctypes structure into python file + cache (vaddr, Structurectypes ) to pickle file ( reloading/continue possible with less recalculation )
 # create a typename for \xff * 8/16. buffer color ? array of char?
 
 # Compare sruct type from parent with multiple pointer (
@@ -61,7 +61,7 @@ def cacheLoad(context, addr):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = makeFilenameFromAddr(context, addr)
-    p = dill.load(file(fname, 'r'))
+    p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
     p.setContext(context)
@@ -74,7 +74,7 @@ def cacheLoadAll(context):
     for addr in addresses:
         fname = makeFilenameFromAddr(context, addr)
         if os.access(fname, os.F_OK):
-            p = dill.load(file(fname, 'r'))
+            p = pickle.load(file(fname, 'r'))
             p.setContext(context)
             yield addr, p
     return
@@ -85,7 +85,7 @@ def remapLoad(context, addr, newmappings):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = makeFilenameFromAddr(context, addr)
-    p = dill.load(file(fname, 'r'))
+    p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
     # YES we do want to over-write _memory_handler and bytes
@@ -135,7 +135,7 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
             if self.obj() is not None:  #
                 return self.obj()
         try:
-            p = dill.load(file(self._fname, 'r'))
+            p = pickle.load(file(self._fname, 'r'))
         except EOFError as e:
             log.error('Could not load %s - removing it ' % (self._fname))
             os.remove(self._fname)
@@ -302,11 +302,11 @@ class AnonymousStructInstance(object):
             os.mkdir(sdir)
         fname = makeFilename(self._context, self)
         try:
-            # FIXME : loops create dill loops
+            # FIXME : loops create pickle loops
             # print self.__dict__.keys()
             log.debug('saving to %s', fname)
-            dill.dump(self, file(fname, 'w'))
-        except dill.PickleError as e:
+            pickle.dump(self, file(fname, 'w'))
+        except pickle.PickleError as e:
             # self.struct must be cleaned.
             log.error("Pickling error, file %s removed",fname)
             os.remove(fname)
