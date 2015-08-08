@@ -6,4 +6,4 @@ python-Levenshtein
 numpy
 
 # preptest requires it, not install
-ctypeslib2
+# ctypeslib2
