@@ -43,7 +43,8 @@ before_script:
 #  - sudo apt-get -qq install libgcc-4.8-dev --yes --force-yes
 # we need stdc++ 32 bits too /usr/bin/ld: cannot find -lstdc++
 #  - sudo apt-get -qq install libstdc++6:i386 libstdc++-4.8-dev:i386 --yes --force-yes
-  - sudo apt-get -qq install libc6-dev libc6-dev-i386 libgcc-4.8-dev libstdc++6:i386 libstdc++-4.8-dev:i386 --yes --force-yes
+## we dont need this as we dont build them anymore
+#  - sudo apt-get -qq install libc6-dev libc6-dev-i386 libgcc-4.8-dev libstdc++6:i386 libstdc++-4.8-dev:i386 --yes --force-yes
 # we also need the large test files (memory dumps)
   - mkdir -p test/dumps/putty
   - mkdir -p test/dumps/ssh
