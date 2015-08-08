@@ -19,7 +19,10 @@ import subprocess
 
 
 class PyPrepTestsCommand(distutils.cmd.Command):
-    """A custom command to build test sets."""
+    """
+    A custom command to build test sets.
+    Requires ctypeslib2.
+    """
 
     description = 'Run tests and dumps memory'
     user_options = []
@@ -45,7 +48,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         import os
         import sys
         os.getcwd()
-        makeCmd = ['make','-d']
+        makeCmd = ['make', '-d']
         p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
         p.wait()
         return p.returncode
@@ -95,6 +98,7 @@ setup(name="haystack",
                "scripts/haystack-reverse"],
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
+      # numpy is already installed in travis-ci
       setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
@@ -111,9 +115,9 @@ setup(name="haystack",
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
-      # test requires ctypeslib2
+      # prep_test requires ctypeslib2
       # tests_require=["volatility", "ctypeslib2>2.1.3"],
-      tests_require=["ctypeslib2>2.1.3"],
+      # tests_require=["ctypeslib2>2.1.3"],
       #entry_points = {'haystack.plugins':['haystack.model:register']},
       cmdclass={
           'preptests': PyPrepTestsCommand,

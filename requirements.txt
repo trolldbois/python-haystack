@@ -5,5 +5,5 @@ python-Levenshtein
 # lets try to use system package / will be install in setup
 numpy
 
-# test requires it, not install
-# ctypeslib2
+# preptest requires it, not install
+ctypeslib2
