@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 LDFLAGS = -ldl
-INCLS = 
+INCLS =
 
 # use the virtualenv python even in sudo
 PYTHON=$(shell which python)
@@ -26,7 +26,7 @@ pid=
 
 C2PY=clang2py
 
-SRCS := $(wildcard *.c *.cpp) 
+SRCS := $(wildcard *.c *.cpp)
 OBJS32x := $(patsubst %.c,%.32,$(SRCS))
 OBJS32 := $(patsubst %.cpp,%.32,$(OBJS32x))
 OBJS64 := $(patsubst %.32,%.64,$(OBJS32))
@@ -41,8 +41,8 @@ DUMPS64 := $(patsubst %,%.dump,$(OBJS64))
 OUTLOGS64 := $(patsubst %,%.stdout,$(OBJS64))
 TGZ64 := $(patsubst %,%.dump.tgz,$(OBJS64))
 
-.PHONY: 
-	
+.PHONY:
+
 
 all: py binaries dumps tgz
 
@@ -55,7 +55,7 @@ dumps: dumps32 dumps64
 
 %.64: %.c
 	$(CC) $(CFLAGS) -target $(TGT64) $<  $(LDFLAGS)  -o $@
-	
+
 %.32: %.cpp
 	$(CXX) $(CPPFLAGS) -target $(TGT32) $<  $(LDFLAGS) -L$(CPPLIB) -I$(CPPINCLUDE) -o $@
 
@@ -64,23 +64,23 @@ dumps: dumps32 dumps64
 
 py: $(PY32) $(PY64)
 
-%_gen32.py: test-%.c 
+%_gen32.py: test-%.c
 	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
-%_gen32.py: test-%.cpp 
+%_gen32.py: test-%.cpp
 	$(C2PY) -k dstu -x $< -o $@ --target $(TGT32)
 
-%_gen64.py: test-%.c 
+%_gen64.py: test-%.c
 	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
 
-%_gen64.py: test-%.cpp 
+%_gen64.py: test-%.cpp
 	$(C2PY) -k dstu -x $< -o $@ --target $(TGT64)
 
 
-dumps32: $(SRCS) $(DUMPS32) $(OBJS32) 
+dumps32: $(SRCS) $(DUMPS32) $(OBJS32)
 
-dumps64: $(SRCS) $(DUMPS64) $(OBJS64) 
-	
+dumps64: $(SRCS) $(DUMPS64) $(OBJS64)
+
 %.32.dump: %.c
 	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
@@ -90,12 +90,12 @@ dumps64: $(SRCS) $(DUMPS64) $(OBJS64)
 	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
-	
+
 %.64.dump: %.c
 	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
 	sudo chown -R $(USER).$(GROUP) $@
-	
+
 %.64.dump: %.cpp
 	echo "looking at $@"
 	sudo $(PYTHON) make.py $@
@@ -109,18 +109,18 @@ tgz: $(TGZ32) $(TGZ64)
 
 %.64.dump.tgz: %.64.dump
 	tar zcf $@ $<
-	
 
-cleanpy: 
-	rm -f $(PY32) $(PY64) 
-	
-cleanall: clean cleanpy 
+
+cleanpy:
+	rm -f $(PY32) $(PY64)
+
+cleanall: clean cleanpy
 	rm -f $(OBJS32) $(OBJS64)
 	rm -f $(OUTLOGS32) $(OUTLOGS64)
 	rm -rf $(DUMPS32) $(DUMPS64)
 	rm -f $(TGZ32) $(TGZ64)
 
-clean: 
+clean:
 	rm -f *~ *.pyc
 
 

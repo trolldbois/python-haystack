@@ -1,9 +1,9 @@
-pefile
+pefile==1.2.9.1
 python-ptrace
 networkx
 python-Levenshtein
 # lets try to use system package / will be install in setup
-# numpy
+numpy
 
 # test requires it, not install
 # ctypeslib2

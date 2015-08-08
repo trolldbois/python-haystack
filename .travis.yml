@@ -24,11 +24,12 @@ before_install:
 # tests dependencies
   - pip -q install coveralls
 
+# install any dependencies required
 install:
 ## install with requirements
-  - python setup.py install
+#  - python setup.py install
 ## or try the develop way to use the git tree
-#  - pip install -r requirements.txt --use-mirrors
+  - pip install -r requirements.txt --use-mirrors
 #  - python setup.py develop
 
 before_script:
