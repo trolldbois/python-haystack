@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# because of dynamic imports
-# pylint: disable=undefined-variable
+
 
 """ Win heap structure - from LGPL metasm
 http://www.informit.com/articles/article.aspx?p=1081496
@@ -15,7 +14,14 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-"""ensure ctypes basic types are subverted"""
+
+import ctypes
+import logging
+
+from haystack import model
+from haystack import listmodel
+from haystack.abc import interfaces
+
 from haystack import model
 from haystack import utils
 from haystack import constraints
@@ -29,42 +35,28 @@ import sys
 
 import code
 
-log = logging.getLogger('winheap')
+log = logging.getLogger('winxpheap')
 
-################ START copy generated classes ##########################
-# copy generated classes (gen.*) to this module as wrapper
-model.copyGeneratedClasses(gen, sys.modules[__name__])
-# register all classes to haystack
-# create plain old python object from ctypes.Structure's, to pickle them
-model.registerModule(sys.modules[__name__])
-################ END copy generated classes ############################
+############# Start methods overrides #################
+# constraints are in constraints files
 
+class WinXPHeapValidator(listmodel.ListModel):
+    """
+    this listmodel Validator will register know important list fields
+    in the winxp HEAP,
+    and be used to validate the loading of these structures.
+    This class contains all helper functions used to parse the winxpheap structures.
+    """
 
-############# Start expectedValues and methods overrides #################
-
-
-#only 32bits
-# SubSegmentCode is a encoded c_void_p, ignore its value
-struct__HEAP_ENTRY_0_1.expectedValues = {
-    'SubSegmentCode': constraints.IgnoreMember,
-}
-
-#only 32bits
-# another to ignore because of encoded pointer.
-struct__HEAP_FREE_ENTRY_0_1.expectedValues = {
-    'SubSegmentCode': constraints.IgnoreMember,
-}
+    def __init__(self, memory_handler, my_constraints, winxpheap_module):
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError("Feed me a IMemoryHandler")
+        if not isinstance(my_constraints, interfaces.IModuleConstraints):
+            raise TypeError("Feed me a IModuleConstraints")
+        super(WinXPHeapValidator, self).__init__(memory_handler, my_constraints)
+        self.winxpheap = winxpheap_module
 
 
-################# BELOW IS IMPORTED FROM WIN7. MIGHT BE WRONG
-
-
-
-HEAP_SEGMENT.expectedValues = {
-    'Signature': [0xffeeffee],
-    # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
-    'LastValidEntry': constraints.IgnoreMember,
-}
 
 def HEAP_SEGMENT_get_UCR_segment_list(self, mappings):
     """Returns a list of UCR segments for this segment.
