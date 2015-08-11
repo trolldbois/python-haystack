@@ -114,6 +114,21 @@ class TargetPlatform(interfaces.ITargetPlatform):
                 linux += 1
             elif '/' == pathname[0]:
                 linux += 1
+        # if nothing is found that way, try pefile detection
+        # volatility case usually
+        if linux == winxp == win7 == 0:
+            try:
+                cls._detect_cpu_arch_pe(mappings)
+                winxp += 1
+                win7 += 1
+            except NotImplementedError, e:
+                pass
+            try:
+                cls._detect_cpu_arch_elf(mappings)
+                linux += 1
+            except NotImplementedError, e:
+                pass
+
         log.debug(
             'detect_os: scores linux:%d winxp:%d win7:%d' %
             (linux, winxp, win7))
@@ -170,6 +185,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
         from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
         # find an executable image and get the ELF header
         for m in mappings:
+            # FIXME
             if 'r-xp' not in m.permissions:
                 continue
             #head = m.read_bytes(m.start, 0x40)  # 0x34 really

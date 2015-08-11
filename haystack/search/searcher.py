@@ -38,7 +38,7 @@ class RecordSearcher(object):
         self._memory_handler = memory_handler
         self._my_constraints = my_constraints
         self.__target_mappings = target_mappings
-        self.__update_cb = update_cb
+        self._update_cb = update_cb
         log.debug(
             'StructFinder created for %s. Search Perimeter on %d mappings.',
             self._memory_handler.get_name(),
@@ -118,8 +118,8 @@ class RecordSearcher(object):
                 if validated:
                     log.debug("found instance @ 0x%lx", offset)
                     # do stuff with it.
-                    if self.__update_cb is not None:
-                        self.__update_cb(instance, offset)
+                    if self._update_cb is not None:
+                        self._update_cb(instance, offset)
                     outputs.append((instance, offset))
                     # stop when time to stop
                     if len(outputs) >= nb:
@@ -207,8 +207,8 @@ class AnyOffsetRecordSearcher(RecordSearcher):
             if validated:
                 log.debug("found instance @ 0x%lx", offset)
                 # do stuff with it.
-                if self.__update_cb is not None:
-                    self.__update_cb(instance, offset)
+                if self._update_cb is not None:
+                    self._update_cb(instance, offset)
                 outputs.append((instance, offset))
                 # stop when time to stop
                 if len(outputs) >= nb:

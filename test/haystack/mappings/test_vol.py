@@ -6,13 +6,11 @@
 import logging
 import unittest
 
-from haystack import model
-from haystack import types
 from haystack.mappings.vol import VolatilityProcessMapper
 
 log = logging.getLogger('test_vol')
 
-@unittest.skip("travis-ci does not like me - bouhouhou")
+#@unittest.skip("travis-ci does not like me - bouhouhou")
 class TestMapper(unittest.TestCase):
     '''load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples
     The malware analysis cookbook'''
@@ -71,10 +69,10 @@ class TestMapper(unittest.TestCase):
         mapper = VolatilityProcessMapper(f, pid)
         mappings = mapper.getMappings()
 
-        from haystack.structures.win32 import winheap
+        from haystack.structures.win32 import winxpheap
         for mstart in heaps:
             heap = mappings.get_mapping_for_address(mstart)
-            res = heap.read_struct(heap.start,winheap.HEAP)
+            res = heap.read_struct(heap.start,winxpheap.HEAP)
             self.assertTrue(res.is_valid(mappings))
 
         # testing that the list of heaps is always the same
@@ -90,13 +88,13 @@ class TestMapper(unittest.TestCase):
         self.assertEquals(mappings.get_os_name(), 'winxp')
 
         ctypes = mappings.config.ctypes
-        from haystack.structures.win32 import winheap
+        from haystack.structures.win32 import winxpheap
         #print ctypes
         for m in mappings.mappings:
             data = m.read_word(m.start + 8)
             if data == 0xeeffeeff:
                 # we have a heap
-                x = m.read_struct(m.start, winheap.HEAP)
+                x = m.read_struct(m.start, winxpheap.HEAP)
                 print x
 
         self.assertEquals( ctypes.sizeof(x), 1430)

@@ -2,10 +2,10 @@
 
 import logging
 import pickle
+
 import json
 
 from haystack.search import searcher
-from haystack import constraints
 from haystack.outputters import text
 from haystack.outputters import python
 

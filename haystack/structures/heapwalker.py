@@ -147,8 +147,8 @@ def make_heap_finder(memory_handler):
         from haystack.structures.libc import libcheapwalker
         return libcheapwalker.LibcHeapFinder(memory_handler)
     elif os_name == 'winxp':
-        from haystack.structures.win32 import winheapwalker
-        return winheapwalker.WinHeapFinder(memory_handler)
+        from haystack.structures.win32 import winxpheapwalker
+        return winxpheapwalker.WinXPHeapFinder(memory_handler)
     elif os_name == 'win7':
         from haystack.structures.win32 import win7heapwalker
         return win7heapwalker.Win7HeapFinder(memory_handler)

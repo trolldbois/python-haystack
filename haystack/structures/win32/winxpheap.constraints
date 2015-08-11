@@ -2,14 +2,25 @@
 [union__HEAP_USERDATA_HEADER_0]
 SFreeListEntry: IgnoreMember
 
+# TODO current subsegment.SFreeListEntry is on error at some depth.
+# bad pointer value on the second subsegment
 [struct__HEAP_SUBSEGMENT]
 SFreeListEntry: IgnoreMember
+
+[struct__HEAP_ENTRY_0_1]
+SubSegmentCode: IgnoreMember
 
 [struct__HEAP]
 Signature: [0xeeffeeff]
 FrontEndHeapType: [0, 1, 2]
+# HEAP CommitRoutine encoded by a global key
+# The HEAP handle data structure includes a function pointer field called
+# CommitRoutine that is called when memory regions within the heap are committed.
+# Starting with Windows Vista, this field was encoded using a random value that
+# was also stored as a field in the HEAP handle data structure.
 CommitRoutine: IgnoreMember
-
+# we have a sentinel value of 0xffffffff
+Segments: IgnoreMember
 
 #    ('Entry', HEAP_ENTRY),
 #    ('HeaderValidateCopy', POINTER_T(None)),
@@ -32,7 +43,7 @@ CommitRoutine: IgnoreMember
 
 
 [struct__HEAP_SEGMENT]
-Signature: [0xeeffeeff]
+#Signature: [0xeeffeeff]
 LastValidEntry: IgnoreMember
 #    ('Heap', POINTER_T(struct__HEAP)),
 #    ('BaseAddress', POINTER_T(None)),

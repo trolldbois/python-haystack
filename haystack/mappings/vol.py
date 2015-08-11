@@ -76,7 +76,7 @@ class VolatilityProcessMappingA(AMemoryMapping):
 
 import sys
 
-
+@unittest.skipTest('not ready')
 class VolatilityProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, imgname, pid):
@@ -183,7 +183,7 @@ def my_render_text(mapper, cmd, outfd, data):
 
             maps.append(pmap)
 
-    mappings = MemoryHandler(maps)
+    mappings = MemoryHandler(maps, )
     # print _memory_handler
     mappings.init_config()
     mapper.mappings = mappings

@@ -13,7 +13,7 @@ from haystack.structures.win32 import winxpheapwalker
 log = logging.getLogger('winxpwalker')
 
 
-class TestWin7HeapWalker(unittest.TestCase):
+class TestWinXPHeapWalker(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -75,7 +75,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             # for each heap, look at all children
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
-            finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+            finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
             cheap = finder._read_heap(heap)
             log.debug(
                 '-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x' %
@@ -105,7 +105,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     def test_sorted_heaps(self):
         """ check if memory_mapping gives heaps sorted by index. """
         # self.skipTest('known_ok')
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         for i, m in enumerate(self._memory_handler.get_heaps()):
             # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex,
             # m.start)
@@ -115,7 +115,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
 
     def test_get_frontendheap(self):
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         # helper
         win7heap = finder._heap_module
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
@@ -195,7 +195,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         return
 
     def test_get_chunks(self):
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
         # for heap in self._memory_handler.get_heaps():
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
@@ -236,7 +236,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     @unittest.expectedFailure
     def test_totalsize(self):
         """ check if there is an adequate allocation rate as per get_user_allocations """
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
 
         #
         # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
@@ -345,7 +345,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     def test_search(self):
         """    Testing the loading of _HEAP in each memory mapping.
         Compare load_members results with known offsets. expect failures otherwise. """
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         # helper
         win7heap = finder._heap_module
         validator = finder.get_heap_validator()
@@ -382,7 +382,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
     def test_get_user_allocations(self):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
-        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
 
         for m in self._memory_handler.get_heaps():
             #
@@ -403,7 +403,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    # logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
+    # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
     # logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
     #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
