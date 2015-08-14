@@ -172,8 +172,13 @@ class WinHeapValidator(listmodel.ListModel):
                 st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
                 # load members on self.FrontEndHeap car c'est un void *
                 #for free in st.iterateList('ListHead'):  # single link list.
-                for free in self.iterate_list_from_field(st, 'ListHead'):
+                #for free in self.iterate_list_from_field(st, 'ListHead'):
+                listHead = st.ListHead._1
+                listHead._orig_address_ = addr
+                for free in self.iterate_list_from_field(listHead, 'Next'):
                     # TODO delete this free from the heap-segment entries chunks
+                    # is that supposed to be a FREE_ENTRY ?
+                    # or a struct__HEAP_LOOKASIDE ?
                     log.debug('free')
                     res.append(free)  # ???
                     pass

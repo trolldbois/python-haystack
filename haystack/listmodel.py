@@ -140,8 +140,8 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param forward: the list pointer fieldname
         :return: None
         """
-        if not issubclass(record_type, ctypes.Structure):
-            raise TypeError('Feed me a ctypes.Structure')
+        if not issubclass(record_type, ctypes.Structure) and not issubclass(record_type, ctypes.Union):
+            raise TypeError('Feed me a ctypes record rype')
         # test field existences in instance
         flink_type = getattr(record_type, forward)
         # test field existences in type
@@ -189,8 +189,8 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param backward: the backward pointer
         :return: None
         """
-        if not issubclass(record_type, ctypes.Structure):
-            raise TypeError('Feed me a ctypes.Structure')
+        if not issubclass(record_type, ctypes.Structure) and not issubclass(record_type, ctypes.Union):
+            raise TypeError('Feed me a ctypes record rype')
         # test field existences in instance
         flink_type = getattr(record_type, forward)
         blink_type = getattr(record_type, backward)
@@ -320,12 +320,14 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         head = getattr(record, fieldname)
         # and its record_type
         field_record_type = type(head)
+        ## DEBUG use registration instead
+        ##field_record_type = pointee_record_type
         # check that forward and backwards link field name were registered
         iterator_fn = None
         if self.is_single_linked_list_type(field_record_type):
             iterator_fn = self._iterate_single_linked_list
             # stop at the first sign of a previously found list entry
-            _, _, sentinels = self.get_single_linked_list_type(type(head))
+            _,sentinels = self.get_single_linked_list_type(type(head))
         elif self.is_double_linked_list_type(field_record_type):
             iterator_fn = self._iterate_double_linked_list
             # stop at the first sign of a previously found list entry

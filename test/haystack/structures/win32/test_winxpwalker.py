@@ -263,7 +263,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
         #self.skipTest('overallocation clearly not working')
 
-        self.assertEquals(self._memory_handler.get_target_platform(), 'win32')
+        self.assertEquals(self._memory_handler.get_target_platform().get_os_name(), 'winxp')
 
         full = list()
         for heap in self._memory_handler.get_heaps():
@@ -464,8 +464,8 @@ class TestWinXPHeapFinder(unittest.TestCase):
             self.assertTrue(self._heap_finder._is_heap(m))
 
 if __name__ == '__main__':
-    # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

@@ -60,7 +60,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         sentinels.append(0xffffffff)
         self.register_double_linked_list_record_type(self.win_heap.struct__LIST_ENTRY, 'Flink', 'Blink', sentinels)
         #
-        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.struct__HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
 
         # we need a single linked pointer list management
 
@@ -76,7 +76,14 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #class struct__SLIST_HEADER_0(ctypes.Structure):
         #    ('Next', SINGLE_LIST_ENTRY),
         self.register_single_linked_list_record_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
+        #self.register_single_linked_list_record_type(self.win_heap.union__SLIST_HEADER, '_1')
+        #self.register_single_linked_list_record_type(self.win_heap.struct__SLIST_HEADER_0, 'Next')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.union__SLIST_HEADER, '_1')
+        #self.register_linked_list_field_and_type(self.win_heap.union__SLIST_HEADER, '_1', self.win_heap.struct__SLIST_HEADER_0, 'Next')
+        self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead')
+        # what the fuck is pointed record type of listHead ?
+        #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
         return
 
