@@ -10,10 +10,12 @@ from haystack.mappings.vol import VolatilityProcessMapper
 
 log = logging.getLogger('test_vol')
 
-#@unittest.skip("travis-ci does not like me - bouhouhou")
+@unittest.skip('not ready')
 class TestMapper(unittest.TestCase):
-    '''load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples
-    The malware analysis cookbook'''
+    """
+    load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples
+    The malware analysis cookbook
+    """
 
     def setUp(self):
         pass

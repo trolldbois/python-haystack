@@ -406,6 +406,7 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset,
                                          major_device, minor_device, inode, pathname, preload=False)
         self._memdumpname = memdumpname
+        assert isinstance(self._memdumpname, str)
         return
 
     def _mmap(self):

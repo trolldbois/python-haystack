@@ -36,7 +36,7 @@ CommitRoutine: IgnoreMember
 # HEAP segment was aggregated into HEAP
 # Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
 LastValidEntry: IgnoreMember
-
+#FreeLists: IgnoreMember
 
 # HEAP_UCR_DESCRIPTOR per definition, reserved space is not maped.
 [struct__HEAP_UCR_DESCRIPTOR]

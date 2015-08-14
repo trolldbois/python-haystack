@@ -82,8 +82,10 @@ def main(argv):
     elif opts.quiet:
         level=logging.ERROR
 
-    if opts.debug :
+    if opts.debug:
         flog = os.path.normpath('log')
+        # FORMAT = '%(relativeCreated)d %(message)s'
+        # logging.basicConfig(format=FORMAT, level=level, filename=flog, filemode='w')
         logging.basicConfig(level=level, filename=flog, filemode='w')
         print ('[+] **** COMPLETE debug log to %s'%(flog))
     else:

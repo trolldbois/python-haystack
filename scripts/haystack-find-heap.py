@@ -64,7 +64,8 @@ class HeapFinder(object):
                                                        my_constraints,
                                                        [m],
                                                        update_cb=partial(self.print_cb, memory_handler))
-        results = my_searcher.search(heap_module.HEAP)
+        results = my_searcher._load_at(m, start_address_mapping, heap_module.HEAP, depth=5)
+        #print haystack.output_to_python(memory_handler, [results])[0][0].toString()
         return results
 
     def print_cb(self, memory_handler, instance, address):
@@ -79,7 +80,8 @@ class HeapFinder(object):
         py_results = haystack.output_to_python(memory_handler, [(instance, address)])
         for x in py_results:
             m = memory_handler.get_mapping_for_address(address)
-            print 'HEAP at 0x%x %s' % (address, m)
+            print 'HEAP at 0x%x size: 0x%x map: %s' % (address, len(m), m)
+            #print x
 
 
 class Win7HeapFinder(HeapFinder):
@@ -118,34 +120,29 @@ zeus.vmem.856.dump
 0x00e80000-0x00e90000
 0x7f6f0000-0x7f7f0000
 
-DEBUG:heapwalker:HeapFinder._is_heap 0x00190000 0x001a0000 r-xp 0x00000000 00:00 0000000 [vol_mapping_007] True
 
-why the fuck is the searcher bailing out ?
-DEBUG:basicmodel:ptr: Blink <class 'haystack.types.LP_4_struct__LIST_ENTRY'> LP_4_struct__LIST_ENTRY(4294967295) 0xffffffff INVALID
-DEBUG:basicmodel:-- <struct__LIST_ENTRY> isValid = False
-DEBUG:basicmodel:structType: SystemResourcesList <class 'haystack.structures.win32.winxp_32.struct__LIST_ENTRY'> <haystack.structures.win32.winxp_32.struct__LIST_ENTRY object at 0x7fe07e0e9b90> isValid FALSE
-DEBUG:basicmodel:-- <struct__ERESOURCE> isValid = False
-DEBUG:basicmodel:structType: Resource <class 'haystack.structures.win32.winxp_32.struct__ERESOURCE'> <haystack.structures.win32.winxp_32.struct__ERESOURCE object at 0x7fe07e0e9cb0> isValid FALSE
-DEBUG:basicmodel:-- <union__HEAP_LOCK_0> isValid = False
-DEBUG:basicmodel:structType: Lock <class 'haystack.structures.win32.winxp_32.union__HEAP_LOCK_0'> <haystack.structures.win32.winxp_32.union__HEAP_LOCK_0 object at 0x7fe07e0513b0> isValid FALSE
-DEBUG:basicmodel:-- <struct__HEAP_LOCK> isValid = False
-DEBUG:basicmodel:member LockVariable was not loaded
-DEBUG:basicmodel:member Heap was not loaded
-DEBUG:basicmodel:member Segments was not loaded
+
+DEBUG:basicmodel:ptr: UnusedUnCommittedRanges <class 'haystack.types.LP_4_struct__HEAP_UNCOMMMTTED_RANGE'> LP_4_struct__HEAP_UNCOMMMTTED_RANGE(3160606104) 0xbc630598 INVALID
 
 '''
 
 
-def main(memdumpname):
+def main(argv):
+    memdumpname = argv[1]
+    # memdumpname, address = argv[1], int(argv[2], 16)
+
     #f = Win7HeapFinder()
     #f.search_heap(memdumpname)
     f = WinXPHeapFinder()
-    #f.search_heap_direct(memdumpname, 0x00190000)
     f.search_heap(memdumpname)
+    #f.search_heap_direct(memdumpname, 0x00860000)
+    #f = Win7HeapFinder()
+    #f.search_heap_direct(memdumpname, address)
 
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    main(sys.argv[1])
+    #logging.basicConfig(level=logging.DEBUG)
+    main(sys.argv)
 

@@ -135,10 +135,12 @@ class RecordSearcher(object):
         """
         log.debug("Loading %s from 0x%lx " % (struct_type, address))
         instance = mem_map.read_struct(address, struct_type)
+        log.debug("Validating %s from 0x%lx " % (struct_type, address))
         # FIXME why not basicmodel ?
         validator = listmodel.ListModel(self._memory_handler, self._my_constraints)
         # check if data matches
         if validator.load_members(instance, depth):
+            # FIXME: should be if validator.is_valid(instance):
             log.info("found instance %s @ 0x%lx", struct_type, address)
             # do stuff with it.
             validated = True

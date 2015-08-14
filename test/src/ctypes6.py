@@ -11,7 +11,7 @@ class CTypes6Validator(listmodel.ListModel):
         self.register_double_linked_list_record_type(self.ctypes6.struct_entry, 'flink', 'blink')
         # heads
         if self._target.get_word_size() == 4:
-            self.register_double_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
         elif self._target.get_word_size() == 8:
-            self.register_double_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
 

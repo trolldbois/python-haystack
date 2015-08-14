@@ -76,7 +76,6 @@ class VolatilityProcessMappingA(AMemoryMapping):
 
 import sys
 
-@unittest.skipTest('not ready')
 class VolatilityProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, imgname, pid):

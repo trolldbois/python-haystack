@@ -106,13 +106,13 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ check if memory_mapping gives heaps sorted by index. """
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        heaps = self._memory_handler.get_heaps()
+        self.assertEquals(len(heaps), len(self._known_heaps))
         for i, m in enumerate(self._memory_handler.get_heaps()):
-            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex,
-            # m.start)
+            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
             self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
                               'ProcessHeaps should have correct indexes')
         return
-
 
     def test_get_frontendheap(self):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
@@ -356,9 +356,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             heap = mapping.read_struct(addr, win7heap.HEAP)
             if addr in map(lambda x: x[0], self._known_heaps):
                 self.assertTrue(
-                    validator.load_members(
-                        heap,
-                        1000),
+                    validator.load_members( heap, 50),
                     "We expected a valid hit at @ 0x%0.8x" %
                     (addr))
                 found.append(addr, )
@@ -401,16 +399,8 @@ class TestWin7HeapWalker(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-    # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    # logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-    # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-    # logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-    #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
-    #logging.getLogger('base').setLevel(level=logging.INFO)
-    #logging.getLogger('basicmodel').setLevel(level=logging.INFO)
-    #logging.getLogger('filemappings').setLevel(level=logging.INFO)
-    # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+    # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)

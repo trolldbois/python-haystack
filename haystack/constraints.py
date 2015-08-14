@@ -68,7 +68,12 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
                     raise ValueError("%s: struct_name: %s Field: %s constraint: %s" % (
                                      e.message, struct_name, field, value))
                 # each field can only have one IConstraint (which can be a list of)
-                _constraints[struct_name][field] = value
+                if field not in _constraints[struct_name]:
+                    _constraints[struct_name][field] = []
+                if isinstance(value, list):
+                    _constraints[struct_name][field].extend(value)
+                else:
+                    _constraints[struct_name][field].append(value)
         return _constraints
 
     def _parse(self, value):

@@ -57,9 +57,26 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # the lists usually use end of mapping as a sentinel.
         # we have to use all mappings instead of heaps, because of a circular dependency
         sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
-        self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
+        sentinels.append(0xffffffff)
+        self.register_double_linked_list_record_type(self.win_heap.struct__LIST_ENTRY, 'Flink', 'Blink', sentinels)
         #
-        self.register_double_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
+
+        # we need a single linked pointer list management
+
+        #class struct__HEAP_LOOKASIDE(ctypes.Structure):
+        #    ('ListHead', SLIST_HEADER),
+
+        #SLIST_HEADER = union__SLIST_HEADER
+
+        #class union__SLIST_HEADER(ctypes.Union):
+        #    ('Alignment', ctypes.c_uint64),
+        #    ('_1', struct__SLIST_HEADER_0),
+
+        #class struct__SLIST_HEADER_0(ctypes.Structure):
+        #    ('Next', SINGLE_LIST_ENTRY),
+        self.register_single_linked_list_record_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
+        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
         return
 
@@ -68,8 +85,12 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
     def HEAP_get_segment_list(self, record):
         """returns a list of all segment attached to one Heap structure."""
         segments = list()
-        segments_addr = self._utils.get_pointee_address(record.SegmentList)
+        segments_addr = self._utils.get_pointee_address(record.Segments)
+        if segments_addr == 0:
+            return []
         m = self._memory_handler.get_mapping_for_address(segments_addr)
+        if not m:
+            raise RuntimeError('HEAP.Segments has a bad address %x' % segments_addr)
         st = m.read_struct(segments_addr, (self.win_heap.struct__HEAP_SEGMENT*64))
         base_addr = st._orig_address_
         size_segment = ctypes.sizeof(self.win_heap.struct__HEAP_SEGMENT)

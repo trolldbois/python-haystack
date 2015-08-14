@@ -34,7 +34,10 @@ def main(filename):
             path = line[i_path:].strip()
             o_path = "%s-%s" % (fmt % start, fmt % end)
             # rename file
-            os.rename(path, o_path)
+            try:
+                os.rename(path, o_path)
+            except OSError, e:
+                sys.stderr.write('File rename error\n')
             # offset is unknown.
             print '%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i)
 

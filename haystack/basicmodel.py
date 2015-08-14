@@ -129,22 +129,48 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     def _is_valid(self, record, record_constraints):
         """ real implementation.    check expectedValues first, then the other fields """
         log.debug(' -- <%s> isValid --', record.__class__.__name__)
-        _fieldsTuple = get_fields(record)
-        myfields = dict(_fieldsTuple)
         done = []
         log.debug("constraints are on %s", record_constraints)
-        # check expectedValues first
-        for attrname, expected in record_constraints.iteritems():
+        # check all fields inline
+        #for attrname, attrtype in get_fields(record):
+        #    attr = getattr(record, attrname)
+        #    ignore = False
+        #    # shorcut ignores
+        #    if attrname in record_constraints:
+        #        for constraint in record_constraints[attrname]:
+        #            if constraint is constraints.IgnoreMember:
+        #                log.debug('ignoring %s as requested', attrname)
+        #                ignore = True
+        #                break
+        #            elif isinstance(constraint, constraints.ListLimitDepthValidation):
+        #                max_depth = constraint.max_depth
+        #                log.debug('setting max_depth %d as requested', max_depth)
+        #        continue
+        #    if ignore:
+        #        continue
+        #    # validate the attr
+        #    if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):
+        #        return False
+
+        # we check constrained field first to stop early if possible
+        _fieldsTuple = get_fields(record)
+        myfields = dict(_fieldsTuple)
+        for attrname, _constraints in record_constraints.iteritems():
             if attrname not in myfields:
                 log.warning('constraint check: field %s does not exists in record for %s',
                             attrname, record.__class__.__name__)
                 continue
             done.append(attrname)
-            log.debug(' +++ %s %s ', attrname, expected)
             attrtype = myfields[attrname]
             attr = getattr(record, attrname)
-            # FIXME : contains IgnoreMember ?
-            if expected is constraints.IgnoreMember:
+            ignore = False
+            for expected in _constraints:
+                log.debug(' +++ %s %s ', attrname, expected)
+                if expected is constraints.IgnoreMember:
+                    ignore = True
+                    break
+            if ignore:
+                log.debug('IgnoreMember: %s ', attrname)
                 continue
             if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):
                 return False
@@ -326,6 +352,8 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             log.debug('Struct partially LOADED. %s not loaded',
                 record.__class__.__name__)
             return True
+        if max_depth > 100:
+            raise RuntimeError('max_depth')
         max_depth -= 1
         if not self.is_valid(record):
             return False
@@ -335,23 +363,26 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         record_constraints = self._get_constraints_for(record)
         for attrname, attrtype in get_fields(record):
             attr = getattr(record, attrname)
+            ignore = False
             # shorcut ignores
             if attrname in record_constraints:
-                # shortcut
-                if record_constraints[attrname] is constraints.IgnoreMember:
-                    return True
+                for _constraint in record_constraints[attrname]:
+                    # shortcut
+                    if _constraint is constraints.IgnoreMember:
+                        ignore = True
+                        break
+            if ignore:
+                continue
             try:
-                if not self._load_member(record, attr, attrname, attrtype, record_constraints,
-                                        max_depth):
+                if not self._load_member(record, attr, attrname, attrtype, record_constraints, max_depth):
                     return False
             except ValueError as e:
                 log.error('maxDepth was %d' % max_depth)
                 raise
-
         log.debug('- <%s> END load_members -', record.__class__.__name__)
         return True
 
-    def _load_member(self, record, attr, attrname, attrtype, record_constraints, maxDepth):
+    def _load_member(self, record, attr, attrname, attrtype, record_constraints, max_depth):
         # skip static void_p data members
         if not self._is_loadable_member(attr, attrname, attrtype):
             log.debug("%s %s not loadable bool(attr) = %s", attrname, attrtype,
@@ -365,7 +396,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                                                       record._orig_address_ + offset)
             # TODO pydoc for impl.
             attr._orig_address_ = record._orig_address_ + offset
-            if not self.load_members(attr, maxDepth - 1):
+            if not self.load_members(attr, max_depth - 1):
                 log.debug(
                     "st: %s %s not valid, error while loading inner struct",
                     attrname, attrtype)
@@ -387,7 +418,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 # if not self._load_member(attr[i], "%s[%d]"%(attrname,i),
                 # elType, _memory_handler, maxDepth):
                 if not self._load_member(record,
-                        attr[i], attrname, elType, record_constraints, maxDepth):
+                        attr[i], attrname, elType, record_constraints, max_depth):
                     return False
             return True
         # we have PointerType here . Basic or complex
@@ -495,10 +526,10 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             elif (self._ctypes.is_array_type(subtype) or
                   self._ctypes.is_pointer_type(subtype)):
                 return self._load_member( # FIXME
-                    contents, 'pointee', subtype, record_constraints, maxDepth - 1)
-
-            if not self.load_members(contents, maxDepth - 1):
-                log.debug('member %s was not loaded' % (attrname))
+                    contents, 'pointee', subtype, record_constraints, max_depth - 1)
+            log.debug('d: %d load_members recursively on pointer %s' % (max_depth, attrname))
+            if not self.load_members(contents, max_depth - 1):
+                log.debug('member %s was not loaded' % attrname)
                 # invalidate the cache ref.
                 self._memory_handler.delRef(_attrType, attr_obj_address)
                 return False

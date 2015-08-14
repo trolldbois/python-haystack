@@ -21,6 +21,11 @@ FrontEndHeapType: [0, 1, 2]
 CommitRoutine: IgnoreMember
 # we have a sentinel value of 0xffffffff
 Segments: IgnoreMember
+# found in wild DEBUG:memorybase:is_valid_address_value = bc63e310 False
+UnusedUnCommittedRanges: IgnoreMember
+VirtualAllocdBlocks: IgnoreMember
+# and a lot of freelists FreeLists[0], <class 'haystack.structures.win32.winxp_32.struct__LIST_ENTRY'>
+
 
 #    ('Entry', HEAP_ENTRY),
 #    ('HeaderValidateCopy', POINTER_T(None)),
@@ -51,4 +56,3 @@ LastValidEntry: IgnoreMember
 #    ('LastValidEntry', POINTER_T(struct__HEAP_ENTRY)),
 #    ('UnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)),
 #    ('LastEntryInSegment', POINTER_T(struct__HEAP_ENTRY)),
-

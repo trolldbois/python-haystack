@@ -47,7 +47,7 @@ class TestListStructTest6(SrcTests):
         self.assertTrue(self.x32_validator.load_members(self.usual, 10))
         # we know its a double linked list, so we can iterate it.
         nodes_addrs = [
-            el for el in self.x32_validator.iterate_list(self.usual.root)]
+            el for el in self.x32_validator._iterate_double_linked_list(self.usual.root)]
         # test that we have a list of two structures in a list
         self.assertEquals(len(nodes_addrs), 2)
 

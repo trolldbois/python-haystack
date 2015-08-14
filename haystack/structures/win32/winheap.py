@@ -36,14 +36,16 @@ class WinHeapValidator(listmodel.ListModel):
     #def _init_heap_module(self):
     #    self.win_heap = module
 
+    def HEAP_get_segment_list(self, record):
+        raise NotImplementedError('code differs between XP and 7')
+
     def HEAP_SEGMENT_get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
         ucrs = list()
-        link_info = self.get_list_info_for_field_for(type(record), 'UCRSegmentList')
-        for ucr in self.iterate_list_from_field(record, link_info):
+        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -58,8 +60,7 @@ class WinHeapValidator(listmodel.ListModel):
         TODO: need some working on.
         """
         vallocs = list()
-        link_info = self.get_list_info_for_field_for(type(record), 'VirtualAllocdBlocks')
-        for valloc in self.iterate_list_from_field(record, link_info):
+        for valloc in self.iterate_list_from_field(record, 'VirtualAllocdBlocks'):
             vallocs.append(valloc)
             log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
                 valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
@@ -72,8 +73,7 @@ class WinHeapValidator(listmodel.ListModel):
         """
         # TODO: exclude UCR segment from valid pointer values in _memory_handler.
         ucrs = list()
-        link_info = self.get_list_info_for_field_for(type(record), 'UCRList')
-        for ucr in self.iterate_list_from_field(record, link_info):
+        for ucr in self.iterate_list_from_field(record, 'UCRList'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -81,9 +81,6 @@ class WinHeapValidator(listmodel.ListModel):
                 ucr_struct_addr, ucr_addr, ucr.Size))
             ucrs.append(ucr)
         return ucrs
-
-    def HEAP_get_segment_list(self, record):
-        raise NotImplementedError('code differs between XP and 7')
 
     def HEAP_get_chunks(self, record):
         """Returns a list of tuple(address,size) for all chunks in
@@ -145,6 +142,7 @@ class WinHeapValidator(listmodel.ListModel):
                 chunk_addr += chunk_header.Size * 8
         return (allocated, free)
 
+
     def HEAP_get_frontend_chunks(self, record):
         """ windows xp ?
             the list of chunks from the frontend are deleted from the segment chunk list.
@@ -174,7 +172,7 @@ class WinHeapValidator(listmodel.ListModel):
                 st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
                 # load members on self.FrontEndHeap car c'est un void *
                 #for free in st.iterateList('ListHead'):  # single link list.
-                for free in self.iterateList(st):
+                for free in self.iterate_list_from_field(st, 'ListHead'):
                     # TODO delete this free from the heap-segment entries chunks
                     log.debug('free')
                     res.append(free)  # ???
@@ -404,8 +402,7 @@ class WinHeapValidator(listmodel.ListModel):
         # FIXME: we should use get_segmentlist to coallescce segment in one heap
         # memory mapping. Not free chunks.
         res = list()
-        link_info = self.get_list_info_for_field_for(type(record), 'FreeLists')
-        for freeblock in self.iterate_list_from_field(record, link_info):
+        for freeblock in self.iterate_list_from_field(record, 'FreeLists'):
             if record.EncodeFlagMask:
                 chunk_header = self.HEAP_ENTRY_decode(freeblock, record)
             # size = header + freespace
@@ -413,4 +410,3 @@ class WinHeapValidator(listmodel.ListModel):
             # FIXME: use word_size from self._target
             res.append((freeblock._orig_address_, chunk_header.Size * 8))
         return res
-

@@ -18,15 +18,30 @@ class TestWinXPHeapWalker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # putty 1 was done under win7 32 bits ?
-        cls._memory_handler = dump_loader.load('/home/jal/outputs/vol/zeus.vmem.856.dump')
-        cls._known_heaps = [(0x00390000, 8956), (0x00540000, 868),
-                             (0x00580000, 111933), (0x005c0000, 1704080),
-                             (0x01ef0000, 604), (0x02010000, 61348),
-                             (0x02080000, 474949), (0x021f0000, 18762),
-                             (0x03360000, 604), (0x04030000, 632),
-                             (0x04110000, 1334), (0x041c0000, 644),
-                             # from free stuf - erroneous
-                             #( 0x0061a000, 1200),
+        #cls._memory_handler = dump_loader.load('/home/jal/outputs/vol/zeus.vmem.856.dump')
+        #cls._known_heaps = [ (0x00090000, 0x100000),
+        #                     (0x00190000, 0x10000),
+        #                     (0x001a0000, 0x10000),
+        #                     (0x00350000, 0x10000),
+        #                     (0x003b0000, 0x10000),
+        #                     (0x00c30000, 0x80000),
+        #                     (0x00d60000, 0x10000),
+        #                     (0x00e20000, 0x10000),
+        #                     (0x00e80000, 0x10000),
+        #                     (0x7f6f0000, 0x100000)
+        #                     ]
+        cls._memory_handler = dump_loader.load('/home/jal/outputs/vol/zeus.vmem.1668.dump')
+        # failed 0x00860000-0x00b60000
+        # failed 0x00150000-0x00250000
+        cls._known_heaps = [ (0x00150000, 0x100000),
+                             (0x00250000, 0x10000),
+                             (0x003f0000, 0x10000),
+                             (0x00b70000, 0x10000),
+                             (0x00ba0000, 0x10000),
+                             (0x01620000, 0x80000),
+                             (0x01eb0000, 0x10000),
+                             (0x01ec0000, 0x100000),
+                             (0x7f6f0000, 0x100000),
                              ]
         return
 
@@ -46,8 +61,6 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
     def test_freelists(self):
         """ List all free blocks """
-
-        # TODO test 0x0061a000 for overflow
 
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
@@ -103,16 +116,19 @@ class TestWinXPHeapWalker(unittest.TestCase):
         return
 
     def test_sorted_heaps(self):
-        """ check if memory_mapping gives heaps sorted by index. """
+        """
+        check if memory_mapping gives heaps sorted by index.
+        FIXME: is HEAP.ProcessHeapsListIndex supposed to be consecutive ?
+        """
         # self.skipTest('known_ok')
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
+        heaps = self._memory_handler.get_heaps()
+        self.assertEquals(len(heaps), len(self._known_heaps))
         for i, m in enumerate(self._memory_handler.get_heaps()):
-            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex,
-            # m.start)
+            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
             self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
                               'ProcessHeaps should have correct indexes')
         return
-
 
     def test_get_frontendheap(self):
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
@@ -233,7 +249,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         self.assertIn(m, self._heapChildren[parent], comment)
 
     # a free chunks size jumps into unknown mmap address space..
-    @unittest.expectedFailure
+    #@unittest.expectedFailure
     def test_totalsize(self):
         """ check if there is an adequate allocation rate as per get_user_allocations """
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
@@ -247,7 +263,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
         #self.skipTest('overallocation clearly not working')
 
-        self.assertEquals(self._memory_handler.get_target_system(), 'win32')
+        self.assertEquals(self._memory_handler.get_target_platform(), 'win32')
 
         full = list()
         for heap in self._memory_handler.get_heaps():
@@ -356,11 +372,9 @@ class TestWinXPHeapWalker(unittest.TestCase):
             heap = mapping.read_struct(addr, win7heap.HEAP)
             if addr in map(lambda x: x[0], self._known_heaps):
                 self.assertTrue(
-                    validator.load_members(
-                        heap,
-                        1000),
+                    validator.load_members(heap, 50),
                     "We expected a valid hit at @ 0x%0.8x" %
-                    (addr))
+                    addr)
                 found.append(addr, )
             else:
                 try:
@@ -400,8 +414,58 @@ class TestWinXPHeapWalker(unittest.TestCase):
         return
 
 
+class TestWinXPHeapFinder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        #cls._memory_handler = dump_loader.load('/home/jal/outputs/vol/zeus.vmem.856.dump')
+        #cls._known_heaps = [ (0x00090000, 0x100000),
+        #                     (0x00190000, 0x10000),
+        #                     (0x001a0000, 0x10000),
+        #                     (0x00350000, 0x10000),
+        #                     (0x003b0000, 0x10000),
+        #                     (0x00c30000, 0x80000),
+        #                     (0x00d60000, 0x10000),
+        #                     (0x00e20000, 0x10000),
+        #                     (0x00e80000, 0x10000),
+        #                     (0x7f6f0000, 0x100000)
+        #                     ]
+        cls._memory_handler = dump_loader.load('/home/jal/outputs/vol/zeus.vmem.1668.dump')
+        # failed 0x00860000-0x00b60000
+        # failed 0x00150000-0x00250000
+        cls._known_heaps = [ (0x00150000, 0x100000),
+                             (0x00250000, 0x10000),
+                             (0x003f0000, 0x10000),
+                             (0x00b70000, 0x10000),
+                             (0x00ba0000, 0x10000),
+                             (0x01620000, 0x80000),
+                             (0x01eb0000, 0x10000),
+                             (0x01ec0000, 0x100000),
+                             (0x7f6f0000, 0x100000),
+                            ]
+        return
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._memory_handler.reset_mappings()
+        cls._memory_handler = None
+        return
+
+    def setUp(self):
+        self._heap_finder = self._memory_handler.get_heap_finder()
+        return
+
+    def tearDown(self):
+        self._heap_finder = None
+        return
+
+    def test_is_heap(self):
+        for addr, size in self._known_heaps:
+            m = self._memory_handler.get_mapping_for_address(addr)
+            self.assertTrue(self._heap_finder._is_heap(m))
+
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

@@ -200,13 +200,13 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             elif end - start > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (mmap_pathname) +
                             ' Search will fail. Buffer is needed.')
-                mmap = FileBackedMemoryMapping(mmap_content_file, start, end, permissions, offset,
+                mmap = FileBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             else:
                 # log.debug('Using a MemoryDumpMemoryMapping. small size')
                 # mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset,
                 log.debug('Always use FilenameBackedMemoryMapping. small size')
-                mmap = FilenameBackedMemoryMapping(mmap_content_file, start, end, permissions, offset,
+                mmap = FilenameBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             _mappings.append(mmap)
         _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)

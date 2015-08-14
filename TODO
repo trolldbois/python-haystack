@@ -1,6 +1,9 @@
 
 - FIX winXP x86 heapwalker, then work on vol.
 
+- use pycallgraph to cProfile a HEAP validation.
+- make a callback profiler that profiles the graph path validation of a structure in graphical format
+
 ***** heap walker validator is not a validator all by itself.
 
 - add a depth parameter to constraints loading on list fields.
