@@ -103,6 +103,8 @@ class HeapFinder(interfaces.IHeapFinder):
         # TODO: optimization. store heap status in object.
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
+        # FIXME: the Heap is not necessary at @start of mapping.
+        # we find some backend heap at other addresses
         heap = self._read_heap(mapping)
         load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))

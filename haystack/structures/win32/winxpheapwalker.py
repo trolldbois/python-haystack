@@ -93,12 +93,13 @@ class WinXPHeapFinder(heapwalker.HeapFinder):
         heap_mappings = super(WinXPHeapFinder, self).get_heap_mappings()
         # FIXME PYDOC  cant remember why we do this.
         # we sort by Process HeapsListIndex
-        for mapping in heap_mappings:
-            mapping._children = WinXPHeapWalker(
-                self._memory_handler,
-                self._heap_module,
-                mapping,
-                self._heap_module_constraints).get_heap_children_mmaps()
+        #for mapping in heap_mappings:
+            # why do we get the "children" segments ?
+            #mapping._children = WinXPHeapWalker(
+            #    self._memory_handler,
+            #    self._heap_module,
+            #    mapping,
+            #    self._heap_module_constraints).get_heap_children_mmaps()
         heap_mappings.sort(
             key=lambda m: self._read_heap(m).ProcessHeapsListIndex)
         return heap_mappings

@@ -36,7 +36,7 @@ def get_field_type(record, fieldname):
 
 def get_fields(record):
     if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
-        raise TypeError('Feed me a ctypes record instance')
+        raise TypeError('Feed me a ctypes record instance. Not: %s'% record)
     return get_record_type_fields(type(record))
 
 def get_record_type_fields(record_type):

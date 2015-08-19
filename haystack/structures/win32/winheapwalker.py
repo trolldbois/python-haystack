@@ -84,9 +84,10 @@ class WinHeapWalker(heapwalker.HeapWalker):
             for x, s in self._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
                 if (m != self._heap_mapping) and (m not in child_heaps):
+                    # FIXME, its actually a segment isn't it ?
                     log.debug(
-                        'mmap 0x%0.8x is extended heap space from 0x%0.8x' %
-                        (m.start, self._heap_mapping.start))
+                        'mmap 0x%0.8x is extended heap space from 0x%0.8x',
+                        m.start, self._heap_mapping.start)
                     child_heaps.add(m)
                     pass
             self._child_heaps = child_heaps
@@ -154,6 +155,6 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 self._heap)]
         freesize = sum([c[1] for c in free_lists])
         log.debug(
-            '\t+ freeLists: free: %0.4d [%0.5d B]' %
-            (len(free_lists), freesize))
+            '+ freeLists: nb_free_chunk:0x%0.4x total_size:0x%0.5x',
+            len(free_lists), freesize)
         return free_lists

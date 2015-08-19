@@ -44,7 +44,15 @@ class HeapFinder(object):
         my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler,
                                                        my_constraints,
                                                        update_cb=partial(self.print_cb, memory_handler))
-        results = my_searcher.search(heap_module.HEAP)
+        # on ly return first results in each mapping
+        results = []
+        for mapping in memory_handler.get_mappings():
+            log.debug("looking at %s", mapping)
+            res = my_searcher._search_in(mapping, heap_module.HEAP, nb=1, align=0x1000)
+            if res:
+                # FIXME output_to are stupid
+                #print haystack.output_to_string(memory_handler, res)
+                results.append(res)
         return results
 
     def search_heap_direct(self, memdumpname, start_address_mapping):
@@ -78,9 +86,12 @@ class HeapFinder(object):
         :return:
         """
         py_results = haystack.output_to_python(memory_handler, [(instance, address)])
-        for x in py_results:
-            m = memory_handler.get_mapping_for_address(address)
-            print 'HEAP at 0x%x size: 0x%x map: %s' % (address, len(m), m)
+        for x, addr in py_results:
+            heap_not_at_start = ' '
+            m = memory_handler.get_mapping_for_address(addr)
+            if addr != m.start:
+                heap_not_at_start = '(!)'
+            print 'HEAP at 0x%x%s\tsize: 0x%x map: %s' % (addr, heap_not_at_start, len(m), m)
             #print x
 
 
@@ -122,20 +133,28 @@ zeus.vmem.856.dump
 
 
 
-DEBUG:basicmodel:ptr: UnusedUnCommittedRanges <class 'haystack.types.LP_4_struct__HEAP_UNCOMMMTTED_RANGE'> LP_4_struct__HEAP_UNCOMMMTTED_RANGE(3160606104) 0xbc630598 INVALID
+DEBUG:basicmodel:ptr: UnusedUnCommittedRanges <class 'haystack.types.LP_4_struct__HEAP_UNCOMMMTTED_RANGE'>
+LP_4_struct__HEAP_UNCOMMMTTED_RANGE(3160606104) 0xbc630598 INVALID
+for f in `ls /home/jal/outputs/vol/zeus.vmem.1668.dump` ; do echo $f; xxd /home/jal/outputs/vol/zeus.vmem.1668.dump/$f | head | grep -c "ffee ffee" ; done | grep -B1 "1$"
+
+DEBUG:utils:obj._sub_addr_: 0xbc630598
 
 '''
 
 
-def main(argv):
-    memdumpname = argv[1]
-    # memdumpname, address = argv[1], int(argv[2], 16)
 
-    #f = Win7HeapFinder()
-    #f.search_heap(memdumpname)
+def main(argv):
+    # f = Win7HeapFinder()
     f = WinXPHeapFinder()
-    f.search_heap(memdumpname)
-    #f.search_heap_direct(memdumpname, 0x00860000)
+    if len(argv) == 2:
+        memdumpname = argv[1]
+        f.search_heap(memdumpname)
+    elif len(argv) == 3:
+        memdumpname, address = argv[1], int(argv[2], 16)
+        ret = f.search_heap_direct(memdumpname, address)
+        print ret
+
+    #f.search_heap(memdumpname)
     #f = Win7HeapFinder()
     #f.search_heap_direct(memdumpname, address)
 

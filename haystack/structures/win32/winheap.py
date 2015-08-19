@@ -85,6 +85,7 @@ class WinHeapValidator(listmodel.ListModel):
     def HEAP_get_chunks(self, record):
         """Returns a list of tuple(address,size) for all chunks in
          the backend allocator."""
+        # FIXME look at segment.LastEntryInSegment
         allocated = list()
         free = list()
         for segment in self.HEAP_get_segment_list(record):
@@ -92,6 +93,8 @@ class WinHeapValidator(listmodel.ListModel):
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
             # create the skip list for each segment.
             skiplist = dict()
+            # FIXME, in XP, ucrsegments is in HEAP
+            # in win7 ucrsegmentlist is in heap_segment
             for ucr in self.HEAP_SEGMENT_get_UCR_segment_list(segment):
                 ucr_addr = self._utils.get_pointee_address(ucr.Address)
                 # UCR.Size are not chunks sizes. NOT *8

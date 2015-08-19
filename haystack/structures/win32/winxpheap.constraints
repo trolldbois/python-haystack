@@ -12,6 +12,7 @@ SubSegmentCode: IgnoreMember
 
 [struct__HEAP]
 Signature: [0xeeffeeff]
+# 1 = LAL, 2 = LFH, 0 = Backend (chunks>= 16k)
 FrontEndHeapType: [0, 1, 2]
 # HEAP CommitRoutine encoded by a global key
 # The HEAP handle data structure includes a function pointer field called
@@ -24,27 +25,21 @@ Segments: IgnoreMember
 # found in wild DEBUG:memorybase:is_valid_address_value = bc63e310 False
 UnusedUnCommittedRanges: IgnoreMember
 VirtualAllocdBlocks: IgnoreMember
-# and a lot of freelists FreeLists[0], <class 'haystack.structures.win32.winxp_32.struct__LIST_ENTRY'>
+# FreeLists[n] could be in UCR ?
+FreeLists: IgnoreMember
 
-
-#    ('Entry', HEAP_ENTRY),
-#    ('HeaderValidateCopy', POINTER_T(None)),
-#    ('TagEntries', POINTER_T(struct__HEAP_TAG_ENTRY)),
-#    ('UCRSegments', POINTER_T(struct__HEAP_UCR_SEGMENT)),
-#    ('UnusedUnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)),
-#    ('VirtualAllocdBlocks', LIST_ENTRY),
-#    ('Segments', POINTER_T(struct__HEAP_SEGMENT) * 64),
-#    ('u', union__HEAP_0),
-#    ('u2', union__HEAP_1),
-#    ('LargeBlocksIndex', POINTER_T(None)),
-#    ('PseudoTagEntries', POINTER_T(struct__HEAP_PSEUDO_TAG_ENTRY)),
-#    ('FreeLists', struct__LIST_ENTRY * 128),
-#    ('LockVariable', POINTER_T(struct__HEAP_LOCK)),
-#    ('CommitRoutine', POINTER_T(ctypes.CFUNCTYPE(ctypes.c_int32, POINTER_T(None), POINTER_T(POINTER_T(None)), POINTER_T(ctypes.c_uint32)))),
-#    ('FrontEndHeap', POINTER_T(None)),
-#    ('FrontHeapLockCount', ctypes.c_uint16),
-#    ('FrontEndHeapType', ctypes.c_ubyte),
-#    ('LastSegmentIndex', ctypes.c_ubyte),
+## Undertanding the LFH
+#LargeBlocksIndex/BlocksIndex – This is a _HEAP_LIST_LOOKUP structure that is used for a variety of
+# purposes. Due to its importance, it will be discussed in greater detail later in this
+# document.
+#FreeLists – A special linked-list that contains pointers to ALL of the free chunks for this
+# heap. It can almost be thought of as a heap cache, but for chunks of every size (and no
+# single associated bitmap).
+#FrontEndHeapType – An integer is initially set to 0x0, and is subsequently assigned a
+# value of 0x2, indicating the use of a LFH. Note: Windows 7 does not actually have
+# support for using Lookaside Lists.
+#FrontEndHeap – A pointer to the associated front-end heap. This will either be NULL or
+# a pointer to a _LFH_HEAP structure when running under Windows 7.
 
 
 [struct__HEAP_SEGMENT]
@@ -56,3 +51,7 @@ LastValidEntry: IgnoreMember
 #    ('LastValidEntry', POINTER_T(struct__HEAP_ENTRY)),
 #    ('UnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)),
 #    ('LastEntryInSegment', POINTER_T(struct__HEAP_ENTRY)),
+
+# FIXME, why is 0xffffffff not used as a sentinels in
+[struct__ERESOURCE]
+SystemResourcesList: IgnoreMember

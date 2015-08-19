@@ -6,6 +6,7 @@
 
 import logging
 import numbers
+import sys
 
 from haystack.outputters import Outputter
 from haystack import types
@@ -29,7 +30,12 @@ class PythonOutputter(Outputter):
         try:
             obj_module_name = obj.__class__.__module__
             obj_class_name = obj.__class__.__name__
-            obj_module = self._model.get_pythoned_module(obj_module_name)
+            try:
+                obj_module = self._model.get_pythoned_module(obj_module_name)
+            except KeyError:
+                # FIXME - ctypes modules should not be in sys.modules. what about reloading?
+                self._model.build_python_class_clones(sys.modules[obj_module_name])
+                obj_module = self._model.get_pythoned_module(obj_module_name)
             my_class = getattr(obj_module, "%s_py" % obj_class_name)
         except AttributeError as e:
             log.warning('did you forget to register your python structures ?')
@@ -145,7 +151,7 @@ class pyObj(object):
             return '#(- not printed by Excessive recursion - )'
         s = '{\n'
         if hasattr(self, '_ctype_'):
-            items = [n for n, t in basicmodel.get_fields(self._ctype_)]
+            items = [n for n, t in basicmodel.get_record_type_fields(self._ctype_)]
         else:
             log.warning('no _ctype_')
             items = [n for n in self.__dict__.keys() if n != '_ctype_']

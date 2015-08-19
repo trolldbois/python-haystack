@@ -141,7 +141,7 @@ class RecordSearcher(object):
         # check if data matches
         if validator.load_members(instance, depth):
             # FIXME: should be if validator.is_valid(instance):
-            log.info("found instance %s @ 0x%lx", struct_type, address)
+            log.debug("found instance %s @ 0x%lx", struct_type, address)
             # do stuff with it.
             validated = True
         else:
@@ -167,7 +167,7 @@ class AnyOffsetRecordSearcher(RecordSearcher):
     allocated chunks of memory.
     """
 
-    def _search_in(self, mem_map, struct_type, nb=10, depth=99):
+    def _search_in(self, mem_map, struct_type, nb=10, depth=99, align=None):
         """
             Looks for structType instances in memory, using :
                 hints from structType (default values, and such)
@@ -181,8 +181,13 @@ class AnyOffsetRecordSearcher(RecordSearcher):
         # where do we look
         start = mem_map.start
         end = mem_map.end
-        # check the word size to use aligned words only
+        # pointer len for alignment
         plen = self._memory_handler.get_target_platform().get_word_size()
+        # # check the word size to use aligned words only
+        if align is None:
+            align = plen
+        else:
+            align = align - align % plen
         # the struct cannot fit after that point.
         my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         end = end - my_ctypes.sizeof(struct_type) + 1
@@ -195,7 +200,7 @@ class AnyOffsetRecordSearcher(RecordSearcher):
         t0 = time.time()
         p = 0
         # python 2.7 xrange doesn't handle long int. replace with ours.
-        for offset in utils.xrange(start, end, plen):
+        for offset in utils.xrange(start, end, align):
             # print a debug message every now and then
             if offset % (1024 << 6) == 0:
                 p2 = offset - start

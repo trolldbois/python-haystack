@@ -1,8 +1,9 @@
-
+- use PEB search to double check that we find all HEAPs in standard scenarios.
 - FIX winXP x86 heapwalker, then work on vol.
 
 - use pycallgraph to cProfile a HEAP validation.
 - make a callback profiler that profiles the graph path validation of a structure in graphical format
+- using a decorator would be fun
 
 ***** heap walker validator is not a validator all by itself.
 

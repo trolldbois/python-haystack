@@ -342,17 +342,39 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # stop at the first sign of a previously found list entry
         done = [s for s in sentinels] + [head_address]
         # log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
+        log.debug("_iterate_list_from_field_with_link_info from %s at offset %d->%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
+        return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done)
+
+    def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels):
+        """
+        Use iterator_fn to iterate on the list structures. (as in struct__LIST_ENTRY)
+        For each list entry address:
+            + verify if the entry address is a sentinel value or already parsed.
+            + calculate <list_entry_address> - offset to find the real list entry address
+            + check if its in cache and yield it
+            + otherwise, if its a valid address, read the record from the new address
+            + save it to cache
+            + yield it.
+
+        :param iterator_fn: an iterator on a registered list entry management structure
+        :param head: the first list entry
+        :param pointee_record_type: the list entry record type we want to load
+        :param offset: the offset between the list entry pointers and the interesting record
+        :param sentinels: values that indicates we should stop iterating.
+        :return: pointee_record_type()
+        """
         # we get all addresses for the instances of the double linked list record_type
         # not, the list_member itself. Only the address of the double linked list field.
-        log.debug("_iterate_list_from_field_with_link_info from %s at offset %d->%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
-        for entry in iterator_fn(head):
-            # entry is not null. We also ignore record (head_address).
-            if entry in done:
-                continue
-            # save it
-            done.append(entry)
+        for entry in iterator_fn(head, sentinels):
             # @ of the list member record
             list_member_address = entry - offset
+            # entry is not null. We also ignore record (head_address).
+            if entry in sentinels:
+                continue
+            elif list_member_address in sentinels:
+                continue
+            # save it
+            sentinels.append(list_member_address)
             # log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
             # use cache if possible, avoid loops.
             st = self._memory_handler.getRef(pointee_record_type, list_member_address)
@@ -373,7 +395,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         raise StopIteration
 
     # FIXME add sentinels.
-    def _iterate_double_linked_list(self, record):
+    def _iterate_double_linked_list(self, record, sentinels=None):
         """
         iterate forward, then backward, until null or duplicate
 
@@ -384,12 +406,13 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         done = [0]
         obj = record
         record_type = type(record)
-        forward, backward, sentinels = self.get_double_linked_list_type(record_type)
-        # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
+        # we ignore the sentinels here, as this is an internal iterator
+        forward, backward, _ = self.get_double_linked_list_type(record_type)
+        log.debug("sentinels %s", str([hex(s) for s in sentinels]))
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = self._utils.get_pointee_address(link)
-            log.debug('_iterate_double_linked_list got a <%s>/0x%x', link.__class__.__name__, addr)
+            log.debug('_iterate_double_linked_list %s <%s>/0x%x', fieldname, link.__class__.__name__, addr)
             nb = 0
             while addr not in done and addr not in sentinels:
                 done.append(addr)
@@ -405,10 +428,11 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 # next
                 link = getattr(st, fieldname)
                 addr = self._utils.get_pointee_address(link)
+                log.debug('_iterate_double_linked_list %s <%s>/0x%x', fieldname, link.__class__.__name__, addr)
             # log.debug('going backward after %x', addr)
         raise StopIteration
 
-    def _iterate_single_linked_list(self, record):
+    def _iterate_single_linked_list(self, record, sentinels=None):
         """
         iterate forward, until null or duplicate
 
@@ -419,11 +443,12 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         done = [0]
         obj = record
         record_type = type(record)
-        fieldname, sentinels = self.get_single_linked_list_type(record_type)
+        # we ignore the sentinels here as this is an internal iterator
+        fieldname, _ = self.get_single_linked_list_type(record_type)
         # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
         link = getattr(obj, fieldname)
         addr = self._utils.get_pointee_address(link)
-        log.debug('_iterate_single_linked_list got a <%s>/0x%x', link.__class__.__name__, addr)
+        log.debug('_iterate_single_linked_list %s <%s>/0x%x', link.__class__.__name__, addr)
         nb = 0
         while addr not in done and addr not in sentinels:
             done.append(addr)
@@ -439,7 +464,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # next
             link = getattr(st, fieldname)
             addr = self._utils.get_pointee_address(link)
-            # log.debug('going backward after %x', addr)
+            log.debug('_iterate_single_linked_list %s <%s>/0x%x', link.__class__.__name__, addr)
         raise StopIteration
 
     def is_valid(self, record):

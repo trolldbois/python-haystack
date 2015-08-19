@@ -31,6 +31,7 @@ def search_record(memory_handler, struct_type, search_constraints=None):
     my_searcher = searcher.RecordSearcher(memory_handler, search_constraints)
     return my_searcher.search(struct_type)
 
+#FIXME TODO change for results == ctypes
 def output_to_string(memory_handler, results):
     """
     Transform ctypes results in a string format
