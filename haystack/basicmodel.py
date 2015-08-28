@@ -442,7 +442,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                             'should not happen')
                 return False
             ref = self._memory_handler.getRef(self._ctypes.CString, attr_obj_address)
-            if ref:
+            if ref is not None:
                 log.debug("%s %s loading from references cache %s/0x%lx", attrname,
                                                                             attr, self._ctypes.CString, attr_obj_address)
                 return True
@@ -482,7 +482,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 return True
 
             ref = self._memory_handler.getRef(_attrType, attr_obj_address)
-            if ref:
+            if ref is not None:
                 log.debug(
                     "%s %s loading from references cache %s/0x%lx",
                     attrname, attr, _attrType, attr_obj_address)

@@ -29,6 +29,15 @@ Changes to architecture.txt:
  - Ran 225 tests in 519.059s
 OK (skipped=7, expected failures=4)
  - Profiling... Ran 225 tests in 160.300s
+ - heaps are not necessarly at offset 0 in mapping
+ - more work on Windows XP heap based on the Zeus vmem extract of a process
+ - cleaned the memory handler to stop being a big bag of everything
+ - remove reverse's context from core haystack
+ - added a script to find heaps in Windows dumps
+ - start standardizing test dumps in a test file inventory
+Ran 240 tests in 119.036s
+FAILED (failures=2, errors=9, skipped=11, expected failures=3)
+
 
 
 

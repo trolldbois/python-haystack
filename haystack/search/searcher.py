@@ -89,7 +89,8 @@ class RecordSearcher(object):
         plen = self._memory_handler.get_target_platform().get_word_size()
         my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         # where do we look for that structure
-        walker = self._memory_handler.get_heap_walker(mem_map)
+        finder = self._memory_handler.get_heap_finder()
+        walker = finder.get_heap_walker(mem_map)
         struct_size = my_ctypes.sizeof(struct_type)
         # get all allocated chunks
         for addr, size in walker.get_user_allocations():
@@ -166,6 +167,35 @@ class AnyOffsetRecordSearcher(RecordSearcher):
     This searcher will not use heap helpers and search will not be restricted to
     allocated chunks of memory.
     """
+    def __init__(self, memory_handler, my_constraints=None, target_mappings=None, update_cb=None):
+        """
+        if target_mappings is not specified, the search perimeter will include
+        only heap mapping.
+
+        :param memory_handler: interfaces.IMemoryHandler
+        :param target_mappings: list of interfaces.IMemoryMapping.
+        :param my_constraints: interfaces.IModuleConstraints
+        :param update_cb: callback function to call for each valid result
+        :return:
+        """
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError("Feed me a IMemoryHandler")
+        if my_constraints and not isinstance(my_constraints, interfaces.IModuleConstraints):
+            raise TypeError("Feed me a IModuleConstraints")
+        if target_mappings is not None and not isinstance(target_mappings, list):
+            raise TypeError("Feed me a list of IMemoryMapping")
+        elif target_mappings is None:
+            # default to all heaps
+            target_mappings = memory_handler.get_mappings()
+        self._memory_handler = memory_handler
+        self._my_constraints = my_constraints
+        self.__target_mappings = target_mappings
+        self._update_cb = update_cb
+        log.debug(
+            'StructFinder created for %s. Search Perimeter on %d mappings.',
+            self._memory_handler.get_name(),
+            len(self.__target_mappings))
+        return
 
     def _search_in(self, mem_map, struct_type, nb=10, depth=99, align=None):
         """

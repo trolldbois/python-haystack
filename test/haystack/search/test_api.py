@@ -164,6 +164,7 @@ class Test6_x32(_ApiTest):
         results, validated = haystack.search.api.load_record(self.memory_handler, self.usual, self.address1)
         # check the string output
         retstr = haystack.output_to_string(self.memory_handler, [(results, validated)])
+        self.assertTrue(isinstance(retstr, str))
 
         # string
         #retstr = api.show_dumpname(self.usual_structname, self.memdumpname,
@@ -174,9 +175,14 @@ class Test6_x32(_ApiTest):
         self.assertIn('"val1b": 0L,', retstr)
 
         # usual->root.{f,b}link = &node1->list; # offset list is (wordsize) bytes
+        ## TU results based on __book
         node1_list_addr = hex(self.address2 + self.my_target.get_word_size())
         self.assertIn('"flink": { # <struct_entry at %s' % node1_list_addr, retstr)
         self.assertIn('"blink": { # <struct_entry at %s' % node1_list_addr, retstr)
+        ## TU results based on direct access
+        #node1_list_addr = self.address2 + self.my_target.get_word_size()
+        #self.assertIn('"flink": 0x%0.8x' % node1_list_addr, retstr)
+        #self.assertIn('"blink": 0x%0.8x' % node1_list_addr, retstr)
 
         # python
         usuals = haystack.output_to_python(self.memory_handler, [(results, validated)])
@@ -191,6 +197,7 @@ class Test6_x32(_ApiTest):
         # that is node 1
         self.assertIsNotNone(usual.root.flink)
         self.assertEquals(usual.root.flink, usual.root.blink)
+        #print usual.root.flink
         # that is node2
         self.assertEquals(usual.root.blink.flink, usual.root.flink.flink)
         # that is None (root.flink = root.blink)

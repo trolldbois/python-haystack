@@ -47,7 +47,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                           for heap in _heaps])
         child_heaps = dict()
         for heap in _heaps:
-            my_heap = self._heap_finder._read_heap(heap)
+            my_heap = self._heap_finder._read_heap(heap, heap.get_marked_heap_address())
             log.debug('==== walking heap num: %0.2d @ %0.8x', my_heap.ProcessHeapsListIndex, heap.start)
             free_size_sum = 0
             for addr, size in self._validator.HEAP_get_freelists(my_heap):
@@ -62,9 +62,10 @@ class TestWinXPHeapValidator(unittest.TestCase):
         _heaps = self._heap_finder.get_heap_mappings()
         segments = []
         for heap in _heaps:
+            heap_addr = heap.get_marked_heap_address()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
-                (self._heap_finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
+                (self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr))
             walker = self._heap_finder.get_heap_walker(heap)
             for i, segment in enumerate(self._validator.HEAP_get_segment_list(walker._heap)):
                 s, e = segment.FirstEntry.value, segment.LastValidEntry.value
@@ -88,10 +89,12 @@ class TestWinXPHeapValidator(unittest.TestCase):
         self.assertEquals(segments, zeus_1668_vmtoolsd_exe.known_segments)
         return
 
+    #def test_is_heap
+
 
 if __name__ == '__main__':
-    #logging.basicConfig(level=logging.INFO)
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.DEBUG)
     # logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
     logging.getLogger('testwinxpheap').setLevel(level=logging.DEBUG)

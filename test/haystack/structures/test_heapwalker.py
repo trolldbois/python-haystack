@@ -12,6 +12,10 @@ import unittest
 
 from haystack import dump_loader
 from haystack.structures import heapwalker
+from haystack.abc import interfaces
+
+from test.testfiles import zeus_1668_vmtoolsd_exe
+from test.testfiles import putty_1_win7
 
 # FIXME move user_allocation test ssh.1 self.assertEquals(len(allocs), 2568)
 # FIXME move user_allocation test putty.1 self.assertEquals(len(allocs), 1733)
@@ -26,7 +30,7 @@ class TestWalkers(unittest.TestCase):
         cls.libc_mh_64 = dump_loader.load('test/src/test-ctypes3.64.dump')
         cls.libc_mh_32 = dump_loader.load('test/src/test-ctypes3.32.dump')
         # cls.winxp_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
-        cls.win7_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls.win7_mh_32 = dump_loader.load(putty_1_win7.dumpname)
 
     @classmethod
     def tearDownClass(cls):
@@ -98,8 +102,117 @@ class TestWalkers(unittest.TestCase):
         # self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._init_heap_type(), 520))
         # self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._init_heap_type(), 2792)) #   0xae8
 
+class TestHeapFinder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
+        cls.finder = cls.memory_handler.get_heap_finder()
 
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
+        cls.memory_handler = None
+        pass
+
+    def test_get_heap_mappings(self):
+        heap_0 = self.finder.get_heap_mappings()[0]
+        self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
+        self.assertEquals(heap_0.start, 0xb84e0000)
+        self.assertEquals(heap_0.pathname, '[heap]')
+
+    def test_get_heaps(self):
+        heaps = self.finder.get_heap_mappings()
+        self.assertEquals(len(heaps), 1)
+
+    @unittest.skip("TODO linux get_stack code")
+    def test_get_stack(self):
+        # FIXME or BREAKME detection was made on pathname.
+        self.assertEquals(self.memory_handler.get_stack().start, 0xbff45000)
+        self.assertEquals(self.memory_handler.get_stack().pathname, '[stack]')
+
+
+class TestHeapFinder2(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load(putty_1_win7.dumpname)
+        cls.finder = cls.memory_handler.get_heap_finder()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
+        cls.memory_handler = None
+        pass
+
+    def test_get_heap_mappings(self):
+        heap_0 = self.finder.get_heap_mappings()[0]
+        self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
+        self.assertEquals(heap_0.start, 0x005c0000)
+        self.assertEquals(heap_0.pathname, 'None')
+        buf = heap_0.read_bytes(heap_0.start, 500)
+        win7heap = self.finder.get_heap_module()
+        x = win7heap.HEAP.from_buffer_copy(buf)
+        # print win7heap.HEAP.Signature
+        # print repr(buf[100:104])
+        # print hex(x.Signature)
+        # print _memory_handler._target_platform.ctypes.sizeof(x)
+
+    def test_get_heaps(self):
+        heaps = self.finder.get_heap_mappings()
+        self.assertEquals(len(heaps), 12)
+
+    @unittest.skip("TODO win32 get_stack code")
+    def test_get_stack(self):
+        # TODO win32 get_stack code
+        # print ''.join(['%s\n'%(m) for m in _memory_handler])
+        # print _memory_handler.get_stack() # no [stack]
+        self.assertEquals(self.memory_handler.get_stack().start, 0x00400000)
+        self.assertEquals(
+            self.memory_handler.get_stack().pathname,
+            '''C:\Program Files (x86)\PuTTY\putty.exe''')
+
+class TestHeapFinder3(unittest.TestCase):
+    """
+    Test on windows
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load(zeus_1668_vmtoolsd_exe.dumpname)
+        cls.finder = cls.memory_handler.get_heap_finder()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
+        cls.memory_handler = None
+        pass
+
+    def test_get_heap_mappings(self):
+        heap_0 = self.finder.get_heap_mappings()[0]
+        self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
+        self.assertEquals(heap_0.start, 0x005c0000)
+        self.assertEquals(heap_0.pathname, 'None')
+        buf = heap_0.read_bytes(heap_0.start, 500)
+        win7heap = self.finder.get_heap_module()
+        x = win7heap.HEAP.from_buffer_copy(buf)
+        # print win7heap.HEAP.Signature
+        # print repr(buf[100:104])
+        # print hex(x.Signature)
+        # print _memory_handler._target_platform.ctypes.sizeof(x)
+
+    def test_get_heaps(self):
+        heaps = self.finder.get_heap_mappings()
+        self.assertEquals(len(heaps), 12)
+
+    @unittest.skip("TODO win32 get_stack code")
+    def test_get_stack(self):
+        # TODO win32 get_stack code
+        # print ''.join(['%s\n'%(m) for m in _memory_handler])
+        # print _memory_handler.get_stack() # no [stack]
+        self.assertEquals(self.memory_handler.get_stack().start, 0x00400000)
+        self.assertEquals(
+            self.memory_handler.get_stack().pathname,
+            '''C:\Program Files (x86)\PuTTY\putty.exe''')
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.DEBUG)
     unittest.main(verbosity=2)

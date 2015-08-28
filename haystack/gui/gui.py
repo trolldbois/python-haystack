@@ -459,15 +459,16 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
     def _openDump(self, dumpname):
         # load memorymapping
-        mappings = dump_loader.load(dumpname)
+        memory_handler = dump_loader.load(dumpname)
         # TODO : make a mapping chooser
-        heap = mappings.get_heap()
+        finder = memory_handler.get_heap_finder()
+        heap = memory_handler.get_heap_mappings()[0]
         # if len(_memory_handler) > 1:
         #  heap = [m for m in _memory_handler if m.pathname == '[heap]'][0]
         # else:
         #  heap = _memory_handler[0]
         return self.make_memory_tab(
-            os.path.sep.join([os.path.basename(dumpname), heap.pathname]), heap, mappings)
+            os.path.sep.join([os.path.basename(dumpname), heap.pathname]), heap, memory_handler)
 
     def closeTab(self):
         self.tabWidget.removeTab(self.tabWidget.currentIndex())

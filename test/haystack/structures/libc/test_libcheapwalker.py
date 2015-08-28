@@ -90,7 +90,7 @@ class TestLibcHeapWalkerBigger(unittest.TestCase):
         heaps = heap_finder.get_heap_mappings()
         self.assertEquals(len(heaps), 1)
         heap = heaps[0]
-        self.assertTrue(heap_finder._is_heap(heap))
+        self.assertTrue(heap_finder._is_heap(heap, heap.start))
         #
         walker = heap_finder.get_heap_walker(heap)
         # test the number of allocations

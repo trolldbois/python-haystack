@@ -379,8 +379,9 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # use cache if possible, avoid loops.
             st = self._memory_handler.getRef(pointee_record_type, list_member_address)
             # st._orig_address_ = link
-            if st:
+            if st is not None:
                 # we return
+                log.debug('_iterate_list_from_field_inner getRef returned cached value on 0x%x', list_member_address)
                 yield st
             else:
                 memoryMap = self._memory_handler.is_valid_address_value(list_member_address, pointee_record_type)
@@ -404,6 +405,8 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         """
         # stop when Null
         done = [0]
+        if sentinels is None:
+            sentinels = []
         obj = record
         record_type = type(record)
         # we ignore the sentinels here, as this is an internal iterator
@@ -424,6 +427,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 st._orig_address_ = addr
                 self._memory_handler.keepRef(st, record_type, addr)
                 log.debug("keepRefx2 %s.%s: @%x", record_type.__name__, fieldname, addr)
+                ## DEBUG
+                #import traceback
+                #print traceback.print_stack()
+                ## DEBUG
                 yield addr
                 # next
                 link = getattr(st, fieldname)
@@ -579,6 +586,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
 
         for list_member in link_iterator:
             # load the list entry structure members
+            log.debug('send %s to load_members' % list_member)
             if not self.load_members(list_member, max_depth - 1):
                 log.error(
                     'Error while loading members on %s',

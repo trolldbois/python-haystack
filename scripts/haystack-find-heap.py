@@ -11,6 +11,7 @@ import haystack
 from haystack import dump_loader
 from haystack import constraints
 from haystack.search import searcher
+from haystack.outputters import text
 
 """
 Search for HEAP.
@@ -21,6 +22,7 @@ log = logging.getLogger('haytack-find-heap')
 
 class HeapFinder(object):
     def __init__(self):
+        print 'Using %s' % self.__class__.__name__
         pass
 
     def _init_module_name(self, memory_handler):
@@ -31,9 +33,9 @@ class HeapFinder(object):
 
     def search_heap(self, memdumpname):
         # we need a memory dump loader
-        memory_handler = dump_loader.load(memdumpname)
-        my_model = memory_handler.get_model()
-        module_name = self._init_module_name(memory_handler)
+        self.memory_handler = dump_loader.load(memdumpname)
+        my_model = self.memory_handler.get_model()
+        module_name = self._init_module_name(self.memory_handler)
         # import the module with the right arch
         heap_module = my_model.import_module(module_name)
         log.debug('the heap module loaded is %s', module_name)
@@ -41,12 +43,12 @@ class HeapFinder(object):
         constraint_filename = self._init_constraints_filename(heap_module)
         parser = constraints.ConstraintsConfigHandler()
         my_constraints = parser.read(constraint_filename)
-        my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler,
+        my_searcher = searcher.AnyOffsetRecordSearcher(self.memory_handler,
                                                        my_constraints,
-                                                       update_cb=partial(self.print_cb, memory_handler))
+                                                       update_cb=partial(self.print_cb, self.memory_handler))
         # on ly return first results in each mapping
         results = []
-        for mapping in memory_handler.get_mappings():
+        for mapping in self.memory_handler.get_mappings():
             log.debug("looking at %s", mapping)
             res = my_searcher._search_in(mapping, heap_module.HEAP, nb=1, align=0x1000)
             if res:
@@ -57,9 +59,9 @@ class HeapFinder(object):
 
     def search_heap_direct(self, memdumpname, start_address_mapping):
         # we need a memory dump loader
-        memory_handler = dump_loader.load(memdumpname)
-        my_model = memory_handler.get_model()
-        module_name = self._init_module_name(memory_handler)
+        self.memory_handler = dump_loader.load(memdumpname)
+        my_model = self.memory_handler.get_model()
+        module_name = self._init_module_name(self.memory_handler)
         # import the module with the right arch
         heap_module = my_model.import_module(module_name)
         log.debug('the heap module loaded is %s', module_name)
@@ -67,11 +69,11 @@ class HeapFinder(object):
         constraint_filename = self._init_constraints_filename(heap_module)
         parser = constraints.ConstraintsConfigHandler()
         my_constraints = parser.read(constraint_filename)
-        m = memory_handler.get_mapping_for_address(start_address_mapping)
-        my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler,
+        m = self.memory_handler.get_mapping_for_address(start_address_mapping)
+        my_searcher = searcher.AnyOffsetRecordSearcher(self.memory_handler,
                                                        my_constraints,
                                                        [m],
-                                                       update_cb=partial(self.print_cb, memory_handler))
+                                                       update_cb=partial(self.print_cb, self.memory_handler))
         results = my_searcher._load_at(m, start_address_mapping, heap_module.HEAP, depth=5)
         #print haystack.output_to_python(memory_handler, [results])[0][0].toString()
         return results
@@ -144,15 +146,20 @@ DEBUG:utils:obj._sub_addr_: 0xbc630598
 
 
 def main(argv):
-    # f = Win7HeapFinder()
-    f = WinXPHeapFinder()
-    if len(argv) == 2:
-        memdumpname = argv[1]
-        f.search_heap(memdumpname)
-    elif len(argv) == 3:
-        memdumpname, address = argv[1], int(argv[2], 16)
-        ret = f.search_heap_direct(memdumpname, address)
-        print ret
+    for f in [
+              Win7HeapFinder(),
+              #WinXPHeapFinder()
+             ]:
+        if len(argv) == 2:
+            memdumpname = argv[1]
+            if f.search_heap(memdumpname) is not None:
+                break
+        elif len(argv) == 3:
+            memdumpname, address = argv[1], int(argv[2], 16)
+            ret = f.search_heap_direct(memdumpname, address)
+            out = text.RecursiveTextOutputter(f.memory_handler)
+            print out.parse(ret[0]), ret[1]
+            break
 
     #f.search_heap(memdumpname)
     #f = Win7HeapFinder()

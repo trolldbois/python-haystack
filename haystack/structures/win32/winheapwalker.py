@@ -82,6 +82,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
         if self._child_heaps is None:
             child_heaps = set()
             for x, s in self._get_freelists():
+                log.debug('get_heap_children_mmaps a')
                 m = self._memory_handler.get_mapping_for_address(x)
                 if (m != self._heap_mapping) and (m not in child_heaps):
                     # FIXME, its actually a segment isn't it ?
@@ -92,6 +93,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
                     pass
             self._child_heaps = child_heaps
         # TODO: add information from used user chunks
+        log.debug('get_heap_children_mmaps b')
         return self._child_heaps
 
     def _get_virtualallocations(self):

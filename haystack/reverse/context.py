@@ -279,12 +279,47 @@ def get_context(fname):
     try:
         context = ReverserContext.cacheLoad(memory_handler)
     except IOError as e:
-        context = ReverserContext(memory_handler, memory_handler.get_heap())
+        finder = memory_handler.get_heap_finder()
+        context = ReverserContext(memory_handler, finder.get_heap_mappings()[0])
     # cache it
     # FIXME that needs to go away
     context.heap._context = context
     return context
 
+# FIXME s/memory_handler.get_context(/get_context_for_addr(memoryhandler, /g
+# move to a IContextHandler
+def get_context_for_address(memory_handler, addr):
+    """Returns the haystack.reverse.context.ReverserContext of this dump.
+    """
+    assert isinstance(addr, long) or isinstance(addr, int)
+    mmap = memory_handler.get_mapping_for_address(addr)
+    if not mmap:
+        raise ValueError
+    if hasattr(mmap, '_context'):
+        # print '** _context exists'
+        return mmap._context
+    finder = memory_handler.get_heap_finder()
+    if mmap not in finder.get_heap_mappings():  # addr is not a heap addr,
+        found = False
+        # or its in a child heap (win7)
+        for h in finder.get_heap_mappings():
+            if hasattr(h, '_children'):
+                if mmap in h._children:
+                    found = True
+                    mmap = h
+                    break
+        if not found:
+            raise ValueError
+    try:
+        ctx = ReverserContext.cacheLoad(memory_handler)
+        # print '** CACHELOADED'
+    except IOError as e:
+        ctx = ReverserContext(memory_handler, mmap)
+        # print '** newly loaded '
+    # cache it
+    log.debug('get_context_for_address end')
+    mmap._context = ctx
+    return ctx
 
 if __name__ == '__main__':
     pass

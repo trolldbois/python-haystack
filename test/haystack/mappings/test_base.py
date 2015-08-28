@@ -100,21 +100,10 @@ class TestMappingsLinux(SrcTests):
         self.assertEquals(len(self.memory_handler._get_mapping('None')), 9)
 
     def test_get_mapping_for_address(self):
+        finder = self.memory_handler.get_heap_finder()
         self.assertEquals(
-            self.memory_handler.get_heap(),
+            finder.get_heap_mappings()[0],
             self.memory_handler.get_mapping_for_address(0xb84e02d3))
-
-    def test_get_heap(self):
-        self.assertTrue(isinstance(self.memory_handler.get_heap(), AMemoryMapping))
-        self.assertEquals(self.memory_handler.get_heap().start, 0xb84e0000)
-        self.assertEquals(self.memory_handler.get_heap().pathname, '[heap]')
-
-    def test_get_heaps(self):
-        self.assertEquals(len(self.memory_handler.get_heaps()), 1)
-
-    def test_get_stack(self):
-        self.assertEquals(self.memory_handler.get_stack().start, 0xbff45000)
-        self.assertEquals(self.memory_handler.get_stack().pathname, '[stack]')
 
     def test_contains(self):
         for m in self.memory_handler:
@@ -218,6 +207,7 @@ class TestMappingsWin32(unittest.TestCase):
         cls.my_utils = None
 
     def test_get_mapping(self):
+        # FIXME: remove
         with self.assertRaises(IndexError):
             self.assertEquals(len(self.memory_handler._get_mapping('[heap]')), 1)
         self.assertEquals(len(self.memory_handler._get_mapping('None')), 71)
@@ -227,33 +217,6 @@ class TestMappingsWin32(unittest.TestCase):
         self.assertNotEquals(m, False)
         self.assertEquals(m.start, 0x005c0000)
         self.assertEquals(m.end, 0x00619000)
-
-    def test_get_heap(self):
-        self.assertTrue(isinstance(self.memory_handler.get_heap(), AMemoryMapping))
-        self.assertEquals(self.memory_handler.get_heap().start, 0x005c0000)
-        self.assertEquals(self.memory_handler.get_heap().pathname, 'None')
-        m = self.memory_handler.get_heap()
-        buf = m.read_bytes(m.start, 500)
-        finder = self.memory_handler.get_heap_finder()
-        win7heap = finder.get_heap_module()
-        x = win7heap.HEAP.from_buffer_copy(buf)
-        # print win7heap.HEAP.Signature
-        # print repr(buf[100:104])
-        # print hex(x.Signature)
-        # print _memory_handler._target_platform.ctypes.sizeof(x)
-
-    def test_get_heaps(self):
-        self.assertEquals(len(self.memory_handler.get_heaps()), 12)
-
-    @unittest.skip("TODO win32 get_stack code") # expectedFailure  # FIXME
-    def test_get_stack(self):
-        # TODO win32 get_stack code
-        # print ''.join(['%s\n'%(m) for m in _memory_handler])
-        # print _memory_handler.get_stack() # no [stack]
-        self.assertEquals(self.memory_handler.get_stack().start, 0x00400000)
-        self.assertEquals(
-            self.memory_handler.get_stack().pathname,
-            '''C:\Program Files (x86)\PuTTY\putty.exe''')
 
     def test_contains(self):
         for m in self.memory_handler:

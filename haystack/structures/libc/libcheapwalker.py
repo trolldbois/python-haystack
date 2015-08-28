@@ -66,12 +66,25 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         self._heap_validator = None
         module_name = 'haystack.structures.libc.ctypes_malloc'
         heap_name = 'malloc_chunk'
-        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__),'libcheap.constraints')
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'libcheap.constraints')
         log.debug('constraint_filename :%s', constraint_filename)
         return module_name, heap_name, constraint_filename
 
     def _init_heap_validation_depth(self):
         return 20
+
+    def _search_heap(self, mapping):
+        """
+        The libc mapping on in starting positions
+        :param mapping:
+        :return:
+        """
+        log.info('checking %s', mapping)
+        heap = mapping.read_struct(mapping.start, self._heap_type)
+        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
+        if load:
+            return heap, mapping.start
+        return None
 
     def get_heap_mappings(self):
         """return the list of heaps that load as heaps
@@ -85,8 +98,14 @@ class LibcHeapFinder(heapwalker.HeapFinder):
             # of the vdso or vsyscall mappigns
             if mapping.pathname in ['[vdso]', '[vsyscall]']:
                 log.debug('Ignore system mapping %s', mapping)
-            elif self._is_heap(mapping):
+            elif mapping.is_marked_as_heap():
                 heap_mappings.append(mapping)
+            else:
+                res = self._search_heap(mapping)
+                if res is not None:
+                    instance, address = res
+                    mapping.mark_as_heap(address)
+                    heap_mappings.append(mapping)
         heap_mappings.sort(key=lambda m: m.start)
         # FIXME, isn't there a find() ?
         i = [

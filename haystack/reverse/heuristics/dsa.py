@@ -10,6 +10,7 @@ import array
 import os
 
 from haystack.reverse import re_string
+from haystack.reverse import context
 from haystack.reverse.fieldtypes import FieldType, Field, PointerField
 from haystack.reverse.heuristics.model import FieldAnalyser, StructureAnalyser
 
@@ -460,7 +461,7 @@ class EnrichedPointerFields(StructureAnalyser):
                 field.set_uncertainty('Unaligned pointer value')
             # + ask _memory_handler for the context for that value
             try:
-                ctx = self._memory_handler.get_context(value)  # no error expected.
+                ctx = context.get_context_for_address(self._memory_handler, value)  # no error expected.
                 #log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
                 # print '** ST id', id(structure), hex(structure._vaddr)
                 # + ask context for the target structure or code info

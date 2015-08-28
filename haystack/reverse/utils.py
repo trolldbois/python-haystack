@@ -91,7 +91,7 @@ def dequeue(addrs, start, end):
     return addrs, ret
 
 
-def getHeapPointers(dumpfilename, mappings):
+def getHeapPointers(dumpfilename, memory_handler):
     ''' Search Heap pointers values in stack and heap.
         records values and pointers address in heap.
     '''
@@ -119,8 +119,9 @@ def getHeapPointers(dumpfilename, mappings):
         #  stack_offsets, stack_values = (),()
         #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
         #log.info('\t[-] merging pointers from heap')
+        finder = memory_handler.get_heap_finder()
         heap_enum = pointerfinder.PointerEnumerator(
-            mappings.get_heap()).search()
+            finder.get_heap_mappings()[0]).search()
         if len(heap_enum) > 0:
             heap_addrs, heap_values = zip(*heap_enum)  # WTF
         else:
@@ -147,7 +148,7 @@ def getHeapPointers(dumpfilename, mappings):
     return heap_addrs, heap_values
 
 
-def getAllPointers(dumpfilename, mappings):
+def getAllPointers(dumpfilename, memory_handler):
     ''' Search all mmap pointers values in heap.
         records values and pointers address in heap.
     '''
@@ -162,8 +163,9 @@ def getAllPointers(dumpfilename, mappings):
     heap_values = int_array_cache(F_HEAP_V)
     if heap_addrs is None or heap_values is None:
         log.info('[+] Making new cache - all pointers')
-        heap_enumerator = pointerfinder.PointerEnumerator(mappings.get_heap())
-        heap_enumerator.setTargetMapping(mappings)  # all pointers
+        finder = memory_handler.get_heap_finder()
+        heap_enumerator = pointerfinder.PointerEnumerator(finder.get_heap_mappings()[0])
+        heap_enumerator.setTargetMapping(memory_handler)  # all pointers
         heap_enum = heap_enumerator.search()
         if len(heap_enum) > 0:
             heap_addrs, heap_values = zip(*heap_enum)  # WTF
@@ -181,7 +183,7 @@ def getAllPointers(dumpfilename, mappings):
     return heap_addrs, heap_values
 
 
-def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
+def getAllocations(dumpfilename, memory_handler, heap, get_user_alloc=None):
     ''' Search malloc_chunks in heap .
         records addrs and sizes.
     '''
@@ -212,7 +214,8 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
         # in case of a pointer ( bad allocation ) out of a mmapping space.
         # But that is not possible, because we are reporting factual reference to existing address space.
         # OK. heap.start should be deleted from the cache name.
-        allocations = mappings.get_heap_walker(heap).get_user_allocations()
+        finder = memory_handler.get_heap_finder()
+        allocations = finder.get_heap_walker(heap).get_user_allocations()
         addrs, sizes = zip(*allocations)
         int_array_save(f_addrs, addrs)
         int_array_save(f_sizes, sizes)

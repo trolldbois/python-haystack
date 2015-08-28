@@ -48,7 +48,7 @@ class TestApiWin32Dump(unittest.TestCase):
         finder = self.memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
         my_heap = [ x for x in heaps if x.start == self.known_heaps[0][0]][0]
-        heapwalker = self.memory_handler.get_heap_walker(heaps[0])
+        heapwalker = finder.get_heap_walker(heaps[0])
         win7heap = heapwalker._heap
 
         my_loader = searcher.RecordLoader(self.memory_handler)

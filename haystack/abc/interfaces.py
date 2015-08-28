@@ -91,6 +91,14 @@ class IMemoryMapping(object):
     def __len__(self):
         raise NotImplementedError(self)
 
+    def mark_as_heap(self, addr):
+        raise NotImplementedError(self)
+
+    def is_marked_as_heap(self):
+        raise NotImplementedError(self)
+
+    def get_marked_heap_address(self):
+        raise NotImplementedError(self)
 
 class IMemoryLoader(object):
     """Parse a process memory _memory_handler from a storage concept,
@@ -108,16 +116,13 @@ class IMemoryHandler(object):
         """Returns the name of the process memory dump we are analysing"""
         raise NotImplementedError(self)
 
+    # helper methods that do not impact the internals
     def get_target_platform(self):
         """Returns the ITargetPlatform for that process memory."""
         raise NotImplementedError(self)
 
     def get_heap_finder(self):
         """Returns the IHeapFinder for that process memory."""
-        raise NotImplementedError(self)
-
-    def get_heap_walker(self, heap):
-        """Returns the IHeapWalker for that process memory."""
         raise NotImplementedError(self)
 
     def get_ctypes_utils(self):
@@ -128,7 +133,7 @@ class IMemoryHandler(object):
         """Returns the Model cache."""
         raise NotImplementedError(self)
 
-    # helper methods that should maybe be moved
+    # class proper methods
     def get_mappings(self):
         """
         return the list of IMemoryMapping
@@ -150,20 +155,6 @@ class IMemoryHandler(object):
     def iter_mapping_with_name(self, pathname):
         """Returns the IMemoryMapping _memory_handler with the name pathname"""
         raise NotImplementedError(self)
-
-    # MOVE TO HEAP FINDER
-    def get_heap(self):
-        """Returns the first IMemoryMapping heaps"""
-        raise NotImplementedError(self)
-
-    def get_heaps(self):
-        """Returns all IMemoryMapping heaps"""
-        raise NotImplementedError(self)
-
-    def get_stack(self):
-        """Returns the IMemoryMapping identified as the stack"""
-        raise NotImplementedError(self)
-    # MOVE TO HEAP FINDER
 
     def is_valid_address(self, obj, structType=None):
         """Return true is the virtual address is a valid address in a IMemoryMapping"""

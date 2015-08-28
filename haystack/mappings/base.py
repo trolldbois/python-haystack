@@ -88,6 +88,8 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         self.minor_device = minor_device
         self.inode = inode
         self.pathname = str(pathname)  # fix None
+        self._is_heap = False
+        self._is_heap_addr = None
 
     def get_target_platform(self):
         """
@@ -177,6 +179,16 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         vaddr = paddr - pstart
         return vaddr
 
+    def mark_as_heap(self, addr):
+        self._is_heap = True
+        self._is_heap_addr = addr
+
+    def is_marked_as_heap(self):
+        return self._is_heap is True
+
+    def get_marked_heap_address(self):
+        return self._is_heap_addr
+
     # ---- to implement if needed
     def read_word(self, address):
         raise NotImplementedError(self)
@@ -216,20 +228,14 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             m.set_target_platform(self._target)
         self._utils = self._target.get_target_ctypes_utils()
         self.__name = name
-        # FIXME book keeper move to context
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
         self.__model = model.Model(self)
         # FIXME reduce open files.
         self.__required_maps = []
         # finish initialization
-        self._heap_finder = self._set_heap_finder()
+        self._heap_finder = None
         self.__optim_get_mapping_for_address()
-        self.__optim_heaps = None
-
-    def _set_heap_finder(self):
-        """set the IHeapFinder for that process memory."""
-        return heapwalker.make_heap_finder(self)
 
     def get_name(self):
         """Returns the name of the process memory dump we are analysing"""
@@ -241,13 +247,9 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
     def get_heap_finder(self):
         """Returns the IHeapFinder for that process memory."""
+        if self._heap_finder is None:
+            self._heap_finder = heapwalker.make_heap_finder(self)
         return self._heap_finder
-
-    def get_heap_walker(self, heap):
-        """Returns the IHeapWalker for that process memory."""
-        if not isinstance(heap, interfaces.IMemoryMapping):
-            raise TypeError("heap should be a IMemoryMapping")
-        return self.get_heap_finder().get_heap_walker(heap)
 
     def get_ctypes_utils(self):
         """Returns the Utils toolkit."""
@@ -256,41 +258,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     def get_model(self):
         """Returns the Model cache."""
         return self.__model
-
-    # FIXME remove/move to subclass
-    # move to a IContextHandler
-    def get_context(self, addr):
-        """Returns the haystack.reverse.context.ReverserContext of this dump.
-        """
-        assert isinstance(addr, long) or isinstance(addr, int)
-        mmap = self.get_mapping_for_address(addr)
-        if not mmap:
-            raise ValueError
-        if hasattr(mmap, '_context'):
-            # print '** _context exists'
-            return mmap._context
-        if mmap not in self.get_heaps():  # addr is not a heap addr,
-            found = False
-            # or its in a child heap ( win7)
-            for h in self.get_heaps():
-                if hasattr(h, '_children'):
-                    if mmap in h._children:
-                        found = True
-                        mmap = h
-                        break
-            if not found:
-                raise ValueError
-        # we found the heap mmap or its parent
-        from haystack.reverse import context
-        try:
-            ctx = context.ReverserContext.cacheLoad(self)
-            # print '** CACHELOADED'
-        except IOError as e:
-            ctx = context.ReverserContext(self, mmap)
-            # print '** newly loaded '
-        # cache it
-        mmap._context = ctx
-        return ctx
 
     # FIXME incorrect API
     def _get_mapping(self, pathname):
@@ -312,6 +279,13 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         for m in self.get_mappings():
             m.reset()
 
+    def __optim_get_mapping_for_address(self):
+        self.__optim_get_mapping_for_address_cache = dict()
+        for m in self.get_mappings():
+            for i in range(m.start, m.end, 0x1000):
+                self.__optim_get_mapping_for_address_cache[i] = m
+        return
+
     def get_mapping_for_address(self, vaddr):
         # TODO: optimization. 127s out of 288s = 40%
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
@@ -323,31 +297,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if _boundary_addr in self.__optim_get_mapping_for_address_cache:
             return self.__optim_get_mapping_for_address_cache[_boundary_addr]
         return False
-
-    def __optim_get_mapping_for_address(self):
-        self.__optim_get_mapping_for_address_cache = dict()
-        for m in self._mappings:
-            for i in range(m.start, m.end, 0x1000):
-                self.__optim_get_mapping_for_address_cache[i] = m
-        return
-
-    def get_heap(self):
-        """Returns the first Heap"""
-        return self.get_heaps()[0]
-
-    def get_heaps(self):
-        """Find heap type and returns _memory_handler with heaps"""
-        if not self.__optim_heaps:
-            # optimize heaps
-            self.__optim_heaps = self.get_heap_finder().get_heap_mappings()
-        return self.__optim_heaps
-
-        return
-
-    def get_stack(self):
-        # FIXME wont work on windows.
-        stack = self._get_mapping('[stack]')[0]
-        return stack
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
@@ -435,6 +384,8 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
     def getRef(self, typ, origAddr):
         """Returns the reference to the type previously loaded at this address"""
+        ## DEBUG
+        #return None
         if (typ, origAddr) in self.__book.refs:
             return self.__book.getRef(typ, origAddr)
         return None
@@ -452,6 +403,9 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
         Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object,
            they might be transient (if obj == somepointer.contents)."""
+        ## DEBUG
+        ##return None
+
         # TODO, memory leak for different objects of same size, overlapping
         # struct.
         if (typ, origAddr) in self.__book.refs:

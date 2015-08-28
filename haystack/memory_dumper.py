@@ -120,7 +120,9 @@ class MemoryDumper:
         err = 0
         # print '\n'.join([str(m) for m in self._memory_handler])
         if self._compact_dump:
-            self.__required = self.mappings.get_heaps()
+            finder = self.mappings.get_heap_finder()
+            self.__required = finder.get_heap_mappings()
+            # FIXME
             self.__required.append(self.mappings.get_stack())
         for m in self.mappings:
             try:

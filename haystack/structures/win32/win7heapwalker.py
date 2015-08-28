@@ -103,7 +103,7 @@ class Win7HeapFinder(heapwalker.HeapFinder):
                 mapping,
                 self._heap_module_constraints).get_heap_children_mmaps()
         heap_mappings.sort(
-            key=lambda m: self._read_heap(m).ProcessHeapsListIndex)
+            key=lambda m: self._read_heap(m, m.get_marked_heap_address()).ProcessHeapsListIndex)
         return heap_mappings
 
     def get_heap_walker(self, heap):

@@ -158,3 +158,4 @@ class Win7HeapValidator(winheap.WinHeapValidator):
                 (segment_addr, first_addr, last_addr))
             segments.append(segment)
         return segments
+

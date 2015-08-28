@@ -49,11 +49,12 @@ def make(opts):
             '[+] Final %d structures from malloc blocs' %
             (len(
                 ctx.structures)))
-
-    heap1 = ctx.mappings.get_heap()
+    finder = ctx.get_memory_handler().get_heap_finder()
+    heap1 = finder.get_heap_mappings()[0]
     log.info('[+] Loading _memory_handler of %s' % (opts.dump2))
     newmappings = dump_loader.load(opts.dump2)
-    heap2 = newmappings.get_heap()
+    finder2 = newmappings.get_heap_finder()
+    heap2 = finder2.get_heap_mappings()[0]
     log.info('[+] finding diff values with %s' % (opts.dump2))
     addrs = cmd_cmp(heap1, heap2, heap1.start)
 

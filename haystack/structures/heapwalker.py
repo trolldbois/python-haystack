@@ -6,6 +6,7 @@ import logging
 
 from haystack.abc import interfaces
 from haystack import constraints
+from haystack.search import searcher
 
 log = logging.getLogger('heapwalker')
 
@@ -49,6 +50,8 @@ class HeapFinder(interfaces.IHeapFinder):
         self._heap_module_constraints = self._load_heap_constraints()
         self._heap_validation_depth = self._init_heap_validation_depth()
         self._heap_type = self._init_heap_type()
+        # optimisations
+        self.__optim_heaps = None
 
     def _init(self):
         """
@@ -88,24 +91,36 @@ class HeapFinder(interfaces.IHeapFinder):
         """
         return 1
 
-    def _read_heap(self, mapping):
+    def _search_heap(self, mapping):
         """ return a ctypes heap struct mapped at address on the mapping"""
-        addr = mapping.start
+        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
+                                                       self._heap_module_constraints)
+        # on ly return first results in each mapping
+        log.debug("_search_heap in %s", mapping)
+        res = my_searcher._search_in(mapping, self._heap_type, nb=1, align=0x1000)
+        if len(res) > 0:
+            instance, address = res[0]
+            mapping.mark_as_heap(address)
+            return instance, address
+        return None
+
+    def _read_heap(self, mapping, addr):
+        """ return a ctypes heap struct mapped at address on the mapping"""
         heap = mapping.read_struct(addr, self._heap_type)
         return heap
 
-    def _is_heap(self, mapping):
+    def _is_heap(self, mapping, addr):
         """
         test if a mapping is a heap
         :param mapping: IMemoryMapping
         :return:
         """
-        # TODO: optimization. store heap status in object.
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
-        # FIXME: the Heap is not necessary at @start of mapping.
+        if mapping.is_marked_as_heap() and addr == mapping.get_marked_heap_address():
+            return True
         # we find some backend heap at other addresses
-        heap = self._read_heap(mapping)
+        heap = self._read_heap(mapping, addr)
         load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
         log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
         return load
@@ -119,12 +134,19 @@ class HeapFinder(interfaces.IHeapFinder):
 
     def get_heap_mappings(self):
         """return the list of heaps that load as heaps"""
-        heap_mappings = []
-        for mapping in self._memory_handler:
-            if self._is_heap(mapping):
-                heap_mappings.append(mapping)
-        heap_mappings.sort(key=lambda m: m.start)
-        return heap_mappings
+        if not self.__optim_heaps:
+            self.__optim_heaps = []
+            for mapping in self._memory_handler:
+                # try at offset 0
+                if mapping.is_marked_as_heap():
+                    self.__optim_heaps.append(mapping)
+                else:
+                    # try harder elsewhere in the mapping
+                    res = self._search_heap(mapping)
+                    if res is not None:
+                        self.__optim_heaps.append(mapping)
+            self.__optim_heaps.sort(key=lambda m: m.start)
+        return self.__optim_heaps
 
     def get_heap_walker(self, heap):
         raise NotImplementedError(self)

@@ -10,6 +10,8 @@ import sys
 from haystack import dump_loader
 from haystack.structures.win32 import win7heapwalker
 
+from test.testfiles import putty_1_win7
+
 log = logging.getLogger('testwalker')
 
 
@@ -18,16 +20,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # putty 1 was done under win7 32 bits ?
-        cls._memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
-        cls._known_heaps = [(0x00390000, 8956), (0x00540000, 868),
-                             (0x00580000, 111933), (0x005c0000, 1704080),
-                             (0x01ef0000, 604), (0x02010000, 61348),
-                             (0x02080000, 474949), (0x021f0000, 18762),
-                             (0x03360000, 604), (0x04030000, 632),
-                             (0x04110000, 1334), (0x041c0000, 644),
-                             # from free stuf - erroneous
-                             #( 0x0061a000, 1200),
-                             ]
+        cls._memory_handler = dump_loader.load(putty_1_win7.dumpname)
         return
 
     @classmethod
@@ -56,9 +49,10 @@ class TestWin7HeapWalker(unittest.TestCase):
                           for heap in _heaps])
         child_heaps = dict()
         for heap in _heaps:
+            heap_addr = heap.get_marked_heap_address()
             log.debug(
-                '==== walking heap num: %0.2d @ %0.8x' %
-                (self._heap_finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
+                '==== walking heap num: %0.2d @ %0.8x',
+                self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr)
             walker = self._heap_finder.get_heap_walker(heap)
             for x, s in walker._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
@@ -76,7 +70,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
             finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
-            cheap = finder._read_heap(heap)
+            cheap = finder._read_heap(heap, heap.get_marked_heap_address())
             log.debug(
                 '-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x' %
                 (heap.start, free_size, cheap.TotalFreeSize))
@@ -94,7 +88,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             log.debug('     \= total: \t\t free:%0.5x ' % (total))
 
             maxlen = len(heap)
-            cheap = finder._read_heap(heap)
+            cheap = finder._read_heap(heap, heap.get_marked_heap_address())
             self.assertEquals(cheap.TotalFreeSize * 8, total)
             log.debug(
                 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x' %
@@ -106,11 +100,11 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ check if memory_mapping gives heaps sorted by index. """
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
-        heaps = self._memory_handler.get_heaps()
-        self.assertEquals(len(heaps), len(self._known_heaps))
-        for i, m in enumerate(self._memory_handler.get_heaps()):
+        heaps = finder.get_heap_mappings()
+        self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
+        for i, m in enumerate(heaps):
             # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
-            self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
+            self.assertEquals(finder._read_heap(m, m.get_marked_heap_address()).ProcessHeapsListIndex, i + 1,
                               'ProcessHeaps should have correct indexes')
         return
 
@@ -119,7 +113,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         # helper
         win7heap = finder._heap_module
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
-        # for heap in self._memory_handler.get_heaps():
+        # for heap in finder.get_heap_mappings():
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
             walker = finder.get_heap_walker(heap)
@@ -197,7 +191,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     def test_get_chunks(self):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
-        # for heap in self._memory_handler.get_heaps():
+        # for heap in finder.get_heap_mappings():
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
             walker = finder.get_heap_walker(heap)
@@ -250,7 +244,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         self.assertEquals(self._memory_handler.get_target_system(), 'win32')
 
         full = list()
-        for heap in self._memory_handler.get_heaps():
+        for heap in finder.get_heap_mappings():
             walker = finder.get_heap_walker(heap)
             my_chunks = list()
 
@@ -354,7 +348,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         for mapping in self._memory_handler:
             addr = mapping.start
             heap = mapping.read_struct(addr, win7heap.HEAP)
-            if addr in map(lambda x: x[0], self._known_heaps):
+            if addr in map(lambda x: x[0], putty_1_win7.known_heaps):
                 self.assertTrue(
                     validator.load_members( heap, 50),
                     "We expected a valid hit at @ 0x%0.8x" %
@@ -374,7 +368,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                         e)
 
         found.sort()
-        self.assertEquals(map(lambda x: x[0], self._known_heaps), found)
+        self.assertEquals(map(lambda x: x[0], putty_1_win7.known_heaps), found)
 
         return
 
@@ -382,7 +376,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
 
-        for m in self._memory_handler.get_heaps():
+        for m in finder.get_heap_mappings():
             #
             walker = finder.get_heap_walker(m)
             total = 0
@@ -399,8 +393,8 @@ class TestWin7HeapWalker(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)

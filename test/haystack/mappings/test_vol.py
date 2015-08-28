@@ -78,7 +78,8 @@ class TestMapper(unittest.TestCase):
             self.assertTrue(res.is_valid(mappings))
 
         # testing that the list of heaps is always the same
-        self.assertEquals(set(heaps), set([m.start for m in mappings.get_heaps()]))
+        finder = mappings.get_heap_finder()
+        self.assertEquals(set(heaps), set([m.start for m in finder.get_heap_mappings()]))
         return
 
     def test_read_mem(self):
@@ -101,8 +102,8 @@ class TestMapper(unittest.TestCase):
 
         self.assertEquals( ctypes.sizeof(x), 1430)
         # print x
-
-        heaps = mappings.get_heaps()
+        finder = mappings.get_heap_finder()
+        heaps = finder.get_heap_mappings()
         #code.interact(local=locals())
 
     def test_read_mem(self):

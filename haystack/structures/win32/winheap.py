@@ -366,8 +366,8 @@ class WinHeapValidator(listmodel.ListModel):
         # we are reading bad data
         # 64 bits: struct__HEAP_ENTRY_0_0_0_0
         chunk_len = ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY_0_0)
-        chunk_header_decoded = (
-            self.win_heap.struct__HEAP_ENTRY_0_0).from_buffer_copy(chunk_header)
+        chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer_copy(chunk_header)
+        #chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer(chunk_header)
         # decode the heap entry chunk header with the heap.Encoding
         working_array = (
             ctypes.c_ubyte *

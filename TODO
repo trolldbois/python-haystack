@@ -1,4 +1,15 @@
+
+- following memory_handler changes, the __book cache seems to forget about some ctypes buffers.
+  not cool. on get_context.
+  Function getRef deactivated. it doesnt bug anymore. 
+  it impacts performance _a lot_ to deactivate the cache.
+  To be obseleted ?
+  But output_to_python depends on it... TODO
+  
+  
 - use PEB search to double check that we find all HEAPs in standard scenarios.
+- orient winheap to work with heap, not with heap aligned on mapping.start.
+
 - FIX winXP x86 heapwalker, then work on vol.
 
 - use pycallgraph to cProfile a HEAP validation.
