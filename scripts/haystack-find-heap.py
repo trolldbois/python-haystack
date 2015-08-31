@@ -92,7 +92,7 @@ class HeapFinder(object):
             heap_not_at_start = ' '
             m = memory_handler.get_mapping_for_address(addr)
             if addr != m.start:
-                heap_not_at_start = '(!)'
+                heap_not_at_start = ' (!)'
             print 'HEAP at 0x%x%s\tsize: 0x%x map: %s' % (addr, heap_not_at_start, len(m), m)
             #print x
 
@@ -147,8 +147,8 @@ DEBUG:utils:obj._sub_addr_: 0xbc630598
 
 def main(argv):
     for f in [
-              Win7HeapFinder(),
-              #WinXPHeapFinder()
+              #Win7HeapFinder(),
+              WinXPHeapFinder()
              ]:
         if len(argv) == 2:
             memdumpname = argv[1]

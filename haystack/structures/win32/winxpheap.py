@@ -2,8 +2,63 @@
 #
 
 
-""" Win heap structure - from LGPL metasm
-http://www.informit.com/articles/article.aspx?p=1081496
+"""
+WinXP HEAP
+
+# if record.FrontEndHeapType == 0
+#    record.CommitRoutine != 0
+#    record.FrontEndHeap == 0
+#    record.LockVariable == 0
+#    record.Flags == 9
+#    record.ForceFlags == 9
+#    record.ProcessHeapsListIndex == 0
+#    record.NonDedicatedListLength == 0
+
+('FrontEndHeap', POINTER_T(None)),
+is the LAL, an array of 128 entries of 0x30 bytes
+for allocation < 1024
+There are 128 look-aside lists per heap, which handle allocations up to 1KB on 32-bit systems
+and up to 2KB on 64-bit platforms.
+http://blogs.technet.com/b/askperf/archive/2007/06/29/what-a-heap-of-part-two.aspx
+
+
+# ('FreeLists', struct__LIST_ENTRY * 128),
+# each one of the 128 list is a double linked list of struct__HEAP_ENTRY
+Freelists is used by the backend manager
+
+# AWD: It is critical to note that the pointer listed in the free lists actually points
+# to the user-accessible part of the heap block and not to the start of the heap block
+# itself. As such, if you want to look at the allocation metadata, you need to first
+# subtract 2x wordsize bytes from the pointer.
+#
+# LXJ: hence, the heap entry contains the LIST_ENTRY pointers in the user allocation part.
+# fieldname, pointee_record_type, lefn, offset = link_info
+#
+for i, freelist in enumerate(record.FreeLists):
+    # all freeblocks in this list have the same size
+
+
+UCR Tracking
+Each heap has a portion of memory set aside to track uncommitted ranges of memory.
+These are used by the segments to track all of the holes in their reserved address
+ranges. The segments track this with small data structures called UCR (Un-committed
+Range) entries.
+
+The heap keeps a global list of free UCR entry structures that the heap
+segments can request, and it dynamically grows this list to service the needs of the
+heap segments.
+
+At the base of the heap, UnusedUnCommittedRanges is a linked list
+of the empty UCR structures that can be used by the heap segments. UCRSegments
+is a linked list of the special UCR segments used to hold the UCR structures.
+
+When a segment uses a UCR, it removes it from the heap’s
+UnusedUnCommittedRanges linked list and puts it on a linked list in the segment
+header called UnCommittedRanges. The special UCR segments are allocated
+dynamically. The system starts off by reserving 0x10000 bytes for each UCR
+segment, and commits 0x1000 bytes (one page) at a time as additional UCR tracking
+entries are needed. If the UCR segment is filled and all 0x10000 bytes are used, the
+heap manager will create another UCR segment and add it to the UCRSegments list.
 
 """
 
@@ -85,6 +140,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.union__SLIST_HEADER, '_1')
         #self.register_linked_list_field_and_type(self.win_heap.union__SLIST_HEADER, '_1', self.win_heap.struct__SLIST_HEADER_0, 'Next')
         self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_ENTRY, 'ListHead')
         # what the fuck is pointed record type of listHead ?
         #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
@@ -119,6 +175,89 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             segments.append(segment)
         return segments
 
+    def HEAP_get_lookaside_chunks(self, record):
+        """
+         heap->FrontEndheap is a list of 128 HEAP_LOOKASIDE
+         lookasidelist[n] block is of size n*8 and used to store (n-1)*8 byte blocks (remaining 8 bytes is used for header
+
+         Most of the time, with FrontEndHeapType == 1 and LockVariable != 0,
+            then TotalFreeSize*4 == FreeLists totals, event with LAL present.
+        """
+        log.debug('HEAP_get_lookaside_chunks')
+        ptr = record.FrontEndHeap
+        lal_start_addr = self._utils.get_pointee_address(ptr)
+        _t = self.win_heap.HEAP_LOOKASIDE * 128
+        m = self._memory_handler.is_valid_address(lal_start_addr, _t)
+        #get_mapping_for_address(lal_start_addr)
+        if not m:
+            #raise RuntimeError('HEAP.FrontEndHeap has a bad address %x' % lal_start_addr)
+            log.error('HEAP.FrontEndHeap has a bad address %x', lal_start_addr)
+            return []
+        #st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
+        lal_list = m.read_struct(lal_start_addr, _t)
+        lal_entry_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_LOOKASIDE)
+        #
+        from haystack.outputters.text import RecursiveTextOutputter
+        parser = RecursiveTextOutputter(self._memory_handler)
+
+        res = []
+        for i, st in enumerate(lal_list):
+            if st.ListHead._1.Next.Next.value == 0:
+                continue
+            #chunk_size = i*8 # free_usable_size = (i-1)*8
+            chunk_size = (i-1)*8
+            log.debug("LAL depth:%d chunk_size:0x%x @: 0x%x", st.Depth, chunk_size, st.ListHead._1.Next.Next.value)
+            res.append((st.ListHead._1.Next.Next.value, chunk_size))
+            #continue
+            entry = st.ListHead._1
+            lal_entry_addr = lal_start_addr + i*lal_entry_size
+            entry._orig_address_ = lal_entry_addr
+            #for i, lookaside in self.iterate_list_from_field(st, 'ListHead'):
+            #for i, lookaside in enumerate(self.iterate_list_from_field(entry, 'Next')):
+            # CHECK I think its HEAP_ENTRY in LAL
+            #iterator_fn = self._iterate_double_linked_list
+            # size is actually a factor of heap granularity == sizeof(HEAP_ENTRY)
+            #size_heap_entry = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY_0_0)
+            #offset = size_heap_entry
+            # get the first entry
+            #first_entry_addr = entry.Next.Next.value
+            #if first_entry_addr == 0:
+            #    continue
+            #first_entry_addr += 2*self._target.get_word_size()
+            #m = self._memory_handler.is_valid_address(first_entry_addr, self.win_heap.struct__HEAP_ENTRY)
+            #if not m:
+            #    raise RuntimeError('HEAP.FrontEndHeap.ListHead._1.Next.Next has a bad address %x' % lal_start_addr)
+            #first_entry = m.read_struct(first_entry_addr, self.win_heap.struct__HEAP_ENTRY)
+            # res.append((first_entry._orig_address_, first_entry.Size * self._target.get_word_size()))
+            # every list head is a sentinel, as head of list
+            sentinels = [lal_entry_addr]
+
+            #for j, freeblock in enumerate(self._iterate_list_from_field_inner(iterator_fn,
+            #                                         first_entry,
+            #                                         self.win_heap.struct__HEAP_ENTRY_0_0,
+            #                                         offset,
+            #                                         sentinels)):
+            for j, freeblock in enumerate(self.iterate_list_from_field(entry, 'Next')):
+                res.append((freeblock._orig_address_, chunk_size))
+                log.debug('HEAP.LAL[%d][%d]: size:0x%x @0x%x', i, j, chunk_size, freeblock._orig_address_)
+
+                #addr = lookaside._orig_address_
+                #log.debug('finding lookaside %d at @%x', i, addr)
+                #print parser.parse(lookaside)
+                #ucr_addr = self._utils.get_pointee_address(ucr.Address)
+                #listHead = st.ListHead._1
+                #listHead._orig_address_ = addr
+                #for free in self.iterate_list_from_field(listHead, 'Next'):
+                #    # TODO delete this free from the heap-segment entries chunks
+                #    # is that supposed to be a FREE_ENTRY ?
+                #    # or a struct__HEAP_LOOKASIDE ?
+                #    log.debug('free')
+                #    #all_free.append(free)  # ???
+                #    pass
+                #yield addr, 0
+        return res
+
+
     # 2015-06-30 for winXP
     #     ('FreeLists', struct__LIST_ENTRY * 128),
     def HEAP_get_freelists(self, record):
@@ -143,7 +282,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #
         for i, freelist in enumerate(record.FreeLists):
             # FIXME TU: all freeblocks in this list have the same size
-            log.debug('HEAP.FreeLists[%d]:', i)
+            #log.debug('HEAP.FreeLists[%d]:', i)
             # AWD: It is critical to note that the pointer listed in the free lists actually points
             # to the user-accessible part of the heap block and not to the start of the heap block
             # itself. As such, if you want to look at the allocation metadata, you need to first
@@ -156,11 +295,24 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             iterator_fn = self._iterate_double_linked_list
             # size is actually a factor of heap granularity == sizeof(HEAP_ENTRY)
             size_heap_entry = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)
+            # FIXME isn't 2 pointers ?
             offset = size_heap_entry
             # the heap.freelists address
             freelists_addr = record._orig_address_ + self._utils.offsetof(type(record), 'FreeLists')
             # every list head is a sentinel, as head of list
             sentinels = [freelists_addr + i*size_heap_entry]
+            # FIXME: backend heap ?
+            # if record.FrontEndHeapType == 0
+            #    record.CommitRoutine != 0
+            #    record.FrontEndHeap == 0
+            #    record.LockVariable == 0
+            #    record.Flags == 9
+            #    record.ForceFlags == 9
+            #    record.Entry._0._0.Size == 193
+            #    record.ProcessHeapsListIndex == 0
+            #    record.NonDedicatedListLength == 0
+            # then the freelists points to UCR ?
+            #
             for j, freeblock in enumerate(self._iterate_list_from_field_inner(iterator_fn,
                                                                  freelist,
                                                                  self.win_heap.struct__HEAP_ENTRY_0_0,

@@ -56,9 +56,10 @@ class TestWinXPHeapWalker(unittest.TestCase):
                           for heap in _heaps])
         child_heaps = dict()
         for heap in _heaps:
+            heap_addr = heap.get_marked_heap_address()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
-                (self._heap_finder._read_heap(heap).ProcessHeapsListIndex, heap.start))
+                (self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr))
             walker = self._heap_finder.get_heap_walker(heap)
             for x, s in walker._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
@@ -76,8 +77,9 @@ class TestWinXPHeapWalker(unittest.TestCase):
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
             finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
-            cheap = finder._read_heap(heap)
-            log.debug('-- heap 0x%0.8x free:%0.5x expected: %0.5x', heap.start, free_size, cheap.TotalFreeSize)
+            heap_addr = heap.get_marked_heap_address()
+            cheap = finder._read_heap(heap, heap_addr)
+            log.debug('-- heap 0x%0.8x free:%0.5x expected: %0.5x', heap_addr, free_size, cheap.TotalFreeSize)
             total = free_size
             for child in children:
                 freeblocks = map(lambda x: x[0], heap_sums[child])

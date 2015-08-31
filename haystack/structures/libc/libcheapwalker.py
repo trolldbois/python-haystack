@@ -18,7 +18,7 @@ class LibcHeapWalker(heapwalker.HeapWalker):
 
     """Helper class that returns heap allocations and free chunks in a standard libc process heap """
 
-    def _init_heap(self):
+    def _init_heap(self, address):
         log.debug('+ Heap @%x size: %d # %s' %
                   (self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping))
         self._allocs = None

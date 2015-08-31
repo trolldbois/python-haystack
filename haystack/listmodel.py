@@ -459,7 +459,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
         link = getattr(obj, fieldname)
         addr = self._utils.get_pointee_address(link)
-        log.debug('_iterate_single_linked_list %s <%s>/0x%x', link.__class__.__name__, addr)
+        log.debug('_iterate_single_linked_list <%s>/0x%x', link.__class__.__name__, addr)
         nb = 0
         while addr not in done and addr not in sentinels:
             done.append(addr)
@@ -475,7 +475,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # next
             link = getattr(st, fieldname)
             addr = self._utils.get_pointee_address(link)
-            log.debug('_iterate_single_linked_list %s <%s>/0x%x', link.__class__.__name__, addr)
+            log.debug('_iterate_single_linked_list <%s>/0x%x', link.__class__.__name__, addr)
         raise StopIteration
 
     def is_valid(self, record):

@@ -161,7 +161,7 @@ class WinHeapValidator(listmodel.ListModel):
             BackEndHeapFree
 
         """
-        res = list()
+        #res = list()
         all_free = list()
         all_committed = list()
         log.debug('HEAP_get_frontend_chunks')
@@ -183,7 +183,7 @@ class WinHeapValidator(listmodel.ListModel):
                     # is that supposed to be a FREE_ENTRY ?
                     # or a struct__HEAP_LOOKASIDE ?
                     log.debug('free')
-                    res.append(free)  # ???
+                    all_free.append(free)  # ???
                     pass
                 addr += ctypes.sizeof(self.win_heap.HEAP_LOOKASIDE)
         elif record.FrontEndHeapType == 2:  # win7 per default

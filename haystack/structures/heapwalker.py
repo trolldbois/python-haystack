@@ -16,14 +16,16 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 class HeapWalker(interfaces.IHeapWalker):
 
     def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
+        if not heap_mapping.is_marked_as_heap():
+            raise TypeError('Please mark the mapping as heap before use')
         self._memory_handler = memory_handler
         self._heap_module = heap_module
         self._heap_mapping = heap_mapping
         self._heap_module_constraints = heap_module_constraints
-        self._init_heap()
+        self._init_heap(heap_mapping.get_marked_heap_address())
 
-    def _init_heap(self):
-        """ Initialiaze anything"""
+    def _init_heap(self, address):
+        """ Initialize anything"""
         raise NotImplementedError('Please implement all methods')
 
     def get_user_allocations(self):
