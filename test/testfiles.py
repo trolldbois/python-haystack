@@ -44,8 +44,8 @@ zeus_1668_vmtoolsd_exe.known_segments = [(0x150680, 0x250000),
                                          (0x7f6f0680, 0x7f7f0000)]
 
 # 2015-08-18 unverified
-zeus_586_svchost_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.856.dump')
-zeus_586_svchost_exe.known_heaps = [(0x00090000, 0x100000),
+zeus_856_svchost_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.856.dump')
+zeus_856_svchost_exe.known_heaps = [(0x00090000, 0x100000),
                                     (0x00190000, 0x10000),
                                     (0x001a0000, 0x10000),
                                     (0x00350000, 0x10000),

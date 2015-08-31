@@ -230,12 +230,16 @@ class TargetPlatform(interfaces.ITargetPlatform):
     @staticmethod
     def make_target_win_32(os_name):
         """    """
+        if os_name not in ['winxp', 'win7']:
+            raise TypeError('os_name should be winxp or win7')
         target = TargetPlatform(None, os_name=os_name, cpu_bits=32, word_size=4, ptr_size=4, ld_size=8)
         return target
 
     @staticmethod
     def make_target_win_64(os_name):
         """    """
+        if os_name not in ['winxp', 'win7']:
+            raise TypeError('os_name should be winxp or win7')
         target = TargetPlatform(None, os_name=os_name, cpu_bits=64, word_size=8, ptr_size=8, ld_size=8)
         return target
 

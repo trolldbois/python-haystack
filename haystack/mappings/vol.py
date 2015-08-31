@@ -16,6 +16,7 @@ from functools import partial
 
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.abc import interfaces
+from haystack import target
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -59,13 +60,13 @@ class VolatilityProcessMappingA(AMemoryMapping):
         return self._backend.zread(addr, size)
 
     def read_struct(self, addr, struct):
-        size = self._target_platform.ctypes.sizeof(struct)
+        size = self._target_platform.get_target_ctypes().sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
         instance._orig_address_ = addr
         return instance
 
     def read_array(self, addr, basetype, count):
-        size = self._target_platform.ctypes.sizeof(basetype * count)
+        size = self._target_platform.get_target_ctypes().sizeof(basetype * count)
         array = (
             basetype *
             count).from_buffer_copy(
@@ -92,7 +93,6 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
             if 'volatility' in mod:
                 del sys.modules[mod]
 
-
     def _init_volatility(self):
         #import sys
         # for mod in sys.modules.keys():
@@ -117,6 +117,8 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
         #_target_platform.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s" % self.imgname
         config.PID = str(self.pid)
+
+        self.config = config
 
         import volatility.plugins.vadinfo as vadinfo
 
@@ -182,7 +184,10 @@ def my_render_text(mapper, cmd, outfd, data):
 
             maps.append(pmap)
 
-    mappings = MemoryHandler(maps, )
+    # get the platform
+    if mapper.config.PROFILE == "WinXPSP2x86":
+        mapper._target = target.TargetPlatform.make_target_win_32('winxp')
+    memory_handler = MemoryHandler(maps, mapper._target, mapper.imgname)
     # print _memory_handler
-    mappings.init_config()
-    mapper.mappings = mappings
+    #mappings.init_config()
+    mapper._memory_handler = memory_handler
