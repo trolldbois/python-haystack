@@ -9,6 +9,7 @@ import unittest
 from haystack.mappings.vol import VolatilityProcessMapper
 
 from test.testfiles import zeus_1668_vmtoolsd_exe
+from test.testfiles import zeus_856_svchost_exe
 
 log = logging.getLogger('test_vol')
 
@@ -55,7 +56,7 @@ class TestMapper(unittest.TestCase):
         memory_handler = mapper.make_memory_handler()
         self.assertEquals(len(memory_handler.get_mappings()), 159)
 
-    def test_is_heaps(self):
+    def test_is_heaps_1168(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 1668
         mapper = VolatilityProcessMapper(f, pid)
@@ -70,71 +71,46 @@ class TestMapper(unittest.TestCase):
             self.assertTrue(heap_addr is not None)
             self.assertTrue(finder._is_heap(heap, heap_addr))
 
-
-    def test_heaps(self):
-        """ look for heaps in pid 856 """
-        ''' for x in _memory_handler:
-                res = x.readStruct(x.start,winheap.HEAP)
-                if res.Signature == 0xeeffeeffL:
-                    print x.start, "Signature:", hex(res.Signature)
-0x190000L Signature: 0xeeffeeffL
-0x90000L Signature: 0xeeffeeffL
-0x1a0000L Signature: 0xeeffeeffL
-0x350000L Signature: 0xeeffeeffL
-0x3b0000L Signature: 0xeeffeeffL
-0xc30000L Signature: 0xeeffeeffL
-0xd60000L Signature: 0xeeffeeffL
-0xe20000L Signature: 0xeeffeeffL
-0xe80000L Signature: 0xeeffeeffL
-0x7f6f0000L Signature: 0xeeffeeffL'''
-        heaps = [0x190000L,0x90000L,0x1a0000L,0x350000L,0x3b0000L,0xc30000L,
-                 0xd60000L,0xe20000L,0xe80000L,0x7f6f0000L]
+    @unittest.skip('number of heaps is still a open question')
+    def test_is_heaps_856(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        # PID 856 has 176 _memory_handler
         mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.make_memory_handler()
-
-        from haystack.structures.win32 import winxpheap
-        for mstart in heaps:
-            heap = mappings.get_mapping_for_address(mstart)
-            res = heap.read_struct(heap.start,winxpheap.HEAP)
-            self.assertTrue(res.is_valid(mappings))
-
-        # testing that the list of heaps is always the same
-        finder = mappings.get_heap_finder()
-        self.assertEquals(set(heaps), set([m.start for m in finder.get_heap_mappings()]))
-        return
+        memory_handler = mapper.make_memory_handler()
+        finder = memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
+        self.assertEquals(len(heaps), len(zeus_856_svchost_exe.known_heaps))
+        for addr, size in zeus_856_svchost_exe.known_heaps:
+            heap = memory_handler.get_mapping_for_address(addr)
+            self.assertTrue(heap.is_marked_as_heap())
+            heap_addr = heap.get_marked_heap_address()
+            self.assertTrue(heap_addr is not None)
+            self.assertTrue(finder._is_heap(heap, heap_addr))
 
     def test_read_mem(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 888  # wscntfy.exe
         mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.make_memory_handler()
-        self.assertEquals(len(mappings), 51)
-        self.assertEquals(mappings.get_os_name(), 'winxp')
+        memory_handler = mapper.make_memory_handler()
+        self.assertEquals(len(memory_handler.get_mappings()), 51)
+        self.assertEquals(memory_handler.get_target_platform().get_os_name(), 'winxp')
 
-        ctypes = mappings.config.ctypes
-        from haystack.structures.win32 import winxpheap
+        ctypes = memory_handler.get_target_platform().get_target_ctypes()
+        from haystack.structures.win32 import winxp_32
         #print ctypes
-        for m in mappings.mappings:
+        for m in memory_handler.get_mappings():
             data = m.read_word(m.start + 8)
             if data == 0xeeffeeff:
                 # we have a heap
-                x = m.read_struct(m.start, winxpheap.HEAP)
+                x = m.read_struct(m.start, winxp_32.HEAP)
                 print x
 
-        self.assertEquals( ctypes.sizeof(x), 1430)
+        self.assertEquals(ctypes.sizeof(x), 1416)
         # print x
-        finder = mappings.get_heap_finder()
+        finder = memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
         #code.interact(local=locals())
 
-    def test_read_mem(self):
-        f = '/home/jal/outputs/vol/zeus.vmem'
-        pid = 888  # wscntfy.exe
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.make_memory_handler()
 
 
 if __name__ == '__main__':

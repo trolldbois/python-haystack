@@ -60,6 +60,48 @@ segment, and commits 0x1000 bytes (one page) at a time as additional UCR trackin
 entries are needed. If the UCR segment is filled and all 0x10000 bytes are used, the
 heap manager will create another UCR segment and add it to the UCRSegments list.
 
+
+        heap_flags = {
+            'HEAP_NO_SERIALIZE': 0,
+            'HEAP_GROWABLE': 1,
+            'HEAP_GENERATE_EXCEPTIONS': 2,
+            'HEAP_ZERO_MEMORY': 3,
+            'HEAP_REALLOC_IN_PLACE_ONLY': 4,
+            'HEAP_TAIL_CHECKING_ENABLED': 5,
+            'HEAP_FREE_CHECKING_ENABLED': 6,
+            'HEAP_DISABLE_COALESCE_ON_FREE': 7,
+            'HEAP_SETTABLE_USER_VALUE': 8,
+            'HEAP_CREATE_ALIGN_16': 16,
+            'HEAP_CREATE_ENABLE_TRACING': 17,
+            'HEAP_CREATE_ENABLE_EXECUTE': 18,
+            'HEAP_FLAG_PAGE_ALLOCS': 24,
+            'HEAP_PROTECTION_ENABLED': 25,
+            'HEAP_CAPTURE_STACK_BACKTRACES': 27,
+            'HEAP_SKIP_VALIDATION_CHECKS': 28,
+            'HEAP_VALIDATE_ALL_ENABLED': 29,
+            'HEAP_VALIDATE_PARAMETERS_ENABLED': 30,
+            'HEAP_LOCK_USER_ALLOCATED': 31,
+            }
+
+        entry_flags = {
+            #'HEAP_ENTRY_BUSY': 0,
+            "busy": 0,
+            #'HEAP_ENTRY_EXTRA_PRESENT': 1,
+            "extra": 1,
+            #'HEAP_ENTRY_FILL_PATTERN': 2,
+            "fill": 2,
+            #'HEAP_ENTRY_VIRTUAL_ALLOC': 3,
+            "virtual": 3,
+            #'HEAP_ENTRY_LAST_ENTRY': 4,
+            "last": 4,
+            #'HEAP_ENTRY_SETTABLE_FLAG1': 5,
+            "flag1": 5,
+            #'HEAP_ENTRY_SETTABLE_FLAG2': 6,
+            "flag2": 6,
+            #'HEAP_ENTRY_SETTABLE_FLAG3': 7
+            "flag3": 7
+            }
+
 """
 
 __author__ = "Loic Jaquemet"

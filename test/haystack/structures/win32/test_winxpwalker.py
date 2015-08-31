@@ -111,7 +111,8 @@ class TestWinXPHeapWalker(unittest.TestCase):
         heaps = finder.get_heap_mappings()
         self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for i, m in enumerate(heaps):
-            log.debug('%d @%0.8x', finder._read_heap(m).ProcessHeapsListIndex, m.start)
+            heap_addr = m.get_marked_heap_address()
+            log.debug('%d @%0.8x', finder._read_heap(m, heap_addr).ProcessHeapsListIndex, heap_addr)
             # self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
             #self.assertGreaterEqual(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
             #                  'ProcessHeaps should have correct indexes')
@@ -122,7 +123,10 @@ class TestWinXPHeapWalker(unittest.TestCase):
         # helper
         win7heap = finder._heap_module
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
-        # for heap in finder.get_heap_mappings():
+        # Mark all heaps
+        for heap in finder.get_heap_mappings():
+            pass
+        # do the one test
         for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
             walker = finder.get_heap_walker(heap)
@@ -357,7 +361,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         validator = finder.get_heap_validator()
 
         found = []
-        for mapping in self._memory_handler.get_heap_mappings():
+        for mapping in finder.get_heap_mappings():
             addr = mapping.start
             heap = mapping.read_struct(addr, win7heap.HEAP)
             print hex(addr)
