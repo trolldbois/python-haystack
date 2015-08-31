@@ -395,7 +395,6 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
 
         raise StopIteration
 
-    # FIXME add sentinels.
     def _iterate_double_linked_list(self, record, sentinels=None):
         """
         iterate forward, then backward, until null or duplicate
@@ -412,31 +411,36 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # we ignore the sentinels here, as this is an internal iterator
         forward, backward, _ = self.get_double_linked_list_type(record_type)
         log.debug("sentinels %s", str([hex(s) for s in sentinels]))
+        # make the stack
+        stack = []
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = self._utils.get_pointee_address(link)
-            log.debug('_iterate_double_linked_list %s <%s>/0x%x', fieldname, link.__class__.__name__, addr)
-            nb = 0
-            while addr not in done and addr not in sentinels:
+            stack.append(addr)
+        # go trough the tree
+        while 1:
+            new_nodes = []
+            if len(stack) == 0:
+                break
+            for addr in stack:
+                if addr in done or addr in sentinels:
+                    continue
                 done.append(addr)
-                memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
-                if memoryMap == False:
-                    log.error("_iterate_double_linked_list: the link of this linked list has a bad value")
-                    raise ValueError('ValueError: the link of this linked list has a bad value')
-                st = memoryMap.read_struct(addr, record_type)
+                memory_map = self._memory_handler.is_valid_address_value(addr, record_type)
+                if memory_map is False:
+                    log.error("_iterate_double_linked_list: the link of this linked list has a bad value: 0x%x", addr)
+                    raise ValueError('ValueError: the link of this linked list has a bad value: 0x%x' % addr)
+                st = memory_map.read_struct(addr, record_type)
                 st._orig_address_ = addr
                 self._memory_handler.keepRef(st, record_type, addr)
                 log.debug("keepRefx2 %s.%s: @%x", record_type.__name__, fieldname, addr)
-                ## DEBUG
-                #import traceback
-                #print traceback.print_stack()
-                ## DEBUG
                 yield addr
                 # next
-                link = getattr(st, fieldname)
-                addr = self._utils.get_pointee_address(link)
-                log.debug('_iterate_double_linked_list %s <%s>/0x%x', fieldname, link.__class__.__name__, addr)
-            # log.debug('going backward after %x', addr)
+                new_nodes.append(self._utils.get_pointee_address(getattr(st, forward)))
+                new_nodes.append(self._utils.get_pointee_address(getattr(st, backward)))
+                log.debug('_iterate_double_linked_list %s <%s>/0x%x', forward, link.__class__.__name__, addr)
+                log.debug('_iterate_double_linked_list %s <%s>/0x%x', backward, link.__class__.__name__, addr)
+            stack = new_nodes
         raise StopIteration
 
     def _iterate_single_linked_list(self, record, sentinels=None):
