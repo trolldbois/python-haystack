@@ -10,21 +10,69 @@ class TestDump(object):
 
 
 # 2015-08-18
+# PEB is 0x7ffde000 says volatility
+# search also gives 0x20080000 and 0x5d0d2000
 zeus_1668_vmtoolsd_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.1668.dump')
-zeus_1668_vmtoolsd_exe.known_heaps = [(0x00150000, 0x100000),
-                                      (0x00250000, 0x10000),
-                                      (0x003f0000, 0x10000),
-                                      (0x00730000, 0xc8000), # testing 0x00670000-0x00738000
-                                      (0x00860000, 0x300000),
-                                      (0x00b70000, 0x10000),
-                                      (0x00ba0000, 0x10000),
-                                      (0x01620000, 0x80000),
-                                      (0x01eb0000, 0x10000),
-                                      (0x01ec0000, 0x100000),
-                                      (0x5d09d000, 0x97000), #
-                                      (0x769f7000, 0xb3000), #
-                                      (0x7f6f0000, 0x100000)]
+zeus_1668_vmtoolsd_exe.known_heaps = [(0x00150000, 0x100000), # k
+                                      (0x00250000, 0x10000), # k
+                                      # peb says missing 0x00260000 # null structure
+                                      (0x003f0000, 0x10000), # k
+                                      #Commit routine removal #(0x00730000, 0xc8000), # probably not a heap
+                                      #Commit routine removal #(0x00860000, 0x300000), # probably not a heap
+                                      (0x00b70000, 0x10000), # k
+                                      # peb says missing 0x00b80000 # null structure
+                                      (0x00ba0000, 0x10000), # k
+                                      (0x01620000, 0x80000), # k
+                                      # peb says missing 0x01aa0000 # null structure
+                                      # peb says missing 0x01ae0000 # null structure
+                                      # peb says missing 0x01b20000 # null structure
+                                      # peb says missing 0x01b60000 # null structure
+                                      # peb says missing 0x01880000 # null structure
+                                      # peb says missing 0x01da0000 # null structure
+                                      (0x01eb0000, 0x10000), # k
+                                      (0x01ec0000, 0x100000), # k
+                                      (0x5d09d000, 0x97000), # probably not a heap
+                                      (0x769f7000, 0xb3000), # probably not a heap
+                                      (0x7f6f0000, 0x100000)] # probably not a heap
 
+# 0x00730000
+# .Entry._0._0.Size is 193
+# .Flags is 9
+# .ForceFlags is 9
+# .ProcessHeapsListIndex = 0
+# .UnusedUnCommittedRanges unmapped pointer
+# .VirtualAllocdBlocks unmapped pointers
+# .Segments unmapped pointers
+# .FreeLists unmapped pointers
+# .LockVariable is null
+# .CommitRoutine is not null
+# .FrontEndHeap: null,
+# .FrontEndHeapType == 1
+
+# 0x00860000
+# .Entry._0._0.Size is 193
+# .Flags is 9
+# .ForceFlags is 9
+# .ProcessHeapsListIndex = 0
+# .UnusedUnCommittedRanges unmapped pointer
+# .VirtualAllocdBlocks unmapped pointers
+# .Segments unmapped pointers
+# .FreeLists unmapped pointers
+# .LockVariable is null
+# .CommitRoutine is not null
+# .FrontEndHeap: null,
+# .FrontEndHeapType == 1
+
+# 0x5d09d000
+# .FrontEndHeapType == 1
+# .FreeLists has valid pointers to to null records
+# .LockVariable is set
+# .FrontEndHeap: 0x00070688,
+
+# 0x7f6f0000
+# .FreeLists unmapped pointers
+# .FrontEndHeap: null,
+# .FrontEndHeapType == 0
 
 
 zeus_1668_vmtoolsd_exe.known_segments = [(0x150680, 0x250000),

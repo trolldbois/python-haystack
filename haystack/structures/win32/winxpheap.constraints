@@ -19,7 +19,10 @@ FrontEndHeapType: [0, 1, 2]
 # CommitRoutine that is called when memory regions within the heap are committed.
 # Starting with Windows Vista, this field was encoded using a random value that
 # was also stored as a field in the HEAP handle data structure.
-CommitRoutine: IgnoreMember
+# We do want a valid commit routine or Null
+## CommitRoutine: IgnoreMember
+
+
 # we have a sentinel value of 0xffffffff
 Segments: IgnoreMember
 # found in wild DEBUG:memorybase:is_valid_address_value = bc63e310 False
@@ -55,3 +58,14 @@ LastValidEntry: IgnoreMember
 # FIXME, why is 0xffffffff not used as a sentinels in
 [struct__ERESOURCE]
 SystemResourcesList: IgnoreMember
+
+# Evolution of PEB http://blog.rewolf.pl/blog/?p=573
+[struct__PEB]
+#Mutant: [-1]
+# its a pointer, buts its 0xffffffff
+Mutant: IgnoreMember
+BeingDebugged: [0,1]
+#NumberOfProcessors: [RangeValue(1,128)]
+#NumberOfHeaps: [RangeValue(1,128)]
+OSMajorVersion: [5]
+OSMinorVersion: [1]

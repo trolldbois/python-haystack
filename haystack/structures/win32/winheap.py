@@ -83,8 +83,10 @@ class WinHeapValidator(listmodel.ListModel):
         return ucrs
 
     def HEAP_get_chunks(self, record):
-        """Returns a list of tuple(address,size) for all chunks in
-         the backend allocator."""
+        """
+        Returns a list of tuple(address,size) for all chunks in
+         the backend allocator.
+        """
         # FIXME look at segment.LastEntryInSegment
         allocated = list()
         free = list()

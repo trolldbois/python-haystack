@@ -116,7 +116,11 @@ def refresh(args):
     result = api.load_record(memory_handler, struct_type, memory_address)
     results = [result]
     if args.validate:
-        validation = api.validate_record(memory_handler, result[0])
+        my_constraints = None
+        if args.constraints_file:
+            handler = constraints.ConstraintsConfigHandler()
+            my_constraints = handler.read(args.constraints_file.name)
+        validation = api.validate_record(memory_handler, result[0], my_constraints)
     if args.interactive:
         import code
         code.interact(local=locals())

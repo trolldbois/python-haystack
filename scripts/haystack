@@ -55,11 +55,14 @@ def argparser():
     search_parser = subparsers.add_parser('search', help='search help')
     search_parser.add_argument('struct_name', type=str, help='Structure type name')
     search_parser.add_argument('--constraints_file', type=argparse.FileType('r'), help='Constraints filename for the module')
+    search_parser.add_argument('--extended', dest='extended_search', action='store_const', const=True, help='do no restrict search to allocated chunks')
     search_parser.set_defaults(func=cli.search_cmdline)
     #
     refresh_parser = subparsers.add_parser('refresh', help='refresh help')
     refresh_parser.add_argument('struct_name', type=str, help='Structure type name')
     refresh_parser.add_argument('addr', type=argparse_utils.int16, help='Structure memory address')
+    refresh_parser.add_argument('--validate', dest='validate', action='store_const', const=True, help='validate the record after loading')
+    refresh_parser.add_argument('--constraints_file', type=argparse.FileType('r'), help='Constraints filename for the module')
     refresh_parser.set_defaults(func=cli.refresh)
     #
     watch_parser = subparsers.add_parser('watch', help='watch a structure in a live process')

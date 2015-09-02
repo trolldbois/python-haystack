@@ -217,8 +217,8 @@ class TestWinXPHeapValidator(unittest.TestCase):
             for i, segment in enumerate(self._validator.HEAP_get_segment_list(walker._heap)):
                 s, e = segment.FirstEntry.value, segment.LastValidEntry.value
                 segments.append((s, e))
-                #ss = parser.parse(segment)
-                #print ss
+                ss = self.parser.parse(segment)
+                print ss
                 log.debug("SEGMENT: FirstEntry:0x%x LastValidEntry:0x%x", segment.FirstEntry.value, segment.LastValidEntry.value)
                 # all segments are linked to a heap
                 self.assertEqual(segment.Heap.value, heap.start)
