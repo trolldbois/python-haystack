@@ -1,4 +1,11 @@
 
+- finder the text outputter bug. haystack refresh PEB returns different and bad results with a 
+constraint file. with a string output.
+see field process Heap
+while python outputters give a None value for the pointer, the string outputters will return the first pointer value
+BAD: python /home/other/Compil/python-haystack/scripts/haystack --debug --string --dumpname /home/jal/outputs/vol/zeus.vmem.1668.dump/ refresh winxp_32_peb.struct__PEB  0x7ffde000 --validate --constraints_file winxpheap.constraints
+OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string --dumpname /home/jal/outputs/vol/zeus.vmem.1668.dump/ refresh winxp_32_peb.struct__PEB  0x7ffde000 --validate
+
 - change Levenshtein for fuzzywuzzy or similar
 
 - following memory_handler changes, the __book cache seems to forget about some ctypes buffers.

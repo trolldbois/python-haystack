@@ -88,6 +88,9 @@ class PythonOutputter(Outputter):
             # get the cached Value of the LP.
             _subtype = self._utils.get_subtype(attrtype)
             _address = self._utils.get_pointee_address(attr)
+            #if field == 'ProcessHeaps':
+            #    import code
+            #    code.interact(local=locals())
             if _address == 0:
                 # Null pointer
                 obj = None
@@ -99,8 +102,8 @@ class PythonOutputter(Outputter):
                 log.error('basic Type array - %s' % (field))
                 obj = 'BasicType array'
             else:
+                # FIXME we should NOT recurse
                 # get the cached Value of the LP.
-                _subtype = self._utils.get_subtype(attrtype)
                 cache = self._memory_handler.getRef(_subtype, _address)
                 if cache is not None:  # struct, union...
                     obj = self._attrToPyObject(cache, field, _subtype)

@@ -46,11 +46,18 @@ class HeapFinder(object):
         my_searcher = searcher.AnyOffsetRecordSearcher(self.memory_handler,
                                                        my_constraints,
                                                        update_cb=partial(self.print_cb, self.memory_handler))
+        ## DEBUG
+        # DEBUG PEB search
+        #peb = my_model.import_module('haystack.structures.win32.winxp_32_peb')
+        ##DEBUG
+
         # on ly return first results in each mapping
         results = []
         for mapping in self.memory_handler.get_mappings():
             log.debug("looking at %s", mapping)
             res = my_searcher._search_in(mapping, heap_module.HEAP, nb=1, align=0x1000)
+            # DEBUG PEB search
+            #res = my_searcher._search_in(mapping, peb.struct__PEB, nb=1, align=0x1000)
             if res:
                 # FIXME output_to are stupid
                 #print haystack.output_to_string(memory_handler, res)

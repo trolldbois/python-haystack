@@ -116,12 +116,15 @@ class RecursiveTextOutputter(Outputter):
             # TODO: can I just dump this block into a recursive call ?
             # probably not if we want to stop LIST types from recursing
             # FIXME why contents is None ?
-            if myaddress == 0 or contents is None:
+            #if field == 'ProcessHeaps':
+            #    import code
+            #    code.interact(local=locals())
+            if myaddress == 0:# or contents is None: # FIXME the solution is probably to remove the content test here
                 # only print address/null
                 s = '%s,' % (myaddress_fmt)
             elif self._ctypes.is_pointer_to_void_type(attrtype):
                 # c_void_p, c_char_p, can load target
-                s = '%s, #(FIELD NOT LOADED: void pointer)' % (myaddress_fmt)
+                s = '%s, #(FIELD NOT LOADED: void pointer)' % self._utils.formatAddress(attr.value) #(myaddress_fmt)
             elif isinstance(self, type(contents)):
                 # pointer of self type ? lists ?
                 # TODO: decide if we recurse in lists or not.
@@ -132,7 +135,9 @@ class RecursiveTextOutputter(Outputter):
             elif (self._ctypes.is_pointer_to_struct_type(attrtype)
                   or self._ctypes.is_pointer_to_union_type(attrtype)):
                 s = '%s,' % (self.parse(contents, prefix + '\t', depth - 1))
+            # FIXME: get coherent with python or just use the one python and then a python to string.
             else:
+                # FIXME we should NOT recurse
                 # could be a pointer to basic type, array type, pointer, ...
                 # we recurse.
                 # s = prefix + '"%s": #(%s)\n%s,'%(field, myaddress_fmt,

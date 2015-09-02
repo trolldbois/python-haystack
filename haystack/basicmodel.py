@@ -268,6 +268,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         # f)
         elif self._ctypes.is_pointer_type(attrtype):
             myaddress = self._utils.get_pointee_address(attr)
+            #log.debug('_is_valid_attr:0x%x name: %s', myaddress, attrname)
             if attrname in record_constraints:
                 # test if NULL is an option
                 log.debug('self._ctypes.is_pointer_type: bool(attr):%s attr:%s',
