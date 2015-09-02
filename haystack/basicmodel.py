@@ -526,7 +526,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             elif (self._ctypes.is_array_type(subtype) or
                   self._ctypes.is_pointer_type(subtype)):
                 return self._load_member( # FIXME
-                    contents, 'pointee', subtype, record_constraints, max_depth - 1)
+                    record, contents, 'pointee', subtype, record_constraints, max_depth - 1)
             log.debug('d: %d load_members recursively on pointer %s' % (max_depth, attrname))
             if not self.load_members(contents, max_depth - 1):
                 log.debug('member %s was not loaded' % attrname)

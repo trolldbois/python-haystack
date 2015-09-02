@@ -37,12 +37,12 @@ class RecordSearcher(object):
             target_mappings = memory_handler.get_heap_finder().get_heap_mappings()
         self._memory_handler = memory_handler
         self._my_constraints = my_constraints
-        self.__target_mappings = target_mappings
+        self._target_mappings = target_mappings
         self._update_cb = update_cb
         log.debug(
             'StructFinder created for %s. Search Perimeter on %d mappings.',
             self._memory_handler.get_name(),
-            len(self.__target_mappings))
+            len(self._target_mappings))
         return
 
     def search(self, struct_type, max_res=10, max_depth=10):
@@ -56,7 +56,7 @@ class RecordSearcher(object):
         :return:
         """
         outputs = []
-        for m in self.__target_mappings:
+        for m in self._target_mappings:
             outputs.extend(
                 self._search_in(
                     m,
@@ -189,12 +189,12 @@ class AnyOffsetRecordSearcher(RecordSearcher):
             target_mappings = memory_handler.get_mappings()
         self._memory_handler = memory_handler
         self._my_constraints = my_constraints
-        self.__target_mappings = target_mappings
+        self._target_mappings = target_mappings
         self._update_cb = update_cb
         log.debug(
             'StructFinder created for %s. Search Perimeter on %d mappings.',
             self._memory_handler.get_name(),
-            len(self.__target_mappings))
+            len(self._target_mappings))
         return
 
     def _search_in(self, mem_map, struct_type, nb=10, depth=99, align=None):

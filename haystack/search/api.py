@@ -8,13 +8,14 @@ import json
 from haystack.search import searcher
 from haystack.outputters import text
 from haystack.outputters import python
+from haystack import listmodel
 
 log = logging.getLogger('api')
 
 class HaystackError(Exception):
     pass
 
-def search_record(memory_handler, struct_type, search_constraints=None):
+def search_record(memory_handler, struct_type, search_constraints=None, extended_search=False):
     """
     Search a record in the memory dump of a process represented
     by memory_handler.
@@ -26,8 +27,12 @@ def search_record(memory_handler, struct_type, search_constraints=None):
     :param memory_handler: IMemoryHandler
     :param struct_type: a ctypes.Structure or ctypes.Union from a module imported by haystack
     :param search_constraints: IModuleConstraints to be considered during the search
+    :param extended_search: boolean, use allocated chunks only per default (False)
     :rtype a list of (ctypes records, memory offset)
     """
+    if extended_search:
+        my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler, search_constraints)
+        return my_searcher.search(struct_type)
     my_searcher = searcher.RecordSearcher(memory_handler, search_constraints)
     return my_searcher.search(struct_type)
 
@@ -113,6 +118,19 @@ def load_record(memory_handler, struct_type, memory_address, load_constraints=No
     """
     if not isinstance(memory_address, long) and not isinstance(memory_address, int):
         raise TypeError('Feed me a long memory_address')
-    my_loader = searcher.RecordLoader(memory_handler, load_constraints)
+    # we need to give target_mappings so not to trigger a heap resolution
+    my_loader = searcher.RecordLoader(memory_handler, load_constraints, target_mappings=memory_handler.get_mappings())
     return my_loader.load(struct_type, memory_address)
+
+def validate_record(memory_handler, instance, record_constraints=None, max_depth=10):
+    """
+    Validate a loaded record against constraints.
+
+    :param memory_handler: IMemoryHandler
+    :param instance: a ctypes record
+    :param record_constraints: IModuleConstraints to be considered during validation
+    :return:
+    """
+    validator = listmodel.ListModel(memory_handler, record_constraints)
+    return validator.load_members(instance, max_depth)
 

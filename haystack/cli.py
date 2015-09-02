@@ -70,7 +70,7 @@ def search_cmdline(args):
     module = memory_handler.get_model().import_module(modulename)
     struct_type = getattr(module, classname)
     # do the search
-    results = api.search_record(memory_handler, struct_type, my_constraints)
+    results = api.search_record(memory_handler, struct_type, my_constraints, extended_search=args.extended_search)
     if args.interactive:
         import code
         code.interact(local=locals())
@@ -115,6 +115,8 @@ def refresh(args):
     # load the record
     result = api.load_record(memory_handler, struct_type, memory_address)
     results = [result]
+    if args.validate:
+        validation = api.validate_record(memory_handler, result[0])
     if args.interactive:
         import code
         code.interact(local=locals())
@@ -131,6 +133,8 @@ def refresh(args):
     else:
         raise ValueError('unknown output format')
     print ret
+    if args.validate:
+        print 'Validated', validation
     return
 
 def check_varname_for_type(memory_handler, varname, struct_type):
