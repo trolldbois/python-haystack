@@ -12,7 +12,7 @@ class TestDump(object):
 # 2015-08-18
 # PEB is 0x7ffde000 says volatility
 # search also gives 0x20080000 and 0x5d0d2000
-zeus_1668_vmtoolsd_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.1668.dump')
+zeus_1668_vmtoolsd_exe = TestDump('test/dumps/vol/zeus.vmem.1668.dump')
 zeus_1668_vmtoolsd_exe.known_heaps = [(0x00150000, 0x100000), # k
                                       (0x00250000, 0x10000), # k
                                       # peb says missing 0x00260000 # null structure
@@ -104,7 +104,7 @@ zeus_1668_vmtoolsd_exe.known_chunks = {#0x5d09d000: (0x0, 0x0),
 
 
 # 2015-08-18 unverified
-zeus_856_svchost_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.856.dump')
+zeus_856_svchost_exe = TestDump('test/dumps/vol/zeus.vmem.856.dump')
 zeus_856_svchost_exe.known_heaps = [(0x00090000, 0x100000),
                                     (0x00190000, 0x10000),
                                     (0x001a0000, 0x10000),

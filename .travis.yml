@@ -28,6 +28,7 @@ before_script:
 # we also need the large test files (memory dumps)
   - mkdir -p test/dumps/putty
   - mkdir -p test/dumps/ssh
+  - mkdir -p test/dumps/vol
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
   - unzip -q putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
@@ -40,11 +41,16 @@ before_script:
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
   - tar zxf ssh.x64.6653.dump.tgz
   - mv ssh.x64.6653.dump test/dumps/ssh/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.1668.dump.tgz
+  - tar zxf zeus.vmem.1668.dump.tgz
+  - mv zeus.vmem.1668.dump test/dumps/vol/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.856.dump.tgz
+  - tar zxf zeus.vmem.856.dump.tgz
+  - mv zeus.vmem.856.dump test/dumps/vol/
 # we need the simple memory tests.
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-20150808.tgz
-  - tar zxf src-20150808.tgz
-  - mv test/src test/src.old
-  - mv src test/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-d2ecd57e08b2d879f8e97dd53a703f4de09575b4.tgz
+  - tar zxf -C src/ src-d2ecd57e08b2d879f8e97dd53a703f4de09575b4.tgz
+
 
 script:
 # run tests. Need root for memory dumps tests.
