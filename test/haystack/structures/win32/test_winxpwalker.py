@@ -92,12 +92,12 @@ class TestWinXPHeapWalker(unittest.TestCase):
             log.debug('     \= total:  free:%0.5x ', total)
 
             maxlen = len(heap)
-            cheap = finder._read_heap(heap)
+            cheap = finder._read_heap(heap, heap_addr)
             #print self.parser.parse(cheap)
             #self.assertEquals(cheap.TotalFreeSize * 8, total)
-            log.debug(
-                'heap: 0x%0.8x free: %0.5x    expected: %0.5x    mmap len:%0.5x',
-                heap.start, total, cheap.TotalFreeSize, maxlen)
+            #log.debug(
+            #    'heap: 0x%0.8x free: %0.5x    expected: %0.5x    mmap len:%0.5x',
+            #    heap.start, total, cheap.TotalFreeSize, maxlen)
 
         return
 
@@ -132,7 +132,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         for heap in finder.get_heap_mappings():
             pass
         # do the one test
-        for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
+        for heap in [heap]:
             allocs = list()
             walker = finder.get_heap_walker(heap)
             heap_children = walker.get_heap_children_mmaps()
@@ -233,7 +233,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                         (m.start, m.end, addr, s, addr + s))
         return
 
-    def _chunks_in_mapping(self, lst, walker):
+    def _chunks_in_mapping(self, lst, walker, mapping):
         for addr, s in lst:
             m = self._memory_handler.get_mapping_for_address(addr)
             if addr + s > m.end:
@@ -242,14 +242,14 @@ class TestWinXPHeapWalker(unittest.TestCase):
                     (m.start, m.end, addr, s, addr + s))
             ##self.assertEquals(mapping, m)
             # actually valid, if m is a children of mapping
-            if m != walker._mapping:
+            if m != mapping:
                 self.assertIn(m, walker.get_heap_children_mmaps())
 
     def assertMappingHierarchy(self, child, parent, comment=None):
         self.assertIn(child, self._heapChildren[parent], comment)
 
     # a free chunks size jumps into unknown mmap address space..
-    #@unittest.expectedFailure
+    @unittest.expectedFailure
     def test_totalsize(self):
         """ check if there is an adequate allocation rate as per get_user_allocations """
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
@@ -271,19 +271,19 @@ class TestWinXPHeapWalker(unittest.TestCase):
             my_chunks = list()
 
             vallocs, va_free = walker._get_virtualallocations()
-            self._chunks_in_mapping(vallocs, walker)
+            self._chunks_in_mapping(vallocs, walker, heap)
             vallocsize = sum([c[1] for c in vallocs])
 
             chunks, free_chunks = walker._get_chunks()
             #print chunks, free_chunks
-            self._chunks_in_mapping(chunks, walker)
+            self._chunks_in_mapping(chunks, walker, heap)
             # Free chunks CAN be OVERFLOWING
             # self._chunks_in_mapping( free_chunks, walker)
             allocsize = sum([c[1] for c in chunks])
             freesize = sum([c[1] for c in free_chunks])
 
             fth_chunks, fth_free = walker._get_frontend_chunks()
-            self._chunks_in_mapping(fth_chunks, walker)
+            self._chunks_in_mapping(fth_chunks, walker, heap)
             fth_allocsize = sum([c[1] for c in fth_chunks])
 
             free_lists = walker._get_freelists()
@@ -308,6 +308,11 @@ class TestWinXPHeapWalker(unittest.TestCase):
         self.assertEquals(len(full), len(set(full)), 'duplicates allocs found')
 
         addrs = [addr for addr, s in full]
+        #addrs.sort()
+        #addrs2 = list(set(addrs))
+        #addrs2.sort()
+        #self.assertEquals(
+        #    addrs, addrs2)#, 'duplicates allocs found but different sizes')
         self.assertEquals(
             len(addrs), len(
                 set(addrs)), 'duplicates allocs found but different sizes')
@@ -465,7 +470,7 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     #logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    #logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
+    logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
     #logging.getLogger('winheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

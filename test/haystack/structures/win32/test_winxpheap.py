@@ -55,6 +55,10 @@ class TestWinXPHeapValidator(unittest.TestCase):
         (why this one?)
         0x3f0000
 
+        FIXME: DOUBLE usage with test_winxpwalker.
+        Need to loook at all segments ?
+        # remove heap constraints verification. they have been moved to constraints.
+
         """
         # test the heaps
         _heaps = self._heap_finder.get_heap_mappings()

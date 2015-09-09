@@ -170,24 +170,30 @@ class WinHeapValidator(listmodel.ListModel):
         ptr = record.FrontEndHeap
         addr = self._utils.get_pointee_address(ptr)
         if record.FrontEndHeapType == 1:  # windows XP per default
+            lal_free_c = self.HEAP_get_lookaside_chunks(record)
+            all_free.extend(lal_free_c)
+            #(allocated_c, free_c) = self.HEAP_get_chunks(record)
+            #freelist_free_c = self.HEAP_get_freelists(record)
+            #all_free = set(lal_free_c + free_c + freelist_free_c)
+            #all_committed = set(allocated_c) - set(all_free)
             # TODO delete this ptr from the heap-segment entries chunks
-            for x in range(128):
-                log.debug('finding lookaside %d at @%x' % (x, addr))
-                m = self._memory_handler.get_mapping_for_address(addr)
-                st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
-                # load members on self.FrontEndHeap car c'est un void *
-                #for free in st.iterateList('ListHead'):  # single link list.
-                #for free in self.iterate_list_from_field(st, 'ListHead'):
-                listHead = st.ListHead._1
-                listHead._orig_address_ = addr
-                for free in self.iterate_list_from_field(listHead, 'Next'):
-                    # TODO delete this free from the heap-segment entries chunks
-                    # is that supposed to be a FREE_ENTRY ?
-                    # or a struct__HEAP_LOOKASIDE ?
-                    log.debug('free')
-                    all_free.append(free)  # ???
-                    pass
-                addr += ctypes.sizeof(self.win_heap.HEAP_LOOKASIDE)
+            #for x in range(128):
+            #    log.debug('finding lookaside %d at @%x' % (x, addr))
+            #    m = self._memory_handler.get_mapping_for_address(addr)
+            #    st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
+            #    # load members on self.FrontEndHeap car c'est un void *
+            #    #for free in st.iterateList('ListHead'):  # single link list.
+            #    #for free in self.iterate_list_from_field(st, 'ListHead'):
+            #    listHead = st.ListHead._1
+            #    listHead._orig_address_ = addr
+            #    for free in self.iterate_list_from_field(listHead, 'Next'):
+            #        # TODO delete this free from the heap-segment entries chunks
+            #        # is that supposed to be a FREE_ENTRY ?
+            #        # or a struct__HEAP_LOOKASIDE ?
+            #        log.debug('free')
+            #        all_free.append(free)  # ???
+            #        pass
+            #    addr += ctypes.sizeof(self.win_heap.HEAP_LOOKASIDE)
         elif record.FrontEndHeapType == 2:  # win7 per default
             log.debug('finding frontend at @%x' % (addr))
             m = self._memory_handler.get_mapping_for_address(addr)
