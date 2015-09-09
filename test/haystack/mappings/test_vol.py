@@ -6,7 +6,10 @@
 import logging
 import unittest
 
-from haystack.mappings.vol import VolatilityProcessMapper
+try:
+    from haystack.mappings.vol import VolatilityProcessMapper
+except ImportError,e:
+    unittest.skip('Volatility not installed')
 
 from test.testfiles import zeus_1668_vmtoolsd_exe
 from test.testfiles import zeus_856_svchost_exe

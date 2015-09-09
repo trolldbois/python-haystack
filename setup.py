@@ -120,7 +120,7 @@ setup(name="haystack",
       test_suite= "test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
       # prep_test requires ctypeslib2
-      # tests_require=["volatility", "ctypeslib2>2.1.3"],
+      #tests_require=["volatility"],
       # tests_require=["ctypeslib2>2.1.3"],
       #entry_points = {'haystack.plugins':['haystack.model:register']},
       cmdclass={
