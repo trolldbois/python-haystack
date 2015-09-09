@@ -49,7 +49,7 @@ before_script:
   - mv zeus.vmem.856.dump test/dumps/vol/
 # we need the simple memory tests.
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-d2ecd57e08b2d879f8e97dd53a703f4de09575b4.tgz
-  - tar zxf -C src/ src-d2ecd57e08b2d879f8e97dd53a703f4de09575b4.tgz
+  - tar zxf src-d2ecd57e08b2d879f8e97dd53a703f4de09575b4.tgz -C src/
 
 
 script:
