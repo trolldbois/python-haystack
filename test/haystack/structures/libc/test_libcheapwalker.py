@@ -70,7 +70,7 @@ class TestLibcHeapWalker(unittest.TestCase):
     def test_get_user_allocations(self):
         # we should have 3 structures + 1 empty chunks
         allocs = self.walker.get_user_allocations()
-        self.assertEquals(len(allocs), 3)
+        self.assertEquals(len(allocs), 35)
 
     def test_get_free_chunks(self):
         # the empty chunk
