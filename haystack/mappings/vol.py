@@ -79,9 +79,10 @@ import sys
 
 class VolatilityProcessMapper(interfaces.IMemoryLoader):
 
-    def __init__(self, imgname, pid):
+    def __init__(self, imgname, profile, pid):
         self.pid = pid
         self.imgname = imgname
+        self.profile = profile
         self._memory_handler = None
         self._unload_volatility()
         self._init_volatility()
@@ -113,7 +114,7 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
         registry.register_global_options(config, commands.Command)
         registry.register_global_options(config, addrspace.BaseAddressSpace)
         config.parse_options()
-        config.PROFILE = "WinXPSP2x86"
+        config.PROFILE = self.profile
         #_target_platform.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s" % self.imgname
         config.PID = str(self.pid)

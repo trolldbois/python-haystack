@@ -38,7 +38,7 @@ class TestMapper(unittest.TestCase):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
         # PID 856 has 176 _memory_handler
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         self.assertEquals(len(memory_handler.get_mappings()), 176)
 
@@ -46,20 +46,20 @@ class TestMapper(unittest.TestCase):
         # volatility
         pid = 676
         # PID 676 has 118 _memory_handler
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         self.assertEquals(len(memory_handler.get_mappings()), 118)
 
         pid = 1668
         # PID 1668 has 159 _memory_handler
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         self.assertEquals(len(memory_handler.get_mappings()), 159)
 
     def test_is_heaps_1168(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 1668
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
@@ -75,7 +75,7 @@ class TestMapper(unittest.TestCase):
     def test_is_heaps_856(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
@@ -90,7 +90,7 @@ class TestMapper(unittest.TestCase):
     def test_read_mem(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 888  # wscntfy.exe
-        mapper = VolatilityProcessMapper(f, pid)
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         self.assertEquals(len(memory_handler.get_mappings()), 51)
         self.assertEquals(memory_handler.get_target_platform().get_os_name(), 'winxp')

@@ -23,6 +23,10 @@ Changes to architecture.txt:
  - mapping should represent the memory dump entity
  - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
 
+2015-09:
+ - Working on Volatility dump reader
+ - working a WinXP chunk iterator
+ - adding PEB to winXP list of know structures
 
 2015-08:
  - Fixes for travis in setup.py

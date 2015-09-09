@@ -119,12 +119,12 @@ class RecursiveTextOutputter(Outputter):
             #if field == 'ProcessHeaps':
             #    import code
             #    code.interact(local=locals())
-            if myaddress == 0:# or contents is None: # FIXME the solution is probably to remove the content test here
+            if myaddress == 0 or contents is None: # FIXME the solution is probably to remove the content test here
                 # only print address/null
                 s = '%s,' % (myaddress_fmt)
             elif self._ctypes.is_pointer_to_void_type(attrtype):
                 # c_void_p, c_char_p, can load target
-                s = '%s, #(FIELD NOT LOADED: void pointer)' % self._utils.formatAddress(attr.value) #(myaddress_fmt)
+                s = '%s, #(FIELD NOT LOADED: void pointer)' % myaddress_fmt # self._utils.formatAddress(attr.value)
             elif isinstance(self, type(contents)):
                 # pointer of self type ? lists ?
                 # TODO: decide if we recurse in lists or not.

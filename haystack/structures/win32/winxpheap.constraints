@@ -21,15 +21,14 @@ FrontEndHeapType: [0, 1, 2]
 # was also stored as a field in the HEAP handle data structure.
 # We do want a valid commit routine or Null
 ## CommitRoutine: IgnoreMember
-
-
 # we have a sentinel value of 0xffffffff
-Segments: IgnoreMember
+# some old heap ? old heap segment ? have no valid signature/pointers
+# Segments: IgnoreMember
 # found in wild DEBUG:memorybase:is_valid_address_value = bc63e310 False
 UnusedUnCommittedRanges: IgnoreMember
-VirtualAllocdBlocks: IgnoreMember
+#VirtualAllocdBlocks: IgnoreMember
 # FreeLists[n] could be in UCR ?
-FreeLists: IgnoreMember
+#FreeLists: IgnoreMember
 
 ## Undertanding the LFH
 #LargeBlocksIndex/BlocksIndex – This is a _HEAP_LIST_LOOKUP structure that is used for a variety of
@@ -46,8 +45,10 @@ FreeLists: IgnoreMember
 
 
 [struct__HEAP_SEGMENT]
-#Signature: [0xeeffeeff]
+Signature: [0xffeeffee]
 LastValidEntry: IgnoreMember
+# 2015-09-09 from tests. Some old remnant have heap == 0 and signature == 0
+Heap: NotNull
 #    ('Heap', POINTER_T(struct__HEAP)),
 #    ('BaseAddress', POINTER_T(None)),
 #    ('FirstEntry', POINTER_T(struct__HEAP_ENTRY)),

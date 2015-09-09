@@ -95,6 +95,10 @@ struct _HEAP_SEGMENT;
 typedef struct _HEAP_SEGMENT HEAP_SEGMENT;
 typedef HEAP_SEGMENT *PHEAP_SEGMENT, **PPHEAP_SEGMENT;
 
+struct _PEB;
+typedef struct _PEB PEB;
+typedef PEB *PPEB, **PPPEB;
+
 struct _RTL_CRITICAL_SECTION;
 typedef struct _RTL_CRITICAL_SECTION RTL_CRITICAL_SECTION;
 typedef RTL_CRITICAL_SECTION *PRTL_CRITICAL_SECTION, **PPRTL_CRITICAL_SECTION;
@@ -110,6 +114,13 @@ typedef struct _LIST_ENTRY { // 0x8 bytes
 	struct _LIST_ENTRY*  Blink;                       // offset   0x4 size   0x4
 
 } __attribute__((packed)) LIST_ENTRY, *PLIST_ENTRY, **PPLIST_ENTRY ;
+
+typedef struct _UNICODE_STRING { // 0x8 bytes
+	USHORT Length;                                    // offset   0x0 size   0x2
+	USHORT MaximumLength;                             // offset   0x2 size   0x2
+	PUSHORT Buffer;                                   // offset   0x4 size   0x4
+
+} __attribute__((packed)) UNICODE_STRING, *PUNICODE_STRING, **PPUNICODE_STRING ;
 
 typedef struct _HEAP_UNCOMMMTTED_RANGE { // 0x10 bytes
 	struct _HEAP_UNCOMMMTTED_RANGE*  Next;            // offset   0x0 size   0x4
@@ -154,6 +165,36 @@ typedef struct _OWNER_ENTRY { // 0x8 bytes
 
 } __attribute__((packed)) OWNER_ENTRY, *POWNER_ENTRY, **PPOWNER_ENTRY ;
 
+typedef union _LARGE_INTEGER { // 0x8 bytes
+	struct {
+		ULONG LowPart;                                   // offset   0x0 size   0x4
+		LONG HighPart;                                   // offset   0x4 size   0x4
+	};
+	struct {
+	ULONG LowPart;                                    // offset   0x0 size   0x4
+	LONG HighPart;                                    // offset   0x4 size   0x4
+} u; // offset   0x0 size   0x8
+	struct {
+		LONGLONG QuadPart;                               // offset   0x0 size   0x8
+	};
+
+} __attribute__((packed)) LARGE_INTEGER, *PLARGE_INTEGER, **PPLARGE_INTEGER ;
+
+typedef union _ULARGE_INTEGER { // 0x8 bytes
+	struct {
+		ULONG LowPart;                                   // offset   0x0 size   0x4
+		ULONG HighPart;                                  // offset   0x4 size   0x4
+	};
+	struct {
+	ULONG LowPart;                                    // offset   0x0 size   0x4
+	ULONG HighPart;                                   // offset   0x4 size   0x4
+} u; // offset   0x0 size   0x8
+	struct {
+		ULONGLONG QuadPart;                              // offset   0x0 size   0x8
+	};
+
+} __attribute__((packed)) ULARGE_INTEGER, *PULARGE_INTEGER, **PPULARGE_INTEGER ;
+
 typedef struct _HEAP_PSEUDO_TAG_ENTRY { // 0xc bytes
 	ULONG Allocs;                                     // offset   0x0 size   0x4
 	ULONG Frees;                                      // offset   0x4 size   0x4
@@ -166,6 +207,12 @@ typedef struct _SINGLE_LIST_ENTRY { // 0x4 bytes
 
 } __attribute__((packed)) SINGLE_LIST_ENTRY, *PSINGLE_LIST_ENTRY, **PPSINGLE_LIST_ENTRY ;
 
+typedef struct _PEB_FREE_BLOCK { // 0x8 bytes
+	struct _PEB_FREE_BLOCK*  Next;                    // offset   0x0 size   0x4
+	ULONG Size;                                       // offset   0x4 size   0x4
+
+} __attribute__((packed)) PEB_FREE_BLOCK, *PPEB_FREE_BLOCK, **PPPEB_FREE_BLOCK ;
+
 typedef struct _HEAP_UCR_SEGMENT { // 0x10 bytes
 	struct _HEAP_UCR_SEGMENT*  Next;                  // offset   0x0 size   0x4
 	ULONG ReservedSize;                               // offset   0x4 size   0x4
@@ -173,6 +220,13 @@ typedef struct _HEAP_UCR_SEGMENT { // 0x10 bytes
 	ULONG filler;                                     // offset   0xc size   0x4
 
 } __attribute__((packed)) HEAP_UCR_SEGMENT, *PHEAP_UCR_SEGMENT, **PPHEAP_UCR_SEGMENT ;
+
+typedef struct _STRING { // 0x8 bytes
+	USHORT Length;                                    // offset   0x0 size   0x2
+	USHORT MaximumLength;                             // offset   0x2 size   0x2
+	PUCHAR Buffer;                                    // offset   0x4 size   0x4
+
+} __attribute__((packed)) STRING, *PSTRING, **PPSTRING ;
 
 typedef union _SLIST_HEADER { // 0x8 bytes
 	ULONGLONG Alignment;                              // offset   0x0 size   0x8
@@ -184,6 +238,14 @@ typedef union _SLIST_HEADER { // 0x8 bytes
 
 } __attribute__((packed)) SLIST_HEADER, *PSLIST_HEADER, **PPSLIST_HEADER ;
 
+typedef struct _RTL_DRIVE_LETTER_CURDIR { // 0x10 bytes
+	USHORT Flags;                                     // offset   0x0 size   0x2
+	USHORT Length;                                    // offset   0x2 size   0x2
+	ULONG TimeStamp;                                  // offset   0x4 size   0x4
+	STRING DosPath;                                   // offset   0x8 size   0x8
+
+} __attribute__((packed)) RTL_DRIVE_LETTER_CURDIR, *PRTL_DRIVE_LETTER_CURDIR, **PPRTL_DRIVE_LETTER_CURDIR ;
+
 typedef struct _DISPATCHER_HEADER { // 0x10 bytes
 	UCHAR Type;                                       // offset   0x0 size   0x1
 	UCHAR Absolute;                                   // offset   0x1 size   0x1
@@ -194,16 +256,28 @@ typedef struct _DISPATCHER_HEADER { // 0x10 bytes
 
 } __attribute__((packed)) DISPATCHER_HEADER, *PDISPATCHER_HEADER, **PPDISPATCHER_HEADER ;
 
+typedef struct _PEB_LDR_DATA { // 0x28 bytes
+	ULONG Length;                                     // offset   0x0 size   0x4
+	UCHAR Initialized;                                // offset   0x4 size   0x1
+	UINT8 gap_in_pdb_ofs_5[0x3];                      // offset   0x5 size   0x3
+	PVOID SsHandle;                                   // offset   0x8 size   0x4
+	LIST_ENTRY InLoadOrderModuleList;                 // offset   0xc size   0x8
+	LIST_ENTRY InMemoryOrderModuleList;               // offset  0x14 size   0x8
+	LIST_ENTRY InInitializationOrderModuleList;       // offset  0x1c size   0x8
+	PVOID EntryInProgress;                            // offset  0x24 size   0x4
+
+} __attribute__((packed)) PEB_LDR_DATA, *PPEB_LDR_DATA, **PPPEB_LDR_DATA ;
+
 typedef struct _KEVENT { // 0x10 bytes
 	DISPATCHER_HEADER Header;                         // offset   0x0 size  0x10
 
 } __attribute__((packed)) KEVENT, *PKEVENT, **PPKEVENT ;
 
-typedef struct _KSEMAPHORE { // 0x14 bytes
-	DISPATCHER_HEADER Header;                         // offset   0x0 size  0x10
-	LONG Limit;                                       // offset  0x10 size   0x4
+typedef struct _CURDIR { // 0xc bytes
+	UNICODE_STRING DosPath;                           // offset   0x0 size   0x8
+	PVOID Handle;                                     // offset   0x8 size   0x4
 
-} __attribute__((packed)) KSEMAPHORE, *PKSEMAPHORE, **PPKSEMAPHORE ;
+} __attribute__((packed)) CURDIR, *PCURDIR, **PPCURDIR ;
 
 typedef struct _HEAP_FREE_ENTRY { // 0x10 bytes
 union {
@@ -221,6 +295,44 @@ union {
 	};
 };
 } __attribute__((packed)) HEAP_FREE_ENTRY, *PHEAP_FREE_ENTRY, **PPHEAP_FREE_ENTRY ;
+
+typedef struct _KSEMAPHORE { // 0x14 bytes
+	DISPATCHER_HEADER Header;                         // offset   0x0 size  0x10
+	LONG Limit;                                       // offset  0x10 size   0x4
+
+} __attribute__((packed)) KSEMAPHORE, *PKSEMAPHORE, **PPKSEMAPHORE ;
+
+typedef struct _RTL_USER_PROCESS_PARAMETERS { // 0x290 bytes
+	ULONG MaximumLength;                              // offset   0x0 size   0x4
+	ULONG Length;                                     // offset   0x4 size   0x4
+	ULONG Flags;                                      // offset   0x8 size   0x4
+	ULONG DebugFlags;                                 // offset   0xc size   0x4
+	PVOID ConsoleHandle;                              // offset  0x10 size   0x4
+	ULONG ConsoleFlags;                               // offset  0x14 size   0x4
+	PVOID StandardInput;                              // offset  0x18 size   0x4
+	PVOID StandardOutput;                             // offset  0x1c size   0x4
+	PVOID StandardError;                              // offset  0x20 size   0x4
+	CURDIR CurrentDirectory;                          // offset  0x24 size   0xc
+	UNICODE_STRING DllPath;                           // offset  0x30 size   0x8
+	UNICODE_STRING ImagePathName;                     // offset  0x38 size   0x8
+	UNICODE_STRING CommandLine;                       // offset  0x40 size   0x8
+	PVOID Environment;                                // offset  0x48 size   0x4
+	ULONG StartingX;                                  // offset  0x4c size   0x4
+	ULONG StartingY;                                  // offset  0x50 size   0x4
+	ULONG CountX;                                     // offset  0x54 size   0x4
+	ULONG CountY;                                     // offset  0x58 size   0x4
+	ULONG CountCharsX;                                // offset  0x5c size   0x4
+	ULONG CountCharsY;                                // offset  0x60 size   0x4
+	ULONG FillAttribute;                              // offset  0x64 size   0x4
+	ULONG WindowFlags;                                // offset  0x68 size   0x4
+	ULONG ShowWindowFlags;                            // offset  0x6c size   0x4
+	UNICODE_STRING WindowTitle;                       // offset  0x70 size   0x8
+	UNICODE_STRING DesktopInfo;                       // offset  0x78 size   0x8
+	UNICODE_STRING ShellInfo;                         // offset  0x80 size   0x8
+	UNICODE_STRING RuntimeData;                       // offset  0x88 size   0x8
+	RTL_DRIVE_LETTER_CURDIR CurrentDirectores[0x20];  // offset  0x90 size 0x200
+
+} __attribute__((packed)) RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS, **PPRTL_USER_PROCESS_PARAMETERS ;
 
 typedef struct _ERESOURCE { // 0x38 bytes
 	LIST_ENTRY SystemResourcesList;                   // offset   0x0 size   0x8
@@ -251,14 +363,6 @@ typedef struct _RTL_CRITICAL_SECTION { // 0x18 bytes
 
 } __attribute__((packed)) RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION, **PPRTL_CRITICAL_SECTION ;
 
-typedef struct _HEAP_LOCK { // 0x38 bytes
-	union {
-	RTL_CRITICAL_SECTION CriticalSection;             // offset   0x0 size  0x18
-	ERESOURCE Resource;                               // offset   0x0 size  0x38
-} Lock; // offset   0x0 size  0x38
-
-} __attribute__((packed)) HEAP_LOCK, *PHEAP_LOCK, **PPHEAP_LOCK ;
-
 typedef struct _HEAP_SEGMENT { // 0x3c bytes
 	HEAP_ENTRY Entry;                                 // offset   0x0 size   0x8
 	ULONG Signature;                                  // offset   0x8 size   0x4
@@ -277,17 +381,6 @@ typedef struct _HEAP_SEGMENT { // 0x3c bytes
 	PHEAP_ENTRY LastEntryInSegment;                   // offset  0x38 size   0x4
 
 } __attribute__((packed)) HEAP_SEGMENT, *PHEAP_SEGMENT, **PPHEAP_SEGMENT ;
-
-typedef struct _RTL_CRITICAL_SECTION_DEBUG { // 0x20 bytes
-	USHORT Type;                                      // offset   0x0 size   0x2
-	USHORT CreatorBackTraceIndex;                     // offset   0x2 size   0x2
-	PRTL_CRITICAL_SECTION CriticalSection;            // offset   0x4 size   0x4
-	LIST_ENTRY ProcessLocksList;                      // offset   0x8 size   0x8
-	ULONG EntryCount;                                 // offset  0x10 size   0x4
-	ULONG ContentionCount;                            // offset  0x14 size   0x4
-	ULONG Spare[0x2];                                 // offset  0x18 size   0x8
-
-} __attribute__((packed)) RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, **PPRTL_CRITICAL_SECTION_DEBUG ;
 
 typedef struct _HEAP { // 0x588 bytes
 	HEAP_ENTRY Entry;                                 // offset   0x0 size   0x8
@@ -334,5 +427,95 @@ typedef struct _HEAP { // 0x588 bytes
 	UCHAR LastSegmentIndex;                           // offset 0x587 size   0x1
 
 } __attribute__((packed)) HEAP, *PHEAP, **PPHEAP ;
+
+typedef struct _HEAP_LOCK { // 0x38 bytes
+	union {
+	RTL_CRITICAL_SECTION CriticalSection;             // offset   0x0 size  0x18
+	ERESOURCE Resource;                               // offset   0x0 size  0x38
+} Lock; // offset   0x0 size  0x38
+
+} __attribute__((packed)) HEAP_LOCK, *PHEAP_LOCK, **PPHEAP_LOCK ;
+
+typedef struct _RTL_CRITICAL_SECTION_DEBUG { // 0x20 bytes
+	USHORT Type;                                      // offset   0x0 size   0x2
+	USHORT CreatorBackTraceIndex;                     // offset   0x2 size   0x2
+	PRTL_CRITICAL_SECTION CriticalSection;            // offset   0x4 size   0x4
+	LIST_ENTRY ProcessLocksList;                      // offset   0x8 size   0x8
+	ULONG EntryCount;                                 // offset  0x10 size   0x4
+	ULONG ContentionCount;                            // offset  0x14 size   0x4
+	ULONG Spare[0x2];                                 // offset  0x18 size   0x8
+
+} __attribute__((packed)) RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, **PPRTL_CRITICAL_SECTION_DEBUG ;
+
+typedef struct _PEB { // 0x210 bytes
+	UCHAR InheritedAddressSpace;                      // offset   0x0 size   0x1
+	UCHAR ReadImageFileExecOptions;                   // offset   0x1 size   0x1
+	UCHAR BeingDebugged;                              // offset   0x2 size   0x1
+	UCHAR SpareBool;                                  // offset   0x3 size   0x1
+	PVOID Mutant;                                     // offset   0x4 size   0x4
+	PVOID ImageBaseAddress;                           // offset   0x8 size   0x4
+	PPEB_LDR_DATA Ldr;                                // offset   0xc size   0x4
+	PRTL_USER_PROCESS_PARAMETERS ProcessParameters;   // offset  0x10 size   0x4
+	PVOID SubSystemData;                              // offset  0x14 size   0x4
+	PVOID ProcessHeap;                                // offset  0x18 size   0x4
+	PRTL_CRITICAL_SECTION FastPebLock;                // offset  0x1c size   0x4
+	PVOID FastPebLockRoutine;                         // offset  0x20 size   0x4
+	PVOID FastPebUnlockRoutine;                       // offset  0x24 size   0x4
+	ULONG EnvironmentUpdateCount;                     // offset  0x28 size   0x4
+	PVOID KernelCallbackTable;                        // offset  0x2c size   0x4
+	ULONG SystemReserved[0x1];                        // offset  0x30 size   0x4
+	ULONG AtlThunkSListPtr32;                         // offset  0x34 size   0x4
+	PPEB_FREE_BLOCK FreeList;                         // offset  0x38 size   0x4
+	ULONG TlsExpansionCounter;                        // offset  0x3c size   0x4
+	PVOID TlsBitmap;                                  // offset  0x40 size   0x4
+	ULONG TlsBitmapBits[0x2];                         // offset  0x44 size   0x8
+	PVOID ReadOnlySharedMemoryBase;                   // offset  0x4c size   0x4
+	PVOID ReadOnlySharedMemoryHeap;                   // offset  0x50 size   0x4
+	PPVOID ReadOnlyStaticServerData;                  // offset  0x54 size   0x4
+	PVOID AnsiCodePageData;                           // offset  0x58 size   0x4
+	PVOID OemCodePageData;                            // offset  0x5c size   0x4
+	PVOID UnicodeCaseTableData;                       // offset  0x60 size   0x4
+	ULONG NumberOfProcessors;                         // offset  0x64 size   0x4
+	ULONG NtGlobalFlag;                               // offset  0x68 size   0x4
+	UINT8 gap_in_pdb_ofs_6C[0x4];                     // offset  0x6c size   0x4
+	LARGE_INTEGER CriticalSectionTimeout;             // offset  0x70 size   0x8
+	ULONG HeapSegmentReserve;                         // offset  0x78 size   0x4
+	ULONG HeapSegmentCommit;                          // offset  0x7c size   0x4
+	ULONG HeapDeCommitTotalFreeThreshold;             // offset  0x80 size   0x4
+	ULONG HeapDeCommitFreeBlockThreshold;             // offset  0x84 size   0x4
+	ULONG NumberOfHeaps;                              // offset  0x88 size   0x4
+	ULONG MaximumNumberOfHeaps;                       // offset  0x8c size   0x4
+	PPVOID ProcessHeaps;                              // offset  0x90 size   0x4
+	PVOID GdiSharedHandleTable;                       // offset  0x94 size   0x4
+	PVOID ProcessStarterHelper;                       // offset  0x98 size   0x4
+	ULONG GdiDCAttributeList;                         // offset  0x9c size   0x4
+	PVOID LoaderLock;                                 // offset  0xa0 size   0x4
+	ULONG OSMajorVersion;                             // offset  0xa4 size   0x4
+	ULONG OSMinorVersion;                             // offset  0xa8 size   0x4
+	USHORT OSBuildNumber;                             // offset  0xac size   0x2
+	USHORT OSCSDVersion;                              // offset  0xae size   0x2
+	ULONG OSPlatformId;                               // offset  0xb0 size   0x4
+	ULONG ImageSubsystem;                             // offset  0xb4 size   0x4
+	ULONG ImageSubsystemMajorVersion;                 // offset  0xb8 size   0x4
+	ULONG ImageSubsystemMinorVersion;                 // offset  0xbc size   0x4
+	ULONG ImageProcessAffinityMask;                   // offset  0xc0 size   0x4
+	ULONG GdiHandleBuffer[0x22];                      // offset  0xc4 size  0x88
+	VOID (*PostProcessInitRoutine)();                 // offset 0x14c size   0x4
+	PVOID TlsExpansionBitmap;                         // offset 0x150 size   0x4
+	ULONG TlsExpansionBitmapBits[0x20];               // offset 0x154 size  0x80
+	ULONG SessionId;                                  // offset 0x1d4 size   0x4
+	ULARGE_INTEGER AppCompatFlags;                    // offset 0x1d8 size   0x8
+	ULARGE_INTEGER AppCompatFlagsUser;                // offset 0x1e0 size   0x8
+	PVOID pShimData;                                  // offset 0x1e8 size   0x4
+	PVOID AppCompatInfo;                              // offset 0x1ec size   0x4
+	UNICODE_STRING CSDVersion;                        // offset 0x1f0 size   0x8
+	PVOID ActivationContextData;                      // offset 0x1f8 size   0x4
+	PVOID ProcessAssemblyStorageMap;                  // offset 0x1fc size   0x4
+	PVOID SystemDefaultActivationContextData;         // offset 0x200 size   0x4
+	PVOID SystemAssemblyStorageMap;                   // offset 0x204 size   0x4
+	ULONG MinimumStackCommit;                         // offset 0x208 size   0x4
+	UINT8 gap_in_pdb_ofs_20C[0x4];                    // offset 0x20c size   0x4
+
+} __attribute__((packed)) PEB, *PPEB, **PPPEB ;
 
 

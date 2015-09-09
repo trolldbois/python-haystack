@@ -39,7 +39,7 @@ class WinHeapValidator(listmodel.ListModel):
     def HEAP_get_segment_list(self, record):
         raise NotImplementedError('code differs between XP and 7')
 
-    def HEAP_SEGMENT_get_UCR_segment_list(self, record):
+    def get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
         Some may have Size == 0.
@@ -97,7 +97,7 @@ class WinHeapValidator(listmodel.ListModel):
             skiplist = dict()
             # FIXME, in XP, ucrsegments is in HEAP
             # in win7 ucrsegmentlist is in heap_segment
-            for ucr in self.HEAP_SEGMENT_get_UCR_segment_list(segment):
+            for ucr in self.get_UCR_segment_list(segment):
                 ucr_addr = self._utils.get_pointee_address(ucr.Address)
                 # UCR.Size are not chunks sizes. NOT *8
                 skiplist[ucr_addr] = ucr.Size

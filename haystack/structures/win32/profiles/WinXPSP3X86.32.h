@@ -203,6 +203,10 @@ struct _HEAP_SEGMENT;
 typedef struct _HEAP_SEGMENT HEAP_SEGMENT;
 typedef HEAP_SEGMENT *PHEAP_SEGMENT, **PPHEAP_SEGMENT;
 
+struct _PEB;
+typedef struct _PEB PEB;
+typedef PEB *PPEB, **PPPEB;
+
 struct _RTL_CRITICAL_SECTION;
 typedef struct _RTL_CRITICAL_SECTION RTL_CRITICAL_SECTION;
 typedef RTL_CRITICAL_SECTION *PRTL_CRITICAL_SECTION, **PPRTL_CRITICAL_SECTION;
@@ -218,6 +222,13 @@ typedef struct _LIST_ENTRY {
  struct _LIST_ENTRY* Blink;
 
 } __attribute__((packed)) LIST_ENTRY, *PLIST_ENTRY, **PPLIST_ENTRY ;
+
+typedef struct _UNICODE_STRING {
+ USHORT Length;
+ USHORT MaximumLength;
+ PUSHORT Buffer;
+
+} __attribute__((packed)) UNICODE_STRING, *PUNICODE_STRING, **PPUNICODE_STRING ;
 
 typedef struct _HEAP_UNCOMMMTTED_RANGE {
  struct _HEAP_UNCOMMMTTED_RANGE* Next;
@@ -262,6 +273,36 @@ typedef struct _OWNER_ENTRY {
 
 } __attribute__((packed)) OWNER_ENTRY, *POWNER_ENTRY, **PPOWNER_ENTRY ;
 
+typedef union _LARGE_INTEGER {
+ struct {
+  ULONG LowPart;
+  LONG HighPart;
+ };
+ struct {
+ ULONG LowPart;
+ LONG HighPart;
+} u;
+ struct {
+  LONGLONG QuadPart;
+ };
+
+} __attribute__((packed)) LARGE_INTEGER, *PLARGE_INTEGER, **PPLARGE_INTEGER ;
+
+typedef union _ULARGE_INTEGER {
+ struct {
+  ULONG LowPart;
+  ULONG HighPart;
+ };
+ struct {
+ ULONG LowPart;
+ ULONG HighPart;
+} u;
+ struct {
+  ULONGLONG QuadPart;
+ };
+
+} __attribute__((packed)) ULARGE_INTEGER, *PULARGE_INTEGER, **PPULARGE_INTEGER ;
+
 typedef struct _HEAP_PSEUDO_TAG_ENTRY {
  ULONG Allocs;
  ULONG Frees;
@@ -274,6 +315,12 @@ typedef struct _SINGLE_LIST_ENTRY {
 
 } __attribute__((packed)) SINGLE_LIST_ENTRY, *PSINGLE_LIST_ENTRY, **PPSINGLE_LIST_ENTRY ;
 
+typedef struct _PEB_FREE_BLOCK {
+ struct _PEB_FREE_BLOCK* Next;
+ ULONG Size;
+
+} __attribute__((packed)) PEB_FREE_BLOCK, *PPEB_FREE_BLOCK, **PPPEB_FREE_BLOCK ;
+
 typedef struct _HEAP_UCR_SEGMENT {
  struct _HEAP_UCR_SEGMENT* Next;
  ULONG ReservedSize;
@@ -281,6 +328,13 @@ typedef struct _HEAP_UCR_SEGMENT {
  ULONG filler;
 
 } __attribute__((packed)) HEAP_UCR_SEGMENT, *PHEAP_UCR_SEGMENT, **PPHEAP_UCR_SEGMENT ;
+
+typedef struct _STRING {
+ USHORT Length;
+ USHORT MaximumLength;
+ PUCHAR Buffer;
+
+} __attribute__((packed)) STRING, *PSTRING, **PPSTRING ;
 
 typedef union _SLIST_HEADER {
  ULONGLONG Alignment;
@@ -292,6 +346,14 @@ typedef union _SLIST_HEADER {
 
 } __attribute__((packed)) SLIST_HEADER, *PSLIST_HEADER, **PPSLIST_HEADER ;
 
+typedef struct _RTL_DRIVE_LETTER_CURDIR {
+ USHORT Flags;
+ USHORT Length;
+ ULONG TimeStamp;
+ STRING DosPath;
+
+} __attribute__((packed)) RTL_DRIVE_LETTER_CURDIR, *PRTL_DRIVE_LETTER_CURDIR, **PPRTL_DRIVE_LETTER_CURDIR ;
+
 typedef struct _DISPATCHER_HEADER {
  UCHAR Type;
  UCHAR Absolute;
@@ -302,16 +364,28 @@ typedef struct _DISPATCHER_HEADER {
 
 } __attribute__((packed)) DISPATCHER_HEADER, *PDISPATCHER_HEADER, **PPDISPATCHER_HEADER ;
 
+typedef struct _PEB_LDR_DATA {
+ ULONG Length;
+ UCHAR Initialized;
+ UINT8 gap_in_pdb_ofs_5[0x3];
+ PVOID SsHandle;
+ LIST_ENTRY InLoadOrderModuleList;
+ LIST_ENTRY InMemoryOrderModuleList;
+ LIST_ENTRY InInitializationOrderModuleList;
+ PVOID EntryInProgress;
+
+} __attribute__((packed)) PEB_LDR_DATA, *PPEB_LDR_DATA, **PPPEB_LDR_DATA ;
+
 typedef struct _KEVENT {
  DISPATCHER_HEADER Header;
 
 } __attribute__((packed)) KEVENT, *PKEVENT, **PPKEVENT ;
 
-typedef struct _KSEMAPHORE {
- DISPATCHER_HEADER Header;
- LONG Limit;
+typedef struct _CURDIR {
+ UNICODE_STRING DosPath;
+ PVOID Handle;
 
-} __attribute__((packed)) KSEMAPHORE, *PKSEMAPHORE, **PPKSEMAPHORE ;
+} __attribute__((packed)) CURDIR, *PCURDIR, **PPCURDIR ;
 
 typedef struct _HEAP_FREE_ENTRY {
 union {
@@ -329,6 +403,44 @@ union {
  };
 };
 } __attribute__((packed)) HEAP_FREE_ENTRY, *PHEAP_FREE_ENTRY, **PPHEAP_FREE_ENTRY ;
+
+typedef struct _KSEMAPHORE {
+ DISPATCHER_HEADER Header;
+ LONG Limit;
+
+} __attribute__((packed)) KSEMAPHORE, *PKSEMAPHORE, **PPKSEMAPHORE ;
+
+typedef struct _RTL_USER_PROCESS_PARAMETERS {
+ ULONG MaximumLength;
+ ULONG Length;
+ ULONG Flags;
+ ULONG DebugFlags;
+ PVOID ConsoleHandle;
+ ULONG ConsoleFlags;
+ PVOID StandardInput;
+ PVOID StandardOutput;
+ PVOID StandardError;
+ CURDIR CurrentDirectory;
+ UNICODE_STRING DllPath;
+ UNICODE_STRING ImagePathName;
+ UNICODE_STRING CommandLine;
+ PVOID Environment;
+ ULONG StartingX;
+ ULONG StartingY;
+ ULONG CountX;
+ ULONG CountY;
+ ULONG CountCharsX;
+ ULONG CountCharsY;
+ ULONG FillAttribute;
+ ULONG WindowFlags;
+ ULONG ShowWindowFlags;
+ UNICODE_STRING WindowTitle;
+ UNICODE_STRING DesktopInfo;
+ UNICODE_STRING ShellInfo;
+ UNICODE_STRING RuntimeData;
+ RTL_DRIVE_LETTER_CURDIR CurrentDirectores[0x20];
+
+} __attribute__((packed)) RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS, **PPRTL_USER_PROCESS_PARAMETERS ;
 
 typedef struct _ERESOURCE {
  LIST_ENTRY SystemResourcesList;
@@ -359,14 +471,6 @@ typedef struct _RTL_CRITICAL_SECTION {
 
 } __attribute__((packed)) RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION, **PPRTL_CRITICAL_SECTION ;
 
-typedef struct _HEAP_LOCK {
- union {
- RTL_CRITICAL_SECTION CriticalSection;
- ERESOURCE Resource;
-} Lock;
-
-} __attribute__((packed)) HEAP_LOCK, *PHEAP_LOCK, **PPHEAP_LOCK ;
-
 typedef struct _HEAP_SEGMENT {
  HEAP_ENTRY Entry;
  ULONG Signature;
@@ -385,17 +489,6 @@ typedef struct _HEAP_SEGMENT {
  PHEAP_ENTRY LastEntryInSegment;
 
 } __attribute__((packed)) HEAP_SEGMENT, *PHEAP_SEGMENT, **PPHEAP_SEGMENT ;
-
-typedef struct _RTL_CRITICAL_SECTION_DEBUG {
- USHORT Type;
- USHORT CreatorBackTraceIndex;
- PRTL_CRITICAL_SECTION CriticalSection;
- LIST_ENTRY ProcessLocksList;
- ULONG EntryCount;
- ULONG ContentionCount;
- ULONG Spare[0x2];
-
-} __attribute__((packed)) RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, **PPRTL_CRITICAL_SECTION_DEBUG ;
 
 typedef struct _HEAP {
  HEAP_ENTRY Entry;
@@ -442,6 +535,96 @@ typedef struct _HEAP {
  UCHAR LastSegmentIndex;
 
 } __attribute__((packed)) HEAP, *PHEAP, **PPHEAP ;
+
+typedef struct _HEAP_LOCK {
+ union {
+ RTL_CRITICAL_SECTION CriticalSection;
+ ERESOURCE Resource;
+} Lock;
+
+} __attribute__((packed)) HEAP_LOCK, *PHEAP_LOCK, **PPHEAP_LOCK ;
+
+typedef struct _RTL_CRITICAL_SECTION_DEBUG {
+ USHORT Type;
+ USHORT CreatorBackTraceIndex;
+ PRTL_CRITICAL_SECTION CriticalSection;
+ LIST_ENTRY ProcessLocksList;
+ ULONG EntryCount;
+ ULONG ContentionCount;
+ ULONG Spare[0x2];
+
+} __attribute__((packed)) RTL_CRITICAL_SECTION_DEBUG, *PRTL_CRITICAL_SECTION_DEBUG, **PPRTL_CRITICAL_SECTION_DEBUG ;
+
+typedef struct _PEB {
+ UCHAR InheritedAddressSpace;
+ UCHAR ReadImageFileExecOptions;
+ UCHAR BeingDebugged;
+ UCHAR SpareBool;
+ PVOID Mutant;
+ PVOID ImageBaseAddress;
+ PPEB_LDR_DATA Ldr;
+ PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
+ PVOID SubSystemData;
+ PVOID ProcessHeap;
+ PRTL_CRITICAL_SECTION FastPebLock;
+ PVOID FastPebLockRoutine;
+ PVOID FastPebUnlockRoutine;
+ ULONG EnvironmentUpdateCount;
+ PVOID KernelCallbackTable;
+ ULONG SystemReserved[0x1];
+ ULONG AtlThunkSListPtr32;
+ PPEB_FREE_BLOCK FreeList;
+ ULONG TlsExpansionCounter;
+ PVOID TlsBitmap;
+ ULONG TlsBitmapBits[0x2];
+ PVOID ReadOnlySharedMemoryBase;
+ PVOID ReadOnlySharedMemoryHeap;
+ PPVOID ReadOnlyStaticServerData;
+ PVOID AnsiCodePageData;
+ PVOID OemCodePageData;
+ PVOID UnicodeCaseTableData;
+ ULONG NumberOfProcessors;
+ ULONG NtGlobalFlag;
+ UINT8 gap_in_pdb_ofs_6C[0x4];
+ LARGE_INTEGER CriticalSectionTimeout;
+ ULONG HeapSegmentReserve;
+ ULONG HeapSegmentCommit;
+ ULONG HeapDeCommitTotalFreeThreshold;
+ ULONG HeapDeCommitFreeBlockThreshold;
+ ULONG NumberOfHeaps;
+ ULONG MaximumNumberOfHeaps;
+ PPVOID ProcessHeaps;
+ PVOID GdiSharedHandleTable;
+ PVOID ProcessStarterHelper;
+ ULONG GdiDCAttributeList;
+ PVOID LoaderLock;
+ ULONG OSMajorVersion;
+ ULONG OSMinorVersion;
+ USHORT OSBuildNumber;
+ USHORT OSCSDVersion;
+ ULONG OSPlatformId;
+ ULONG ImageSubsystem;
+ ULONG ImageSubsystemMajorVersion;
+ ULONG ImageSubsystemMinorVersion;
+ ULONG ImageProcessAffinityMask;
+ ULONG GdiHandleBuffer[0x22];
+ VOID (*PostProcessInitRoutine)();
+ PVOID TlsExpansionBitmap;
+ ULONG TlsExpansionBitmapBits[0x20];
+ ULONG SessionId;
+ ULARGE_INTEGER AppCompatFlags;
+ ULARGE_INTEGER AppCompatFlagsUser;
+ PVOID pShimData;
+ PVOID AppCompatInfo;
+ UNICODE_STRING CSDVersion;
+ PVOID ActivationContextData;
+ PVOID ProcessAssemblyStorageMap;
+ PVOID SystemDefaultActivationContextData;
+ PVOID SystemAssemblyStorageMap;
+ ULONG MinimumStackCommit;
+ UINT8 gap_in_pdb_ofs_20C[0x4];
+
+} __attribute__((packed)) PEB, *PPEB, **PPPEB ;
 # 1 "WinXPSP3X86.ntoskrnl.32.h"
 # 1 "<built-in>" 1
 # 1 "<built-in>" 3

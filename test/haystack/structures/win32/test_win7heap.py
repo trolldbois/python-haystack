@@ -136,7 +136,7 @@ class TestWin7Heap(unittest.TestCase):
             all_ucrs = []
             # UCR size should add on all UCR for all segments
             for segment in validator.HEAP_get_segment_list(heap):
-                all_ucrs.extend(validator.HEAP_SEGMENT_get_UCR_segment_list(segment))
+                all_ucrs.extend(validator.get_UCR_segment_list(segment))
             total_ucr_size = sum([ucr.Size for ucr in all_ucrs])
             # sum of all existing UCR. not just free UCR
             # FIXME, HEAP_SEGMENT_get_UCR_segment_list is not working

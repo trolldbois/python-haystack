@@ -342,6 +342,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             # the heap.freelists address
             freelists_addr = record._orig_address_ + self._utils.offsetof(type(record), 'FreeLists')
             # every list head is a sentinel, as head of list
+            # FIXME:
+            ## if i == 0, 1 or 2, size is not related to the index i
             sentinels = [freelists_addr + i*size_heap_entry]
             # FIXME: backend heap ?
             # if record.FrontEndHeapType == 0
@@ -376,19 +378,32 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
     def HEAP_ENTRY_decode(self, chunk_header, heap):
         return chunk_header
 
-    def HEAP_SEGMENT_get_UCR_segment_list(self, record):
+    def get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP.UCRSegments is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
-        ucrs = list()
-        segments = list()
+        if not isinstance(record, self.win_heap.struct__HEAP):
+            raise TypeError('record should be a heap')
+        ucrs = []
+        segments = []
+        ucr_addr = self._utils.get_pointee_address(record.UCRSegments)
+        if ucr_addr == 0:
+            return ucrs
         # record.segments is a pointer to s single list
         # the field has a different name from win7
         #struct__HEAP_UCR_SEGMENT._fields_ = [
         #('Next', POINTER_T(struct__HEAP_UCR_SEGMENT)),
-        ucrs = list()
-        for ucr in self.iterate_list_from_field(record, 'UCRSegments'):
+        m = self._memory_handler.get_mapping_for_address(ucr_addr)
+        if not m:
+            log.debug("found a non valid UCRSegments pointer at %x", ucr_addr)
+            raise ValueError("found a non valid UCRSegments pointer at %x" % ucr_addr)
+        root_ucr = m.read_struct(ucr_addr, self.win_heap.struct__HEAP_UCR_SEGMENT)
+        self._memory_handler.keepRef(ucr_addr, self.win_heap.struct__HEAP_UCR_SEGMENT, ucr_addr)
+        # FIXME what is this hack
+        root_ucr._orig_address_ = ucr_addr
+        ucrs.append(ucr_addr)
+        for ucr in self.iterate_list_from_field(root_ucr, 'UCRSegments'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -397,3 +412,66 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             ucrs.append(ucr)
         return ucrs
 
+    def HEAP_get_chunks(self, record):
+        """
+        Returns a list of tuple(address,size) for all chunks in
+         the backend allocator.
+        """
+        # FIXME look at segment.LastEntryInSegment
+        allocated = list()
+        free = list()
+        for segment in self.HEAP_get_segment_list(record):
+            first_addr = self._utils.get_pointee_address(segment.FirstEntry)
+            last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
+            # create the skip list for each segment.
+            skiplist = dict()
+            # FIXME, in XP, ucrsegments is in HEAP, its a pointer
+            # in win7 ucrsegmentlist is in heap_segment
+            for ucr in self.get_UCR_segment_list(record):
+                ucr_addr = self._utils.get_pointee_address(ucr.Address)
+                # UCR.Size are not chunks sizes. NOT *8
+                skiplist[ucr_addr] = ucr.Size
+                log.debug('adding skiplist from %x to %x', ucr_addr, ucr_addr+ucr.Size)
+            #
+            log.debug('skiplist has %d items', len(skiplist))
+
+            chunk_addr = first_addr
+            log.debug('reading chunk from %x to %x', first_addr, last_addr)
+            while chunk_addr < last_addr:
+                if chunk_addr in skiplist:
+                    size = skiplist[chunk_addr]
+                    log.debug(
+                        'Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x',
+                        chunk_addr, size, chunk_addr + size)
+                    chunk_addr += size
+                    continue
+                chunk_header = self._memory_handler.getRef(self.win_heap.HEAP_ENTRY, chunk_addr)
+                if chunk_header is None:  # force read it
+                    log.debug('reading chunk from %x', chunk_addr)
+                    m = self._memory_handler.get_mapping_for_address(chunk_addr)
+                    # FIXME
+                    # in some case, we have the last chunk pointing to the first byte
+                    # of the next unallocated mapping offset_X.
+                    # in some case, there is a non allocated gap between offset_X and last_addr
+                    # FIXME, the skiplist above should address that.
+                    if not m:
+                        log.debug("found a non valid chunk pointer at %x", chunk_addr)
+                        break
+                    chunk_header = m.read_struct(chunk_addr, self.win_heap.struct__HEAP_ENTRY)
+                    self._memory_handler.keepRef(chunk_header, self.win_heap.struct__HEAP_ENTRY, chunk_addr)
+                    # FIXME what is this hack
+                    chunk_header._orig_address_ = chunk_addr
+                log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+                flags = chunk_header._0._1.Flags
+                size = chunk_header._0._0.Size
+                if (flags & 1) == 1:
+                    log.debug('Chunk 0x%0.8x is in use size: %0.5x', chunk_addr, size * 8)
+                    allocated.append((chunk_addr, size * 8))
+                else:
+                    log.debug('Chunk 0x%0.8x is FREE, size: %0.5x', chunk_addr, size * 8)
+                    free.append((chunk_addr, size * 8))
+                    if size == 0:
+                        log.debug('Free Chunk with 0 size, breaking out')
+                        chunk_addr = last_addr
+                chunk_addr += size * 8
+        return (allocated, free)

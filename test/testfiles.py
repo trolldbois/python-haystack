@@ -31,8 +31,8 @@ zeus_1668_vmtoolsd_exe.known_heaps = [(0x00150000, 0x100000), # k
                                       # peb says missing 0x01da0000 # null structure
                                       (0x01eb0000, 0x10000), # k
                                       (0x01ec0000, 0x100000), # k
-                                      (0x5d09d000, 0x97000), # probably not a heap
-                                      (0x769f7000, 0xb3000), # probably not a heap
+                                      # (0x5d09d000, 0x97000), # probably not a heap bad segments no-sig
+                                      # (0x769f7000, 0xb3000), # probably not a heap, bad segments no-sig
                                       (0x7f6f0000, 0x100000)] # probably not a heap
 
 # 0x00730000
@@ -90,6 +90,18 @@ zeus_1668_vmtoolsd_exe.known_segments = [(0x150680, 0x250000),
                                          (0x1fc0040, 0x20c0000),
                                          #(), # 0x00670000-0x00738000
                                          (0x7f6f0680, 0x7f7f0000)]
+
+zeus_1668_vmtoolsd_exe.known_chunks = {#0x5d09d000: (0x0, 0x0),
+                                       #0x769f7000: (0x0, 0x0),
+                                       0x250000: (0x4fe0, 0x9a0),
+                                       0x7f6f0000: (0x2988, 0x0),
+                                       0x3f0000: (0x1d20, 0x0),
+                                       0xb70000: (0x187e8, 0x158),
+                                       0xba0000: (0x1ab0, 0x9ed0),
+                                       0x1eb0000: (0x7600, 0x340),
+                                       0x1ec0000: (0x1808, 0x178),
+                                       0x1620000: (0x25e0, 0x3a0)}
+
 
 # 2015-08-18 unverified
 zeus_856_svchost_exe = TestDump('/home/jal/outputs/vol/zeus.vmem.856.dump')

@@ -109,13 +109,18 @@ class TestWinXPHeapWalker(unittest.TestCase):
         # self.skipTest('known_ok')
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         heaps = finder.get_heap_mappings()
+        #print [hex(x.start) for x in heaps]
+        #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
         self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        last = 0
         for i, m in enumerate(heaps):
             heap_addr = m.get_marked_heap_address()
-            log.debug('%d @%0.8x', finder._read_heap(m, heap_addr).ProcessHeapsListIndex, heap_addr)
+            this = finder._read_heap(m, heap_addr).ProcessHeapsListIndex
+            log.debug('%d @%0.8x', this, heap_addr)
             # self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
-            #self.assertGreaterEqual(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
-            #                  'ProcessHeaps should have correct indexes')
+            self.assertGreaterEqual(this, last,
+                              'ProcessHeaps should have increment indexes')
+            last = this
         return
 
     def test_get_frontendheap(self):
@@ -205,8 +210,8 @@ class TestWinXPHeapWalker(unittest.TestCase):
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         addr = zeus_1668_vmtoolsd_exe.known_heaps[0][0]
         for heap in finder.get_heap_mappings():
+            log.debug('Looking at chunks in 0x%x', heap.get_marked_heap_address())
             #   for heap in [self._memory_handler.get_mapping_for_address(addr)]:
-            allocs = list()
             walker = finder.get_heap_walker(heap)
             allocated, free = walker._get_chunks()
             # self.assertNotEquals(allocated,[])
@@ -216,9 +221,11 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 self.assertGreater(
                     chunk_size, 0x8, 'too small chunk_addr == 0x%0.8x size: %d' %
                     (chunk_addr, chunk_size))
-                allocs.append((chunk_addr, chunk_size))  # with header
-
-            for addr, s in allocs:
+            a_sizes = sum([x[1] for x in allocated])
+            f_sizes = sum([x[1] for x in free])
+            log.debug("allocated: 0x%x , free: 0x%x", a_sizes, f_sizes)
+            # tesfiles: log.info("0x%x: (0x%x,0x%x),", heap.get_marked_heap_address(), a_sizes, f_sizes)
+            for addr, s in allocated:
                 m = self._memory_handler.get_mapping_for_address(addr)
                 if addr + s > m.end:
                     self.fail(
@@ -268,7 +275,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
             vallocsize = sum([c[1] for c in vallocs])
 
             chunks, free_chunks = walker._get_chunks()
-            print chunks, free_chunks
+            #print chunks, free_chunks
             self._chunks_in_mapping(chunks, walker)
             # Free chunks CAN be OVERFLOWING
             # self._chunks_in_mapping( free_chunks, walker)
@@ -357,17 +364,17 @@ class TestWinXPHeapWalker(unittest.TestCase):
         Compare load_members results with known offsets. expect failures otherwise. """
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         # helper
-        win7heap = finder._heap_module
+        winheap = finder._heap_module
         validator = finder.get_heap_validator()
 
         found = []
         for mapping in finder.get_heap_mappings():
-            addr = mapping.start
-            heap = mapping.read_struct(addr, win7heap.HEAP)
-            print hex(addr)
+            addr = mapping.get_marked_heap_address()
+            found.append(addr, )
+            heap = mapping.read_struct(addr, winheap.HEAP)
+            #print hex(addr)
             if addr in map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps):
                 self.assertTrue(validator.load_members(heap, 50), "We expected a valid hit at @ 0x%0.8x" % addr)
-                found.append(addr, )
             else:
                 try:
                     ret = validator.load_members(heap, 1)
@@ -382,6 +389,9 @@ class TestWinXPHeapWalker(unittest.TestCase):
                         e)
 
         found.sort()
+        #print ''
+        #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
+        #print [hex(x) for x in found]
         self.assertEquals(map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps), found)
 
         return
@@ -455,13 +465,15 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     #logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
-    logging.getLogger('winheapwalker').setLevel(level=logging.DEBUG)
+    #logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
+    #logging.getLogger('winheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-    #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
+    # logging.getLogger('listmodel').setLevel(level=logging.INFO)
     #logging.getLogger('dump_loader').setLevel(level=logging.INFO)
-    #logging.getLogger('base').setLevel(level=logging.INFO)
+    # logging.getLogger('searcher').setLevel(level=logging.INFO)
+    #logging.getLogger('memorybase').setLevel(level=logging.INFO)
+    #logging.getLogger('utils').setLevel(level=logging.INFO)
     #logging.getLogger('basicmodel').setLevel(level=logging.INFO)
     #logging.getLogger('filemappings').setLevel(level=logging.INFO)
     # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)

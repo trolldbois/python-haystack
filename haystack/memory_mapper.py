@@ -36,7 +36,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
                  baseOffset=None, dumpname=None, volname=None):
         memory_handler = None
         if not (volname is None) and not (pid is None):
-            memory_handler = self._init_volatility(dumpname, pid)
+            memory_handler = self._init_volatility(dumpname, "WinXPSP2x86", pid)
         if not (pid is None):
             memory_handler = self._init_pid(pid, mmap)
         elif not (memfile is None):
@@ -105,7 +105,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
         return _memory_handler
 
     @staticmethod
-    def _init_volatility(volname, pid):
-        mapper = VolatilityProcessMapper(volname, pid)
+    def _init_volatility(volname, profile, pid):
+        mapper = VolatilityProcessMapper(volname, profile, pid)
         _memory_handler = mapper.make_memory_handler()
         return _memory_handler
