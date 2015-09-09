@@ -123,10 +123,11 @@ class TestWinXPHeapWalker(unittest.TestCase):
             last = this
         return
 
+    @unittest.expectedFailure
     def test_get_frontendheap(self):
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         # helper
-        win7heap = finder._heap_module
+        winxpheap = finder._heap_module
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
         # Mark all heaps
         for heap in finder.get_heap_mappings():
@@ -161,7 +162,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY) # HEAP_ENTRY
+                st = m.read_struct(chunk_addr, winxpheap.HEAP_ENTRY) # HEAP_ENTRY
                 # st.UnusedBytes == 0x5    ?
                 if st._0._1.UnusedBytes == 0x05:
                     prev_header_addr -= 8 * st._0._1._0.SegmentOffset
@@ -188,6 +189,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
             # FIXME - UNITTEST- you need to validate that NextOffset in
             # userblock gives same answer
+            # FIXME
             oracle = committed[0]  # TODO
             for chunk_addr, chunk_size in committed:
                 m = self._memory_handler.get_mapping_for_address(chunk_addr)
@@ -195,7 +197,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                     self.assertIn(m, heap_children)
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY)
+                st = m.read_struct(chunk_addr, winxpheap.HEAP_ENTRY)
                 # NextOffset in userblock gives same answer
 
             for addr, s in allocs:
