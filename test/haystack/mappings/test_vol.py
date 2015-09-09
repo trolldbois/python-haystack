@@ -6,10 +6,7 @@
 import logging
 import unittest
 
-try:
-    from haystack.mappings.vol import VolatilityProcessMapper
-except ImportError,e:
-    unittest.skip('Volatility not installed')
+from haystack.mappings.vol import VolatilityProcessMapper
 
 from test.testfiles import zeus_1668_vmtoolsd_exe
 from test.testfiles import zeus_856_svchost_exe
@@ -24,6 +21,10 @@ class TestMapper(unittest.TestCase):
     """
 
     def setUp(self):
+        try:
+            import volatility
+        except ImportError,e:
+            self.skipTest('Volatility not installed')
         pass
 
     def tearDown(self):
@@ -106,7 +107,7 @@ class TestMapper(unittest.TestCase):
             if data == 0xeeffeeff:
                 # we have a heap
                 x = m.read_struct(m.start, winxp_32.HEAP)
-                print x
+                #print x
 
         self.assertEquals(ctypes.sizeof(x), 1416)
         # print x
