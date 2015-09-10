@@ -1,8 +1,8 @@
 # python-haystack memory forensics
 
-[![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=development)](https://travis-ci.org/trolldbois/python-haystack)
-[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=development&service=github)](https://coveralls.io/github/trolldbois/python-haystack?branch=development)
-[![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/development)
+[![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=master)](https://travis-ci.org/trolldbois/python-haystack)
+[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=master&service=github)](https://coveralls.io/github/trolldbois/python-haystack?branch=master)
+[![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/master)
 [![pypi](https://img.shields.io/pypi/dm/haystack.svg)](https://pypi.python.org/pypi/haystack)
 
 Quick Start:
@@ -149,7 +149,7 @@ Quick info:
 
 ::
 
-|    usage: haystack-reverser [-h] [--debug]
+|    usage: haystack-reverse  [-h] [--debug]
 |                             dumpname
 |                             {instances,typemap,group,parent,graph,show,makesig,clean}
 |                             ...

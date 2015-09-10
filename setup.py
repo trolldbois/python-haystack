@@ -60,7 +60,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.20",
+      version="0.21",
       description="Search C Structures in a process' memory",
       long_description=open("README.md").read(),
       url="http://packages.python.org/haystack/",
@@ -93,7 +93,7 @@ setup(name="haystack",
                 "haystack.structures.win32"],
       #package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={"haystack.reverse": ['data/words.100'],
-                    "haystack.structures.win32": ['win7heap.constraints', 'winheap.constraints'],
+                    "haystack.structures.win32": ['win7heap.constraints', 'winxpheap.constraints'],
                     "haystack.structures.libc": ['libcheap.constraints']},
       scripts=["scripts/haystack",
                "scripts/haystack-gui",
@@ -103,15 +103,16 @@ setup(name="haystack",
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
       # numpy is already installed in travis-ci
-      setup_requires=["numpy"],
+      ## setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile",
                         "python-ptrace",
-                        # reverse
-                        "numpy",
-                        "networkx",
-                        "python-Levenshtein"],
+                        # reverse need these.
+                        #"numpy",
+                        #"networkx",
+                        #"python-Levenshtein"
+                        ],
       dependency_links=[#"https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",

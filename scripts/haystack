@@ -21,7 +21,7 @@ import sys
 import os
 
 from haystack import argparse_utils
-from haystack import cli, watch
+from haystack import cli
 
 log = logging.getLogger('haystack')
 
