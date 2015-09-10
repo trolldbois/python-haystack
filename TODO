@@ -1,4 +1,10 @@
 
+
+- re-correlate the is_valid methods to the record type, so that advanced code-based
+validation is allowed on a record, on top of constraits
+Will require a registation of specific validation functions, and probable access
+to parent nodes 'validation state'.
+
 - finder the text outputter bug. haystack refresh PEB returns different and bad results with a 
 constraint file. with a string output.
 see field process Heap
