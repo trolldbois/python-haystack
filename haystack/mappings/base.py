@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Provides basic memory mappings helpers.
+"""Provides basic memory _memory_handler helpers.
 
 Short story, the memory of a process is segmented in several memory
 zones called memory mapping,
@@ -24,15 +24,15 @@ Classes:
 - FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
 
 This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
-Its intended to be retrofittable with ptrace's memory mappings.
+Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
 import logging
 
 # haystack
-from haystack import utils
-from haystack import config
-
+from haystack import target
+from haystack import model
+from haystack.abc import interfaces
 from haystack.structures import heapwalker
 
 __author__ = "Loic Jaquemet"
@@ -43,10 +43,11 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 __credits__ = ["Victor Skinner"]
 
-log = logging.getLogger('base')
+log = logging.getLogger('memorybase')
 
 
-class MemoryMapping:
+
+class AMemoryMapping(interfaces.IMemoryMapping):
 
     """
     Just the metadata.
@@ -77,7 +78,8 @@ class MemoryMapping:
 
     def __init__(self, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        self.config = None
+        self._target_platform = target.TargetPlatform.make_target_platform_local()
+        self._utils = self._target_platform.get_target_ctypes_utils()
         self.start = start
         self.end = end
         self.permissions = permissions
@@ -86,17 +88,29 @@ class MemoryMapping:
         self.minor_device = minor_device
         self.inode = inode
         self.pathname = str(pathname)  # fix None
+        self._is_heap = False
+        self._is_heap_addr = None
 
-    def init_config(self, config):
-        self.config = config
+    def get_target_platform(self):
+        """
+        :rtype: ITargetPlatform
+        """
+        return self._target_platform
+
+    def set_target_platform(self, target):
+        """
+        :param target: ITargetPlatform
+        """
+        self._target_platform = target
+        self._utils = self._target_platform.get_target_ctypes_utils()
         return
 
     def __contains__(self, address):
         return self.start <= address < self.end
 
     def __str__(self):
-        text = ' '.join([utils.formatAddress(self.start), utils.formatAddress(self.end), self.permissions,
-                         '0x%0.8x' % (self.offset), '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % (self.inode), str(self.pathname)])
+        text = ' '.join([self._utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
+                         '0x%0.8x' % self.offset, '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % self.inode, str(self.pathname)])
         return text
 
     __repr__ = __str__
@@ -116,7 +130,7 @@ class MemoryMapping:
                 requested = buf_len
             else:
                 requested = remaining
-            data = self.readBytes(covered, requested)
+            data = self.read_bytes(covered, requested)
             if data == "":
                 break
             offset = data.find(bytestr)
@@ -129,14 +143,14 @@ class MemoryMapping:
             remaining -= skip
         return
 
-    def readCString(self, address, max_size, chunk_length=256):
+    def read_cstring(self, address, max_size, chunk_length=256):
         ''' identic to process.readCString '''
         string = []
         size = 0
         truncated = False
         while True:
             done = False
-            data = self.readBytes(address, chunk_length)
+            data = self.read_bytes(address, chunk_length)
             if '\0' in data:
                 done = True
                 data = data[:data.index('\0')]
@@ -152,7 +166,7 @@ class MemoryMapping:
             address += chunk_length
         return ''.join(string), truncated
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start
         if ret < 0 or ret > len(self):
             raise ValueError(
@@ -160,166 +174,129 @@ class MemoryMapping:
                 (vaddr, ret))
         return ret
 
-    def ptov(self, paddr):
-        pstart = self.vtop(self.start)
+    def _ptov(self, paddr):
+        pstart = self._vtop(self.start)
         vaddr = paddr - pstart
         return vaddr
 
+    def mark_as_heap(self, addr):
+        self._is_heap = True
+        self._is_heap_addr = addr
+
+    def is_marked_as_heap(self):
+        return self._is_heap is True
+
+    def get_marked_heap_address(self):
+        return self._is_heap_addr
+
     # ---- to implement if needed
-    def readWord(self, address):
+    def read_word(self, address):
         raise NotImplementedError(self)
 
-    def readBytes(self, address, size):
+    def read_bytes(self, address, size):
         raise NotImplementedError(self)
 
-    def readStruct(self, address, struct):
+    def read_struct(self, address, struct):
         raise NotImplementedError(self)
 
-    def readArray(self, address, basetype, count):
+    def read_array(self, address, basetype, count):
         raise NotImplementedError(self)
 
+class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
+    """
+    Handler for the concept of process memory.
 
-class Mappings:
+    Parse a process memory _memory_handler from a storage concept,
+    then identify its ITargetPlatform characteristics
+    and produce an IMemoryHandler for this process memory dump """
 
-    """List of memory mappings for one process"""
+    def __init__(self, mapping_list, _target, name):
+        """Set the list of IMemoryMapping and the ITargetPlatform
 
-    def __init__(self, lst, name='noname'):
-        if lst is None:
-            self.mappings = []
-        elif not isinstance(lst, list):
-            raise TypeError('Please feed me a list')
-        else:
-            self.mappings = list(lst)
-        self.config = None
-        self.name = name
-        self.__heaps = None
-        self.__heap_finder = None
-        self.__os_name = None
-        self.__cpu_bits = None
+        :param mapping_list: list of IMemoryMapping
+        :param _target: the ITargetPlatform
+        :return: IMemoryHandler, self
+        :rtype: IMemoryHandler
+        """
+        if not isinstance(mapping_list, list):
+            raise TypeError('Please feed me a list of IMemoryMapping')
+        if not isinstance(_target, interfaces.ITargetPlatform):
+            raise TypeError('Please feed me a ITargetPlatform')
+        self._mappings = mapping_list
+        self._target = _target
+        for m in self._mappings:
+            m.set_target_platform(self._target)
+        self._utils = self._target.get_target_ctypes_utils()
+        self.__name = name
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
-        # set the word size in this config.
-        self.__wordsize = None
+        self.__model = model.Model(self)
+        # FIXME reduce open files.
         self.__required_maps = []
-        # self._init_word_size()
+        # finish initialization
+        self._heap_finder = None
+        self.__optim_get_mapping_for_address()
 
-    def get_context(self, addr):
-        """Returns the haystack.reverse.context.ReverserContext of this dump.
-        """
-        assert isinstance(addr, long) or isinstance(addr, int)
-        mmap = self.get_mapping_for_address(addr)
-        if not mmap:
-            raise ValueError
-        if hasattr(mmap, '_context'):
-            # print '** _context exists'
-            return mmap._context
-        if mmap not in self.get_heaps():  # addr is not a heap addr,
-            found = False
-            # or its in a child heap ( win7)
-            for h in self.get_heaps():
-                if hasattr(h, '_children'):
-                    if mmap in h._children:
-                        found = True
-                        mmap = h
-                        break
-            if not found:
-                raise ValueError
-        # we found the heap mmap or its parent
-        from haystack.reverse import context
-        try:
-            ctx = context.ReverserContext.cacheLoad(self)
-            # print '** CACHELOADED'
-        except IOError as e:
-            ctx = context.ReverserContext(self, mmap)
-            # print '** newly loaded '
-        # cache it
-        mmap._context = ctx
-        return ctx
+    def get_name(self):
+        """Returns the name of the process memory dump we are analysing"""
+        return self.__name
 
-    def get_user_allocations(self, heap, filterInUse=True):
-        """changed when the dump is loaded"""
-        assert isinstance(heap, MemoryMapping)
-        if self.__heap_finder is None:
-            self.get_heaps()
+    def get_target_platform(self):
+        """Returns the ITargetPlatform for that process memory."""
+        return self._target
 
-        walker = self.__heap_finder.get_walker_for_heap(self, heap)
-        return walker.get_user_allocations()
+    def get_heap_finder(self):
+        """Returns the IHeapFinder for that process memory."""
+        if self._heap_finder is None:
+            self._heap_finder = heapwalker.make_heap_finder(self)
+        return self._heap_finder
 
-    def get_mapping(self, pathname):
+    def get_ctypes_utils(self):
+        """Returns the Utils toolkit."""
+        return self._utils
+
+    def get_model(self):
+        """Returns the Model cache."""
+        return self.__model
+
+    # FIXME incorrect API
+    def _get_mapping(self, pathname):
         mmap = None
-        if len(self.mappings) >= 1:
-            mmap = [m for m in self.mappings if m.pathname == pathname]
+        if len(self._mappings) >= 1:
+            mmap = [m for m in self._mappings if m.pathname == pathname]
         if len(mmap) < 1:
             raise IndexError('No mmap of pathname %s' % (pathname))
         return mmap
 
-    def get_mapping_for_address(self, vaddr):
-        assert isinstance(vaddr, long) or isinstance(vaddr, int)
-        for m in self.mappings:
-            if vaddr in m:
-                return m
-        return False
+    def get_mappings(self):
+        return list(self._mappings)
 
-    def init_config(self, cpu=None, os_name=None):
-        """Pre-populate cpu and os_name"""
-        if os_name is not None and os_name not in ['linux', 'winxp', 'win7']:
-            raise NotImplementedError('OS not implemented: %s' % (os_name))
-        if cpu is not None and cpu not in ['32', '64']:
-            raise NotImplementedError('CPU bites not implemented: %s' % (cpu))
-        self.__os_name = os_name
-        self.__cpu_bits = cpu
-        # the config init should NOT load heaps as a way to determine the
-        # memory dump arch
-        # self.get_heaps()
-        # but
-        os_name = self.get_os_name()
-        cpu = self.get_cpu_bits()
-        # Change ctypes now
-        #from haystack import config
-        self.config = config.make_config(cpu=cpu, os_name=os_name)
-        self._reset_config()
+    def reset_mappings(self):
+        """
+        Temporarly closes all file used by this handler.
+        :return:
+        """
+        for m in self.get_mappings():
+            m.reset()
 
-    def get_heap(self):
-        """Returns the first Heap"""
-        return self.get_heaps()[0]
-
-    def get_heaps(self):
-        """Find heap type and returns mappings with heaps"""
-        if self.__heaps is None:
-            self.__heap_finder = heapwalker.make_heap_walker(self)
-            self.__heaps = self.__heap_finder.get_heap_mappings(self)
-            # if len(self.__heaps) == 0:
-            #    raise RuntimeError("No heap found")
-        return self.__heaps
-
-    def _reset_config(self):
-        # This is where the config is set for all maps.
-        for m in self.mappings:
-            m.config = self.config
+    def __optim_get_mapping_for_address(self):
+        self.__optim_get_mapping_for_address_cache = dict()
+        for m in self.get_mappings():
+            for i in range(m.start, m.end, 0x1000):
+                self.__optim_get_mapping_for_address_cache[i] = m
         return
 
-    def get_stack(self):
-        # FIXME wont work on windows.
-        stack = self.get_mapping('[stack]')[0]
-        return stack
-
-    def append(self, m):
-        assert isinstance(m, MemoryMapping)
-        self.mappings.append(m)
-        if self.config is not None:
-            m.config = self.config
-
-    def get_os_name(self):
-        if self.__os_name is not None:
-            return self.__os_name
-        self.__os_name = heapwalker.detect_os(self.mappings)
-        return self.__os_name
-
-    def get_cpu_bits(self):
-        if self.__cpu_bits is not None:
-            return self.__cpu_bits
-        self.__cpu_bits = heapwalker.detect_cpu(self.mappings, self.__os_name)
-        return self.__cpu_bits
+    def get_mapping_for_address(self, vaddr):
+        # TODO: optimization. 127s out of 288s = 40%
+        assert isinstance(vaddr, long) or isinstance(vaddr, int)
+        #if not (isinstance(vaddr, long) or isinstance(vaddr, int)):
+        #    import code
+        #    code.interact(local=locals())
+        # check 4 Mo boundaries
+        _boundary_addr = (vaddr >> 12) << 12
+        if _boundary_addr in self.__optim_get_mapping_for_address_cache:
+            return self.__optim_get_mapping_for_address_cache[_boundary_addr]
+        return False
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
@@ -332,7 +309,7 @@ class Mappings:
         Returns the mapping in which the object stands otherwise.
         """
         # check for null pointers
-        addr = utils.get_pointee_address(obj)
+        addr = self._utils.get_pointee_address(obj)
         if addr == 0:
             return False
         return self.is_valid_address_value(addr, structType)
@@ -348,34 +325,37 @@ class Mappings:
 
         Returns the mapping in which the address stands otherwise.
         """
-        import ctypes
+        my_ctypes = self._target.get_target_ctypes()
         m = self.get_mapping_for_address(addr)
         log.debug('is_valid_address_value = %x %s' % (addr, m))
         if m:
-            if (structType is not None):
-                s = ctypes.sizeof(structType)
+            if structType is not None:
+                s = my_ctypes.sizeof(structType)
                 if (addr + s) < m.start or (addr + s) > m.end:
                     return False
             return m
         return False
 
     def __contains__(self, vaddr):
-        for m in self.mappings:
+        for m in self._mappings:
             if vaddr in m:
                 return True
         return False
 
     def __len__(self):
-        return len(self.mappings)
+        return len(self._mappings)
 
     def __getitem__(self, i):
-        return self.mappings[i]
+        return self._mappings[i]
 
     def __setitem__(self, i, val):
         raise NotImplementedError()
 
     def __iter__(self):
-        return iter(self.mappings)
+        return iter(self._mappings)
+
+    def __str__(self):
+        return "<MemoryHandler for %s with %d mappings>" % (self.get_name(), len(self.get_mappings()))
 
     def reset(self):
         """Clean the book"""
@@ -404,6 +384,8 @@ class Mappings:
 
     def getRef(self, typ, origAddr):
         """Returns the reference to the type previously loaded at this address"""
+        ## DEBUG
+        #return None
         if (typ, origAddr) in self.__book.refs:
             return self.__book.getRef(typ, origAddr)
         return None
@@ -421,6 +403,9 @@ class Mappings:
 
         Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object,
            they might be transient (if obj == somepointer.contents)."""
+        ## DEBUG
+        ##return None
+
         # TODO, memory leak for different objects of same size, overlapping
         # struct.
         if (typ, origAddr) in self.__book.refs:
@@ -448,7 +433,7 @@ class Mappings:
 class _book(object):
 
     """The book registers all registered ctypes modules and keeps
-    some pointer refs to buffers allocated in memory mappings.
+    some pointer refs to buffers allocated in memory _memory_handler.
 
     # see also ctypes._pointer_type_cache , _reset_cache()
     """
@@ -467,3 +452,4 @@ class _book(object):
 
     def delRef(self, typ, addr):
         del self.refs[(typ, addr)]
+

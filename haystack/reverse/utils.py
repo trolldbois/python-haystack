@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 This module holds some basic utils function.
-'''
-
+"""
 
 import itertools
 import logging
@@ -13,13 +12,7 @@ import os
 import struct
 import sys
 
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+from haystack.reverse import config
 
 log = logging.getLogger('utils')
 
@@ -98,17 +91,16 @@ def dequeue(addrs, start, end):
     return addrs, ret
 
 
-def getHeapPointers(dumpfilename, mappings):
+def getHeapPointers(dumpfilename, memory_handler):
     ''' Search Heap pointers values in stack and heap.
         records values and pointers address in heap.
     '''
     import pointerfinder
-    config = mappings.config
-    #F_VALUES = config.getCacheFilename(config.CACHE_HS_POINTERS_VALUES, dumpfilename)
-    F_HEAP_O = config.getCacheFilename(config.CACHE_HEAP_ADDRS, dumpfilename)
-    F_HEAP_V = config.getCacheFilename(config.CACHE_HEAP_VALUES, dumpfilename)
-    #F_STACK_O = config.getCacheFilename(config.CACHE_STACK_ADDRS, dumpfilename)
-    #F_STACK_V = config.getCacheFilename(config.CACHE_STACK_VALUES, dumpfilename)
+    #F_VALUES = _target_platform.get_cache_filename(_target_platform.CACHE_HS_POINTERS_VALUES, dumpfilename)
+    F_HEAP_O = config.get_cache_filename(config.CACHE_HEAP_ADDRS, dumpfilename)
+    F_HEAP_V = config.get_cache_filename(config.CACHE_HEAP_VALUES, dumpfilename)
+    #F_STACK_O = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_ADDRS, dumpfilename)
+    #F_STACK_V = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_VALUES, dumpfilename)
     #log.debug('reading from %s'%(F_VALUES))
     #values = int_array_cache(F_VALUES)
     heap_addrs = int_array_cache(F_HEAP_O)
@@ -118,8 +110,8 @@ def getHeapPointers(dumpfilename, mappings):
     if heap_addrs is None or heap_values is None:
         # - getting pointers values from stack')
         log.info('[+] Making new cache - heap pointers')
-        #stack_enumerator = pointerfinder.PointerEnumerator(mappings.get_stack())
-        # stack_enumerator.setTargetMapping(mappings.get_heap()) #only interested in heap pointers
+        #stack_enumerator = pointerfinder.PointerEnumerator(_memory_handler.get_stack())
+        # stack_enumerator.setTargetMapping(_memory_handler.get_heap()) #only interested in heap pointers
         #stack_enum = stack_enumerator.search()
         # if len(stack_enum)>0:
         #  stack_offsets, stack_values = zip(*stack_enum)
@@ -127,8 +119,9 @@ def getHeapPointers(dumpfilename, mappings):
         #  stack_offsets, stack_values = (),()
         #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
         #log.info('\t[-] merging pointers from heap')
+        finder = memory_handler.get_heap_finder()
         heap_enum = pointerfinder.PointerEnumerator(
-            mappings.get_heap()).search()
+            finder.get_heap_mappings()[0]).search()
         if len(heap_enum) > 0:
             heap_addrs, heap_values = zip(*heap_enum)  # WTF
         else:
@@ -155,24 +148,24 @@ def getHeapPointers(dumpfilename, mappings):
     return heap_addrs, heap_values
 
 
-def getAllPointers(dumpfilename, mappings):
+def getAllPointers(dumpfilename, memory_handler):
     ''' Search all mmap pointers values in heap.
         records values and pointers address in heap.
     '''
     import pointerfinder
-    config = mappings.config
-    F_HEAP_O = config.getCacheFilename(
+    F_HEAP_O = config.get_cache_filename(
         config.CACHE_ALL_PTRS_ADDRS,
         dumpfilename)
-    F_HEAP_V = config.getCacheFilename(
+    F_HEAP_V = config.get_cache_filename(
         config.CACHE_ALL_PTRS_VALUES,
         dumpfilename)
     heap_addrs = int_array_cache(F_HEAP_O)
     heap_values = int_array_cache(F_HEAP_V)
     if heap_addrs is None or heap_values is None:
         log.info('[+] Making new cache - all pointers')
-        heap_enumerator = pointerfinder.PointerEnumerator(mappings.get_heap())
-        heap_enumerator.setTargetMapping(mappings)  # all pointers
+        finder = memory_handler.get_heap_finder()
+        heap_enumerator = pointerfinder.PointerEnumerator(finder.get_heap_mappings()[0])
+        heap_enumerator.setTargetMapping(memory_handler)  # all pointers
         heap_enum = heap_enumerator.search()
         if len(heap_enum) > 0:
             heap_addrs, heap_values = zip(*heap_enum)  # WTF
@@ -190,20 +183,19 @@ def getAllPointers(dumpfilename, mappings):
     return heap_addrs, heap_values
 
 
-def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
+def getAllocations(dumpfilename, memory_handler, heap, get_user_alloc=None):
     ''' Search malloc_chunks in heap .
         records addrs and sizes.
     '''
     # TODO if linux
     # TODO from haystack.reverse import heapwalker
     # from haystack.structures.libc  import libc.ctypes_malloc
-    config = mappings.config
-    f_addrs = config.getCacheFilename(
+    f_addrs = config.get_cache_filename(
         '%x.%s' %
         (heap.start,
          config.CACHE_MALLOC_CHUNKS_ADDRS),
         dumpfilename)
-    f_sizes = config.getCacheFilename(
+    f_sizes = config.get_cache_filename(
         '%x.%s' %
         (heap.start,
          config.CACHE_MALLOC_CHUNKS_SIZES),
@@ -214,7 +206,7 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
     if addrs is None or sizes is None:
         log.info('[+] Making new cache - getting malloc_chunks from heap ')
         # TODO : HeapWalker + order addresses ASC ...
-        # allocations = sorted(heapwalker.get_user_allocations(mappings, heap))
+        # allocations = sorted(heapwalker.get_user_allocations(_memory_handler, heap))
         # TODO 2 , allocations should be triaged by mmapping ( heap.start ) before write2disk.
         # Or the heap.start should be removed from the cache name.. it has no impact.
         # heapwalker.getuserAllocations should parse ALL mmappings to get all user allocations.
@@ -222,7 +214,8 @@ def getAllocations(dumpfilename, mappings, heap, get_user_alloc=None):
         # in case of a pointer ( bad allocation ) out of a mmapping space.
         # But that is not possible, because we are reporting factual reference to existing address space.
         # OK. heap.start should be deleted from the cache name.
-        allocations = mappings.get_user_allocations(heap)
+        finder = memory_handler.get_heap_finder()
+        allocations = finder.get_heap_walker(heap).get_user_allocations()
         addrs, sizes = zip(*allocations)
         int_array_save(f_addrs, addrs)
         int_array_save(f_sizes, sizes)

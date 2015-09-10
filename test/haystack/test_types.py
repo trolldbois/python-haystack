@@ -10,20 +10,14 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-# init ctypes with a controlled type size
-from haystack import model
-from haystack import types
 
-import operator
-import os
 import logging
-import struct
 import unittest
 
-import ctypes
+from haystack import types
 
-def make_types():
-    import ctypes
+
+def make_types(ctypes):
     # make some structures.
 
     class St(ctypes.Structure):
@@ -62,7 +56,7 @@ class TestReload(unittest.TestCase):
     """Tests sizes after ctypes changes."""
 
     def setUp(self):
-        model.reset()
+        pass
 
     # test ctypes._pointer_type_cache
     def test_pointer_type_cache(self):
@@ -70,7 +64,7 @@ class TestReload(unittest.TestCase):
         # between reset(), we keep the reference to the ctypes modules
         # and we don't the pointer cache, that we only share with the default
         # ctypes proxy instance
-        ctypes = types.reset_ctypes()
+        ctypes = types.load_ctypes_default()
 
         class X(ctypes.Structure):
             pass
@@ -79,17 +73,18 @@ class TestReload(unittest.TestCase):
         ctypes.POINTER(X)
         self.assertIn(X, ctypes._pointer_type_cache.keys())
 
-        ctypes = types.reset_ctypes()
         # we keep the cache
         self.assertIn(X, ctypes._pointer_type_cache.keys())
 
-        c4 = types.reload_ctypes(4, 4, 8)
-        c8 = types.reload_ctypes(8, 8, 16)
+        c4 = types.build_ctypes_proxy(4, 4, 8)
+        c8 = types.build_ctypes_proxy(8, 8, 16)
         cd = types.load_ctypes_default()
         if c4 != cd:
             newarch = c4
         elif c8 != cd:
             newarch = c4
+        else:
+            raise RuntimeError("unmanaged case")
 
         # cd and ctypes share a cache
         self.assertIn(X, cd._pointer_type_cache.keys())
@@ -114,30 +109,27 @@ class TestReload(unittest.TestCase):
 
     def test_reset_ctypes(self):
         """Test if reset gives the original types"""
-        import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
-        proxy = ctypes
-        for name, value in make_types().items():
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertEquals(ctypes.sizeof(stp), 4)
         self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
 
-        ctypes = types.reset_ctypes()
+        import ctypes
         # no CString.
-        self.assertRaises(AttributeError, make_types)
+        self.assertRaises(AttributeError, make_types, ctypes)
         self.assertIn('ctypes', '%s' % (ctypes))
         self.assertFalse(hasattr(ctypes, 'proxy'))
         return
 
     def test_load_ctypes_default(self):
         """Test if the default proxy works"""
-        import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         self.assertTrue(ctypes.proxy)
         # test
         ctypes = types.load_ctypes_default()
         self.assertTrue(ctypes.proxy)
-        for name, value in make_types().items():
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         # default ctypes should be similar to host ctypes.
         self.assertEquals(
@@ -159,9 +151,8 @@ class TestReload(unittest.TestCase):
 
     def test_reload_ctypes(self):
         """Tests loading of specific arch ctypes."""
-        import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
-        for name, value in make_types().items():
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
@@ -169,8 +160,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(4, 8, 8)
-        for name, value in make_types().items():
+        ctypes = types.build_ctypes_proxy(4, 8, 8)
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
@@ -178,8 +169,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(8, 4, 8)
-        for name, value in make_types().items():
+        ctypes = types.build_ctypes_proxy(8, 4, 8)
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
@@ -187,8 +178,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 8)
 
         # other arch
-        ctypes = types.reload_ctypes(8, 4, 16)
-        for name, value in make_types().items():
+        ctypes = types.build_ctypes_proxy(8, 4, 16)
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
@@ -196,19 +187,18 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(double), 16)
 
         # other arch
-        self.assertRaises(NotImplementedError, types.reload_ctypes, 16, 8, 16)
+        self.assertRaises(NotImplementedError, types.build_ctypes_proxy, 16, 8, 16)
         return
 
     def test_set_ctypes(self):
         """Test reloading of previous defined arch-ctypes."""
-        import ctypes
-        x32 = types.reload_ctypes(4, 4, 8)
-        x64 = types.reload_ctypes(8, 8, 16)
-        win = types.reload_ctypes(8, 8, 8)
-        ctypes = types.reset_ctypes()
+        x32 = types.build_ctypes_proxy(4, 4, 8)
+        x64 = types.build_ctypes_proxy(8, 8, 16)
+        win = types.build_ctypes_proxy(8, 8, 8)
+        ctypes = types.load_ctypes_default()
 
-        ctypes = types.set_ctypes(x32)
-        for name, value in make_types().items():
+        ctypes = x32
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes, x32)
@@ -216,8 +206,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(stp), 4)
         self.assertEquals(ctypes.sizeof(double), 8)
 
-        ctypes = types.set_ctypes(x64)
-        for name, value in make_types().items():
+        ctypes = x64
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes, x64)
@@ -225,8 +215,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(stp), 8)
         self.assertEquals(ctypes.sizeof(double), 16)
 
-        ctypes = types.set_ctypes(win)
-        for name, value in make_types().items():
+        ctypes = win
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes, win)
@@ -234,8 +224,8 @@ class TestReload(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(stp), 8)
         self.assertEquals(ctypes.sizeof(double), 8)
 
-        ctypes = types.set_ctypes(x32)
-        for name, value in make_types().items():
+        ctypes = x32
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
         self.assertEquals(ctypes, x32)
@@ -251,10 +241,8 @@ class TestBasicFunctions(unittest.TestCase):
     """Tests basic haystack.types functions on base types."""
 
     def setUp(self):
-        model.reset()
-        import ctypes
         ctypes = types.load_ctypes_default()
-        for name, value in make_types().items():
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
@@ -350,7 +338,7 @@ class TestBasicFunctions(unittest.TestCase):
     def test_is_ctypes(self):
         valids = [St(), St2(), SubSt2()]
         invalids = [v for v in self.tests if v not in valids]
-        self._testMe(ctypes.is_ctypes_instance, valids, invalids)
+        self._testMe(types.is_ctypes_instance, valids, invalids)
         return
 
 
@@ -359,9 +347,8 @@ class TestProxyCTypesAPI(unittest.TestCase):
     """Tests that the ctypes API is respected."""
 
     def setUp(self):
-        model.reset()
         ctypes = types.load_ctypes_default()
-        for name, value in make_types().items():
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
                       arra2, arra3, charp, string, fptr, arra4, double, arra5,
@@ -369,19 +356,21 @@ class TestProxyCTypesAPI(unittest.TestCase):
 
     def test_import(self):
         #''' Do not replace c_char_p '''
+        ctypes = types.load_ctypes_default()
         from haystack import basicmodel
         self.assertEquals(
             ctypes.c_char_p.__name__,
             'c_char_p',
             'c_char_p should not be changed')
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
                 ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.LoadableMembers))
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
         self.assertIn(ctypes.CString, ctypes.__dict__.values())
 
     def test_cast(self):
+        ctypes = types.load_ctypes_default()
         i = ctypes.c_int(42)
         a = ctypes.c_void_p(ctypes.addressof(i))
         p = ctypes.cast(a, ctypes.POINTER(ctypes.c_int))
@@ -410,7 +399,7 @@ class TestProxyCTypesAPI(unittest.TestCase):
         # print
         #import code
         # code.interact(local=locals())
-        
+
     def test_cfunctype(self):
         #verify this is our proxy module
         self.assertTrue(hasattr(ctypes,'get_real_ctypes_member'))
@@ -426,11 +415,10 @@ class TestBasicFunctions32(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        model.reset()
-        import ctypes
-        ctypes = types.reload_ctypes(4, 4, 8)
+        ctypes = types.build_ctypes_proxy(4, 4, 8)
         self.assertTrue(ctypes.proxy)
-        for name, value in make_types().items():
+        self._ctypes = ctypes
+        for name, value in make_types(self._ctypes).items():
             globals()[name] = value
         # reload test list after globals have been changed
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
@@ -438,25 +426,25 @@ class TestBasicFunctions32(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(ctypes.sizeof(ctypes.c_long), 4)
-        self.assertEquals(ctypes.sizeof(ctypes.c_void_p), 4)
-        self.assertEquals(ctypes.sizeof(ctypes.POINTER(ctypes.c_int)), 4)
-        self.assertEquals(ctypes.sizeof(ctypes.c_char_p), 4)
-        self.assertEquals(ctypes.sizeof(ctypes.c_wchar_p), 4)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(ctypes.sizeof(double), 8)
-        self.assertEquals(ctypes.sizeof(fptr), 4)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 4)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 4)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.POINTER(self._ctypes.c_int)), 4)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 4)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 4)
+        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 4)
+        self.assertEquals(self._ctypes.sizeof(double), 8)
+        self.assertEquals(self._ctypes.sizeof(fptr), 4)
 
         return
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
-                ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.LoadableMembers))
-        self.assertIn(ctypes.CString, ctypes.__dict__.values())
+                self._ctypes.Structure,
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
 class TestBasicFunctionsWin(TestBasicFunctions):
@@ -465,12 +453,11 @@ class TestBasicFunctionsWin(TestBasicFunctions):
 
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
-        # use the host ctypes with modif
-        model.reset()
-        import ctypes
-        ctypes = types.reload_ctypes(8, 8, 8)
+        # use the host self._ctypes with modif
+        ctypes = types.build_ctypes_proxy(8, 8, 8)
         self.assertTrue(ctypes.proxy)
-        for name, value in make_types().items():
+        self._ctypes = ctypes
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
@@ -478,23 +465,23 @@ class TestBasicFunctionsWin(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(ctypes.sizeof(ctypes.c_long), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_void_p), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_char_p), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_wchar_p), 8)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(double), 8)
-        self.assertEquals(ctypes.sizeof(fptr), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
+        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 8)
+        self.assertEquals(self._ctypes.sizeof(double), 8)
+        self.assertEquals(self._ctypes.sizeof(fptr), 8)
         return
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
-                ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.LoadableMembers))
-        self.assertIn(ctypes.CString, ctypes.__dict__.values())
+                self._ctypes.Structure,
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
 class TestBasicFunctions64(TestBasicFunctions):
@@ -504,11 +491,10 @@ class TestBasicFunctions64(TestBasicFunctions):
     def setUp(self):
         """Have to reload that at every test. classmethod will not work"""
         # use the host ctypes with modif
-        model.reset()
-        import ctypes
-        ctypes = types.reload_ctypes(8, 8, 16)
+        ctypes = types.build_ctypes_proxy(8, 8, 16)
         self.assertTrue(ctypes.proxy)
-        for name, value in make_types().items():
+        self._ctypes = ctypes
+        for name, value in make_types(ctypes).items():
             globals()[name] = value
         #
         self.tests = [St, St2, SubSt2, btype, longt, voidp, stp, stpvoid, arra1,
@@ -516,23 +502,23 @@ class TestBasicFunctions64(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(ctypes.sizeof(ctypes.c_long), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_void_p), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_char_p), 8)
-        self.assertEquals(ctypes.sizeof(ctypes.c_wchar_p), 8)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(double), 16)
-        self.assertEquals(ctypes.sizeof(fptr), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
+        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
+        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 8)
+        self.assertEquals(self._ctypes.sizeof(double), 16)
+        self.assertEquals(self._ctypes.sizeof(fptr), 8)
         return
 
     def test_import(self):
         from haystack import basicmodel
-        self.assertTrue(
+        self.assertFalse(
             issubclass(
-                ctypes.Structure,
-                basicmodel.LoadableMembers))
-        self.assertTrue(issubclass(ctypes.Union, basicmodel.LoadableMembers))
-        self.assertIn(ctypes.CString, ctypes.__dict__.values())
+                self._ctypes.Structure,
+                basicmodel.CTypesRecordConstraintValidator))
+        self.assertFalse(issubclass(self._ctypes.Union, basicmodel.CTypesRecordConstraintValidator))
+        self.assertIn(self._ctypes.CString, self._ctypes.__dict__.values())
 
 
 if __name__ == '__main__':

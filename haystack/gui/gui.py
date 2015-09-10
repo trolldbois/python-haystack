@@ -175,13 +175,13 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     def loadMapping(self, mapping, mappings):
         '''
         update the widget with a new mapping
-        we also have to keep a reference to all mappings to be able to search for structures..
+        we also have to keep a reference to all _memory_handler to be able to search for structures..
         '''
         self._init()  # pass if not self._dirty
         self.mapping = mapping
         self.mappings = mappings
         # FIXME : useless?
-        # if self.mapping not in self.mappings:
+        # if self.mapping not in self._memory_handler:
         #  raise ValueError('mapping not in mapping list.')
         # init the view
         self.graphicsView.loadMapping(mapping)
@@ -190,7 +190,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         # init the hexeditor
         # print type(self.mapping)
         # a=self.mapping.mmap()
-        self.qhexedit.setData(self.mapping.mmap().getByteBuffer())  # beuaaah
+        self.qhexedit.setData(self.mapping.mmap().get_byte_buffer())  # beuaaah
         return
 
     def searchValue(self, value):
@@ -222,7 +222,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         searcher = pointerfinder.PointerSearcher(self.mapping)
         for vaddr in searcher:
             # searcher should return [(offset, value)]
-            word = self.mapping.readWord(vaddr)
+            word = self.mapping.read_word(vaddr)
             offset = vaddr - start
             self.pointers.addToGroup(
                 widgets.Word(
@@ -280,12 +280,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         '''
         return size of structure and list of addresses and values )
         '''
-        from haystack import abouchet
+        from haystack import api
         import ctypes
         # import sslsnoop #?
         # self.mapping.unmmap()
         # DEBUG stop at the first instance, lazy me
-        instances = abouchet.searchIn(
+        instances = api.searchIn(
             structType,
             mappings=self.mappings,
             targetMappings=[
@@ -459,15 +459,16 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
 
     def _openDump(self, dumpname):
         # load memorymapping
-        mappings = dump_loader.load(dumpname)
+        memory_handler = dump_loader.load(dumpname)
         # TODO : make a mapping chooser
-        heap = mappings.get_heap()
-        # if len(mappings) > 1:
-        #  heap = [m for m in mappings if m.pathname == '[heap]'][0]
+        finder = memory_handler.get_heap_finder()
+        heap = memory_handler.get_heap_mappings()[0]
+        # if len(_memory_handler) > 1:
+        #  heap = [m for m in _memory_handler if m.pathname == '[heap]'][0]
         # else:
-        #  heap = mappings[0]
+        #  heap = _memory_handler[0]
         return self.make_memory_tab(
-            os.path.sep.join([os.path.basename(dumpname), heap.pathname]), heap, mappings)
+            os.path.sep.join([os.path.basename(dumpname), heap.pathname]), heap, memory_handler)
 
     def closeTab(self):
         self.tabWidget.removeTab(self.tabWidget.currentIndex())
@@ -512,7 +513,7 @@ def dropToInteractive():
 def gui(opt):
     app = QtGui.QApplication(sys.argv)
 
-    #mappings = dump_loader.load(opt)
+    #_memory_handler = dump_loader.load(opt)
     mappings = None
     root = MyMain(opt)
     root.show()

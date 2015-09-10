@@ -4,118 +4,117 @@
 """Tests haystack.utils ."""
 
 import logging
-import sys
 import unittest
 
-from haystack import model
-from haystack import types
 from haystack.mappings.vol import VolatilityProcessMapper
-from haystack.mappings.vol import VolatilityProcessMapping
+
+from test.testfiles import zeus_1668_vmtoolsd_exe
+from test.testfiles import zeus_856_svchost_exe
 
 log = logging.getLogger('test_vol')
 
-@unittest.skip("travis-ci does not like me - bouhouhou")
+#@unittest.skip('not ready')
 class TestMapper(unittest.TestCase):
-    '''load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples 
-    The malware analysis cookbook'''
+    """
+    load zeus.vmem from https://code.google.com/p/volatility/wiki/MemorySamples
+    The malware analysis cookbook
+    """
 
     def setUp(self):
-        model.reset()
+        try:
+            import volatility
+        except ImportError,e:
+            self.skipTest('Volatility not installed')
+        pass
 
     def tearDown(self):
-        model.reset()
-        types.load_ctypes_default()
+        pass
 
+    def test_number_of_mappings(self):
+        """ check the number of mappings on 3 processes """
+        #check vad numbers with
+        #vol.py -f /home/jal/outputs/vol/zeus.vmem -p 856 vadwalk |wc -l
+        #5 headers lines to be removed from count
+        #
+        #analysis here:
+        #https://malwarereversing.wordpress.com/2011/09/23/zeus-analysis-in-volatility-2-0/
 
-    def test_init(self):
-        ''' check vad numbers with 
-        vol.py -f /home/jal/outputs/vol/zeus.vmem -p 856 vadwalk |wc -l 
-        5 headers lines to be removed from count
-        
-        analysis here:
-        https://malwarereversing.wordpress.com/2011/09/23/zeus-analysis-in-volatility-2-0/
-        '''
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        # PID 856 has 176 mappings
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.getMappings()
-        self.assertEquals(len(mappings), 176)
+        # PID 856 has 176 _memory_handler
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        self.assertEquals(len(memory_handler.get_mappings()), 176)
 
         # testing that we can use the Mapper twice in a row, without breaking
         # volatility
         pid = 676
-        # PID 676 has 118 mappings
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.getMappings()
-        self.assertEquals(len(mappings), 118)
+        # PID 676 has 118 _memory_handler
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        self.assertEquals(len(memory_handler.get_mappings()), 118)
 
+        pid = 1668
+        # PID 1668 has 159 _memory_handler
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        self.assertEquals(len(memory_handler.get_mappings()), 159)
 
-    def test_heaps(self):
-        ''' look for heaps in pid 856'''
-        ''' for x in mappings:
-                res = x.readStruct(x.start,winheap.HEAP)
-                if res.Signature == 0xeeffeeffL:
-                    print x.start, "Signature:", hex(res.Signature)
-0x190000L Signature: 0xeeffeeffL
-0x90000L Signature: 0xeeffeeffL
-0x1a0000L Signature: 0xeeffeeffL
-0x350000L Signature: 0xeeffeeffL
-0x3b0000L Signature: 0xeeffeeffL
-0xc30000L Signature: 0xeeffeeffL
-0xd60000L Signature: 0xeeffeeffL
-0xe20000L Signature: 0xeeffeeffL
-0xe80000L Signature: 0xeeffeeffL
-0x7f6f0000L Signature: 0xeeffeeffL'''
-        heaps = [0x190000L,0x90000L,0x1a0000L,0x350000L,0x3b0000L,0xc30000L,
-                 0xd60000L,0xe20000L,0xe80000L,0x7f6f0000L]
+    def test_is_heaps_1168(self):
+        f = '/home/jal/outputs/vol/zeus.vmem'
+        pid = 1668
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        finder = memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
+        self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
+            heap = memory_handler.get_mapping_for_address(addr)
+            self.assertTrue(heap.is_marked_as_heap())
+            heap_addr = heap.get_marked_heap_address()
+            self.assertTrue(heap_addr is not None)
+            self.assertTrue(finder._is_heap(heap, heap_addr))
+
+    @unittest.skip('number of heaps is still a open question')
+    def test_is_heaps_856(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 856
-        # PID 856 has 176 mappings
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.getMappings()
-
-        from haystack.structures.win32 import winheap
-        for mstart in heaps:
-            heap = mappings.get_mapping_for_address(mstart)
-            res = heap.readStruct(heap.start,winheap.HEAP)
-            self.assertTrue(res.isValid(mappings))
-
-        # testing that the list of heaps is always the same
-        self.assertEquals(set(heaps), set([m.start for m in mappings.get_heaps()]))
-        return
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        finder = memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
+        self.assertEquals(len(heaps), len(zeus_856_svchost_exe.known_heaps))
+        for addr, size in zeus_856_svchost_exe.known_heaps:
+            heap = memory_handler.get_mapping_for_address(addr)
+            self.assertTrue(heap.is_marked_as_heap())
+            heap_addr = heap.get_marked_heap_address()
+            self.assertTrue(heap_addr is not None)
+            self.assertTrue(finder._is_heap(heap, heap_addr))
 
     def test_read_mem(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
         pid = 888  # wscntfy.exe
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.getMappings()
-        self.assertEquals(len(mappings), 51)
-        self.assertEquals(mappings.get_os_name(), 'winxp')
+        mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
+        memory_handler = mapper.make_memory_handler()
+        self.assertEquals(len(memory_handler.get_mappings()), 51)
+        self.assertEquals(memory_handler.get_target_platform().get_os_name(), 'winxp')
 
-        ctypes = mappings.config.ctypes
-        from haystack.structures.win32 import winheap
+        ctypes = memory_handler.get_target_platform().get_target_ctypes()
+        from haystack.structures.win32 import winxp_32
         #print ctypes
-        import pefile
-        import code
-        for m in mappings.mappings:
-            data = m.readWord(m.start + 8)
+        for m in memory_handler.get_mappings():
+            data = m.read_word(m.start + 8)
             if data == 0xeeffeeff:
                 # we have a heap
-                x = m.readStruct(m.start, winheap.HEAP)
-                print x
+                x = m.read_struct(m.start, winxp_32.HEAP)
+                #print x
 
-        self.assertEquals( ctypes.sizeof(x), 1430)
+        self.assertEquals(ctypes.sizeof(x), 1416)
         # print x
-
-        heaps = mappings.get_heaps()
+        finder = memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
         #code.interact(local=locals())
 
-    def test_read_mem(self):
-        f = '/home/jal/outputs/vol/zeus.vmem'
-        pid = 888  # wscntfy.exe
-        mapper = VolatilityProcessMapper(f, pid)
-        mappings = mapper.getMappings()
 
 
 if __name__ == '__main__':

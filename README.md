@@ -1,14 +1,18 @@
 # python-haystack memory forensics
 
-[![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=dev)](https://travis-ci.org/trolldbois/python-haystack)
-[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg)](https://coveralls.io/r/trolldbois/python-haystack)
+[![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=development)](https://travis-ci.org/trolldbois/python-haystack)
+[![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=development&service=github)](https://coveralls.io/github/trolldbois/python-haystack?branch=development)
 [![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/development)
 [![pypi](https://img.shields.io/pypi/dm/haystack.svg)](https://pypi.python.org/pypi/haystack)
+
+Quick Start:
+============
+[Quick usage guide](docs/docs/Haystack basic usage.ipynb) in the docs/ folder.
 
 Introduction:
 =============
 
-python-haystack is an heap analysis framework, focused on classic 
+python-haystack is an heap analysis framework, focused on classic
 C structure matching.
 
 The first class of algorithms gives the ability to search for known
@@ -21,13 +25,13 @@ C structures from memory. Heap analysis. Dynamic types definition.
 How to get a memory dump:
 =========================
 
-While technically you could use a third party tool, haystack actually 
-need memory mapping information to work with. 
+While technically you could use a third party tool, haystack actually
+need memory mapping information to work with.
 So there is a dumping tool included::
 
 $ sudo haystack-dump dump <pid> dumps/myssh.dump
 
-You can easily reproduce the format of the dump, its a folder/archive 
+You can easily reproduce the format of the dump, its a folder/archive
 containing each memory map in a separate file :
 
 - content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
@@ -37,22 +41,22 @@ containing each memory map in a separate file :
 Search for known structures:
 ============================
 
-You need the python definition/ctypes structures of the known 
+You need the python definition/ctypes structures of the known
 structures.
 An example would be sslsnoop, which provide python ctypes structures for
 openssl and openssh structures.
 
 Quick info:
- This demonstrate the ability to brute-force the search 
- of a known structure, based on fields types assumptions or constraints. 
+ This demonstrate the ability to brute-force the search
+ of a known structure, based on fields types assumptions or constraints.
  The magic is performed in the model.py module.
- The constraints are applied on the python ctypes structures by the 
+ The constraints are applied on the python ctypes structures by the
  'expectedValues' static field.
 
-Command line example: 
+Command line example:
 ---------------------
 
-For example, this will dump the session_state structures + pointed 
+For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
 Lets assume we have an ssh client or server as pid *4042*::
 
@@ -72,13 +76,13 @@ $ haystack-gui --dumpname dumps/myssh.dump
 
 You can the search a structure from the heap of that memory mapping.
 
-You have to import your extensions before that to have them listed in 
+You have to import your extensions before that to have them listed in
 the search dialog.
 
-( *try sslsnoop.ctypes_openssh* ) 
+( *try sslsnoop.ctypes_openssh* )
 
 Tip:
- As this is a beta version, sslsnoop is hard-imported in the GUI. 
+ As this is a beta version, sslsnoop is hard-imported in the GUI.
  You should have it installed.
 
 
@@ -99,48 +103,48 @@ and that was the session key of the receive stream.
 Extensibility:
 --------------
 
-It's easy to add new structures. Its basically the ctypes definition of 
+It's easy to add new structures. Its basically the ctypes definition of
 C structures that should be done following the next 4 steps :
 
 #) Your class must extend haystack.model.LoadableMembersStructure.
-#) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure 
+#) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure
 #) *Optional* You can add an expectedValues dict() to your ctype classes to add some constraints.
-#) *Optional* You can override isValid and loadMembers to implement advanced constraints validation.
-#) call model.registerModule(sys.modules[__name__])
+#) *Optional* You can override isValid and load_members to implement advanced constraints validation.
+#) call model.build_python_class_clones(sys.modules[__name__])
 
 Easy 'creation':
   use h2xml and xml2py binaries, shipped with ctypeslib to generate a python module from
   a C header.
 
 Advanced use:
-  You can override methods isValid and loadMembers to implements 
+  You can override methods isValid and load_members to implements
   advanced data loading and constraints validation.
-  
+
   See sslsnoop for loading cipher structures from void pointers
 
 The global algorithm :
-  #) The ctypes structure is mapped at the first offset of the memory 
+  #) The ctypes structure is mapped at the first offset of the memory
      mapping.
-  #) The method loadMembers is called.
+  #) The method load_members is called.
   #) The method isValid is called on self.
-  #) A validation test is done for each members, constraints and 
+  #) A validation test is done for each members, constraints and
      memory space validity (pointers) are tested.
      The validation does not recurse.
-  #) Each members is then 'loaded' to local space. 
-     If the value is a pointer or a model.LoadableMembersStructure type, it's 
+  #) Each members is then 'loaded' to local space.
+     If the value is a pointer or a model.LoadableMembersStructure type, it's
      recursively Loaded. ( and validated).
      If the recursive loading fails, the calls fails. bye-bye.
   #) If all contraints are respected, we have a match.
   #) Move to see next offset, goto 1)
 
 
-Heap analysis / Memory Reverser / Memory forensics:
+Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
 ===================================================
 
-Quick info: 
+Quick info:
  This tool parse the heap for allocator structures, pointers
  values, small integers and text (ascii/utf).
- Given all the previous information, it can extract instances 
+ Given all the previous information, it can extract instances
  and helps you in classifying and defining structures types.
 
 ::
@@ -185,7 +189,7 @@ The most interesting one being the <yourdumpname>.headers_values.py that
 gives you an ctypes listing of all found structures, with gestimates
 on fields types.
 
-A <yourdumpname>.gexf file is also produced to help you visualize 
+A <yourdumpname>.gexf file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
 
@@ -223,7 +227,7 @@ Pseudo Example for extension :
 |class RSA(OpenSSLStruct):
 |  ''' rsa/rsa.h '''
 |  _fields_ = [
-|  ("pad",  ctypes.c_int), 
+|  ("pad",  ctypes.c_int),
 |  ("version",  ctypes.c_long),
 |  ("meth",ctypes.POINTER(BIGNUM)),#const RSA_METHOD *meth;
 |  ("engine",ctypes.POINTER(ENGINE)),#ENGINE *engine;
@@ -246,8 +250,8 @@ Pseudo Example for extension :
 |  ("mt_blinding",ctypes.POINTER(BIGNUM))#BN_BLINDING *mt_blinding;
 |  ]
 |  expectedValues={
-|    "pad": [0], 
-|    "version": [0], 
+|    "pad": [0],
+|    "version": [0],
 |    "references": RangeValue(0,0xfff),
 |    "n": [NotNull],
 |    "e": [NotNull],
@@ -258,15 +262,15 @@ Pseudo Example for extension :
 |    "dmq1": [NotNull],
 |    "iqmp": [NotNull]
 |  }
-|  def loadMembers(self, mappings, maxDepth):
+|  def load_members(self, mappings, maxDepth):
 |    print 'example'
-|    if not LoadableMembersStructure.loadMembers(self, mappings, maxDepth):
+|    if not LoadableMembersStructure.load_members(self, mappings, maxDepth):
 |      log.debug('RSA not loaded')
 |      return False
 |    return True
 |
 |# register to haystack
-|model.registerModule(sys.modules[__name__])
+|model.build_python_class_clones(sys.modules[__name__])
 |
 |#EOF
 
@@ -276,27 +280,27 @@ not so FAQ :
 
 What does it do ?:
 ------------------
-The basic functionnality is to search in a process' memory maps for a 
+The basic functionnality is to search in a process' memory maps for a
 specific C Structures.
 
-The extended reverse engineering functionnality aims at reversing 
+The extended reverse engineering functionnality aims at reversing
 structures from memory/heap analysis.
 
 How do it knows that the structures is valid ? :
 ------------------------------------------------
 You add some constraints ( expectedValues ) on the fields. Pointers are also a good start.
- 
+
 Where does the idea comes from ? :
 -----------------------------------
 http://www.hsc.fr/ressources/breves/passe-partout.html.fr originally.
-since I started in March 2011, I have uncovered several other related 
+since I started in March 2011, I have uncovered several other related
 previous work.
 
 Most of them are in the docs/ folder.
 
 Other related work are mona.py from Immunity, some other Mandiant stuff...
 
-In a nutshell, this is probably not an original idea. But yet, I could 
+In a nutshell, this is probably not an original idea. But yet, I could
 not find a operational standalone lib for live memory extraction for my sslsnoop PoC, so....
 
 

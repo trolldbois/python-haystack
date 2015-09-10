@@ -1,25 +1,31 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 import logging
-from haystack import types
+
+from haystack.abc import interfaces
+from haystack import constraints
+from haystack.search import searcher
 
 log = logging.getLogger('heapwalker')
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 
-class HeapWalker(object):
+class HeapWalker(interfaces.IHeapWalker):
 
-    def __init__(self, mappings, mapping, offset=0):
-        self._mappings = mappings
-        self._mapping = mapping
-        self._offset = offset
-        self._init_heap()
+    def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
+        if not heap_mapping.is_marked_as_heap():
+            raise TypeError('Please mark the mapping as heap before use')
+        self._memory_handler = memory_handler
+        self._heap_module = heap_module
+        self._heap_mapping = heap_mapping
+        self._heap_module_constraints = heap_module_constraints
+        self._init_heap(heap_mapping.get_marked_heap_address())
 
-    def _init_heap(self):
+    def _init_heap(self, address):
+        """ Initialize anything"""
         raise NotImplementedError('Please implement all methods')
 
     def get_user_allocations(self):
@@ -30,176 +36,148 @@ class HeapWalker(object):
         """ returns all free chunks in the heap (addr,size) """
         raise NotImplementedError('Please implement all methods')
 
+class HeapFinder(interfaces.IHeapFinder):
 
-# TODO make a virtual function that plays libc or win32 ?
-# or put that in the MemoryMappings ?
-# or in the context ?
+    def __init__(self, memory_handler):
+        """
+        :param memory_handler: IMemoryHandler
+        :return: HeapFinder
+        """
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError('Feed me a IMemoryHandlerobject')
+        self._memory_handler = memory_handler
+        self._target = self._memory_handler.get_target_platform()
+        self._heap_module_name, self._heap_class_name, self._heap_constraint_filename = self._init()
+        self._heap_module = self._import_heap_module()
+        self._heap_module_constraints = self._load_heap_constraints()
+        self._heap_validation_depth = self._init_heap_validation_depth()
+        self._heap_type = self._init_heap_type()
+        # optimisations
+        self.__optim_heaps = None
 
+    def _init(self):
+        """
+        Return the heap configuration information
+        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        """
+        raise NotImplementedError(self)
 
-def detect_os(mappings):
-    """Arch independent way to assess the os of a captured process"""
-    linux = winxp = win7 = 0
-    for pathname in [m.pathname.lower() for m in mappings
-                     if m.pathname is not None and m.pathname != '']:
-        if '\\system32\\' in pathname:
-            winxp += 1
-            win7 += 1
-        if 'ntdll.dll' in pathname:
-            winxp += 1
-            win7 += 1
-        elif 'Documents and Settings' in pathname:
-            winxp += 1
-        elif 'xpsp2res.dll' in pathname:
-            winxp += 1
-        elif 'SysWOW64' in pathname:
-            win7 += 1
-        elif '\\wer.dll' in pathname:
-            win7 += 1
-        elif '[heap]' in pathname:
-            linux += 1
-        elif '[vdso]' in pathname:
-            linux += 1
-        elif '/usr/lib/' in pathname:
-            linux += 1
-        elif '/' == pathname[0]:
-            linux += 1
-    log.debug(
-        'detect_os: scores linux:%d winxp:%d win7:%d' %
-        (linux, winxp, win7))
-    scores = max(linux, max(winxp, win7))
-    if scores == linux:
-        return 'linux'
-    elif scores == winxp:
-        return 'winxp'
-    elif scores == win7:
-        return 'win7'
+    def _import_heap_module(self):
+        """
+        Load the module for this target arch
+        :return: module
+        """
+        heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
+        # FIXME, is that necessary for memory allocation structs ?
+        # not needed
+        # self._memory_handler.get_model().build_python_class_clones(heap_module)
+        return heap_module
 
+    def _load_heap_constraints(self):
+        """
+        Init the constraints on the heap module
+        :return:
+        """
+        parser = constraints.ConstraintsConfigHandler()
+        return parser.read(self._heap_constraint_filename)
 
-def detect_cpu(mappings, os_name=None):
-    if os_name is None:
-        os_name = detect_os(mappings)
-    cpu = 'unknown'
-    if os_name == 'linux':
-        cpu = _detect_cpu_arch_elf(mappings)
-    elif os_name == 'winxp' or os_name == 'win7':
-        cpu = _detect_cpu_arch_pe(mappings)
-    return cpu
+    def _init_heap_type(self):
+        """init the internal heap structure type
+        :rtype: ctypes heap structure type
+        """
+        return getattr(self._heap_module, self._heap_class_name)
 
+    def _init_heap_validation_depth(self):
+        """init the internal heap structure type
+        :rtype: ctypes heap structure type
+        """
+        return 1
 
-def _detect_cpu_arch_pe(mappings):
-    import pefile
-    # get the maps with read-only data
-    # find the executable image and get the PE header
-    pe = None
-    for m in mappings:
-        # volatility dumps VAD differently than winappdbg
-        # we have to look at all mappings
-        # if m.permissions != 'r--':
-        #    continue
-        try:
-            head = m.readBytes(m.start, 0x1000)
-            pe = pefile.PE(data=head, fast_load=True)
-            # only get the dirst one that works
-            if pe is None:
-                continue
-            break
-        except pefile.PEFormatError as e:
-            pass
-    machine = pe.FILE_HEADER.Machine
-    arch = pe.OPTIONAL_HEADER.Magic
-    if arch == 0x10b:
-        return '32'
-    elif arch == 0x20b:
-        return '64'
-    else:
-        raise NotImplementedError('MACHINE is %s' % (pe.e_machine))
-    return
-
-
-def _detect_cpu_arch_elf(mappings):
-    from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
-    # find an executable image and get the ELF header
-    for m in mappings:
-        if 'r-xp' not in m.permissions:
-            continue
-        try:
-            head = m.readBytes(m.start, 0x40)  # 0x34 really
-        except Exception as e:
-            continue
-        x = struct_Elf_Ehdr.from_buffer_copy(head)
-        log.debug('MACHINE:%s pathname:%s' % (x.e_machine, m.pathname))
-        if x.e_machine == 3:
-            return '32'
-        elif x.e_machine == 62:
-            return '64'
-        else:
-            continue
-    raise NotImplementedError('MACHINE has not been found.')
-
-
-def make_heap_walker(mappings):
-    """try to find what type of heaps are """
-    from haystack.mappings import base
-    if not isinstance(mappings, base.Mappings):
-        raise TypeError('Feed me a Mappings')
-    # ctypes is preloaded with proper arch
-    os_name = mappings.get_os_name()
-    if os_name == 'linux':
-        from haystack.structures.libc import libcheapwalker
-        return libcheapwalker.LibcHeapFinder()
-    elif os_name == 'winxp':
-        from haystack.structures.win32 import winheapwalker
-        return winheapwalker.WinHeapFinder()
-    elif os_name == 'win7':
-        from haystack.structures.win32 import win7heapwalker
-        return win7heapwalker.Win7HeapFinder()
-    else:
-        raise NotImplementedError(
-            'Heap Walker not found for os %s' %
-            (os_name))
-
-
-class HeapFinder(object):
-
-    def __init__(self):#, ctypes):
-        #ctypes = types.set_ctypes(ctypes)
-        self.heap_type = None
-        self.walker_class = callable()
-        self.heap_validation_depth = 1
-        raise NotImplementedError(
-            'Please fix your self.heap_type and self.walker_class')
-
-    def is_heap(self, mappings, mapping):
-        """test if a mapping is a heap"""
-        from haystack.mappings import base
-        if not isinstance(mappings, base.Mappings):
-            raise TypeError('Feed me a Mappings object')
-        heap = self.read_heap(mapping)
-        load = heap.loadMembers(mappings, self.heap_validation_depth)
-        log.debug('HeapFinder.is_heap %s %s' % (mapping, load))
-        return load
-
-    def read_heap(self, mapping):
+    def _search_heap(self, mapping):
         """ return a ctypes heap struct mapped at address on the mapping"""
-        addr = mapping.start
-        heap = mapping.readStruct(addr, self.heap_type)
+        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
+                                                       self._heap_module_constraints)
+        # on ly return first results in each mapping
+        log.debug("_search_heap in %s", mapping)
+        res = my_searcher._search_in(mapping, self._heap_type, nb=1, align=0x1000)
+        if len(res) > 0:
+            instance, address = res[0]
+            mapping.mark_as_heap(address)
+            return instance, address
+        return None
+
+    def _read_heap(self, mapping, addr):
+        """ return a ctypes heap struct mapped at address on the mapping"""
+        heap = mapping.read_struct(addr, self._heap_type)
         return heap
 
-    def get_heap_mappings(self, mappings):
-        """return the list of heaps that load as heaps"""
-        from haystack.mappings import base
-        if not isinstance(mappings, base.Mappings):
-            raise TypeError('Feed me a Mappings object')
-        heap_mappings = []
-        for mapping in mappings:
-            # BUG: python-ptrace read /proc/$$/mem.
-            # file.seek does not like long integers
-            if mapping.pathname in ['[vdso]', '[vsyscall]']:
-                log.debug('Ignore system mapping %s' % (mapping))
-            elif self.is_heap(mappings, mapping):
-                heap_mappings.append(mapping)
-        heap_mappings.sort(key=lambda m: m.start)
-        return heap_mappings
+    def _is_heap(self, mapping, addr):
+        """
+        test if a mapping is a heap
+        :param mapping: IMemoryMapping
+        :return:
+        """
+        if not isinstance(mapping, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
+        if mapping.is_marked_as_heap() and addr == mapping.get_marked_heap_address():
+            return True
+        # we find some backend heap at other addresses
+        heap = self._read_heap(mapping, addr)
+        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
+        log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
+        return load
 
-    def get_walker_for_heap(self, mappings, heap):
-        return self.walker_class(mappings, heap, 0)
+    def get_heap_module(self):
+        """
+        Returns the heap module.
+        :return:
+        """
+        return self._heap_module
+
+    def get_heap_mappings(self):
+        """return the list of heaps that load as heaps"""
+        if not self.__optim_heaps:
+            self.__optim_heaps = []
+            for mapping in self._memory_handler:
+                # try at offset 0
+                if mapping.is_marked_as_heap():
+                    self.__optim_heaps.append(mapping)
+                else:
+                    # try harder elsewhere in the mapping
+                    res = self._search_heap(mapping)
+                    if res is not None:
+                        self.__optim_heaps.append(mapping)
+            self.__optim_heaps.sort(key=lambda m: m.start)
+        return self.__optim_heaps
+
+    def get_heap_walker(self, heap):
+        raise NotImplementedError(self)
+
+    def get_heap_validator(self):
+        raise NotImplementedError(self)
+
+
+def make_heap_finder(memory_handler):
+    """
+    Build a heap_finder for this memory_handler
+
+    :param memory_handler: IMemoryHandler
+    :return: a heap walker for that platform
+    :rtype: IHeapWalker
+    """
+    if not isinstance(memory_handler, interfaces.IMemoryHandler):
+        raise TypeError('memory_handler should be an IMemoryHandler')
+    target_platform = memory_handler.get_target_platform()
+    os_name = target_platform.get_os_name()
+    if os_name == 'linux':
+        from haystack.structures.libc import libcheapwalker
+        return libcheapwalker.LibcHeapFinder(memory_handler)
+    elif os_name == 'winxp':
+        from haystack.structures.win32 import winxpheapwalker
+        return winxpheapwalker.WinXPHeapFinder(memory_handler)
+    elif os_name == 'win7':
+        from haystack.structures.win32 import win7heapwalker
+        return win7heapwalker.Win7HeapFinder(memory_handler)
+    else:
+        raise NotImplementedError(
+            'Heap Walker not found for os %s', os_name)

@@ -23,7 +23,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(
             QtGui.QApplication.translate(
                 "MainWindow",
-                "Haystack Memory analysis",
+                "Haystack MemoryHandler analysis",
                 None,
                 QtGui.QApplication.UnicodeUTF8))
         self.centralwidget = QtGui.QWidget(MainWindow)

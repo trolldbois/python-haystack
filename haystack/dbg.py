@@ -3,7 +3,7 @@
 # #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
-# Windows mappings code stolen from winappdbg
+# Windows _memory_handler code stolen from winappdbg
 #
 # Copyright (c) 2009-2010, Mario Vilas
 # All rights reserved.
@@ -36,11 +36,6 @@ import logging
 
 log = logging.getLogger("gbd")
 
-from haystack import types
-import ctypes
-if hasattr(ctypes, 'proxy'):
-    types.reset_ctypes()
-
 import platform
 if platform.system() != 'Windows':
     # ptrace debugguer
@@ -65,8 +60,7 @@ if platform.system() != 'Windows':
 
 else:
     # TODO Test unit
-    import winappdbg
-    from winappdbg import win32, Process, System, HexDump, HexInput, CrashDump
+    from winappdbg import win32, Process, System, HexDump
 
     class WinAppDebugger:
 
@@ -81,7 +75,7 @@ else:
             def readArray(vaddr, typ, s):
                 # print 'HIHIHI',proc, vaddr, typ, s
                 return proc.read_structure(vaddr, typ * s)
-            proc.readArray = readArray
+            proc.read_array = readArray
             proc.cont = proc.resume
             return proc
 
@@ -217,9 +211,9 @@ else:
         memoryMap = process.get_memory_map()
         mappedFilenames = process.get_mapped_filenames()
         if fileName:
-            log.debug("Memory map for %d (%s):" % (pid, fileName))
+            log.debug("MemoryHandler map for %d (%s):" % (pid, fileName))
         else:
-            log.debug("Memory map for %d:" % pid)
+            log.debug("MemoryHandler map for %d:" % pid)
         log.debug('%d filenames' % len(mappedFilenames))
         log.debug('')
         log.debug('%d memorymap' % len(memoryMap))
@@ -263,5 +257,3 @@ else:
     class ProcessError(Exception):
         pass
     ProcError = ProcessError
-
-types.load_ctypes_default()

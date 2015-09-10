@@ -30,7 +30,7 @@ class StructureInfoTableModel(QtCore.QAbstractTableModel):
         return len(self.arraydata[0])
 
     def data(self, index, role):
-        if not index.isValid():
+        if not index.is_valid():
             return QtCore.QVariant()
         elif role != Qt.DisplayRole:
             return QtCore.QVariant()
@@ -69,7 +69,7 @@ class ResultListModel(QtCore.QAbstractListModel):
         return len(self.arraydata)
 
     def data(self, index, role):
-        if not index.isValid():
+        if not index.is_valid():
             return QtCore.QVariant()
         elif role != Qt.DisplayRole:
             return QtCore.QVariant()

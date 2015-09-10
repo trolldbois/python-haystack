@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" Old poc code integrated in reversers. """
+""" Old poc code integrated in reversers.
+TODO : Double check if code is used anywhere,
+ then absorb comment and erase all.
+"""
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
 import argparse
-import os
 import time
 import sys
+
+import os
 import numpy
 
-from haystack.config import ConfigClass as Config
+from haystack.reverse.config import ConfigClass as Config
 from haystack import dump_loader
-
 from fieldtypes import FieldType
-import signature
 import structure
 import utils
-
 
 log = logging.getLogger('progressive')
 
@@ -47,21 +48,23 @@ def make(opts):
     log.info('[+] Extracting structures from pointer values and offsets.')
     # get the list of pointers values pointing to heap
     # need cache
-    mappings = dump_loader.load(opts.dumpfile, lazy=True)
+    memory_handler = dump_loader.load(opts.dumpfile, lazy=True)
     values, heap_addrs, aligned, not_aligned = utils.getHeapPointers(
-        opts.dumpfile.name, mappings)
+        opts.dumpfile.name, memory_handler)
     dumpname = opts.dumpfile.name
     # we
     if not os.access(Config.structsCacheDir, os.F_OK):
         os.mkdir(Config.structsCacheDir)
-    heap = mappings.get_heap()
+
+    finder = memory_handler.get_heap_finder()
+    heap = finder.get_heap_mappings()[0]
     log.info('[+] Reversing %s' % (heap))
     # creates
     t0 = time.time()
     structCache = {}
     signatures = {}
     lastNb = 0
-    for anon_struct, structs_addrs in buildAnonymousStructs(mappings, heap, aligned,
+    for anon_struct, structs_addrs in buildAnonymousStructs(memory_handler, heap, aligned,
                                                             not_aligned, heap_addrs, structCache, reverse=False):  # reverse is way too slow...
         #
         # regexp could be better if crossed against another dump.
@@ -214,6 +217,8 @@ def rewrite(structs_addrs, structCache, dumpname):
             logging.getLogger('progressive').setLevel(logging.INFO)
         anon = structCache[vaddr]
         anon.resolvePointers()
+        # FIXME DELETE MODULE
+        # usage of mystruct.resolvePointers() indicates old code
         towrite.append(anon.toString())
         if len(towrite) >= 10000:
             fout.write('\n'.join(towrite))

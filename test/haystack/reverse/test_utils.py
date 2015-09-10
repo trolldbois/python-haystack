@@ -3,11 +3,10 @@
 
 """Tests haystack.utils ."""
 
-import numpy
-import os
 import unittest
 
-from haystack import model
+import numpy
+
 from haystack.reverse import utils
 from haystack.reverse import context
 

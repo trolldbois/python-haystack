@@ -1,0 +1,72 @@
+# bad pointer value on the second subsegment
+[union__HEAP_USERDATA_HEADER_0]
+SFreeListEntry: IgnoreMember
+
+# TODO current subsegment.SFreeListEntry is on error at some depth.
+# bad pointer value on the second subsegment
+[struct__HEAP_SUBSEGMENT]
+SFreeListEntry: IgnoreMember
+
+[struct__HEAP_ENTRY_0_1]
+SubSegmentCode: IgnoreMember
+
+[struct__HEAP]
+Signature: [0xeeffeeff]
+# 1 = LAL, 2 = LFH, 0 = Backend (chunks>= 16k)
+FrontEndHeapType: [0, 1, 2]
+# HEAP CommitRoutine encoded by a global key
+# The HEAP handle data structure includes a function pointer field called
+# CommitRoutine that is called when memory regions within the heap are committed.
+# Starting with Windows Vista, this field was encoded using a random value that
+# was also stored as a field in the HEAP handle data structure.
+# We do want a valid commit routine or Null
+## CommitRoutine: IgnoreMember
+# we have a sentinel value of 0xffffffff
+# some old heap ? old heap segment ? have no valid signature/pointers
+# Segments: IgnoreMember
+# found in wild DEBUG:memorybase:is_valid_address_value = bc63e310 False
+UnusedUnCommittedRanges: IgnoreMember
+#VirtualAllocdBlocks: IgnoreMember
+# FreeLists[n] could be in UCR ?
+#FreeLists: IgnoreMember
+
+## Undertanding the LFH
+#LargeBlocksIndex/BlocksIndex – This is a _HEAP_LIST_LOOKUP structure that is used for a variety of
+# purposes. Due to its importance, it will be discussed in greater detail later in this
+# document.
+#FreeLists – A special linked-list that contains pointers to ALL of the free chunks for this
+# heap. It can almost be thought of as a heap cache, but for chunks of every size (and no
+# single associated bitmap).
+#FrontEndHeapType – An integer is initially set to 0x0, and is subsequently assigned a
+# value of 0x2, indicating the use of a LFH. Note: Windows 7 does not actually have
+# support for using Lookaside Lists.
+#FrontEndHeap – A pointer to the associated front-end heap. This will either be NULL or
+# a pointer to a _LFH_HEAP structure when running under Windows 7.
+
+
+[struct__HEAP_SEGMENT]
+Signature: [0xffeeffee]
+LastValidEntry: IgnoreMember
+# 2015-09-09 from tests. Some old remnant have heap == 0 and signature == 0
+Heap: NotNull
+#    ('Heap', POINTER_T(struct__HEAP)),
+#    ('BaseAddress', POINTER_T(None)),
+#    ('FirstEntry', POINTER_T(struct__HEAP_ENTRY)),
+#    ('LastValidEntry', POINTER_T(struct__HEAP_ENTRY)),
+#    ('UnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)),
+#    ('LastEntryInSegment', POINTER_T(struct__HEAP_ENTRY)),
+
+# FIXME, why is 0xffffffff not used as a sentinels in
+[struct__ERESOURCE]
+SystemResourcesList: IgnoreMember
+
+# Evolution of PEB http://blog.rewolf.pl/blog/?p=573
+[struct__PEB]
+#Mutant: [-1]
+# its a pointer, buts its 0xffffffff
+Mutant: IgnoreMember
+BeingDebugged: [0,1]
+#NumberOfProcessors: [RangeValue(1,128)]
+#NumberOfHeaps: [RangeValue(1,128)]
+OSMajorVersion: [5]
+OSMinorVersion: [1]

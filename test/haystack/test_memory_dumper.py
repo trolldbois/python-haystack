@@ -3,7 +3,6 @@
 
 """Tests haystack.utils ."""
 
-import os
 import unittest
 import logging
 import shutil
@@ -11,6 +10,8 @@ import tempfile
 import time
 import subprocess
 import sys
+
+import os
 
 from haystack import model
 from haystack import memory_dumper
@@ -29,11 +30,11 @@ class TestMemoryDumper(unittest.TestCase):
     def setUpClass(cls):
         # run make.py
         import os
-        import sys
+
         if not os.geteuid() == 0:
             #raise RuntimeError(
             raise unittest.SkipTest(
-                "Memory dump test can only be run as root. Please sudo")
+                "MemoryHandler dump test can only be run as root. Please sudo")
 
     def get_folder_size(self, folder):
         folder_size = 0
@@ -71,16 +72,15 @@ class TestMemoryDumper32(TestMemoryDumper):
         dump the heap and stack
         kill the process
         launch a process
-        dump all the memory mappings
+        dump all the memory _memory_handler
         kill the process
         compare size which should be incremental
-        compare mappings files which should be the same
+        compare _memory_handler files which should be the same
     """
 
     def setUp(self):
-        model.reset()
         from haystack import types
-        types.reload_ctypes(4, 4, 8)
+        types.build_ctypes_proxy(4, 4, 8)
         self.cpu_bits = '32'
         self.os_name = 'linux'
         self.tgts = []
@@ -113,16 +113,16 @@ class TestMemoryDumper32(TestMemoryDumper):
         time.sleep(0.1)
 
     def test_mappings_file(self):
-        '''Checks if memory_dumper make a mappings index file'''
+        '''Checks if memory_dumper make a _memory_handler index file'''
         tgt1 = self._make_tgt_dir()
         self.devnull = file('/dev/null')
         self.process = self.run_app_test('test1', stdout=self.devnull.fileno())
         time.sleep(0.1)
         # FIXME, heaponly is breaking machine detection.
         out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
-        self.assertIsNotNone(file('%s/mappings' % out1))
+        self.assertIsNotNone(file('%s/_memory_handler' % out1))
         self.assertGreater(len(
-            file('%s/mappings' % out1).readlines()), 15, 'the mappings file looks too small')
+            file('%s/_memory_handler' % out1).readlines()), 15, 'the _memory_handler file looks too small')
 
     def test_dumptype_dir(self):
         '''Checks if dumping to folder works'''
@@ -149,19 +149,19 @@ class TestMemoryDumper32(TestMemoryDumper):
         size3 = self.get_folder_size(tgt3)
 
         self.assertGreater(size1, 500)  # not a null archive
-        # self.assertGreater(size2, size1) # more mappings
-        self.assertGreater(size3, size2)  # more mappings
+        # self.assertGreater(size2, size1) # more _memory_handler
+        self.assertGreater(size3, size2)  # more _memory_handler
         # print size1, size2, size3
-        # print file(out1+'/mappings').read()
+        # print file(out1+'/_memory_handler').read()
         # print '-'*80
-        # print file(out2+'/mappings').read()
+        # print file(out2+'/_memory_handler').read()
         # print '-'*80
-        # print file(out3+'/mappings').read()
+        # print file(out3+'/_memory_handler').read()
         # print '-'*80
 
         # test opening by dump_loader
         from haystack import dump_loader
-        from haystack.mappings.base import Mappings
+        from haystack.mappings.base import MemoryHandler
         # PYDOC
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
@@ -169,7 +169,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             out1,
             cpu=self.cpu_bits,
             os_name=self.os_name)
-        self.assertIsInstance(mappings1, Mappings)
+        self.assertIsInstance(mappings1, MemoryHandler)
 
         mappings2 = dump_loader.load(
             out2,
@@ -205,9 +205,9 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_1:
-            instance, found = haystack.abouchet.show_dumpname(
+            instance, found = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_Node', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
@@ -216,7 +216,7 @@ class TestMemoryDumper32(TestMemoryDumper):
             pass
 
         for offset in offsets_3:
-            instance, found = haystack.abouchet.show_dumpname(
+            instance, found = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_test3', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
@@ -234,9 +234,9 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_3:
-            ret = haystack.abouchet.show_dumpname(
+            ret = haystack.api.show_dumpname(
                 'test.src.ctypes3.struct_test3', self.out, int(
                     offset, 16), rtype='string')
             self.assertIn('"val1": 3735928559L', ret)
@@ -254,10 +254,10 @@ class TestMemoryDumper32(TestMemoryDumper):
         offsets_3 = [l.split(' ')[1]
                      for l in stdoutdata.split('\n') if "test3" in l]
         # check offsets in memory dump
-        import haystack.abouchet
+        import haystack.api
         for offset in offsets_3:
             self.assertRaises(ValueError,
-                              haystack.abouchet.show_dumpname,
+                              haystack.api.show_dumpname,
                               'test.src.ctypes3.struct_test3',
                               self.out,
                               int(offset,

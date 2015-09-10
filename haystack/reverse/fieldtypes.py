@@ -5,23 +5,19 @@
 #
 
 import logging
-import os
-import collections
-import struct
-import itertools
-
-from haystack.config import ConfigClass
-from haystack.reverse import re_string
-
 import ctypes
+
+from haystack.reverse import config
+
+"""
+the Python classes to represent the guesswork record and field typing of
+allocations.
+"""
+
 
 log = logging.getLogger('field')
 
 # Field related functions and classes
-# FIXME, use objects.
-config = ConfigClass()
-
-
 def findFirstNot(s, c):
     for i in xrange(len(s)):
         if s[i] != c:

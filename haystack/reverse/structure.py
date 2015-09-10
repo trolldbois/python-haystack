@@ -4,27 +4,21 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-import collections
 import logging
-import os
 import pickle
 import itertools
 import numbers
-import math
 import weakref
+import ctypes
+import sys
 
-from haystack.config import ConfigClass as Config
-from haystack import dump_loader
-from haystack import model
+import os
 
-import fieldtypes
+from haystack.reverse import config
 from fieldtypes import Field, FieldType, makeArrayField
 import pattern
 import utils
-
 import lrucache
-
-import ctypes
 
 log = logging.getLogger('structure')
 
@@ -48,7 +42,7 @@ DEBUG_ADDRS = []
 # Compare sruct type from parent with multiple pointer (
 
 def makeFilename(context, st):
-    sdir = context.config.getStructsCacheDir(context.dumpname)
+    sdir = config.get_record_cache_folder_name(context.dumpname)
     if not os.path.isdir(sdir):
         os.mkdir(sdir)
     return os.path.sep.join([sdir, str(st)])
@@ -94,7 +88,7 @@ def remapLoad(context, addr, newmappings):
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
-    # YES we do want to over-write mappings and bytes
+    # YES we do want to over-write _memory_handler and bytes
     p.setContext(context)
     return p
 
@@ -183,7 +177,8 @@ class StructureNotResolvedError(Exception):
     pass
 
 
-class AnonymousStructInstance():
+# should not be a new style class
+class AnonymousStructInstance(object):
 
     '''
     AnonymousStruct in absolute address space.
@@ -192,6 +187,7 @@ class AnonymousStructInstance():
 
     def __init__(self, context, vaddr, size, prefix=None):
         self._context = context
+        self._target = self._context.memory_handler.get_target_platform()
         self._vaddr = vaddr
         self._size = size
         self.reset()  # set fields
@@ -301,7 +297,7 @@ class AnonymousStructInstance():
     def saveme(self):
         if not self._dirty:
             return
-        sdir = self._context.config.getStructsCacheDir(self._context.dumpname)
+        sdir = config.get_record_cache_folder_name(self._context.dumpname)
         if not os.path.isdir(sdir):
             os.mkdir(sdir)
         fname = makeFilename(self._context, self)
@@ -322,7 +318,6 @@ class AnonymousStructInstance():
             # clean it, its stale
             os.remove(fname)
             log.warning('removing %s' % (fname))
-            import sys
             ex = sys.exc_info()
             raise ex[1], None, ex[2]
         return
@@ -419,11 +414,11 @@ class AnonymousStructInstance():
                         undecoded += 1
                         #log.debug('target %x is unresolvable in a field'%(field.value))
                     pass
-                elif field.value in self._mappings:  # other mappings
+                elif field.value in self._memory_handler:  # other _memory_handler
                     inMappings += 1
                     tgt = 'ext_lib_%d' % (field.offset)
                     field._ptr_to_ext_lib = True
-                    field.target_struct_addr = self._mappings.get_mapping_for_address(
+                    field.target_struct_addr = self._memory_handler.get_mapping_for_address(
                         field.value).start
                     pass
             #
@@ -446,7 +441,7 @@ class AnonymousStructInstance():
     # , structs_addrs, structCache):
     def _resolvePointerToStructField(self, field):
         raise NotImplementedError('Obselete')
-        # TODO DEBUG, i got gaps in my memory mappings structures
+        # TODO DEBUG, i got gaps in my memory _memory_handler structures
         #  struct_add16e8 -> struct_add173c
         # if len(structs_addrs) == 0:
         if len(self._context._malloc_addresses) == 0:
@@ -457,7 +452,7 @@ class AnonymousStructInstance():
             field.value, self._context._malloc_addresses)
         log.debug('nearest_addr:%x ind:%d' % (nearest_addr, ind))
         tgt_st = self._context.getStructureForAddr(nearest_addr)
-        if field.value % Config.WORDSIZE != 0:
+        if field.value % self.target.get_word_size() != 0:
             # non aligned, nothing could match
             return tgt_st, None
         log.debug('tgt_st %s' % tgt_st)
@@ -645,7 +640,7 @@ class AnonymousStructInstance():
         #  return False
         return field._target_field.isString()
 
-    def getFields(self):
+    def get_fields(self):
         return [f for f in self._fields]
 
     def getPointerFields(self):
@@ -667,18 +662,18 @@ class AnonymousStructInstance():
         self._context = context
 
     @property
-    def _mappings(self):
-        return self._context.mappings
+    def _memory_handler(self):
+        return self._context.memory_handler
 
     @property
     def _heap(self):
-        return self._context.mappings.get_heap()
+        return self._context.memory_handler.get_heap_mappings()
 
     @property  # TODO add a cache property ?
     def bytes(self):
         if self._bytes is None:
-            m = self._mappings.get_mapping_for_address(self._vaddr)
-            self._bytes = m.readBytes(
+            m = self._memory_handler.get_mapping_for_address(self._vaddr)
+            self._bytes = m.read_bytes(
                 self._vaddr,
                 self._size)  # TODO re_string.Nocopy
         return self._bytes
@@ -741,12 +736,13 @@ class %s(ctypes.Structure):  # %s
         """
         d = self.__dict__.copy()
         try:
-            d['dumpname'] = os.path.normpath(self._mappings.name)
+            d['dumpname'] = os.path.normpath(self._memory_handler.name)
         except AttributeError as e:
-            #log.error('no mappings name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
+            #log.error('no _memory_handler name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
             d['dumpname'] = None
         d['_context'] = None
         d['_bytes'] = None
+        d['_target'] = None
         return d
 
     def __setstate__(self, d):
@@ -790,18 +786,18 @@ class ReversedType(ctypes.Structure):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:
-        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.getFields()]
+        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()
 
-    @classmethod
-    def toString(cls):
-        import ctypes
+    # @classmethod
+    def toString(self):
         fieldsStrings = []
-        for attrname, attrtyp in cls.getFields():  # model
-            if ctypes.is_pointer_type(
-                    attrtyp) and not ctypes.is_pointer_to_void_type(attrtyp):
+        for attrname, attrtyp in self.getFields():  # model
+            # FIXME need ctypesutils.
+            if self.ctypes.is_pointer_type(
+                    attrtyp) and not self.ctypes.is_pointer_to_void_type(attrtyp):
                 fieldsStrings.append(
                     '(%s, ctypes.POINTER(%s) ),\n' %
                     (attrname, attrtyp._type_.__name__))
@@ -811,10 +807,10 @@ class ReversedType(ctypes.Structure):
                     (attrname, attrtyp.__name__))
         fieldsString = '[ \n%s ]' % (''.join(fieldsStrings))
 
-        info = 'size:%d' % (ctypes.sizeof(cls))
+        info = 'size:%d' % (self.ctypes.sizeof(self))
         ctypes_def = '''
 class %s(ctypes.Structure):  # %s
   _fields_ = %s
 
-''' % (cls.__name__, info, fieldsString)
+''' % (self.__name__, info, fieldsString)
         return ctypes_def

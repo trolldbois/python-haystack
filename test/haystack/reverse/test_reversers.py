@@ -7,27 +7,22 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
-import os
-import sys
 import unittest
 
-from haystack import config
-
-from haystack import model, constraints
+from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics import dsa
 
-#import ctypes
-
-log=logging.getLogger("test_reversers")
+log = logging.getLogger("test_reversers")
 
 
 class TestStructureSizes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        sys.path.append('test/src/')
+        pass
+        #sys.path.append('test/src/')
         #import ctypes3
         #
         #node = ctypes3.struct_Node
@@ -42,21 +37,20 @@ class TestStructureSizes(unittest.TestCase):
         #    ('me', [constraints.NotNull])])
 
     def setUp(self):
-        model.reset()
         # os.chdir()
         self.context = context.get_context('test/src/test-ctypes3.32.dump')
-        self.dsa = dsa.DSASimple(self.context.config)
+        self.dsa = dsa.DSASimple(self.context.memory_handler.get_target_platform())
 
     def tearDown(self):
+        self.context.memory_handler.reset_mappings()
         self.context = None
-        model.reset()
 
     @unittest.skip('DEBUGging the other one')
     def test_sizes(self):
-        ctypes = self.context.config.ctypes
+        ctypes = self.context.memory_handler.get_target_platform().get_target_ctypes()
         structs = self.context.listStructures()
         sizes = sorted(set([len(s) for s in structs]))
-        import ctypes3
+        ctypes3 = self.context.memory_handler.get_model().import_module('test.src.ctypes3_32')
         for st in structs:  # [1:2]:
             self.dsa.analyze_fields(st)
             #print st.toString()
@@ -70,7 +64,7 @@ class TestStructureSizes(unittest.TestCase):
         # our compiler put a padding at the end of struct_Node
         # struct_node should be 8, no padding, but its 12.
         self.assertEqual(sizes, [12,20])
-        
+
         #st = ctypes3.Node()
         # print st.toString(), st._expectedValues_
 
@@ -94,26 +88,30 @@ class TestStructureSizes(unittest.TestCase):
 
 class TestFullReverse(unittest.TestCase):
 
-    def setUp(self):
-        model.reset()
+    @classmethod
+    def setUpClass(cls):
+        cls.dumpname = 'test/dumps/ssh/ssh.1'
+        cls.ctx = context.get_context(cls.dumpname)
+        config.remove_cache_folder(cls.dumpname)
+        return
 
-    def tearDown(self):
-        model.reset()
+    @classmethod
+    def tearDownClass(cls):
+        config.remove_cache_folder(cls.dumpname)
+        return
 
     def test_reverseInstances(self):
         log.info('START test test_reverseInstances')
-        ctx = context.get_context('test/dumps/ssh/ssh.1')
-        dumpname = 'test/dumps/ssh/ssh.1'
-        ctx = ctx.config.cleanCache(dumpname)
-        ctx = reversers.reverseInstances(dumpname)
-
+        ctx = reversers.reverseInstances(self.dumpname)
+        # FIXME test something.
+        return
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logging.getLogger("ctypes_malloc").setLevel(logging.INFO)
     logging.getLogger("base").setLevel(logging.INFO)
     logging.getLogger("heapwalker").setLevel(logging.INFO)
     logging.getLogger("filemappings").setLevel(logging.INFO)
     logging.getLogger("dsa").setLevel(logging.INFO)
     logging.getLogger("dump_loader").setLevel(logging.INFO)
-    unittest.main()
+    unittest.main(verbosity=2)

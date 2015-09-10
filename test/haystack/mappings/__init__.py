@@ -7,7 +7,7 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __doc__ = """
-  Memory Mappings used in haystack
+  MemoryHandler Mappings used in haystack
 """
 
 all = [

@@ -24,21 +24,20 @@ Classes:
 - FileBackedMemoryMapping .fromFile : memory space based on a file, with direct read no cache from file.
 
 This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor Skinner.
-Its intended to be retrofittable with ptrace's memory mappings.
+Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
-import os
 import logging
 import struct
 import mmap
 
-# FIXME
+import os
 import ctypes
 
 # haystack
 from haystack import utils
-from haystack import config  # MMAP_HACK
-from haystack.mappings.base import MemoryMapping
+import haystack
+from haystack.mappings.base import AMemoryMapping
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -48,10 +47,10 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 __credits__ = ["Victor Skinner"]
 
-log = logging.getLogger('filemappings')
+log = logging.getLogger('file')
 
 
-class LocalMemoryMapping(MemoryMapping):
+class LocalMemoryMapping(AMemoryMapping):
 
     """
     Local memory mapping.
@@ -60,7 +59,7 @@ class LocalMemoryMapping(MemoryMapping):
 
     def __init__(self, address, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,
@@ -75,10 +74,9 @@ class LocalMemoryMapping(MemoryMapping):
             len(self)).from_address(
             int(address))  # DEBUG TODO byte or ubyte
         self._address = ctypes.addressof(self._local_mmap)
-        # self._vbase = self.start + self._address # shit, thats wraps up...
         self._bytebuffer = None
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start + self._address
         if ret < self._address or ret > (self._address + len(self)):
             raise ValueError(
@@ -89,43 +87,43 @@ class LocalMemoryMapping(MemoryMapping):
     def mmap(self):
         return self
 
-    def readWord(self, vaddr):
+    def read_word(self, vaddr):
         """Address have to be aligned!"""
-        laddr = self.vtop(vaddr)
-        word = self.config.get_word_type().from_address(
+        laddr = self._vtop(vaddr)
+        word = self._target_platform.get_word_type().from_address(
             long(laddr)).value  # is non-aligned a pb ?, indianess is at risk
         return word
 
-    def readBytes1(self, vaddr, size):
-        laddr = self.vtop(vaddr)
+    def _read_bytes(self, vaddr, size):
+        laddr = self._vtop(vaddr)
         #data = b''.join([ struct.pack('B',x) for x in self.readArray( vaddr, ctypes.c_ubyte, size) ] )
         data = ctypes.string_at(laddr, size)  # real 0.5 % perf
         return data
+    read_bytes = _read_bytes
 
-    def readBufferBytes(self, vaddr, size):
+    def read_buffer_bytes(self, vaddr, size):
         laddr = vaddr - self.start
         return self._bytebuffer[laddr:laddr + size]
-    readBytes = readBytes1
 
-    def readStruct(self, vaddr, struct):
-        laddr = self.vtop(vaddr)
+    def read_struct(self, vaddr, struct):
+        laddr = self._vtop(vaddr)
         struct = struct.from_address(int(laddr))
         #struct = struct.from_buffer_copy(struct.from_address(int(laddr)))
         struct._orig_address_ = vaddr
         return struct
 
-    def readArray(self, vaddr, basetype, count):
-        laddr = self.vtop(vaddr)
+    def read_array(self, vaddr, basetype, count):
+        laddr = self._vtop(vaddr)
         array = (basetype * count).from_address(int(laddr))
         return array
 
-    def getByteBuffer(self):
+    def get_byte_buffer(self):
         if self._bytebuffer is None:
-            self._bytebuffer = self.readBytes(self.start, len(self))
-            self.readBytes = self.readBufferBytes
+            self._bytebuffer = self.read_bytes(self.start, len(self))
+            self.read_bytes = self.read_buffer_bytes
         return self._bytebuffer
 
-    def initByteBuffer(self, data=None):
+    def init_byte_buffer(self, data=None):
         self._bytebuffer = data
 
     def __getstate__(self):
@@ -139,7 +137,7 @@ class LocalMemoryMapping(MemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.init_config(memoryMapping.config)
+        el.set_target_platform(memoryMapping.get_target_platform())
         return el
 
     @classmethod
@@ -149,12 +147,12 @@ class LocalMemoryMapping(MemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.init_config(memoryMapping.config)
+        el.set_target_platform(memoryMapping.get_target_platform())
         el.content_array_save_me_from_gc = content_array
         return el
 
 
-class MemoryDumpMemoryMapping(MemoryMapping):
+class MemoryDumpMemoryMapping(AMemoryMapping):
 
     """
     A memoryMapping wrapper around a memory file dump.
@@ -166,7 +164,7 @@ class MemoryDumpMemoryMapping(MemoryMapping):
 
     def __init__(self, memdump, start, end, permissions='rwx-', offset=0x0,
                  major_device=0x0, minor_device=0x0, inode=0x0, pathname='MEMORYDUMP', preload=False):
-        MemoryMapping.__init__(
+        AMemoryMapping.__init__(
             self,
             start,
             end,
@@ -177,26 +175,25 @@ class MemoryDumpMemoryMapping(MemoryMapping):
             inode,
             pathname)
         self._memdump = memdump
-        log.debug('memdump %s' % (memdump))
         self._base = None
         if preload:
             self._mmap()
 
-    def useByteBuffer(self):
+    def use_byte_buffer(self):
         # toddo use bitstring
-        self._mmap().getByteBuffer()  # XXX FIXME buggy
+        self._mmap().get_byte_buffer()  # XXX FIXME buggy
         # force readBytes update
-        self.readBytes = self._base.readBytes
+        self.read_bytes = self._base.read_bytes
 
-    def getByteBuffer(self):
-        return self._mmap().getByteBuffer()
+    def get_byte_buffer(self):
+        return self._mmap().get_byte_buffer()
 
-    def isMmaped(self):
+    def is_mmaped(self):
         return not (self._base is None)
 
     def mmap(self):
         """ mmap-ed access gives a 20% perf increase on by tests """
-        if not self.isMmaped():
+        if not self.is_mmaped():
             self._mmap()
         return self._base
 
@@ -214,8 +211,8 @@ class MemoryDumpMemoryMapping(MemoryMapping):
             if hasattr(self._memdump, 'fileno'):  # normal file.
                 # XXX that is the most fucked up, non-portable fuck I ever
                 # wrote.
-                if config.MMAP_HACK_ACTIVE:
-                    # print 'mmap_hack', self
+                if haystack.MMAP_HACK_ACTIVE:
+                    log.debug('Using MMAP_HACK: %s' % self)
                     # if self.pathname.startswith('/usr/lib'):
                     #    raise Exception
                     self._local_mmap_bytebuffer = mmap.mmap(
@@ -226,14 +223,14 @@ class MemoryDumpMemoryMapping(MemoryMapping):
                     self._memdump = None
                     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
                     # this is a local memory hack, so
-                    # self.config.get_word_type() is not involved.
+                    # self._target_platform.get_word_type() is not involved.
                     heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(
                         id(self._local_mmap_bytebuffer) + 2 * (ctypes.sizeof(ctypes.c_ulong))))[0]
                     self._local_mmap_content = (
                         ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
                 else:  # fallback with no creepy hacks
                     log.warning(
-                        'Memory Mapping content mmap-ed() (double copy of %s) : %s' %
+                        'MemoryHandler Mapping content mmap-ed() (double copy of %s) : %s' %
                         (self._memdump.__class__, self))
                     # we have the bytes
                     local_mmap_bytebuffer = mmap.mmap(
@@ -246,36 +243,43 @@ class MemoryDumpMemoryMapping(MemoryMapping):
                         local_mmap_bytebuffer,
                         ctypes.c_ubyte)
             else:  # dumpfile, file inside targz ... any read() API really
+                print self.__class__
                 self._local_mmap_content = utils.bytes2array(
                     self._memdump.read(),
                     ctypes.c_ubyte)
                 self._memdump.close()
                 log.warning(
-                    'Memory Mapping content copied to ctypes array : %s' %
+                    'MemoryHandler Mapping content copied to ctypes array : %s' %
                     (self))
             # make that _base
             self._base = LocalMemoryMapping.fromAddress(
                 self, ctypes.addressof(
                     self._local_mmap_content))
-            log.debug('LocalMemoryMapping done.')
-        # redirect stuff
-        self.readWord = self._base.readWord
-        self.readArray = self._base.readArray
-        self.readBytes = self._base.readBytes
-        self.readStruct = self._base.readStruct
+            log.debug('%s done.' % self.__class__)
+        # redirect function calls
+        self.read_word = self._base.read_word
+        self.read_array = self._base.read_array
+        self.read_bytes = self._base.read_bytes
+        self.read_struct = self._base.read_struct
         return self._base
 
-    def readWord(self, vaddr):
-        return self._mmap().readWord(vaddr)
+    def _read_word(self, vaddr):
+        return self._mmap().read_word(vaddr)
 
-    def readBytes(self, vaddr, size):
-        return self._mmap().readBytes(vaddr, size)
+    def _read_bytes(self, vaddr, size):
+        return self._mmap().read_bytes(vaddr, size)
 
-    def readStruct(self, vaddr, structType):
-        return self._mmap().readStruct(vaddr, structType)
+    def _read_struct(self, vaddr, structType):
+        return self._mmap().read_struct(vaddr, structType)
 
-    def readArray(self, vaddr, basetype, count):
-        return self._mmap().readArray(vaddr, basetype, count)
+    def _read_array(self, vaddr, basetype, count):
+        return self._mmap().read_array(vaddr, basetype, count)
+
+    # set the default
+    read_word = _read_word
+    read_array = _read_array
+    read_bytes = _read_bytes
+    read_struct = _read_struct
 
     def __getstate__(self):
         d = dict(self.__dict__)
@@ -287,13 +291,6 @@ class MemoryDumpMemoryMapping(MemoryMapping):
         d['_base'] = None
         d['_process'] = None
         return d
-
-    def __del__(self):
-        # we need to clean the mmap mess
-        if hasattr(self, '_local_mmap_bytebuffer'):
-            if hasattr(self._local_mmap_bytebuffer, 'close'):
-                self._local_mmap_bytebuffer.close()
-        pass
 
     @classmethod
     def fromFile(cls, memoryMapping, aFile):
@@ -333,7 +330,7 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         """ returns self to force super() to read through us    """
         return self
 
-    def vtop(self, vaddr):
+    def _vtop(self, vaddr):
         ret = vaddr - self.start
         if ret < 0 or ret > len(self):
             raise ValueError(
@@ -341,15 +338,15 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
                 (vaddr, ret))
         return ret
 
-    def readBytes(self, vaddr, size):
-        laddr = self.vtop(vaddr)
+    def read_bytes(self, vaddr, size):
+        laddr = self._vtop(vaddr)
         size = ctypes.sizeof((ctypes.c_ubyte * size))
         data = b''.join([struct.pack('B', x)
                          for x in self._local_mmap[laddr:laddr + size]])
         return data
 
-    def readStruct(self, vaddr, structType):
-        laddr = self.vtop(vaddr)
+    def read_struct(self, vaddr, structType):
+        laddr = self._vtop(vaddr)
         size = ctypes.sizeof(structType)
         # YES you DO need to have a copy, otherwise you finish with a allocated
         # struct in a read-only mmaped file. Not good if you want to changed members pointers after that.
@@ -362,18 +359,18 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
         struct._orig_address_ = vaddr
         return struct
 
-    def readWord(self, vaddr):
+    def read_word(self, vaddr):
         """Address have to be aligned!"""
-        laddr = self.vtop(vaddr)
-        word = self.config.get_word_type().from_buffer_copy(
+        laddr = self._vtop(vaddr)
+        word = self._target_platform.get_word_type().from_buffer_copy(
             self._local_mmap[
                 laddr:laddr +
-                self.config.get_word_size()],
+                self._target_platform.get_word_size()],
             0).value  # is non-aligned a pb ?
         return word
 
-    def readArray(self, address, basetype, count):
-        laddr = self.vtop(address)
+    def read_array(self, address, basetype, count):
+        laddr = self._vtop(address)
         size = ctypes.sizeof((basetype * count))
         array = (
             basetype *
@@ -409,13 +406,33 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
         MemoryDumpMemoryMapping.__init__(self, None, start, end, permissions, offset,
                                          major_device, minor_device, inode, pathname, preload=False)
         self._memdumpname = memdumpname
+        assert isinstance(self._memdumpname, str)
         return
 
     def _mmap(self):
         #import code
         # code.interact(local=locals())
         self._memdump = file(self._memdumpname, 'rb')
+        # memdump is closed by super()
         return MemoryDumpMemoryMapping._mmap(self)
+
+    def reset(self):
+        """
+        Allows for this lazy-loading mapping wrapper to return
+        to a non-loaded state, closing opened file descriptors.
+        :return:
+        """
+        self._local_mmap_content = None
+        if hasattr(self, '_local_mmap_bytebuffer'):
+            if self._local_mmap_bytebuffer:
+                self._local_mmap_bytebuffer.close()
+                self._local_mmap_bytebuffer = None
+        self._memdump = None
+        self._base = None
+        self.read_word = self._read_word
+        self.read_array = self._read_array
+        self.read_bytes = self._read_bytes
+        self.read_struct = self._read_struct
 
 
 class LazyMmap:

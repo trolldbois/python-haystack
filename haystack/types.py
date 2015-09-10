@@ -3,57 +3,35 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import ctypes
 import logging
 import sys
 
 log = logging.getLogger('types')
+
+# let's use a cache
 __PROXIES = {}
 
-
-def reset_ctypes():
-    """Reset sys.module to import the host ctypes module."""
-    # we want to keep a unique ref to a unique instanciation of the real ctypes
-    # Deletion of the real module is bad for the health.
-    # import the current ctypes
-    import ctypes
-    if isinstance(ctypes, CTypesProxy):
-        ctypes = set_ctypes(__PROXIES['real'])
-    elif 'real' not in __PROXIES.keys():
-        # do nothing and save it
-        __PROXIES['real'] = ctypes
-    else:
-        ctypes = set_ctypes(__PROXIES['real'])
-    log.debug('reset: ctypes changed to %s ' % (ctypes))
-    return ctypes
-
-
 def load_ctypes_default():
-    """Load sys.module with a default host-mimicking ctypes module proxy."""
-    ctypes = reset_ctypes()
+    """Load a wrapper around the ctypes local platform."""
     # get the hosts' types
     longsize = ctypes.sizeof(ctypes.c_long)
     pointersize = ctypes.sizeof(ctypes.c_void_p)
     longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
-    return reload_ctypes(longsize, pointersize, longdoublesize)
+    return build_ctypes_proxy(longsize, pointersize, longdoublesize)
 
-
-def reload_ctypes(longsize, pointersize, longdoublesize):
-    """Load sys.modle with a tuned ctypes module proxy."""
+def build_ctypes_proxy(longsize, pointersize, longdoublesize):
+    """Make a ctypes proxy with these charateristics."""
     if (longsize, pointersize, longdoublesize) in __PROXIES:
         instance = __PROXIES[(longsize, pointersize, longdoublesize)]
-        set_ctypes(instance)
         return instance
     instance = CTypesProxy(longsize, pointersize, longdoublesize)
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
-    return set_ctypes(instance)
+    return instance
 
-
-def set_ctypes(_ctypes):
-    """Load Change the global ctypes module to a specific proxy instance"""
-    sys.modules['ctypes'] = _ctypes
-    log.debug('set: ctypes changed to %s' % (_ctypes))
-    return sys.modules['ctypes']
-
+def is_ctypes_instance(obj):
+    """Checks if an object is a ctypes type object"""
+    return issubclass(type(obj), ctypes.Structure) or issubclass(type(obj), ctypes.Union)
 
 def check_arg_is_type(func):
     def check_arg(self, objtype):
@@ -68,14 +46,14 @@ def check_arg_is_type(func):
 
 class CTypesProxy(object):
 
-    """# TODO: set types in config.Types
-    # ctypeslib generate python code based on config.Types.*
-    # never import ctypes, but proxy always through instance of config.
+    """# TODO: set types in _target_platform.Types
+    # ctypeslib generate python code based on _target_platform.Types.*
+    # never import ctypes, but proxy always through instance of _target_platform.
     # flow:
-    # a) init config with size/etc.
-    # b) init model instance with config instance
+    # a) init _target_platform with size/etc.
+    # b) init model instance with _target_platform instance
     # c) create structure & Union proxied in model instance
-    # d) refer to config through dynamically generated Structure/Union classes.
+    # d) refer to _target_platform through dynamically generated Structure/Union classes.
 
     # sys.modules['ctypes'] = proxymodule/instance
 
@@ -88,11 +66,8 @@ class CTypesProxy(object):
         self.__longsize = longsize
         self.__pointersize = pointersize
         self.__longdoublesize = longdoublesize
-        # remove all refs to the ctypes modules or proxies
-        ctypes = reset_ctypes()
-        # import the real one
-        #import ctypes
         self.__real_ctypes = ctypes
+        # TODO delete
         if hasattr(ctypes, 'proxy'):
             raise RuntimeError('base ctype should not be a proxy')
         # copy every members from ctypes to our proxy instance
@@ -102,15 +77,11 @@ class CTypesProxy(object):
             elif not name.startswith('__'):
                 setattr(self, name, getattr(ctypes, name))
                 # print name
-        del ctypes
-        # replace it. We want ctypes to be self for the rest of init.
-        sys.modules['ctypes'] = self
-        log.debug('init: ctypes changed to %s' % (self))
         self.__init_types()
         self.__name__ = "CTypesProxy-%d:%d:%d" % (self.__longsize,
                                                   self.__pointersize,
                                                   self.__longdoublesize)
-        log.info("types: %s %s",str(self.c_void_p),id(self.c_void_p))
+        log.debug("types: %s %s",str(self.c_void_p),id(self.c_void_p))
         pass
 
     def __init_types(self):
@@ -321,7 +292,9 @@ class CTypesProxy(object):
         return
 
     def __set_records(self):
-        """Replaces ctypes.Structure and ctypes.Union with their LoadableMembers
+        """
+        DO NOT DO :Replaces ctypes.Structure and ctypes.Union with their CTypesRecordConstraintValidator
+
         counterparts. Add a CString type.
         MAYBE FIXME: These root types will only be valid when the ctypes record is
         used with the adequate CTypesProxy.
@@ -344,38 +317,39 @@ class CTypesProxy(object):
         # and there we have it. We can load basicmodel
         self.CString = CString
 
-        # change LoadableMembers structure given the loaded plugins
-        import basicmodel
-        if True:
-            import listmodel
-            heritance = tuple(
-                [listmodel.ListModel, basicmodel.LoadableMembers])
-        else:
-            heritance = tuple([basicmodel.LoadableMembers])
-        self.LoadableMembers = type('LoadableMembers', heritance, {})
+        # change CTypesRecordConstraintValidator structure given the loaded plugins
+        #import basicmodel
+        #if True:
+        #    import listmodel
+        #    heritance = tuple(
+        #        [listmodel.ListModel, basicmodel.CTypesRecordConstraintValidator])
+        #else:
+        #    heritance = tuple([basicmodel.CTypesRecordConstraintValidator])
+        #self.LoadableMembers = type('CTypesRecordConstraintValidator', heritance, {})
 
-        class LoadableMembersUnion(
-                self.__real_ctypes.Union, self.LoadableMembers):
-            pass
+        #class LoadableMembersUnion(
+        #        self.__real_ctypes.Union, self.LoadableMembers):
+        #    pass
 
-        class LoadableMembersStructure(
-                self.__real_ctypes.Structure, self.LoadableMembers):
-            pass
+        #class LoadableMembersStructure(
+        #        self.__real_ctypes.Structure, self.LoadableMembers):
+        #    pass
+
         # create local POPO ( lodableMembers )
         #createPOPOClasses(sys.modules[__name__] )
-        from haystack.outputters import python
-        self.LoadableMembersStructure_py = type(
-            '%s.%s_py' %
-            (__name__, LoadableMembersStructure), (python.pyObj,), {})
-        self.LoadableMembersUnion_py = type(
-            '%s.%s_py' %
-            (__name__, LoadableMembersUnion), (python.pyObj,), {})
-        # register LoadableMembers
+        #from haystack.outputters import python
+        #self.LoadableMembersStructure_py = type(
+        #    '%s.%s_py' %
+        #    (__name__, LoadableMembersStructure), (python.pyObj,), {})
+        #self.LoadableMembersUnion_py = type(
+        #    '%s.%s_py' %
+        #    (__name__, LoadableMembersUnion), (python.pyObj,), {})
+        # register CTypesRecordConstraintValidator
 
         # we need model to be initialised.
-        self.Structure = LoadableMembersStructure
-        self.Union = LoadableMembersUnion
-        
+        #self.Structure = LoadableMembersStructure
+        #self.Union = LoadableMembersUnion
+
         return
 
     def __set_utils_types(self):
@@ -425,12 +399,10 @@ class CTypesProxy(object):
         # obj and next_type have to be our instances
         if not isinstance(obj, self._T_Simple):
             raise TypeError(
-                '%s is not a haystack ctypes pointer' %
-                (type(obj)))
+                '%s is not a haystack ctypes pointer', type(obj))
         if not issubclass(next_type, self._T_Simple):
             raise TypeError(
-                '%s is not a haystack ctypes pointer' %
-                (next_type))
+                '%s is not a haystack ctypes pointer', next_type)
         instance = next_type()
         instance.value = obj.value
         return instance
@@ -458,7 +430,7 @@ class CTypesProxy(object):
 
     def _p_type(s):
         ''' ??? '''
-        #FIXME: Something about self reference in structure fields from 
+        #FIXME: Something about self reference in structure fields from
         #ctypeslib.
         #Check if still used
         import inspect
@@ -480,12 +452,6 @@ class CTypesProxy(object):
         # FIXME, use address + _ofs instead
         _bytes = (self.c_byte*(_ofs+_size)).from_buffer_copy(record)[_ofs:]
         return _bytes
-
-    # migration from utils.
-    def is_ctypes_instance(self, obj):
-        """Checks if an object is a ctypes type object"""
-        # FIXME. is it used for loadablemembers detection or for ctypes VS POPO
-        return issubclass(type(obj), self.get_real_ctypes_member('Structure'))
 
     def is_array_of_basic_instance(self, obj):
         """Checks if an object is a array of basic types.
@@ -623,3 +589,4 @@ class CTypesProxy(object):
             self.__longsize, self.__pointersize, self.__longdoublesize, id(self))
 
     # TODO implement haystack.utils.bytestr_fmt here
+

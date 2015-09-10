@@ -7,14 +7,10 @@ import logging
 import unittest
 import sys
 
-from haystack import model
+from haystack.search import api
 from haystack import dump_loader
-from haystack import utils
-from haystack.outputters import text
 from haystack.outputters import python
-
 from test.haystack import SrcTests
-
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -29,59 +25,59 @@ class TestToPyObject(SrcTests):
     """Basic types"""
 
     def setUp(self):
-        model.reset()
-        self.mappings = dump_loader.load('test/src/test-ctypes5.32.dump')
+        self.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
+        sys.path.append('test/src/')
+        my_model = self.memory_handler.get_model()
+        self.ctypes5_gen32 = my_model.import_module("ctypes5_gen32")
+        my_model.build_python_class_clones(self.ctypes5_gen32)
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
-        self.mappings = None
-        pass
+        self.memory_handler.reset_mappings()
+        self.memory_handler = None
+        self.ctypes5_gen32 = None
+        sys.path.remove('test/src/')
 
     def test_complex(self):
-        from test.src import ctypes5_gen32
-        model.registerModule(ctypes5_gen32)
         # struct a - basic types
         offset = self.offsets['struct_d'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        d = m.readStruct(offset, ctypes5_gen32.struct_d)
-        ret = d.loadMembers(self.mappings, 10)
-        self.assertTrue(ret)
+        m = self.memory_handler.get_mapping_for_address(offset)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        d, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_d, offset)
+        self.assertTrue(validated)
 
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_d']), ctypes.sizeof(d))
+        self.assertEquals(int(self.sizes['struct_d']), my_ctypes.sizeof(d))
 
-        parser = python.PythonOutputter(self.mappings)
+        parser = python.PythonOutputter(self.memory_handler)
         obj = parser.parse(d)
-
+        # check Ctypes values too
         self.assertEquals(d.a.value, self.offsets['struct_d'][0])
         self.assertEquals(d.b.value, self.offsets['struct_d.b'][0])
         self.assertEquals(d.b2.value, self.offsets['struct_d.b2'][0])
+
+        # check python calues
         for i in range(9):
             self.assertEquals(
-                int(self.values['struct_d.c[%d].a' % (i)]), obj.c[i].a)
+                int(self.values['struct_d.c[%d].a' % i]), obj.c[i].a)
             self.assertEquals(
-                int(self.values['struct_d.f[%d]' % (i)]), obj.f[i])
+                int(self.values['struct_d.f[%d]' % i]), obj.f[i])
         self.assertEquals(int(self.values['struct_d.e']), obj.e)
         self.assertEquals(str(self.values['struct_d.i']), obj.i)
 
         return
 
     def test_basic_types(self):
-        from test.src import ctypes5_gen32
-        model.registerModule(ctypes5_gen32)
         # struct a - basic types
         offset = self.offsets['struct_a'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        a = m.readStruct(offset, ctypes5_gen32.struct_a)
-        ret = a.loadMembers(self.mappings, 10)
-        self.assertTrue(ret)
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_a']), ctypes.sizeof(a))
+        m = self.memory_handler.get_mapping_for_address(offset)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        ret, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_a, offset)
+        self.assertTrue(validated)
 
-        parser = python.PythonOutputter(self.mappings)
-        a = parser.parse(a)
+        self.assertEquals(int(self.sizes['struct_a']), my_ctypes.sizeof(ret))
+
+        parser = python.PythonOutputter(self.memory_handler)
+        a = parser.parse(ret)
 
         self.assertEquals(int(self.values['struct_a.a']), a.a)
         self.assertEquals(int(self.values['struct_a.b']), a.b)
@@ -93,10 +89,9 @@ class TestToPyObject(SrcTests):
         self.assertEquals(float(self.values['struct_a.h']), a.h)
 
         offset = self.offsets['union_au'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        au = m.readStruct(offset, ctypes5_gen32.union_au)
-        ret = au.loadMembers(self.mappings, 10)
-        self.assertTrue(ret)
+        m = self.memory_handler.get_mapping_for_address(offset)
+        au, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.union_au, offset)
+        self.assertTrue(validated)
         au = parser.parse(au)
         self.assertEquals(int(self.values['union_au.d']), au.d)
         self.assertEquals(float(self.values['union_au.g']), au.g)
@@ -105,17 +100,15 @@ class TestToPyObject(SrcTests):
         return
 
     def test_basic_signed_types(self):
-        from test.src import ctypes5_gen32
-        model.registerModule(ctypes5_gen32)
-        # struct a - basic types
+        # union b - basic types
         offset = self.offsets['union_b'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        b = m.readStruct(offset, ctypes5_gen32.union_b)
-        ret = b.loadMembers(self.mappings, 10)
+        m = self.memory_handler.get_mapping_for_address(offset)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        ret, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.union_b, offset)
         self.assertTrue(ret)
-        import ctypes
-        parser = python.PythonOutputter(self.mappings)
-        b = parser.parse(b)
+
+        parser = python.PythonOutputter(self.memory_handler)
+        b = parser.parse(ret)
 
         self.assertEquals(int(self.values['union_b.a']), b.a)
         self.assertEquals(int(self.values['union_b.b']), b.b)
@@ -128,19 +121,15 @@ class TestToPyObject(SrcTests):
         return
 
     def test_bitfield(self):
-        from test.src import ctypes5_gen32
-        model.registerModule(ctypes5_gen32)
         # struct a - basic types
         offset = self.offsets['struct_c'][0]
-        m = self.mappings.get_mapping_for_address(offset)
-        c = m.readStruct(offset, ctypes5_gen32.struct_c)
-        ret = c.loadMembers(self.mappings, 10)
-        self.assertTrue(ret)
+        m = self.memory_handler.get_mapping_for_address(offset)
+        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
+        c, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_c, offset)
+        self.assertTrue(validated)
+        self.assertEquals(int(self.sizes['struct_c']), my_ctypes.sizeof(c))
 
-        import ctypes
-        self.assertEquals(int(self.sizes['struct_c']), ctypes.sizeof(c))
-
-        parser = python.PythonOutputter(self.mappings)
+        parser = python.PythonOutputter(self.memory_handler)
         c = parser.parse(c)
 
         self.assertEquals(int(self.values['struct_c.a1']), c.a1)

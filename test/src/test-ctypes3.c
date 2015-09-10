@@ -20,6 +20,7 @@ struct test3
 
 struct Node {
   unsigned int val1;
+  void * ptr1;
   void * ptr2;
 };
 
@@ -31,8 +32,8 @@ int test3(){
   t3->val2 = 0x10101010;
   t3->val2b = 0x10101010;
   t3->me = (unsigned int *) t3;
-  printf("test3 %p\n",t3);
-  
+  printf("o: test3 %p\n",t3);
+
   return 0;
 }
 
@@ -40,9 +41,10 @@ int test1(){
   struct Node * node;
   node = (struct Node *) malloc(sizeof(struct Node));
   node->val1 = 0xdeadbeef;
+  node->ptr1 = node;
   node->ptr2 = node;
-  printf("test1 %p\n",node);
-  
+  printf("o: test1 %p\n",node);
+
   return 0;
 }
 
@@ -56,11 +58,11 @@ int main(){
   test3();
   test1();
   test3();
-  
+
   printf("pid %u\n",getpid());
   fflush(stdout);
   sleep(-1);
-  
+
   return 0;
 }
 

@@ -6,25 +6,22 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import argparse
-import logging
-import os
-import sys
 from collections import defaultdict
+
 import networkx
+
 import matplotlib.pyplot as plt
-
-
-from haystack.config import ConfigClass
-from haystack import argparse_utils
-from haystack.reverse import utils
+from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse.reversers import *  # by the pickle of my thumb
 
-log = logging.getLogger('graph')
+"""
+Graph tools to represent allocations in a graph.
+That allows graph algorithms applications.
+"""
 
-# FIXME, use objects.
-config = ConfigClass()
+
+log = logging.getLogger('graph')
 
 
 def printGraph(G, gname):
@@ -60,6 +57,7 @@ def save_graph_headers(ctx, graph, fname):
     for anon in structs:
         anon.decodeFields()
         anon.resolvePointers()
+        # FIXME rework, usage of obselete function
         # anon.pointerResolved=True
         anon._aggregateFields()
         print anon
@@ -86,7 +84,8 @@ def make(opts):
 
     #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
     digraph = networkx.readwrite.gexf.read_gexf(opts.gexf.name)
-    heap = ctx.mappings.get_heap()
+    finder = ctx.get_memory_handler().get_heap_finder()
+    heap = finder.get_heap_mappings()[0]
 
     # only add heap structure with links
     edges = [
@@ -167,7 +166,7 @@ def clean(digraph):
     bigGraph.add_edges_from(digraph.edges(subgraphs[0].nodes()))
 
     stack_addrs = utils.int_array_cache(
-        config.getCacheFilename(
+        config.get_cache_filename(
             config.CACHE_STACK_VALUES,
             ctx.dumpname))
     stack_addrs_txt = set(['%x' % (addr)
@@ -187,7 +186,6 @@ def clean(digraph):
 
 
 def printImportant(ctx, digraph, degreesList, ind, bigGraph):
-    import structure
     nb, saddr = degreesList[ind]
     addr = int(saddr, 16)
     s1 = ctx.structures[addr]  # TODO FIXME RAISES
@@ -212,6 +210,7 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
     for node in impDiGraph.successors(saddr):
         st = ctx.structures[int(node, 16)]
         st.decodeFields()
+        # FIXME rework, usage of obselete function
         st.resolvePointers()
         # st.pointerResolved=True
         # st._aggregateFields()

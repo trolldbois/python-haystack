@@ -1,38 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tools around structure signature"""
+"""
+Tools around guessing a field' type and
+creating signature for record to compare them.
+"""
 
-import logging
-import argparse
-import os
-import sys
+import itertools
+
 import re
 import Levenshtein  # seqmatcher ?
 import networkx
-import itertools
 
-import haystack
-from haystack import model
-from haystack import dump_loader
-from haystack import argparse_utils
-from haystack.config import Config
+from haystack.reverse.config import Config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
-from haystack.reverse import utils
+
 
 #FIXME
 from haystack.reverse.reversers import *
 
 import ctypes
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Beta"
-
 
 log = logging.getLogger('signature')
 
@@ -254,7 +242,7 @@ class RegexpSearcher(pointerfinder.AbstractSearcher):
             'search %s mapping for matching values %s' %
             (self.getSearchMapping(), self.regexp))
         for match in self.getSearchMapping().finditer(
-                self.getSearchMapping().mmap().getByteBuffer()):
+                self.getSearchMapping().mmap().get_byte_buffer()):
             offset = match.start()
             # FIXME, TU what is value for?
             value = match.group(0)
@@ -271,7 +259,7 @@ class RegexpSearcher(pointerfinder.AbstractSearcher):
             'iterate %s mapping for matching values' %
             (self.getSearchMapping()))
         for match in self.pattern.finditer(
-                self.getSearchMapping().mmap().getByteBuffer()):
+                self.getSearchMapping().mmap().get_byte_buffer()):
             offset = match.start()
             value = match.group(0)  # [] of int ?
             if isinstance(value, list):

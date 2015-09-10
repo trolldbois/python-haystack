@@ -1,34 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from haystack import model
-from haystack.constraints import RangeValue, NotNull, IgnoreMember
+from haystack import listmodel
 
+class CTypes6Validator(listmodel.ListModel):
 
-def populate(config):
-    # classes copy from ctypes6_genXX is done from unittest setUp
-    struct_usual.expectedValues = {
-        "val1": [0x0aaaaaaa],
-        "val2": [0x0ffffff0],
-        "txt": [NotNull]  # text there
-    }
+    def __init__(self, memory_handler, my_constraints, my_module):
+        super(CTypes6Validator, self).__init__(memory_handler, my_constraints)
+        self.ctypes6 = my_module
+        # double linked list management structure type
+        self.register_double_linked_list_record_type(self.ctypes6.struct_entry, 'flink', 'blink')
+        # heads
+        if self._target.get_word_size() == 4:
+            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+        elif self._target.get_word_size() == 8:
+            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
 
-    struct_Node.expectedValues = {
-        "val1": [0xdeadbeef, 0xdeadbabe],
-        "val2": [0xffffffff],
-        #"list.flink": [0,NotNull],
-        #"list.blink": [0,NotNull],
-    }
-    struct_entry.expectedValues = {
-        #"flink": [0,NotNull],
-        #"blink": [0,NotNull],
-    }
-
-    # x32 -4.
-    #import ctypes
-    if config.get_word_size() == 4:
-        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -4),]
-    elif config.get_word_size() == 8:
-        struct_Node._listHead_ = [('list', struct_Node, 'XXXX', -8),]
-    #                           #('list', struct_Node, 'qwd', -4)]
-    from haystack import listmodel
-    listmodel.declare_double_linked_list_type(struct_entry, 'flink', 'blink')

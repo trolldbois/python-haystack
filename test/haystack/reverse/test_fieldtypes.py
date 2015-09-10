@@ -4,22 +4,12 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
-import sys
 
-from haystack import model
 from haystack.reverse import context
-
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+from haystack.reverse import config
+from haystack.reverse.heuristics import dsa
+from haystack.reverse import fieldtypes
 
 log = logging.getLogger('test_fieldtypes')
 
@@ -27,22 +17,25 @@ log = logging.getLogger('test_fieldtypes')
 class TestField(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         #self.context3 = context.get_context('test/src/test-ctypes3.dump')
-        self.context6 = context.get_context('test/src/test-ctypes6.32.dump')
-        from haystack.reverse.heuristics import dsa
-        self.dsa = dsa.DSASimple(self.context6.mappings)
-        self.st = self.context6.listStructures()[0]
+        cls.dumpname = 'test/src/test-ctypes6.32.dump'
+        config.remove_cache_folder(cls.dumpname)
+        cls.context6 = context.get_context(cls.dumpname)
+        cls.dsa = dsa.DSASimple(cls.context6.memory_handler)
+        cls.st = cls.context6.listStructures()[0]
+
+    @classmethod
+    def tearDownClass(cls):
+        config.remove_cache_folder(cls.dumpname)
 
     def setUp(self):
-        model.reset()
         pass
 
     def tearDown(self):
         pass
 
     def test_is_types(self):
-        from haystack.reverse import fieldtypes
         # def __init__(self, astruct, offset, typename, size, isPadding):
         ptr = fieldtypes.PointerField(
             self.st,

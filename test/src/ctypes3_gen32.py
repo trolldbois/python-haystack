@@ -71,6 +71,7 @@ class struct_Node(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
     ('val1', ctypes.c_uint32),
+    ('ptr1', POINTER_T(None)),
     ('ptr2', POINTER_T(None)),
      ]
 

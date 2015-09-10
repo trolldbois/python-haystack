@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Utils to diff two heap memory mappings."""
+"""
+Utils to diff two heap memory record allocations
+
+2015-08-01: does not work. Is not used.
+
+"""
 
 import argparse
 import logging
 import os
 import sys
-import difflib
-import mmap
-import timeit
-from collections import defaultdict
 
-from haystack import config
 from haystack import argparse_utils
-from haystack.reverse import utils
-from haystack.reverse import context, reversers  # TODO DELTE reversers
-from haystack.reverse.reversers import *
-
-import code
+from haystack import dump_loader
+from haystack.reverse import reversers
+from haystack.reverse import context
+from haystack.reverse import config
+from haystack.reverse import structure
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -42,18 +42,19 @@ def make(opts):
             (len(
                 ctx.structures)))
         # FIXME, I think its now an heapwalker, not a reverser
-        mallocRev = MallocReverser()
-        context = mallocRev.reverse(context)
-        mallocRev.check_inuse(context)
+        mallocRev = reversers.MallocReverser()
+        ctx = mallocRev.reverse(ctx)
+        mallocRev.check_inuse(ctx)
         log.info(
             '[+] Final %d structures from malloc blocs' %
             (len(
                 ctx.structures)))
-
-    heap1 = ctx.mappings.get_heap()
-    log.info('[+] Loading mappings of %s' % (opts.dump2))
+    finder = ctx.get_memory_handler().get_heap_finder()
+    heap1 = finder.get_heap_mappings()[0]
+    log.info('[+] Loading _memory_handler of %s' % (opts.dump2))
     newmappings = dump_loader.load(opts.dump2)
-    heap2 = newmappings.get_heap()
+    finder2 = newmappings.get_heap_finder()
+    heap2 = finder2.get_heap_mappings()[0]
     log.info('[+] finding diff values with %s' % (opts.dump2))
     addrs = cmd_cmp(heap1, heap2, heap1.start)
 

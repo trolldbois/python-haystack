@@ -2,34 +2,36 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import pickle
+# import dill as pickle
+
 import numpy
 import os
-import pickle
 
+from haystack import dump_loader
 from haystack.reverse import utils
+from haystack.reverse import config
+from haystack.reverse import structure, reversers
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+"""
+This is a controller to parse allocated chunk from memory and
+ guess/reverse the record and its field member types.
+"""
 
 
 log = logging.getLogger('context')
 
 
-class ReverserContext():
-
-    ''' TODO: Change Name to MmapReverserContext
+class ReverserContext(object):
+    """
+    TODO: Change Name to MmapReverserContext
     add methods for chained mmap
     Add check for context, only on valid heaps ( getHeaps)
-    '''
+    """
 
-    def __init__(self, mappings, heap):
-        self.config = mappings.config
-        self.mappings = mappings
-        self.dumpname = mappings.name
+    def __init__(self, memory_handler, heap):
+        self.memory_handler = memory_handler
+        self.dumpname = memory_handler.get_name()
         self.heap = heap
         self._heap_start = heap.start
         self.parsed = set()
@@ -42,24 +44,22 @@ class ReverserContext():
         # force reload JIT
         self._reversedTypes = dict()
         self._structures = None
-        ructures = None
 
         log.info('[+] Fetching cached structures addresses list')
-        #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self.mappings)
+        #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self._memory_handler)
 
         # FIXME: no use I think
-        ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.mappings)
+        ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self._memory_handler)
         ##self._pointers_values_heap = heap_values
         ##self._pointers_offsets_heap = heap_offsets
 
         # test with all mmap in target
-        ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self.mappings)
+        ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self._memory_handler)
         ##self._pointers_values = all_values
         ##self._pointers_offsets = all_offsets
 
-        if self.mappings.get_os_name() not in ['winxp', 'win7']:
+        if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
             log.info('[+] Reversing function pointers names')
-            from haystack.structures.libc import libdl
             # TODO INLINE CACHED
             # dict(libdl.reverseLocalFonctionPointerNames(self) )
             self._function_names = dict()
@@ -68,10 +68,12 @@ class ReverserContext():
         # malloc_size is the structures_sizes,
         # TODO adaptable allocator win32/linux
         self._malloc_addresses, self._malloc_sizes = utils.getAllocations(
-            self.dumpname, self.mappings, self.heap)
+            self.dumpname, self.memory_handler, self.heap)
         self._structures_addresses = self._malloc_addresses
         self._user_alloc_addresses = self._malloc_addresses
         self._user_alloc_sizes = self._malloc_sizes
+        # clean a bit
+        self.memory_handler.reset_mappings()
 
         return
 
@@ -91,14 +93,10 @@ class ReverserContext():
                 self._structures) == len(self._malloc_addresses):
             return self._structures
         # cache Load
-        from haystack.reverse import structure, reversers
         log.info('[+] Fetching cached structures list')
         self._structures = dict(
             [(long(vaddr), s) for vaddr, s in structure.cacheLoadAllLazy(self)])
-        log.info(
-            '[+] Fetched %d cached structures addresses from disk' %
-            (len(
-                self._structures)))
+        log.info('[+] Fetched %d cached structures addresses from disk', len(self._structures))
 
         # no all structures yet, make them from MallocReverser
         if len(self._structures) != len(self._malloc_addresses):
@@ -110,7 +108,7 @@ class ReverserContext():
                              set(self._structures)))
                 self.parsed = set()
             # use GenericHeapAllocationReverser to get user blocks
-            mallocRev = reversers.GenericHeapAllocationReverser()
+            mallocRev = reversers.GenericHeapAllocationReverser(self)
             context = mallocRev.reverse(self)
             # mallocRev.check_inuse(self)
             log.info(
@@ -185,14 +183,13 @@ class ReverserContext():
         return self._reversedTypes.values()
 
     @classmethod
-    def cacheLoad(cls, mappings):
-        #from haystack.reverse.context import ReverserContext
-        dumpname = os.path.normpath(mappings.name)
-        config = mappings.config
-        config.makeCache(dumpname)
-        context_cache = config.getCacheFilename(config.CACHE_CONTEXT, dumpname)
+    def cacheLoad(cls, memory_handler):
+        dumpname = os.path.normpath(memory_handler.get_name())
+        config.create_cache_folder_name(dumpname)
+        context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname)
         try:
-            context = pickle.load(file(context_cache, 'r'))
+            with file(context_cache, 'r') as fin:
+                context = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
             log.error(
@@ -200,42 +197,44 @@ class ReverserContext():
             raise RuntimeError('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
         context.config = config
-        context.mappings = mappings
-        context.heap = context.mappings.get_mapping_for_address(
+        context.memory_handler = memory_handler
+        context.heap = context.memory_handler.get_mapping_for_address(
             context._heap_start)
 
         context._init2()
         return context
 
     def save(self):
-        # we only need dumpfilename to reload mappings, addresses to reload
+        # we only need dumpfilename to reload _memory_handler, addresses to reload
         # cached structures
-        context_cache = self.config.getCacheFilename(
-            self.config.CACHE_CONTEXT,
+        context_cache = config.get_cache_filename(
+            config.CACHE_CONTEXT,
             self.dumpname)
         try:
-            pickle.dump(self, file(context_cache, 'w'))
+            with file(context_cache, 'w') as fout:
+                pickle.dump(self, fout)
         except pickle.PicklingError, e:
             log.error("Pickling error on %s, file removed",context_cache)
             os.remove(context_cache)
             raise e
 
     def reset(self):
+        self.memory_handler.reset_mappings()
         try:
             os.remove(
-                self.config.getCacheFilename(
-                    self.config.CACHE_CONTEXT,
+                config.get_cache_filename(
+                    config.CACHE_CONTEXT,
                     self.dumpname))
         except OSError as e:
             pass
         try:
-            if not os.access(self.config.CACHE_STRUCT_DIR, os.F_OK):
+            if not os.access(config.CACHE_STRUCT_DIR, os.F_OK):
                 return
             for r, d, files in os.walk(
-                    self.config.getCacheFilename(self.config.CACHE_STRUCT_DIR, self.dumpname)):
+                    config.get_cache_filename(config.CACHE_STRUCT_DIR, self.dumpname)):
                 for f in files:
                     os.remove(os.path.join(r, f))
-            os.rmdir(r)
+                os.rmdir(r)
         except OSError as e:
             pass
 
@@ -246,10 +245,9 @@ class ReverserContext():
                _heap_start
            Ignore the rest
         """
-        
         # FIXME, double check and delete
         #d = self.__dict__.copy()
-        #del d['mappings']
+        #del d['_memory_handler']
         #del d['heap']
         #del d['_structures']
         #del d['_structures_addresses']
@@ -257,7 +255,6 @@ class ReverserContext():
         ##del d['_pointers_offsets']
         #del d['_malloc_addresses']
         #del d['_malloc_sizes']
-        # print d
         d = dict()
         d['dumpname'] = self.__dict__['dumpname']
         d['parsed'] = self.__dict__['parsed']
@@ -274,19 +271,55 @@ class ReverserContext():
 
 
 def get_context(fname):
-    ''' Load a dump file, and create a reverser context object.
+    """
+    Load a dump file, and create a reverser context object.
     @return context: a ReverserContext
-    '''
-    from haystack import dump_loader
-    mappings = dump_loader.load(fname)
+    """
+    memory_handler = dump_loader.load(fname)
     try:
-        context = ReverserContext.cacheLoad(mappings)
+        context = ReverserContext.cacheLoad(memory_handler)
     except IOError as e:
-        context = ReverserContext(mappings, mappings.get_heap())
+        finder = memory_handler.get_heap_finder()
+        context = ReverserContext(memory_handler, finder.get_heap_mappings()[0])
     # cache it
+    # FIXME that needs to go away
     context.heap._context = context
     return context
 
+# FIXME s/memory_handler.get_context(/get_context_for_addr(memoryhandler, /g
+# move to a IContextHandler
+def get_context_for_address(memory_handler, addr):
+    """Returns the haystack.reverse.context.ReverserContext of this dump.
+    """
+    assert isinstance(addr, long) or isinstance(addr, int)
+    mmap = memory_handler.get_mapping_for_address(addr)
+    if not mmap:
+        raise ValueError
+    if hasattr(mmap, '_context'):
+        # print '** _context exists'
+        return mmap._context
+    finder = memory_handler.get_heap_finder()
+    if mmap not in finder.get_heap_mappings():  # addr is not a heap addr,
+        found = False
+        # or its in a child heap (win7)
+        for h in finder.get_heap_mappings():
+            if hasattr(h, '_children'):
+                if mmap in h._children:
+                    found = True
+                    mmap = h
+                    break
+        if not found:
+            raise ValueError
+    try:
+        ctx = ReverserContext.cacheLoad(memory_handler)
+        # print '** CACHELOADED'
+    except IOError as e:
+        ctx = ReverserContext(memory_handler, mmap)
+        # print '** newly loaded '
+    # cache it
+    log.debug('get_context_for_address end')
+    mmap._context = ctx
+    return ctx
 
 if __name__ == '__main__':
     pass

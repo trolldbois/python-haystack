@@ -1,28 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Dumps a process memory mappings to a haystack dump format."""
+"""Dumps a process memory _memory_handler to a haystack dump format."""
 
 import logging
 import argparse
-import os
-import pickle
 import shutil
 import sys
-import tarfile
 import tempfile
-import time
-import zipfile
 
+import os
 
 from haystack import dbg
-from haystack import utils
 from haystack import argparse_utils
-from haystack import config
 from haystack.mappings.process import readProcessMappings
 
-
-#import code
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -51,14 +43,13 @@ class MemoryDumper:
         self._dest = os.path.normpath(dest)
         self._archive_type = archiveType
         self._compact_dump = compact
-        self._config = None
 
     def getMappings(self):
         """Returns the MemoryMappings."""
         return self.mappings
 
     def connectProcess(self):
-        """Connect the debugguer to the process and gets the memory mappings
+        """Connect the debugguer to the process and gets the memory _memory_handler
         metadata."""
         self.dbg = dbg.PtraceDebugger()
         self.process = self.dbg.addProcess(self._pid, is_attached=False)
@@ -69,8 +60,7 @@ class MemoryDumper:
             raise IOError
             # ptrace exception is raised before that
         self.mappings = readProcessMappings(self.process)
-        log.debug('mappings read. Dropping ptrace on pid.')
-        self.mappings.init_config()
+        log.debug('_memory_handler read. Dropping ptrace on pid.')
         return
 
     def dump(self, dest=None):
@@ -84,7 +74,7 @@ class MemoryDumper:
         return self._dest
 
     def _dump_to_dir(self):
-        """Dump memory mappings to files in a directory."""
+        """Dump memory _memory_handler to files in a directory."""
         if os.path.isfile(self._dest):
             raise TypeError('target is a file. You asked for a directory dump. '
                             'Please delete the file.')
@@ -95,7 +85,7 @@ class MemoryDumper:
         return
 
     def _dump_to_file(self):
-        """Dump memory mappings to an archive."""
+        """Dump memory _memory_handler to an archive."""
         if os.path.isdir(self._dest):
             raise TypeError('Target is a dir. You asked for a file dump. '
                             'Please delete the dir.')
@@ -124,13 +114,15 @@ class MemoryDumper:
         return
 
     def _dump_all_mappings(self, destdir):
-        """Iterates on all mappings and dumps them to file."""
+        """Iterates on all _memory_handler and dumps them to file."""
         self.index = file(os.path.join(destdir, 'mappings'), 'w+')
         # test dump only the heap
         err = 0
-        # print '\n'.join([str(m) for m in self.mappings])
+        # print '\n'.join([str(m) for m in self._memory_handler])
         if self._compact_dump:
-            self.__required = self.mappings.get_heaps()
+            finder = self.mappings.get_heap_finder()
+            self.__required = finder.get_heap_mappings()
+            # FIXME
             self.__required.append(self.mappings.get_stack())
         for m in self.mappings:
             try:
@@ -152,6 +144,7 @@ class MemoryDumper:
 
     def _dump_mapping(self, m, tmpdir):
         """Dump one mapping to one file in one tmpdir."""
+        my_utils = self.mappings.get_ctypes_utils()
         if m.permissions[0] != 'r':
             log.debug('Ignore read protected mapping %s' % (m))
             return
@@ -160,15 +153,15 @@ class MemoryDumper:
             return
         # make filename
         # We don't really care about the filename but we need to be coherent.
-        mname = b'%s-%s' % (utils.formatAddress(m.start),
-                            utils.formatAddress(m.end))
+        mname = b'%s-%s' % (my_utils.formatAddress(m.start),
+                            my_utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)
         # dumping the memorymap content if required.
         if self._compact_dump:
             # only dumps useful ( stack, heap, binary for arch detection
             if (m in self.__required):
                 with open(mmap_fname, 'wb') as mmap_fout:
-                    mmap_fout.write(m.mmap().getByteBuffer())
+                    mmap_fout.write(m.mmap().get_byte_buffer())
                 log.debug('Dump %s' % (m))
             else:
                 log.debug('Ignore %s' % (m))
@@ -176,7 +169,7 @@ class MemoryDumper:
             # dump all the maps
             log.debug('Dump %s' % (m))
             with open(mmap_fname, 'wb') as mmap_fout:
-                mmap_fout.write(m.mmap().getByteBuffer())
+                mmap_fout.write(m.mmap().get_byte_buffer())
         # dump all the metadata
         self.index.write('%s\n' % (m))
         return
@@ -195,17 +188,17 @@ class MemoryDumper:
 
 
 def dump(pid, outfile, typ="dir", compact=False):
-    """Dumps a process memory mappings to Haystack dump format."""
+    """Dumps a process memory _memory_handler to Haystack dump format."""
     dumper = MemoryDumper(pid, outfile, typ, compact)
     dumper.connectProcess()
     destname = dumper.dump()
-    log.info('Process %d memory mappings dumped to file %s' % (dumper._pid,
+    log.info('Process %d memory _memory_handler dumped to file %s' % (dumper._pid,
                                                                destname))
     return destname
 
 
 def _dump(opt):
-    """Dumps a process memory mappings to Haystack dump format."""
+    """Dumps a process memory _memory_handler to Haystack dump format."""
     return dump(opt.pid, opt.dumpname, opt.type)
 
 

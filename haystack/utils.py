@@ -10,205 +10,214 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import ctypes
 import logging
-import os
 import struct
 from struct import pack
-from struct import unpack
 
-# never import ctypes globally
+import os
+
+from haystack.abc import interfaces
+from haystack import types
+
+# never use ctypes import
 
 log = logging.getLogger('utils')
 
+class Utils(interfaces.ICTypesUtils):
 
-def formatAddress(addr):
-    import ctypes
-    if ctypes.sizeof(ctypes.c_void_p) == 8:
-        return b'0x%016x' % addr
-    else:
-        return b'0x%08x' % addr
+    def __init__(self, _target_ctypes):
+        self.__ctypes = _target_ctypes
+        assert isinstance(_target_ctypes, types.CTypesProxy)
+        self.__local_process_memory_handler = None
 
+    def formatAddress(self, addr):
+        if self.__ctypes.sizeof(self.__ctypes.c_void_p) == 8:
+            return b'0x%016x' % addr
+        else:
+            return b'0x%08x' % addr
 
-def unpackWord(bytes, endianess='@'):
-    import ctypes
-    if ctypes.sizeof(ctypes.c_void_p) == 8:
-        return struct.unpack('%sQ' % endianess, bytes)[0]
-    else:
-        return struct.unpack('%sI' % endianess, bytes)[0]
+    def unpackWord(self, bytes, endianess='@'):
+        if self.__ctypes.sizeof(self.__ctypes.c_void_p) == 8:
+            return struct.unpack('%sQ' % endianess, bytes)[0]
+        else:
+            return struct.unpack('%sI' % endianess, bytes)[0]
 
+    def is_address_local(self, obj, structType=None):
+        """
+        Costly , checks if obj is mapped to local memory space.
+        Returns the memory mapping if found.
+        False, otherwise.
+        """
+        addr = self.get_pointee_address(obj)
+        log.debug('get_pointee_address returned %x',addr)
+        if addr == 0:
+            return False
+        # maintain a cache to improve performance.
+        # if not found in cache, try to reload local process memory space.
+        # the pointer memory space could have been allocated recently.
+        # the calling function is most certainly going to fail anyway
+        if self.__local_process_memory_handler is not None:
+            ret = self.__local_process_memory_handler.is_valid_address(obj, structType)
+            if ret:
+                return ret
 
-def is_address_local(obj, structType=None):
-    """
-    Costly , checks if obj is mapped to local memory space.
-    Returns the memory mapping if found.
-    False, otherwise.
-    """
-    addr = get_pointee_address(obj)
-    if addr == 0:
-        return False
+        class P:
+            pid = os.getpid()
+            # we need that for the machine arch read.
 
-    class P:
-        pid = os.getpid()
-        # we need that for the machine arch read.
+            def readBytes(self, addr, size):
+                return self.__ctypes.string_at(addr, size)
 
-        def readBytes(self, addr, size):
-            import ctypes
-            return ctypes.string_at(addr, size)
+        # loading dependencies
+        from haystack.mappings.process import readProcessMappings
+        memory_handler = readProcessMappings(P())  # memory_mapping
+        self.__local_process_memory_handler = memory_handler
+        return self.__local_process_memory_handler.is_valid_address(obj, structType)
 
-    # loading dependencies
-    from haystack.mappings.process import readProcessMappings
-    mappings = readProcessMappings(P())  # memory_mapping
-    ret = mappings.is_valid_address(obj, structType)
-    return ret
+    def get_pointee_address(self, obj):
+        """
+        Returns the address of the struct pointed by the obj, or null if invalid.
 
-
-def get_pointee_address(obj):
-    """
-    Returns the address of the struct pointed by the obj, or null if invalid.
-
-    :param obj: a pointer.
-    """
-    import ctypes
-    # check for homebrew POINTER
-    if hasattr(obj, '_sub_addr_'):
-        # print 'obj._sub_addr_', hex(obj._sub_addr_)
-        return obj._sub_addr_
-    elif isinstance(obj, int) or isinstance(obj, long):
-        # basictype pointers are created as int.
-        return obj
-    elif not bool(obj):
-        return 0
-    elif ctypes.is_function_type(type(obj)):
-        return ctypes.cast(obj, ctypes.c_void_p).value
-    elif ctypes.is_pointer_type(type(obj)):
-        return ctypes.cast(obj, ctypes.c_void_p).value
-        # check for null pointers
-        # if bool(obj):
-        if not hasattr(obj, 'contents'):
+        :param obj: a pointer.
+        """
+        # check for homebrew POINTER
+        #import pdb
+        #pdb.set_trace()
+        if hasattr(obj, '_sub_addr_'):
+            log.debug('obj._sub_addr_: 0x%x', obj._sub_addr_)
+            return obj._sub_addr_
+        elif isinstance(obj, int) or isinstance(obj, long):
+            # basictype pointers are created as int.
+            return obj
+        elif not bool(obj):
             return 0
-        # print '** NOT MY HAYSTACK POINTER'
-        return ctypes.addressof(obj.contents)
-    else:
-        return 0
+        elif self.__ctypes.is_function_type(type(obj)):
+            return self.__ctypes.cast(obj, self.__ctypes.c_void_p).value
+        elif self.__ctypes.is_pointer_type(type(obj)):
+            return self.__ctypes.cast(obj, self.__ctypes.c_void_p).value
+            # check for null pointers
+            # if bool(obj):
+            # FIXME unreachable
+            if not hasattr(obj, 'contents'):
+                return 0
+            # print '** NOT MY HAYSTACK POINTER'
+            return self.__ctypes.addressof(obj.contents)
+        else:
+            return 0
 
+    def container_of(self, memberaddr, typ, membername):
+        """
+        From a pointer to a member, returns the parent struct.
+        Returns the instance of typ(), in which the member "membername' is really.
+        Useful in some Kernel linked list which used members as prec,next pointers.
 
-def container_of(memberaddr, typ, membername):
-    """
-    From a pointer to a member, returns the parent struct.
-    Returns the instance of typ(), in which the member "membername' is really.
-    Useful in some Kernel linked list which used members as prec,next pointers.
+        :param memberadd: the address of membername.
+        :param typ: the type of the containing structure.
+        :param membername: the membername.
 
-    :param memberadd: the address of membername.
-    :param typ: the type of the containing structure.
-    :param membername: the membername.
+        Stolen from linux kernel headers.
+             const typeof( ((typ *)0)->member ) *__mptr = (ptr);
+            (type *)( (char *)__mptr - offsetof(type,member) );})
+        """
+        return typ.from_address(memberaddr - self.offsetof(typ, membername))
 
-    Stolen from linux kernel headers.
-         const typeof( ((typ *)0)->member ) *__mptr = (ptr);
-        (type *)( (char *)__mptr - offsetof(type,member) );})
-    """
-    return typ.from_address(memberaddr - offsetof(typ, membername))
+    def offsetof(self, typ, membername):
+        """
+        Returns the offset of a member in a structure.
 
+        :param typ: the structure type.
+        :param membername: the membername in that structure.
+        """
+        return getattr(typ, membername).offset
 
-def offsetof(typ, membername):
-    """
-    Returns the offset of a member in a structure.
+    def ctypes_to_python_array(self, array):
+        """Converts an array of undetermined Basic self.__ctypes class to a python array,
+        by guessing it's type from it's class name.
 
-    :param typ: the structure type.
-    :param membername: the membername in that structure.
-    """
-    return getattr(typ, membername).offset
-
-
-def ctypes_to_python_array(array):
-    """Converts an array of undetermined Basic Ctypes class to a python array,
-    by guessing it's type from it's class name.
-
-    This is a bad example of introspection.
-    """
-    import ctypes
-    if isinstance(array, str):
-        # special case for c_char[]
-        return array
-    if not ctypes.is_array_of_basic_instance(array):
-        raise TypeError('NOT-AN-Basic-Type-ARRAY')
-    if array._type_ in [ctypes.c_int, ctypes.c_uint, ctypes.c_long,
-                        ctypes.c_ulong, ctypes.c_ubyte, ctypes.c_byte]:
-        return [long(el) for el in array]
-    if array._type_ in [ctypes.c_float, ctypes.c_double, ctypes.c_longdouble]:
-        return [float(el) for el in array]
-    sb = ''.join([pack(array._type_._type_, el) for el in array])
-    return sb
-
-
-def array2bytes(array):
-    """Converts an array of undetermined Basic Ctypes class to a byte string,
-    by guessing it's type from it's class name.
-
-    This is a bad example of introspection.
-    """
-    import ctypes
-    if isinstance(array, str):
-        # special case for c_char[]
-        return array
-    if ctypes.is_array_of_basic_instance(array):
-        sb = b''.join([pack(array._type_._type_, el) for el in array])
-        return sb
-    else:
-        c_size = ctypes.sizeof(array)
-        a2 = (ctypes.c_ubyte * c_size).from_address(ctypes.addressof(array))
-        sb = b''.join([pack('B', el) for el in a2])
+        This is a bad example of introspection.
+        """
+        if isinstance(array, str):
+            # special case for c_char[]
+            return array
+        if not self.__ctypes.is_array_of_basic_instance(array):
+            raise TypeError('NOT-AN-Basic-Type-ARRAY')
+        if array._type_ in [self.__ctypes.c_int, self.__ctypes.c_uint, self.__ctypes.c_long,
+                            self.__ctypes.c_ulong, self.__ctypes.c_ubyte, self.__ctypes.c_byte]:
+            return [long(el) for el in array]
+        if array._type_ in [self.__ctypes.c_float, self.__ctypes.c_double, self.__ctypes.c_longdouble]:
+            return [float(el) for el in array]
+        sb = ''.join([struct.pack(array._type_._type_, el) for el in array])
         return sb
 
+    def array2bytes(self, array):
+        """Converts an array of undetermined Basic self.__ctypes class to a byte string,
+        by guessing it's type from it's class name.
 
-def bytes2array(bytes, typ):
-    """Converts a bytestring in a ctypes array of typ() elements."""
-    import ctypes
-    typLen = ctypes.sizeof(typ)
-    if len(bytes) % typLen != 0:
-        raise ValueError('thoses bytes are not an array of %s' % (typ))
-    arrayLen = len(bytes) / typLen
-    array = (typ * arrayLen)()
-    if arrayLen == 0:
+        This is a bad example of introspection.
+        """
+        if isinstance(array, str):
+            # special case for c_char[]
+            return array
+        if self.__ctypes.is_array_of_basic_instance(array):
+            sb = b''.join([struct.pack(array._type_._type_, el) for el in array])
+            return sb
+        else:
+            c_size = self.__ctypes.sizeof(array)
+            a2 = (self.__ctypes.c_ubyte * c_size).from_address(self.__ctypes.addressof(array))
+            sb = b''.join([struct.pack('B', el) for el in a2])
+            return sb
+
+    def bytes2array(self, bytes, typ):
+        """
+        Converts a bytestring in a self.__ctypes array of typ() elements.
+
+        :param bytes: str
+        :param typ: ctypes
+        :return: array
+        """
+        typLen = self.__ctypes.sizeof(typ)
+        if len(bytes) % typLen != 0:
+            raise ValueError('thoses bytes are not an array of %s' % (typ))
+        arrayLen = len(bytes) / typLen
+        array = (typ * arrayLen)()
+        if arrayLen == 0:
+            return array
+        fmt = self.__ctypes.get_pack_format()[typ.__name__]
+        try:
+            for i in range(0, arrayLen):
+                array[i] = struct.unpack(
+                    fmt, bytes[typLen * i:typLen * (i + 1)])[0]
+        except struct.error as e:
+            log.error('format:%s typLen*i:typLen*(i+1) = %d:%d' %
+                      (fmt, typLen * i, typLen * (i + 1)))
+            raise e
         return array
-    fmt = ctypes.get_pack_format()[typ.__name__]
-    try:
-        for i in range(0, arrayLen):
-            array[i] = struct.unpack(
-                fmt, bytes[typLen * i:typLen * (i + 1)])[0]
-    except struct.error as e:
-        log.error('format:%s typLen*i:typLen*(i+1) = %d:%d' %
-                  (fmt, typLen * i, typLen * (i + 1)))
-        raise e
-    return array
 
+    def pointer2bytes(self, attr, nb_element):
+        """
+        Returns an array from a self.__ctypes POINTER, given the number of elements.
 
-def pointer2bytes(attr, nbElement):
-    """
-    Returns an array from a ctypes POINTER, given the number of elements.
+        :param attr: the structure member.
+        :param nb_element: the number of element in the array.
+        """
+        # attr is a pointer and we want to read elementSize of type(attr.contents))
+        if not self.is_address_local(attr):
+            raise TypeError('POINTER NOT LOCAL: %x', attr)
+        first_element_addr = self.get_pointee_address(attr)
+        array = (type(attr.contents) * nb_element).from_address(first_element_addr)
+        # we have an array type starting at attr.contents[0]
+        return self.array2bytes(array)
 
-    :param attr: the structure member.
-    :param nbElement: the number of element in the array.
-    """
-    # attr is a pointer and we want to read elementSize of type(attr.contents))
-    if not is_address_local(attr):
-        return 'POINTER NOT LOCAL'
-    firstElementAddr = get_pointee_address(attr)
-    array = (type(attr.contents) * nbElement).from_address(firstElementAddr)
-    # we have an array type starting at attr.contents[0]
-    return array2bytes(array)
-
-
-def get_subtype(cls):
-    """get the subtype of a pointer, array or basic type with haystack quirks."""
-    # could use _pointer_type_cache
-    if hasattr(cls, '_subtype_'):
-        return cls._subtype_
-    return cls._type_
+    def get_subtype(self, cls):
+        """get the subtype of a pointer, array or basic type with haystack quirks."""
+        # could use _pointer_type_cache
+        if hasattr(cls, '_subtype_'):
+            return cls._subtype_
+        return cls._type_
 
 
 try:
     # Python 2
     py_xrange = xrange
-
     def xrange(start, end, step=1):
         """ stoupid xrange can't handle long ints... """
         end = end - start
@@ -218,3 +227,30 @@ try:
 except NameError as e:
     # Python 3
     xrange = range
+
+
+def bytes2array(bytes, typ):
+    """
+    Converts a bytestring in a ctypes array of typ() elements.
+
+    :param bytes: str
+    :param typ: ctypes
+    :return: array
+    """
+    typLen = ctypes.sizeof(typ)
+    if len(bytes) % typLen != 0:
+        raise ValueError('thoses bytes are not an array of %s' % (typ))
+    arrayLen = len(bytes) / typLen
+    array = (typ * arrayLen)()
+    if arrayLen == 0:
+        return array
+    fmt = typ._type_
+    try:
+        for i in range(0, arrayLen):
+            array[i] = struct.unpack(
+                fmt, bytes[typLen * i:typLen * (i + 1)])[0]
+    except struct.error as e:
+        log.error('format:%s typLen*i:typLen*(i+1) = %d:%d' %
+                  (fmt, typLen * i, typLen * (i + 1)))
+        raise e
+    return array

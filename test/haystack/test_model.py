@@ -5,69 +5,75 @@
 
 import logging
 import unittest
-import sys
 
-from haystack import dump_loader
 from haystack import model
-from haystack import types
-from haystack import utils
-from haystack.structures.win32 import win7heapwalker
+from haystack.mappings import process
 
 
 class TestCopyModule(unittest.TestCase):
 
-    def test_registerModule(self):
-        from haystack import model
-        model.reset()
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler= process.read_local_process_mappings()
+        cls.my_target = cls.memory_handler.get_target_platform()
+        cls.my_model = model.Model(cls.memory_handler)
 
-        try:
-            from test.structures import good
-            from test.structures import good_gen
-            from test.structures import bad_gen
-            # copy bad_gen in good
-            model.copyGeneratedClasses(bad_gen, good)
-            model.copyGeneratedClasses(good_gen, good)
-            self.assertIn('Struct1', good.__dict__)
-            self.assertIn('Struct2', good.__dict__)
-            self.assertNotIn('Struct1_py', good.__dict__)
-            self.assertNotIn('expectedValues', good.Struct1.__dict__)
-        except ImportError as e:
-            self.fail(e)
-        try:
-            from test.structures import bad
-            # test if module has members
-            self.assertEquals(bad.BLOCK_SIZE, 16)
-            self.assertIn('Struct1', bad.__dict__)
-            self.assertIn('expectedValues', bad.Struct1.__dict__)
-            # same Struct1 object is imported in bad and good
-            self.assertIn('expectedValues', good.Struct1.__dict__)
-            self.assertNotIn('expectedValues', good.Struct2.__dict__)
-        except ImportError as e:
-            self.fail(e)
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler.reset_mappings()
+        cls.memory_handler = None
+        cls.my_target = None
+        cls.my_model = None
 
-        # test if register works (creates POPO)
-        model.registerModule(bad)
-        self.assertIn('Struct1_py', bad.__dict__)
-        self.assertIn('expectedValues', bad.Struct1.__dict__)
-        # POPO is not create in good
-        self.assertNotIn('Struct1_py', good.__dict__)
-        self.assertIn('expectedValues', good.Struct1.__dict__)
-        self.assertNotIn('expectedValues', good.Struct2.__dict__)
+    def setUp(self):
+        self.my_model.reset()
 
-        model.registerModule(good)  # creates POPO for the rest
-        self.assertIn('Struct2_py', good.__dict__)
-        self.assertIn('expectedValues', good.Struct1.__dict__)
-        # expectedValues is in a function
-        self.assertNotIn('expectedValues', good.Struct2.__dict__)
+    def tearDown(self):
+        self.my_model.reset()
 
-        # add an expectedValues
-        good.populate()
-        self.assertIn('expectedValues', good.Struct1.__dict__)
-        self.assertIn('expectedValues', good.Struct2.__dict__)
+    def test_register_module(self):
+        """
+        Register module allows for python types to be created as a python friendly
+        clone to ctypes structures.
+        """
+        bad = self.my_model.import_module("test.structures.bad")
+        good = self.my_model.import_module("test.structures.good")
+
+        # register the module
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertNotIn('Struct2_py', good.__dict__.keys())
+        self.my_model.build_python_class_clones(good)
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertIn('Struct2_py', good.__dict__.keys())
+
+        self.assertNotIn(bad, self.my_model.get_pythoned_modules().values())
+        self.assertNotIn('Struct1_py', bad.__dict__.keys())
+        self.my_model.build_python_class_clones(bad)
+        self.assertIn(bad, self.my_model.get_pythoned_modules().values())
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertIn('Struct1_py', bad.__dict__.keys())
+
+    def test_reset(self):
+        """Reset the model cache. All classes should have been removed."""
+        good = self.my_model.import_module("test.structures.good")
+
+        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertNotIn('Struct2_py', good.__dict__.keys())
+        self.my_model.build_python_class_clones(good)
+        self.assertIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertIn('Struct2_py', good.__dict__.keys())
+
+        self.my_model.reset()
+        self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
+        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertIn('Struct2_py', good.__dict__.keys())
+
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
     #logging.basicConfig( stream=sys.stderr, level=logging.INFO )
     # logging.getLogger("listmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)

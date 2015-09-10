@@ -6,25 +6,17 @@
 
 import logging
 import argparse
-import os
-import pickle
-import time
 import sys
-import re
-import struct
 import ctypes
 
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.utils import xrange
-from haystack.reverse import utils
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+"""
+A few class that can be used to search a portion of memory
+ for specific pattern (null values, pointers)
+"""
 
 log = logging.getLogger('pointerfinder')
 
@@ -49,7 +41,7 @@ def _openDumpfile(dumpfile):
 
 
 def mergeDump(dumpFile):
-    log.info('Loading the mappings in the memory dump file.')
+    log.info('Loading the _memory_handler in the memory dump file.')
     mappings = _openDumpfile(dumpFile)
     if mappings is None:
         return
@@ -101,16 +93,17 @@ see cmp --list
 
 class FeedbackGiver:
 
-    def _initSteps(self, _len, steps=10):
-        pass
+    def _initSteps(self, start, end, steps):
+        raise NotImplementedError
 
-    def _checkSteps(self):
-        pass
+    def _checkSteps(self, step):
+        raise NotImplementedError
 
     def feedback(self, step, val):
         """ make a feedback"""
-        #log.info('processing vaddr 0x%x'%(val))
-        pass
+        # log.info('processing vaddr 0x%x'%(val))
+        # raise NotImplementedError
+        return
 
 
 class AbstractSearcher(FeedbackGiver):
@@ -118,7 +111,7 @@ class AbstractSearcher(FeedbackGiver):
     """ Search for something in memspace.
         feedback(step, val) will be called each step
     """
-    WORDSIZE = ctypes.sizeof(ctypes.c_void_p)  # config
+    WORDSIZE = ctypes.sizeof(ctypes.c_void_p)  # _target_platform
 
     def __init__(self, searchMapping, steps=10, feedback=None):
         """
@@ -191,7 +184,7 @@ class PointerSearcher(AbstractSearcher):
     """
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word in self.getTargetMapping():
             return True
         return False
@@ -223,7 +216,7 @@ class AbstractEnumerator(AbstractSearcher):
 class PointerEnumerator(AbstractEnumerator):
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word in self.getTargetMapping():
             return True, word
         return False, None
@@ -236,7 +229,7 @@ class NullSearcher(AbstractSearcher):
     """
 
     def testMatch(self, vaddr):
-        word = self.getSearchMapping().readWord(vaddr)
+        word = self.getSearchMapping().read_word(vaddr)
         if word == 0:
             return True
         return False

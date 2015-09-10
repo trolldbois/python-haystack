@@ -4,72 +4,58 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import struct
-import operator
-import os
 import unittest
-import pickle
 import sys
 
-from haystack import types
-from haystack import utils
 from haystack import dump_loader
+from haystack.structures.win32 import win7heapwalker
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
-
+from test.testfiles import putty_1_win7
 
 log = logging.getLogger('testwalker')
 
 
-class TestAllocator(unittest.TestCase):
+class TestWin7HeapWalker(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # putty 1 was done under win7 32 bits ?
+        cls._memory_handler = dump_loader.load(putty_1_win7.dumpname)
+        return
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._memory_handler.reset_mappings()
+        cls._memory_handler = None
+        return
 
     def setUp(self):
-        # putty 1 was done under winxp 32 bits ?
-        self._mappings = dump_loader.load('test/dumps/putty/putty.1.dump')
-        self._known_heaps = [(0x00390000, 8956), (0x00540000, 868),
-                             (0x00580000, 111933), (0x005c0000, 1704080),
-                             (0x01ef0000, 604), (0x02010000, 61348),
-                             (0x02080000, 474949), (0x021f0000, 18762),
-                             (0x03360000, 604), (0x04030000, 632),
-                             (0x04110000, 1334), (0x041c0000, 644),
-                             # from free stuf - erroneous
-                             #( 0x0061a000, 1200),
-                             ]
+        self._heap_finder = self._memory_handler.get_heap_finder()
         return
 
     def tearDown(self):
-        from haystack import model
-        model.reset()
-        self._mappings = None
+        self._heap_finder = None
         return
 
     def test_freelists(self):
         """ List all free blocks """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
 
         # TODO test 0x0061a000 for overflow
 
-        #self.skipTest('known ok')
-        self.assertNotEqual(self._mappings, None)
-
+        self.assertNotEqual(self._memory_handler, None)
+        # test the heaps
+        _heaps = self._heap_finder.get_heap_mappings()
         heap_sums = dict([(heap, list())
-                          for heap in self._mappings.get_heaps()])
+                          for heap in _heaps])
         child_heaps = dict()
-        # append addr and size to each mmaps
-        finder = win7heapwalker.Win7HeapFinder()
-        for heap in self._mappings.get_heaps():
+        for heap in _heaps:
+            heap_addr = heap.get_marked_heap_address()
             log.debug(
-                '==== walking heap num: %0.2d @ %0.8x' %
-                (finder.read_heap(heap).ProcessHeapsListIndex, heap.start))
-            walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
+                '==== walking heap num: %0.2d @ %0.8x',
+                self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr)
+            walker = self._heap_finder.get_heap_walker(heap)
             for x, s in walker._get_freelists():
-                m = self._mappings.get_mapping_for_address(x)
+                m = self._memory_handler.get_mapping_for_address(x)
                 # Found new mmap outside of heaps mmaps
                 if m not in heap_sums:
                     heap_sums[m] = []
@@ -83,8 +69,8 @@ class TestAllocator(unittest.TestCase):
             # for each heap, look at all children
             freeblocks = map(lambda x: x[0], heap_sums[heap])
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
-            finder = win7heapwalker.Win7HeapFinder()
-            cheap = finder.read_heap(heap)
+            finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+            cheap = finder._read_heap(heap, heap.get_marked_heap_address())
             log.debug(
                 '-- heap 0x%0.8x \t free:%0.5x \texpected: %0.5x' %
                 (heap.start, free_size, cheap.TotalFreeSize))
@@ -102,7 +88,7 @@ class TestAllocator(unittest.TestCase):
             log.debug('     \= total: \t\t free:%0.5x ' % (total))
 
             maxlen = len(heap)
-            cheap = finder.read_heap(heap)
+            cheap = finder._read_heap(heap, heap.get_marked_heap_address())
             self.assertEquals(cheap.TotalFreeSize * 8, total)
             log.debug(
                 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x' %
@@ -112,34 +98,25 @@ class TestAllocator(unittest.TestCase):
 
     def test_sorted_heaps(self):
         """ check if memory_mapping gives heaps sorted by index. """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
         # self.skipTest('known_ok')
-        finder = win7heapwalker.Win7HeapFinder()
-        for i, m in enumerate(self._mappings.get_heaps()):
-            # print '%d @%0.8x'%(finder.read_heap(m).ProcessHeapsListIndex,
-            # m.start)
-            self.assertEquals(finder.read_heap(m).ProcessHeapsListIndex, i + 1,
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        heaps = finder.get_heap_mappings()
+        self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
+        for i, m in enumerate(heaps):
+            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
+            self.assertEquals(finder._read_heap(m, m.get_marked_heap_address()).ProcessHeapsListIndex, i + 1,
                               'ProcessHeaps should have correct indexes')
         return
 
-    def test_is_heap(self):
-        """ check if the isHeap fn perform correctly."""
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        self.assertEquals(self._mappings.get_os_name(), 'win7')
-        heaps = self._mappings.get_heaps()
-        self.assertEquals(len(heaps), 12)
-        return
-
     def test_get_frontendheap(self):
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        #heap = self._mappings.get_mapping_for_address(0x00390000)
-        # for heap in self._mappings.get_heaps():
-        for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        # helper
+        win7heap = finder._heap_module
+        # heap = self._memory_handler.get_mapping_for_address(0x00390000)
+        # for heap in finder.get_heap_mappings():
+        for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
-            walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
+            walker = finder.get_heap_walker(heap)
             heap_children = walker.get_heap_children_mmaps()
             committed, free = walker._get_frontend_chunks()
             # page 37
@@ -160,13 +137,13 @@ class TestAllocator(unittest.TestCase):
                     'too small chunk_addr == 0x%0.8x' %
                     (chunk_addr))
 
-                m = self._mappings.get_mapping_for_address(chunk_addr)
+                m = self._memory_handler.get_mapping_for_address(chunk_addr)
                 if m != heap:
                     self.assertIn(m, heap_children)
 
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.readStruct(chunk_addr, win7heap.HEAP_ENTRY)
+                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY) # HEAP_ENTRY
                 # st.UnusedBytes == 0x5    ?
                 if st._0._1.UnusedBytes == 0x05:
                     prev_header_addr -= 8 * st._0._1._0.SegmentOffset
@@ -195,16 +172,16 @@ class TestAllocator(unittest.TestCase):
             # userblock gives same answer
             oracle = committed[0]  # TODO
             for chunk_addr, chunk_size in committed:
-                m = self._mappings.get_mapping_for_address(chunk_addr)
+                m = self._memory_handler.get_mapping_for_address(chunk_addr)
                 if m != heap:
                     self.assertIn(m, heap_children)
                 # should be aligned
                 self.assertEquals(chunk_addr & 7, 0)  # page 40
-                st = m.readStruct(chunk_addr, win7heap.HEAP_ENTRY)
+                st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY)
                 # NextOffset in userblock gives same answer
 
             for addr, s in allocs:
-                m = self._mappings.get_mapping_for_address(addr)
+                m = self._memory_handler.get_mapping_for_address(addr)
                 if addr + s > m.end:
                     self.fail(
                         'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
@@ -212,13 +189,12 @@ class TestAllocator(unittest.TestCase):
         return
 
     def test_get_chunks(self):
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        #heap = self._mappings.get_mapping_for_address(0x00390000)
-        # for heap in self._mappings.get_heaps():
-        for heap in [self._mappings.get_mapping_for_address(0x005c0000)]:
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        # heap = self._memory_handler.get_mapping_for_address(0x00390000)
+        # for heap in finder.get_heap_mappings():
+        for heap in [self._memory_handler.get_mapping_for_address(0x005c0000)]:
             allocs = list()
-            walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
+            walker = finder.get_heap_walker(heap)
             allocated, free = walker._get_chunks()
             for chunk_addr, chunk_size in allocated:
                 # self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
@@ -228,7 +204,7 @@ class TestAllocator(unittest.TestCase):
                 allocs.append((chunk_addr, chunk_size))  # with header
 
             for addr, s in allocs:
-                m = self._mappings.get_mapping_for_address(addr)
+                m = self._memory_handler.get_mapping_for_address(addr)
                 if addr + s > m.end:
                     self.fail(
                         'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
@@ -237,7 +213,7 @@ class TestAllocator(unittest.TestCase):
 
     def _chunks_in_mapping(self, lst, walker):
         for addr, s in lst:
-            m = self._mappings.get_mapping_for_address(addr)
+            m = self._memory_handler.get_mapping_for_address(addr)
             if addr + s > m.end:
                 self.fail(
                     'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
@@ -254,8 +230,7 @@ class TestAllocator(unittest.TestCase):
     @unittest.expectedFailure
     def test_totalsize(self):
         """ check if there is an adequate allocation rate as per get_user_allocations """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
 
         #
         # While all allocations over 0xFE00 blocks are handled by VirtualAlloc()/VirtualFree(),
@@ -266,11 +241,11 @@ class TestAllocator(unittest.TestCase):
 
         #self.skipTest('overallocation clearly not working')
 
-        self.assertEquals(self._mappings.get_target_system(), 'win32')
+        self.assertEquals(self._memory_handler.get_target_system(), 'win32')
 
         full = list()
-        for heap in self._mappings.get_heaps():
-            walker = win7heapwalker.Win7HeapWalker(self._mappings, heap, 0)
+        for heap in finder.get_heap_mappings():
+            walker = finder.get_heap_walker(heap)
             my_chunks = list()
 
             vallocs, va_free = walker._get_virtualallocations()
@@ -316,7 +291,7 @@ class TestAllocator(unittest.TestCase):
 
         where = dict()
         for addr, s in full:
-            m = self._mappings.get_mapping_for_address(addr)
+            m = self._memory_handler.get_mapping_for_address(addr)
             self.assertTrue(m, '0x%0.8x is not a valid address!' % (addr))
             if m not in where:
                 where[m] = []
@@ -324,7 +299,7 @@ class TestAllocator(unittest.TestCase):
                 log.debug(
                     'OVERFLOW 0x%0.8x-0x%0.8x, 0x%0.8x size: %d end: 0x%0.8x' %
                     (m.start, m.end, addr, s, addr + s))
-                m2 = self._mappings.get_mapping_for_address(addr + s)
+                m2 = self._memory_handler.get_mapping_for_address(addr + s)
                 self.assertTrue(
                     m2, '0x%0.8x is not a valid address 0x%0.8x + 0x%0.8x!' %
                     (addr + s, addr, s))
@@ -363,54 +338,50 @@ class TestAllocator(unittest.TestCase):
 
     def test_search(self):
         """    Testing the loading of _HEAP in each memory mapping.
-        Compare loadMembers results with known offsets. expect failures otherwise. """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
-        # self.skipTest('known_ok')
+        Compare load_members results with known offsets. expect failures otherwise. """
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
+        # helper
+        win7heap = finder._heap_module
+        validator = finder.get_heap_validator()
 
         found = []
-        for mapping in self._mappings:
+        for mapping in self._memory_handler:
             addr = mapping.start
-            heap = mapping.readStruct(addr, win7heap.HEAP)
-            if addr in map(lambda x: x[0], self._known_heaps):
+            heap = mapping.read_struct(addr, win7heap.HEAP)
+            if addr in map(lambda x: x[0], putty_1_win7.known_heaps):
                 self.assertTrue(
-                    heap.loadMembers(
-                        self._mappings,
-                        1000),
+                    validator.load_members( heap, 50),
                     "We expected a valid hit at @ 0x%0.8x" %
                     (addr))
                 found.append(addr, )
             else:
                 try:
-                    ret = heap.loadMembers(self._mappings, 1)
+                    ret = validator.load_members(heap, 1)
                     self.assertFalse(
                         ret,
                         "We didnt expected a valid hit at @%x" %
-                        (addr))
+                        addr)
                 except Exception as e:
                     # should not raise an error
                     self.fail(
                         'Haystack should not raise an Exception. %s' %
-                        (e))
+                        e)
 
         found.sort()
-        self.assertEquals(map(lambda x: x[0], self._known_heaps), found)
+        self.assertEquals(map(lambda x: x[0], putty_1_win7.known_heaps), found)
 
         return
 
     def test_get_user_allocations(self):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
-        # You have to import after ctypes has been tuned ( mapping loader )
-        from haystack.structures.win32 import win7heapwalker, win7heap
+        finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
 
-        # self.skipTest('useless')
-
-        for m in self._mappings.get_heaps():
+        for m in finder.get_heap_mappings():
             #
-            walker = win7heapwalker.Win7HeapWalker(self._mappings, m, 0)
+            walker = finder.get_heap_walker(m)
             total = 0
             for chunk_addr, chunk_size in walker.get_user_allocations():
-                self.assertTrue(chunk_addr in self._mappings)
+                self.assertTrue(chunk_addr in self._memory_handler)
                 self.assertGreater(
                     chunk_size,
                     0,
@@ -423,12 +394,7 @@ class TestAllocator(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-    # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    # logging.getLogger('win7heapwalker').setLevel(level=logging.DEBUG)
-    # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)
-    # logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
-    # logging.getLogger('dump_loader').setLevel(level=logging.INFO)
-    # logging.getLogger('memory_mapping').setLevel(level=logging.INFO)
+    # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)

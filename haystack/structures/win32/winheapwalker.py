@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
@@ -7,21 +6,19 @@
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 import logging
-import sys
-
-import numpy
-from haystack import model
-from haystack import types
+import ctypes
 
 from haystack.structures import heapwalker
 
-import ctypes
+
+
+# import numpy
+
 
 log = logging.getLogger('winheapwalker')
 
 
 class WinHeapWalker(heapwalker.HeapWalker):
-
     """
     Helpers functions that return pure python lists - no ctypes in here.
 
@@ -29,37 +26,6 @@ class WinHeapWalker(heapwalker.HeapWalker):
     FTH allocation in Heap.LocalData[n].SegmentInfo.CachedItems
     Virtual allocation
     """
-
-    def _init_heap(self):
-        self._allocs = None
-        self._free_chunks = None
-        self._child_heaps = None
-        # clean the iport module to remove any rpevious loading with a different
-        # ctypes proxy class
-        #if 'winheap' in sys.modules:
-        #    del sys.modules['winheap']
-        #import ctypes
-        from haystack.structures.win32 import winheap
-        self._heap = self._mapping.readStruct(
-            self._mapping.start +
-            self._offset,
-            winheap.HEAP)
-        if not self._heap.loadMembers(self._mappings, 1):
-            raise TypeError('HEAP.loadMembers returned False')
-
-        log.debug('+ Heap @%0.8x size: %d # %s' %
-                  (self._mapping.start +
-                   self._offset, len(self._mapping), self._mapping))
-        # print '+ Heap @%0.8x size:%d FTH_Type:0x%x maskFlag:0x%x index:0x%x'%(self._mapping.start+self._offset,
-        #                            len(self._mapping), self._heap.FrontEndHeapType, self._heap.EncodeFlagMask, self._heap.ProcessHeapsListIndex)
-        # placeholders
-        self._backend_committed = None
-        self._backend_free = None
-        self._fth_committed = None
-        self._fth_free = None
-        self._valloc_committed = None
-        self._valloc_free = None
-        return
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
@@ -78,8 +44,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        from haystack.structures.win32 import winheap
-        sublen = ctypes.sizeof(winheap.HEAP_ENTRY)
+        sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
         # get all chunks
         vallocs, va_free = self._get_virtualallocations()
         chunks, free_chunks = self._get_chunks()
@@ -93,7 +58,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 'NON unique referenced user chunks found. Please enquire. %d != %d' %
                 (len(lst), len(myset)))
         # need to cut sizeof(HEAP_ENTRY) from address and size
-        self._allocs = numpy.asarray(sorted(myset))
+        # self._allocs = numpy.asarray(sorted(myset))
+        self._allocs = sorted(myset)
 
         free_lists = self._get_freelists()
         lst = va_free + free_chunks + fth_free
@@ -104,7 +70,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
         if len(free_chunks) != len(free_lists):
             log.warning('Weird: len(free_chunks) != len(free_lists)')
         # need to cut sizeof(HEAP_ENTRY) from address and size
-        self._free_chunks = numpy.asarray(sorted(myset))
+        # self._free_chunks = numpy.asarray(sorted(myset))
+        self._free_chunks = sorted(myset)
         return
 
     def get_heap_children_mmaps(self):
@@ -115,22 +82,25 @@ class WinHeapWalker(heapwalker.HeapWalker):
         if self._child_heaps is None:
             child_heaps = set()
             for x, s in self._get_freelists():
-                m = self._mappings.get_mapping_for_address(x)
-                if (m != self._mapping) and (m not in child_heaps):
+                log.debug('get_heap_children_mmaps a')
+                m = self._memory_handler.get_mapping_for_address(x)
+                if (m != self._heap_mapping) and (m not in child_heaps):
+                    # FIXME, its actually a segment isn't it ?
                     log.debug(
-                        'mmap 0x%0.8x is extended heap space from 0x%0.8x' %
-                        (m.start, self._mapping.start))
+                        'mmap 0x%0.8x is extended heap space from 0x%0.8x',
+                        m.start, self._heap_mapping.start)
                     child_heaps.add(m)
                     pass
             self._child_heaps = child_heaps
         # TODO: add information from used user chunks
+        log.debug('get_heap_children_mmaps b')
         return self._child_heaps
 
     def _get_virtualallocations(self):
         """ returns addr,size of committed,free vallocs heap entries"""
         if (self._valloc_committed, self._valloc_free) == (None, None):
-            self._valloc_committed = self._heap.get_virtual_allocated_blocks_list(
-                self._mappings)
+            self._valloc_committed = self._validator.HEAP_get_virtual_allocated_blocks_list(
+                self._heap)
             self._valloc_free = []  # FIXME TODO
             log.debug(
                 '\t+ %d vallocated blocks' %
@@ -144,8 +114,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
     def _get_chunks(self):
         """ returns addr,size of committed,free heap entries in blocksindex"""
         if (self._backend_committed, self._backend_free) == (None, None):
-            self._backend_committed, self._backend_free = self._heap.get_chunks(
-                self._mappings)
+            self._backend_committed, self._backend_free = self._validator.HEAP_get_chunks(
+                self._heap)
             # HEAP_ENTRY.Size is in chunk size. (8 bytes )
             allocsize = sum([c[1] for c in self._backend_committed])
             freesize = sum([c[1] for c in self._backend_free])
@@ -159,8 +129,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
     def _get_frontend_chunks(self):
         """ returns addr,size of committed,free heap entries in fth heap"""
         if (self._fth_committed, self._fth_free) == (None, None):
-            self._fth_committed, self._fth_free = self._heap.get_frontend_chunks(
-                self._mappings)
+            self._fth_committed, self._fth_free = self._validator.HEAP_get_frontend_chunks(
+                self._heap)
             fth_commitsize = sum([c[1] for c in self._fth_committed])
             fth_freesize = sum([c[1] for c in self._fth_free])
             log.debug(
@@ -183,41 +153,10 @@ class WinHeapWalker(heapwalker.HeapWalker):
         free_lists = [
             (freeblock_addr,
              size) for freeblock_addr,
-            size in self._heap.get_freelists(
-                self._mappings)]
+            size in self._validator.HEAP_get_freelists(
+                self._heap)]
         freesize = sum([c[1] for c in free_lists])
         log.debug(
-            '\t+ freeLists: free: %0.4d [%0.5d B]' %
-            (len(free_lists), freesize))
+            '+ freeLists: nb_free_chunk:0x%0.4x total_size:0x%0.5x',
+            len(free_lists), freesize)
         return free_lists
-
-    def _get_BlocksIndex(self):
-        pass
-
-
-class WinHeapFinder(heapwalker.HeapFinder):
-
-    def __init__(self):#, ctypes):
-        #ctypes = types.set_ctypes(ctypes)
-        # clean the iport module to remove any rpevious loading with a different
-        # ctypes proxy class
-        #if 'winheap' in sys.modules:
-        #    del sys.modules['winheap']
-        from haystack.structures.win32 import winheap
-        winheap = reload(winheap)
-        self.heap_type = winheap.HEAP
-        self.walker_class = WinHeapWalker
-        self.heap_validation_depth = 1
-
-    def get_heap_mappings(self, mappings):
-        """return the list of mappings that load as heaps"""
-        heap_mappings = super(WinHeapFinder, self).get_heap_mappings(mappings)
-        # FIXME PYDOC  cant remember why we do this.
-        for mapping in heap_mappings:
-            mapping._children = WinHeapWalker(
-                mappings,
-                mapping,
-                0).get_heap_children_mmaps()
-        heap_mappings.sort(
-            key=lambda m: self.read_heap(m).ProcessHeapsListIndex)
-        return heap_mappings

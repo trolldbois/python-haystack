@@ -6,43 +6,40 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import struct
-import operator
-import os
 import unittest
 
-from haystack import model
-from haystack.mappings.base import Mappings
-from haystack.mappings.file import LocalMemoryMapping
+from haystack.mappings.base import MemoryHandler
 from haystack.reverse import pointerfinder
-
-from haystack import config
-
 import test_pattern
 
 class TestPointer(test_pattern.SignatureTests):
 
     def setUp(self):
+        super(TestPointer, self).setUp()
         self.mmap, self.values = self._make_mmap_with_values(self.seq)
         self.name = 'test_dump_1'
 
     def _make_mmap_with_values(self, intervals, struct_offset=None):
-        '''Make a memory map, with a fake structure of pointer pattern inside.
-        Return the pattern signature'''
+        """
+         Make a memory map, with a fake structure of pointer pattern inside.
+        Return the pattern signature
+
+        :param intervals:
+        :param struct_offset:
+        :return:
+        """
         # template of a memory map metadata
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)
         # could be 8, it doesn't really matter
-        self.word_size = self.config.get_word_size()
+        self.word_size = self.target.get_word_size()
         if struct_offset is not None:
             self._struct_offset = struct_offset
         else:
             self._struct_offset = self.word_size*12 # 12, or any other aligned
         mmap,values = self._make_mmap(self._mstart, self._mlength, self._struct_offset,
                                intervals, self.word_size)
-        mappings = Mappings([mmap], 'test')
-        mappings.config = self.config
-        mappings._reset_config()
+        self.memory_handler = MemoryHandler([mmap], self.target, 'test')
         return mmap, values
 
 

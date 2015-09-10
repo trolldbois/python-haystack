@@ -20,17 +20,12 @@ reverse
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 __all__ = [
-    'find_struct_process',
-    'find_struct_memfile',
-    'refresh_struct_process',
-    'search_struct_process',
-    'search_struct_memfile',
-    'search_struct_dumpname',
-    'refresh'
 ]
 
+# verify the version
 from pkg_resources import get_distribution, DistributionNotFound
 import os.path
+import resource
 
 try:
     _dist = get_distribution('haystack')
@@ -45,18 +40,26 @@ except DistributionNotFound:
 else:
     __version__ = _dist.version
 
-# in any haystack import, we need to ensure the model is loaded.
-import model
+# search API
+from haystack.search import api
+search_record = api.search_record
+output_to_string = api.output_to_string
+output_to_python = api.output_to_python
 
-# DEFINE the API.
-import abouchet
+# augment our file limit capacity to max
+maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+# print 'maxnofile', maxnofile
+resource.setrlimit(
+    resource.RLIMIT_NOFILE,
+    (maxnofile[1],
+     maxnofile[1]))
+# maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
+# print 'maxnofile_after', maxnofile_after
+# travis-ci says
+# maxnofile (64000, 64000)
+# maxnofile_after (64000, 64000)
 
-find_struct_process = abouchet.find_struct_process
-find_struct_memfile = abouchet.find_struct_memfile
-refresh_struct_process = abouchet.refresh_struct_process
-
-search_struct_process = abouchet.search_struct_process
-search_struct_memfile = abouchet.search_struct_memfile
-search_struct_dumpname = abouchet.search_struct_dumpname
-refresh = abouchet.refresh
-show_dumpname = abouchet.show_dumpname
+# bad bad idea...
+MMAP_HACK_ACTIVE = True
+# do not load huge mmap
+MAX_MAPPING_SIZE_FOR_MMAP = 1024 * 1024 * 20

@@ -1,51 +1,73 @@
 
 
-- FIX get_heap on windows XP/zeus demo
+- re-correlate the is_valid methods to the record type, so that advanced code-based
+validation is allowed on a record, on top of constraits
+Will require a registation of specific validation functions, and probable access
+to parent nodes 'validation state'.
+
+- finder the text outputter bug. haystack refresh PEB returns different and bad results with a 
+constraint file. with a string output.
+see field process Heap
+while python outputters give a None value for the pointer, the string outputters will return the first pointer value
+BAD: python /home/other/Compil/python-haystack/scripts/haystack --debug --string --dumpname /home/jal/outputs/vol/zeus.vmem.1668.dump/ refresh winxp_32_peb.struct__PEB  0x7ffde000 --validate --constraints_file winxpheap.constraints
+OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string --dumpname /home/jal/outputs/vol/zeus.vmem.1668.dump/ refresh winxp_32_peb.struct__PEB  0x7ffde000 --validate
+
+- change Levenshtein for fuzzywuzzy or similar
+
+- following memory_handler changes, the __book cache seems to forget about some ctypes buffers.
+  not cool. on get_context.
+  Function getRef deactivated. it doesnt bug anymore. 
+  it impacts performance _a lot_ to deactivate the cache.
+  To be obseleted ?
+  But output_to_python depends on it... TODO
+  
+  
+- use PEB search to double check that we find all HEAPs in standard scenarios.
+- orient winheap to work with heap, not with heap aligned on mapping.start.
+
+- FIX winXP x86 heapwalker, then work on vol.
+
+- use pycallgraph to cProfile a HEAP validation.
+- make a callback profiler that profiles the graph path validation of a structure in graphical format
+- using a decorator would be fun
+
+***** heap walker validator is not a validator all by itself.
+
+- add a depth parameter to constraints loading on list fields.
+- separate listmodel in a constraints like config file ?
+
+- a working str() on Ctypes.loadableMembers requires no instanciated utils
+
+- add an searcher configuration for padding value == 0 ( to be forwarded to basicmodel)
+- padding value should be 0 most of the time. make it configurable/monkeypatchable
+
+- use ASN.1 for constraints. ??
+
+- FIX get_heap on windows XP/zeus demo. Extract a process from a vol dump to make a test case.
 - add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
 
 - make a listmodel method for arrays of structures
 - make the winxp freelists method to work.
 
-- FIX the model reloading of ctypes across all modules.
-    - unloading all reverse module is crude.
-    - resetting some haystack sub modules (reverse) seems to work
-
-- never import ctypes anywhere !
-    - always rely on a model.py/config.py ctypes singleton
-
-- too many open files
-    - close mappings file in memory mappings.???
-    - clean all TU to clean memory mappings in bringDown
-
-
 - use heapwalker plugins from rekall/volatility to create a proxy heapwalker ?
-
 
 
 Attribute packed is not correct in ctypeslib
 
  - proper way to load constraints and bit-dependant modules is side by side
- like ctypes6.py
  
-    # A - the caller has to load the proper bit-dependant python code, 
-    from test.src import ctypes6_gen32
-    # B - then apply the classes to a dynamic module if needed
-    from test.src import ctypes6
-    model.copyGeneratedClasses(ctypes6_gen32, ctypes6)
-    model.registerModule(ctypes6)
-    # C - then apply constraints on objects.
-    ctypes6.populate(self.mappings.config)
+    # A - the caller has to load the proper bit-dependant python code,
+    ctypes3 = cls.my_model.import_module("test.src.ctypes3_gen64")
+    # my_model is alreadytarget dependant
 
-Step C) would be nicer is a yara format is applied, and gen that into the module
-itself. 
-    -> model.apply_constraints("yaraconstraintsfilename")
-format yara constraints as
+    # B - then apply constraints on module.
+    handler = constraints.ConstraintsConfigHandler()
+    my_constraints = handler.read('test/src/ctypes3.constraints')
+    results = haystack.search_record(self.memory_handler, self.ctypes3.struct_test3, my_constraints)
 
- 
+
 
 Todo:
- - Put constraints in yara form ? at least in separate folder/
- - Add argument change contraints to load constraints from user provided file or folder (~/.haystack/constraints.d)
  - Add a struct beautifier for the string formatting. (hex vs int)
  - easy API
  - documented example

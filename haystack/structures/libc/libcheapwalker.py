@@ -1,17 +1,13 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
+# Copyright (C) 2011 Loïc Jaquemet loic.jaquemet+python@gmail.com
 #
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
+import os
 import logging
 import sys
-
-import numpy
-from haystack import model
-from haystack import types
 
 from haystack.structures import heapwalker
 
@@ -20,14 +16,15 @@ log = logging.getLogger('libcheapwalker')
 
 class LibcHeapWalker(heapwalker.HeapWalker):
 
-    """ """
+    """Helper class that returns heap allocations and free chunks in a standard libc process heap """
 
-    def _init_heap(self):
+    def _init_heap(self, address):
         log.debug('+ Heap @%x size: %d # %s' %
-                  (self._mapping.start +
-                   self._offset, len(self._mapping), self._mapping))
+                  (self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping))
         self._allocs = None
         self._free_chunks = None
+        assert hasattr(self._heap_module, 'malloc_chunk')
+        self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
@@ -46,34 +43,71 @@ class LibcHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        from haystack.structures.libc import ctypes_malloc
-        self._allocs, self._free_chunks = ctypes_malloc.get_user_allocations(
-            self._mappings, self._mapping)
+        self._allocs, self._free_chunks = self._heap_validator.get_user_allocations(self._heap_mapping)
 
 
 class LibcHeapFinder(heapwalker.HeapFinder):
 
-    def __init__(self):#, ctypes):
-        import ctypes
-        from haystack.structures.libc import ctypes_malloc
-        ctypes_malloc = reload(ctypes_malloc)
-        self.heap_type = ctypes_malloc.malloc_chunk
-        self.walker_class = LibcHeapWalker
-        self.heap_validation_depth = 20
-
-    # def is_heap(self, mappings, mapping):
+    # def _is_heap(self, _memory_handler, mapping):
     #    """test if a mapping is a heap - at least one allocation."""
-    #    if not super(LibcHeapFinder,self).is_heap(mappings, mapping):
+    #    if not super(LibcHeapFinder,self)._is_heap(_memory_handler, mapping):
     #        return False
     #    # try to get at least one alloc.
     #    from haystack.structures.libc.ctypes_malloc import iter_user_allocations
-    #    for x in iter_user_allocations(mappings, mapping):
+    #    for x in iter_user_allocations(_memory_handler, mapping):
     #        return True
     #    return False
 
-    def get_heap_mappings(self, mappings):
-        """Prioritize heaps with [heap]"""
-        heap_mappings = super(LibcHeapFinder, self).get_heap_mappings(mappings)
+    def _init(self):
+        """
+        Return the heap configuration information
+        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        """
+        self._heap_validator = None
+        module_name = 'haystack.structures.libc.ctypes_malloc'
+        heap_name = 'malloc_chunk'
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'libcheap.constraints')
+        log.debug('constraint_filename :%s', constraint_filename)
+        return module_name, heap_name, constraint_filename
+
+    def _init_heap_validation_depth(self):
+        return 20
+
+    def _search_heap(self, mapping):
+        """
+        The libc mapping on in starting positions
+        :param mapping:
+        :return:
+        """
+        log.info('checking %s', mapping)
+        heap = mapping.read_struct(mapping.start, self._heap_type)
+        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
+        if load:
+            return heap, mapping.start
+        return None
+
+    def get_heap_mappings(self):
+        """return the list of heaps that load as heaps
+
+        Full overload of parent, to fix some bugs and prioritize.
+        """
+        heap_mappings = []
+        for mapping in self._memory_handler:
+            # BUG: python-ptrace read /proc/$$/mem.
+            # file.seek does not like long integers like the start address
+            # of the vdso or vsyscall mappigns
+            if mapping.pathname in ['[vdso]', '[vsyscall]']:
+                log.debug('Ignore system mapping %s', mapping)
+            elif mapping.is_marked_as_heap():
+                heap_mappings.append(mapping)
+            else:
+                res = self._search_heap(mapping)
+                if res is not None:
+                    instance, address = res
+                    mapping.mark_as_heap(address)
+                    heap_mappings.append(mapping)
+        heap_mappings.sort(key=lambda m: m.start)
+        # FIXME, isn't there a find() ?
         i = [
             i for (
                 i,
@@ -82,3 +116,13 @@ class LibcHeapFinder(heapwalker.HeapFinder):
             h = heap_mappings.pop(i[0])
             heap_mappings.insert(0, h)
         return heap_mappings
+
+    def get_heap_walker(self, heap):
+        return LibcHeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
+
+    def get_heap_validator(self):
+        if self._heap_validator is None:
+            self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler,
+                                                   self._heap_module_constraints,
+                                                   self._heap_module)
+        return self._heap_validator

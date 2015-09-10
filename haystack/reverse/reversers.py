@@ -1,57 +1,74 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import argparse
 import logging
-import numpy
-import os
-import pickle
-import shelve
 import struct
 import sys
 import time
 
-#from haystack.config import ConfigClass as Config
-from haystack import dump_loader
-from haystack import argparse_utils
-from haystack.structures import libc
+import os
 
-import structure
-import fieldtypes
-import utils
+from haystack.reverse import config
+from haystack.reverse import structure
+from haystack.reverse import fieldtypes
+from haystack.reverse import utils
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
+"""
+StructureOrientedReverser:
+    Inherits this class when you are delivering a controller that target structure-based elements and :
+      * check consistency between structures,
+      * aggregate structures based on a heuristic,
+          Apply heuristics on context.heap
 
+GenericHeapAllocationReverser:
+    use heapwalker to get user allocations into reversed/guesswork structures.
+
+PointerReverser:
+    @obseleted by PointerFieldsAnalyser, GenericHeapAllocationReverser
+    Looks at pointers values to build basic structures boundaries.
+
+FieldReverser:
+    Decode each structure by asserting simple basic types from the byte content.
+
+PointerFieldReverser:
+    Identify pointer fields and their target structure.
+
+DoubleLinkedListReverser:
+    Identify double Linked list. ( list, vector, ... )
+
+PointerGraphReverser:
+    use the pointer relation between records to map a graph.
+
+save_headers:
+    Save the python class code definition to file.
+
+reverseInstances:
+        # we use common allocators to find structures.
+        use DoubleLinkedListReverser to try to find some double linked lists records
+        use FieldReverser to decode bytes contents to find basic types
+        use PointerFieldReverser to identify pointer relation between structures
+        use PointerGraphReverser to graph pointer relations between structures
+        save guessed records' python code definition to file
+"""
 
 log = logging.getLogger('reversers')
 
+class StructureOrientedReverser(object):
+    """
+    Inherits this class when you are delivering a controller that target structure-based elements and :
+      * check consistency between structures,
+      * aggregate structures based on a heuristic,
+          Apply heuristics on context.heap
+    """
 
-'''
-Inherits this class when you are delivering a controller that target structure-based elements and :
-  * check consistency between structures,
-  * aggregate structures based on a heuristic,
-'''
-
-
-class StructureOrientedReverser():
-
-    '''
-      Apply heuristics on context.heap
-    '''
-
-    def __init__(self):
+    def __init__(self, _context):
         self.cacheFilenames = []
         # self.cacheDict
 
-    ''' Improve the reversing process
-  '''
-
     def reverse(self, ctx, cacheEnabled=True):
+        ''' Improve the reversing process
+        '''
+        self.my_target = ctx.memory_handler.get_target_platform()
+
         skip = False
         if cacheEnabled:
             ctx, skip = self._getCache(ctx)
@@ -75,7 +92,7 @@ class StructureOrientedReverser():
 
     ''' Subclass implementation of the reversing process '''
 
-    def _reverse(self, ctx, addrs=None):
+    def _reverse(self, ctx):
         raise NotImplementedError
 
     def _getCache(self, ctx):
@@ -119,8 +136,9 @@ class StructureOrientedReverser():
 
 
 class GenericHeapAllocationReverser(StructureOrientedReverser):
-
-    ''' use heapwalker to get user allocations into structures.  '''
+    """
+    use heapwalker to get user allocations into structures.
+    """
 
     def _reverse(self, context):
         log.info('[+] Reversing user allocations ')
@@ -156,8 +174,11 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
             ##log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
             # optimise insertion
             # if len(my_pointers_addrs) > 0:
-            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, config.get_word_size(), False)
+            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, _target_platform.get_word_size(), False)
             # cache to disk
+            #print 'check typesfor haystack.types.LoadableMembersUnion'
+            #import code
+            #code.interact(local=locals())
             mystruct.saveme()
             # next
             if time.time() - tl > 10:  # i>0 and i%10000 == 0:
@@ -182,18 +203,14 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
         return
 
 
-'''
-  Looks at pointers values to build basic structures boundaries.
-
-  @obselete PointerFieldsAnalyser is now doing that on the go...
-'''
-
-
 class PointerReverser(StructureOrientedReverser):
+    """
+      Looks at pointers values to build basic structures boundaries.
 
-    '''
+      @obselete PointerFieldsAnalyser is now doing that on the go...
+
     slice the mapping in several structures delimited per pointer-boundaries
-    '''
+    """
 
     def _reverse(self, context):
         log.info('[+] Reversing pointers in %s' % (context.heap))
@@ -232,7 +249,7 @@ class PointerReverser(StructureOrientedReverser):
                     f = mystruct.addField(
                         p_addr,
                         fieldtypes.FieldType.POINTER,
-                        context.config.get_word_size(),
+                        self.my_target.get_word_size(),
                         False)
                     #log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
 
@@ -257,12 +274,11 @@ class PointerReverser(StructureOrientedReverser):
         lengths.append(heap.end - aligned[-1])  # add tail
         return lengths
 
-'''
-  Decode each structure by asserting simple basic types from the byte content.
-'''
-
 
 class FieldReverser(StructureOrientedReverser):
+    """
+    Decode each structure by asserting simple basic types from the byte content.
+    """
 
     def _reverse(self, context):
 
@@ -273,14 +289,14 @@ class FieldReverser(StructureOrientedReverser):
         fromcache = 0
         # writing to file
         fout = file(
-            context.config.getCacheFilename(
-                context.config.CACHE_GENERATED_PY_HEADERS_VALUES,
+            config.get_cache_filename(
+                config.CACHE_GENERATED_PY_HEADERS_VALUES,
                 context.dumpname),
             'w')
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
         log.debug('Run heuristics structure fields type discovery')
-        dsa = DSASimple(context.config)
+        dsa = DSASimple(context.memory_handler)
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
@@ -290,7 +306,8 @@ class FieldReverser(StructureOrientedReverser):
             else:
                 decoded += 1
                 dsa.analyze_fields(anon)
-                log.info("_reverse: %s %s",str(context.config.ctypes.c_void_p),id(context.config.ctypes.c_void_p))
+                my_ctypes = context.memory_handler.get_target_platform().get_target_ctypes()
+                log.info("_reverse: %s %s",str(my_ctypes.c_void_p),id(my_ctypes.c_void_p))
                 anon.saveme()
             # output headers
             towrite.append(anon.toString())
@@ -309,12 +326,11 @@ class FieldReverser(StructureOrientedReverser):
         context.parsed.add(str(self))
         return
 
-'''
-  Identify pointer fields and their target structure.
-'''
-
 
 class PointerFieldReverser(StructureOrientedReverser):
+    """
+      Identify pointer fields and their target structure.
+    """
 
     def _reverse(self, context):
         log.info('[+] PointerFieldReverser: resolving pointers')
@@ -323,16 +339,16 @@ class PointerFieldReverser(StructureOrientedReverser):
         decoded = 0
         fromcache = 0
         from haystack.reverse.heuristics.dsa import EnrichedPointerFields
-        pfa = EnrichedPointerFields(context.config)
+        pfa = EnrichedPointerFields(context.memory_handler)
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
             anon = context.getStructureForAddr(ptr_value)
             if anon.is_resolvedPointers():
                 fromcache += 1
             else:
                 decoded += 1
-                # if not hasattr(anon, 'mappings'):
-                #  log.error('damned, no mappings in %x'%(ptr_value))
-                #  anon.mappings = context.mappings
+                # if not hasattr(anon, '_memory_handler'):
+                #  log.error('damned, no _memory_handler in %x'%(ptr_value))
+                #  anon._memory_handler = context._memory_handler
                 pfa.analyze_fields(anon)
                 anon.saveme()
             if time.time() - tl > 30:
@@ -347,12 +363,11 @@ class PointerFieldReverser(StructureOrientedReverser):
         context.parsed.add(str(self))
         return
 
-'''
-  Identify double Linked list. ( list, vector, ... )
-'''
-
 
 class DoubleLinkedListReverser(StructureOrientedReverser):
+    """
+      Identify double Linked list. ( list, vector, ... )
+    """
 
     def _reverse(self, context):
         log.info('[+] DoubleLinkedListReverser: resolving first two pointers')
@@ -364,7 +379,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
         lists = []
         for ptr_value in context.listStructuresAddresses():
             '''for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
-            if context.pointers_offsets[i-1]+context.config.get_word_size() != context.pointers_offsets[i]:
+            if context.pointers_offsets[i-1]+context._target_platform.get_word_size() != context.pointers_offsets[i]:
               done+=1
               continue
             ptr_value = context._pointers_values[i-1]
@@ -413,15 +428,15 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
     def twoWords(self, ctx, st_addr, offset=0):
         """we want to read both pointers"""
         # return
-        # ctx.heap.getByteBuffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context.config.get_word_size()]
-        m = ctx.mappings.get_mapping_for_address(st_addr + offset)
-        return m.readBytes(st_addr + offset, 2 * ctx.config.get_word_size())
+        # ctx.heap.get_byte_buffer()[st_addr-ctx.heap.start+offset:st_addr-ctx.heap.start+offset+2*context._target_platform.get_word_size()]
+        m = ctx.memory_handler.get_mapping_for_address(st_addr + offset)
+        return m.read_bytes(st_addr + offset, 2 * self.my_target.get_word_size())
 
     def unpack(self, context, ptr_value):
         """we want to read both pointers"""
-        fmt = context.config.get_word_type_char()*2
+        fmt = self.my_target.get_word_type_char()*2
         # FIXME check and delete
-        #if context.config.get_word_size() == 8:
+        #if context._target_platform.get_word_size() == 8:
         #    return struct.unpack('QQ', self.twoWords(context, ptr_value))
         #else:
         #    return struct.unpack('LL', self.twoWords(context, ptr_value))
@@ -486,20 +501,20 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
 
     def findHead(self, ctx, members):
         sizes = sorted([(ctx.getStructureSizeForAddr(m), m) for m in members])
-        if sizes[0] < 3 * ctx.config.get_word_size():
+        if sizes[0] < 3 * self.my_target.config.get_word_size():
             log.error('a double linked list element must be 3 WORD at least')
             raise ValueError(
                 'a double linked list element must be 3 WORD at least')
-        numWordSized = [s for s, addr in sizes].count(3 * ctx.config.get_word_size())
+        numWordSized = [s for s, addr in sizes].count(3 * self.my_target.get_word_size())
         if numWordSized == 1:
             head = sizes.pop(0)[1]
         else:  # if numWordSized > 1:
             # find one element with 0, and take that for granted...
             head = None
             for s, addr in sizes:
-                if s == 3 * ctx.config.get_word_size():
+                if s == 3 * self.my_target.get_word_size():
                     # read ->next ptr and first field of struct || null
-                    f2, field0 = self.unpack(ctx, addr + ctx.config.get_word_size())
+                    f2, field0 = self.unpack(ctx, addr + self.my_target.get_word_size())
                     if field0 == 0:  # this could be HEAD. or a 0 value.
                         head = addr
                         log.debug(
@@ -514,12 +529,11 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
                     (head))
         return (head, [m for (s, m) in sizes])
 
-'''
-  use the pointer relation between structure to map a graph.
-'''
-
 
 class PointerGraphReverser(StructureOrientedReverser):
+    """
+      use the pointer relation between structure to map a graph.
+    """
 
     def _reverse(self, context):
         import networkx
@@ -556,15 +570,24 @@ class PointerGraphReverser(StructureOrientedReverser):
         log.info('[+] Graph - added %d edges' % (graph.number_of_edges()))
         networkx.readwrite.gexf.write_gexf(
             graph,
-            context.config.getCacheFilename(
-                context.config.CACHE_GRAPH,
+            config.get_cache_filename(
+                config.CACHE_GRAPH,
                 context.dumpname))
         context.parsed.add(str(self))
         return
 
 
 def refreshOne(context, ptr_value):
+    """
+    FIXME: usage unknown
+    usage of mystruct.resolvePointers() indicates old code
+
+    :param context:
+    :param ptr_value:
+    :return:
+    """
     aligned = context.structures_addresses
+    my_target = context.memory_handler.get_target_platform()
 
     lengths = [(aligned[i + 1] - aligned[i]) for i in range(len(aligned) - 1)]
     lengths.append(context.heap.end - aligned[-1])  # add tail
@@ -580,7 +603,7 @@ def refreshOne(context, ptr_value):
         f = mystruct.addField(
             p_addr,
             fieldtypes.FieldType.POINTER,
-            context.config.get_word_size(),
+            my_target.get_word_size(),
             False)
     # resolvePointers
     mystruct.resolvePointers()
@@ -589,11 +612,18 @@ def refreshOne(context, ptr_value):
 
 
 def save_headers(context, addrs=None):
-    ''' structs_addrs is sorted '''
+    """
+    Save the python class code definition to file.
+
+    :param context:
+    :param addrs:
+    :return:
+    """
+    # structs_addrs is sorted
     log.info('[+] saving headers')
     fout = file(
-        context.config.getCacheFilename(
-            context.config.CACHE_GENERATED_PY_HEADERS_VALUES,
+        config.get_cache_filename(
+            config.CACHE_GENERATED_PY_HEADERS_VALUES,
             context.dumpname),
         'w')
     towrite = []
@@ -621,8 +651,8 @@ def reverseInstances(dumpname):
     log.debug('[+] Loading the memory dump ')
     ctx = context.get_context(dumpname)
     try:
-        if not os.access(ctx.config.getStructsCacheDir(ctx.dumpname), os.F_OK):
-            os.mkdir(ctx.config.getStructsCacheDir(ctx.dumpname))
+        if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
+            os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
 
         # we use common allocators to find structures.
         #log.debug('Reversing malloc')
@@ -632,22 +662,22 @@ def reverseInstances(dumpname):
 
         # try to find some logical constructs.
         log.debug('Reversing DoubleLinkedListReverser')
-        doublelink = DoubleLinkedListReverser()
+        doublelink = DoubleLinkedListReverser(ctx)
         ctx = doublelink.reverse(ctx)
 
         # decode bytes contents to find basic types.
         log.debug('Reversing Fields')
-        fr = FieldReverser()
+        fr = FieldReverser(ctx)
         ctx = fr.reverse(ctx)
 
         # identify pointer relation between structures
         log.debug('Reversing PointerFields')
-        pfr = PointerFieldReverser()
+        pfr = PointerFieldReverser(ctx)
         ctx = pfr.reverse(ctx)
 
         # graph pointer relations between structures
         log.debug('Reversing PointerGraph')
-        ptrgraph = PointerGraphReverser()
+        ptrgraph = PointerGraphReverser(ctx)
         ctx = ptrgraph.reverse(ctx)
         ptrgraph._saveStructures(ctx)
 
@@ -662,10 +692,7 @@ def reverseInstances(dumpname):
     except KeyboardInterrupt as e:
         # except IOError,e:
         log.warning(e)
-        log.info('[+] %d structs extracted' % (context.structuresCount()))
+        log.info('[+] %d structs extracted' % (ctx.structuresCount()))
         raise e
         pass
-    pass
-
-if __name__ == '__main__':
     pass

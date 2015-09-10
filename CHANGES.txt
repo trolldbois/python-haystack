@@ -3,7 +3,73 @@ Ongoing:
  - Volatility memorymap
  - merge in master
 
+ - move interfaces into an interfaces module, maybe use abc.
 
+Changes to architecture.txt:
+ - IMemoryHandler: there is a process memory concept (dump, live, vol, rekall) that need a handler.
+ - IMemoryLoader: a memory loader is a helper class reads the dump and creates a IMemoryHandler instance
+    + figures out the ITargetPlatform information (cpu, wordsize)
+        + the ITargetPlatform wraps a CTypesProxy instance
+    + figures out the list of IMemoryMapping
+    + creates a IMemoryHandler with both previous element
+ - the IMemoryHandler instance is the one way access to:
+    + the list of IMemoryMapping
+    + the CTypesProxy ctypes proxy object for this MemoryHandler host
+    + the IHeapWalker helpers
+ - the memory l
+
+
+ - model should be an instance.
+ - mapping should represent the memory dump entity
+ - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
+
+2015-09:
+ - Working on Volatility dump reader
+ - working a WinXP chunk iterator
+ - adding PEB to winXP list of know structures
+
+2015-08:
+ - Fixes for travis in setup.py
+ - Ran 225 tests in 519.059s
+OK (skipped=7, expected failures=4)
+ - Profiling... Ran 225 tests in 160.300s
+ - heaps are not necessarly at offset 0 in mapping
+ - more work on Windows XP heap based on the Zeus vmem extract of a process
+ - cleaned the memory handler to stop being a big bag of everything
+ - remove reverse's context from core haystack
+ - added a script to find heaps in Windows dumps
+ - start standardizing test dumps in a test file inventory
+Ran 240 tests in 119.036s
+FAILED (failures=2, errors=9, skipped=11, expected failures=3)
+
+
+
+
+2015-07:
+ - Ran 212 tests in 58.233s
+FAILED (failures=1, errors=106, skipped=6, expected failures=1)
+ - move constraints to config flat file instead of python code
+ - refactor to ctypes proxy class in instances instead of module.
+ - design with abc ready interfaces
+ - clean TU state, 0 errors
+ - constraints config is case sensitive
+ - fixed win7heapfinder and walker
+ - adjusted basicmodel to use memeory_handler properly.
+ - Ran 213 tests in 149.355s
+FAILED (failures=2, errors=31, skipped=8, expected failures=2)
+ - fixed the search API to a simple one
+ - fixed the haystack search cli to the new API
+ - Ran 213 tests in 169.886s
+FAILED (errors=22, skipped=6, expected failures=2)
+ - pretty much refactored haytack core and search in reverse.
+ - Ran 229 tests in 347.116s
+FAILED (errors=7, skipped=7, expected failures=3)
+ - cleaned search API, with matching TU
+ - the constraints model and listmodel are enforced by an MVC model
+ - Ran 224 tests in 317.901s
+FAILED (failures=2, errors=13, skipped=7, expected failures=3)
+
+ 
 2015-06:
  - keep track of changes in this file
  - use travis-ci to compile
@@ -11,7 +77,7 @@ Ongoing:
  - FIX OverflowError: Python int too large to convert to C long on ptrace file.seek - ignore vsyscall mmap that is in the higher mmap reagion
     + this is a temporary bugfix.
  - add memory dumps test case to a dropbox
- - fix the heap structures used by haystack for win7. 
+ - fix the heap structures used by haystack for win7.
     + Constraints: Ignore HEAP_ENTRY SubSegmentCode pointer as it is encoded.
     + fix some ctypeslib bugs
  - fix the generation process for HEAP structures. ctypeslib and clang do not like circular dependencies.
