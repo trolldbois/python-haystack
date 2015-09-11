@@ -214,8 +214,7 @@ def argparser():
                              default="dir",
                              help='Dump in "gztar","tar" or "dir" format. '
                                   'Defaults to "dir".')
-    dump_parser.add_argument('dumpname', type=argparse_utils.writeable,
-                             action='store', help='The dump name.')
+    dump_parser.add_argument('dumpname', action='store', help='The dump name.')
     dump_parser.set_defaults(func=_dump)
 
     return dump_parser
