@@ -169,7 +169,7 @@ class MemoryDumper:
             with open(mmap_fname, 'wb') as mmap_fout:
                 mmap_fout.write(m.mmap().get_byte_buffer())
         # dump all the metadata
-        self.index.write('%s\n', m)
+        self.index.write('%s\n' % m)
         return
 
     def _make_archive(self, srcdir, name):
