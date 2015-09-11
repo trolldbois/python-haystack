@@ -10,11 +10,8 @@ import sys
 import tempfile
 
 import os
-
 from haystack import dbg
-from haystack import argparse_utils
 from haystack.mappings.process import readProcessMappings
-
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -34,8 +31,9 @@ def archiveTypes(s):
 
 
 class MemoryDumper:
-
-    ''' Dumps a process memory maps to a tgz '''
+    """
+    Dumps a process memory maps to a tgz
+    """
     ARCHIVE_TYPES = ["dir", "tar", "gztar"]
 
     def __init__(self, pid, dest, archiveType="dir", compact=False):
@@ -109,7 +107,7 @@ class MemoryDumper:
                 err += 1
                 log.warning(e)
                 pass  # no se how to read windows
-        log.debug('%d mapping in error, destdir: %s' % (err, destdir))
+        log.debug('%d mapping in error, destdir: %s', err, destdir)
         self.index.close()
         return
 
@@ -131,7 +129,7 @@ class MemoryDumper:
                 err += 1
                 log.warning(e)
                 pass  # no se how to read windows
-        log.debug('%d mapping in error, destdir: %s' % (err, destdir))
+        log.debug('%d mapping in error, destdir: %s', err, destdir)
         self.index.close()
         return
 
@@ -146,10 +144,10 @@ class MemoryDumper:
         """Dump one mapping to one file in one tmpdir."""
         my_utils = self.mappings.get_ctypes_utils()
         if m.permissions[0] != 'r':
-            log.debug('Ignore read protected mapping %s' % (m))
+            log.debug('Ignore read protected mapping %s', m)
             return
         elif m.pathname in ['[vdso]', '[vsyscall]']:
-            log.debug('Ignore system mapping %s' % (m))
+            log.debug('Ignore system mapping %s', m)
             return
         # make filename
         # We don't really care about the filename but we need to be coherent.
@@ -159,19 +157,19 @@ class MemoryDumper:
         # dumping the memorymap content if required.
         if self._compact_dump:
             # only dumps useful ( stack, heap, binary for arch detection
-            if (m in self.__required):
+            if m in self.__required:
                 with open(mmap_fname, 'wb') as mmap_fout:
                     mmap_fout.write(m.mmap().get_byte_buffer())
-                log.debug('Dump %s' % (m))
+                log.debug('Dump %s', m)
             else:
-                log.debug('Ignore %s' % (m))
+                log.debug('Ignore %s', m)
         else:
             # dump all the maps
-            log.debug('Dump %s' % (m))
+            log.debug('Dump %s', m)
             with open(mmap_fname, 'wb') as mmap_fout:
                 mmap_fout.write(m.mmap().get_byte_buffer())
         # dump all the metadata
-        self.index.write('%s\n' % (m))
+        self.index.write('%s\n', m)
         return
 
     def _make_archive(self, srcdir, name):
@@ -192,15 +190,12 @@ def dump(pid, outfile, typ="dir", compact=False):
     dumper = MemoryDumper(pid, outfile, typ, compact)
     dumper.connectProcess()
     destname = dumper.dump()
-    log.info('Process %d memory _memory_handler dumped to file %s' % (dumper._pid,
-                                                               destname))
+    log.info('Process %d memory _memory_handler dumped to file %s', dumper._pid, destname)
     return destname
-
 
 def _dump(opt):
     """Dumps a process memory _memory_handler to Haystack dump format."""
     return dump(opt.pid, opt.dumpname, opt.type)
-
 
 def argparser():
     dump_parser = argparse.ArgumentParser(prog='memory_dumper',
@@ -219,13 +214,11 @@ def argparser():
 
     return dump_parser
 
-
 def main(argv):
     logging.basicConfig(level=logging.DEBUG)
     parser = argparser()
     opts = parser.parse_args(argv)
     opts.func(opts)
-
 
 if __name__ == '__main__':
     main(sys.argv[1:])
