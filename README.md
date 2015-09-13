@@ -30,14 +30,16 @@ While technically you could use a third party tool, haystack actually
 need memory mapping information to work with.
 So there is a dumping tool included::
 
-$ sudo haystack-dump dump <pid> dumps/myssh.dump
+    $ sudo haystack-dump dump <pid> dumps/myssh.dump
 
 You can easily reproduce the format of the dump, its a folder/archive
 containing each memory map in a separate file :
 
-- content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
+- memory content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
 - 'mappings' file containing memory mappings metadata.  ( mappings )
 
+Or you can write a `haystack.abc.IMemoryMapping` implementation for your favorite format.
+There is already a beta volatility support in `haystack.mappings.vol`
 
 Search for known structures:
 ============================
@@ -47,13 +49,15 @@ A [quick usage guide](docs/Haystack basic usage.ipynb) is available to go
 over the basic steps to go from a C Header file to a Python ctypes definition.
 Or you can do it yourself, with traditional Python ctypes records.
 
-The search api is available through the `haystack` script but also in an api so 
-that you can embed that in your own code. 
+The search api is available through the `haystack` script but also in an API so 
+that you can embed that search in your own code. 
 
 In short, the haystack search will iterate over every offset of the program's 
-memory to try and find 'valid' offset for that specific record.
+memory to try and find 'valid' offset for that specific record type.
+
 The validity of the record  is determined mostly by inherent constraints, like
-pointer values, or your own constraints that you define in a file.
+pointer values that should be in a valid address space, or your own constraints 
+that you define in a file.
 
 You can take a look a `haystack/structures/win32/winxpheap.constraints`, where
 the constraints of a Windows XP HEAP are defined.
@@ -67,12 +71,13 @@ The following constraints are supported:
  - IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.
  - NotNull: The value of this field must not be 0.
  - RangeValue(x,y): the field must have a value between x and y.
- - PerfectMatch('hello world'): the field (a string) must match the argument
+ - PerfectMatch('hello world'): the field (a string) must match 'hello world'
  - [1,2,3]: A list of values that the fields should have
- - [1, RangeValue(12,16), 42]: The field
+ - [1, RangeValue(12,16), 42]: The field value should be 1, 12-16 or 42.
 
 
 Example:
+
     [struct_name]
     myfield: [1,0xff]
     ptr_field: NotNull
@@ -81,7 +86,7 @@ Example:
 Command line example:
 ---------------------
 
-**(sslsnoop repository needs an update to be compatible with releases > v0.20 - pending)** 
+**sslsnoop repository needs an update to be compatible with releases > v0.20 - pending** 
 
 For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
@@ -95,7 +100,7 @@ Lets assume we have an ssh client or server as pid *4042*:
 Graphic example :
 -----------------
 
-*(This is not working right now)*
+**This is not working right now**
 
 There is also an attempt at a Graphical GUI ( Qt4 )
 Dump the process, then you can open it in the GUI::
@@ -120,6 +125,7 @@ How to define your own structures:
 
 The most easy way is to use ctypeslib to generate ctypes records from
 C Headers.
+
 Or define your python ctypes record by hand.
 
 
@@ -129,69 +135,45 @@ Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
 **alpha-stage-not-working** 
 
 Quick info:
- This tool parse the heap for allocator structures, pointers
+ The `haystack-reverse` tool parse the heap for allocator structures, pointers
  values, small integers and text (ascii/utf).
  Given all the previous information, it can extract instances
  and helps you in classifying and defining structures types.
 
-::
-
-     usage: haystack-reverse  [-h] [--debug]
-                              dumpname
-                              {instances,typemap,group,parent,graph,show,makesig,clean}
-                              ...
- 
-     Several tools to reverse engineer structures on the heap.
- 
-     positional arguments:
-       dumpname              Source memory dump by haystack.
-       {instances,typemap,group,parent,graph,show,makesig,clean}
-                             sub-command help
-         instances           List all structures instances with virtual address,
-                             member types guess and info.
-         typemap             Try to reverse generic types from instances'
-                             similarities.
-         group               Show structure instances groups by size and signature.
-         parent              Print the parent structures pointing to the structure
-                             located at this address.
-         graph               DISABLED - Show sorted structure instances groups by
-                             size and signature in a graph.
-         show                Show one structure instance.
-         makesig             Create a simple signature file of the heap - NULL,
-                             POINTERS, OTHER VALUES.
-         clean               Clean the memory dump from cached info.
- 
-     optional arguments:
-       -h, --help            show this help message and exit
-       --debug               Debug mode on.
-
 
 Command line example:
 --------------------
-This will create several files in the folder containing <yourdumpname>::
+This will create several files in the folder containing <yourdumpname>:
 
-    $ python haystack-reverse instances <yourdumpname>
+    $ python haystack-reverse <yourdumpfolder> instances
+    $ python haystack-reverse haystack/test/src//test-ctypes6.64.dump instances
+    $ ls -l haystack/test/src/test-ctypes6.64.dump/cache
+    $ ls -l haystack/test/src/test-ctypes6.64.dump/cache/structs
 
-The most interesting one being the <yourdumpname>.headers_values.py that
-gives you an ctypes listing of all found structures, with gestimates
+The most interesting one being the `<yourdumpfolder>/cache/headers_values.py` that
+gives you an ctypes listing of all found structures, with guesstimates
 on fields types.
 
-A <yourdumpname>.gexf file is also produced to help you visualize
+A <yourdumpfolder>/cache/graph.gexf file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
 
-Show ordered list of structures, by similarities::
+Show ordered list of structures, by similarities:
 
-    $ python haystack-reverse show <yourdumpname>
+    $ python haystack-reverse <yourdumpname> show
 
 Show only structures of size *324*::
 
-    $ python haystack-reverse show --size 324 <yourdumpname>
+    $ python haystack-reverse <yourdumpname> show --size 324 
 
 
-Write to file an attempt to reversed the original types hierachy::
+Write to file an attempt to reversed the original types hierachy:
 
-    $ python haystack-reverse typemap <yourdumpname>
+    $ python haystack-reverse <yourdumpname> typemap 
+
+Clean the cache created :
+
+    $ python haystack-reverse <yourdumpname> clean 
 
 
 Extension examples :
