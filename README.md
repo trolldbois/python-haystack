@@ -62,18 +62,18 @@ Constraints file:
 -----------------
 
 The following constraints are supported:
- IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.
+ `IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.
  NotNull: The value of this field must not be 0.
  RangeValue(x,y): the field must have a value between x and y.
  PerfectMatch('hello world'): the field (a string) must match the argument
  [1,2,3]: A list of values that the fields should have
- [1, RangeValue(12,16), 42]: The field
+ [1, RangeValue(12,16), 42]: The field`
 
 
 Example:
- [struct_name]
+ `[struct_name]
  myfield: [1,0xff]
- ptr_field: NotNull 
+ ptr_field: NotNull` 
 
 
 Command line example:
@@ -85,9 +85,9 @@ For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
 Lets assume we have an ssh client or server as pid *4042*::
 
-  $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state search > instance.pickled
-  $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
-  $ sudo haystack --pid xxxx --pickled <your ctypes Structure> search > instance.pickled
+  `$ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state search > instance.pickled`
+  `$ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled`
+  `$ sudo haystack --pid xxxx --pickled <your ctypes Structure> search > instance.pickled`
 
 
 Graphic example :
@@ -98,8 +98,8 @@ Graphic example :
 There is also an attempt at a Graphical GUI ( Qt4 )
 Dump the process, then you can open it in the GUI::
 
-$ haystack-gui # ( and Ctrl-O , click click)
-$ haystack-gui --dumpname dumps/myssh.dump
+ `$ haystack-gui # ( and Ctrl-O , click click)`
+ `$ haystack-gui --dumpname dumps/myssh.dump`
 
 You can the search a structure from the heap of that memory mapping.
 

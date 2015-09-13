@@ -423,6 +423,7 @@ class DSASimple(StructureAnalyser):
             log.debug(
                 '_make_gaps: adding field at offset %d:%d' %
                 (gap2.offset, gap2.offset + len(gap2)))
+            # FIXME BUG: ValueError: __len__() should return >= 0
             gaps.append(gap1)
             gaps.append(gap2)
         return
