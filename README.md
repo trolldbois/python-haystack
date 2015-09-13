@@ -58,6 +58,24 @@ You can take a look a `haystack/structures/win32/winxpheap.constraints`, where
 the constraints of a Windows XP HEAP are defined.
 Obviously, the more constraints, the better the results will be.  
 
+Constraints file:
+-----------------
+
+The following constraints are supported:
+ IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.
+ NotNull: The value of this field must not be 0.
+ RangeValue(x,y): the field must have a value between x and y.
+ PerfectMatch('hello world'): the field (a string) must match the argument
+ [1,2,3]: A list of values that the fields should have
+ [1, RangeValue(12,16), 42]: The field
+
+
+Example:
+ [struct_name]
+ myfield: [1,0xff]
+ ptr_field: NotNull 
+
+
 Command line example:
 ---------------------
 
