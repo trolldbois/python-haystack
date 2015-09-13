@@ -7,7 +7,7 @@
 
 Quick Start:
 ============
-[Quick usage guide](docs/docs/Haystack basic usage.ipynb) in the docs/ folder.
+[Quick usage guide](docs/Haystack basic usage.ipynb) in the docs/ folder.
 
 Introduction:
 =============
