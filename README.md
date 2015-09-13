@@ -43,7 +43,7 @@ Search for known structures:
 ============================
 
 To search for a specific record, you will first need to define that record type.
-A [quick usage guide](docs/docs/Haystack basic usage.ipynb) is available to go
+A [quick usage guide](docs/Haystack basic usage.ipynb) is available to go
 over the basic steps to go from a C Header file to a Python ctypes definition.
 Or you can do it yourself, with traditional Python ctypes records.
 
