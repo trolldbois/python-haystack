@@ -18,7 +18,7 @@ C structure matching.
 The first class of algorithms gives the ability to search for known
 record in a live process's memory, or in a memory dump.
 
-*alpha-stage*
+**alpha-stage**
 The second class of algorithms aims at giving a reverse engineering look
 at a memory dump, focusing on reconstruction, classification of classic
 C structures from memory. Heap analysis. Dynamic types definition.
@@ -54,8 +54,10 @@ In short, the haystack search will iterate over every offset of the program's
 memory to try and find 'valid' offset for that specific record.
 The validity of the record  is determined mostly by inherent constraints, like
 pointer values, or your own constraints that you define in a file.
+
 You can take a look a `haystack/structures/win32/winxpheap.constraints`, where
 the constraints of a Windows XP HEAP are defined.
+
 Obviously, the more constraints, the better the results will be.  
 
 Constraints file:
@@ -71,49 +73,43 @@ The following constraints are supported:
 
 
 Example:
- `[struct_name]
- myfield: [1,0xff]
- ptr_field: NotNull` 
+    [struct_name]
+    myfield: [1,0xff]
+    ptr_field: NotNull
 
 
 Command line example:
 ---------------------
 
-(sslsnoop repository needs an update to be compatible with releases > v0.20 - pending) 
+**(sslsnoop repository needs an update to be compatible with releases > v0.20 - pending)** 
 
 For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
-Lets assume we have an ssh client or server as pid *4042*::
+Lets assume we have an ssh client or server as pid *4042*:
 
-  `$ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state search > instance.pickled`
-  `$ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled`
-  `$ sudo haystack --pid xxxx --pickled <your ctypes Structure> search > instance.pickled`
+    $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state search > instance.pickled
+    $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+    $ sudo haystack --pid xxxx --pickled <your ctypes Structure> search > instance.pickled
 
 
 Graphic example :
 -----------------
 
-(This is not working right now)
+*(This is not working right now)*
 
 There is also an attempt at a Graphical GUI ( Qt4 )
 Dump the process, then you can open it in the GUI::
 
- `$ haystack-gui # ( and Ctrl-O , click click)`
- `$ haystack-gui --dumpname dumps/myssh.dump`
+    $ haystack-gui # ( and Ctrl-O , click click)
+    $ haystack-gui --dumpname dumps/myssh.dump
 
 You can the search a structure from the heap of that memory mapping.
 
 You have to import your extensions before that to have them listed in
 the search dialog.
 
-( *try sslsnoop.ctypes_openssh* )
 
-Tip:
- As this is a beta version, sslsnoop is hard-imported in the GUI.
- You should have it installed.
-
-
-python script interpreter example:
+python API example:
 ----------------------------------
 
 See the [quick usage guide](docs/docs/Haystack basic usage.ipynb)
@@ -127,8 +123,10 @@ C Headers.
 Or define your python ctypes record by hand.
 
 
-*alpha-stage-not-working* Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
+Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
 ===================================================
+
+**alpha-stage-not-working** 
 
 Quick info:
  This tool parse the heap for allocator structures, pointers
@@ -138,41 +136,41 @@ Quick info:
 
 ::
 
-|    usage: haystack-reverse  [-h] [--debug]
-|                             dumpname
-|                             {instances,typemap,group,parent,graph,show,makesig,clean}
-|                             ...
-|
-|    Several tools to reverse engineer structures on the heap.
-|
-|    positional arguments:
-|      dumpname              Source memory dump by haystack.
-|      {instances,typemap,group,parent,graph,show,makesig,clean}
-|                            sub-command help
-|        instances           List all structures instances with virtual address,
-|                            member types guess and info.
-|        typemap             Try to reverse generic types from instances'
-|                            similarities.
-|        group               Show structure instances groups by size and signature.
-|        parent              Print the parent structures pointing to the structure
-|                            located at this address.
-|        graph               DISABLED - Show sorted structure instances groups by
-|                            size and signature in a graph.
-|        show                Show one structure instance.
-|        makesig             Create a simple signature file of the heap - NULL,
-|                            POINTERS, OTHER VALUES.
-|        clean               Clean the memory dump from cached info.
-|
-|    optional arguments:
-|      -h, --help            show this help message and exit
-|      --debug               Debug mode on.
+     usage: haystack-reverse  [-h] [--debug]
+                              dumpname
+                              {instances,typemap,group,parent,graph,show,makesig,clean}
+                              ...
+ 
+     Several tools to reverse engineer structures on the heap.
+ 
+     positional arguments:
+       dumpname              Source memory dump by haystack.
+       {instances,typemap,group,parent,graph,show,makesig,clean}
+                             sub-command help
+         instances           List all structures instances with virtual address,
+                             member types guess and info.
+         typemap             Try to reverse generic types from instances'
+                             similarities.
+         group               Show structure instances groups by size and signature.
+         parent              Print the parent structures pointing to the structure
+                             located at this address.
+         graph               DISABLED - Show sorted structure instances groups by
+                             size and signature in a graph.
+         show                Show one structure instance.
+         makesig             Create a simple signature file of the heap - NULL,
+                             POINTERS, OTHER VALUES.
+         clean               Clean the memory dump from cached info.
+ 
+     optional arguments:
+       -h, --help            show this help message and exit
+       --debug               Debug mode on.
 
 
 Command line example:
 --------------------
 This will create several files in the folder containing <yourdumpname>::
 
-$ python haystack-reverse instances <yourdumpname>
+    $ python haystack-reverse instances <yourdumpname>
 
 The most interesting one being the <yourdumpname>.headers_values.py that
 gives you an ctypes listing of all found structures, with gestimates
@@ -184,16 +182,16 @@ instances links. It gets messy for any kind of serious application.
 
 Show ordered list of structures, by similarities::
 
-$ python haystack-reverse show <yourdumpname>
+    $ python haystack-reverse show <yourdumpname>
 
 Show only structures of size *324*::
 
-$ python haystack-reverse show --size 324 <yourdumpname>
+    $ python haystack-reverse show --size 324 <yourdumpname>
 
 
 Write to file an attempt to reversed the original types hierachy::
 
-$ python haystack-reverse typemap <yourdumpname>
+    $ python haystack-reverse typemap <yourdumpname>
 
 
 Extension examples :
