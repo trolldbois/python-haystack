@@ -15,11 +15,12 @@ Introduction:
 python-haystack is an heap analysis framework, focused on classic
 C structure matching.
 
-The first class of algorithms gives the ability to search for known
-record in a live process's memory, or in a memory dump.
+The first function/API is the SEARCH function.
+ - It gives the ability to search for known record types in a process memory dump (or live process's memory)
 
 **alpha-stage**
-The second class of algorithms aims at giving a reverse engineering look
+The second function/API is the REVERSE function.
+ - It aims at giving a reverse engineering look
 at a memory dump, focusing on reconstruction, classification of classic
 C structures from memory. Heap analysis. Dynamic types definition.
 
@@ -146,7 +147,7 @@ Command line example:
 This will create several files in the folder containing <yourdumpname>:
 
     $ python haystack-reverse <yourdumpfolder> instances
-    $ python haystack-reverse haystack/test/src//test-ctypes6.64.dump instances
+    $ python haystack-reverse haystack/test/src/test-ctypes6.64.dump instances
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache/structs
 
