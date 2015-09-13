@@ -25,7 +25,6 @@ __all__ = [
 # verify the version
 from pkg_resources import get_distribution, DistributionNotFound
 import os.path
-import resource
 
 try:
     _dist = get_distribution('haystack')
@@ -46,18 +45,23 @@ search_record = api.search_record
 output_to_string = api.output_to_string
 output_to_python = api.output_to_python
 
-# augment our file limit capacity to max
-maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-# print 'maxnofile', maxnofile
-resource.setrlimit(
-    resource.RLIMIT_NOFILE,
-    (maxnofile[1],
-     maxnofile[1]))
-# maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
-# print 'maxnofile_after', maxnofile_after
-# travis-ci says
-# maxnofile (64000, 64000)
-# maxnofile_after (64000, 64000)
+try:
+    import resource
+    # augment our file limit capacity to max
+    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+    # print 'maxnofile', maxnofile
+    resource.setrlimit(
+        resource.RLIMIT_NOFILE,
+        (maxnofile[1],
+         maxnofile[1]))
+    # maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
+    # print 'maxnofile_after', maxnofile_after
+    # travis-ci says
+    # maxnofile (64000, 64000)
+    # maxnofile_after (64000, 64000)
+except ImportError, e:
+    pass
+
 
 # bad bad idea...
 MMAP_HACK_ACTIVE = True
