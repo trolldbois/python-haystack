@@ -11,8 +11,9 @@ import itertools
 import re
 import Levenshtein  # seqmatcher ?
 import networkx
+import numpy
 
-from haystack.reverse.config import Config
+from haystack.reverse import config
 from haystack.utils import xrange
 from haystack.reverse import pointerfinder
 
@@ -43,8 +44,10 @@ class SignatureGroupMaker:
         # need to force resolve of structures
         self._signatures = []
         for addr in map(long, self._structures_addresses):
+            # decode the fields
             self._context.getStructureForAddr(
                 addr).decodeFields()  # can be long
+            # get the signature for the record
             self._signatures.append(
                 (addr, self._context.getStructureForAddr(addr).getSignature(True)))
         return
@@ -69,8 +72,8 @@ class SignatureGroupMaker:
         return
 
     def persist(self):
-        outdir = Config.getCacheFilename(
-            Config.CACHE_SIGNATURE_GROUPS_DIR,
+        outdir = config.get_cache_filename(
+            config.CACHE_SIGNATURE_GROUPS_DIR,
             self._context.dumpname)
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
@@ -82,14 +85,14 @@ class SignatureGroupMaker:
         return
 
     def isPersisted(self):
-        outdir = Config.getCacheFilename(
-            Config.CACHE_SIGNATURE_GROUPS_DIR,
+        outdir = config.get_cache_filename(
+            config.CACHE_SIGNATURE_GROUPS_DIR,
             self._context.dumpname)
         return os.access(os.path.sep.join([outdir, self._name]), os.F_OK)
 
     def load(self):
-        outdir = Config.getCacheFilename(
-            Config.CACHE_SIGNATURE_GROUPS_DIR,
+        outdir = config.get_cache_filename(
+            config.CACHE_SIGNATURE_GROUPS_DIR,
             self._context.dumpname)
         inname = os.path.sep.join([outdir, self._name])
         self._similarities = utils.int_array_cache(inname)
@@ -109,11 +112,11 @@ class StructureSizeCache:
         self._sizes = None
 
     def _loadCache(self):
-        outdir = Config.getCacheFilename(
-            Config.CACHE_SIGNATURE_SIZES_DIR,
+        outdir = config.get_cache_filename(
+            config.CACHE_SIGNATURE_SIZES_DIR,
             self._context.dumpname)
         fdone = os.path.sep.join(
-            [outdir, Config.CACHE_SIGNATURE_SIZES_DIR_TAG])
+            [outdir, config.CACHE_SIGNATURE_SIZES_DIR_TAG])
         if not os.access(fdone, os.R_OK):
             return False
         for myfile in os.listdir(outdir):
@@ -127,8 +130,8 @@ class StructureSizeCache:
     def cacheSizes(self):
         """Find the number of different sizes, and creates that much numpyarray"""
         # if not os.access
-        outdir = Config.getCacheFilename(
-            Config.CACHE_SIGNATURE_SIZES_DIR,
+        outdir = config.get_cache_filename(
+            config.CACHE_SIGNATURE_SIZES_DIR,
             self._context.dumpname)
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
@@ -147,7 +150,7 @@ class StructureSizeCache:
         # saved all sizes dictionaries.
         # tag it as done
         file(
-            os.path.sep.join([outdir, Config.CACHE_SIGNATURE_SIZES_DIR_TAG]), 'w')
+            os.path.sep.join([outdir, config.CACHE_SIGNATURE_SIZES_DIR_TAG]), 'w')
         self._sizes = arrays
         return
 
@@ -409,8 +412,8 @@ def graphStructureGroups(context, chains, originAddr=None):
         print '#', '-' * 78
     networkx.readwrite.gexf.write_gexf(
         graph,
-        Config.getCacheFilename(
-            Config.CACHE_GRAPH,
+        config.get_cache_filename(
+            config.CACHE_GRAPH,
             context.dumpname))
 
 
@@ -494,12 +497,12 @@ def makeGroupSignature(context, sizeCache):
 # FIXME: 100 maybe is a bit short
 try:
     import pkgutil
-    _words = pkgutil.get_data(__name__, Config.WORDS_FOR_REVERSE_TYPES_FILE)
+    _words = pkgutil.get_data(__name__, config.WORDS_FOR_REVERSE_TYPES_FILE)
 except ImportError:
     import pkg_resources
     _words = pkg_resources.resource_string(
         __name__,
-        Config.WORDS_FOR_REVERSE_TYPES_FILE)
+        config.WORDS_FOR_REVERSE_TYPES_FILE)
 
 # global
 _NAMES = [s.strip() for s in _words.split('\n')[:-1]]

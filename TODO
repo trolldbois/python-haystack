@@ -1,4 +1,4 @@
-
+- keep the original address in the Ouputters, python output.
 
 - re-correlate the is_valid methods to the record type, so that advanced code-based
 validation is allowed on a record, on top of constraits
@@ -23,15 +23,10 @@ OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string 
   
   
 - use PEB search to double check that we find all HEAPs in standard scenarios.
-- orient winheap to work with heap, not with heap aligned on mapping.start.
-
-- FIX winXP x86 heapwalker, then work on vol.
 
 - use pycallgraph to cProfile a HEAP validation.
 - make a callback profiler that profiles the graph path validation of a structure in graphical format
 - using a decorator would be fun
-
-***** heap walker validator is not a validator all by itself.
 
 - add a depth parameter to constraints loading on list fields.
 - separate listmodel in a constraints like config file ?
@@ -43,13 +38,9 @@ OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string 
 
 - use ASN.1 for constraints. ??
 
-- FIX get_heap on windows XP/zeus demo. Extract a process from a vol dump to make a test case.
 - add a hintoffset search thingy, so that one can search for a structure at a particular offset of a mmap ? maybe to complex for API
 
-- make a listmodel method for arrays of structures
-- make the winxp freelists method to work.
-
-- use heapwalker plugins from rekall/volatility to create a proxy heapwalker ?
+- make a listmodel method for arrays of structures, or not.
 
 
 Attribute packed is not correct in ctypeslib
@@ -73,10 +64,11 @@ Todo:
  - documented example
  - Rekall plugin
  - Rekall memorymap
- - make basicmodel:loadable members work with vtypes ?
+ - make basicmodel:loadable members work with vtypes (vol/rekall) ?
  - Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
  - pylint ignore W0212 in profiles.
  - add PyQt4 as dependency for optional functions
  - Add to ipython
+ - Make reverse work again
 
 

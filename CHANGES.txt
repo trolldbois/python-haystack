@@ -1,9 +1,6 @@
 Ongoing:
- - Volatility plugin
- - Volatility memorymap
- - merge in master
-
- - move interfaces into an interfaces module, maybe use abc.
+ - stabilisation of search
+ - refactorisation of reverse
 
 Changes to architecture.txt:
  - IMemoryHandler: there is a process memory concept (dump, live, vol, rekall) that need a handler.
@@ -19,14 +16,13 @@ Changes to architecture.txt:
  - the memory l
 
 
- - model should be an instance.
- - mapping should represent the memory dump entity
- - ctypes for internal haystack loading should be a Proxy ctypes, saved the mapping instance
-
 2015-09:
  - Working on Volatility dump reader
  - working a WinXP chunk iterator
  - adding PEB to winXP list of know structures
+ - Working volatility plugins in repo https://github.com/trolldbois/volatility_plugins
+ - winheap to work with heap at w.e. offset, not with heap aligned on mapping.start.
+ - fixed winXP x86 heapwalker
 
 2015-08:
  - Fixes for travis in setup.py
@@ -41,8 +37,7 @@ OK (skipped=7, expected failures=4)
  - start standardizing test dumps in a test file inventory
 Ran 240 tests in 119.036s
 FAILED (failures=2, errors=9, skipped=11, expected failures=3)
-
-
+ - model is an instance.
 
 
 2015-07:

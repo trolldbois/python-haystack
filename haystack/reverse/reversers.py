@@ -501,7 +501,7 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
 
     def findHead(self, ctx, members):
         sizes = sorted([(ctx.getStructureSizeForAddr(m), m) for m in members])
-        if sizes[0] < 3 * self.my_target.config.get_word_size():
+        if sizes[0] < 3 * self.my_target.get_word_size():
             log.error('a double linked list element must be 3 WORD at least')
             raise ValueError(
                 'a double linked list element must be 3 WORD at least')
@@ -653,6 +653,8 @@ def reverseInstances(dumpname):
     try:
         if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
             os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
+
+        log.info("[+] Cache created in %s", config.get_record_cache_folder_name(ctx.dumpname))
 
         # we use common allocators to find structures.
         #log.debug('Reversing malloc')

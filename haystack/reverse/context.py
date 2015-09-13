@@ -49,14 +49,14 @@ class ReverserContext(object):
         #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self._memory_handler)
 
         # FIXME: no use I think
-        ##heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self._memory_handler)
-        ##self._pointers_values_heap = heap_values
-        ##self._pointers_offsets_heap = heap_offsets
+        heap_offsets, heap_values = utils.getHeapPointers(self.dumpname, self.memory_handler)
+        self._pointers_values_heap = heap_values
+        self._pointers_offsets_heap = heap_offsets
 
         # test with all mmap in target
-        ##all_offsets, all_values = utils.getAllPointers(self.dumpname, self._memory_handler)
-        ##self._pointers_values = all_values
-        ##self._pointers_offsets = all_offsets
+        all_offsets, all_values = utils.getAllPointers(self.dumpname, self.memory_handler)
+        self._pointers_values = all_values
+        self._pointers_offsets = all_offsets
 
         if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
             log.info('[+] Reversing function pointers names')
