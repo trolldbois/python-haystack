@@ -16,8 +16,9 @@ python-haystack is an heap analysis framework, focused on classic
 C structure matching.
 
 The first class of algorithms gives the ability to search for known
-structures in a live process's memory, or in a memory dump.
+record in a live process's memory, or in a memory dump.
 
+*alpha-stage*
 The second class of algorithms aims at giving a reverse engineering look
 at a memory dump, focusing on reconstruction, classification of classic
 C structures from memory. Heap analysis. Dynamic types definition.
@@ -41,20 +42,26 @@ containing each memory map in a separate file :
 Search for known structures:
 ============================
 
-You need the python definition/ctypes structures of the known
-structures.
-An example would be sslsnoop, which provide python ctypes structures for
-openssl and openssh structures.
+To search for a specific record, you will first need to define that record type.
+A [quick usage guide](docs/docs/Haystack basic usage.ipynb) is available to go
+over the basic steps to go from a C Header file to a Python ctypes definition.
+Or you can do it yourself, with traditional Python ctypes records.
 
-Quick info:
- This demonstrate the ability to brute-force the search
- of a known structure, based on fields types assumptions or constraints.
- The magic is performed in the model.py module.
- The constraints are applied on the python ctypes structures by the
- 'expectedValues' static field.
+The search api is available through the `haystack` script but also in an api so 
+that you can embed that in your own code. 
+
+In short, the haystack search will iterate over every offset of the program's 
+memory to try and find 'valid' offset for that specific record.
+The validity of the record  is determined mostly by inherent constraints, like
+pointer values, or your own constraints that you define in a file.
+You can take a look a `haystack/structures/win32/winxpheap.constraints`, where
+the constraints of a Windows XP HEAP are defined.
+Obviously, the more constraints, the better the results will be.  
 
 Command line example:
 ---------------------
+
+(sslsnoop repository needs an update to be compatible with releases > v0.20 - pending) 
 
 For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
@@ -67,6 +74,8 @@ Lets assume we have an ssh client or server as pid *4042*::
 
 Graphic example :
 -----------------
+
+(This is not working right now)
 
 There is also an attempt at a Graphical GUI ( Qt4 )
 Dump the process, then you can open it in the GUI::
@@ -89,56 +98,18 @@ Tip:
 python script interpreter example:
 ----------------------------------
 
-as root::
-
-  >>> import haystack
-  >>> state_it = haystack.search_process('sslsnoop.ctypes_openssh.session_state', 4042, hint=0)
-  >>> state = state_it.next()[0][0]
-  >>> state.receive_context.evp.app_data.aes_ctx.rd_key
-  '\xcc\xeaM#\xbd# \xc1\x89\xf5\xaa\xb7\xc6f!\x91\xfe\x17\xcc\x97C4\xecV\xca\xc1F\xe1\x0c\xa7gp\xa0\x92\x9di\xe3\xa6q?)g7\xde%\xc0P\xae\x1e\xc1yV\xfdg\x08i\xd4\x00?\xb7\xf1\xc0o\x19\xaci\xad\xf7Q\x0e\xa5\x9e\x85\x0e\x9a)t\xce\xf507\x8f\xa9ef\x81\x0c\xfb\xe3\x8f\x96\xd2\x97Ac\xe2\x94t1\xed\xf2\xf5=\x16\x11z\xab\xc4\x86;\xc8&6\x9c\xc6\xa9\xc4i\xfb\xbf\xd5\x13P{S(\x98]\x82\xda\x8aDF\xb3q\xfb\x93\xa0!\x80\xc0\x88\xb9\xdd]\x8cK\xfe\x1b?:\x05\x88\x9f\x1b\x85H\x17\xa2X\x9b\xb6!\xac\x80\x89\x1b\xa9\x08\x16\x00,@\x01\xa2t\xd5LC\x7f\xdc\xa3\xfc5\xc3\xc1\xa8\xb3\xdcul\xfca\xfaG\xd7\x85r\xf1\x92\x93\xd5cn\xefa\xa5\x88l\xd0#\xfb2\x00H\xdc%\xed^\xdf\xa1\x86yFK\xaf\xcd\xe7)\xb2\xdd\xcb\xd1\xa8\xad\xb0\xdf\xb1\xb8E'
-
-and that was the session key of the receive stream.
+See the [quick usage guide](docs/docs/Haystack basic usage.ipynb)
 
 
-Extensibility:
+How to define your own structures:
 --------------
 
-It's easy to add new structures. Its basically the ctypes definition of
-C structures that should be done following the next 4 steps :
-
-#) Your class must extend haystack.model.LoadableMembersStructure.
-#) You must give your class a completed _fields_ (with one _ ), like all ctypes.Structure
-#) *Optional* You can add an expectedValues dict() to your ctype classes to add some constraints.
-#) *Optional* You can override isValid and load_members to implement advanced constraints validation.
-#) call model.build_python_class_clones(sys.modules[__name__])
-
-Easy 'creation':
-  use h2xml and xml2py binaries, shipped with ctypeslib to generate a python module from
-  a C header.
-
-Advanced use:
-  You can override methods isValid and load_members to implements
-  advanced data loading and constraints validation.
-
-  See sslsnoop for loading cipher structures from void pointers
-
-The global algorithm :
-  #) The ctypes structure is mapped at the first offset of the memory
-     mapping.
-  #) The method load_members is called.
-  #) The method isValid is called on self.
-  #) A validation test is done for each members, constraints and
-     memory space validity (pointers) are tested.
-     The validation does not recurse.
-  #) Each members is then 'loaded' to local space.
-     If the value is a pointer or a model.LoadableMembersStructure type, it's
-     recursively Loaded. ( and validated).
-     If the recursive loading fails, the calls fails. bye-bye.
-  #) If all contraints are respected, we have a match.
-  #) Move to see next offset, goto 1)
+The most easy way is to use ctypeslib to generate ctypes records from
+C Headers.
+Or define your python ctypes record by hand.
 
 
-Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
+*alpha-stage-not-working* Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
 ===================================================
 
 Quick info:
@@ -214,81 +185,22 @@ Extension examples :
 @ see ctypes-kernel on my github. Linux kernel structure are generated from a build kernel tree. (VMM is abitch)
 
 
-Pseudo Example for extension :
-==============================
-
-::
-
-|from haystack.model import LoadableMembersStructure, RangeValue, NotNull
-|
-|class OpenSSLStruct(LoadableMembersStructure):
-|  pass
-|
-|class RSA(OpenSSLStruct):
-|  ''' rsa/rsa.h '''
-|  _fields_ = [
-|  ("pad",  ctypes.c_int),
-|  ("version",  ctypes.c_long),
-|  ("meth",ctypes.POINTER(BIGNUM)),#const RSA_METHOD *meth;
-|  ("engine",ctypes.POINTER(ENGINE)),#ENGINE *engine;
-|  ('n', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-|  ('e', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-|  ('d', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-|  ('p', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-|  ('q', ctypes.POINTER(BIGNUM) ), ## still in ssh memap
-|  ('dmp1', ctypes.POINTER(BIGNUM) ),
-|  ('dmq1', ctypes.POINTER(BIGNUM) ),
-|  ('iqmp', ctypes.POINTER(BIGNUM) ),
-|  ("ex_data", CRYPTO_EX_DATA ),
-|  ("references", ctypes.c_int),
-|  ("flags", ctypes.c_int),
-|  ("_method_mod_n", ctypes.POINTER(BN_MONT_CTX) ),
-|  ("_method_mod_p", ctypes.POINTER(BN_MONT_CTX) ),
-|  ("_method_mod_q", ctypes.POINTER(BN_MONT_CTX) ),
-|  ("bignum_data",ctypes.POINTER(ctypes.c_ubyte)), ## moue c_char_p ou POINTER(c_char) ?
-|  ("blinding",ctypes.POINTER(BIGNUM)),#BN_BLINDING *blinding;
-|  ("mt_blinding",ctypes.POINTER(BIGNUM))#BN_BLINDING *mt_blinding;
-|  ]
-|  expectedValues={
-|    "pad": [0],
-|    "version": [0],
-|    "references": RangeValue(0,0xfff),
-|    "n": [NotNull],
-|    "e": [NotNull],
-|    "d": [NotNull],
-|    "p": [NotNull],
-|    "q": [NotNull],
-|    "dmp1": [NotNull],
-|    "dmq1": [NotNull],
-|    "iqmp": [NotNull]
-|  }
-|  def load_members(self, mappings, maxDepth):
-|    print 'example'
-|    if not LoadableMembersStructure.load_members(self, mappings, maxDepth):
-|      log.debug('RSA not loaded')
-|      return False
-|    return True
-|
-|# register to haystack
-|model.build_python_class_clones(sys.modules[__name__])
-|
-|#EOF
-
 
 not so FAQ :
 ============
 
 What does it do ?:
 ------------------
-The basic functionnality is to search in a process' memory maps for a
-specific C Structures.
+The basic functionality is to search in a process' memory for a
+specific C Record.
 
-The extended reverse engineering functionnality aims at reversing
+The extended reverse engineering functionality aims at reversing
 structures from memory/heap analysis.
 
 How do it knows that the structures is valid ? :
 ------------------------------------------------
-You add some constraints ( expectedValues ) on the fields. Pointers are also a good start.
+You add some constraints on the record fields expected values. 
+Pointers are always constrained to valid memory space.
 
 Where does the idea comes from ? :
 -----------------------------------
@@ -308,7 +220,7 @@ What are the dependencies ? :
 ----------------------------
 
 - python-ptrace on linux
-- winappdbg on win32
+- winappdbg on win32 ( not sure if working, feedback welcome)
 - python-numpy
 - python-networkx
 - python-levenshtein
