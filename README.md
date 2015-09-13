@@ -62,12 +62,12 @@ Constraints file:
 -----------------
 
 The following constraints are supported:
- `IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.`
- `NotNull: The value of this field must not be 0.`
- `RangeValue(x,y): the field must have a value between x and y.
- PerfectMatch('hello world'): the field (a string) must match the argument
- [1,2,3]: A list of values that the fields should have
- [1, RangeValue(12,16), 42]: The field`
+ - IgnoreMember: The value of this field will be ignored. Useful to Ignore pointer fields.
+ - NotNull: The value of this field must not be 0.
+ - RangeValue(x,y): the field must have a value between x and y.
+ - PerfectMatch('hello world'): the field (a string) must match the argument
+ - [1,2,3]: A list of values that the fields should have
+ - [1, RangeValue(12,16), 42]: The field
 
 
 Example:
