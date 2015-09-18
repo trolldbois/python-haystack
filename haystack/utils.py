@@ -83,6 +83,9 @@ class Utils(interfaces.ICTypesUtils):
         #import pdb
         #pdb.set_trace()
         if hasattr(obj, '_sub_addr_'):
+            if callable(obj._sub_addr_):
+                log.debug('obj._sub_addr_: 0x%x', obj._sub_addr_())
+                return obj._sub_addr_()
             log.debug('obj._sub_addr_: 0x%x', obj._sub_addr_)
             return obj._sub_addr_
         elif isinstance(obj, int) or isinstance(obj, long):

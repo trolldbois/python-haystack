@@ -290,8 +290,8 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # TODO: optimization. 127s out of 288s = 40%
         assert isinstance(vaddr, long) or isinstance(vaddr, int)
         #if not (isinstance(vaddr, long) or isinstance(vaddr, int)):
-        #    import code
-        #    code.interact(local=locals())
+        #    import pdb
+        #    pdb.set_trace()
         # check 4 Mo boundaries
         _boundary_addr = (vaddr >> 12) << 12
         if _boundary_addr in self.__optim_get_mapping_for_address_cache:
