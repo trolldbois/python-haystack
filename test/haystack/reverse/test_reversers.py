@@ -102,7 +102,7 @@ class TestFullReverse(unittest.TestCase):
 
     def test_reverseInstances(self):
         log.info('START test test_reverseInstances')
-        ctx = reversers.reverseInstances(self.dumpname)
+        ctx = reversers.reverse_instances(self.dumpname)
         # FIXME test something.
         return
 

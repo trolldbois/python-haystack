@@ -155,7 +155,7 @@ The most interesting one being the `<yourdumpfolder>/cache/headers_values.py` th
 gives you an ctypes listing of all found structures, with guesstimates
 on fields types.
 
-A <yourdumpfolder>/cache/graph.gexf file is also produced to help you visualize
+A `<yourdumpfolder>/cache/graph.gexf` file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
 

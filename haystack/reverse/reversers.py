@@ -41,7 +41,7 @@ PointerGraphReverser:
 save_headers:
     Save the python class code definition to file.
 
-reverseInstances:
+reverse_instances:
         # we use common allocators to find structures.
         use DoubleLinkedListReverser to try to find some double linked lists records
         use FieldReverser to decode bytes contents to find basic types
@@ -646,7 +646,7 @@ def save_headers(context, addrs=None):
     return
 
 
-def reverseInstances(dumpname):
+def reverse_instances(dumpname):
     from haystack.reverse import context
     log.debug('[+] Loading the memory dump ')
     ctx = context.get_context(dumpname)

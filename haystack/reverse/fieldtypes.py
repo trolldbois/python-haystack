@@ -379,6 +379,8 @@ class Field:
     def __getstate__(self):
         d = self.__dict__.copy()
         # print d.keys()
+        #print d
+
         return d
 
 
@@ -387,7 +389,24 @@ class PointerField(Field):
     ''' represent a pointer field'''
 
     def set_child_ctype(self, name):
-        self.set_ctype('ctypes.POINTER(%s)' % name)
+        #self.set_ctype('ctypes.POINTER(%s)' % name)
+        #self.set_ctype('ctypes.POINTER(%s)' % name.__name__)
+        #print self.get_ctype()
+        # 2015-09-13
+        # FIXME should probably use a memory_handler
+        # this breaks pickling
+        self.set_ctype(ctypes.POINTER(name))
+
+    #def get_ctype(self):
+    #    return eval(Field.get_ctype(self))
+
+    # FIXME, probably need a setstate
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d['_ctype'] = str(d['_ctype'])
+
+        return d
+
 
     def set_child_addr(self, addr):
         self._child_addr = addr

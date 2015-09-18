@@ -1,3 +1,7 @@
+
+- change the reversers anonymous structure to be POPO.
+- we want all funcs outside of it.
+
 - keep the original address in the Ouputters, python output.
 
 - re-correlate the is_valid methods to the record type, so that advanced code-based
@@ -69,6 +73,6 @@ Todo:
  - pylint ignore W0212 in profiles.
  - add PyQt4 as dependency for optional functions
  - Add to ipython
- - Make reverse work again
+ - Make reverse work againe
 
 

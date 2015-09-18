@@ -41,15 +41,15 @@ DEBUG_ADDRS = []
 
 # Compare sruct type from parent with multiple pointer (
 
-def makeFilename(context, st):
+def make_filename(context, st):
     sdir = config.get_record_cache_folder_name(context.dumpname)
     if not os.path.isdir(sdir):
         os.mkdir(sdir)
     return os.path.sep.join([sdir, str(st)])
 
 
-def makeFilenameFromAddr(context, addr):
-    return makeFilename(context, 'struct_%x' % (addr))
+def make_filename_from_addr(context, addr):
+    return make_filename(context, 'struct_%x' % (addr))
 
 
 def makeStructure(context, start, size):
@@ -60,7 +60,7 @@ def cacheLoad(context, addr):
     dumpname = context.dumpname
     if not os.access(dumpname, os.F_OK):
         return None
-    fname = makeFilenameFromAddr(context, addr)
+    fname = make_filename_from_addr(context, addr)
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
@@ -72,7 +72,7 @@ def cacheLoadAll(context):
     dumpname = context.dumpname
     addresses = context.listStructuresAddresses()
     for addr in addresses:
-        fname = makeFilenameFromAddr(context, addr)
+        fname = make_filename_from_addr(context, addr)
         if os.access(fname, os.F_OK):
             p = pickle.load(file(fname, 'r'))
             p.setContext(context)
@@ -84,7 +84,7 @@ def remapLoad(context, addr, newmappings):
     dumpname = context.dumpname
     if not os.access(dumpname, os.F_OK):
         return None
-    fname = makeFilenameFromAddr(context, addr)
+    fname = make_filename_from_addr(context, addr)
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
@@ -114,7 +114,7 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
 
     def __init__(self, context, addr):
         self._addr = addr
-        self._fname = makeFilenameFromAddr(context, addr)
+        self._fname = make_filename_from_addr(context, addr)
         if not os.access(self._fname, os.F_OK):
             raise ValueError()
         self._context = context
@@ -203,10 +203,10 @@ class AnonymousStructInstance(object):
     def get_name(self):
         return self._name
 
-    def setCtype(self, t):
+    def set_ctype(self, t):
         self._ctype = t
 
-    def getCtype(self):
+    def get_ctype(self):
         if self._ctype is None:
             raise TypeError('Structure has no type')
         return self._ctype
@@ -300,7 +300,7 @@ class AnonymousStructInstance(object):
         sdir = config.get_record_cache_folder_name(self._context.dumpname)
         if not os.path.isdir(sdir):
             os.mkdir(sdir)
-        fname = makeFilename(self._context, self)
+        fname = make_filename(self._context, self)
         try:
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
@@ -786,15 +786,17 @@ class ReversedType(ctypes.Structure):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:
-        cls._fields_ = [(f.get_name(), f.getCtype()) for f in root.get_fields()]
+        for f in root.get_fields():
+            print f, f.get_ctype()
+        cls._fields_ = [(f.get_name(), f.get_ctype()) for f in root.get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():
         #    print 'error', f.get_name(), f.getCtype()
 
-    # @classmethod
+    #@classmethod
     def toString(self):
         fieldsStrings = []
-        for attrname, attrtyp in self.getFields():  # model
+        for attrname, attrtyp in self.get_fields():  # model
             # FIXME need ctypesutils.
             if self.ctypes.is_pointer_type(
                     attrtyp) and not self.ctypes.is_pointer_to_void_type(attrtyp):
@@ -814,3 +816,4 @@ class %s(ctypes.Structure):  # %s
 
 ''' % (self.__name__, info, fieldsString)
         return ctypes_def
+

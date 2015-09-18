@@ -1,27 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import itertools
+import ctypes
+import logging
+import os
+import re
+import Levenshtein  # seqmatcher ?
+import networkx
+import numpy
+import struct
+
+from haystack.reverse import config
+from haystack.utils import xrange
+from haystack.reverse import pointerfinder
+from haystack.reverse import utils
+from haystack.reverse import structure
+from haystack.reverse.heuristics import dsa
+
 """
 Tools around guessing a field' type and
 creating signature for record to compare them.
 """
 
-import itertools
-
-import re
-import Levenshtein  # seqmatcher ?
-import networkx
-import numpy
-
-from haystack.reverse import config
-from haystack.utils import xrange
-from haystack.reverse import pointerfinder
-
-
-#FIXME
-from haystack.reverse.reversers import *
-
-import ctypes
 
 log = logging.getLogger('signature')
 
@@ -30,9 +31,10 @@ log = logging.getLogger('signature')
 
 
 class SignatureGroupMaker:
-
-    """From a list of addresses, groups similar signature together.
-    HINT: structure should be resolved but not reverse-patternised for arrays...??"""
+    """
+    From a list of addresses, groups similar signature together.
+    HINT: structure should be resolved but not reverse-patternised for arrays...??
+    """
 
     def __init__(self, context, name, addrs):
         self._name = name
@@ -43,13 +45,14 @@ class SignatureGroupMaker:
         # get text signature for Counter to parse
         # need to force resolve of structures
         self._signatures = []
+        decoder = dsa.DSASimple(self._context.memory_handler)
         for addr in map(long, self._structures_addresses):
             # decode the fields
-            self._context.getStructureForAddr(
-                addr).decodeFields()  # can be long
+            record = self._context.getStructureForAddr(addr)
+            ## record.decodeFields()  # can be long
+            decoder.analyze_fields(record)
             # get the signature for the record
-            self._signatures.append(
-                (addr, self._context.getStructureForAddr(addr).getSignature(True)))
+            self._signatures.append((addr, self._context.getStructureForAddr(addr).getSignature(True)))
         return
 
     def make(self):
@@ -380,13 +383,16 @@ def buildStructureGroup(context, sizeCache, optsize=None):
 
 def printStructureGroups(context, chains, originAddr=None):
     chains.sort()
+    decoder = dsa.DSASimple(context.memory_handler)
     for chain in chains:
         log.debug('\t[-] chain len:%d' % len(chain))
         if originAddr is not None:
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            context.getStructureForAddr(addr).decodeFields()  # can be long
+            record = context.getStructureForAddr(addr)
+            ##record.decodeFields()  # can be long
+            decoder.analyze_fields(record)
             print context.getStructureForAddr(addr).toString()
         print '#', '-' * 78
 
@@ -394,6 +400,7 @@ def printStructureGroups(context, chains, originAddr=None):
 def graphStructureGroups(context, chains, originAddr=None):
     # TODO change generic fn
     chains.sort()
+    decoder = dsa.DSASimple(context.memory_handler)
     graph = networkx.DiGraph()
     for chain in chains:
         log.debug('\t[-] chain len:%d' % len(chain))
@@ -401,7 +408,9 @@ def graphStructureGroups(context, chains, originAddr=None):
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            context.getStructureForAddr(addr).decodeFields()  # can be long
+            record = context.getStructureForAddr(addr)
+            ## record.decodeFields()  # can be long
+            decoder.analyze_fields(record)
             print context.getStructureForAddr(addr).toString()
             targets = set()
             for f in context.getStructureForAddr(addr).getPointerFields():
@@ -430,17 +439,18 @@ def makeReversedTypes(context, sizeCache):
     for chains in buildStructureGroup(context, sizeCache):
         fixType(context, chains)
 
-    log.info(
-        '[+] For each instances, fix pointers fields to newly created types.')
+    log.info('[+] For each instances, fix pointers fields to newly created types.')
+    decoder = dsa.DSASimple(context.memory_handler)
     for s in context.listStructures():
         s.reset()
-        s.decodeFields()
+        ## s.decodeFields()
+        decoder.analyze_fields(s)
         for f in s.getPointerFields():
             addr = f._getValue(0)
             if addr in context.heap:
                 try:
                     ctypes_type = context.getStructureForOffset(
-                        addr).getCtype()
+                        addr).get_ctype()
                 # we have escapees, withouth a typed type... saved them from
                 # exception
                 except TypeError as e:
@@ -448,7 +458,8 @@ def makeReversedTypes(context, sizeCache):
                         context,
                         context.getStructureForOffset(addr),
                         getname())
-                f.setCtype(ctypes.POINTER(ctypes_type))
+                #f.setCtype(ctypes.POINTER(ctypes_type))
+                f.set_child_ctype(ctypes.POINTER(ctypes_type))
                 f.setComment('pointer fixed')
 
     log.info('[+] For new reversed type, fix their definitive fields.')
@@ -545,7 +556,7 @@ def fixInstanceType(context, instance, name):
     if ctypes_type is None:  # make type
         ctypes_type = structure.ReversedType.create(context, name)
     ctypes_type.addInstance(instance)
-    instance.setCtype(ctypes_type)
+    instance.set_ctype(ctypes_type)
     return ctypes_type
 
 
