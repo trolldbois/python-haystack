@@ -133,3 +133,8 @@ putty_1_win7.known_heaps = [(0x00390000, 0x3000),
                             # from free stuf - erroneous
                             #( 0x0061a000, 1200),
                             ]
+
+
+ssh_1_i386_linux = TestDump('test/dumps/ssh/ssh.1')
+ssh_1_i386_linux.known_records = {'struct_evp_cipher_ctx_st': [0xb84ee328, 0xb84ee3bc],
+                                 }
