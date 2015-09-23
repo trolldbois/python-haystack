@@ -75,6 +75,9 @@ class VolatilityProcessMappingA(AMemoryMapping):
                 size))
         return array
 
+    def reset(self):
+        pass
+
 import sys
 
 class VolatilityProcessMapper(interfaces.IMemoryLoader):

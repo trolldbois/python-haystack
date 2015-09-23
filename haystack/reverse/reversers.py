@@ -167,6 +167,8 @@ class GenericHeapAllocationReverser(StructureOrientedReverser):
                 sys.stdout.flush()
                 continue
             loaded += 1
+            if size < 0:
+                log.error("Negative allocation size")
             mystruct = structure.makeStructure(context, ptr_value, size)
             context._structures[ptr_value] = mystruct
             # add pointerFields

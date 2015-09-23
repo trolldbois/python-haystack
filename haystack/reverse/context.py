@@ -45,6 +45,9 @@ class ReverserContext(object):
         self._reversedTypes = dict()
         self._structures = None
 
+        if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
+            os.mkdir(config.get_cache_folder_name(self.dumpname))
+
         log.info('[+] Fetching cached structures addresses list')
         #ptr_values, ptr_offsets, aligned_ptr, not_aligned_ptr = utils.getHeapPointers(self.dumpname, self._memory_handler)
 
@@ -98,9 +101,9 @@ class ReverserContext(object):
             [(long(vaddr), s) for vaddr, s in structure.cacheLoadAllLazy(self)])
         log.info('[+] Fetched %d cached structures addresses from disk', len(self._structures))
 
-        # no all structures yet, make them from MallocReverser
+        # no all structures yet, make them from Allocated memory
         if len(self._structures) != len(self._malloc_addresses):
-            log.info('[+] No cached structures - making them from malloc reversers %d|%d' %
+            log.info('[+] No cached structures - making them from allocated memory reversers %d|%d' %
                      (len(self._structures), len(self._malloc_addresses)))
             if (len(self._malloc_addresses) - len(self._structures)) < 10:
                 log.warning('close numbers to check %s' %
@@ -183,7 +186,7 @@ class ReverserContext(object):
         return self._reversedTypes.values()
 
     @classmethod
-    def cacheLoad(cls, memory_handler):
+    def cacheLoad(cls, memory_handler):#, cache_folder_name):
         dumpname = os.path.normpath(memory_handler.get_name())
         config.create_cache_folder_name(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname)
@@ -277,10 +280,10 @@ def get_context(fname):
     """
     memory_handler = dump_loader.load(fname)
     try:
-        context = ReverserContext.cacheLoad(memory_handler)
+        context = ReverserContext.cacheLoad(memory_handler)#, memory_handler.get_name())
     except IOError as e:
         finder = memory_handler.get_heap_finder()
-        context = ReverserContext(memory_handler, finder.get_heap_mappings()[0])
+        context = ReverserContext(memory_handler, finder.get_heap_mappings()[0])#, memory_handler.get_name())
     # cache it
     # FIXME that needs to go away
     context.heap._context = context
@@ -294,7 +297,7 @@ def get_context_for_address(memory_handler, addr):
     assert isinstance(addr, long) or isinstance(addr, int)
     mmap = memory_handler.get_mapping_for_address(addr)
     if not mmap:
-        raise ValueError
+        raise ValueError()
     if hasattr(mmap, '_context'):
         # print '** _context exists'
         return mmap._context
@@ -311,10 +314,10 @@ def get_context_for_address(memory_handler, addr):
         if not found:
             raise ValueError
     try:
-        ctx = ReverserContext.cacheLoad(memory_handler)
+        ctx = ReverserContext.cacheLoad(memory_handler)#, memory_handler.get_name())
         # print '** CACHELOADED'
     except IOError as e:
-        ctx = ReverserContext(memory_handler, mmap)
+        ctx = ReverserContext(memory_handler, mmap)#, memory_handler.get_name())
         # print '** newly loaded '
     # cache it
     log.debug('get_context_for_address end')

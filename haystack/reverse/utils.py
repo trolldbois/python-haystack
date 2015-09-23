@@ -217,6 +217,8 @@ def getAllocations(dumpfilename, memory_handler, heap, get_user_alloc=None):
         # OK. heap.start should be deleted from the cache name.
         finder = memory_handler.get_heap_finder()
         allocations = finder.get_heap_walker(heap).get_user_allocations()
+        if len(allocations) == 0:
+            return [],[]
         addrs, sizes = zip(*allocations)
         int_array_save(f_addrs, addrs)
         int_array_save(f_sizes, sizes)

@@ -363,9 +363,13 @@ class DSASimple(StructureAnalyser):
                 # log.debug(structure)
                 # log.debug(f)
                 #log.debug('%s < %s '%(f.offset, nextoffset) )
-                # for f1 in fields:
-                #    log.debug(f1)
-                assert(False)  # f.offset < nextoffset # No overlaps authorised
+                #for f1 in fields:
+                #    print f1.offset,'->',f1.offset+len(f1)
+                #import code
+                #code.interact(local=locals())
+                #assert(False)  # f.offset < nextoffset # No overlaps authorised
+                fields.remove(f)
+                log.error("need to TU the fields gap with utf8 text")
             # do next field
             nextoffset = f.offset + len(f)
         # conclude on QUEUE insertion
@@ -408,24 +412,24 @@ class DSASimple(StructureAnalyser):
             s1 = self._target.get_word_size() - \
                 nextoffset % self._target.get_word_size()
             gap1 = Field(structure, nextoffset, FieldType.UNKNOWN, s1, True)
-            gap2 = Field(
-                structure,
-                nextoffset +
-                s1,
-                FieldType.UNKNOWN,
-                endoffset -
-                nextoffset -
-                s1,
-                False)
             log.debug(
                 '_make_gaps: Unaligned field at offset %d:%d' %
                 (gap1.offset, gap1.offset + len(gap1)))
-            log.debug(
-                '_make_gaps: adding field at offset %d:%d' %
-                (gap2.offset, gap2.offset + len(gap2)))
-            # FIXME BUG: ValueError: __len__() should return >= 0
             gaps.append(gap1)
-            gaps.append(gap2)
+            if nextoffset + s1 < endoffset:
+                gap2 = Field(
+                    structure,
+                    nextoffset +
+                    s1,
+                    FieldType.UNKNOWN,
+                    endoffset -
+                    nextoffset -
+                    s1,
+                    False)
+                log.debug(
+                    '_make_gaps: adding field at offset %d:%d' %
+                    (gap2.offset, gap2.offset + len(gap2)))
+                gaps.append(gap2)
         return
 
 

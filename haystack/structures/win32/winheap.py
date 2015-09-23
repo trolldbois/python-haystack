@@ -55,13 +55,23 @@ class WinHeapValidator(listmodel.ListModel):
         return ucrs
 
     def HEAP_get_virtual_allocated_blocks_list(self, record):
-        """Returns a list of virtual allocated entries.
+        """Returns a list of addr,size virtual allocated entries.
 
         TODO: need some working on.
         """
         vallocs = list()
         for valloc in self.iterate_list_from_field(record, 'VirtualAllocdBlocks'):
-            vallocs.append(valloc)
+            # FIXME - we should probably return [] on 0 sized entry
+            addr = valloc._orig_address_
+            size = valloc.CommitSize
+            if size == 0:
+                continue
+            #('Entry', LIST_ENTRY),
+            #('ExtraStuff', HEAP_ENTRY_EXTRA),
+            #('CommitSize', ctypes.c_uint32),
+            #('ReserveSize', ctypes.c_uint32),
+            #('BusyBlock', HEAP_ENTRY),
+            vallocs.append((addr, size))
             log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
                 valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
         return vallocs
