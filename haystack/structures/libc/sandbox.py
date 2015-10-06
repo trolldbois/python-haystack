@@ -20,7 +20,7 @@ from haystack import utils
 from haystack.mappings.process import readProcessMappings
 from haystack.reverse import context
 from haystack.reverse import reversers
-from haystack.reverse import pointerfinder
+from haystack.reverse import searchers
 
 
 

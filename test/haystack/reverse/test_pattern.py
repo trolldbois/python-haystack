@@ -25,8 +25,9 @@ Testing pointer patterns recognition.
 log = logging.getLogger('test_pattern')
 
 class SignatureTests(unittest.TestCase):
-
-    '''Helper class for signature tests'''
+    """
+    Helper class for signature tests
+    """
 
     # a example pattern of interval between pointers
     #seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
@@ -49,11 +50,18 @@ class SignatureTests(unittest.TestCase):
 
     def setUp(self):
         # x64
+        # FIXME, do base*word_size
         self.seq = [8, 8, 16, 256, 8, 16, 8, 8, 24]
         self.target = target.TargetPlatform.make_target_platform_local()
+        self.word_size = self.target.get_word_size()
 
     def _accumulate(self, iterable, func=operator.add):
-        '''Translate an interval sequence to a absolute offset sequence'''
+        """
+        Translate an interval sequence to a absolute offset sequence
+        :param iterable:
+        :param func:
+        :return:
+        """
         it = iter(iterable)
         total = next(it)
         yield total
@@ -62,8 +70,16 @@ class SignatureTests(unittest.TestCase):
             yield total
 
     def _make_mmap(self, mstart, mlength, struct_offset, seq, word_size):
-        '''Create memory mapping with some pointer values at specific
-        intervals. '''
+        """
+        Create memory mapping with some pointer values at specific
+        intervals.
+        :param mstart:
+        :param mlength:
+        :param struct_offset:
+        :param seq:
+        :param word_size:
+        :return:
+        """
         nsig = [struct_offset]
         nsig.extend(seq)
         # rewrite intervals indices to offsets from start
@@ -95,8 +111,13 @@ class SignatureTests(unittest.TestCase):
         return mmap2, values
 
     def _make_signature(self, intervals, struct_offset=None):
-        '''Make a memory map, with a fake structure of pointer pattern inside.
-        Return the pattern signature'''
+        """
+        Make a memory map, with a fake structure of pointer pattern inside.
+        Return the pattern signature
+        :param intervals:
+        :param struct_offset:
+        :return:
+        """
         # template of a memory map metadata
         self._mstart = 0x0c00000
         self._mlength = 4096  # end at (0x0c01000)
@@ -163,7 +184,7 @@ class TestPinnedPointers(SignatureTests):
         self.offset = 1  # offset of the pinned pointer sequence in the sig
         self.name = 'test_dump_1'
         self.sig = self._make_signature(self.seq)
-        self.pp = pattern.PinnedPointers(self.seq, self.sig, self.offset)
+        self.pp = pattern.PinnedPointers(self.seq, self.sig, self.offset, self.word_size)
 
     def test_init(self):
         self.assertEqual(
@@ -184,14 +205,14 @@ class TestPinnedPointers(SignatureTests):
 
     def test_cmp(self):
         #seq = [4, 4, 8, 128, 4, 8, 4, 4, 12]
-        pp1 = pattern.PinnedPointers(self.seq[1:], self.sig, self.offset + 1)
-        pp2 = pattern.PinnedPointers(self.seq[1:-1], self.sig, self.offset + 1)
-        pp3 = pattern.PinnedPointers(self.seq[:-1], self.sig, self.offset + 1)
-        pp4 = pattern.PinnedPointers(self.seq[:], self.sig, self.offset + 1)
+        pp1 = pattern.PinnedPointers(self.seq[1:], self.sig, self.offset + 1, self.word_size)
+        pp2 = pattern.PinnedPointers(self.seq[1:-1], self.sig, self.offset + 1, self.word_size)
+        pp3 = pattern.PinnedPointers(self.seq[:-1], self.sig, self.offset + 1, self.word_size)
+        pp4 = pattern.PinnedPointers(self.seq[:], self.sig, self.offset + 1, self.word_size)
 
         #seq = [4, 8, 4, 128, 4, 8, 4, 4, 12]
         seq = [8, 16, 8, 256, 8, 16, 8, 8, 24]
-        pp5 = pattern.PinnedPointers(seq, self.sig, self.offset)
+        pp5 = pattern.PinnedPointers(seq, self.sig, self.offset, self.word_size)
 
         self.assertNotEqual(pp1, self.pp)
         self.assertNotEqual(pp2, self.pp)
@@ -241,8 +262,8 @@ class TestAnonymousStructRange(SignatureTests):
         self.offset = 1  # we need to skip the start -> first pointer part
         self.name = 'struct_1'
         self.sig = self._make_signature(self.seq)
-        self.pp = pattern.PinnedPointers(self.seq, self.sig, self.offset)
-        self.astruct = pattern.AnonymousStructRange(self.pp)
+        self.pp = pattern.PinnedPointers(self.seq, self.sig, self.offset, self.word_size)
+        self.astruct = pattern.AnonymousStructRange(self.pp, self.word_size)
 
     def test_len(self):
         len_struct = sum(self.seq) + self.word_size

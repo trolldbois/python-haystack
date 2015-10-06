@@ -78,6 +78,14 @@ class TestMappingsWindows(SrcTests):
         self.putty.reset()
         self.putty = None
 
+
+    def test_non_allocated_pointers_are_useless(self):
+        self.putty = context.get_context('test/dumps/putty/putty.1.dump')
+        memory_handler = self.putty.memory_handler
+        allocated_pointers = self.putty._structures_addresses
+        pointers_values = self.putty._pointers_values
+        pointers_offsets = self.putty._pointers_offsets
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     # logging.basicConfig(level=logging.DEBUG)

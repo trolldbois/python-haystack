@@ -529,7 +529,7 @@ class EnrichedPointerFields(StructureAnalyser):
         children = []
         for field in pointerFields:
             try:
-                tgt = structure._context.getStructureForAddr(field.value)
+                tgt = structure._context.get_structure_for_address(field.value)
                 if not tgt.is_resolved():  # fields have not been decoded yet
                     children.append(tgt)
             except KeyError as e:

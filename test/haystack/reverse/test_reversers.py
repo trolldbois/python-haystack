@@ -13,6 +13,7 @@ from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse import reversers
 from haystack.reverse.heuristics import dsa
+from test.testfiles import ssh_1_i386_linux
 
 log = logging.getLogger("test_reversers")
 
@@ -91,7 +92,7 @@ class TestFullReverse(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = 'test/dumps/ssh/ssh.1'
-        cls.ctx = context.get_context(cls.dumpname)
+        cls.ctx = context.get_context(cls.dumpname, ssh_1_i386_linux.known_heaps[0][0])
         config.remove_cache_folder(cls.dumpname)
         return
 

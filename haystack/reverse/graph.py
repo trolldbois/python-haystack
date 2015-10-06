@@ -166,9 +166,7 @@ def clean(digraph):
     bigGraph.add_edges_from(digraph.edges(subgraphs[0].nodes()))
 
     stack_addrs = utils.int_array_cache(
-        config.get_cache_filename(
-            config.CACHE_STACK_VALUES,
-            ctx.dumpname))
+        config.get_cache_filename(config.CACHE_STACK_VALUES, ctx.dumpname, ctx._heap_addr))
     stack_addrs_txt = set(['%x' % (addr)
                            for addr in stack_addrs])  # new, no long
 

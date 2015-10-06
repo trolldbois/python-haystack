@@ -27,5 +27,6 @@ class TestBasicFunctions(unittest.TestCase):
         lst = ctx._structures_addresses
         # print ['0x%0.8x'%i for i in lst]
 
+
 if __name__ == '__main__':
     unittest.main(verbosity=0)

@@ -16,7 +16,7 @@ import statushandler
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.reverse import signature
-from haystack.reverse import pointerfinder
+from haystack.reverse import searchers
 
 from PyQt4 import QtGui, QtCore
 
@@ -219,7 +219,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         log.info('search %s mapping for pointer' % (self.mapping_name))
         found = 0
         start = self.mapping.start
-        searcher = pointerfinder.PointerSearcher(self.mapping)
+        searcher = searcher.PointerSearcher(self.mapping)
         for vaddr in searcher:
             # searcher should return [(offset, value)]
             word = self.mapping.read_word(vaddr)
@@ -243,7 +243,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         found = 0
         tmpnull = []
         start = self.mapping.start
-        searcher = pointerfinder.NullSearcher(self.mapping)
+        searcher = searcher.NullSearcher(self.mapping)
         for vaddr in searcher:
             offset = vaddr - start
             tmpnull.append(offset / searcher.WORDSIZE)

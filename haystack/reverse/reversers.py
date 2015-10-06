@@ -135,76 +135,6 @@ class StructureOrientedReverser(object):
         return '<%s>' % (self.__class__.__name__)
 
 
-class GenericHeapAllocationReverser(StructureOrientedReverser):
-    """
-    use heapwalker to get user allocations into structures.
-    """
-
-    def _reverse(self, context):
-        log.info('[+] Reversing user allocations ')
-        t0 = time.time()
-        tl = t0
-        loaded = 0
-        prevLoaded = 0
-        unused = 0
-        # FIXME why is that a LIST ?????
-        doneStructs = context._structures.keys()
-        #
-        todo = sorted(set(context._user_alloc_addresses) - set(doneStructs))
-        fromcache = len(context._user_alloc_addresses) - len(todo)
-        ##offsets = list(context._pointers_offsets)
-        # build structs from pointers boundaries. and creates pointer fields if
-        # possible.
-        log.info(
-            '[+] Adding new raw structures from getUserAllocations cached contents - %d todo' %
-            (len(todo)))
-        for i, (ptr_value, size) in enumerate(
-                zip(map(long, context._user_alloc_addresses), map(long, context._user_alloc_sizes))):
-            # TODO if len(_structure.keys()) +/- 30% de _malloc, do malloc_addr - keys() ,
-            # and use fsking utils.dequeue()
-            if ptr_value in doneStructs:  # FIXME TODO THAT IS SUCKY SUCKY
-                sys.stdout.write('.')
-                sys.stdout.flush()
-                continue
-            loaded += 1
-            if size < 0:
-                log.error("Negative allocation size")
-            mystruct = structure.makeStructure(context, ptr_value, size)
-            context._structures[ptr_value] = mystruct
-            # add pointerFields
-            ##offsets, my_pointers_addrs = utils.dequeue(offsets, ptr_value, ptr_value+size)
-            ##log.debug('Adding %d pointer fields field on struct of size %d'%( len(my_pointers_addrs), size) )
-            # optimise insertion
-            # if len(my_pointers_addrs) > 0:
-            ##  mystruct.addFields(my_pointers_addrs, fieldtypes.FieldType.POINTER, _target_platform.get_word_size(), False)
-            # cache to disk
-            #print 'check typesfor haystack.types.LoadableMembersUnion'
-            #import code
-            #code.interact(local=locals())
-            mystruct.saveme()
-            # next
-            if time.time() - tl > 10:  # i>0 and i%10000 == 0:
-                tl = time.time()
-                # DEBUG...
-                rate = (
-                    (tl - t0) / (loaded)) if loaded else ((tl - t0) / (loaded + fromcache))
-                log.info(
-                    '%2.2f secondes to go (b:%d/c:%d)' %
-                    ((len(todo) - i) * rate, loaded, fromcache))
-        log.info(
-            '[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:%d)' %
-            (loaded +
-             fromcache,
-             time.time() -
-             t0,
-             loaded,
-             fromcache,
-             unused))
-
-        context.parsed.add(str(self))
-        return
-
-
 class PointerReverser(StructureOrientedReverser):
     """
       Looks at pointers values to build basic structures boundaries.
@@ -290,18 +220,14 @@ class FieldReverser(StructureOrientedReverser):
         decoded = 0
         fromcache = 0
         # writing to file
-        fout = file(
-            config.get_cache_filename(
-                config.CACHE_GENERATED_PY_HEADERS_VALUES,
-                context.dumpname),
-            'w')
+        fout = file(context.get_filename_cache_headers(), 'w')
         towrite = []
         from haystack.reverse.heuristics.dsa import DSASimple
         log.debug('Run heuristics structure fields type discovery')
         dsa = DSASimple(context.memory_handler)
         # for ptr_value,anon in context.structures.items():
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
-            anon = context.getStructureForAddr(ptr_value)
+            anon = context.get_structure_for_address(ptr_value)
             # TODO this is a performance hit, unproxying...
             if anon.is_resolved():
                 fromcache += 1
@@ -343,7 +269,7 @@ class PointerFieldReverser(StructureOrientedReverser):
         from haystack.reverse.heuristics.dsa import EnrichedPointerFields
         pfa = EnrichedPointerFields(context.memory_handler)
         for ptr_value in context.listStructuresAddresses():  # lets try reverse
-            anon = context.getStructureForAddr(ptr_value)
+            anon = context.get_structure_for_address(ptr_value)
             if anon.is_resolvedPointers():
                 fromcache += 1
             else:
@@ -399,8 +325,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
                     done += len(_members) - 1
                     lists.append((head, _members))  # save list chain
                     # set names
-                    context.getStructureForAddr(head).setName('list_head')
-                    [context.getStructureForAddr(m).setName(
+                    context.get_structure_for_address(head).setName('list_head')
+                    [context.get_structure_for_address(m).setName(
                         'list_%x_%d' % (head, i)) for i, m in enumerate(_members)]
                     # TODO get substructures ( P4P4xx ) signature and
                     # a) extract substructures
@@ -474,10 +400,10 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
             return None, None
         if (f2 == head_addr):
             log.debug('f2 is head_addr too')
-            context.getStructureForAddr(head_addr).setName('struct')
+            context.get_structure_for_address(head_addr).setName('struct')
             log.debug(
                 '%s' %
-                (context.getStructureForAddr(head_addr).toString()))
+                (context.get_structure_for_address(head_addr).toString()))
 
         current = head_addr
         while (f1 in context._structures_addresses):
@@ -549,7 +475,7 @@ class PointerGraphReverser(StructureOrientedReverser):
         t0 = time.time()
         tl = t0
         for i, ptr_value in enumerate(context.listStructuresAddresses()):
-            struct = context.getStructureForAddr(ptr_value)
+            struct = context.get_structure_for_address(ptr_value)
             # targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr )
             # for child in struct.getPointerFields()) #target_struct_addr
             targets = set(
@@ -570,11 +496,7 @@ class PointerGraphReverser(StructureOrientedReverser):
                 log.info('%2.2f secondes to go (g:%d)' % (
                     (len(graph) - (i)) * rate, i))
         log.info('[+] Graph - added %d edges' % (graph.number_of_edges()))
-        networkx.readwrite.gexf.write_gexf(
-            graph,
-            config.get_cache_filename(
-                config.CACHE_GRAPH,
-                context.dumpname))
+        networkx.readwrite.gexf.write_gexf(graph, context.get_filename_cache_graph())
         context.parsed.add(str(self))
         return
 
@@ -613,11 +535,11 @@ def refreshOne(context, ptr_value):
     return mystruct
 
 
-def save_headers(context, addrs=None):
+def save_headers(ctx, addrs=None):
     """
     Save the python class code definition to file.
 
-    :param context:
+    :param ctx:
     :param addrs:
     :return:
     """
@@ -626,15 +548,15 @@ def save_headers(context, addrs=None):
     fout = file(
         config.get_cache_filename(
             config.CACHE_GENERATED_PY_HEADERS_VALUES,
-            context.dumpname),
+            ctx.dumpname, ctx._heap_start),
         'w')
     towrite = []
     if addrs is None:
-        addrs = iter(context.listStructuresAddresses())
+        addrs = iter(ctx.listStructuresAddresses())
 
     for vaddr in addrs:
         #anon = context._get_structures()[vaddr]
-        anon = context.getStructureForAddr(vaddr)
+        anon = ctx.get_structure_for_address(vaddr)
         towrite.append(anon.toString())
         if len(towrite) >= 10000:
             try:
@@ -648,10 +570,21 @@ def save_headers(context, addrs=None):
     return
 
 
+# TODO move to standalone file
 def reverse_instances(dumpname):
+    from haystack import dump_loader
+    memory_handler = dump_loader.load(dumpname)
+    finder = memory_handler.get_heap_finder()
+    heaps = finder.get_heap_mappings()
+    for heap in heaps:
+        heap_addr = heap.get_marked_heap_address()
+        reverse_heap(dumpname, heap_addr)
+    return
+
+def reverse_heap(dumpname, heap_addr):
     from haystack.reverse import context
-    log.debug('[+] Loading the memory dump ')
-    ctx = context.get_context(dumpname)
+    log.debug('[+] Loading the memory dump for HEAP 0x%x', heap_addr)
+    ctx = context.get_context(dumpname, heap_addr)
     try:
         if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
             os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))

@@ -22,7 +22,8 @@ import os
 from haystack import dump_loader
 from haystack.reverse import config
 from haystack.reverse import utils
-from haystack.reverse import pointerfinder
+from haystack.reverse import searchers
+import haystack.reverse.matchers
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -206,9 +207,18 @@ class PatternEncoder:
 
 def make(opts):
     log.info('Make the signature.')
-    ppMapper = PinnedPointersMapper()
-    for dumpfile in opts.dumpfiles:
+    # head + first word size
+    memory_handler = dump_loader.load(opts.dumpfiles[0])
+    word_size = memory_handler.get_target_platform().get_word_size()
+    ppMapper = PinnedPointersMapper(word_size)
+    heap_sig = PointerIntervalSignature(memory_handler, '[heap]')
+    log.info('pinning offset list created for heap %s.' % (heap_sig))
+    ppMapper.addSignature(heap_sig)
+    # now do the others
+    for dumpfile in opts.dumpfiles[1:]:
         memory_handler = dump_loader.load(dumpfile)
+        if memory_handler.get_target_platform().get_word_size() != word_size:
+            log.error("Differing wordsize between samples")
         heap_sig = PointerIntervalSignature(memory_handler, '[heap]')
         log.info('pinning offset list created for heap %s.' % (heap_sig))
         ppMapper.addSignature(heap_sig)
@@ -245,6 +255,7 @@ class PointerIntervalSignature:
         self.cacheFilenamePrefix = config.get_cache_folder_name(self.name)
         self.addressCache = {}
         self.sig = None
+        self._word_size = memory_handler.get_target_platform().get_word_size()
         self._get_mapping()
         self._load()
 
@@ -266,8 +277,7 @@ class PointerIntervalSignature:
             log.info(
                 "Signature has to be calculated for %s. It's gonna take a while." %
                 (self.name))
-            pointerSearcher = pointerfinder.PointerSearcher(self.mmap)
-            self.WORDSIZE = pointerSearcher.WORDSIZE
+            pointerSearcher = haystack.reverse.matchers.PointerSearcher(self.mmap)
             sig = []
             # save first offset
             last = self.mmap.start
@@ -401,10 +411,9 @@ class PinnedPointers:
       @param offset: the offset of this interval within the signature
     '''
 
-    def __init__(self, sequence, sig, offset):
+    def __init__(self, sequence, sig, offset, word_size):
         self.sequence = sequence
-        self.nb_bytes = sum(
-            sequence) + pointerfinder.PointerSearcher.WORDSIZE  # add wordSIZE
+        self.nb_bytes = sum(sequence) + word_size
         self.offset = offset
         self.sig = sig
         self.relations = {}
@@ -497,14 +506,14 @@ class AnonymousStructRange:
                     in all other cases, return the __cmp__ of the address compared to the start of the struct
     '''
 
-    def __init__(self, pinnedPointer):
+    def __init__(self, pinnedPointer, word_size):
         self.pinnedPointer = pinnedPointer
         # by default we start at the first pointer
         self.start = pinnedPointer.getAddress()
         self.stop = pinnedPointer.getAddress(
             len(pinnedPointer))  # by default we stop at the last pointer
         # add the length of the last pointer
-        self.stop += pointerfinder.PointerSearcher.WORDSIZE
+        self.stop += word_size
         self.pointers = None
         self.pointersTypes = {}
         self.pointersValues = None
@@ -606,13 +615,14 @@ class PinnedPointersMapper:
     e) Meta info: on trouve les multiple instances ( same struct, multiple alloc)
     '''
 
-    def __init__(self, sequenceLength=20):
+    def __init__(self, word_size, sequenceLength=20):
         self.cacheValues2 = {}
         self.signatures = []
         self.signatures_sequences = {}
         self.started = False
         self.common = []
         self.length = sequenceLength
+        self.word_size = word_size
         return
 
     def addSignature(self, sig):
@@ -690,7 +700,8 @@ class PinnedPointersMapper:
                             sig,
                             start,
                             seqStop -
-                            start)
+                            start,
+                            self.word_size)
                         sig_aggregated_seqs.append(pp)  # save a big sequence
                         #log.debug('Saving an aggregated sequence %d-%d'%(start, stop))
                         del subseq
@@ -811,7 +822,7 @@ class PinnedPointersMapper:
             unresolved_for_sig = [
                 pp for pp in self.unresolved if pp.sig == sig]
             log.debug('Pin anonymous structures on %s' % (sig))
-            pinned = [AnonymousStructRange(pp) for pp in resolved_for_sig]
+            pinned = [AnonymousStructRange(pp, self.word_size) for pp in resolved_for_sig]
             log.debug('Create list of structures addresses for %s' % (sig))
             pinned_start = [pp.getAddress() for pp in resolved_for_sig]
             # if sorted(pinned_start) != pinned_start:
@@ -819,7 +830,7 @@ class PinnedPointersMapper:
             #  raise ValueError('iscrewedupbadlyhere')
             log.debug('Pin probable anonymous structures on %s' % (sig))
             pinned_lightly = [
-                AnonymousStructRange(pp) for pp in unresolved_for_sig]
+                AnonymousStructRange(pp, self.word_size) for pp in unresolved_for_sig]
             log.debug(
                 'Create list of probable structures addresses for %s' %
                 (sig))
@@ -1007,7 +1018,7 @@ class PinnedPointersMapper:
         #
         for other_parent_pp in other_parent_pps:
             sig = other_parent_pp.sig
-            other_parent_astruct = AnonymousStructRange(other_parent_pp)
+            other_parent_astruct = AnonymousStructRange(other_parent_pp, self.word_size)
             other_parent_astruct = cache[sig].pinned[
                 cache[sig].pinned.index(
                     other_parent_astruct.start)]  # get the real one
@@ -1063,7 +1074,7 @@ class PinnedPointersMapper:
         #
         for other_parent_pp in other_parent_pps:
             sig = other_parent_pp.sig
-            other_parent_astruct = AnonymousStructRange(other_parent_pp)
+            other_parent_astruct = AnonymousStructRange(other_parent_pp, self.word_size)
             other_parent_astruct = cache[sig].pinned[
                 cache[sig].pinned.index(
                     other_parent_astruct.start)]  # get the real one
@@ -1138,7 +1149,7 @@ class PinnedPointersMapper:
             if len(relatedPPs) > 1:
                 log.debug('We have more than one relatedPP to target')
             tgtAnons = [
-                AnonymousStructRange(relatedPP) for relatedPP in relatedPPs]
+                AnonymousStructRange(relatedPP, self.word_size) for relatedPP in relatedPPs]
             tgtPtrs = [tgtAnon.getPointersValues()[pointerIndex]
                        for tgtAnon in tgtAnons]
 
@@ -1149,7 +1160,7 @@ class PinnedPointersMapper:
             ok = 0
             relatedTargetPPs = targetPP.relations[sig]  # children struct
             for relatedTargetPP in relatedTargetPPs:
-                addr = AnonymousStructRange(relatedTargetPP).start
+                addr = AnonymousStructRange(relatedTargetPP, self.word_size).start
                 log.debug('compare %d and %s' % (addr, tgtPtrs))
                 if addr in tgtPtrs:
                     log.debug(
@@ -1254,9 +1265,9 @@ class PinnedPointersMapper:
         return False
 
 
-def savePinned(cacheValues, sig, offset, match_len):
+def savePinned(cacheValues, sig, offset, match_len, word_size):
     pinned = sig.sig[offset:offset + match_len]
-    pp = PinnedPointers(pinned, sig, offset)
+    pp = PinnedPointers(pinned, sig, offset, word_size)
     s = pp.structLen()
     if s not in cacheValues:
         cacheValues[s] = list()

@@ -12,8 +12,9 @@ import numpy
 import struct
 
 from haystack.reverse import config
+import haystack.reverse.matchers
 from haystack.utils import xrange
-from haystack.reverse import pointerfinder
+from haystack.reverse import searchers
 from haystack.reverse import utils
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
@@ -48,11 +49,11 @@ class SignatureGroupMaker:
         decoder = dsa.DSASimple(self._context.memory_handler)
         for addr in map(long, self._structures_addresses):
             # decode the fields
-            record = self._context.getStructureForAddr(addr)
+            record = self._context.get_structure_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
             # get the signature for the record
-            self._signatures.append((addr, self._context.getStructureForAddr(addr).getSignature(True)))
+            self._signatures.append((addr, self._context.get_structure_for_address(addr).getSignature(True)))
         return
 
     def make(self):
@@ -171,7 +172,7 @@ class StructureSizeCache:
             yield (size, numpy.asarray(self._sizes[size]))
 
 
-class SignatureMaker(pointerfinder.AbstractSearcher):
+class SignatureMaker(searchers.AbstractSearcher):
 
     '''
     make a condensed signature of the mapping.
@@ -185,97 +186,97 @@ class SignatureMaker(pointerfinder.AbstractSearcher):
     OTHER = 0x4
 
     def __init__(self, mapping):
-        pointerfinder.AbstractSearcher.__init__(self, mapping)
-        self.pSearch = pointerfinder.PointerSearcher(self.getSearchMapping())
-        self.nSearch = pointerfinder.NullSearcher(self.getSearchMapping())
+        searchers.AbstractSearcher.__init__(self, mapping)
+        self.pSearch = haystack.reverse.matchers.PointerSearcher(self.get_search_mapping())
+        self.nSearch = haystack.reverse.matchers.NullSearcher(self.get_search_mapping())
 
-    def testMatch(self, vaddr):
+    def test_match(self, vaddr):
         ''' return either NULL, POINTER or OTHER '''
-        if self.nSearch.testMatch(vaddr):
+        if self.nSearch.test_match(vaddr):
             return self.NULL
-        if self.pSearch.testMatch(vaddr):
+        if self.pSearch.test_match(vaddr):
             return self.POINTER
         return self.OTHER
 
     def search(self):
         ''' returns the memspace signature. Dont forget to del that object, it's big. '''
-        self.values = b''
+        self._values = b''
         log.debug(
             'search %s mapping for matching values' %
-            (self.getSearchMapping()))
+            (self.get_search_mapping()))
         for vaddr in xrange(
-                self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
-            self._checkSteps(vaddr)  # be verbose
-            self.values += struct.pack('B', self.testMatch(vaddr))
-        return self.values
+                self.get_search_mapping().start, self.get_search_mapping().end, self.WORDSIZE):
+            self._check_steps(vaddr)  # be verbose
+            self._values += struct.pack('B', self.test_match(vaddr))
+        return self._values
 
     def __iter__(self):
         ''' Iterate over the mapping to return the signature of that memspace '''
         log.debug(
             'iterate %s mapping for matching values' %
-            (self.getSearchMapping()))
+            (self.get_search_mapping()))
         for vaddr in xrange(
-                self.getSearchMapping().start, self.getSearchMapping().end, self.WORDSIZE):
-            self._checkSteps(vaddr)  # be verbose
-            yield struct.pack('B', self.testMatch(vaddr))
+                self.get_search_mapping().start, self.get_search_mapping().end, self.WORDSIZE):
+            self._check_steps(vaddr)  # be verbose
+            yield struct.pack('B', self.test_match(vaddr))
         return
 
 
 class PointerSignatureMaker(SignatureMaker):
 
-    def testMatch(self, vaddr):
+    def test_match(self, vaddr):
         ''' return either POINTER or OTHER '''
-        if self.pSearch.testMatch(vaddr):
+        if self.pSearch.test_match(vaddr):
             return self.POINTER
         return self.OTHER
 
 
-class RegexpSearcher(pointerfinder.AbstractSearcher):
+class RegexpSearcher(searchers.AbstractSearcher):
 
     '''
     Search by regular expression in memspace.
     '''
 
     def __init__(self, mapping, regexp):
-        pointerfinder.AbstractSearcher.__init__(self, mapping)
+        searchers.AbstractSearcher.__init__(self, mapping)
         self.regexp = regexp
         self.pattern = re.compile(regexp, re.IGNORECASE)
 
     def search(self):
         ''' find all valid matches offsets in the memory space '''
-        self.values = set()
+        self._values = set()
         log.debug(
             'search %s mapping for matching values %s' %
-            (self.getSearchMapping(), self.regexp))
-        for match in self.getSearchMapping().finditer(
-                self.getSearchMapping().mmap().get_byte_buffer()):
+            (self.get_search_mapping(), self.regexp))
+        for match in self.get_search_mapping().finditer(
+                self.get_search_mapping().mmap().get_byte_buffer()):
             offset = match.start()
             # FIXME, TU what is value for?
             value = match.group(0)
             if isinstance(value, list):
                 value = ''.join([chr(x) for x in match.group()])
-            vaddr = offset + self.getSearchMapping().start
-            self._checkSteps(vaddr)  # be verbose
-            self.values.add((vaddr, value))
-        return self.values
+            vaddr = offset + self.get_search_mapping().start
+            self._check_steps(vaddr)  # be verbose
+            self._values.add((vaddr, value))
+        return self._values
 
     def __iter__(self):
         ''' Iterate over the mapping to find all valid matches '''
         log.debug(
             'iterate %s mapping for matching values' %
-            (self.getSearchMapping()))
+            (self.get_search_mapping()))
         for match in self.pattern.finditer(
-                self.getSearchMapping().mmap().get_byte_buffer()):
+                self.get_search_mapping().mmap().get_byte_buffer()):
             offset = match.start()
             value = match.group(0)  # [] of int ?
             if isinstance(value, list):
                 value = ''.join([chr(x) for x in match.group()])
-            vaddr = offset + self.getSearchMapping().start
-            self._checkSteps(vaddr)  # be verbose
+            vaddr = offset + self.get_search_mapping().start
+            self._check_steps(vaddr)  # be verbose
             yield (vaddr, value)
         return
 
-    def testMatch(self, vaddr):
+    def test_match(self, vaddr):
         return True
 
 #EmailRegexp = r'''[a-zA-Z0-9+_\-\.]+@[0-9a-zA-Z][.-0-9a-zA-Z]*.[a-zA-Z]+'''
@@ -390,10 +391,10 @@ def printStructureGroups(context, chains, originAddr=None):
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            record = context.getStructureForAddr(addr)
+            record = context.get_structure_for_address(addr)
             ##record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.getStructureForAddr(addr).toString()
+            print context.get_structure_for_address(addr).toString()
         print '#', '-' * 78
 
 
@@ -408,12 +409,12 @@ def graphStructureGroups(context, chains, originAddr=None):
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            record = context.getStructureForAddr(addr)
+            record = context.get_structure_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.getStructureForAddr(addr).toString()
+            print context.get_structure_for_address(addr).toString()
             targets = set()
-            for f in context.getStructureForAddr(addr).getPointerFields():
+            for f in context.get_structure_for_address(addr).getPointerFields():
                 addr_child = f._getValue(0)
                 child = context.getStructureForOffset(addr)
                 targets.add(('%x' % addr, '%x' % child._vaddr))
@@ -543,7 +544,7 @@ def fixType(context, chains):
         for addr in chain:  # chain is a numpy
             addr = int(addr)
             # FIXME
-            instance = context.getStructureForAddr(addr)
+            instance = context.get_structure_for_address(addr)
             #
             ctypes_type = fixInstanceType(context, instance, name)
     return

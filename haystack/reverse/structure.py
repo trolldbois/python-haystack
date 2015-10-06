@@ -384,7 +384,7 @@ class AnonymousStructInstance(object):
             # if pointed is not None:  # erase previous info
             tgt = None
             try:
-                tgt = self._context.getStructureForAddr(field.value)
+                tgt = self._context.get_structure_for_address(field.value)
                 known += 1
                 field.target_struct_addr = field.value
                 # change the basic ctypes
@@ -451,7 +451,7 @@ class AnonymousStructInstance(object):
         nearest_addr, ind = utils.closestFloorValue(
             field.value, self._context._malloc_addresses)
         log.debug('nearest_addr:%x ind:%d' % (nearest_addr, ind))
-        tgt_st = self._context.getStructureForAddr(nearest_addr)
+        tgt_st = self._context.get_structure_for_address(nearest_addr)
         if field.value % self.target.get_word_size() != 0:
             # non aligned, nothing could match
             return tgt_st, None

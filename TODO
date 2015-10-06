@@ -1,4 +1,6 @@
 
+- do we trust get_user_allocation or not ? for libc ? for winheap ?
+
 - change the reversers anonymous structure to be POPO.
 - we want all funcs outside of it.
 

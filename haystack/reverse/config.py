@@ -57,13 +57,23 @@ def get_cache_folder_name(dumpname):
     root = os.path.abspath(dumpname)
     return os.path.sep.join([root, CACHE_NAME])
 
-def get_cache_filename(typ, dumpname):
-    '''Returns a filename for caching a type of data based on the dump filename.
+def get_cache_filename(typ, dumpname, address):
+    """
+    Returns a filename for caching a type of data based on the dump filename.
 
-    typ: one of Config.CACHE_XX types.
-    dumpname: the dump file name.
-    '''
-    return os.path.sep.join([get_cache_folder_name(dumpname), typ])
+    :param typ: one of Config.CACHE_XX types.
+    :param dumpname: the dumpname to get the cache folder
+    :param address: a optional unique identifier
+    :return:
+    """
+    fname = typ
+    if address is not None:
+        fname = '%x.%s' % (address, typ)
+    else:
+        log.warning('usage without uuid')
+        import pdb
+        pdb.set_trace()
+    return os.path.sep.join([get_cache_folder_name(dumpname), fname])
 
 def get_record_cache_folder_name(dumpname):
     """
@@ -72,4 +82,4 @@ def get_record_cache_folder_name(dumpname):
     dumpname: the dump file name.
     """
     root = os.path.abspath(dumpname)
-    return get_cache_filename(CACHE_STRUCT_DIR, root)
+    return os.path.sep.join([root, CACHE_STRUCT_DIR])

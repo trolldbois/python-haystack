@@ -13,6 +13,8 @@ import struct
 import sys
 
 from haystack.reverse import config
+import haystack.reverse.enumerators
+import haystack.reverse.matchers
 
 log = logging.getLogger('utils')
 
@@ -92,131 +94,59 @@ def dequeue(addrs, start, end):
     return addrs, ret
 
 
-def getHeapPointers(dumpfilename, memory_handler):
-    ''' Search Heap pointers values in stack and heap.
-        records values and pointers address in heap.
-    '''
-    import pointerfinder
-    #F_VALUES = _target_platform.get_cache_filename(_target_platform.CACHE_HS_POINTERS_VALUES, dumpfilename)
-    F_HEAP_O = config.get_cache_filename(config.CACHE_HEAP_ADDRS, dumpfilename)
-    F_HEAP_V = config.get_cache_filename(config.CACHE_HEAP_VALUES, dumpfilename)
-    #F_STACK_O = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_ADDRS, dumpfilename)
-    #F_STACK_V = _target_platform.get_cache_filename(_target_platform.CACHE_STACK_VALUES, dumpfilename)
-    #log.debug('reading from %s'%(F_VALUES))
-    #values = int_array_cache(F_VALUES)
-    heap_addrs = int_array_cache(F_HEAP_O)
-    heap_values = int_array_cache(F_HEAP_V)
-    #stack_addrs = int_array_cache(F_STACK_O)
-    #stack_values = int_array_cache(F_STACK_V)
+def _get_cache_heap_pointers(ctx, enumerator):
+    """
+    Cache or return Heap pointers values in enumerator .
+    :param dumpfilename:
+    :param heap_addr: the heap address for the cache filename
+    :return:
+    """
+    heap_addrs_fname = ctx.get_filename_cache_pointers_addresses()
+    heap_values_fname = ctx.get_filename_cache_pointers_values()
+    heap_addrs = int_array_cache(heap_addrs_fname)
+    heap_values = int_array_cache(heap_values_fname)
     if heap_addrs is None or heap_values is None:
-        # - getting pointers values from stack')
         log.info('[+] Making new cache - heap pointers')
-        #stack_enumerator = pointerfinder.PointerEnumerator(_memory_handler.get_stack())
-        # stack_enumerator.setTargetMapping(_memory_handler.get_heap()) #only interested in heap pointers
-        #stack_enum = stack_enumerator.search()
-        # if len(stack_enum)>0:
-        #  stack_offsets, stack_values = zip(*stack_enum)
-        # else:
-        #  stack_offsets, stack_values = (),()
-        #log.info('\t[-] got %d pointers '%(len(stack_enum)) )
-        #log.info('\t[-] merging pointers from heap')
-        finder = memory_handler.get_heap_finder()
-        heap_enum = pointerfinder.PointerEnumerator(
-            finder.get_heap_mappings()[0]).search()
+        heap_enum = enumerator.search()
         if len(heap_enum) > 0:
             heap_addrs, heap_values = zip(*heap_enum)  # WTF
         else:
             heap_addrs, heap_values = (), ()
         log.info('\t[-] got %d pointers ' % (len(heap_enum)))
         # merge
-        #values = sorted(set(heap_values+stack_values))
-        #int_array_save(F_VALUES , values)
-        int_array_save(F_HEAP_O, heap_addrs)
-        int_array_save(F_HEAP_V, heap_values)
-        #int_array_save(F_STACK_O, stack_addrs)
-        #int_array_save(F_STACK_V, stack_values)
-        #log.info('\t[-] we have %d unique pointers values out of %d orig.'%(len(values), len(heap_values)+len(stack_values)) )
+        int_array_save(heap_addrs_fname, heap_addrs)
+        int_array_save(heap_values_fname, heap_values)
     else:
-        log.info(
-            '[+] Loading from cache %d pointers %d unique' %
-            (len(heap_values), len(
-                set(heap_values))))
-        #log.info('\t[-] we have %d unique pointers values, and %d pointers in heap .'%(len(values), len(heap_addrs)) )
-    #aligned = numpy.asarray(filter(lambda x: (x%4) == 0, values))
-    #not_aligned = numpy.asarray(sorted( set(values)^set(aligned)))
-    #log.info('\t[-] only %d are aligned values.'%(len(aligned) ) )
-    # , stack_addrs, stack_values #values, aligned, not_aligned
+        log.info('[+] Loading from cache %d pointers %d unique', len(heap_values), len(set(heap_values)))
     return heap_addrs, heap_values
 
-
-def getAllPointers(dumpfilename, memory_handler):
-    ''' Search all mmap pointers values in heap.
-        records values and pointers address in heap.
-    '''
-    import pointerfinder
-    F_HEAP_O = config.get_cache_filename(
-        config.CACHE_ALL_PTRS_ADDRS,
-        dumpfilename)
-    F_HEAP_V = config.get_cache_filename(
-        config.CACHE_ALL_PTRS_VALUES,
-        dumpfilename)
-    heap_addrs = int_array_cache(F_HEAP_O)
-    heap_values = int_array_cache(F_HEAP_V)
-    if heap_addrs is None or heap_values is None:
-        log.info('[+] Making new cache - all pointers')
-        finder = memory_handler.get_heap_finder()
-        heap_enumerator = pointerfinder.PointerEnumerator(finder.get_heap_mappings()[0])
-        heap_enumerator.setTargetMapping(memory_handler)  # all pointers
-        heap_enum = heap_enumerator.search()
-        if len(heap_enum) > 0:
-            heap_addrs, heap_values = zip(*heap_enum)  # WTF
-        else:
-            heap_addrs, heap_values = (), ()
-        log.info('\t[-] got %d pointers ' % (len(heap_enum)))
-        # merge
-        int_array_save(F_HEAP_O, heap_addrs)
-        int_array_save(F_HEAP_V, heap_values)
-    else:
-        log.info(
-            '[+] Loading from cache %d pointers %d unique' %
-            (len(heap_values), len(
-                set(heap_values))))
-    return heap_addrs, heap_values
-
-
-def getAllocations(dumpfilename, memory_handler, heap, get_user_alloc=None):
-    ''' Search malloc_chunks in heap .
+def cache_get_user_allocations(ctx, heap_walker):
+    """
+    cache the user allocations, which are the allocated chunks
         records addrs and sizes.
-    '''
-    # TODO if linux
-    # TODO from haystack.reverse import heapwalker
-    # from haystack.structures.libc  import libc.ctypes_malloc
-    f_addrs = config.get_cache_filename(
-        '%x.%s' %
-        (heap.start,
-         config.CACHE_MALLOC_CHUNKS_ADDRS),
-        dumpfilename)
-    f_sizes = config.get_cache_filename(
-        '%x.%s' %
-        (heap.start,
-         config.CACHE_MALLOC_CHUNKS_SIZES),
-        dumpfilename)
-    log.debug('reading from %s' % (f_addrs))
+
+    :param dumpfilename:
+    :param memory_handler:
+    :param heapwalker:
+    :return:
+    """
+    f_addrs = ctx.get_filename_cache_allocations_addresses()
+    f_sizes = ctx.get_filename_cache_allocations_sizes()
+    log.debug('reading from %s' % f_addrs)
     addrs = int_array_cache(f_addrs)
     sizes = int_array_cache(f_sizes)
     if addrs is None or sizes is None:
-        log.info('[+] Making new cache - getting malloc_chunks from heap ')
+        log.info('[+] Making new cache - getting allocated chunks from heap ')
         # TODO : HeapWalker + order addresses ASC ...
         # allocations = sorted(heapwalker.get_user_allocations(_memory_handler, heap))
         # TODO 2 , allocations should be triaged by mmapping ( heap.start ) before write2disk.
         # Or the heap.start should be removed from the cache name.. it has no impact.
-        # heapwalker.getuserAllocations should parse ALL mmappings to get all user allocations.
+        # heapwalker.cache_get_user_allocations should parse ALL mmappings to get all user allocations.
         # But in that case, there will/could be a problem when using utils.closestFloorValue...
         # in case of a pointer ( bad allocation ) out of a mmapping space.
         # But that is not possible, because we are reporting factual reference to existing address space.
         # OK. heap.start should be deleted from the cache name.
-        finder = memory_handler.get_heap_finder()
-        allocations = finder.get_heap_walker(heap).get_user_allocations()
+        allocations = heap_walker.get_user_allocations()
         if len(allocations) == 0:
             return [],[]
         addrs, sizes = zip(*allocations)
@@ -226,6 +156,7 @@ def getAllocations(dumpfilename, memory_handler, heap, get_user_alloc=None):
         log.info('[+] Loading from cache')
     log.info('\t[-] we have %d malloc_chunks' % (len(addrs)))
     return addrs, sizes
+
 
 '''
   a shareBytes array of bytes. no allocation buffer should be made, only indexes.
