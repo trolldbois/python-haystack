@@ -34,6 +34,8 @@ class ReverserContext(object):
 
     def __init__(self, memory_handler, heap):
         self.memory_handler = memory_handler
+        # cache it
+        memory_handler.cache_context_for_heap(heap, self)
         self.dumpname = memory_handler.get_name()
         self.heap = heap
         self._heap_start = heap.start
@@ -52,27 +54,27 @@ class ReverserContext(object):
         if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
             os.mkdir(config.get_cache_folder_name(self.dumpname))
 
-        log.info('[+] Fetching cached structures addresses list')
         finder = self.memory_handler.get_heap_finder()
         heap_walker = finder.get_heap_walker(self.heap)
 
+        log.info('[+] Searching pointers in heap')
         # get all pointers found in from allocated space.
         all_offsets, all_values = self.get_heap_pointers_from_allocated(heap_walker)
         self._pointers_values = all_values
         self._pointers_offsets = all_offsets
 
-        log.info('[+] Fetching cached allocated chunks list')
+        log.info('[+] Gathering allocated heap chunks')
         res = utils.cache_get_user_allocations(self, heap_walker)
         self._structures_addresses, self._structures_sizes = res
 
-        # clean a bit
+        # clean a bit the open fd's
         self.memory_handler.reset_mappings()
 
-        if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
-            log.info('[+] Reversing function pointers names')
-            # TODO INLINE CACHED
-            # dict(libdl.reverseLocalFonctionPointerNames(self) )
-            self._function_names = dict()
+        #if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
+        #    log.info('[+] Reversing function pointers names')
+        #    # TODO INLINE CACHED
+        #    # dict(libdl.reverseLocalFonctionPointerNames(self) )
+        #    self._function_names = dict()
         return
 
     def get_structure_for_address(self, addr):
@@ -84,18 +86,35 @@ class ReverserContext(object):
         """
         return self._get_structures()[addr]
 
-    ''' TODO implement a LRU cache '''
-
+    # TODO implement a LRU cache
     def _get_structures(self):
-        # TODO use HeapWalker ... win32 + libc
         if self._structures is not None and len(
                 self._structures) == len(self._structures_addresses):
             return self._structures
         # otherwise cache Load
-        log.info('[+] Fetching cached structures list')
+        log.info('[+] Loading cached structures list')
         self._structures = dict(
             [(long(vaddr), s) for vaddr, s in structure.cacheLoadAllLazy(self)])
-        log.info('[+] Fetched %d cached structures addresses from disk', len(self._structures))
+        log.info('[+] Loaded %d cached structures addresses from disk', len(self._structures))
+
+        # If we are missing some structures from the cache loading
+        # then recreated them in cache from Allocated memory
+        nb_missing = len(self._structures_addresses) - len(self._structures)
+        if nb_missing != 0:
+            import reversers
+
+            log.info('[+] Missing cached structures %d' % nb_missing)
+            if nb_missing < 10:
+                log.warning('close numbers to check missing:%d unique: %d', nb_missing,
+                            (set(self._structures_addresses) -
+                             set(self._structures)))
+            # use BasicCachingReverser to get user blocks
+            cache_reverse = reversers.BasicCachingReverser(self)
+            _ = cache_reverse.reverse(self)
+            # mallocRev.check_inuse(self)
+            log.info('[+] Built %d/%d structures from allocations',
+                     len(self._structures),
+                     len(self._structures_addresses))
         return self._structures
 
     def getStructureSizeForAddr(self, addr):
@@ -143,6 +162,12 @@ class ReverserContext(object):
         '''Returns the list of structures with a member with this pointer value '''
         return [self._get_structures()[addr]
                 for addr in self.listStructuresAddrForPointerValue(ptr_value)]
+
+    def list_allocations_addresses(self):
+        return map(long, self._structures_addresses)
+
+    def list_allocations_sizes(self):
+        return map(long, self._structures_sizes)
 
     def listStructuresAddresses(self):
         return map(long, self._get_structures().keys())
@@ -222,19 +247,21 @@ class ReverserContext(object):
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname, heap_addr)
         try:
             with file(context_cache, 'r') as fin:
-                context = pickle.load(fin)
+                ctx = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
             log.error(
                 'Error in the context file. File cleaned. Please restart.')
             raise RuntimeError('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
-        context.config = config
-        context.memory_handler = memory_handler
-        context.heap = context.memory_handler.get_mapping_for_address(context._heap_start)
+        ctx.config = config
+        ctx.memory_handler = memory_handler
+        ctx.heap = ctx.memory_handler.get_mapping_for_address(ctx._heap_start)
+        # cache it
+        memory_handler.cache_context_for_heap(ctx.heap, ctx)
 
-        context._init2()
-        return context
+        ctx._init2()
+        return ctx
 
     def save(self):
         # we only need dumpfilename to reload _memory_handler, addresses to reload
@@ -287,12 +314,14 @@ class ReverserContext(object):
         d['dumpname'] = self.__dict__['dumpname']
         d['parsed'] = self.__dict__['parsed']
         d['_heap_start'] = self.__dict__['_heap_start']
+        d['_word_size'] = self.__dict__['_word_size']
         return d
 
     def __setstate__(self, d):
         self.dumpname = d['dumpname']
         self.parsed = d['parsed']
         self._heap_start = d['_heap_start']
+        self._word_size = d['_word_size']
         self._structures = None
         self._function_names = dict()
         return
@@ -306,23 +335,15 @@ def get_context(fname, heap_addr):
     """
     memory_handler = dump_loader.load(fname)
     try:
-        context = ReverserContext.cacheLoad(memory_handler, heap_addr)
+        ctx = ReverserContext.cacheLoad(memory_handler, heap_addr)
     except IOError as e:
         finder = memory_handler.get_heap_finder()
         heaps = finder.get_heap_mappings()
         heap = memory_handler.get_mapping_for_address(heap_addr)
-        context = ReverserContext(memory_handler, heap)
-    # cache it
-    # FIXME that needs to go away
-    #context.heap._context = context
-    return context
+        ctx = ReverserContext(memory_handler, heap)
+    return ctx
 
 
-# TODO, cache context in IContextHandler/memoryHandler
-#    if hasattr(mmap, '_context'):
-#        # print '** _context exists'
-#        return mmap._context
-#mmap._context = ctx
 
 def get_context_for_address(memory_handler, address):
     """
@@ -348,14 +369,15 @@ def get_context_for_address(memory_handler, address):
                     break
         if not found:
             raise ValueError("Address is not in heap")
+    cached = memory_handler.get_cached_context_for_heap(mmap)
+    if cached is not None:
+        return cached
     # found
     heap_addr = mmap.get_marked_heap_address()
     try:
         ctx = ReverserContext.cacheLoad(memory_handler, heap_addr)
     except IOError as e:
         ctx = ReverserContext(memory_handler, mmap)
-    # cache it
-    log.debug('get_context_for_address end')
     return ctx
 
 if __name__ == '__main__':

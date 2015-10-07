@@ -82,4 +82,4 @@ def get_record_cache_folder_name(dumpname):
     dumpname: the dump file name.
     """
     root = os.path.abspath(dumpname)
-    return os.path.sep.join([root, CACHE_STRUCT_DIR])
+    return os.path.sep.join([root, CACHE_NAME, CACHE_STRUCT_DIR])

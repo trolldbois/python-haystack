@@ -154,7 +154,7 @@ def cache_get_user_allocations(ctx, heap_walker):
         int_array_save(f_sizes, sizes)
     else:
         log.info('[+] Loading from cache')
-    log.info('\t[-] we have %d malloc_chunks' % (len(addrs)))
+    log.info('\t[-] we have %d allocated chunks', len(addrs))
     return addrs, sizes
 
 

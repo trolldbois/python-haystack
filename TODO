@@ -1,5 +1,8 @@
 
-- do we trust get_user_allocation or not ? for libc ? for winheap ?
+- make a TU for the DSASimple bug.use the bytes from that record and create 
+a debug help that prints the resolution criterias for a record/field
+
+- do we trust get_user_allocation or not ? for libc ? for winheap ? YES
 
 - change the reversers anonymous structure to be POPO.
 - we want all funcs outside of it.

@@ -360,13 +360,13 @@ class DSASimple(StructureAnalyser):
             if f.offset > nextoffset:  # add temp padding field
                 self._aligned_gaps(structure, f.offset, nextoffset, gaps)
             elif f.offset < nextoffset:
-                # log.debug(structure)
-                # log.debug(f)
-                #log.debug('%s < %s '%(f.offset, nextoffset) )
-                #for f1 in fields:
-                #    print f1.offset,'->',f1.offset+len(f1)
-                #import code
-                #code.interact(local=locals())
+                log.debug(structure)
+                log.debug(f)
+                log.debug('%s < %s '%(f.offset, nextoffset) )
+                for f1 in fields:
+                    print f1.offset,'->',f1.offset+len(f1)
+                import code
+                code.interact(local=locals())
                 #assert(False)  # f.offset < nextoffset # No overlaps authorised
                 fields.remove(f)
                 log.error("need to TU the fields gap with utf8 text")
@@ -498,8 +498,7 @@ class EnrichedPointerFields(StructureAnalyser):
             field.set_child_addr(tgt._vaddr)
             offset = value - tgt._vaddr
             try:
-                tgt_field = tgt.get_field_at_offset(
-                    offset)  # @throws IndexError
+                tgt_field = tgt.get_field_at_offset(offset)  # @throws IndexError
             except IndexError as e:  # there is no field right there
                 log.debug(
                     'there is no field at pointed value %0.8x. May need splitting byte field - %s' %

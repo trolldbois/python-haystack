@@ -93,15 +93,17 @@ def remapLoad(context, addr, newmappings):
     return p
 
 
-def cacheLoadAllLazy(context):
-    dumpname = context.dumpname
-    addresses = context._structures_addresses
+def cacheLoadAllLazy(ctx):
+    dumpname = ctx.dumpname
+    addresses = ctx.list_allocations_addresses()
     for addr in addresses:
         try:
-            yield addr, CacheWrapper(context, addr)
+            yield addr, CacheWrapper(ctx, addr)
         except ValueError as e:
-            #log.warning(' TODO rebuild the struct')
-            pass
+            log.debug('Record 0x%x not found in cache', addr)
+            ##raise e
+            # we do not want to return in error.
+            # try to load as many as possible.
     return
 
 
@@ -116,7 +118,7 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
         self._addr = addr
         self._fname = make_filename_from_addr(context, addr)
         if not os.access(self._fname, os.F_OK):
-            raise ValueError()
+            raise ValueError("%s does not exists" % self._fname)
         self._context = context
         self.obj = None
 
@@ -333,6 +335,8 @@ class AnonymousStructInstance(object):
             (self.toString(), self.is_resolved()))
         log.debug('Looking at child structure ID %d' % id(self))
         if not self.is_resolved():
+            import pdb
+            pdb.set_trace()
             raise StructureNotResolvedError()
         ret = [f for f in self._fields if f.offset == offset]
         if len(ret) == 0:  # then check for closest match

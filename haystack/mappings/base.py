@@ -236,6 +236,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # finish initialization
         self._heap_finder = None
         self.__optim_get_mapping_for_address()
+        self.__contextes = {}
 
     def get_name(self):
         """Returns the name of the process memory dump we are analysing"""
@@ -297,6 +298,17 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if _boundary_addr in self.__optim_get_mapping_for_address_cache:
             return self.__optim_get_mapping_for_address_cache[_boundary_addr]
         return False
+
+    # reverse helper
+    def cache_context_for_heap(self, mmap, ctx):
+        """Caches the ReverserContext for a IMemoryMapping"""
+        self.__contextes[mmap.get_marked_heap_address()] = ctx
+
+    def get_cached_context_for_heap(self, mmap):
+        """Returns the cached ReverserContext for a IMemoryMapping"""
+        if mmap.get_marked_heap_address() not in self.__contextes:
+            return None
+        return self.__contextes[mmap.get_marked_heap_address()]
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """

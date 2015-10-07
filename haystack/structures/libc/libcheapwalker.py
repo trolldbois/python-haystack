@@ -79,7 +79,7 @@ class LibcHeapFinder(heapwalker.HeapFinder):
         :param mapping:
         :return:
         """
-        log.info('checking %s', mapping)
+        log.debug('checking %s', mapping)
         heap = mapping.read_struct(mapping.start, self._heap_type)
         load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
         if load:

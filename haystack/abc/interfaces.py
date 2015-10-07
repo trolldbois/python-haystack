@@ -148,6 +148,15 @@ class IMemoryHandler(object):
         """
         raise NotImplementedError(self)
 
+    # reverse helper
+    def cache_context_for_mapping(self, mmap, ctx):
+        """Caches the ReverserContext for a IMemoryMapping"""
+        raise NotImplementedError(self)
+
+    def get_cached_context_for_heap(self, mmap):
+        """Returns the cached ReverserContext for a IMemoryMapping"""
+        raise NotImplementedError(self)
+
     def get_mapping_for_address(self, vaddr):
         """Returns the IMemoryMapping that contains this virtual address."""
         raise NotImplementedError(self)

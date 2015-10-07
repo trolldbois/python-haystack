@@ -19,11 +19,11 @@ StructureOrientedReverser:
       * aggregate structures based on a heuristic,
           Apply heuristics on context.heap
 
-GenericHeapAllocationReverser:
+BasicCachingReverser:
     use heapwalker to get user allocations into reversed/guesswork structures.
 
 PointerReverser:
-    @obseleted by PointerFieldsAnalyser, GenericHeapAllocationReverser
+    @obseleted by PointerFieldsAnalyser, BasicCachingReverser
     Looks at pointers values to build basic structures boundaries.
 
 FieldReverser:
@@ -134,6 +134,63 @@ class StructureOrientedReverser(object):
     def __str__(self):
         return '<%s>' % (self.__class__.__name__)
 
+class BasicCachingReverser(StructureOrientedReverser):
+    """
+    use heapwalker to get user allocations into structures in cache.
+    """
+
+    def _reverse(self, ctx):
+        log.info('[+] Reversing user allocations into cache')
+        t0 = time.time()
+        tl = t0
+        loaded = 0
+        prevLoaded = 0
+        unused = 0
+        # FIXME why is that a LIST ?????
+        doneStructs = ctx._structures.keys()
+        allocations = ctx.list_allocations_addresses()
+        #
+        todo = sorted(set(allocations) - set(doneStructs))
+        fromcache = len(allocations) - len(todo)
+        ##offsets = list(context._pointers_offsets)
+        # build structs from pointers boundaries. and creates pointer fields if
+        # possible.
+        log.info(
+            '[+] Adding new raw structures from getUserAllocations cached contents - %d todo' %
+            (len(todo)))
+        for i, (ptr_value, size) in enumerate(
+                zip(map(long, allocations), map(long, ctx.list_allocations_sizes()))):
+            # TODO if len(_structure.keys()) +/- 30% de _malloc, do malloc_addr - keys() ,
+            # and use fsking utils.dequeue()
+            if ptr_value in doneStructs:  # FIXME TODO THAT IS SUCKY SUCKY
+                sys.stdout.write('.')
+                sys.stdout.flush()
+                continue
+            loaded += 1
+            if size < 0:
+                log.error("Negative allocation size")
+            mystruct = structure.makeStructure(ctx, ptr_value, size)
+            ctx._structures[ptr_value] = mystruct
+            # cache to disk
+            mystruct.saveme()
+            # next
+            if time.time() - tl > 10:  # i>0 and i%10000 == 0:
+                tl = time.time()
+                # DEBUG...
+                rate = ((tl - t0) / (loaded)) if loaded else ((tl - t0) / (loaded + fromcache))
+                log.info('%2.2f secondes to go (b:%d/c:%d)', (len(todo) - i) * rate, loaded, fromcache)
+        log.info(
+            '[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:%d)' %
+            (loaded +
+             fromcache,
+             time.time() -
+             t0,
+             loaded,
+             fromcache,
+             unused))
+
+        ctx.parsed.add(str(self))
+        return
 
 class PointerReverser(StructureOrientedReverser):
     """
@@ -235,8 +292,12 @@ class FieldReverser(StructureOrientedReverser):
                 decoded += 1
                 dsa.analyze_fields(anon)
                 my_ctypes = context.memory_handler.get_target_platform().get_target_ctypes()
-                log.info("_reverse: %s %s",str(my_ctypes.c_void_p),id(my_ctypes.c_void_p))
+                # DEBUG ctypes log.info("_reverse: %s %s",str(my_ctypes.c_void_p),id(my_ctypes.c_void_p))
                 anon.saveme()
+                if not anon.is_resolved():
+                    print 'not anon.is_resolved()'
+                    import pdb
+                    pdb.set_trace()
             # output headers
             towrite.append(anon.toString())
             if time.time() - tl > 30:  # i>0 and i%10000 == 0:
@@ -589,13 +650,7 @@ def reverse_heap(dumpname, heap_addr):
         if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
             os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
 
-        log.info("[+] Cache created in %s", config.get_record_cache_folder_name(ctx.dumpname))
-
-        # we use common allocators to find structures.
-        #log.debug('Reversing malloc')
-        #mallocRev = MallocReverser()
-        #ctx = mallocRev.reverse(ctx)
-        # mallocRev.check_inuse(ctx)
+        log.info("[+] Cache created in %s", config.get_cache_folder_name(ctx.dumpname))
 
         # try to find some logical constructs.
         log.debug('Reversing DoubleLinkedListReverser')
@@ -633,3 +688,4 @@ def reverse_heap(dumpname, heap_addr):
         raise e
         pass
     pass
+    return ctx
