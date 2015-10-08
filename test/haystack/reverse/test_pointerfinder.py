@@ -260,9 +260,10 @@ class TestPointerEnumeratorReal(unittest.TestCase):
                 logging.debug('WordAlignedEnumerator: %d pointers, timeit %0.2f', len(heap_addrs2), ts2)
                 all_heaps_addrs.extend(heap_addrs2)
                 ##
-                print "Pointers:"
-                for k,v in heap_enum2:
-                    print hex(k), hex(v)
+                if False:
+                    print "Pointers:"
+                    for k,v in heap_enum2:
+                        print hex(k), hex(v)
 
         self._stats(all_heaps_addrs)
 
