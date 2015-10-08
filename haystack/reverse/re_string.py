@@ -146,17 +146,28 @@ def _rfind_utf16(bytesarray, longerThan=7):
     return -1
 
 
-def rfind_utf16(bytes, offset, size, aligned=False):
-    '''@returns index from offset where utf16 was found'''
+def rfind_utf16(bytes, offset, size, aligned, word_size):
+    """
+    @returns index from offset where utf16 was found
+    If the result must be aligned,
+        a) it is assumed that the bytes index 0 is aligned.
+        b) any misaligned result will be front-truncated
+
+    :param bytes: the data buffer
+    :param offset: the offset in the data buffer
+    :param size: the size of the scope in the buffer
+    :param aligned: indicate if the result string must be aligned with word boundaries
+    :param word_size: the size of a word
+    :return:
+    """
     # print offset, offset+size
     bytes_nocp = Nocopy(bytes, offset, offset + size)
     index = _rfind_utf16(bytes_nocp)
     if aligned and index > -1:
         # align results
-        # FIXME TODO WORDSIZE is 4 ?
-        if index % 4:
-            index += index % 4
-        if index > offset + size - 4:
+        if index % word_size:
+            index += index % word_size
+        if index > offset + size - word_size:
             return -1
     return index
 

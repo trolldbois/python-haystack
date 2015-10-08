@@ -12,6 +12,7 @@ from haystack.reverse import context
 from haystack.reverse import config
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
+from haystack import dump_loader
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -29,7 +30,11 @@ class TestStructure(unittest.TestCase):
     def setUpClass(cls):
         cls.dumpname = 'test/src/test-ctypes3.32.dump'
         config.remove_cache_folder(cls.dumpname)
-        cls.context = context.get_context(cls.dumpname)
+        cls.memory_handler = dump_loader.load(cls.dumpname)
+        finder = cls.memory_handler.get_heap_finder()
+        heap = finder.get_heap_mappings()[0]
+        heap_addr = heap.get_marked_heap_address()
+        cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
         cls.dsa = dsa.DSASimple(cls.context.memory_handler)
         cls.pta = dsa.EnrichedPointerFields(cls.context.memory_handler)
@@ -100,9 +105,41 @@ class TestStructure(unittest.TestCase):
                 else:
                     self.assertIn(value, [None, False], name + ' not resetted')
 
+
+class TestStructure2(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dumpname = 'test/src/test-ctypes6.32.dump'
+        config.remove_cache_folder(cls.dumpname)
+        cls.memory_handler = dump_loader.load(cls.dumpname)
+        finder = cls.memory_handler.get_heap_finder()
+        heap = finder.get_heap_mappings()[0]
+        heap_addr = heap.get_marked_heap_address()
+        cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
+        cls.target = cls.context.memory_handler.get_target_platform()
+        cls.dsa = dsa.DSASimple(cls.context.memory_handler)
+        cls.pta = dsa.EnrichedPointerFields(cls.context.memory_handler)
+        return
+
+    @classmethod
+    def tearDownClass(cls):
+        config.remove_cache_folder(cls.dumpname)
+        cls.context = None
+        cls.target = None
+        cls.dsa = None
+        cls.pta = None
+        return
+
+    def setUp(self):
+        return
+
+    def tearDown(self):
+        self.context.reset()
+        return
+
     def test_string_overlap(self):
-        context6 = context.get_context('test/src/test-ctypes6.32.dump')
-        for s in context6.listStructures():
+        for s in self.context.listStructures():
             # s.resolvePointers()
             self.dsa.analyze_fields(s)
             log.debug(s.toString())

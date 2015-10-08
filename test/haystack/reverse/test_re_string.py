@@ -143,44 +143,20 @@ class TestReString(unittest.TestCase):
 
     def test_rfind_utf16(self):
         # print len(self.test1)
-        self.assertEquals(
-            0, re_string.rfind_utf16(
-                self.test1, 0, len(
-                    self.test1)))
-        self.assertEquals(
-            0, re_string.rfind_utf16(
-                self.test2, 0, len(
-                    self.test2)))
-        self.assertEquals(
-            0, re_string.rfind_utf16(
-                self.test3, 0, len(
-                    self.test3)))
-        self.assertEquals(-1,
-                          re_string.rfind_utf16(self.test4,
-                                                0,
-                                                len(self.test4)))
-        self.assertEquals(-1,
-                          re_string.rfind_utf16(self.test5,
-                                                0,
-                                                len(self.test5)))
-        self.assertEquals(-1,
-                          re_string.rfind_utf16(self.test6,
-                                                0,
-                                                len(self.test6)))
-        self.assertEquals(-1,
-                          re_string.rfind_utf16(self.test7,
-                                                0,
-                                                len(self.test7)))
+        self.assertEquals(0, re_string.rfind_utf16(self.test1, 0, len(self.test1), True, 4))
+        self.assertEquals(0, re_string.rfind_utf16(self.test2, 0, len(self.test2), True, 4))
+        self.assertEquals(0, re_string.rfind_utf16(self.test3, 0, len(self.test3), True, 4))
+        self.assertEquals(-1, re_string.rfind_utf16(self.test4, 0, len(self.test4), True, 4))
+        self.assertEquals(-1, re_string.rfind_utf16(self.test5, 0, len(self.test5), True, 4))
+        self.assertEquals(-1, re_string.rfind_utf16(self.test6, 0, len(self.test6), True, 4))
+        self.assertEquals(-1, re_string.rfind_utf16(self.test7, 0, len(self.test7), True, 4))
         # truncated last field
         # print repr(self.test8[120:])
-        self.assertEquals(
-            122, re_string.rfind_utf16(
-                self.test8, 0, len(
-                    self.test8)))
+        self.assertEquals(122, re_string.rfind_utf16(self.test8, 0, len(self.test8), False, 4))
         # find start with limited size
-        self.assertEquals(0, re_string.rfind_utf16(self.test8, 0, 64))
+        self.assertEquals(0, re_string.rfind_utf16(self.test8, 0, 64, True, 4))
         # middle field ( 12+64 )
-        self.assertEquals(12, re_string.rfind_utf16(self.test8, 64, 58))
+        self.assertEquals(12, re_string.rfind_utf16(self.test8, 64, 58, True, 4))
         # non aligned middle field ?
         # TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0,
         # len(self.test9) ))

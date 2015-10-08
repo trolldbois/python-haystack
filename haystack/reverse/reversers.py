@@ -267,6 +267,14 @@ class PointerReverser(StructureOrientedReverser):
 class FieldReverser(StructureOrientedReverser):
     """
     Decode each structure by asserting simple basic types from the byte content.
+
+    It tries the followings heuristics:
+        ZeroFields
+        PrintableAsciiFields
+        UTF16Fields
+        IntegerFields
+        PointerFields
+
     """
 
     def _reverse(self, context):
@@ -319,6 +327,9 @@ class FieldReverser(StructureOrientedReverser):
 class PointerFieldReverser(StructureOrientedReverser):
     """
       Identify pointer fields and their target structure.
+
+      You should call this Reverser only when all heaps have been reverse.
+      TODO: add minimum reversing level check before running
     """
 
     def _reverse(self, context):
@@ -631,21 +642,42 @@ def save_headers(ctx, addrs=None):
     return
 
 
-# TODO move to standalone file
 def reverse_instances(dumpname):
+    """
+    Reverse all heaps in dumpname
+
+    :param dumpname:
+    :return:
+    """
     from haystack import dump_loader
     memory_handler = dump_loader.load(dumpname)
     finder = memory_handler.get_heap_finder()
     heaps = finder.get_heap_mappings()
     for heap in heaps:
         heap_addr = heap.get_marked_heap_address()
-        reverse_heap(dumpname, heap_addr)
+        reverse_heap(memory_handler, heap_addr)
+
+        ctx = memory_handler.get_cached_context_for_heap(heap)
+        # identify pointer relation between structures
+        log.debug('Reversing PointerFields')
+        pfr = PointerFieldReverser(ctx)
+        ctx = pfr.reverse(ctx)
+
+        # graph pointer relations between structures
+        log.debug('Reversing PointerGraph')
+        ptrgraph = PointerGraphReverser(ctx)
+        ctx = ptrgraph.reverse(ctx)
+        ptrgraph._saveStructures(ctx)
+
+        # save to file
+        save_headers(ctx)
+
     return
 
-def reverse_heap(dumpname, heap_addr):
+def reverse_heap(memory_handler, heap_addr):
     from haystack.reverse import context
     log.debug('[+] Loading the memory dump for HEAP 0x%x', heap_addr)
-    ctx = context.get_context(dumpname, heap_addr)
+    ctx = context.get_context_for_address(memory_handler, heap_addr)
     try:
         if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
             os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
@@ -662,23 +694,8 @@ def reverse_heap(dumpname, heap_addr):
         fr = FieldReverser(ctx)
         ctx = fr.reverse(ctx)
 
-        # identify pointer relation between structures
-        log.debug('Reversing PointerFields')
-        pfr = PointerFieldReverser(ctx)
-        ctx = pfr.reverse(ctx)
-
-        # graph pointer relations between structures
-        log.debug('Reversing PointerGraph')
-        ptrgraph = PointerGraphReverser(ctx)
-        ctx = ptrgraph.reverse(ctx)
-        ptrgraph._saveStructures(ctx)
-
         # save to file
         save_headers(ctx)
-        # fr._saveStructures(ctx)
-        ##libRev = KnowStructReverser('libQt')
-        ##ctx = libRev.reverse(ctx)
-        # we have more enriched context
 
         # etc
     except KeyboardInterrupt as e:

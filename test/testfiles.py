@@ -134,6 +134,20 @@ putty_1_win7.known_heaps = [(0x00390000, 0x3000),
                             #( 0x0061a000, 1200),
                             ]
 
+putty_7124_win7 = TestDump('test/dumps/putty/putty.7124.dump')
+putty_7124_win7.known_heaps = [(0x260000, 0x21000),
+                               (0x2a0000, 0x9000),
+                               (0x310000, 0x3000),
+                               (0x320000, 0x6000),
+                               (0x620000, 0x59000),
+                               (0x1d40000, 0x1000),
+                               (0x1d90000, 0x10000),
+                               (0x1e60000, 0x1000),
+                               (0x2c00000, 0x1000),
+                               (0x3dc0000, 0x1000),
+                               (0x3e00000, 0x1000),
+                               (0x3f50000, 0x1000)]
+
 
 ssh_1_i386_linux = TestDump('test/dumps/ssh/ssh.1')
 ssh_1_i386_linux.known_heaps = [(0xb84e0000, 0x21000)]

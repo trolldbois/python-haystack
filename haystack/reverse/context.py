@@ -105,9 +105,7 @@ class ReverserContext(object):
 
             log.info('[+] Missing cached structures %d' % nb_missing)
             if nb_missing < 10:
-                log.warning('close numbers to check missing:%d unique: %d', nb_missing,
-                            (set(self._structures_addresses) -
-                             set(self._structures)))
+                log.warning('TO check missing:%d unique: %d', nb_missing, len(set(self._structures_addresses) - set(self._structures)))
             # use BasicCachingReverser to get user blocks
             cache_reverse = reversers.BasicCachingReverser(self)
             _ = cache_reverse.reverse(self)
@@ -328,6 +326,7 @@ class ReverserContext(object):
 
 
 # FIXME - get context should be on memory_handler.
+#@deprecated
 def get_context(fname, heap_addr):
     """
     Load a dump file, and create a reverser context object.
@@ -353,7 +352,7 @@ def get_context_for_address(memory_handler, address):
     assert isinstance(address, long) or isinstance(address, int)
     mmap = memory_handler.get_mapping_for_address(address)
     if not mmap:
-        raise ValueError("Invalid address")
+        raise ValueError("Invalid address: 0x%x", address)
     finder = memory_handler.get_heap_finder()
     if mmap not in finder.get_heap_mappings():
         # addr is not a heap addr,
@@ -368,7 +367,7 @@ def get_context_for_address(memory_handler, address):
                     mmap = h
                     break
         if not found:
-            raise ValueError("Address is not in heap")
+            raise ValueError("Address is not in heap: 0x%x", address)
     cached = memory_handler.get_cached_context_for_heap(mmap)
     if cached is not None:
         return cached

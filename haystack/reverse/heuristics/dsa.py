@@ -100,27 +100,22 @@ class ZeroFields(FieldAnalyser):
 
 class UTF16Fields(FieldAnalyser):
 
-    """ rfinds utf-16-ascii and ascii 7bit
+    """
+    rfinds utf-16-ascii and ascii 7bit
 
     """
 
     def make_fields(self, structure, offset, size):
-        assert(
-            offset %
-            self._target.get_word_size() == 0)  # vaddr and offset should be aligned
+        assert(offset % self._target.get_word_size() == 0)  # vaddr and offset should be aligned
         #log.debug('checking String')
         fields = []
         bytes = structure.bytes
         while size > self._target.get_word_size():
             # print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
-            index = re_string.rfind_utf16(bytes, offset, size)
+            # we force aligned results only.
+            index = re_string.rfind_utf16(bytes, offset, size, True, self._target.get_word_size())
             if index > -1:
-                f = Field(
-                    structure,
-                    offset + index,
-                    FieldType.STRING16,
-                    size - index,
-                    False)
+                f = Field(structure, offset + index, FieldType.STRING16, size - index, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size = index  # reduce unknown field in prefix
@@ -145,31 +140,17 @@ class PrintableAsciiFields(FieldAnalyser):
             # print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
             index, ssize = re_string.find_ascii(bytes, offset, size)
             if index == 0:
-                if (ssize < size) and bytes[
-                        offset + index + ssize] == '\x00':  # space for a \x00
+                if (ssize < size) and bytes[offset + index + ssize] == '\x00':  # space for a \x00
                     ssize += 1
-                    f = Field(
-                        structure,
-                        offset +
-                        index,
-                        FieldType.STRINGNULL,
-                        ssize,
-                        False)
+                    f = Field(structure, offset + index, FieldType.STRINGNULL, ssize, False)
                 else:
-                    f = Field(
-                        structure,
-                        offset +
-                        index,
-                        FieldType.STRING,
-                        ssize,
-                        False)
+                    f = Field(structure, offset + index, FieldType.STRING, ssize, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size -= ssize  # reduce unknown field
                 offset += ssize
                 if ssize % self._target.get_word_size():
-                    rest = self._target.get_word_size() - \
-                        ssize % self._target.get_word_size()
+                    rest = self._target.get_word_size() - ssize % self._target.get_word_size()
                     size -= rest  # goto next aligned
                     offset += rest
             else:
@@ -193,33 +174,27 @@ class PointerFields(FieldAnalyser):
         log.debug('checking Pointer')
         bytes = structure.bytes
         fields = []
+        ctypes_utils = self._target.get_target_ctypes_utils()
         while size >= self._target.get_word_size():
-            value = self._target.get_target_ctypes_utils().unpackWord(
-                bytes[
-                    offset:offset +
-                    self._target.get_word_size()])
+            value = ctypes_utils.unpackWord(bytes[offset:offset + self._target.get_word_size()])
             # check if pointer value is in range of _memory_handler and set self.comment to pathname value of pointer
             # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
-            if value not in structure._memory_handler: # FIXME for self._memory_handler
+            if not self._memory_handler.is_valid_address(value):
                 size -= self._target.get_word_size()
                 offset += self._target.get_word_size()
                 continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
-            field = PointerField(
-                structure,
-                offset,
-                FieldType.POINTER,
-                self._target.get_word_size(),
-                False)
+            field = PointerField(structure, offset, FieldType.POINTER, self._target.get_word_size(), False)
             field.value = value
             # TODO: leverage the context._function_names
-            if value in structure._context._function_names:
-                field.comment = ' %s::%s' % (os.path.basename(structure._memory_handler.get_mapping_for_address(value).pathname),
-                                             structure._context._function_names[value])
-            else:
-                field.comment = structure._memory_handler.get_mapping_for_address( # FIXME for self._memory_handler
-                    value).pathname
+            # if value in structure._context._function_names:
+            #    field.comment = ' %s::%s' % (os.path.basename(self._memory_handler.get_mapping_for_address(value).pathname),
+            #                                 structure._context._function_names[value])
+            # else:
+            #    field.comment = self._memory_handler.get_mapping_for_address(value).pathname
+            field.comment = self._memory_handler.get_mapping_for_address(value).pathname
+
             fields.append(field)
             size -= self._target.get_word_size()
             offset += self._target.get_word_size()
@@ -325,25 +300,17 @@ class DSASimple(StructureAnalyser):
         # find strings
         # find smallints
         # find pointers
-        for analyser in [
-                self.zero_a, self.utf16_a, self.ascii_a, self.int_a, self.ptr_a]:
+        for analyser in [self.zero_a, self.utf16_a, self.ascii_a, self.int_a, self.ptr_a]:
+            log.debug("analyzing with %s", analyser)
             for field in gaps:
                 if field.padding:
                     fields.append(field)
                     continue
-                log.debug(
-                    'Using %s on %d:%d' %
-                    (analyser.__class__.__name__,
-                     field.offset,
-                     field.offset +
-                     len(field)))
-                fields.extend(
-                    analyser.make_fields(
-                        structure,
-                        field.offset,
-                        len(field)))
-                # for f1 in fields:
-                #    log.debug('after %s'%f1)
+                log.debug('Using %s on %d:%d', analyser.__class__.__name__, field.offset, field.offset + len(field))
+                new_fields = analyser.make_fields(structure, field.offset, len(field))
+                fields.extend(new_fields)
+                for f1 in new_fields:
+                    log.debug('new_field %s', f1)
                 # print fields
             if len(fields) != nb:  # no change in fields, keep gaps
                 nb = len(fields)
@@ -362,29 +329,19 @@ class DSASimple(StructureAnalyser):
             elif f.offset < nextoffset:
                 log.debug(structure)
                 log.debug(f)
-                log.debug('%s < %s '%(f.offset, nextoffset) )
-                for f1 in fields:
-                    print f1.offset,'->',f1.offset+len(f1)
-                import code
-                code.interact(local=locals())
-                #assert(False)  # f.offset < nextoffset # No overlaps authorised
-                fields.remove(f)
+                log.debug('%s < %s ' % (f.offset, nextoffset))
+                log.debug(fields[i + 1])
                 log.error("need to TU the fields gap with utf8 text")
+                assert(False)  # f.offset < nextoffset # No overlaps authorised
+                # fields.remove(f)
             # do next field
             nextoffset = f.offset + len(f)
         # conclude on QUEUE insertion
         lastfield_size = len(structure) - nextoffset
         if lastfield_size > 0:
             if lastfield_size < self._target.get_word_size():
-                gap = Field(
-                    structure,
-                    nextoffset,
-                    FieldType.UNKNOWN,
-                    lastfield_size,
-                    True)
-                log.debug(
-                    '_make_gaps: adding last field at offset %d:%d' %
-                    (gap.offset, gap.offset + len(gap)))
+                gap = Field(structure, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
+                log.debug('_make_gaps: adding last field at offset %d:%d', gap.offset, gap.offset + len(gap))
                 gaps.append(gap)
             else:
                 self._aligned_gaps(structure, len(structure), nextoffset, gaps)
@@ -397,38 +354,18 @@ class DSASimple(StructureAnalyser):
                     add (padding + gap) to gaps
                  """
         if nextoffset % self._target.get_word_size() == 0:
-            gap = Field(
-                structure,
-                nextoffset,
-                FieldType.UNKNOWN,
-                endoffset -
-                nextoffset,
-                False)
-            log.debug(
-                '_make_gaps: adding field at offset %d:%d' %
-                (gap.offset, gap.offset + len(gap)))
+            gap = Field(structure, nextoffset, FieldType.UNKNOWN, endoffset - nextoffset, False)
+            log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
-        else:     # unaligned field should be splitted
-            s1 = self._target.get_word_size() - \
-                nextoffset % self._target.get_word_size()
+        else:
+            # unaligned field should be splitted
+            s1 = self._target.get_word_size() - nextoffset % self._target.get_word_size()
             gap1 = Field(structure, nextoffset, FieldType.UNKNOWN, s1, True)
-            log.debug(
-                '_make_gaps: Unaligned field at offset %d:%d' %
-                (gap1.offset, gap1.offset + len(gap1)))
+            log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = Field(
-                    structure,
-                    nextoffset +
-                    s1,
-                    FieldType.UNKNOWN,
-                    endoffset -
-                    nextoffset -
-                    s1,
-                    False)
-                log.debug(
-                    '_make_gaps: adding field at offset %d:%d' %
-                    (gap2.offset, gap2.offset + len(gap2)))
+                gap2 = Field(structure, nextoffset + s1, FieldType.UNKNOWN, endoffset - nextoffset - s1, False)
+                log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
 
@@ -500,9 +437,7 @@ class EnrichedPointerFields(StructureAnalyser):
             try:
                 tgt_field = tgt.get_field_at_offset(offset)  # @throws IndexError
             except IndexError as e:  # there is no field right there
-                log.debug(
-                    'there is no field at pointed value %0.8x. May need splitting byte field - %s' %
-                    (value, e))
+                log.debug('there is no field at pointed value %0.8x. May need splitting byte field - %s', value, e)
                 field.set_child_desc('Badly reversed field')
                 field.set_child_ctype('void')
                 field.set_name('ptr_void')

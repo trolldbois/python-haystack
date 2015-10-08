@@ -45,6 +45,8 @@ def closestFloorValueNumpy(val, lst):
     # Find indices where elements should be inserted to maintain order.
     if isinstance(lst, list):  # TODO delete
         log.warning('misuse of closestFloorValue')
+        import pdb
+        pdb.set_trace()
         try:
             # be positive, its a small hit compared to searchsorted on
             # non-numpy array
@@ -150,8 +152,8 @@ def cache_get_user_allocations(ctx, heap_walker):
         if len(allocations) == 0:
             return [],[]
         addrs, sizes = zip(*allocations)
-        int_array_save(f_addrs, addrs)
-        int_array_save(f_sizes, sizes)
+        addrs = int_array_save(f_addrs, addrs)
+        sizes = int_array_save(f_sizes, sizes)
     else:
         log.info('[+] Loading from cache')
     log.info('\t[-] we have %d allocated chunks', len(addrs))

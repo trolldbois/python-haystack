@@ -330,9 +330,7 @@ class AnonymousStructInstance(object):
 
     def get_field_at_offset(self, offset):
         '''@ returns the field at a specific offset.'''
-        log.debug(
-            'Looking at child %s %s' %
-            (self.toString(), self.is_resolved()))
+        log.debug('Looking at child %s %s', self.toString(), self.is_resolved())
         log.debug('Looking at child structure ID %d' % id(self))
         if not self.is_resolved():
             import pdb

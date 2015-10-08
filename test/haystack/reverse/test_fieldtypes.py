@@ -10,6 +10,7 @@ from haystack.reverse import context
 from haystack.reverse import config
 from haystack.reverse.heuristics import dsa
 from haystack.reverse import fieldtypes
+from haystack import dump_loader
 
 log = logging.getLogger('test_fieldtypes')
 
@@ -21,7 +22,11 @@ class TestField(unittest.TestCase):
         #self.context3 = context.get_context('test/src/test-ctypes3.dump')
         cls.dumpname = 'test/src/test-ctypes6.32.dump'
         config.remove_cache_folder(cls.dumpname)
-        cls.context6 = context.get_context(cls.dumpname)
+        cls.memory_handler = dump_loader.load(cls.dumpname)
+        finder = cls.memory_handler.get_heap_finder()
+        heap = finder.get_heap_mappings()[0]
+        heap_addr = heap.get_marked_heap_address()
+        cls.context6 = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.dsa = dsa.DSASimple(cls.context6.memory_handler)
         cls.st = cls.context6.listStructures()[0]
 
