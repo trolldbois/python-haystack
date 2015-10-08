@@ -295,15 +295,16 @@ class TestPointerEnumeratorReal(unittest.TestCase):
                 logging.debug('AllocatedWordAlignedEnumerator: %d pointers, timeit %0.2f', len(heap_addrs2), ts2)
                 all_heaps_addrs.extend(heap_addrs2)
                 ##
-                print "Pointers:"
-                for k,v in heap_enum2:
-                    print hex(k), hex(v)
-                print "Allocations:"
-                for addr, size in heap_walker.get_user_allocations():
-                    print hex(addr), '->', hex(addr+size), '(%x)'%size
-                print "Free chunks:"
-                for addr, size in heap_walker.get_free_chunks():
-                    print hex(addr), '->', hex(addr+size), '(%x)'%size
+                if False:
+                    print "Pointers:"
+                    for k,v in heap_enum2:
+                        print hex(k), hex(v)
+                    print "Allocations:"
+                    for addr, size in heap_walker.get_user_allocations():
+                        print hex(addr), '->', hex(addr+size), '(%x)'%size
+                    print "Free chunks:"
+                    for addr, size in heap_walker.get_free_chunks():
+                        print hex(addr), '->', hex(addr+size), '(%x)'%size
 
         self._stats(all_heaps_addrs)
 
