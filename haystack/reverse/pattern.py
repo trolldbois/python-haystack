@@ -279,7 +279,7 @@ class PointerIntervalSignature:
                 "Signature has to be calculated for %s. It's gonna take a while." %
                 (self.name))
             matcher = matchers.PointerSearcher(self.memory_handler)
-            pointerSearcher = searchers.WordAlignedSearcher(self.mmap, matcher, self.feedback, self._word_size)
+            pointerSearcher = searchers.WordAlignedSearcher(self.mmap, matcher, self._feedback, self._word_size)
             #pointerSearcher = matchers.PointerSearcher(self.mmap)
             sig = []
             # save first offset
