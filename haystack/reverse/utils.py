@@ -45,8 +45,8 @@ def closestFloorValueNumpy(val, lst):
     # Find indices where elements should be inserted to maintain order.
     if isinstance(lst, list):  # TODO delete
         log.warning('misuse of closestFloorValue')
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
         try:
             # be positive, its a small hit compared to searchsorted on
             # non-numpy array
