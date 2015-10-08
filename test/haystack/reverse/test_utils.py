@@ -9,6 +9,7 @@ import numpy
 
 from haystack.reverse import utils
 from haystack.reverse import context
+from haystack import dump_loader
 
 
 class TestBasicFunctions(unittest.TestCase):
@@ -23,7 +24,11 @@ class TestBasicFunctions(unittest.TestCase):
         with self.assertRaises(ValueError):
             utils.closestFloorValue(-1, lst)
 
-        ctx = context.get_context('test/src/test-ctypes3.32.dump')
+        memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
+        finder = memory_handler.get_heap_finder()
+        heap = finder.get_heap_mappings()[0]
+        heap_addr = heap.get_marked_heap_address()
+        ctx = context.get_context_for_address(memory_handler, heap_addr)
         lst = ctx._structures_addresses
         # print ['0x%0.8x'%i for i in lst]
 
