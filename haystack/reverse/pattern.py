@@ -22,8 +22,8 @@ import os
 from haystack import dump_loader
 from haystack.reverse import config
 from haystack.reverse import utils
+from haystack.reverse import matchers
 from haystack.reverse import searchers
-import haystack.reverse.matchers
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -256,6 +256,7 @@ class PointerIntervalSignature:
         self.addressCache = {}
         self.sig = None
         self._word_size = memory_handler.get_target_platform().get_word_size()
+        self._feedback = searchers.NoFeedback()
         self._get_mapping()
         self._load()
 
@@ -277,7 +278,9 @@ class PointerIntervalSignature:
             log.info(
                 "Signature has to be calculated for %s. It's gonna take a while." %
                 (self.name))
-            pointerSearcher = haystack.reverse.matchers.PointerSearcher(self.mmap)
+            matcher = matchers.PointerSearcher(self.memory_handler)
+            pointerSearcher = searchers.WordAlignedSearcher(self.mmap, matcher, self.feedback, self._word_size)
+            #pointerSearcher = matchers.PointerSearcher(self.mmap)
             sig = []
             # save first offset
             last = self.mmap.start
