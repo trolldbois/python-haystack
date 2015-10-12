@@ -212,7 +212,7 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
         st.resolvePointers()
         # st.pointerResolved=True
         # st._aggregateFields()
-        print node, st.getSignature(text=True)
+        print node, st.get_signature(text=True)
     # clean and print
     # s1._aggregateFields()
     impDiGraph.remove_node(root)

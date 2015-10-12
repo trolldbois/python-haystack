@@ -125,7 +125,7 @@ def print_diff_files(opts, context, newmappings, structures):
     f1 = file(d1out, 'w')
     f2 = file(d2out, 'w')
     for st in structures:
-        st2 = structure.remapLoad(context, st.vaddr, newmappings)
+        st2 = structure.remap_load(context, st.vaddr, newmappings)
         if st.bytes == st2.bytes:
             print 'identic bit field !!!'
             return

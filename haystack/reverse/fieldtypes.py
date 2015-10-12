@@ -61,9 +61,9 @@ class FieldType(object):
         make a structure type
         """
         import structure
-        vaddr = parent.vaddr + offset
-        newfieldType = FieldTypeStruct('%lx' % vaddr, fields)
-        newfieldType.setStruct(structure.makeStructure(parent.context, vaddr, len(newfieldType)))
+        _address = parent.address + offset
+        newfieldType = FieldTypeStruct('%lx' % _address, fields)
+        newfieldType.setStruct(structure.AnonymousRecord(parent.context, _address, len(newfieldType)))
         newField = Field(parent, offset, newfieldType, len(newfieldType), False)
         return newField
 
@@ -290,7 +290,7 @@ class Field(object):
             log.warning('ARRAY in Field type, %s' % self.typename)
             log.error(
                 'error in 0x%x offset 0x%x' %
-                (self.struct._vaddr, self.offset))
+                (self.struct.address, self.offset))
             bytes = ''.join(
                 ['[', ','.join([el.to_string() for el in self.elements]), ']'])
         elif self.padding or self.typename == FieldType.UNKNOWN:

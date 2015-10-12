@@ -117,7 +117,7 @@ class TestFullReverse(unittest.TestCase):
         self.assertEqual(2236, len(ctx.listPointerValueInHeap()))
         self.assertEqual(2568, len(ctx.list_allocations_addresses()))
         self.assertEqual(2568, len(ctx._get_structures()))
-        self.assertEqual(2568, ctx.structuresCount())
+        self.assertEqual(2568, ctx.get_record_count())
         self.assertIn('ssh.1/cache/b84e0000.ctx', ctx.get_filename_cache_context())
         self.assertIn('ssh.1/cache/b84e0000.headers_values.py', ctx.get_filename_cache_headers())
         self.assertIn('ssh.1/cache/b84e0000.graph.gexf', ctx.get_filename_cache_graph())

@@ -405,7 +405,7 @@ class EnrichedPointerFields(StructureAnalyser):
             try:
                 ctx = context.get_context_for_address(self._memory_handler, value)  # no error expected.
                 #log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
-                # print '** ST id', id(structure), hex(structure._vaddr)
+                # print '** ST id', id(structure), hex(structure.address)
                 # + ask context for the target structure or code info
             except ValueError as e:
                 log.debug('target to non heap mmaps is not implemented')
@@ -419,7 +419,7 @@ class EnrichedPointerFields(StructureAnalyser):
             tgt = None
             try:
                 # get enclosing structure @throws KeyError
-                tgt = ctx.getStructureForOffset(value)
+                tgt = ctx.get_record_at_address(value)
             # there is no child structure member at pointed value.
             except (IndexError, ValueError) as e:
                 log.debug('there is no child structure enclosing pointed value %0.8x - %s', value, e)
@@ -429,8 +429,8 @@ class EnrichedPointerFields(StructureAnalyser):
                 continue
             # structure found
             # we always point on structure, not field
-            field.set_child_addr(tgt._vaddr)
-            offset = value - tgt._vaddr
+            field.set_child_addr(tgt.address)
+            offset = value - tgt.address
             try:
                 tgt_field = tgt.get_field_at_offset(offset)  # @throws IndexError
             except IndexError as e:  # there is no field right there
@@ -458,7 +458,7 @@ class EnrichedPointerFields(StructureAnalyser):
         children = []
         for field in pointerFields:
             try:
-                tgt = structure._context.get_structure_for_address(field.value)
+                tgt = structure._context.get_record_for_address(field.value)
                 if not tgt.is_resolved():  # fields have not been decoded yet
                     children.append(tgt)
             except KeyError as e:

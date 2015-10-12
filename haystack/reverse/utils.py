@@ -243,7 +243,7 @@ def nextStructure(context, struct):
         return None
     if struct.vaddr + len(struct) != val:
         print '*** WARNING nextStruct is not concurrent to struct'
-    return context.getStructureForOffset[val]
+    return context.get_record_at_address[val]
 
 
 def printNext(ctx, s):

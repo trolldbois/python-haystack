@@ -90,7 +90,7 @@ def show(opt):
     ctx = context.get_context(opt.dumpname)
     log.info('[+] Find Structure at: @%x', opt.address)
     try:
-        st = ctx.getStructureForOffset(opt.address)
+        st = ctx.get_record_at_address(opt.address)
         st.decodeFields()
         print st.to_string()
     except ValueError,e:
@@ -110,7 +110,7 @@ def printParents(opt):
     log.info('[+] find offsets of struct_addr:%x', opt.address)
     i = 0
     try:
-        child_address = ctx.getStructureAddrForOffset(opt.address)
+        child_address = ctx.get_record_address_at_address(opt.address)
         for st in ctx.listStructuresForPointerValue(child_address):
             st.decodeFields()
             print st.to_string()

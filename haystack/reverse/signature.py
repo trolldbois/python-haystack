@@ -49,11 +49,11 @@ class SignatureGroupMaker:
         decoder = dsa.DSASimple(self._context.memory_handler)
         for addr in map(long, self._structures_addresses):
             # decode the fields
-            record = self._context.get_structure_for_address(addr)
+            record = self._context.get_record_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
             # get the signature for the record
-            self._signatures.append((addr, self._context.get_structure_for_address(addr).getSignature(True)))
+            self._signatures.append((addr, self._context.get_record_for_address(addr).get_signature(True)))
         return
 
     def make(self):
@@ -391,10 +391,10 @@ def printStructureGroups(context, chains, originAddr=None):
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            record = context.get_structure_for_address(addr)
+            record = context.get_record_for_address(addr)
             ##record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_structure_for_address(addr).to_string()
+            print context.get_record_for_address(addr).to_string()
         print '#', '-' * 78
 
 
@@ -409,15 +409,15 @@ def graphStructureGroups(context, chains, originAddr=None):
             if originAddr not in chain:
                 continue  # ignore chain if originAddr is not in it
         for addr in map(long, chain):
-            record = context.get_structure_for_address(addr)
+            record = context.get_record_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_structure_for_address(addr).to_string()
+            print context.get_record_for_address(addr).to_string()
             targets = set()
-            for f in context.get_structure_for_address(addr).get_pointer_fields():
+            for f in context.get_record_for_address(addr).get_pointer_fields():
                 addr_child = f._getValue(0)
-                child = context.getStructureForOffset(addr)
-                targets.add(('%x' % addr, '%x' % child._vaddr))
+                child = context.get_record_at_address(addr)
+                targets.add(('%x' % addr, '%x' % child.address))
             graph.add_edges_from(targets)
         print '#', '-' * 78
     networkx.readwrite.gexf.write_gexf(
@@ -450,14 +450,14 @@ def makeReversedTypes(context, sizeCache):
             addr = f._getValue(0)
             if addr in context.heap:
                 try:
-                    ctypes_type = context.getStructureForOffset(
+                    ctypes_type = context.get_record_at_address(
                         addr).get_ctype()
                 # we have escapees, withouth a typed type... saved them from
                 # exception
                 except TypeError as e:
                     ctypes_type = fixInstanceType(
                         context,
-                        context.getStructureForOffset(addr),
+                        context.get_record_at_address(addr),
                         getname())
                 #f.setCtype(ctypes.POINTER(ctypes_type))
                 f.set_child_ctype(ctypes.POINTER(ctypes_type))
@@ -544,7 +544,7 @@ def fixType(context, chains):
         for addr in chain:  # chain is a numpy
             addr = int(addr)
             # FIXME
-            instance = context.get_structure_for_address(addr)
+            instance = context.get_record_for_address(addr)
             #
             ctypes_type = fixInstanceType(context, instance, name)
     return

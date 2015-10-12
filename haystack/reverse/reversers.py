@@ -50,11 +50,6 @@ reverse_instances:
 log = logging.getLogger('reversers')
 
 
-## TODO:
-# implement Anaonstructure .get_address()
-# implement AnonStructure.get_reverse_level()
-
-
 class BasicCachingReverser(interfaces.IContextReverser):
     """
     Uses heapwalker to get user allocations into structures in cache.
@@ -89,10 +84,10 @@ class BasicCachingReverser(interfaces.IContextReverser):
             loaded += 1
             if size < 0:
                 log.error("Negative allocation size")
-            mystruct = structure.makeStructure(self._context, ptr_value, size)
+            mystruct = structure.AnonymousRecord(self._context, ptr_value, size)
             self._context._structures[ptr_value] = mystruct
             # cache to disk
-            mystruct.saveme()
+            mystruct.saveme(self._context)
             # next
             if time.time() - tl > 10:  # i>0 and i%10000 == 0:
                 tl = time.time()
@@ -146,7 +141,7 @@ class AbstractReverser(interfaces.IContextReverser):
         if time.time() - self._tl > 30:
             tl = time.time()
             rate = (tl - self._t0) / (1 + self._nb_reversed + self._nb_from_cache)
-            _ttg = (self._context.structuresCount() - (self._nb_from_cache + self._nb_reversed)) * rate
+            _ttg = (self._context.get_record_count() - (self._nb_from_cache + self._nb_reversed)) * rate
             log.info('%2.2f secondes to go (d:%d,c:%d)', _ttg, self._nb_reversed, self._nb_from_cache)
             # write to file
             self._fout.write('\n'.join(self._towrite))
@@ -210,8 +205,8 @@ class DoubleLinkedListReverser(AbstractReverser):
                     self._nb_reversed += len(_members) - 1
                     lists.append((head, _members))  # save list chain
                     # set names
-                    _context.get_structure_for_address(head).set_name('list_head')
-                    [_context.get_structure_for_address(m).set_name(
+                    _context.get_record_for_address(head).set_name('list_head')
+                    [_context.get_record_for_address(m).set_name(
                         'list_%x_%d' % (head, i)) for i, m in enumerate(_members)]
                     # TODO get substructures ( P4P4xx ) signature and
                     # a) extract substructures
@@ -271,8 +266,8 @@ class DoubleLinkedListReverser(AbstractReverser):
             return None, None
         if f2 == head_addr:
             log.debug('f2 is head_addr too')
-            self._context.get_structure_for_address(head_addr).set_name('struct')
-            log.debug('%s', self._context.get_structure_for_address(head_addr).to_string())
+            self._context.get_record_for_address(head_addr).set_name('struct')
+            log.debug('%s', self._context.get_record_for_address(head_addr).to_string())
 
         current = head_addr
         while self._context.is_known_address(f1):
@@ -293,7 +288,7 @@ class DoubleLinkedListReverser(AbstractReverser):
         return None, None
 
     def find_list_head(self, members):
-        sizes = sorted([(self._context.getStructureSizeForAddr(m), m) for m in members])
+        sizes = sorted([(self._context.get_record_size_for_address(m), m) for m in members])
         if sizes[0] < 3 * self._target.get_word_size():
             log.error('a double linked list element must be 3 WORD at least')
             raise ValueError(
@@ -424,7 +419,7 @@ class PointerGraphReverser(RecordReverser):
         t0 = time.time()
         tl = t0
         for i, ptr_value in enumerate(context.listStructuresAddresses()):
-            struct = context.get_structure_for_address(ptr_value)
+            struct = context.get_record_for_address(ptr_value)
             # targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr )
             # for child in struct.getPointerFields()) #target_struct_addr
             # target_struct_addr
@@ -465,7 +460,7 @@ class ArrayFieldsReverser(RecordReverser):
         _record._fields.sort()
         myfields = []
 
-        signature = _record.getSignature()
+        signature = _record.get_signature()
         pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
         patterns = pencoder.makePattern()
 
@@ -531,11 +526,11 @@ class InlineRecordReverser(RecordReverser):
         _record._fields.sort()
         myfields = []
 
-        signature = _record.getTypeSignature()
+        signature = _record.get_type_signature()
         pencoder = pattern.PatternEncoder(signature, minGroupSize=2)
         patterns = pencoder.makePattern()
 
-        txt = _record.getTypeSignature(text=True)
+        txt = _record.get_type_signature(text=True)
         p = pattern.findPatternText(txt, 1, 2)
 
         log.debug('substruct typeSig: %s' % txt)
@@ -609,7 +604,7 @@ def refreshOne(context, ptr_value):
     offsets, my_pointers_addrs = utils.dequeue(
         offsets, ptr_value, ptr_value + size)
     # save the ref/struct type
-    mystruct = structure.makeStructure(context, ptr_value, size)
+    mystruct = structure.AnonymousRecord(context, ptr_value, size)
     context.structures[ptr_value] = mystruct
     for p_addr in my_pointers_addrs:
         f = mystruct.add_field(
@@ -644,7 +639,7 @@ def save_headers(ctx, addrs=None):
 
     for vaddr in addrs:
         #anon = context._get_structures()[vaddr]
-        anon = ctx.get_structure_for_address(vaddr)
+        anon = ctx.get_record_for_address(vaddr)
         towrite.append(anon.to_string())
         if len(towrite) >= 10000:
             try:
@@ -692,7 +687,7 @@ def reverse_heap(memory_handler, heap_addr):
     except KeyboardInterrupt as e:
         # except IOError,e:
         log.warning(e)
-        log.info('[+] %d structs extracted' % (ctx.structuresCount()))
+        log.info('[+] %d structs extracted' % (ctx.get_record_count()))
         raise e
         pass
     pass

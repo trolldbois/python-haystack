@@ -13,9 +13,8 @@ import sys
 
 import os
 
-from haystack.reverse import fieldtypes
+
 # FieldType, makeArrayField
-import pattern
 import lrucache
 
 log = logging.getLogger('structure')
@@ -23,64 +22,55 @@ log = logging.getLogger('structure')
 DEBUG_ADDRS = []
 
 
-def make_filename(context, st):
-    sdir = context.get_folder_cache_structures()
+def make_filename(_context, _record):
+    sdir = _context.get_folder_cache_structures()
     if not os.path.isdir(sdir):
         os.mkdir(sdir)
-    return os.path.sep.join([sdir, str(st)])
+    return os.path.sep.join([sdir, str(_record)])
 
 
-def make_filename_from_addr(context, addr):
-    return make_filename(context, 'struct_%x' % addr)
+def make_filename_from_addr(_context, address):
+    return make_filename(_context, 'struct_%x' % address)
 
 
-def makeStructure(context, start, size):
-    return AnonymousRecord(context, start, size)
-
-
-def cacheLoad(context, addr):
-    dumpname = context.dumpname
+def cache_load(_context, address):
+    # FIXME: unused
+    dumpname = _context.dumpname
     if not os.access(dumpname, os.F_OK):
         return None
-    fname = make_filename_from_addr(context, addr)
+    fname = make_filename_from_addr(_context, address)
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
-    p._set_context(context)
+    p.set_memory_handler(_context.memory_handler)
     return p
 
 
-def cacheLoadAll(context):
-    dumpname = context.dumpname
-    addresses = context.listStructuresAddresses()
-    for addr in addresses:
-        fname = make_filename_from_addr(context, addr)
-        if os.access(fname, os.F_OK):
-            p = pickle.load(file(fname, 'r'))
-            p._set_context(context)
-            yield addr, p
-    return
-
-
-def remapLoad(context, addr, newmappings):
-    dumpname = context.dumpname
+def remap_load(_context, address, newmappings):
+    # FIXME: used by obsolete code
+    dumpname = _context.dumpname
     if not os.access(dumpname, os.F_OK):
         return None
-    fname = make_filename_from_addr(context, addr)
+    fname = make_filename_from_addr(_context, address)
     p = pickle.load(file(fname, 'r'))
     if p is None:
         return None
     # YES we do want to over-write _memory_handler and bytes
-    p._set_context(context)
+    p._memory_handler = _context.memory_handler
     return p
 
 
-def cacheLoadAllLazy(ctx):
-    dumpname = ctx.dumpname
-    addresses = ctx.list_allocations_addresses()
+def cache_load_all_lazy(_context):
+    """
+    reload all allocated records with a CacheWrapper.
+    :param _context:
+    :return:
+    """
+    dumpname = _context.dumpname
+    addresses = _context.list_allocations_addresses()
     for addr in addresses:
         try:
-            yield addr, CacheWrapper(ctx, addr)
+            yield addr, CacheWrapper(_context, addr)
         except ValueError as e:
             log.debug('Record 0x%x not found in cache', addr)
             ##raise e
@@ -89,19 +79,22 @@ def cacheLoadAllLazy(ctx):
     return
 
 
-class CacheWrapper:  # this is kind of a weakref proxy, but hashable
+class CacheWrapper:
+    """
+    this is kind of a weakref proxy, but hashable
+    """
     # TODO put that refs in the context
     refs = lrucache.LRUCache(5000)
     # duh, it works ! TODO: .saveme() on cache eviction
     # but there is no memory reduction as the GC does not collect that shit.
     # i would guess too many fields, map, context...
 
-    def __init__(self, context, addr):
-        self._addr = addr
-        self._fname = make_filename_from_addr(context, addr)
+    def __init__(self, _context, address):
+        self.address = address
+        self._fname = make_filename_from_addr(_context, address)
         if not os.access(self._fname, os.F_OK):
             raise ValueError("%s does not exists" % self._fname)
-        self._context = context
+        self._memory_handler = _context.memory_handler
         self.obj = None
 
     def __getattr__(self, *args):
@@ -110,8 +103,8 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
         return getattr(self.obj(), *args)
 
     def unload(self):
-        if self._addr in CacheWrapper.refs:
-            del CacheWrapper.refs[self._addr]
+        if self.address in CacheWrapper.refs:
+            del CacheWrapper.refs[self.address]
         self.obj = None
 
     def _load(self):
@@ -121,14 +114,14 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
         try:
             p = pickle.load(file(self._fname, 'r'))
         except EOFError as e:
-            log.error('Could not load %s - removing it ' % (self._fname))
+            log.error('Could not load %s - removing it ' % self._fname)
             os.remove(self._fname)
             raise e  # bad file removed
         if not isinstance(p, AnonymousRecord):
             raise EOFError("not a AnonymousRecord in cache. %s", p.__class__)
-        p._set_context(self._context)
+        p._memory_handler = self._context.memory_handler
         p._dirty = False
-        CacheWrapper.refs[self._addr] = p
+        CacheWrapper.refs[self.address] = p
         self.obj = weakref.ref(p)
         return
 
@@ -146,13 +139,13 @@ class CacheWrapper:  # this is kind of a weakref proxy, but hashable
         raise TypeError
 
     def __hash__(self):
-        return hash(self._addr)
+        return hash(self.address)
 
     def __cmp__(self, other):
-        return cmp(self._addr, other._addr)
+        return cmp(self.address, other.address)
 
     def __str__(self):
-        return 'struct_%x' % (self._vaddr)
+        return 'struct_%x' % self.address
 
 
 class StructureNotResolvedError(Exception):
@@ -166,18 +159,18 @@ class AnonymousRecord(object):
     Comparaison between struct is done is relative addresse space.
     """
 
-    def __init__(self, context, vaddr, size, prefix=None):
+    def __init__(self, context, _address, size, prefix=None):
         """
         Create a record instance representing an allocated chunk to reverse.
         :param context: the context of the allocated chunk
-        :param vaddr: the address of the allocated chunk
+        :param _address: the address of the allocated chunk
         :param size: the size of the allocated chunk
         :param prefix: the name prefix to identify the allocated chunk
         :return:
         """
-        self._context = context
-        self._target = self._context.memory_handler.get_target_platform()
-        self._vaddr = vaddr
+        self._memory_handler = context.memory_handler
+        self._target = self._memory_handler.get_target_platform()
+        self.__address = _address
         self._size = size
         self._reverse_level = 0
         self.reset()  # set fields
@@ -191,9 +184,9 @@ class AnonymousRecord(object):
         :return:
         """
         if name is None:
-            self._name = 'struct_%x' % self._vaddr
+            self._name = 'struct_%x' % self.__address
         else:
-            self._name = '%s_%x' % (name, self._vaddr)
+            self._name = '%s_%x' % (name, self.__address)
 
     def get_name(self):
         return self._name
@@ -230,7 +223,7 @@ class AnonymousRecord(object):
         """
         self._fields.extend(fields)
 
-    def saveme(self):
+    def saveme(self, _context):
         """
         Cache the structure to file if required.
 
@@ -239,11 +232,9 @@ class AnonymousRecord(object):
         if not self._dirty:
             return
         # double check that the cache folder exists
-        sdir = self._context.get_folder_cache_structures()
-        if not os.path.isdir(sdir):
-            os.mkdir(sdir)
+        sdir = _context.get_folder_cache_structures()
         # create the cache filename for this structure
-        fname = make_filename(self._context, self)
+        fname = make_filename(_context, self)
         try:
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
@@ -251,16 +242,17 @@ class AnonymousRecord(object):
             pickle.dump(self, file(fname, 'w'))
         except pickle.PickleError as e:
             # self.struct must be cleaned.
-            log.error("Pickling error, file %s removed",fname)
+            log.error("Pickling error, file %s removed", fname)
             os.remove(fname)
             raise e
         except RuntimeError as e:
             log.error(e)
             print self.to_string()
+            # FIXME: why silent removal igore
         except KeyboardInterrupt as e:
             # clean it, its stale
             os.remove(fname)
-            log.warning('removing %s' % (fname))
+            log.warning('removing %s' % fname)
             ex = sys.exc_info()
             raise ex[1], None, ex[2]
         return
@@ -313,18 +305,15 @@ class AnonymousRecord(object):
         """
         return [f for f in self._fields if f.is_pointer()]
 
-    def _set_context(self, context):
-        self._context = context
-
     @property
-    def _memory_handler(self):
-        return self._context.memory_handler
+    def address(self):
+        return self.__address
 
     @property  # TODO add a cache property ?
     def bytes(self):
         if self._bytes is None:
-            m = self._memory_handler.get_mapping_for_address(self._vaddr)
-            self._bytes = m.read_bytes(self._vaddr, self._size)
+            m = self._memory_handler.get_mapping_for_address(self.__address)
+            self._bytes = m.read_bytes(self.__address, self._size)
             # TODO re_string.Nocopy
         return self._bytes
 
@@ -348,7 +337,7 @@ class AnonymousRecord(object):
         # print self.fields
         self._fields.sort()
         fieldsString = '[ \n%s ]' % (''.join([field.to_string('\t') for field in self._fields]))
-        info = 'resolved:%s SIG:%s size:%d' % (self.is_resolved(), self.getSignature(text=True), len(self))
+        info = 'resolved:%s SIG:%s size:%d' % (self.is_resolved(), self.get_signature(text=True), len(self))
         if len(self.get_pointer_fields()) != 0:
             info += ' resolvedPointers:%s' % (self.is_resolvedPointers())
         ctypes_def = '''
@@ -367,7 +356,7 @@ class %s(ctypes.Structure):  # %s
         """
         if isinstance(other, numbers.Number):
             # test vaddr in struct instance len
-            if self._vaddr <= other <= self._vaddr + len(self):
+            if self.__address <= other <= self.__address + len(self):
                 return True
             return False
         else:
@@ -392,7 +381,7 @@ class %s(ctypes.Structure):  # %s
     def __cmp__(self, other):
         if not isinstance(other, AnonymousRecord):
             return -1
-        return cmp(self._vaddr, other._vaddr)
+        return cmp(self.__address, other.__address)
 
     def __getstate__(self):
         """ the important fields are
@@ -411,7 +400,7 @@ class %s(ctypes.Structure):  # %s
         except AttributeError as e:
             #log.error('no _memory_handler name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
             d['dumpname'] = None
-        d['_context'] = None
+        d['_memory_handler'] = None
         d['_bytes'] = None
         d['_target'] = None
         return d
@@ -425,21 +414,19 @@ class %s(ctypes.Structure):  # %s
     def __str__(self):
         # FIXME, that should probably return self._name
         # BUT we need to ensure it does not impact the cache name
-        return 'struct_%x' % self._vaddr
+        return 'struct_%x' % self.__address
 
     ### pieces of codes that need review.
 
-    def getSignature(self, text=False):
+    def get_signature(self, text=False):
         if text:
-            return ''.join(
-                ['%s%d' % (f.getSignature()[0].sig, f.getSignature()[1]) for f in self._fields])
-        return [f.getSignature() for f in self._fields]
+            return ''.join(['%s%d' % (f.get_signature()[0].sig, f.get_signature()[1]) for f in self._fields])
+        return [f.get_signature() for f in self._fields]
 
-    def getTypeSignature(self, text=False):
+    def get_type_signature(self, text=False):
         if text:
-            return ''.join([f.getSignature()[0].sig.upper()
-                            for f in self._fields])
-        return [f.getSignature()[0] for f in self._fields]
+            return ''.join([f.get_signature()[0].sig.upper() for f in self._fields])
+        return [f.get_signature()[0] for f in self._fields]
 
 
 class ReversedType(ctypes.Structure):

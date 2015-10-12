@@ -222,7 +222,7 @@ class TestDSA(unittest.TestCase):
         # struct_682638 in putty.7124.dump
         vaddr = 0x682638
         size = 184
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -240,7 +240,7 @@ class TestDSA(unittest.TestCase):
         # struct_691ed8 in putty.7124.dump
         vaddr = 0x691ed8
         size = 256
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -254,7 +254,7 @@ class TestDSA(unittest.TestCase):
         # struct_64f328 in putty.7124.dump
         vaddr = 0x64f328
         size = 72
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -268,7 +268,7 @@ class TestDSA(unittest.TestCase):
         # in putty.7124.dump
         vaddr = 0x657488
         size = 88
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -282,7 +282,7 @@ class TestDSA(unittest.TestCase):
         # in putty.7124.dump
         vaddr = 0x63d4c8  # + 1968
         size = 4088  # 128
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -300,7 +300,7 @@ class TestDSA(unittest.TestCase):
         # in putty.7124.dump
         vaddr = 0x63aa68
         size = 120
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())
@@ -316,7 +316,7 @@ class TestDSA(unittest.TestCase):
         # its garbage anyway
         vaddr = 0x675b30
         size = 8184
-        st = structure.makeStructure(self.putty7124, vaddr, size)
+        st = structure.AnonymousRecord(self.putty7124, vaddr, size)
         self.dsa.analyze_fields(st)
         # print repr(st.bytes)
         log.debug(st.to_string())

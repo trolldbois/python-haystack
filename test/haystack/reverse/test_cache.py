@@ -11,7 +11,7 @@ def main():
     from haystack.reverse import context
     ctx = context.get_context('test/dumps/skype/skype.1/skype.1.f')
     from haystack.reverse import structure
-    it = structure.cacheLoadAllLazy(ctx)
+    it = structure.cache_load_all_lazy(ctx)
 
     structs = []
     for i in range(10000):

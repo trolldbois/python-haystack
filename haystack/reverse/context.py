@@ -43,17 +43,16 @@ class ReverserContext(object):
         self.parsed = set()
         self._function_names = dict()
         # refresh heap pointers list and allocators chunks
+        self._reversedTypes = dict()
+        self._structures = None
         self._init2()
         return
 
     def _init2(self):
-        # force reload JIT
-        self._reversedTypes = dict()
-        self._structures = None
-
+        # Check that cache folder exists
         if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
             os.mkdir(config.get_cache_folder_name(self.dumpname))
-
+        # we need a heap walker to parse all allocations
         finder = self.memory_handler.get_heap_finder()
         heap_walker = finder.get_heap_walker(self.heap)
 
@@ -72,29 +71,23 @@ class ReverserContext(object):
 
         #if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
         #    log.info('[+] Reversing function pointers names')
-        #    # TODO INLINE CACHED
+        #    # TODO in reversers
         #    # dict(libdl.reverseLocalFonctionPointerNames(self) )
         #    self._function_names = dict()
         return
 
-    def get_structure_for_address(self, addr):
-        """
-        return the structure.AnonymousRecord associated with this address
-
-        :param addr:
-        :return:
-        """
-        return self._get_structures()[addr]
+    def _is_record_cache_dirty(self):
+        return self._structures is None or len(self._structures) != len(self._structures_addresses)
 
     # TODO implement a LRU cache
     def _get_structures(self):
-        if self._structures is not None and len(
-                self._structures) == len(self._structures_addresses):
+        if not self._is_record_cache_dirty():
             return self._structures
+
         # otherwise cache Load
         log.info('[+] Loading cached structures list')
         self._structures = dict(
-            [(long(vaddr), s) for vaddr, s in structure.cacheLoadAllLazy(self)])
+            [(long(vaddr), s) for vaddr, s in structure.cache_load_all_lazy(self)])
         log.info('[+] Loaded %d cached structures addresses from disk', len(self._structures))
 
         # If we are missing some structures from the cache loading
@@ -109,38 +102,56 @@ class ReverserContext(object):
             # use BasicCachingReverser to get user blocks
             cache_reverse = reversers.BasicCachingReverser(self)
             _ = cache_reverse.reverse()
-            # mallocRev.check_inuse(self)
             log.info('[+] Built %d/%d structures from allocations',
                      len(self._structures),
                      len(self._structures_addresses))
         return self._structures
 
-    def getStructureSizeForAddr(self, addr):
-        ''' return the structure.AnonymousRecord associated with this addr'''
-        itemindex = numpy.where(
-            self._structures_addresses == numpy.int64(addr))[0][0]
+    def get_record_size_for_address(self, addr):
+        """
+        return the allocated record size associated with this address
+
+        :param addr:
+        :return:
+        """
+        itemindex = numpy.where(self._structures_addresses == numpy.int64(addr))[0][0]
         return self._structures_sizes[itemindex]
 
-    def structuresCount(self):
-        if self._structures is not None and len(
-                self._structures) == len(self._structures_addresses):
+    def get_record_count(self):
+        if self._is_record_cache_dirty():
+            # refresh the cache
             return len(self._get_structures())
         return len(self._structures_addresses)
 
-    def getStructureAddrForOffset(self, offset):
-        '''Returns the closest containing structure address for this offset in this heap.'''
+    def get_record_address_at_address(self, _address):
+        """
+        Returns the closest containing record address for this address.
+        :param _address:
+        :return:
+        """
         # if offset not in self.heap:
         #  raise ValueError('address 0x%0.8x not in heap 0x%0.8x'%(offset, self.heap.start))
-        return utils.closestFloorValue(
-            offset, self._structures_addresses)[0]  # [1] is the index of [0]
+        return utils.closestFloorValue(_address, self._structures_addresses)[0]  # [1] is the index of [0]
 
-    def getStructureForOffset(self, ptr_value):
-        '''Returns the structure containing this address'''
-        st = self.get_structure_for_address(
-            self.getStructureAddrForOffset(ptr_value))
-        if st._vaddr <= ptr_value < (st._vaddr + len(st)):
+    def get_record_at_address(self, _address):
+        """
+        Returns the closest containing record for this address.
+        :param _address:
+        :return:
+        """
+        st = self.get_record_for_address(self.get_record_address_at_address(_address))
+        if st.address <= _address < (st.address + len(st)):
             return st
         raise IndexError('No known structure covers that ptr_value')
+
+    def get_record_for_address(self, addr):
+        """
+        return the structure.AnonymousRecord associated with this address
+
+        :param addr:
+        :return:
+        """
+        return self._get_structures()[addr]
 
     def listOffsetsForPointerValue(self, ptr_value):
         '''Returns the list of offsets where this value has been found'''
@@ -153,7 +164,7 @@ class ReverserContext(object):
 
     def listStructuresAddrForPointerValue(self, ptr_value):
         '''Returns the list of structures addresses with a member with this pointer value '''
-        return sorted(set([int(self.getStructureAddrForOffset(offset))
+        return sorted(set([int(self.get_record_address_at_address(offset))
                            for offset in self.listOffsetsForPointerValue(ptr_value)]))
 
     def listStructuresForPointerValue(self, ptr_value):
@@ -335,7 +346,7 @@ class ReverserContext(object):
         # dump all structures
         for i, s in enumerate(self._structures.values()):
             try:
-                s.saveme()
+                s.saveme(self)
             except KeyboardInterrupt as e:
                 os.remove(s.fname)
                 raise e
