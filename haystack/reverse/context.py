@@ -4,7 +4,7 @@
 import logging
 import pickle
 # import dill as pickle
-
+import time
 import numpy
 import os
 
@@ -108,7 +108,7 @@ class ReverserContext(object):
                 log.warning('TO check missing:%d unique: %d', nb_missing, len(set(self._structures_addresses) - set(self._structures)))
             # use BasicCachingReverser to get user blocks
             cache_reverse = reversers.BasicCachingReverser(self)
-            _ = cache_reverse.reverse(self)
+            _ = cache_reverse.reverse()
             # mallocRev.check_inuse(self)
             log.info('[+] Built %d/%d structures from allocations',
                      len(self._structures),
@@ -172,6 +172,9 @@ class ReverserContext(object):
 
     def listStructures(self):
         return self._get_structures().values()
+
+    def is_known_address(self, address):
+        return address in self._structures_addresses
 
     def getReversedType(self, typename):
         if typename in self._reversedTypes:
@@ -323,6 +326,26 @@ class ReverserContext(object):
         self._structures = None
         self._function_names = dict()
         return
+
+    def save_structures(self):
+        tl = time.time()
+        if self._structures is None:
+            log.debug('No loading has been done, not saving anything')
+            return
+        # dump all structures
+        for i, s in enumerate(self._structures.values()):
+            try:
+                s.saveme()
+            except KeyboardInterrupt as e:
+                os.remove(s.fname)
+                raise e
+            if time.time() - tl > 30:  # i>0 and i%10000 == 0:
+                t0 = time.time()
+                log.info('\t\t - %2.2f secondes to go ', (len(self._structures) - i) * ((tl - t0) / i))
+                tl = t0
+        tf = time.time()
+        log.info('\t[.] saved in %2.2f secs' % (tf - tl))
+
 
 
 # FIXME - get context should be on memory_handler.

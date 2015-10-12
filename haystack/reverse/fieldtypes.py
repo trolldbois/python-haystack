@@ -34,7 +34,6 @@ def makeArrayField(parent, fields):
 
 
 class FieldType(object):
-
     """
     Represents the type of a field.
     """
@@ -85,7 +84,6 @@ class FieldType(object):
 
 
 class FieldTypeStruct(FieldType):
-
     """
     Fields that are know independent structure.
     In case we reverse a Big record that has members of known record types.
@@ -343,7 +341,6 @@ class Field(object):
 
 
 class PointerField(Field):
-
     """
     represent a pointer field
     """
@@ -385,7 +382,9 @@ class PointerField(Field):
 
 
 class ArrayField(Field):
-
+    """
+    Represents an array field.
+    """
     # , basicTypename, basicTypeSize ): # use first element to get that info
     def __init__(self, astruct, elements):
         self.struct = astruct

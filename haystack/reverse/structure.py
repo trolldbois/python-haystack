@@ -179,6 +179,7 @@ class AnonymousRecord(object):
         self._target = self._context.memory_handler.get_target_platform()
         self._vaddr = vaddr
         self._size = size
+        self._reverse_level = 0
         self.reset()  # set fields
         self.set_name(prefix)
         return
@@ -214,6 +215,7 @@ class AnonymousRecord(object):
         self._fields = []
         self._resolved = False
         self._resolvedPointers = False
+        self._reverse_level = 0
         self._dirty = True
         self._ctype = None
         self._bytes = None
@@ -322,9 +324,8 @@ class AnonymousRecord(object):
     def bytes(self):
         if self._bytes is None:
             m = self._memory_handler.get_mapping_for_address(self._vaddr)
-            self._bytes = m.read_bytes(
-                self._vaddr,
-                self._size)  # TODO re_string.Nocopy
+            self._bytes = m.read_bytes(self._vaddr, self._size)
+            # TODO re_string.Nocopy
         return self._bytes
 
     # TODO replace by a numerical "reverse progression" index.
@@ -336,14 +337,18 @@ class AnonymousRecord(object):
 
     def is_resolvedPointers(self):
         return self._resolvedPointers
+    ##
+    def get_reverse_level(self):
+        return self._reverse_level
+
+    def set_reverse_level(self, level):
+        self._reverse_level = level
 
     def to_string(self):
         # print self.fields
         self._fields.sort()
-        fieldsString = '[ \n%s ]' % (
-            ''.join([field.to_string('\t') for field in self._fields]))
-        info = 'resolved:%s SIG:%s size:%d' % (
-            self.is_resolved(), self.getSignature(text=True), len(self))
+        fieldsString = '[ \n%s ]' % (''.join([field.to_string('\t') for field in self._fields]))
+        info = 'resolved:%s SIG:%s size:%d' % (self.is_resolved(), self.getSignature(text=True), len(self))
         if len(self.get_pointer_fields()) != 0:
             info += ' resolvedPointers:%s' % (self.is_resolvedPointers())
         ctypes_def = '''
@@ -423,132 +428,6 @@ class %s(ctypes.Structure):  # %s
         return 'struct_%x' % self._vaddr
 
     ### pieces of codes that need review.
-    def _aggregateFields(self):
-        # if not self.resolvedPointers:
-        #  raise ValueError('I should be resolved')
-        self._dirty = True
-
-        self._fields.sort()
-        myfields = []
-
-        signature = self.getSignature()
-        pencoder = pattern.PatternEncoder(signature, minGroupSize=3)
-        patterns = pencoder.makePattern()
-
-        #txt = self.getSignature(text=True)
-        #log.warning('signature of len():%d, %s'%(len(txt),txt))
-        #p = pattern.findPatternText(txt, 2, 3)
-        # log.debug(p)
-
-        #log.debug('aggregateFields came up with pattern %s'%(patterns))
-
-        # pattern is made on FieldType,
-        # so we need to dequeue self.fields at the same time to enqueue in
-        # myfields
-        for nb, fieldTypesAndSizes in patterns:
-            # print 'fieldTypesAndSizes:',fieldTypesAndSizes
-            if nb == 1:
-                fieldType = fieldTypesAndSizes[0]  # its a tuple
-                field = self._fields.pop(0)
-                myfields.append(field)  # single el
-                #log.debug('simple field:%s '%(field) )
-            # array of subtructure DEBUG XXX TODO
-            elif len(fieldTypesAndSizes) > 1:
-                log.debug('substructure with sig %s' % (fieldTypesAndSizes))
-                myelements = []
-                for i in range(nb):
-                    fields = [ self._fields.pop(0) for i in range(len(fieldTypesAndSizes))]  # nb-1 left
-                    #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ]
-                    # need global ref to compare substructure signature to
-                    # other anonstructure
-                    firstField = fieldtypes.FieldType.makeStructField(
-                        self,
-                        fields[0].offset,
-                        fields)
-                    myelements.append(firstField)
-                array = fieldtypes.makeArrayField(self, myelements)
-                myfields.append(array)
-                #log.debug('array of structure %s'%(array))
-            elif len(fieldTypesAndSizes) == 1:  # make array of elements or
-                log.debug("found array of %s",  self._fields[0].typename.basename)
-                fields = [self._fields.pop(0) for i in range(nb)]
-                array = fieldtypes.makeArrayField(self, fields)
-                myfields.append(array)
-                #log.debug('array of elements %s'%(array))
-            else:  # TODO DEBUG internal struct
-                raise ValueError("fields patterns len is incorrect %d" % len(fieldTypesAndSizes))
-
-        log.debug('done with aggregateFields')
-        self._fields = myfields
-        # print 'final', self.fields
-        return
-
-
-    def _findSubStructures(self):
-        if not self.resolvedPointers:
-            raise ValueError('I should be resolved')
-        self._dirty = True
-
-        self._fields.sort()
-        myfields = []
-
-        signature = self.getTypeSignature()
-        pencoder = pattern.PatternEncoder(signature, minGroupSize=2)
-        patterns = pencoder.makePattern()
-
-        txt = self.getTypeSignature(text=True)
-        p = pattern.findPatternText(txt, 1, 2)
-
-        log.debug('substruct typeSig: %s' % txt)
-        log.debug('substruct findPatterntext: %s' % p)
-        log.debug('substruct came up with pattern %s' % (patterns))
-
-        # pattern is made on FieldType,
-        # so we need to dequeue self.fields at the same time to enqueue in
-        # myfields
-        for nb, fieldTypes in patterns:
-            if nb == 1:
-                field = self._fields.pop(0)
-                myfields.append(field)  # single el
-                #log.debug('simple field:%s '%(field) )
-            elif len(fieldTypes) > 1:  # array of subtructure DEBUG XXX TODO
-                log.debug('fieldTypes:%s' % fieldTypes)
-                log.debug('substructure with sig %s' %
-                          (''.join([ft.sig[0] for ft in fieldTypes])))
-                myelements = []
-                for i in range(nb):
-                    fields = [
-                        self._fields.pop(0) for i in range(
-                            len(fieldTypes))]  # nb-1 left
-                    #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ]
-                    # need global ref to compare substructure signature to
-                    # other anonstructure
-                    firstField = fieldtypes.FieldType.makeStructField(
-                        self,
-                        fields[0].offset,
-                        fields)
-                    myelements.append(firstField)
-                array = fieldtypes.makeArrayField(self, myelements)
-                myfields.append(array)
-                #log.debug('array of structure %s'%(array))
-            # make array of elements obase on same base type
-            elif len(fieldTypes) == 1:
-                log.debug(
-                    'found array of %s' %
-                    (self._fields[0].typename.basename))
-                fields = [self._fields.pop(0) for i in range(nb)]
-                array = fieldtypes.makeArrayField(self, fields)
-                myfields.append(array)
-                #log.debug('array of elements %s'%(array))
-            else:  # TODO DEBUG internal struct
-                raise ValueError(
-                    'fields patterns len is incorrect %d' %
-                    (len(fieldTypes)))
-
-        log.debug('done with findSubstructure')
-        self._fields = myfields
-        # print 'final', self.fields
-        return
 
     def getSignature(self, text=False):
         if text:
