@@ -48,11 +48,11 @@ class TestField(unittest.TestCase):
             fieldtypes.FieldType.POINTER,
             4,
             False)
-        self.assertFalse(ptr.isString())
-        self.assertTrue(ptr.isPointer())
-        self.assertFalse(ptr.isZeroes())
-        self.assertFalse(ptr.isArray())
-        self.assertFalse(ptr.isInteger())
+        self.assertFalse(ptr.is_string())
+        self.assertTrue(ptr.is_pointer())
+        self.assertFalse(ptr.is_zeroes())
+        self.assertFalse(ptr.is_array())
+        self.assertFalse(ptr.is_integer())
 
 
 if __name__ == '__main__':

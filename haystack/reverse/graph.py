@@ -61,7 +61,7 @@ def save_graph_headers(ctx, graph, fname):
         # anon.pointerResolved=True
         anon._aggregateFields()
         print anon
-        towrite.append(anon.toString())
+        towrite.append(anon.to_string())
         if len(towrite) >= 10000:
             try:
                 fout.write('\n'.join(towrite))
@@ -189,7 +189,7 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
     s1 = ctx.structures[addr]  # TODO FIXME RAISES
     # s1 = s1._load() #structure.cacheLoad(ctx, int(saddr,16))
     s1.decodeFields()
-    print s1.toString()
+    print s1.to_string()
     # strip the node from its predecessors, they are numerously too numerous
     impDiGraph = networkx.DiGraph()
     root = '%d nodes' % (nb)

@@ -36,7 +36,7 @@ class RecursiveTextOutputter(Outputter):
         if depth <= 0:
             return 'None, # DEPTH LIMIT REACHED'
         if hasattr(obj, 'toString'):
-            return obj.toString(prefix, depth)
+            return obj.to_string(prefix, depth)
         if hasattr(obj, '_orig_address_'):
             s = "{ # <%s at 0x%x>" % (
                 obj.__class__.__name__, obj._orig_address_)

@@ -1,4 +1,40 @@
 
+
+1) integrate pattern and signature modules in the reverse API
+2) add a Reverser that takes and search for known records types.
+
+# apply librairies structures/know structures search against heap before running anything else.
+# that should cut our reverse time way down
+# prioritize search per reverse struct size. limit to big struct and their graph.
+# then make a Named/Anonymous Struct out of them
+
+# The controller/Reverser should keep structs coherency. and appli maker to each of them
+# the controller can have different heuristics to apply to struct :
+# * aggregates: char[][], buffers
+# * type definition: substructs, final reverse type step, c++ objects,
+
+# on each integer array, look indices for \x00
+# if there is a regular interval between \x00 in the sequence ( 5 char
+# then 0 ) then make some sub arrays, nul terminated
+
+# magic len approach on untyped bytearrays or array of int. - TRY TO ALIGN ON 2**x
+# if len(fields[i:i+n]) == 4096 // ou un exposant de 2 > 63 # m = math.modf(math.log( l, 2)) %% m[0] == 0.0 && m[1]>5.0
+# alors on a un buffer de taille l
+# fields[i:i+n] ne devrait contenir que du zeroes, untyped et int
+
+
+
+
+- use coroutine/threadify the StructureAnalyzer
+
+# TODO look for VFT and malloc metadata ?
+# se stdc++ to unmangle c++
+# vivisect ?
+# TODO 1: make an interactive thread on that anon_struct and a struct Comparator to find similar struct.
+#         that is a first step towards structure identification && naming. + caching of info
+# create a typename for \xff * 8/16. buffer color ? array of char?
+
+
 - make a TU for the DSASimple bug.use the bytes from that record and create 
 a debug help that prints the resolution criterias for a record/field
 

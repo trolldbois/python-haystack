@@ -310,6 +310,10 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             return None
         return self.__contextes[mmap.get_marked_heap_address()]
 
+    def get_cached_context(self):
+        """Returns all cached ReverserContext"""
+        return self.__contextes.values()
+
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
         :param obj: the obj to evaluate.

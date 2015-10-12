@@ -184,7 +184,7 @@ def reverse_lookup(opt):
     log.info('[+] Found %d structures.' % (len(structs)))
     for st in structs:
         st.decodeFields()
-        print st.toString()
+        print st.to_string()
     return
 
 

@@ -17,7 +17,7 @@ def main():
     for i in range(10000):
         structs.append(it.next())
 
-    [s.toString() for addr, s in structs]
+    [s.to_string() for addr, s in structs]
 
     # 51 Mo
 

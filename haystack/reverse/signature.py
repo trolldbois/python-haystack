@@ -394,7 +394,7 @@ def printStructureGroups(context, chains, originAddr=None):
             record = context.get_structure_for_address(addr)
             ##record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_structure_for_address(addr).toString()
+            print context.get_structure_for_address(addr).to_string()
         print '#', '-' * 78
 
 
@@ -412,9 +412,9 @@ def graphStructureGroups(context, chains, originAddr=None):
             record = context.get_structure_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_structure_for_address(addr).toString()
+            print context.get_structure_for_address(addr).to_string()
             targets = set()
-            for f in context.get_structure_for_address(addr).getPointerFields():
+            for f in context.get_structure_for_address(addr).get_pointer_fields():
                 addr_child = f._getValue(0)
                 child = context.getStructureForOffset(addr)
                 targets.add(('%x' % addr, '%x' % child._vaddr))
@@ -446,7 +446,7 @@ def makeReversedTypes(context, sizeCache):
         s.reset()
         ## s.decodeFields()
         decoder.analyze_fields(s)
-        for f in s.getPointerFields():
+        for f in s.get_pointer_fields():
             addr = f._getValue(0)
             if addr in context.heap:
                 try:
@@ -552,7 +552,7 @@ def fixType(context, chains):
 
 def fixInstanceType(context, instance, name):
     # TODO if instance.isFixed, return instance.getCtype()
-    instance.setName(name)
+    instance.set_name(name)
     ctypes_type = context.getReversedType(name)
     if ctypes_type is None:  # make type
         ctypes_type = structure.ReversedType.create(context, name)

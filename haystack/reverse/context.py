@@ -79,7 +79,7 @@ class ReverserContext(object):
 
     def get_structure_for_address(self, addr):
         """
-        return the structure.AnonymousStructInstance associated with this address
+        return the structure.AnonymousRecord associated with this address
 
         :param addr:
         :return:
@@ -116,7 +116,7 @@ class ReverserContext(object):
         return self._structures
 
     def getStructureSizeForAddr(self, addr):
-        ''' return the structure.AnonymousStructInstance associated with this addr'''
+        ''' return the structure.AnonymousRecord associated with this addr'''
         itemindex = numpy.where(
             self._structures_addresses == numpy.int64(addr))[0][0]
         return self._structures_sizes[itemindex]

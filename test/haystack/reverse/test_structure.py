@@ -61,13 +61,13 @@ class TestStructure(unittest.TestCase):
             self.dsa.analyze_fields(s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
                 self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
-                self.assertEqual(len(s.getPointerFields()), 2)
+                self.assertEqual(len(s.get_pointer_fields()), 2)
             elif len(s) == 20:  # test3, 1 pointer on create
                 # fields, no heuristic to detect medium sized int
                 # TODO untyped of size < 8 == int * x
                 # print s.toString()
                 self.assertEqual(len(s.get_fields()), 3)  # discutable
-                self.assertEqual(len(s.getPointerFields()), 1)
+                self.assertEqual(len(s.get_pointer_fields()), 1)
         return
 
     def test_resolvePointers(self):
@@ -84,7 +84,7 @@ class TestStructure(unittest.TestCase):
             self.pta.analyze_fields(s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
                 self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
-                self.assertEqual(len(s.getPointerFields()), 2)
+                self.assertEqual(len(s.get_pointer_fields()), 2)
 
     def test_reset(self):
         for s in self.context.listStructures():
@@ -142,7 +142,7 @@ class TestStructure2(unittest.TestCase):
         for s in self.context.listStructures():
             # s.resolvePointers()
             self.dsa.analyze_fields(s)
-            log.debug(s.toString())
+            log.debug(s.to_string())
         self.assertTrue(True)  # test no error
 
 

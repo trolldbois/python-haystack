@@ -358,7 +358,7 @@ class WinHeapValidator(listmodel.ListModel):
                 ('ListHints', POINTER(POINTER(LIST_ENTRY))),
             """
             log.debug('ArraySize is %d' % (bi.ArraySize))
-            log.debug('BlocksIndex: %s' % (bi.toString()))
+            log.debug('BlocksIndex: %s' % (bi.to_string()))
             hints_addr = self._utils.get_pointee_address(bi.ListHints)
             log.debug('ListHints is pointing to %x' % (hints_addr))
             extlookup_addr = self._utils.get_pointee_address(bi.ExtendedLookup)

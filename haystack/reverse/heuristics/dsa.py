@@ -371,8 +371,8 @@ class DSASimple(StructureAnalyser):
 
 
 class EnrichedPointerFields(StructureAnalyser):
-
-    """ For all pointer fields in a structure,
+    """
+    For all pointer fields in a structure,
     try to enrich the field name with information about the child structure.
 
     All structure should have been Analysed, otherwise,
@@ -392,7 +392,7 @@ class EnrichedPointerFields(StructureAnalyser):
         """
         # If you want to cache resolved infos, it still should be decided by
         # the caller
-        pointerFields = structure.getPointerFields()
+        pointerFields = structure.get_pointer_fields()
         log.debug('got %d pointerfields' % (len(pointerFields)))
         for field in pointerFields:
             value = field.value
@@ -410,12 +410,11 @@ class EnrichedPointerFields(StructureAnalyser):
             except ValueError as e:
                 log.debug('target to non heap mmaps is not implemented')
                 m = self._memory_handler.get_mapping_for_address(value)
-                field.set_child_desc(
-                    'ext_lib @%0.8x %s' %
-                    (m.start, m.pathname))
+                field.set_child_desc('ext_lib @%0.8x %s' % (m.start, m.pathname))
                 field._ptr_to_ext_lib = True
-                field.set_child_ctype('void')  # TODO: Function pointer ?
-                field.set_name('ptr_ext_lib_%d' % (field.offset))
+                field.set_child_ctype('void')
+                # TODO: Function pointer ?
+                field.set_name('ptr_ext_lib_%d' % field.offset)
                 continue
             tgt = None
             try:
@@ -423,9 +422,7 @@ class EnrichedPointerFields(StructureAnalyser):
                 tgt = ctx.getStructureForOffset(value)
             # there is no child structure member at pointed value.
             except (IndexError, ValueError) as e:
-                log.debug(
-                    'there is no child structure enclosing pointed value %0.8x - %s' %
-                    (value, e))
+                log.debug('there is no child structure enclosing pointed value %0.8x - %s', value, e)
                 field.set_child_desc('MemoryHandler management space')
                 field.set_child_ctype('void')
                 field.set_name('ptr_void')
@@ -444,9 +441,7 @@ class EnrichedPointerFields(StructureAnalyser):
                 continue
             # do not put exception for field 0. structure name should appears
             # anyway.
-            field.set_child_desc(
-                '%s.%s' %
-                (tgt.get_name(), tgt_field.get_name()))
+            field.set_child_desc('%s.%s' % (tgt.get_name(), tgt_field.get_name()))
             # TODO:
             # do not complexify code by handling target field type,
             # lets start with simple structure type pointer,
@@ -459,7 +454,7 @@ class EnrichedPointerFields(StructureAnalyser):
 
     def get_unresolved_children(self, structure):
         """ returns all children that are not fully analyzed yet."""
-        pointerFields = structure.getPointerFields()
+        pointerFields = structure.get_pointer_fields()
         children = []
         for field in pointerFields:
             try:

@@ -41,7 +41,7 @@ def writeReversedTypes(opt):
     ctx = signature.makeReversedTypes(ctx, sizeCache)
     outfile = file(config.get_cache_filename(config.REVERSED_TYPES_FILENAME, ctx.dumpname),'w')
     for revStructType in ctx.listReversedTypes():
-        outfile.write(revStructType.toString())
+        outfile.write(revStructType.to_string())
         #
         #print revStructType._instances
         #for a,lst in revStructType._instances.items():
@@ -92,7 +92,7 @@ def show(opt):
     try:
         st = ctx.getStructureForOffset(opt.address)
         st.decodeFields()
-        print st.toString()
+        print st.to_string()
     except ValueError,e:
         log.info('[+] Found no structure.')
         return
@@ -113,7 +113,7 @@ def printParents(opt):
         child_address = ctx.getStructureAddrForOffset(opt.address)
         for st in ctx.listStructuresForPointerValue(child_address):
             st.decodeFields()
-            print st.toString()
+            print st.to_string()
             i+=1
     except ValueError,e:
         log.info('[+] Found no structures.')

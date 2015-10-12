@@ -192,77 +192,6 @@ class BasicCachingReverser(StructureOrientedReverser):
         ctx.parsed.add(str(self))
         return
 
-class PointerReverser(StructureOrientedReverser):
-    """
-      Looks at pointers values to build basic structures boundaries.
-
-      @obselete PointerFieldsAnalyser is now doing that on the go...
-
-    slice the mapping in several structures delimited per pointer-boundaries
-    """
-
-    def _reverse(self, context):
-        log.info('[+] Reversing pointers in %s' % (context.heap))
-
-        # make structure lengths from interval between pointers
-        lengths = self.makeLengths(context.heap, context._structures_addresses)
-
-        # we really should be lazyloading structs..
-        t0 = time.time()
-        tl = t0
-        loaded = 0
-        todo = sorted(set(context._structures_addresses) -
-                      set(context._structures.keys()))
-        fromcache = len(context._structures_addresses) - len(todo)
-        # build structs from pointers boundaries. and creates pointer fields if
-        # possible.
-        log.info('[+] Adding new raw structures from pointers boundaries')
-        offsets = list(context._pointers_offsets)
-        for i, ptr_value in enumerate(context._structures_addresses):
-            # toh stoupid
-            if ptr_value in todo:
-                loaded += 1
-                size = lengths[i]
-                # get offset of pointer fields
-                offsets, my_pointers_addrs = utils.dequeue(
-                    offsets, ptr_value, ptr_value + size)
-                # save the ref/struct type
-                mystruct = structure.makeStructure(context, ptr_value, size)
-                context._structures[ptr_value] = mystruct
-                # mystruct.save()
-                # get pointers addrs in start -> start+size
-                log.debug(
-                    'Adding %d pointer fields field ' %
-                    (len(my_pointers_addrs)))
-                for p_addr in my_pointers_addrs:
-                    f = mystruct.addField(
-                        p_addr,
-                        fieldtypes.FieldType.POINTER,
-                        self.my_target.get_word_size(),
-                        False)
-                    #log.debug('Add field at %lx offset:%d'%( p_addr,p_addr-ptr_value))
-
-            if time.time() - tl > 10:  # i>0 and i%10000 == 0:
-                tl = time.time()
-                # DEBUG...
-                rate = (
-                    (tl - t0) / (loaded)) if loaded else ((tl - t0) / (loaded + fromcache))
-                log.info(
-                    '%2.2f secondes to go (b:%d/c:%d)' %
-                    ((len(todo) - i) * rate, loaded, fromcache))
-        log.info(
-            '[+] Extracted %d structures in %2.0f (b:%d/c:%d)' %
-            (loaded + fromcache, time.time() - t0, loaded, fromcache))
-
-        context.parsed.add(str(self))
-        return
-
-    def makeLengths(self, heap, aligned):
-        lengths = [(aligned[i + 1] - aligned[i])
-                   for i in range(len(aligned) - 1)]
-        lengths.append(heap.end - aligned[-1])  # add tail
-        return lengths
-
 
 class FieldReverser(StructureOrientedReverser):
     """
@@ -307,7 +236,7 @@ class FieldReverser(StructureOrientedReverser):
                     import pdb
                     pdb.set_trace()
             # output headers
-            towrite.append(anon.toString())
+            towrite.append(anon.to_string())
             if time.time() - tl > 30:  # i>0 and i%10000 == 0:
                 tl = time.time()
                 rate = ((tl - t0) / (decoded + fromcache)
@@ -397,8 +326,8 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
                     done += len(_members) - 1
                     lists.append((head, _members))  # save list chain
                     # set names
-                    context.get_structure_for_address(head).setName('list_head')
-                    [context.get_structure_for_address(m).setName(
+                    context.get_structure_for_address(head).set_name('list_head')
+                    [context.get_structure_for_address(m).set_name(
                         'list_%x_%d' % (head, i)) for i, m in enumerate(_members)]
                     # TODO get substructures ( P4P4xx ) signature and
                     # a) extract substructures
@@ -472,10 +401,10 @@ class DoubleLinkedListReverser(StructureOrientedReverser):
             return None, None
         if (f2 == head_addr):
             log.debug('f2 is head_addr too')
-            context.get_structure_for_address(head_addr).setName('struct')
+            context.get_structure_for_address(head_addr).set_name('struct')
             log.debug(
                 '%s' %
-                (context.get_structure_for_address(head_addr).toString()))
+                (context.get_structure_for_address(head_addr).to_string()))
 
         current = head_addr
         while (f1 in context._structures_addresses):
@@ -554,9 +483,9 @@ class PointerGraphReverser(StructureOrientedReverser):
                 ('%x' %
                  ptr_value,
                  '%x' %
-                 child._child_addr) for child in struct.getPointerFields())  # target_struct_addr
+                 child._child_addr) for child in struct.get_pointer_fields())  # target_struct_addr
             # DEBUG
-            if len(struct.getPointerFields()) > 0:
+            if len(struct.get_pointer_fields()) > 0:
                 if len(targets) == 0:
                     raise ValueError
             # DEBUG
@@ -596,7 +525,7 @@ def refreshOne(context, ptr_value):
     mystruct = structure.makeStructure(context, ptr_value, size)
     context.structures[ptr_value] = mystruct
     for p_addr in my_pointers_addrs:
-        f = mystruct.addField(
+        f = mystruct.add_field(
             p_addr,
             fieldtypes.FieldType.POINTER,
             my_target.get_word_size(),
@@ -629,7 +558,7 @@ def save_headers(ctx, addrs=None):
     for vaddr in addrs:
         #anon = context._get_structures()[vaddr]
         anon = ctx.get_structure_for_address(vaddr)
-        towrite.append(anon.toString())
+        towrite.append(anon.to_string())
         if len(towrite) >= 10000:
             try:
                 fout.write('\n'.join(towrite))

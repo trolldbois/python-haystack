@@ -141,9 +141,9 @@ def print_diff_files(opts, context, newmappings, structures):
         #st2.resolvePointers(ctx.structures_addresses, ctx.structures)
         # st2._aggregateFields()
         # write the files
-        f1.write(st.toString())
+        f1.write(st.to_string())
         f1.write('\n')
-        f2.write(st2.toString())
+        f2.write(st2.to_string())
         f2.write('\n')
         sys.stdout.write('.')
         sys.stdout.flush()
