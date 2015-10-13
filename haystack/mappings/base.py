@@ -277,6 +277,9 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         Temporarly closes all file used by this handler.
         :return:
         """
+        # clean the book
+        self.__book = _book()
+        # reset the mappings
         for m in self.get_mappings():
             m.reset()
 
@@ -400,8 +403,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
     def getRef(self, typ, origAddr):
         """Returns the reference to the type previously loaded at this address"""
-        ## DEBUG
-        #return None
         if (typ, origAddr) in self.__book.refs:
             return self.__book.getRef(typ, origAddr)
         return None
@@ -419,9 +420,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
         Sometypes, your have to cast a c_void_p, You can keep ref in Ctypes object,
            they might be transient (if obj == somepointer.contents)."""
-        ## DEBUG
-        ##return None
-
         # TODO, memory leak for different objects of same size, overlapping
         # struct.
         if (typ, origAddr) in self.__book.refs:
@@ -431,9 +429,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             else:
                 origAddr = hex(origAddr)
             if typ is not None:
-                log.debug(
-                    'ignore keepRef - references already in cache %s/%s' %
-                    (typ, origAddr))
+                log.debug('ignore keepRef - references already in cache %s/%s', typ, origAddr)
             return
         # there is no pre-existing typ().from_address(origAddr)
         self.__book.addRef(obj, typ, origAddr)
