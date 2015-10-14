@@ -22,7 +22,7 @@ from test.haystack import SrcTests
 log = logging.getLogger("test_reversers")
 
 
-class TestStructureSizes(unittest.TestCase):
+class TestStructureSizes(SrcTests):
 
     @classmethod
     def setUpClass(cls):
@@ -43,11 +43,16 @@ class TestStructureSizes(unittest.TestCase):
 
     def setUp(self):
         # os.chdir()
-        self.context = context.get_context('test/src/test-ctypes3.32.dump')
+        self.memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
+        self._load_offsets_values(self.memory_handler.get_name())
+        finder = self.memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
+        self.context = context.get_context_for_address(self.memory_handler, heaps[0])
+        ##
         self.dsa = dsa.DSASimple(self.context.memory_handler.get_target_platform())
 
     def tearDown(self):
-        self.context.memory_handler.reset_mappings()
+        self.memory_handler.reset_mappings()
         self.context = None
 
     @unittest.skip('DEBUGging the other one')
@@ -133,12 +138,13 @@ class Test1(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = zeus_856_svchost_exe.dumpname
+        config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
         return
 
     @classmethod
     def tearDownClass(cls):
-        #config.remove_cache_folder(cls.dumpname)
+        config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = None
         cls._context = None
         return
@@ -162,7 +168,7 @@ class TestReverseZeus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = zeus_856_svchost_exe.dumpname
-        ##config.remove_cache_folder(cls.dumpname)
+        config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
         ##
         cls.offset = zeus_856_svchost_exe.known_records[0][0]
@@ -172,7 +178,7 @@ class TestReverseZeus(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        #config.remove_cache_folder(cls.dumpname)
+        config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = None
         cls._context = None
         return
@@ -190,17 +196,17 @@ class TestReverseZeus(unittest.TestCase):
         struct_d.reset()
 
         sig_1 = struct_d.get_signature(text=True)
-        print '1.', self._v(struct_d)
+        # print '1.', self._v(struct_d)
         #self.assertEqual(sig_1, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
 
         # decode bytes contents to find basic types.
         fr = reversers.FieldReverser(self._context)
         fr.reverse()
         sig_2 = struct_d.get_signature(text=True)
-        print '2.', self._v(struct_d)
+        # print '2.', self._v(struct_d)
         # no double linked list in here
         #self.assertEqual(sig_2, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
-        print struct_d.to_string()
+        # print struct_d.to_string()
         #import code
         #code.interact(local=locals())
 
@@ -209,9 +215,9 @@ class TestReverseZeus(unittest.TestCase):
         doublelink.reverse()
         #self.assertEqual(doublelink.found, 12)
         sig_3 = struct_d.get_signature(text=True)
-        print '3.', self._v(struct_d)
+        # print '3.', self._v(struct_d)
         #self.assertEqual(sig_3, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
-        print struct_d.to_string()
+        # print struct_d.to_string()
         #import code
         #code.interact(local=locals())
 
@@ -219,8 +225,8 @@ class TestReverseZeus(unittest.TestCase):
         pfr = reversers.PointerFieldReverser(self._context)
         pfr.reverse()
         sig_4 = struct_d.get_signature(text=True)
-        print '4.', self._v(struct_d)
-        print struct_d.to_string()
+        # print '4.', self._v(struct_d)
+        # print struct_d.to_string()
         #import code
         #code.interact(local=locals())
 
@@ -228,21 +234,22 @@ class TestReverseZeus(unittest.TestCase):
         afr = reversers.ArrayFieldsReverser(self._context)
         afr.reverse()
         sig_5 = struct_d.get_signature(text=True)
-        print '5.', self._v(struct_d)
-        print struct_d.to_string()
+        # print '5.', self._v(struct_d)
+        # print struct_d.to_string()
         #import code
         #code.interact(local=locals())
 
         tr = reversers.TypeReverser(self._context)
         tr.reverse()
         sig_6 = struct_d.get_signature(text=True)
-        print '6.', self._v(struct_d)
-        print "tr._similarities", tr._similarities
+        # print '6.', self._v(struct_d)
+        # print "tr._similarities", tr._similarities
         for a,b in tr._similarities:
-            print self._context.get_record_for_address(a).to_string()
-            print self._context.get_record_for_address(b).to_string()
+            # print self._context.get_record_for_address(a).to_string()
+            # print self._context.get_record_for_address(b).to_string()
             #import code
             #code.interact(local=locals())
+            pass
 
 
 
@@ -287,13 +294,13 @@ class TestReversers(SrcTests):
 
         struct_d = self._context.get_record_for_address(self.offset)
         sig_1 = struct_d.get_signature(text=True)
-        print '1.', self._v(struct_d)
+        # print '1.', self._v(struct_d)
 
         # try to find some logical constructs.
         doublelink = reversers.DoubleLinkedListReverser(self._context)
         doublelink.reverse()
         sig_2 = struct_d.get_signature(text=True)
-        print '2.', self._v(struct_d)
+        # print '2.', self._v(struct_d)
         # no double linked list in here
         self.assertEqual('', sig_2)
 
@@ -301,39 +308,40 @@ class TestReversers(SrcTests):
         fr = reversers.FieldReverser(self._context)
         fr.reverse()
         sig_3 = struct_d.get_signature(text=True)
-        print '3.', self._v(struct_d)
+        # print '3.', self._v(struct_d)
         self.assertEqual(sig_3, 'P8P8P8z24i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8P8P8P8P8P8P8P8P8P8P8P8P8u40P8P8P8P8P8P8P8P8P8P8i8P8T14u2z16P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z16P8')
 
         # identify pointer relation between structures
         pfr = reversers.PointerFieldReverser(self._context)
         pfr.reverse()
         sig_4 = struct_d.get_signature(text=True)
-        print '4.', self._v(struct_d)
+        # print '4.', self._v(struct_d)
 
         # aggregate field of same type in an array
         afr = reversers.ArrayFieldsReverser(self._context)
         afr.reverse()
         sig_5 = struct_d.get_signature(text=True)
-        print '5.', self._v(struct_d)
+        # print '5.', self._v(struct_d)
 
 
         tr = reversers.TypeReverser(self._context)
         tr.reverse()
         sig_6 = struct_d.get_signature(text=True)
-        print '6.', self._v(struct_d)
-        print "tr._similarities", tr._similarities
+        # print '6.', self._v(struct_d)
+        # print "tr._similarities", tr._similarities
         for a,b in tr._similarities:
-            print self._context.get_record_for_address(a).to_string()
-            print self._context.get_record_for_address(b).to_string()
+            # print self._context.get_record_for_address(a).to_string()
+            # print self._context.get_record_for_address(b).to_string()
             #import code
             #code.interact(local=locals())
+            pass
 
         self.assertNotEqual(sig_4, sig_5)
         self.assertEqual(sig_4, 'P8P8P8z24i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8P8P8P8P8P8P8P8P8P8P8P8P8u40P8P8P8P8P8P8P8P8P8P8i8P8T14u2z16P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z16P8')
         self.assertEqual(sig_5, 'a24z24i8a640z8a128a96u40a80i8P8T14u2z16P8a304z16P8')
-        print 'struct_d 0x%x' % self.offset
+        # print 'struct_d 0x%x' % self.offset
 
-        print struct_d.to_string()
+        # print struct_d.to_string()
         #import code
         #code.interact(local=locals())
 
