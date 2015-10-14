@@ -126,6 +126,9 @@ class AbstractReverser(interfaces.IReverser, interfaces.IContextReverser):
         # closing statements
         return
 
+    def __str__(self):
+        return '<%s>' % self.__class__.__name__
+
     def reverse_context(self, _context):
         """
         Subclass implementation of the reversing process
@@ -190,9 +193,6 @@ class AbstractContextReverser(AbstractReverser, interfaces.IContextReverser):
         #self._fout.write('\n'.join(self._towrite))
         #self._towrite = []
         pass
-
-    def __str__(self):
-        return '<%s>' % self.__class__.__name__
 
     def reverse_context(self, _context):
         """
@@ -513,20 +513,33 @@ class PointerGraphReverser(AbstractReverser):
         super(PointerGraphReverser, self).__init__(_memory_handler)
         import networkx
         self._master_graph = networkx.DiGraph()
-        self._graph = networkx.DiGraph()
+        self._graph = None
+
+    def reverse(self):
+        super(PointerGraphReverser, self).reverse()
+        import networkx
+        dumpname = self._memory_handler.get_name()
+        outname = os.path.sep.join([config.get_cache_folder_name(dumpname), config.CACHE_GRAPH])
+
+        log.info('[+] Process Graph == %d Nodes', self._master_graph.number_of_nodes())
+        log.info('[+] Process Graph == %d Edges', self._master_graph.number_of_edges())
+        networkx.readwrite.gexf.write_gexf(self._graph, outname)
+        return
 
     def reverse_context(self, _context):
         import networkx
         # we only need the addresses...
+        self._graph = networkx.DiGraph()
         self._graph.add_nodes_from(['%x' % k for k in _context.listStructuresAddresses()])
-        log.info('[+] Graph - added %d nodes' % (self._graph.number_of_nodes()))
+        self._master_graph.add_nodes_from(['%x' % k for k in _context.listStructuresAddresses()])
+        log.info('[+] Heap 0x%x Graph += %d Nodes', _context._heap_start, self._graph.number_of_nodes())
         t0 = time.time()
         tl = t0
         for _record in _context.listStructures():
             self.reverse_record(_record)
             # output headers
         #
-        log.info('[+] Graph - added %d edges', self._graph.number_of_edges())
+        log.info('[+] Heap 0x%x Graph += %d Edges', _context._heap_start, self._graph.number_of_edges())
         networkx.readwrite.gexf.write_gexf(self._graph, _context.get_filename_cache_graph())
         ##
         return
@@ -543,6 +556,7 @@ class PointerGraphReverser(AbstractReverser):
                 raise ValueError
         # DEBUG
         self._graph.add_edges_from(targets)
+        self._master_graph.add_edges_from(targets)
         return
 
 
