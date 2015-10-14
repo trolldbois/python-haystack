@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+
 class AbstractMatcher(object):
     """
     Search for pointers by checking if the word value is a valid addresses in memspace.
@@ -23,6 +24,7 @@ class AbstractMatcher(object):
         returns: bool
         """
         raise NotImplementedError
+
 
 class AbstractMatcherWithValue(object):
     """
@@ -44,6 +46,7 @@ class AbstractMatcherWithValue(object):
         """
         raise NotImplementedError
 
+
 class PointerSearcher(AbstractMatcher):
     """
     Search for pointers by checking if the word value is a valid addresses in memspace.
@@ -57,6 +60,7 @@ class PointerSearcher(AbstractMatcher):
         if self.is_valid_address_value(word):
             return True
         return False
+
 
 class NullSearcher(AbstractMatcher):
     """
@@ -72,6 +76,7 @@ class NullSearcher(AbstractMatcher):
         if word == 0:
             return True
         return False
+
 
 class PointerEnumerator(AbstractMatcherWithValue):
     """

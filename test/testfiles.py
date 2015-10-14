@@ -116,6 +116,8 @@ zeus_856_svchost_exe.known_heaps = [(0x00090000, 0x100000),
                                     (0x00e80000, 0x10000),
                                     (0x7f6f0000, 0x100000)]
 
+zeus_856_svchost_exe.known_records = [(0x992f0, 14720)]
+
 # putty.1.dump is a win7 32 bits memory dump
 putty_1_win7 = TestDump('test/dumps/putty/putty.1.dump')
 putty_1_win7.known_heaps = [(0x00390000, 0x3000),

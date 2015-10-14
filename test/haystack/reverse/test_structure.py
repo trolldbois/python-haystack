@@ -72,15 +72,17 @@ class TestStructure(unittest.TestCase):
 
     def test_resolvePointers(self):
         for s in self.context.listStructures():
+            self.dsa.analyze_fields(s)
+        for s in self.context.listStructures():
             self.pta.analyze_fields(s)
         self.assertTrue(True)  # test no error
 
     def test_resolvePointers2(self):
         for s in self.context.listStructures():
             self.dsa.analyze_fields(s)
-            self.assertTrue(s.is_resolved())
+            self.assertEqual(s.get_reverse_level(), 10)
         for s in self.context.listStructures():
-            log.debug('RESOLVATION: %s' % (s.is_resolved()))
+            log.debug('RLEVEL: %d' % s.get_reverse_level())
             self.pta.analyze_fields(s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
                 self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
@@ -94,9 +96,9 @@ class TestStructure(unittest.TestCase):
             else:
                 members = s.__dict__
             for name, value in members.items():
-                if name in ['_size', '_context', '_name', '_vaddr', '_target']:
+                if name in ['_size', '_memory_handler', '_name', '_vaddr', '_target']:
                     self.assertNotIn(value, [None, False])
-                elif name in ['_dirty']:
+                elif name in ['_dirty', '_AnonymousRecord__address']:
                     self.assertTrue(value)
                 elif name in ['_fields']:
                     self.assertEquals(value, list())

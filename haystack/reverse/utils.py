@@ -96,7 +96,7 @@ def dequeue(addrs, start, end):
     return addrs, ret
 
 
-def _get_cache_heap_pointers(ctx, enumerator):
+def get_cache_heap_pointers(ctx, enumerator):
     """
     Cache or return Heap pointers values in enumerator .
     :param dumpfilename:
@@ -121,6 +121,7 @@ def _get_cache_heap_pointers(ctx, enumerator):
     else:
         log.info('[+] Loading from cache %d pointers %d unique', len(heap_values), len(set(heap_values)))
     return heap_addrs, heap_values
+
 
 def cache_get_user_allocations(ctx, heap_walker):
     """

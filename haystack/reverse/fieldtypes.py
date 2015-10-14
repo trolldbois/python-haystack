@@ -63,7 +63,7 @@ class FieldType(object):
         import structure
         _address = parent.address + offset
         newfieldType = FieldTypeStruct('%lx' % _address, fields)
-        newfieldType.setStruct(structure.AnonymousRecord(parent.context, _address, len(newfieldType)))
+        newfieldType.setStruct(structure.AnonymousRecord(parent._memory_handler, _address, len(newfieldType)))
         newField = Field(parent, offset, newfieldType, len(newfieldType), False)
         return newField
 
@@ -90,7 +90,7 @@ class FieldTypeStruct(FieldType):
     """
 
     def __init__(self, name, fields):
-        super(FieldTypeStruct, self).__init__(0x1, 'struct', name, 'K', isPtr=False)
+        super(FieldTypeStruct, self).__init__(self, 0x1, 'struct', name, 'K', isPtr=False)
         self.size = sum([len(f) for f in fields])
         self.elements = fields
         # TODO s2[0].elements[0].typename.elements[0] is no good
@@ -106,9 +106,12 @@ class FieldTypeStruct(FieldType):
 
 
 class FieldTypeArray(FieldType):
-
+    """
+    An array type
+    """
     def __init__(self, basicTypeName):
-        FieldType.__init__(self, 0x60, 'array_%s' % basicTypeName, None, 'a', isPtr=False)
+        super(FieldTypeArray, self).__init__(self, 0x60, 'array_%s' % basicTypeName, None, 'a', isPtr=False)
+
 
 # setup all the know types that are interesting to us
 FieldType.UNKNOWN = FieldType(0x0, 'untyped', 'ctypes.c_ubyte', ctypes.c_ubyte, 'u')
@@ -188,7 +191,7 @@ class Field(object):
         return self._ctype
         # FIXME TODO
 
-    def getTypename(self):
+    def get_typename(self):
         if self.is_string() or self.is_zeroes():
             return '%s * %d' % (self.typename.ctypes, len(self))
         elif self.is_array():
@@ -287,19 +290,16 @@ class Field(object):
         elif self.is_zeroes():
             bytes = repr(self.value)  # '\\x00'*len(self)
         elif self.is_array():
-            log.warning('ARRAY in Field type, %s' % self.typename)
-            log.error(
-                'error in 0x%x offset 0x%x' %
-                (self.struct.address, self.offset))
-            bytes = ''.join(
-                ['[', ','.join([el.to_string() for el in self.elements]), ']'])
+            log.warning('ARRAY in Field type, %s', self.typename)
+            log.error('error in 0x%x offset 0x%x', self.struct.address, self.offset)
+            bytes = ''.join(['[', ','.join([el.to_string() for el in self.elements]), ']'])
         elif self.padding or self.typename == FieldType.UNKNOWN:
             bytes = self.struct.bytes[self.offset:self.offset + len(self)]
         else:  # bytearray, pointer...
             return self.value
         return bytes
 
-    def getSignature(self):
+    def get_signature(self):
         return (self.typename, self.size)
 
     def to_string(self, prefix=''):
@@ -329,7 +329,7 @@ class Field(object):
                 self.comment, self.usercomment, repr(self.getValue(config.commentMaxSize)))
 
         fstr = "%s( '%s' , %s ), %s\n" % (
-            prefix, self.get_name(), self.getTypename(), comment)
+            prefix, self.get_name(), self.get_typename(), comment)
         return fstr
 
     def __getstate__(self):
@@ -397,6 +397,9 @@ class ArrayField(Field):
         self.basicTypename = elements[0].typename
 
         self.size = self.basicTypeSize * len(self.elements)
+
+        super(ArrayField, self).__init__(astruct, self.offset, self.typename, self.size, False)
+
         self.padding = False
         self.value = None
         self.comment = ''
@@ -409,7 +412,7 @@ class ArrayField(Field):
     def get_ctype(self):
         return self._ctype
 
-    def getTypename(self):
+    def get_typename(self):
         return '%s * %d' % (self.basicTypename.ctypes, self.nbElements)
 
     def _getValue(self, maxLen):
@@ -428,7 +431,7 @@ class ArrayField(Field):
         comment = '# %s %s array:%s' % (
             self.comment, self.usercomment, self.getValue(config.commentMaxSize))
         fstr = "%s( '%s' , %s ), %s\n" % (
-            prefix, self.get_name(), self.getTypename(), comment)
+            prefix, self.get_name(), self.get_typename(), comment)
         return fstr
 
 

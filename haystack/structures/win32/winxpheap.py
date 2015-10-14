@@ -461,7 +461,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
                     self._memory_handler.keepRef(chunk_header, self.win_heap.struct__HEAP_ENTRY, chunk_addr)
                     # FIXME what is this hack
                     chunk_header._orig_address_ = chunk_addr
-                log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
+                log.debug('\t\tEntry: 0x%0.8x\n%s', chunk_addr, chunk_header)
                 flags = chunk_header._0._1.Flags
                 size = chunk_header._0._0.Size
                 if (flags & 1) == 1:

@@ -56,7 +56,7 @@ def remap_load(_context, address, newmappings):
     if p is None:
         return None
     # YES we do want to over-write _memory_handler and bytes
-    p._memory_handler = _context.memory_handler
+    p.set_memory_handler(_context.memory_handler)
     return p
 
 
@@ -119,7 +119,9 @@ class CacheWrapper:
             raise e  # bad file removed
         if not isinstance(p, AnonymousRecord):
             raise EOFError("not a AnonymousRecord in cache. %s", p.__class__)
-        p._memory_handler = self._context.memory_handler
+        if isinstance(p, CacheWrapper):
+            raise TypeError("Why is a cache wrapper pickled?")
+        p.set_memory_handler(self._memory_handler)
         p._dirty = False
         CacheWrapper.refs[self.address] = p
         self.obj = weakref.ref(p)
@@ -159,16 +161,16 @@ class AnonymousRecord(object):
     Comparaison between struct is done is relative addresse space.
     """
 
-    def __init__(self, context, _address, size, prefix=None):
+    def __init__(self, memory_handler, _address, size, prefix=None):
         """
         Create a record instance representing an allocated chunk to reverse.
-        :param context: the context of the allocated chunk
+        :param memory_handler: the memory_handler of the allocated chunk
         :param _address: the address of the allocated chunk
         :param size: the size of the allocated chunk
         :param prefix: the name prefix to identify the allocated chunk
         :return:
         """
-        self._memory_handler = context.memory_handler
+        self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
         self.__address = _address
         self._size = size
@@ -245,6 +247,11 @@ class AnonymousRecord(object):
             log.error("Pickling error, file %s removed", fname)
             os.remove(fname)
             raise e
+        except TypeError as e:
+            log.error(e)
+            # FIXME pickling a cachewrapper ????
+            #import code
+            #code.interact(local=locals())
         except RuntimeError as e:
             log.error(e)
             print self.to_string()
@@ -266,10 +273,8 @@ class AnonymousRecord(object):
         """
         if offset < 0 or offset > len(self):
             raise IndexError("Invalid offset")
-        log.debug('Looking at child %s %s', self.to_string(), self.is_resolved())
-        log.debug('Looking at child structure ID %d' % id(self))
-        if not self.is_resolved():
-            raise StructureNotResolvedError("Please run BasicCachingReverser at least once on this record")
+        if self.get_reverse_level() < 10:
+            raise StructureNotResolvedError("Reverse level %d is too low for record 0x%x", self.get_reverse_level(), self.address)
         # find the field
         ret = [f for f in self._fields if f.offset == offset]
         if len(ret) == 0:
@@ -317,16 +322,9 @@ class AnonymousRecord(object):
             # TODO re_string.Nocopy
         return self._bytes
 
-    # TODO replace by a numerical "reverse progression" index.
-    def is_resolved(self):
-        return self._resolved
+    def set_memory_handler(self, memory_handler):
+        self._memory_handler = memory_handler
 
-    def set_resolved(self):
-        self._resolved = True
-
-    def is_resolvedPointers(self):
-        return self._resolvedPointers
-    ##
     def get_reverse_level(self):
         return self._reverse_level
 
@@ -337,9 +335,7 @@ class AnonymousRecord(object):
         # print self.fields
         self._fields.sort()
         fieldsString = '[ \n%s ]' % (''.join([field.to_string('\t') for field in self._fields]))
-        info = 'resolved:%s SIG:%s size:%d' % (self.is_resolved(), self.get_signature(text=True), len(self))
-        if len(self.get_pointer_fields()) != 0:
-            info += ' resolvedPointers:%s' % (self.is_resolvedPointers())
+        info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature(text=True), len(self))
         ctypes_def = '''
 class %s(ctypes.Structure):  # %s
   _fields_ = %s
@@ -437,13 +433,13 @@ class ReversedType(ctypes.Structure):
     """
 
     @classmethod
-    def create(cls, context, name):
-        ctypes_type = context.getReversedType(name)
+    def create(cls, _context, name):
+        ctypes_type = _context.getReversedType(name)
         if ctypes_type is None:  # make type an register it
             ctypes_type = type(
                 name, (cls,), {
                     '_instances': dict()})  # leave _fields_ out
-            context.addReversedType(name, ctypes_type)
+            _context.addReversedType(name, ctypes_type)
         return ctypes_type
 
     ''' add the instance to be a instance of this type '''
@@ -461,7 +457,7 @@ class ReversedType(ctypes.Structure):
         return cls._instances
 
     @classmethod
-    def makeFields(cls, context):
+    def makeFields(cls, _context):
         # print '****************** makeFields(%s, context)'%(cls.__name__)
         root = cls.getInstances().values()[0]
         # try:

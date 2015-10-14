@@ -44,6 +44,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
+        # FIXME ? why use a ctypes module here ?
         sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
         # get all chunks
         vallocs, va_free = self._get_virtualallocations()

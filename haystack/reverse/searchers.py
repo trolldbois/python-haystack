@@ -20,6 +20,7 @@ A few class that can be used to search a portion of memory
 
 log = logging.getLogger('searchers')
 
+
 class AFeedbackGiver(object):
     """
     Class to give feedback at every step.
@@ -35,9 +36,10 @@ class AFeedbackGiver(object):
         # log.info('processing vaddr 0x%x'%(val))
         raise NotImplementedError
 
+
 class NoFeedback(AFeedbackGiver):
     def __init__(self):
-        self.count = 1
+        super(NoFeedback, self).__init__(1)
 
     def feedback(self, step, val):
         """ make a feedback"""
@@ -95,6 +97,7 @@ class AbstractSearcher(object):
     def get_search_mapping(self):
         return self._search_mapping
 
+
 class WordAlignedSearcher(AbstractSearcher):
     """
     Search for something in memspace.
@@ -123,6 +126,7 @@ class WordAlignedSearcher(AbstractSearcher):
         log.debug('search %s mapping for matching values', self.get_search_mapping())
         self._values = [t for t in self]
         return self._values
+
 
 class AllocatedWordAlignedSearcher(WordAlignedSearcher):
     """
@@ -170,10 +174,11 @@ class AllocatedWordAlignedSearcher(WordAlignedSearcher):
 def reverse_lookup(opt):
     from haystack.reverse import context
     log.info('[+] Load context')
-    ctx = context.get_context(opt.dumpname)
+    # FIXME, it should be the  heap_addr
     addr = opt.struct_addr
+    ctx = context.get_context(opt.dumpname, addr)
 
-    log.info('[+] find offsets of struct_addr:%x' % (addr))
+    log.info('[+] find offsets of struct_addr:%x' % addr)
     i = -1
     structs = set()
     try:
@@ -203,9 +208,9 @@ def merge_dump(dumpname):
     word_size = memory_handler.get_target_platform().get_word_size()
     feedback = NoFeedback()
     # get pointers in stack
-    stack_searcher = WordAlignedSearcher(stack, PointerSearcher(memory_handler), feedback, word_size)
+    stack_searcher = WordAlignedSearcher(stack, matchers.PointerSearcher(memory_handler), feedback, word_size)
 
-    heap_searcher = WordAlignedSearcher(heap, PointerSearcher(memory_handler), feedback, word_size)
+    heap_searcher = WordAlignedSearcher(heap, matchers.PointerSearcher(memory_handler), feedback, word_size)
     pointersFromHeap = heap_searcher.search()
     pointersFromStack = stack_searcher.search()
     pointersFromHeap = sorted(pointersFromHeap)

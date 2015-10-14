@@ -6,7 +6,7 @@
 
 import logging
 import array
-
+import collections
 import os
 
 from haystack.reverse import re_string
@@ -285,16 +285,17 @@ class DSASimple(StructureAnalyser):
         fields, gaps = self._analyze(structure)
         structure.add_fields(fields)
         structure.add_fields(gaps)  # , FieldType.UNKNOWN
-        structure.set_resolved()
         return structure
 
-    def _analyze(self, structure):
-        slen = len(structure)
+    def _analyze(self, _record):
+        slen = len(_record)
         offset = 0
         # call on analyzers
         fields = []
         nb = -1
-        gaps = [Field(structure, 0, FieldType.UNKNOWN, len(structure), False)]
+        gaps = [Field(_record, 0, FieldType.UNKNOWN, len(_record), False)]
+
+        _record.set_reverse_level(10)
 
         # find zeroes
         # find strings
@@ -307,27 +308,27 @@ class DSASimple(StructureAnalyser):
                     fields.append(field)
                     continue
                 log.debug('Using %s on %d:%d', analyser.__class__.__name__, field.offset, field.offset + len(field))
-                new_fields = analyser.make_fields(structure, field.offset, len(field))
+                new_fields = analyser.make_fields(_record, field.offset, len(field))
                 fields.extend(new_fields)
                 for f1 in new_fields:
                     log.debug('new_field %s', f1)
                 # print fields
             if len(fields) != nb:  # no change in fields, keep gaps
                 nb = len(fields)
-                gaps = self._make_gaps(structure, fields)
+                gaps = self._make_gaps(_record, fields)
             if len(gaps) == 0:
                 return fields, gaps
         return fields, gaps
 
-    def _make_gaps(self, structure, fields):
+    def _make_gaps(self, _record, fields):
         fields.sort()
         gaps = []
         nextoffset = 0
         for i, f in enumerate(fields):
             if f.offset > nextoffset:  # add temp padding field
-                self._aligned_gaps(structure, f.offset, nextoffset, gaps)
+                self._aligned_gaps(_record, f.offset, nextoffset, gaps)
             elif f.offset < nextoffset:
-                log.debug(structure)
+                log.debug(_record)
                 log.debug(f)
                 log.debug('%s < %s ' % (f.offset, nextoffset))
                 log.debug(fields[i + 1])
@@ -337,34 +338,34 @@ class DSASimple(StructureAnalyser):
             # do next field
             nextoffset = f.offset + len(f)
         # conclude on QUEUE insertion
-        lastfield_size = len(structure) - nextoffset
+        lastfield_size = len(_record) - nextoffset
         if lastfield_size > 0:
             if lastfield_size < self._target.get_word_size():
-                gap = Field(structure, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
+                gap = Field(_record, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
                 log.debug('_make_gaps: adding last field at offset %d:%d', gap.offset, gap.offset + len(gap))
                 gaps.append(gap)
             else:
-                self._aligned_gaps(structure, len(structure), nextoffset, gaps)
+                self._aligned_gaps(_record, len(_record), nextoffset, gaps)
         return gaps
 
-    def _aligned_gaps(self, structure, endoffset, nextoffset, gaps):
+    def _aligned_gaps(self, _record, endoffset, nextoffset, gaps):
         """ if nextoffset is aligned
                     add a gap to gaps, or
                 if nextoffset is not aligned
                     add (padding + gap) to gaps
                  """
         if nextoffset % self._target.get_word_size() == 0:
-            gap = Field(structure, nextoffset, FieldType.UNKNOWN, endoffset - nextoffset, False)
+            gap = Field(_record, nextoffset, FieldType.UNKNOWN, endoffset - nextoffset, False)
             log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
         else:
             # unaligned field should be splitted
             s1 = self._target.get_word_size() - nextoffset % self._target.get_word_size()
-            gap1 = Field(structure, nextoffset, FieldType.UNKNOWN, s1, True)
+            gap1 = Field(_record, nextoffset, FieldType.UNKNOWN, s1, True)
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = Field(structure, nextoffset + s1, FieldType.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = Field(_record, nextoffset + s1, FieldType.UNKNOWN, endoffset - nextoffset - s1, False)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
@@ -380,7 +381,8 @@ class EnrichedPointerFields(StructureAnalyser):
     """
 
     def analyze_fields(self, structure):
-        """ @returns structure, with enriched info on pointer fields.
+        """
+        @returns structure, with enriched info on pointer fields.
         For pointer fields value:
         (-) if pointer value is in _memory_handler ( well it is... otherwise it would not be a pointer.)
         + if value is unaligned, mark it as cheesy
@@ -404,11 +406,9 @@ class EnrichedPointerFields(StructureAnalyser):
             # + ask _memory_handler for the context for that value
             try:
                 ctx = context.get_context_for_address(self._memory_handler, value)  # no error expected.
-                #log.warning('value: 0x%0.8x ctx.heap: 0x%0.8x'%(value, ctx.heap.start))
-                # print '** ST id', id(structure), hex(structure.address)
                 # + ask context for the target structure or code info
             except ValueError as e:
-                log.debug('target to non heap mmaps is not implemented')
+                # value is a pointer, but not to a heap.
                 m = self._memory_handler.get_mapping_for_address(value)
                 field.set_child_desc('ext_lib @%0.8x %s' % (m.start, m.pathname))
                 field._ptr_to_ext_lib = True
@@ -428,12 +428,14 @@ class EnrichedPointerFields(StructureAnalyser):
                 field.set_name('ptr_void')
                 continue
             # structure found
+            log.debug('Looking at child id:0x%x str:%s', tgt.address, tgt.to_string())
             # we always point on structure, not field
             field.set_child_addr(tgt.address)
             offset = value - tgt.address
             try:
                 tgt_field = tgt.get_field_at_offset(offset)  # @throws IndexError
-            except IndexError as e:  # there is no field right there
+            except IndexError as e:
+                # there is no field right there
                 log.debug('there is no field at pointed value %0.8x. May need splitting byte field - %s', value, e)
                 field.set_child_desc('Badly reversed field')
                 field.set_child_ctype('void')
@@ -452,19 +454,6 @@ class EnrichedPointerFields(StructureAnalyser):
             # all
         return
 
-    def get_unresolved_children(self, structure):
-        """ returns all children that are not fully analyzed yet."""
-        pointerFields = structure.get_pointer_fields()
-        children = []
-        for field in pointerFields:
-            try:
-                tgt = structure._context.get_record_for_address(field.value)
-                if not tgt.is_resolved():  # fields have not been decoded yet
-                    children.append(tgt)
-            except KeyError as e:
-                pass
-        return children
-
 
 class IntegerArrayFields(StructureAnalyser):
 
@@ -476,8 +465,7 @@ class IntegerArrayFields(StructureAnalyser):
         size = len(bytes)
         if size < 4:
             return False
-        ctr = collections.Counter(
-            [bytes[i:i + self._target.get_word_size()] for i in range(len(bytes))])
+        ctr = collections.Counter([bytes[i:i + self._target.get_word_size()] for i in range(len(bytes))])
         floor = max(1, int(size * .1))  # 10 % variation in values
         #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
         commons = ctr.most_common()
@@ -486,6 +474,5 @@ class IntegerArrayFields(StructureAnalyser):
         # few values. it migth be an array
         self.size = size
         self.values = bytes
-        self.comment = '10%% var in values: %s' % (
-            ','.join([repr(v) for v, nb in commons]))
+        self.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
         return True
