@@ -231,9 +231,9 @@ class TestReverseZeus(unittest.TestCase):
         #code.interact(local=locals())
 
         # aggregate field of same type in an array
-        afr = reversers.ArrayFieldsReverser(self._context)
-        afr.reverse()
-        sig_5 = struct_d.get_signature(text=True)
+        #afr = reversers.ArrayFieldsReverser(self._context)
+        #afr.reverse()
+        #sig_5 = struct_d.get_signature(text=True)
         # print '5.', self._v(struct_d)
         # print struct_d.to_string()
         #import code
