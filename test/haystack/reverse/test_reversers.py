@@ -101,13 +101,13 @@ class TestFullReverse(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = 'test/dumps/ssh/ssh.1'
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(ssh_1_i386_linux.dumpname)
         return
 
     @classmethod
     def tearDownClass(cls):
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = None
         return
 
@@ -138,13 +138,13 @@ class Test1(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = zeus_856_svchost_exe.dumpname
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
         return
 
     @classmethod
     def tearDownClass(cls):
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = None
         cls._context = None
         return
@@ -168,7 +168,7 @@ class TestReverseZeus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dumpname = zeus_856_svchost_exe.dumpname
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
         ##
         cls.offset = zeus_856_svchost_exe.known_records[0][0]
@@ -178,7 +178,7 @@ class TestReverseZeus(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        config.remove_cache_folder(cls.dumpname)
+        #config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = None
         cls._context = None
         return
@@ -350,14 +350,74 @@ class TestReversers(SrcTests):
         #code.interact(local=locals())
 
 
+class TestGraphReverser(SrcTests):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dumpname = zeus_856_svchost_exe.dumpname
+        #config.remove_cache_folder(cls.dumpname)
+        cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
+        ##
+        cls.offset = zeus_856_svchost_exe.known_records[0][0]
+        cls._context = context.get_context_for_address(cls.memory_handler, cls.offset)
+        return
+
+    @classmethod
+    def tearDownClass(cls):
+        #config.remove_cache_folder(cls.dumpname)
+        cls.memory_handler = None
+        cls._context = None
+        return
+
+    def _v(self, record):
+        if True:
+            return record.get_signature(text=True)
+        else:
+            return record.to_string()
+
+    def test_graph(self):
+        log.debug('Reversing PointerGraph')
+        ptrgraph = reversers.PointerGraphReverser(self.memory_handler)
+        ptrgraph.reverse()
+
+
+class TestEnrichedPointerAnalyserReal(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
+        cls._context = context.get_context_for_address(cls.memory_handler, 0x90000)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler = None
+        cls._context = None
+
+    def test_doublelink(self):
+        rev = reversers.DoubleLinkedListReverser(self._context)
+        # interesting records
+        # SIG:T4i4P4P4i4z12
+        # struct_bbf78 struct_a6518 struct_cca28
+        # list goes from 0xccd28, 0xccd00 to 0x98268
+        #_record = self._context.get_record_for_address(0xccd28)
+        _record = self._context.get_record_for_address(0xccd00)
+        print _record.to_string()
+        _record.set_reverse_level(10)
+        rev.reverse_record(_record)
+        print _record.to_string()
+        n1 = self._context.get_record_for_address(0x000ccae8)
+        print n1.to_string()
+        tail = self._context.get_record_for_address(0x98268)
+        print tail.to_string()
+
+        pass
 
 
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    #logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("reversers").setLevel(logging.DEBUG)
     #logging.getLogger("structure").setLevel(logging.DEBUG)
-    #logging.getLogger("dsa").setLevel(logging.DEBUG)
+    logging.getLogger("dsa").setLevel(logging.DEBUG)
     #logging.getLogger("winxpheap").setLevel(logging.DEBUG)
     unittest.main(verbosity=2)

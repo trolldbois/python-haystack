@@ -114,7 +114,7 @@ class CacheWrapper:
         try:
             p = pickle.load(file(self._fname, 'r'))
         except EOFError as e:
-            log.error('Could not load %s - removing it ' % self._fname)
+            log.error('Could not load %s - removing it %s', self._fname, e)
             os.remove(self._fname)
             raise e  # bad file removed
         if not isinstance(p, AnonymousRecord):

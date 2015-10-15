@@ -8,7 +8,7 @@ import logging
 
 from haystack import target
 from haystack.abc import interfaces
-from haystack.reverse import structure
+from haystack import dump_loader
 from haystack.reverse import fieldtypes
 from haystack.reverse import context
 from haystack.reverse import structure
@@ -364,6 +364,7 @@ class TestFieldAnalyserReal(unittest.TestCase):
         for i, f in enumerate(self.test1._fields):
             self.assertGreaterEqual(f.offset, nextoffset)
             nextoffset = f.offset + len(f)
+
 
 
 

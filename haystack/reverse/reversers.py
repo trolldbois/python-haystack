@@ -149,6 +149,10 @@ class AbstractContextReverser(AbstractReverser, interfaces.IContextReverser):
         # save to file
         self._fout = file(self._context.get_filename_cache_headers(), 'w')
         self._towrite = []
+        self._t0 = time.time()
+        self._tl = self._t0
+        self._nb_reversed = 0
+        self._nb_from_cache = 0
 
     def get_reverse_level(self):
         return self._reverse_level
@@ -272,6 +276,7 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
     def __init__(self, _context):
         super(DoubleLinkedListReverser, self).__init__(_context, _reverse_level=30)
         self._target = _context.memory_handler.get_target_platform()
+        self._word_size = self._target.get_word_size()
         self.found = 0
         self.members = set()
         self.lists = []
@@ -288,36 +293,47 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
               continue
               # if not head of structure, not a classic DoubleLinkedList ( TODO, think kernel ctypes + offset)
         """
+        log.debug('heap is %s', self._context.heap)
         # FIXME, we should check any field offset where a,b is a couple of pointer to the same type
         if _record.get_reverse_level() >= self.get_reverse_level():
             # ignore this record. its already reversed.
             self._nb_from_cache += 1
         else:
             for field in _record.get_fields()[:-1]:
+                offset = field.offset
                 ptr_value = field.offset + _record.address
                 if ptr_value in self.members:
                     # already checked as part of a list
                     self._nb_from_cache += 1
-                elif self.is_linked_list_member(ptr_value):
-                    head, _members = self.iterate_list(ptr_value)
+                elif self.is_linked_list_member(ptr_value, offset):
+                    head, _members = self.iterate_list(ptr_value, offset)
                     if _members is not None:
                         self.members.update(_members)
-                        self._nb_reversed += len(_members) - 1
+                        self._nb_reversed += len(_members)
                         self.lists.append((head, _members))  # save list chain
                         # set names
                         # FIXME. change name of fields instead.??
                         self._context.get_record_for_address(head).set_name('list_head')
-                        [self._context.get_record_for_address(m).set_name(
-                            'list_%x_%d' % (head, i)) for i, m in enumerate(_members)]
+                        self._context.get_record_for_address(head).get_field_at_offset(offset).set_name('forward')
+                        # change the name of all list member
+                        for i, m in enumerate(_members[1:]):
+                            ni = self._context.get_record_for_address(m)
+                            ni.set_name('list_%x_item_%d' % (head, i+1))
+                            ni.get_field_at_offset(offset).set_name('Next')
+                            ni.get_field_at_offset(offset+self._word_size).set_name('Back')
+                            # TODO change pointee type name
+
                         self.found += 1
-                        log.debug('0x%x is a linked_list_member in a list of %d members', ptr_value, len(_members))
+                        log.debug('0x%x is a linked_list_member in a list of %d members', head, len(_members))
+                    else:
+                        log.debug('Iterate_list returned no list members')
                 else:
                     log.debug('0x%x is not a linked_list_member', ptr_value)
         self._nb_reversed += 1
         self._callback()
         return
 
-    def is_linked_list_member(self, ptr_value):
+    def is_linked_list_member(self, ptr_value, offset):
         """
         Checks if this address hold a DoubleLinkedPointer record with forward and backward pointers.
         :param ptr_value:
@@ -326,20 +342,31 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         f1, f2 = self.get_two_pointers(ptr_value)
         if (f1 == ptr_value) or (f2 == ptr_value):
             # this are self pointers that could be a list head or end
+            log.debug('Either f1(%s) or f2(%s) points to self', f1 == ptr_value, f2 == ptr_value)
             return False
         # get next and prev in the same HEAP
         if (f1 in self._context.heap) and (f2 in self._context.heap):
             st1_next, st1_prev = self.get_two_pointers(f1)
             st2_next, st2_prev = self.get_two_pointers(f2)
             # check if the three pointer work
+            cpn = (ptr_value == st1_prev == st2_next)
+            cnp = (ptr_value == st2_prev == st1_next)
             if (ptr_value == st1_prev == st2_next) or (ptr_value == st2_prev == st1_next):
                 # log.debug('%x is part of a double linked-list', ptr_value)
                 if self._context.is_known_address(f1) and self._context.is_known_address(f2):
+                    log.debug('f1 and f2 are known structures')
+                    return True
+                elif self._context.get_record_address_at_address(f1) and self._context.get_record_address_at_address(f2):
+                    log.debug('f1 and f2 are covering known structures')
                     return True
                 else:
-                    # log.debug('FP Bad candidate not head of struct: %x ', ptr_value)
+                    log.debug('FP Bad candidate not head of struct: %x ', ptr_value)
                     # FIXME: x2LinkEntry record could be a substructure.
                     return False
+            else:
+                log.debug('ptr->next->previous not met on cpn(%s) or cnp(%s) ', cnp, cnp)
+        else:
+            log.debug('Either f1(%s) or f2(%s) points are not in heap', f1 in self._context.heap, f2 in self._context.heap)
         return False
 
     def get_two_pointers(self, st_addr, offset=0):
@@ -353,31 +380,35 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         _bytes = m.read_bytes(st_addr + offset, 2 * self._target.get_word_size())
         return struct.unpack(fmt, _bytes)
 
-    def iterate_list(self, head_addr):
+    def iterate_list(self, head_addr, offset):
         """
         Iterate the list starting at head_addr.
         :param head_addr:
         :return:
         """
         # FIXME: does not go backwards. Fix with ListModel. algo.
-        members = [head_addr]
+        members = [head_addr-offset]
         f1, f2 = self.get_two_pointers(head_addr)
         if f1 == head_addr:
             log.debug('f1 is head_addr too')
             return None, None
         if f2 == head_addr:
             log.debug('f2 is head_addr too')
-            self._context.get_record_for_address(head_addr).set_name('struct')
-            log.debug('%s', self._context.get_record_for_address(head_addr).to_string())
+            #self._context.get_record_for_address(head_addr-offset).set_name('struct')
+            log.debug('%s', self._context.get_record_for_address(head_addr-offset).to_string())
 
+        stack = set()
+        sentinels = set()
+        stack.add(f1)
+        stack.add(f2)
         current = head_addr
-        while self._context.is_known_address(f1):
-            if f1 in members:
-                log.debug('loop to head - returning %d members from head.addr %x f1:%x', len(members) - 1, head_addr, f1)
+        while self._context.is_known_address(f1-offset):
+            if f1-offset in members:
+                log.debug('loop to head - returning %d members from head.addr %x f1:%x', len(members) - 1, head_addr, f1-offset)
                 return self.find_list_head(members)
             first_f1, first_f2 = self.get_two_pointers(f1)
             if current == first_f2:
-                members.append(f1)
+                members.append(f1-offset)
                 current = f1
                 f1 = first_f1
             else:
@@ -386,7 +417,12 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
 
         # if you leave the while, you are out of the heap address space. That
         # is probably not a linked list...
-        return None, None
+        log.debug('f1(0x%x) is not in heap - last:0x%x members:%d', f1, current, len(members))
+        #for m in members:
+        #    print hex(m), '->',
+        #print
+        return current-offset, members
+        #return None, None
 
     def find_list_head(self, members):
         sizes = sorted([(self._context.get_record_size_for_address(m), m) for m in members])
@@ -513,29 +549,36 @@ class PointerGraphReverser(AbstractReverser):
         super(PointerGraphReverser, self).__init__(_memory_handler)
         import networkx
         self._master_graph = networkx.DiGraph()
+        self._heaps_graph = networkx.DiGraph()
         self._graph = None
 
     def reverse(self):
         super(PointerGraphReverser, self).reverse()
         import networkx
         dumpname = self._memory_handler.get_name()
-        outname = os.path.sep.join([config.get_cache_folder_name(dumpname), config.CACHE_GRAPH])
+        outname1 = os.path.sep.join([config.get_cache_folder_name(dumpname), config.CACHE_GRAPH])
+        outname2 = os.path.sep.join([config.get_cache_folder_name(dumpname), config.CACHE_GRAPH_HEAP])
 
         log.info('[+] Process Graph == %d Nodes', self._master_graph.number_of_nodes())
         log.info('[+] Process Graph == %d Edges', self._master_graph.number_of_edges())
-        networkx.readwrite.gexf.write_gexf(self._graph, outname)
+        networkx.readwrite.gexf.write_gexf(self._master_graph, outname1)
+        log.info('[+] Process Heaps Graph == %d Nodes', self._heaps_graph.number_of_nodes())
+        log.info('[+] Process Heaps Graph == %d Edges', self._heaps_graph.number_of_edges())
+        networkx.readwrite.gexf.write_gexf(self._heaps_graph, outname2)
         return
 
     def reverse_context(self, _context):
         import networkx
         # we only need the addresses...
         self._graph = networkx.DiGraph()
-        self._graph.add_nodes_from(['%x' % k for k in _context.listStructuresAddresses()])
-        self._master_graph.add_nodes_from(['%x' % k for k in _context.listStructuresAddresses()])
         log.info('[+] Heap 0x%x Graph += %d Nodes', _context._heap_start, self._graph.number_of_nodes())
         t0 = time.time()
         tl = t0
         for _record in _context.listStructures():
+            # in all case
+            self._graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
+            self._master_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
+            self._heaps_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
             self.reverse_record(_record)
             # output headers
         #
@@ -549,14 +592,24 @@ class PointerGraphReverser(AbstractReverser):
         # targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr )
         # for child in struct.getPointerFields()) #target_struct_addr
         # target_struct_addr
-        targets = set(('%x' % ptr_value, '%x' % child._child_addr) for child in _record.get_pointer_fields())
-        # DEBUG
-        if len(_record.get_pointer_fields()) > 0:
-            if len(targets) == 0:
-                raise ValueError
-        # DEBUG
-        self._graph.add_edges_from(targets)
-        self._master_graph.add_edges_from(targets)
+        #targets = set(('%x' % ptr_value, '%x' % child._child_addr) for child in _record.get_pointer_fields())
+        for f in _record.get_pointer_fields():
+            pointee_addr = f._child_addr
+            # we always feed these two
+            self._graph.add_edge(hex(_record.address), hex(pointee_addr))
+            self._master_graph.add_edge(hex(_record.address), hex(pointee_addr))
+            # but we only feed the heaps graph if the target is known
+            heap = self._memory_handler.get_mapping_for_address(pointee_addr)
+            _context = self._memory_handler.get_cached_context_for_heap(heap)
+            if _context is None:
+                continue
+            try:
+                pointee = _context.get_record_at_address(pointee_addr)
+            except IndexError as e:
+                continue
+            except ValueError as e:
+                continue
+            self._heaps_graph.add_edge(hex(_record.address), hex(pointee_addr))
         return
 
 
