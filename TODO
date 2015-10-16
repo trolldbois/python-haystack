@@ -45,6 +45,7 @@ a debug help that prints the resolution criterias for a record/field
 
 - keep the original address in the Ouputters, python output.
 
+++ we also need advanced constraints in the search API to be able to check for next_back == current 
 - re-correlate the is_valid methods to the record type, so that advanced code-based
 validation is allowed on a record, on top of constraits
 Will require a registation of specific validation functions, and probable access

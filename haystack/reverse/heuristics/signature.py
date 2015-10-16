@@ -18,6 +18,8 @@ from haystack.reverse import searchers
 from haystack.reverse import utils
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
+from haystack.reverse.heuristics import interfaces
+from haystack.reverse.heuristics import model
 
 """
 Tools around guessing a field' type and
@@ -26,6 +28,79 @@ creating signature for record to compare them.
 
 
 log = logging.getLogger('signature')
+
+
+class TypeReverser(model.AbstractReverser):
+    """
+    """
+
+    def __init__(self, _context):
+        super(TypeReverser, self).__init__(_context)
+        self._signatures = []
+
+    def reverse_context(self, _context):
+        """
+        Go over each record and call the reversing process.
+        Wraps around some time-based function to ease the wait.
+        Saves the context to cache at the end.
+        """
+        import Levenshtein
+        log.debug("Gathering all signatures")
+        for _record in _context.listStructures():
+            self._signatures.append((_record.address, _record.get_signature(True)))
+            self._nb_reversed += 1
+            self._callback()
+        ##
+        self._similarities = []
+        for i, (addr1, el1) in enumerate(self._signatures[:-1]):
+            log.debug("Comparing signatures with %s", el1)
+            for addr2, el2 in self._signatures[i + 1:]:
+                lev = Levenshtein.ratio(el1, el2)  # seqmatcher ?
+                if lev > 0.75:
+                    #self._similarities.append( ((addr1,el1),(addr2,el2)) )
+                    self._similarities.append((addr1, addr2))
+                    # we do not need the signature.
+        # check for chains
+        # TODO we need a group maker with an iterator to push group
+        # proposition to the user
+        log.debug('\t[-] Signatures done.')
+
+        for _record in _context.listStructures():
+            # do the changes.
+            self.reverse_record(_record)
+            self._append_to_write(_record.to_string())
+            self._callback()
+
+        self._context.save()
+        self._write()
+        return
+
+    def persist(self):
+        outdir = self._context.get_folder_cache()
+        if not os.path.isdir(outdir):
+            os.mkdir(outdir)
+        if not os.access(outdir, os.W_OK):
+            raise IOError('cant write to %s' % outdir)
+        #
+        outname = self._context.get_filename_cache_signatures()
+        #outname = os.path.sep.join([outdir, self._name])
+        ar = utils.int_array_save(outname, self._similarities)
+        return
+
+    def load(self):
+        inname = self._context.get_filename_cache_signatures()
+        self._similarities = utils.int_array_cache(inname)
+        return
+
+    def reverse_record(self, _record):
+        # TODO: add minimum reversing level check before running
+        # writing to file
+        # for ptr_value,anon in context.structures.items():
+        #self._pfa.analyze_fields(_record)
+        sig = _record.get_signature()
+        address = _record.address
+        _record.set_reverse_level(self._reverse_level)
+        return
 
 # TODO a Group maker based on field pointer memorymappings and structure
 # instance/sizes...
@@ -46,7 +121,7 @@ class SignatureGroupMaker:
         # get text signature for Counter to parse
         # need to force resolve of structures
         self._signatures = []
-        decoder = dsa.DSASimple(self._context.memory_handler)
+        decoder = dsa.FieldReverser(self._context.memory_handler)
         for addr in map(long, self._structures_addresses):
             # decode the fields
             record = self._context.get_record_for_address(addr)
@@ -384,7 +459,7 @@ def buildStructureGroup(context, sizeCache, optsize=None):
 
 def printStructureGroups(context, chains, originAddr=None):
     chains.sort()
-    decoder = dsa.DSASimple(context.memory_handler)
+    decoder = dsa.FieldReverser(context.memory_handler)
     for chain in chains:
         log.debug('\t[-] chain len:%d' % len(chain))
         if originAddr is not None:
@@ -401,7 +476,7 @@ def printStructureGroups(context, chains, originAddr=None):
 def graphStructureGroups(context, chains, originAddr=None):
     # TODO change generic fn
     chains.sort()
-    decoder = dsa.DSASimple(context.memory_handler)
+    decoder = dsa.FieldReverser(context.memory_handler)
     graph = networkx.DiGraph()
     for chain in chains:
         log.debug('\t[-] chain len:%d' % len(chain))
@@ -441,7 +516,7 @@ def makeReversedTypes(context, sizeCache):
         fixType(context, chains)
 
     log.info('[+] For each instances, fix pointers fields to newly created types.')
-    decoder = dsa.DSASimple(context.memory_handler)
+    decoder = dsa.FieldReverser(context.memory_handler)
     for s in context.listStructures():
         s.reset()
         ## s.decodeFields()

@@ -10,18 +10,15 @@ b6f01000-b6f04000 rw-p 0029d000 08:04 3426931    /usr/lib/i386-linux-gnu/libQtCo
 
 '''
 import struct
-import os
 import sys
 import ctypes
 
+import os
+
 offset = 0xb6b3ef68 - 0xb68b1000
 
-from haystack import utils
 from haystack.mappings.process import readProcessMappings
 from haystack.reverse import context
-from haystack.reverse import reversers
-from haystack.reverse import searchers
-
 
 
 class Dummy():

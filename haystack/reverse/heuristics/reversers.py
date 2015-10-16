@@ -11,8 +11,10 @@ from haystack.reverse import config
 from haystack.reverse import structure
 from haystack.reverse import fieldtypes
 from haystack.reverse import utils
-from haystack.reverse import interfaces
 from haystack.reverse import pattern
+
+from haystack.reverse.heuristics import pointertypes
+from haystack.reverse.heuristics import model
 from haystack.reverse.heuristics import dsa
 
 """
@@ -51,227 +53,61 @@ reverse_instances:
 log = logging.getLogger('reversers')
 
 
-class BasicCachingReverser(interfaces.IContextReverser):
+class BasicCachingReverser(model.AbstractReverser):
     """
     Uses heapwalker to get user allocations into structures in cache.
     This reverser should be use as a first step in the reverse process.
     """
-    def __init__(self, _context):
-        self._reverse_level = 1
-        self._context = _context
 
-    def get_reverse_level(self):
-        return self._reverse_level
+    REVERSE_LEVEL = 1
 
-    def reverse(self):
+    def _iterate_records(self, _context):
+        for x in enumerate(zip(map(long, allocations), map(long, _context.list_allocations_sizes()))):
+            yield x
+
+    def reverse_context(self, _context):
         log.info('[+] Reversing user allocations into cache')
-        t0 = time.time()
-        tl = t0
-        loaded = 0
-        unused = 0
+        self._loaded = 0
+        self._unused = 0
         # FIXME why is that a LIST ?????
-        doneStructs = self._context._structures.keys()
-        allocations = self._context.list_allocations_addresses()
+        self._done_records = _context._structures.keys()
+        self._allocations = _context.list_allocations_addresses()
         #
-        todo = sorted(set(allocations) - set(doneStructs))
-        fromcache = len(allocations) - len(todo)
-        log.info('[+] Adding new raw structures from getUserAllocations cached contents - %d todo', len(todo))
-        for i, (ptr_value, size) in enumerate(
-                zip(map(long, allocations), map(long, self._context.list_allocations_sizes()))):
-            if ptr_value in doneStructs:  # FIXME TODO THAT IS SUCKY SUCKY
-                sys.stdout.write('.')
-                sys.stdout.flush()
-                continue
-            loaded += 1
-            if size < 0:
-                log.error("Negative allocation size")
-            mystruct = structure.AnonymousRecord(self._context.memory_handler, ptr_value, size)
-            self._context._structures[ptr_value] = mystruct
-            # cache to disk
-            mystruct.saveme(self._context)
-            # next
-            if time.time() - tl > 10:  # i>0 and i%10000 == 0:
-                tl = time.time()
-                # DEBUG...
-                rate = ((tl - t0) / (loaded)) if loaded else ((tl - t0) / (loaded + fromcache))
-                log.info('%2.2f secondes to go (b:%d/c:%d)', (len(todo) - i) * rate, loaded, fromcache)
-        # finishing statements
-        total = loaded + fromcache
-        ts = time.time() - t0
-        log.info('[+] Extracted %d structures in %2.0f (b:%d/c:%d/u:%d)', total, ts, loaded, fromcache, unused)
-        return
+        self._todo = sorted(set(self._allocations) - set(self._done_records))
+        self._fromcache = len(self._allocations) - len(self._todo)
+        log.info('[+] Adding new raw structures from getUserAllocations cached contents - %d todo', len(self._todo))
+        super(BasicCachingReverser, self).reverse_context(_context)
 
-
-class AbstractReverser(interfaces.IReverser, interfaces.IContextReverser):
-
-    def __init__(self, _memory_handler):
-        self._memory_handler = _memory_handler
-
-    def reverse(self):
-        """
-        Go over each record and call the reversing process.
-        Wraps around some time-based function to ease the wait.
-        Saves the context to cache at the end.
-        """
-        log.info('[+] %s: START', self)
-        # run the reverser
-        for _context in self._memory_handler.get_cached_context():
-            self._t0 = time.time()
-            self._tl = self._t0
-            self._nb_reversed = 0
-            self._nb_from_cache = 0
-            self.reverse_context(_context)
-            # save the context
-            _context.save()
-        # closing statements
-        return
-
-    def __str__(self):
-        return '<%s>' % self.__class__.__name__
-
-    def reverse_context(self, _context):
-        """
-        Subclass implementation of the reversing process
-
-        Should iterate over records.
-        """
-        raise NotImplementedError
-
-
-class AbstractContextReverser(AbstractReverser, interfaces.IContextReverser):
-    """
-    Implements helper wraps
-    """
-    def __init__(self, _context, _reverse_level):
-        super(AbstractContextReverser, self).__init__(_context.memory_handler)
-        self._context = _context
-        self._reverse_level = _reverse_level
-        # save to file
-        self._fout = file(self._context.get_filename_cache_headers(), 'w')
-        self._towrite = []
-        self._t0 = time.time()
-        self._tl = self._t0
-        self._nb_reversed = 0
-        self._nb_from_cache = 0
-
-    def get_reverse_level(self):
-        return self._reverse_level
-
-    def reverse(self):
-        """
-        Go over each record and call the reversing process.
-        Wraps around some time-based function to ease the wait.
-        Saves the context to cache at the end.
-        """
-        log.info('[+] %s: START', self)
-        self._t0 = time.time()
-        self._tl = self._t0
-        self._nb_reversed = 0
-        self._nb_from_cache = 0
-        # run the reverser
-        self.reverse_context(self._context)
-        # save the context
-        self._context.save()
-        # closing statements
-        total = self._nb_from_cache + self._nb_reversed
-        ts = time.time() - self._t0
-        log.info('[+] %s: END %d records in %2.0fs (new:%d,cache:%d)', self, total, ts, self._nb_reversed, self._nb_from_cache)
-        return
-
-    def _callback(self):
-        # every 30 secs, print a statement, save text repr to file.
-        if time.time() - self._tl > 30:
-            tl = time.time()
-            rate = (tl - self._t0) / (1 + self._nb_reversed + self._nb_from_cache)
-            _ttg = (self._context.get_record_count() - (self._nb_from_cache + self._nb_reversed)) * rate
-            log.info('%2.2f seconds to go (new:%d,cache:%d)', _ttg, self._nb_reversed, self._nb_from_cache)
-            # write to file
-            self._write()
-        return
-
-    def _append_to_write(self, _content):
-        #self._towrite.append(_content)
-        pass
-
-    def _write(self):
-        #self._fout.write('\n'.join(self._towrite))
-        #self._towrite = []
-        pass
-
-    def reverse_context(self, _context):
-        """
-        Subclass implementation of the reversing process
-
-        Should iterate over records.
-        """
-        raise NotImplementedError
-
-
-class AbstractRecordReverser(AbstractContextReverser, interfaces.IRecordReverser):
-    """
-    Inherits this class when you are delivering a controller that target structure-based elements.
-      * Implement reverse_record(self, _record)
-    """
-    def __init__(self, _context, _reverse_level):
-        super(AbstractRecordReverser, self).__init__(_context, _reverse_level)
-
-    def reverse_context(self, _context):
-        """
-        Go over each record and call the reversing process.
-        Wraps around some time-based function to ease the wait.
-        Saves the context to cache at the end.
-        """
-        for _record in _context.listStructures():
-            if _record.get_reverse_level() >= self.get_reverse_level():
-                # ignore this record. its already reversed.
-                self._nb_from_cache += 1
-            else:
-                self._nb_reversed += 1
-                # call the heuristic
-                self.reverse_record(_record)
-            # output headers
-            self._append_to_write(_record.to_string())
-            self._callback()
-        ##
-        self._context.save()
-        return
-
-    def reverse_record(self, _record):
-        """
-        Subclass implementation of the reversing process
-
-        Should set _reverse_level of _record.
-        """
-        raise NotImplementedError
-
-
-class FieldReverser(AbstractRecordReverser):
-    """
-    Decode each structure by asserting simple basic types from the byte content.
-
-    It tries the followings heuristics:
-        ZeroFields
-        PrintableAsciiFields
-        UTF16Fields
-        IntegerFields
-        PointerFields
-
-    """
-    def __init__(self, _context):
-        super(FieldReverser, self).__init__(_context, _reverse_level=10)
-        self._dsa = dsa.DSASimple(self._context.memory_handler)
-
-    def reverse_record(self, _record):
-        # writing to file
-        # for ptr_value,anon in context.structures.items():
-        self._dsa.analyze_fields(_record)
-        _record.set_reverse_level(self._reverse_level)
+    def reverse_record(self, _context, _record):
+        i, (ptr_value, size) = _record
+        if ptr_value in self._done_records:
+            sys.stdout.write('.')
+            sys.stdout.flush()
+            return
+        self._loaded += 1
+        if size < 0:
+            log.error("Negative allocation size")
+        mystruct = structure.AnonymousRecord(_context.memory_handler, ptr_value, size)
+        _context._structures[ptr_value] = mystruct
+        # cache to disk
+        mystruct.saveme(_context)
         return
 
 
 class DoubleLinkedListReverser(AbstractRecordReverser):
     """
       Identify double Linked list. ( list, vector, ... )
+
+      FIXME: make a "KnownRecordTyepReverser"
+      That can apply on the full allocated chunk or a subsets of fields.
+
+        Use a LIST_ENTRY in that reverser to replace this.
+
+            class LIST_ENTRY(ctypes.Structure):
+                _fields_ = [('Next', ctypes.POINTER(LIST_ENTRY)),
+                            ('Back', ctypes.POINTER(LIST_ENTRY))]
+
+        we also need advanced constraints in the search API to be able to check for next_back == current ...
     """
     def __init__(self, _context):
         super(DoubleLinkedListReverser, self).__init__(_context, _reverse_level=30)
@@ -303,6 +139,7 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
                 offset = field.offset
                 ptr_value = field.offset + _record.address
                 if ptr_value in self.members:
+                    # FIXME, check that it is at the same offset
                     # already checked as part of a list
                     self._nb_from_cache += 1
                 elif self.is_linked_list_member(ptr_value, offset):
@@ -322,6 +159,8 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
                             ni.get_field_at_offset(offset).set_name('Next')
                             ni.get_field_at_offset(offset+self._word_size).set_name('Back')
                             # TODO change pointee type name
+                        # TODO agg. Next and Back field into a LIST_ENTRY type.
+                        # push the LIST_ENTRY type into the context/memory_handler
 
                         self.found += 1
                         log.debug('0x%x is a linked_list_member in a list of %d members', head, len(_members))
@@ -336,38 +175,35 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
     def is_linked_list_member(self, ptr_value, offset):
         """
         Checks if this address hold a DoubleLinkedPointer record with forward and backward pointers.
+        with b=ptr_value-offset, pointers arre valid for a->b<-c
+
+        Check that _next and _back are valid record in heap
         :param ptr_value:
         :return:
         """
-        f1, f2 = self.get_two_pointers(ptr_value)
-        if (f1 == ptr_value) or (f2 == ptr_value):
+        _next, _back = self.get_two_pointers(ptr_value)
+        if (_next == ptr_value) or (_back == ptr_value):
             # this are self pointers that could be a list head or end
-            log.debug('Either f1(%s) or f2(%s) points to self', f1 == ptr_value, f2 == ptr_value)
+            log.debug('Either f1(%s) or f2(%s) points to self', _next == ptr_value, _back == ptr_value)
             return False
+        tn = self._context.is_known_address(_next-offset)
+        tb = self._context.is_known_address(_back-offset)
+        if not (tn and tb):
+            # at least one pointer value is dangling.
+            log.debug('Either Next(%s) or Back(%s) ptr are not records in heap', tn, tb)
+            return False
+        # classic LIST_ENTRY
+        log.debug('Next and Back are pointing to known records fields')
         # get next and prev in the same HEAP
-        if (f1 in self._context.heap) and (f2 in self._context.heap):
-            st1_next, st1_prev = self.get_two_pointers(f1)
-            st2_next, st2_prev = self.get_two_pointers(f2)
-            # check if the three pointer work
-            cpn = (ptr_value == st1_prev == st2_next)
-            cnp = (ptr_value == st2_prev == st1_next)
-            if (ptr_value == st1_prev == st2_next) or (ptr_value == st2_prev == st1_next):
-                # log.debug('%x is part of a double linked-list', ptr_value)
-                if self._context.is_known_address(f1) and self._context.is_known_address(f2):
-                    log.debug('f1 and f2 are known structures')
-                    return True
-                elif self._context.get_record_address_at_address(f1) and self._context.get_record_address_at_address(f2):
-                    log.debug('f1 and f2 are covering known structures')
-                    return True
-                else:
-                    log.debug('FP Bad candidate not head of struct: %x ', ptr_value)
-                    # FIXME: x2LinkEntry record could be a substructure.
-                    return False
-            else:
-                log.debug('ptr->next->previous not met on cpn(%s) or cnp(%s) ', cnp, cnp)
-        else:
-            log.debug('Either f1(%s) or f2(%s) points are not in heap', f1 in self._context.heap, f2 in self._context.heap)
-        return False
+        _next_next, _next_back = self.get_two_pointers(_next)
+        _back_next, _back_back = self.get_two_pointers(_back)
+        # check if the three pointer work
+        cbn = (ptr_value == _next_back)
+        cnb = (ptr_value == _back_next)
+        if not (cbn and cnb):
+            log.debug('ptr->next->previous not met on cbn(%s) or cnb(%s)', cbn, cnb)
+            return False
+        return True
 
     def get_two_pointers(self, st_addr, offset=0):
         """
@@ -380,75 +216,56 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         _bytes = m.read_bytes(st_addr + offset, 2 * self._target.get_word_size())
         return struct.unpack(fmt, _bytes)
 
-    def iterate_list(self, head_addr, offset):
+    def iterate_list(self, _address, offset):
         """
-        Iterate the list starting at head_addr.
-        :param head_addr:
+        Iterate the list starting at _address.
+
+        Given list: a <-> b <-> c <-> d
+        _address is either b or c
+        We will return a,b,c,d
+
+        :param _address:
         :return:
         """
-        # FIXME: does not go backwards. Fix with ListModel. algo.
-        members = [head_addr-offset]
-        f1, f2 = self.get_two_pointers(head_addr)
-        if f1 == head_addr:
-            log.debug('f1 is head_addr too')
+        # FIXME, we are missing a and d
+        if not self.is_linked_list_member(_address, offset):
             return None, None
-        if f2 == head_addr:
-            log.debug('f2 is head_addr too')
-            #self._context.get_record_for_address(head_addr-offset).set_name('struct')
-            log.debug('%s', self._context.get_record_for_address(head_addr-offset).to_string())
+        ends = []
+        members = [_address-offset]
+        _next, _back = self.get_two_pointers(_address)
+        current = _address
+        # check that  a->_address<->_next<-c are part of the list
+        while self.is_linked_list_member(_next, offset):
+            if _next-offset in members:
+                log.debug('loop from 0x%x to member 0x%x', current-offset, _next-offset)
+                break
+            members.append(_next-offset)
+            _next, _ = self.get_two_pointers(_next)
+            current = _next
+        # we found an end
+        ends.append((current, 'Next', _next))
+        if _next-offset not in members:
+            members.append(_next-offset)
 
-        stack = set()
-        sentinels = set()
-        stack.add(f1)
-        stack.add(f2)
-        current = head_addr
-        while self._context.is_known_address(f1-offset):
-            if f1-offset in members:
-                log.debug('loop to head - returning %d members from head.addr %x f1:%x', len(members) - 1, head_addr, f1-offset)
-                return self.find_list_head(members)
-            first_f1, first_f2 = self.get_two_pointers(f1)
-            if current == first_f2:
-                members.append(f1-offset)
-                current = f1
-                f1 = first_f1
-            else:
-                log.warning('(st:%x f1:%x) f2:%x is not current.addr:%x', current, first_f1, first_f2, current)
-                return None, None
+        # now the other side
+        current = _address
+        while self.is_linked_list_member(_back, offset):
+            if _back-offset in members:
+                log.debug('loop from 0x%x to member 0x%x', current-offset, _back-offset)
+                break
+            members.insert(0, _back-offset)
+            _, _back = self.get_two_pointers(_back)
+            current = _back
+        # we found an end
+        ends.append((current, 'Back', _back))
+        if _back-offset not in members:
+            members.insert(0, _back-offset)
 
-        # if you leave the while, you are out of the heap address space. That
-        # is probably not a linked list...
-        log.debug('f1(0x%x) is not in heap - last:0x%x members:%d', f1, current, len(members))
-        #for m in members:
-        #    print hex(m), '->',
-        #print
+        log.debug('head:0x%x members:%d tail:0x%x', current, len(members), ends[0][0])
+        for m in members:
+            print hex(m), '->',
+        print
         return current-offset, members
-        #return None, None
-
-    def find_list_head(self, members):
-        sizes = sorted([(self._context.get_record_size_for_address(m), m) for m in members])
-        if sizes[0] < 3 * self._target.get_word_size():
-            log.error('a double linked list element must be 3 WORD at least')
-            raise ValueError('a double linked list element must be 3 WORD at least')
-        numWordSized = [s for s, addr in sizes].count(3 * self._target.get_word_size())
-        if numWordSized == 1:
-            head = sizes.pop(0)[1]
-        else:  # if numWordSized > 1:
-            # find one element with 0, and take that for granted...
-            head = None
-            for s, addr in sizes:
-                if s == 3 * self._target.get_word_size():
-                    # read ->next ptr and first field of struct || null
-                    f2, field0 = self.get_two_pointers(addr + self._target.get_word_size())
-                    if field0 == 0:  # this could be HEAD. or a 0 value.
-                        head = addr
-                        log.debug('We had to guess the HEAD for this linked list %x', addr)
-                        break
-            if head is None:
-                head = sizes[0][1]
-                #raise TypeError('No NULL pointer/HEAD in the double linked list')
-                log.warning('No NULL pointer/HEAD in the double linked list - head is now %x', head)
-        return (head, [m for (s, m) in sizes])
-
 
 
 class PointerFieldReverser(AbstractRecordReverser):
@@ -461,7 +278,7 @@ class PointerFieldReverser(AbstractRecordReverser):
 
     def __init__(self, _context):
         super(PointerFieldReverser, self).__init__(_context, _reverse_level=50)
-        self._pfa = dsa.EnrichedPointerFields(self._context.memory_handler)
+        self._pfa = pointertypes.EnrichedPointerFields(self._context.memory_handler)
 
     def reverse_record(self, _record):
         # TODO: add minimum reversing level check before running
@@ -472,73 +289,6 @@ class PointerFieldReverser(AbstractRecordReverser):
         return
 
 
-class TypeReverser(AbstractContextReverser):
-    """
-    """
-
-    def __init__(self, _context):
-        super(TypeReverser, self).__init__(_context, _reverse_level=80)
-        self._signatures = []
-
-    def reverse_context(self, _context):
-        """
-        Go over each record and call the reversing process.
-        Wraps around some time-based function to ease the wait.
-        Saves the context to cache at the end.
-        """
-        import Levenshtein
-        for _record in _context.listStructures():
-            self._signatures.append((_record.address, _record.get_signature(True)))
-            self._nb_reversed += 1
-            self._callback()
-        ##
-        self._similarities = []
-        for i, (addr1, el1) in enumerate(self._signatures[:-1]):
-            for addr2, el2 in self._signatures[i + 1:]:
-                lev = Levenshtein.ratio(el1, el2)  # seqmatcher ?
-                if lev > 0.75:
-                    #self._similarities.append( ((addr1,el1),(addr2,el2)) )
-                    self._similarities.append((addr1, addr2))
-                    # we do not need the signature.
-        # check for chains
-        # TODO we need a group maker with an iterator to push group
-        # proposition to the user
-        log.debug('\t[-] Signatures done.')
-
-        for _record in _context.listStructures():
-            # do the changes.
-            self.reverse_record(_record)
-            self._append_to_write(_record.to_string())
-            self._callback()
-
-        self._context.save()
-        self._write()
-        return
-
-    def persist(self):
-        outdir = self._context.get_folder_cache()
-        if not os.path.isdir(outdir):
-            os.mkdir(outdir)
-        if not os.access(outdir, os.W_OK):
-            raise IOError('cant write to %s' % outdir)
-        #
-        outname = self._context.get_filename_cache_signatures()
-        #outname = os.path.sep.join([outdir, self._name])
-        ar = utils.int_array_save(outname, self._similarities)
-        return
-
-    def load(self):
-        inname = self._context.get_filename_cache_signatures()
-        self._similarities = utils.int_array_cache(inname)
-        return
-
-    def reverse_record(self, _record):
-        # TODO: add minimum reversing level check before running
-        # writing to file
-        # for ptr_value,anon in context.structures.items():
-        #self._pfa.analyze_fields(_record)
-        _record.set_reverse_level(self._reverse_level)
-        return
 
 
 class PointerGraphReverser(AbstractReverser):

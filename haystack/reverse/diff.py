@@ -10,12 +10,13 @@ Utils to diff two heap memory record allocations
 
 import argparse
 import logging
-import os
 import sys
+
+import os
 
 from haystack import argparse_utils
 from haystack import dump_loader
-from haystack.reverse import reversers
+import reversers
 from haystack.reverse import context
 from haystack.reverse import config
 from haystack.reverse import structure

@@ -208,7 +208,7 @@ class TestDSA(unittest.TestCase):
         # context.get_context('test/src/test-ctypes3.dump')
         cls.context = None
         cls.putty7124 = context.get_context(putty_7124_win7.dumpname, putty_7124_win7.known_heaps[0][0])
-        cls.dsa = dsa.DSASimple(cls.putty7124.memory_handler)
+        cls.dsa = dsa.FieldReverser(cls.putty7124.memory_handler)
         cls.memory_handler = cls.putty7124.memory_handler
 
     def setUp(self):
@@ -355,7 +355,7 @@ class TestFieldAnalyserReal(unittest.TestCase):
         # and that the gap before is not separated in a gap field
         self.assertEqual(self.real, self.test1.bytes)
 
-        _dsa = dsa.DSASimple(self.memory_handler)
+        _dsa = dsa.FieldReverser(self.memory_handler)
         _dsa.analyze_fields(self.test1)
         fields = self.test1._fields
         fields.sort()

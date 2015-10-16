@@ -7,16 +7,16 @@
 import logging
 import unittest
 import sys
+
 import os
 
 from haystack.reverse import config
 from haystack.reverse import context
-from haystack.reverse import reversers
+import reversers
 from haystack.reverse.heuristics import dsa
 from test.testfiles import ssh_1_i386_linux
 from test.testfiles import zeus_856_svchost_exe
 from haystack import dump_loader
-
 from test.haystack import SrcTests
 
 log = logging.getLogger("test_reversers")
@@ -49,7 +49,7 @@ class TestStructureSizes(SrcTests):
         heaps = finder.get_heap_mappings()
         self.context = context.get_context_for_address(self.memory_handler, heaps[0])
         ##
-        self.dsa = dsa.DSASimple(self.context.memory_handler.get_target_platform())
+        self.dsa = dsa.FieldReverser(self.context.memory_handler.get_target_platform())
 
     def tearDown(self):
         self.memory_handler.reset_mappings()
@@ -408,9 +408,36 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         print n1.to_string()
         tail = self._context.get_record_for_address(0x98268)
         print tail.to_string()
+        expected = [0xccd28,0xccd00L,0xccae8,0xcca50,0xcca28,0xcc428,0xc6878,0xdcbc8,0xdcb40,0xcd300,0xbbf78,0xbefd8,0xbecd8,0xbc560,0xbbee0,0xbbda8,0xbbb38,0xbbae0,0xa6518,0xb5d00,0xb5cd8,0xb5cb0,0xb5b70,0xb1aa8,0xa20b8,0x9e2f8,0xa1920,0xa1838,0x98268]
+        # FIXME should be more complicated that that
+        self.assertEqual(rev.lists[0][1], expected)
 
         pass
 
+class TestTypeReverser(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
+        cls._context = context.get_context_for_address(cls.memory_handler, 0x90000)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.memory_handler = None
+        cls._context = None
+
+    def test_doublelink(self):
+        rev = reversers.TypeReverser(self._context)
+        # interesting records
+        # SIG:T4i4P4P4i4z12
+        # struct_bbf78 struct_a6518 struct_cca28
+        # list goes from 0xccd28, 0xccd00 to 0x98268
+        #_record = self._context.get_record_for_address(0xccd28)
+        _record = self._context.get_record_for_address(0xccd00)
+        print _record.to_string()
+        _record.set_reverse_level(10)
+        rev.reverse_context(self._context)
+        print _record.to_string()
+        pass
 
 
 

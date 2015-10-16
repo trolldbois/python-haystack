@@ -8,15 +8,14 @@ import logging
 
 log = logging.getLogger('searchview')
 
-from PyQt4 import QtGui, QtCore, QtOpenGL
+from PyQt4 import QtGui, QtCore
 from PyQt4.Qt import Qt
 import inspect
 
 from searchStruct import Ui_Search_Structure
 
 from haystack import model
-from haystack.reverse import signature
-from haystack import utils
+import signature
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -158,7 +157,6 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
 
     def fillTree(self):
         # DEBUG
-        import sslsnoop.ctypes_openssh
         import ctypes
         # we have to use haystack.model (.. .model) and not only model
         mods = model.registeredModules()

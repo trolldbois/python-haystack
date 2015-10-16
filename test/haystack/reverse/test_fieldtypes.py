@@ -27,7 +27,7 @@ class TestField(unittest.TestCase):
         heap = finder.get_heap_mappings()[0]
         heap_addr = heap.get_marked_heap_address()
         cls.context6 = context.get_context_for_address(cls.memory_handler, heap_addr)
-        cls.dsa = dsa.DSASimple(cls.context6.memory_handler)
+        cls.dsa = dsa.FieldReverser(cls.context6.memory_handler)
         cls.st = cls.context6.listStructures()[0]
 
     @classmethod

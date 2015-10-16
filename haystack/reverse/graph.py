@@ -11,9 +11,8 @@ from collections import defaultdict
 import networkx
 
 import matplotlib.pyplot as plt
-from haystack.reverse import config
 from haystack.reverse import context
-from haystack.reverse.reversers import *  # by the pickle of my thumb
+from reversers import *  # by the pickle of my thumb
 
 """
 Graph tools to represent allocations in a graph.

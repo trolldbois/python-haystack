@@ -13,6 +13,7 @@ from haystack.reverse import config
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
 from haystack import dump_loader
+import pointertypes
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -36,8 +37,8 @@ class TestStructure(unittest.TestCase):
         heap_addr = heap.get_marked_heap_address()
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
-        cls.dsa = dsa.DSASimple(cls.context.memory_handler)
-        cls.pta = dsa.EnrichedPointerFields(cls.context.memory_handler)
+        cls.dsa = dsa.FieldReverser(cls.context.memory_handler)
+        cls.pta = pointertypes.EnrichedPointerFields(cls.context.memory_handler)
         return
 
     @classmethod
@@ -120,8 +121,8 @@ class TestStructure2(unittest.TestCase):
         heap_addr = heap.get_marked_heap_address()
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
-        cls.dsa = dsa.DSASimple(cls.context.memory_handler)
-        cls.pta = dsa.EnrichedPointerFields(cls.context.memory_handler)
+        cls.dsa = dsa.FieldReverser(cls.context.memory_handler)
+        cls.pta = pointertypes.EnrichedPointerFields(cls.context.memory_handler)
         return
 
     @classmethod
