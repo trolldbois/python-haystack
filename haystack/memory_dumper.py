@@ -146,7 +146,7 @@ class MemoryDumper:
         if m.permissions[0] != 'r':
             log.debug('Ignore read protected mapping %s', m)
             return
-        elif m.pathname in ['[vdso]', '[vsyscall]']:
+        elif m.pathname in ['[vdso]', '[vsyscall]', '[vvar]']:
             log.debug('Ignore system mapping %s', m)
             return
         # make filename
