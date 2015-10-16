@@ -1,20 +1,26 @@
-import context
-from dsa import log
-from model import StructureAnalyser
+# -*- coding: utf-8 -*-
 
-__author__ = 'jal'
+import logging
+
+from haystack.reverse import context
+from haystack.reverse.heuristics import model
+
+log = logging.getLogger("pointertypes")
 
 
-class EnrichedPointerFields(StructureAnalyser):
+class PointerFieldReverser(model.AbstractReverser):
     """
+    Identify pointer fields and their target structure.
+
     For all pointer fields in a structure,
     try to enrich the field name with information about the child structure.
 
     All structure should have been Analysed, otherwise,
     results are not going to be untertaining.
     """
+    REVERSE_LEVEL = 50
 
-    def analyze_fields(self, structure):
+    def reverse_record(self, _context, _record):
         """
         @returns structure, with enriched info on pointer fields.
         For pointer fields value:
@@ -28,7 +34,7 @@ class EnrichedPointerFields(StructureAnalyser):
         """
         # If you want to cache resolved infos, it still should be decided by
         # the caller
-        pointerFields = structure.get_pointer_fields()
+        pointerFields = _record.get_pointer_fields()
         log.debug('got %d pointerfields' % (len(pointerFields)))
         for field in pointerFields:
             value = field.value
@@ -86,4 +92,6 @@ class EnrichedPointerFields(StructureAnalyser):
             field.set_child_ctype(tgt.get_name())
             field.set_name('%s_%s' % (tgt.get_name(), tgt_field.get_name()))
             # all
+
+        _record.set_reverse_level(self._reverse_level)
         return

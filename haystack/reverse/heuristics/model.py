@@ -80,18 +80,17 @@ class AbstractReverser(hri.IReverser):
         Wraps around some time-based function to ease the wait.
         Saves the context to cache at the end.
         """
-        log.info('[+] %s: START on heap 0x%x', self, _context._heap_addr)
+        log.info('[+] %s: START on heap 0x%x', self, _context._heap_start)
         t0 = time.time()
         for _record in self._iterate_records(_context):
             # call the heuristic
             self.reverse_record(_context, _record)
-            # sate the _record
-            _record.saveme(_context)
-            self._callback(total=_context.get_record_count())
+            # can call get_record_count because of loop
+            # #self._callback(total=_context.get_record_count())
         # closing statements
         total = self._nb_from_cache + self._nb_reversed
         ts = time.time() - t0
-        log.info('[+] %s: END time:%2.0fs Heap:0x%x records:%d (new:%d,cache:%d)', self, ts, _context._heap_addr, ts, self._nb_reversed, self._nb_from_cache)
+        log.info('[+] %s: END time:%2.0fs Heap:0x%x records:%d (new:%d,cache:%d)', self, ts, _context._heap_start, ts, self._nb_reversed, self._nb_from_cache)
         return
 
     def reverse_record(self, _context, _record):
@@ -109,6 +108,8 @@ class AbstractReverser(hri.IReverser):
                 self.reverse_field(_context, _record, _field)
             # set our new reserve level
             _record.set_reverse_level(self.get_reverse_level())
+            # sate the _record
+            _record.saveme(_context)
         return
 
     def reverse_field(self, _context, _record, _field):
@@ -171,27 +172,4 @@ class FieldAnalyser(object):
         """
         raise NotImplementedError('This should be implemented.')
 
-
-class StructureAnalyser(object):
-    """
-    StructureAnalyzer should apply heuristics on the structure, all fields included,
-    and try to determine specific field types that are identifiable with a
-    full structure-view.
-
-    # FIXME this is a RecordReverser...
-    """
-
-    def __init__(self, memory_handler):
-        if not isinstance(memory_handler, hi.IMemoryHandler):
-            raise TypeError('memory_handler should be an IMemoryHandler')
-        self._memory_handler = memory_handler
-        self._target = self._memory_handler.get_target_platform()
-
-    def analyze_fields(self, structure):
-        """
-        @param structure: the AnonymousStructure to analyze and modify
-
-        @returns
-        """
-        raise NotImplementedError('This should be implemented.')
 

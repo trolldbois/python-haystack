@@ -4,19 +4,21 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import os
 import logging
 import unittest
 import sys
 
-import os
-
+from haystack import dump_loader
 from haystack.reverse import config
 from haystack.reverse import context
-import reversers
 from haystack.reverse.heuristics import dsa
+from haystack.reverse.heuristics import reversers
+from haystack.reverse.heuristics import signature
+from haystack.reverse.heuristics import pointertypes
+
 from test.testfiles import ssh_1_i386_linux
 from test.testfiles import zeus_856_svchost_exe
-from haystack import dump_loader
 from test.haystack import SrcTests
 
 log = logging.getLogger("test_reversers")
@@ -62,7 +64,7 @@ class TestStructureSizes(SrcTests):
         sizes = sorted(set([len(s) for s in structs]))
         ctypes3 = self.context.memory_handler.get_model().import_module('test.src.ctypes3_32')
         for st in structs:  # [1:2]:
-            self.dsa.analyze_fields(st)
+            self.dsa.reverse_record(self.context, st)
             #print st.toString()
             # print repr(self.context.heap.readBytes(st._vaddr, len(st)))
 
@@ -200,7 +202,7 @@ class TestReverseZeus(unittest.TestCase):
         #self.assertEqual(sig_1, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
 
         # decode bytes contents to find basic types.
-        fr = reversers.FieldReverser(self._context)
+        fr = dsa.FieldReverser(self._context)
         fr.reverse()
         sig_2 = struct_d.get_signature(text=True)
         # print '2.', self._v(struct_d)
@@ -211,7 +213,7 @@ class TestReverseZeus(unittest.TestCase):
         #code.interact(local=locals())
 
         # try to find some logical constructs.
-        doublelink = reversers.DoubleLinkedListReverser(self._context)
+        doublelink = reversers.DoubleLinkedListReverser(self.memory_handler)
         doublelink.reverse()
         #self.assertEqual(doublelink.found, 12)
         sig_3 = struct_d.get_signature(text=True)
@@ -222,7 +224,7 @@ class TestReverseZeus(unittest.TestCase):
         #code.interact(local=locals())
 
         # identify pointer relation between structures
-        pfr = reversers.PointerFieldReverser(self._context)
+        pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
         sig_4 = struct_d.get_signature(text=True)
         # print '4.', self._v(struct_d)
@@ -239,7 +241,7 @@ class TestReverseZeus(unittest.TestCase):
         #import code
         #code.interact(local=locals())
 
-        tr = reversers.TypeReverser(self._context)
+        tr = signature.TypeReverser(self.memory_handler)
         tr.reverse()
         sig_6 = struct_d.get_signature(text=True)
         # print '6.', self._v(struct_d)
@@ -297,7 +299,7 @@ class TestReversers(SrcTests):
         # print '1.', self._v(struct_d)
 
         # try to find some logical constructs.
-        doublelink = reversers.DoubleLinkedListReverser(self._context)
+        doublelink = reversers.DoubleLinkedListReverser(self.memory_handler)
         doublelink.reverse()
         sig_2 = struct_d.get_signature(text=True)
         # print '2.', self._v(struct_d)
@@ -305,14 +307,14 @@ class TestReversers(SrcTests):
         self.assertEqual('', sig_2)
 
         # decode bytes contents to find basic types.
-        fr = reversers.FieldReverser(self._context)
+        fr = dsa.FieldReverser(self.memory_handler)
         fr.reverse()
         sig_3 = struct_d.get_signature(text=True)
         # print '3.', self._v(struct_d)
         self.assertEqual(sig_3, 'P8P8P8z24i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8P8P8P8P8P8P8P8P8P8P8P8P8u40P8P8P8P8P8P8P8P8P8P8i8P8T14u2z16P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z16P8')
 
         # identify pointer relation between structures
-        pfr = reversers.PointerFieldReverser(self._context)
+        pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
         sig_4 = struct_d.get_signature(text=True)
         # print '4.', self._v(struct_d)
@@ -328,7 +330,7 @@ class TestReversers(SrcTests):
         # print '5.', self._v(struct_d)
 
 
-        tr = reversers.TypeReverser(self._context)
+        tr = signature.TypeReverser(self.memory_handler)
         tr.reverse()
         sig_6 = struct_d.get_signature(text=True)
         # print '6.', self._v(struct_d)
@@ -393,7 +395,7 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         cls._context = None
 
     def test_doublelink(self):
-        rev = reversers.DoubleLinkedListReverser(self._context)
+        rev = reversers.DoubleLinkedListReverser(self.memory_handler)
         # interesting records
         # SIG:T4i4P4P4i4z12
         # struct_bbf78 struct_a6518 struct_cca28
@@ -426,7 +428,7 @@ class TestTypeReverser(unittest.TestCase):
         cls._context = None
 
     def test_doublelink(self):
-        rev = reversers.TypeReverser(self._context)
+        rev = signature.TypeReverser(self.memory_handler)
         # interesting records
         # SIG:T4i4P4P4i4z12
         # struct_bbf78 struct_a6518 struct_cca28

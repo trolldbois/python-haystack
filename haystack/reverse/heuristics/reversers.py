@@ -12,10 +12,9 @@ from haystack.reverse import structure
 from haystack.reverse import fieldtypes
 from haystack.reverse import utils
 from haystack.reverse import pattern
-
-from haystack.reverse.heuristics import pointertypes
 from haystack.reverse.heuristics import model
 from haystack.reverse.heuristics import dsa
+from haystack.reverse.heuristics import pointertypes
 
 """
 BasicCachingReverser:
@@ -62,7 +61,7 @@ class BasicCachingReverser(model.AbstractReverser):
     REVERSE_LEVEL = 1
 
     def _iterate_records(self, _context):
-        for x in enumerate(zip(map(long, allocations), map(long, _context.list_allocations_sizes()))):
+        for x in enumerate(zip(map(long, self._allocations), map(long, _context.list_allocations_sizes()))):
             yield x
 
     def reverse_context(self, _context):
@@ -94,7 +93,7 @@ class BasicCachingReverser(model.AbstractReverser):
         return
 
 
-class DoubleLinkedListReverser(AbstractRecordReverser):
+class DoubleLinkedListReverser(model.AbstractReverser):
     """
       Identify double Linked list. ( list, vector, ... )
 
@@ -109,15 +108,16 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
 
         we also need advanced constraints in the search API to be able to check for next_back == current ...
     """
-    def __init__(self, _context):
-        super(DoubleLinkedListReverser, self).__init__(_context, _reverse_level=30)
-        self._target = _context.memory_handler.get_target_platform()
-        self._word_size = self._target.get_word_size()
+
+    REVERSE_LEVEL = 30
+
+    def __init__(self, _memory_handler):
+        super(DoubleLinkedListReverser, self).__init__(_memory_handler)
         self.found = 0
         self.members = set()
         self.lists = []
 
-    def reverse_record(self, _record):
+    def reverse_record(self, _context, _record):
         """
         for i in range(1, len(context.pointers_offsets)): # find two consecutive ptr
             if context.pointers_offsets[i-1]+context._target_platform.get_word_size() != context.pointers_offsets[i]:
@@ -129,7 +129,7 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
               continue
               # if not head of structure, not a classic DoubleLinkedList ( TODO, think kernel ctypes + offset)
         """
-        log.debug('heap is %s', self._context.heap)
+        log.debug('heap is %s', _context.heap)
         # FIXME, we should check any field offset where a,b is a couple of pointer to the same type
         if _record.get_reverse_level() >= self.get_reverse_level():
             # ignore this record. its already reversed.
@@ -142,19 +142,19 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
                     # FIXME, check that it is at the same offset
                     # already checked as part of a list
                     self._nb_from_cache += 1
-                elif self.is_linked_list_member(ptr_value, offset):
-                    head, _members = self.iterate_list(ptr_value, offset)
+                elif self.is_linked_list_member(_context, ptr_value, offset):
+                    head, _members = self.iterate_list(_context, ptr_value, offset)
                     if _members is not None:
                         self.members.update(_members)
                         self._nb_reversed += len(_members)
                         self.lists.append((head, _members))  # save list chain
                         # set names
                         # FIXME. change name of fields instead.??
-                        self._context.get_record_for_address(head).set_name('list_head')
-                        self._context.get_record_for_address(head).get_field_at_offset(offset).set_name('forward')
+                        _context.get_record_for_address(head).set_name('list_head')
+                        _context.get_record_for_address(head).get_field_at_offset(offset).set_name('forward')
                         # change the name of all list member
                         for i, m in enumerate(_members[1:]):
-                            ni = self._context.get_record_for_address(m)
+                            ni = _context.get_record_for_address(m)
                             ni.set_name('list_%x_item_%d' % (head, i+1))
                             ni.get_field_at_offset(offset).set_name('Next')
                             ni.get_field_at_offset(offset+self._word_size).set_name('Back')
@@ -169,10 +169,9 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
                 else:
                     log.debug('0x%x is not a linked_list_member', ptr_value)
         self._nb_reversed += 1
-        self._callback()
         return
 
-    def is_linked_list_member(self, ptr_value, offset):
+    def is_linked_list_member(self, _context, ptr_value, offset):
         """
         Checks if this address hold a DoubleLinkedPointer record with forward and backward pointers.
         with b=ptr_value-offset, pointers arre valid for a->b<-c
@@ -181,13 +180,13 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         :param ptr_value:
         :return:
         """
-        _next, _back = self.get_two_pointers(ptr_value)
+        _next, _back = self.get_two_pointers(_context, ptr_value)
         if (_next == ptr_value) or (_back == ptr_value):
             # this are self pointers that could be a list head or end
             log.debug('Either f1(%s) or f2(%s) points to self', _next == ptr_value, _back == ptr_value)
             return False
-        tn = self._context.is_known_address(_next-offset)
-        tb = self._context.is_known_address(_back-offset)
+        tn = _context.is_known_address(_next-offset)
+        tb = _context.is_known_address(_back-offset)
         if not (tn and tb):
             # at least one pointer value is dangling.
             log.debug('Either Next(%s) or Back(%s) ptr are not records in heap', tn, tb)
@@ -195,8 +194,8 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         # classic LIST_ENTRY
         log.debug('Next and Back are pointing to known records fields')
         # get next and prev in the same HEAP
-        _next_next, _next_back = self.get_two_pointers(_next)
-        _back_next, _back_back = self.get_two_pointers(_back)
+        _next_next, _next_back = self.get_two_pointers(_context, _next)
+        _back_next, _back_back = self.get_two_pointers(_context, _back)
         # check if the three pointer work
         cbn = (ptr_value == _next_back)
         cnb = (ptr_value == _back_next)
@@ -205,18 +204,18 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
             return False
         return True
 
-    def get_two_pointers(self, st_addr, offset=0):
+    def get_two_pointers(self, _context, st_addr, offset=0):
         """
         Read two words from an address as to get 2 pointers out.
         usually that is what a double linked list structure is.
         """
         # TODO add PEP violation fmt ignore. get_word_type_char returns a str()
         fmt = str(self._target.get_word_type_char()*2)
-        m = self._context.memory_handler.get_mapping_for_address(st_addr + offset)
+        m = _context.memory_handler.get_mapping_for_address(st_addr + offset)
         _bytes = m.read_bytes(st_addr + offset, 2 * self._target.get_word_size())
         return struct.unpack(fmt, _bytes)
 
-    def iterate_list(self, _address, offset):
+    def iterate_list(self, _context, _address, offset):
         """
         Iterate the list starting at _address.
 
@@ -228,19 +227,19 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         :return:
         """
         # FIXME, we are missing a and d
-        if not self.is_linked_list_member(_address, offset):
+        if not self.is_linked_list_member(_context, _address, offset):
             return None, None
         ends = []
         members = [_address-offset]
-        _next, _back = self.get_two_pointers(_address)
+        _next, _back = self.get_two_pointers(_context, _address)
         current = _address
         # check that  a->_address<->_next<-c are part of the list
-        while self.is_linked_list_member(_next, offset):
+        while self.is_linked_list_member(_context, _next, offset):
             if _next-offset in members:
                 log.debug('loop from 0x%x to member 0x%x', current-offset, _next-offset)
                 break
             members.append(_next-offset)
-            _next, _ = self.get_two_pointers(_next)
+            _next, _ = self.get_two_pointers(_context, _next)
             current = _next
         # we found an end
         ends.append((current, 'Next', _next))
@@ -249,12 +248,12 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
 
         # now the other side
         current = _address
-        while self.is_linked_list_member(_back, offset):
+        while self.is_linked_list_member(_context, _back, offset):
             if _back-offset in members:
                 log.debug('loop from 0x%x to member 0x%x', current-offset, _back-offset)
                 break
             members.insert(0, _back-offset)
-            _, _back = self.get_two_pointers(_back)
+            _, _back = self.get_two_pointers(_context, _back)
             current = _back
         # we found an end
         ends.append((current, 'Back', _back))
@@ -268,33 +267,12 @@ class DoubleLinkedListReverser(AbstractRecordReverser):
         return current-offset, members
 
 
-class PointerFieldReverser(AbstractRecordReverser):
-    """
-      Identify pointer fields and their target structure.
-
-      You should call this Reverser only when all heaps have been reversed.
-
-    """
-
-    def __init__(self, _context):
-        super(PointerFieldReverser, self).__init__(_context, _reverse_level=50)
-        self._pfa = pointertypes.EnrichedPointerFields(self._context.memory_handler)
-
-    def reverse_record(self, _record):
-        # TODO: add minimum reversing level check before running
-        # writing to file
-        # for ptr_value,anon in context.structures.items():
-        self._pfa.analyze_fields(_record)
-        _record.set_reverse_level(self._reverse_level)
-        return
-
-
-
-
-class PointerGraphReverser(AbstractReverser):
+class PointerGraphReverser(model.AbstractReverser):
     """
       use the pointer relation between structure to map a graph.
     """
+    REVERSE_LEVEL = 150
+
     def __init__(self, _memory_handler):
         super(PointerGraphReverser, self).__init__(_memory_handler)
         import networkx
@@ -329,7 +307,7 @@ class PointerGraphReverser(AbstractReverser):
             self._graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
             self._master_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
             self._heaps_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
-            self.reverse_record(_record)
+            self.reverse_record(_context, _record)
             # output headers
         #
         log.info('[+] Heap 0x%x Graph += %d Edges', _context._heap_start, self._graph.number_of_edges())
@@ -337,7 +315,7 @@ class PointerGraphReverser(AbstractReverser):
         ##
         return
 
-    def reverse_record(self, _record):
+    def reverse_record(self, _context, _record):
         ptr_value = _record.address
         # targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr )
         # for child in struct.getPointerFields()) #target_struct_addr
@@ -363,14 +341,13 @@ class PointerGraphReverser(AbstractReverser):
         return
 
 
-class ArrayFieldsReverser(AbstractRecordReverser):
+class ArrayFieldsReverser(model.AbstractReverser):
     """
     Aggregate fields of similar type into arrays in the record.
     """
-    def __init__(self, _context):
-        super(ArrayFieldsReverser, self).__init__(_context, _reverse_level=100)
+    REVERSE_LEVEL = 200
 
-    def reverse_record(self, _record):
+    def reverse_record(self, _context, _record):
         """
             Aggregate fields of similar type into arrays in the record.
         """
@@ -440,14 +417,13 @@ class ArrayFieldsReverser(AbstractRecordReverser):
         return
 
 
-class InlineRecordReverser(AbstractRecordReverser):
+class InlineRecordReverser(model.AbstractReverser):
     """
     Detect record types in a large one .
     """
-    def __init__(self, _context):
-        super(InlineRecordReverser, self).__init__(_context, _reverse_level=200)
+    REVERSE_LEVEL = 200
 
-    def reverse_record(self, _record):
+    def reverse_record(self, _context, _record):
         if not _record.resolvedPointers:
             raise ValueError('I should be resolved')
         _record._dirty = True
@@ -597,13 +573,13 @@ def reverse_heap(memory_handler, heap_addr):
 
         # decode bytes contents to find basic types.
         log.debug('Reversing Fields')
-        fr = FieldReverser(ctx)
-        fr.reverse()
+        fr = dsa.FieldReverser(memory_handler)
+        fr.reverse_context(ctx)
 
         # try to find some logical constructs.
         log.debug('Reversing DoubleLinkedListReverser')
-        doublelink = DoubleLinkedListReverser(ctx)
-        doublelink.reverse()
+        doublelink = DoubleLinkedListReverser(memory_handler)
+        doublelink.reverse_context(ctx)
 
         # save to file
         save_headers(ctx)
@@ -636,13 +612,14 @@ def reverse_instances(dumpname):
         reverse_heap(memory_handler, heap_addr)
 
     # then and only then can we look at the PointerFields
+    # identify pointer relation between structures
+    log.debug('Reversing PointerFields')
+    pfr = pointertypes.PointerFieldReverser(memory_handler)
+    pfr.reverse()
+
+    # save that
     for heap in heaps:
         ctx = memory_handler.get_cached_context_for_heap(heap)
-        # identify pointer relation between structures
-        log.debug('Reversing PointerFields')
-        pfr = PointerFieldReverser(ctx)
-        pfr.reverse()
-        # save that
         ctx.save_structures()
         # save to file
         save_headers(ctx)

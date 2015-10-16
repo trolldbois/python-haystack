@@ -12,8 +12,8 @@ from haystack.reverse import context
 from haystack.reverse import config
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
+from haystack.reverse.heuristics import pointertypes
 from haystack import dump_loader
-import pointertypes
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -38,7 +38,7 @@ class TestStructure(unittest.TestCase):
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
         cls.dsa = dsa.FieldReverser(cls.context.memory_handler)
-        cls.pta = pointertypes.EnrichedPointerFields(cls.context.memory_handler)
+        cls.pta = pointertypes.PointerFieldReverser(cls.context.memory_handler)
         return
 
     @classmethod
@@ -59,7 +59,7 @@ class TestStructure(unittest.TestCase):
 
     def test_decodeFields(self):
         for s in self.context.listStructures():
-            self.dsa.analyze_fields(s)
+            self.dsa.reverse_record(self.context, s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
                 self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
                 self.assertEqual(len(s.get_pointer_fields()), 2)
@@ -73,18 +73,18 @@ class TestStructure(unittest.TestCase):
 
     def test_resolvePointers(self):
         for s in self.context.listStructures():
-            self.dsa.analyze_fields(s)
+            self.dsa.reverse_record(self.context, s)
         for s in self.context.listStructures():
-            self.pta.analyze_fields(s)
+            self.pta.reverse_record(self.context, s)
         self.assertTrue(True)  # test no error
 
     def test_resolvePointers2(self):
         for s in self.context.listStructures():
-            self.dsa.analyze_fields(s)
+            self.dsa.reverse_record(self.context, s)
             self.assertEqual(s.get_reverse_level(), 10)
         for s in self.context.listStructures():
             log.debug('RLEVEL: %d' % s.get_reverse_level())
-            self.pta.analyze_fields(s)
+            self.pta.reverse_record(self.context, s)
             if len(s) == 12:  # Node + padding, 1 pointer on create
                 self.assertEqual(len(s.get_fields()), 3)  # 1, 2 and padding
                 self.assertEqual(len(s.get_pointer_fields()), 2)
@@ -122,7 +122,7 @@ class TestStructure2(unittest.TestCase):
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
         cls.dsa = dsa.FieldReverser(cls.context.memory_handler)
-        cls.pta = pointertypes.EnrichedPointerFields(cls.context.memory_handler)
+        cls.pta = pointertypes.PointerFieldReverser(cls.context.memory_handler)
         return
 
     @classmethod
@@ -144,7 +144,7 @@ class TestStructure2(unittest.TestCase):
     def test_string_overlap(self):
         for s in self.context.listStructures():
             # s.resolvePointers()
-            self.dsa.analyze_fields(s)
+            self.dsa.reverse_record(self.context, s)
             log.debug(s.to_string())
         self.assertTrue(True)  # test no error
 

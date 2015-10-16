@@ -373,7 +373,7 @@ class FieldReverser(model.AbstractReverser):
         return
 
 
-class IntegerArrayFields(StructureAnalyser):
+class IntegerArrayFields(model.FieldAnalyser):
 
     """ TODO """
 

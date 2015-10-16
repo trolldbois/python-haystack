@@ -87,14 +87,14 @@ class ReverserContext(object):
         # then recreated them in cache from Allocated memory
         nb_missing = len(self._structures_addresses) - len(self._structures)
         if nb_missing != 0:
-            import reversers
+            from haystack.reverse.heuristics import reversers
 
             log.info('[+] Missing cached records %d' % nb_missing)
             if nb_missing < 10:
                 log.warning('TO check missing:%d unique: %d', nb_missing, len(set(self._structures_addresses) - set(self._structures)))
             # use BasicCachingReverser to get user blocks
-            cache_reverse = reversers.BasicCachingReverser(self)
-            _ = cache_reverse.reverse()
+            cache_reverse = reversers.BasicCachingReverser(self.memory_handler)
+            _ = cache_reverse.reverse_context(self)
             log.info('[+] Built %d/%d records from allocations',
                      len(self._structures),
                      len(self._structures_addresses))

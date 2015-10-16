@@ -4,12 +4,13 @@
 import itertools
 import ctypes
 import logging
+import struct
+
 import os
 import re
 import Levenshtein  # seqmatcher ?
 import networkx
 import numpy
-import struct
 
 from haystack.reverse import config
 import haystack.reverse.matchers
@@ -18,7 +19,6 @@ from haystack.reverse import searchers
 from haystack.reverse import utils
 from haystack.reverse import structure
 from haystack.reverse.heuristics import dsa
-from haystack.reverse.heuristics import interfaces
 from haystack.reverse.heuristics import model
 
 """
@@ -33,9 +33,10 @@ log = logging.getLogger('signature')
 class TypeReverser(model.AbstractReverser):
     """
     """
+    REVERSE_LEVEL = 300
 
-    def __init__(self, _context):
-        super(TypeReverser, self).__init__(_context)
+    def __init__(self, memory_handler):
+        super(TypeReverser, self).__init__(memory_handler)
         self._signatures = []
 
     def reverse_context(self, _context):
@@ -67,32 +68,30 @@ class TypeReverser(model.AbstractReverser):
 
         for _record in _context.listStructures():
             # do the changes.
-            self.reverse_record(_record)
-            self._append_to_write(_record.to_string())
-            self._callback()
+            self.reverse_record(_context, _record)
+            #self._callback()
 
-        self._context.save()
-        self._write()
+        _context.save()
         return
 
-    def persist(self):
-        outdir = self._context.get_folder_cache()
+    def persist(self, _context):
+        outdir = _context.get_folder_cache()
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         if not os.access(outdir, os.W_OK):
             raise IOError('cant write to %s' % outdir)
         #
-        outname = self._context.get_filename_cache_signatures()
+        outname = _context.get_filename_cache_signatures()
         #outname = os.path.sep.join([outdir, self._name])
         ar = utils.int_array_save(outname, self._similarities)
         return
 
-    def load(self):
-        inname = self._context.get_filename_cache_signatures()
+    def load(self, _context):
+        inname = _context.get_filename_cache_signatures()
         self._similarities = utils.int_array_cache(inname)
         return
 
-    def reverse_record(self, _record):
+    def reverse_record(self, _context, _record):
         # TODO: add minimum reversing level check before running
         # writing to file
         # for ptr_value,anon in context.structures.items():

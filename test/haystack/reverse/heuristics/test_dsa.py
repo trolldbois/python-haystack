@@ -8,7 +8,7 @@ import logging
 
 from haystack import target
 from haystack.abc import interfaces
-from haystack import dump_loader
+
 from haystack.reverse import fieldtypes
 from haystack.reverse import context
 from haystack.reverse import structure
@@ -224,7 +224,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x682638
         size = 184
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -242,7 +242,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x691ed8
         size = 256
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -256,7 +256,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x64f328
         size = 72
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -270,7 +270,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x657488
         size = 88
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -284,7 +284,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x63d4c8  # + 1968
         size = 4088  # 128
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -302,7 +302,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x63aa68
         size = 120
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -318,7 +318,7 @@ class TestDSA(unittest.TestCase):
         vaddr = 0x675b30
         size = 8184
         st = structure.AnonymousRecord(self.memory_handler, vaddr, size)
-        self.dsa.analyze_fields(st)
+        self.dsa.reverse_record(self.context, st)
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
@@ -336,7 +336,7 @@ class TestFieldAnalyserReal(unittest.TestCase):
     def setUpClass(cls):
         from haystack import dump_loader
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
-        cls.ctx = context.get_context_for_address(cls.memory_handler, 0x90000)
+        cls.context = context.get_context_for_address(cls.memory_handler, 0x90000)
         cls.target = cls.memory_handler.get_target_platform()
         cls.zeroes = dsa.ZeroFields(cls.memory_handler)
         cls.utf16 = dsa.UTF16Fields(cls.memory_handler)
@@ -356,7 +356,7 @@ class TestFieldAnalyserReal(unittest.TestCase):
         self.assertEqual(self.real, self.test1.bytes)
 
         _dsa = dsa.FieldReverser(self.memory_handler)
-        _dsa.analyze_fields(self.test1)
+        _dsa.reverse_record(self.context, self.test1)
         fields = self.test1._fields
         fields.sort()
 
