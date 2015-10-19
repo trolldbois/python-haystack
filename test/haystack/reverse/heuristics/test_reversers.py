@@ -244,7 +244,7 @@ class TestReverseZeus(unittest.TestCase):
         #self.assertEqual(sig_1, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
 
         # decode bytes contents to find basic types.
-        fr = dsa.FieldReverser(self._context)
+        fr = dsa.FieldReverser(self.memory_handler)
         fr.reverse()
         sig_2 = struct_d.get_signature(text=True)
         # print '2.', self._v(struct_d)

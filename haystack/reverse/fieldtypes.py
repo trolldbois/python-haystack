@@ -39,18 +39,17 @@ class FieldType(object):
     """
     types = set()
 
-    def __init__(self, _id, basename, typename, ctype, sig, isPtr=False):
+    def __init__(self, _id, basename, typename, sig, isPtr=False):
         self._id = _id
         self.basename = basename
         self.ctypes = typename
-        self._ctype = ctype
         self.sig = sig
         self.isPtr = isPtr
 
     @classmethod
     def makePOINTER(cls, typ):
-        if typ == FieldType.STRING:
-            return FieldType.STRING_POINTER
+        if typ == STRING:
+            return STRING_POINTER
         return cls(typ._id + 0xa, typ.basename + '_ptr',
                    'ctypes.POINTER(%s)' % (typ.ctypes), 'P', True)
 
@@ -95,10 +94,13 @@ class FieldTypeStruct(FieldType):
     """
 
     def __init__(self, typename, name, fields):
-        super(FieldTypeStruct, self).__init__(0x1, name, typename, 'K', 'K', isPtr=False)
+        super(FieldTypeStruct, self).__init__(0x1, name, typename, 'K', isPtr=False)
         self.size = sum([len(f) for f in fields])
         self.elements = fields
         # TODO s2[0].elements[0].typename.elements[0] is no good
+
+    def get_fields(self):
+        return self.elements
 
     def setStruct(self, struct):
         self._struct = struct
@@ -115,25 +117,25 @@ class FieldTypeArray(FieldType):
     An array type
     """
     def __init__(self, basicTypeName):
-        super(FieldTypeArray, self).__init__(self, 0x60, 'array_%s' % basicTypeName, None, 'a', isPtr=False)
+        super(FieldTypeArray, self).__init__(self, 0x60, 'array_%s' % basicTypeName, 'a', isPtr=False)
 
 
 # setup all the know types that are interesting to us
-FieldType.UNKNOWN = FieldType(0x0, 'untyped', 'ctypes.c_ubyte', ctypes.c_ubyte, 'u')
-FieldType.STRUCT = FieldType(0x1, 'struct', 'Structure', None, 'K')
-FieldType.ZEROES = FieldType(0x2, 'zerroes', 'ctypes.c_ubyte', ctypes.c_ubyte, 'z')
-FieldType.STRING = FieldType(0x4, 'text', 'ctypes.c_char', ctypes.c_char, 'T')
-FieldType.STRING16 = FieldType(0x14, 'utf16', 'ctypes.c_char', ctypes.c_char, 'T')
-FieldType.STRINGNULL = FieldType(0x6, 'text0', 'ctypes.c_char', ctypes.c_char, 'T')
-FieldType.STRING_POINTER = FieldType(0x4 + 0xa, 'text_ptr', 'ctypes.c_char_p', ctypes.c_char_p, 's', True)
-FieldType.INTEGER = FieldType(0x18, 'int', 'ctypes.c_uint', ctypes.c_uint, 'I')
-FieldType.SMALLINT = FieldType(0x8, 'small_int', 'ctypes.c_uint', ctypes.c_uint, 'i')
-FieldType.SIGNED_SMALLINT = FieldType(0x28, 'signed_small_int', 'ctypes.c_int', ctypes.c_uint, 'i')
-FieldType.ARRAY = FieldType(0x40, 'array', 'Array', None, 'a')
-FieldType.BYTEARRAY = FieldType(0x50, 'array', 'ctypes.c_ubyte', ctypes.c_ubyte, 'a')
-#FieldType.ARRAY_CHAR_P = FieldType(0x9, 'array_char_p',     'ctypes.c_char_p',   'Sp')
-FieldType.POINTER = FieldType(0xa, 'ptr', 'ctypes.c_void_p', ctypes.c_void_p, 'P', True)
-FieldType.PADDING = FieldType(0xff, 'pad', 'ctypes.c_ubyte', ctypes.c_ubyte, 'X')
+UNKNOWN = FieldType(0x0, 'untyped', 'ctypes.c_ubyte', 'u')
+STRUCT = FieldType(0x1, 'struct', 'Structure', 'K')
+ZEROES = FieldType(0x2, 'zerroes', 'ctypes.c_ubyte', 'z')
+STRING = FieldType(0x4, 'text', 'ctypes.c_char', 'T')
+STRING16 = FieldType(0x14, 'utf16', 'ctypes.c_char', 'T')
+STRINGNULL = FieldType(0x6, 'text0', 'ctypes.c_char', 'T')
+STRING_POINTER = FieldType(0x4 + 0xa, 'text_ptr', 'ctypes.c_char_p', 's', True)
+INTEGER = FieldType(0x18, 'int', 'ctypes.c_uint', 'I')
+SMALLINT = FieldType(0x8, 'small_int', 'ctypes.c_uint', 'i')
+SIGNED_SMALLINT = FieldType(0x28, 'signed_small_int', 'ctypes.c_int', 'i')
+ARRAY = FieldType(0x40, 'array', 'Array', 'a')
+BYTEARRAY = FieldType(0x50, 'array', 'ctypes.c_ubyte', 'a')
+# ARRAY_CHAR_P = FieldType(0x9, 'array_char_p',     'ctypes.c_char_p',   'Sp')
+POINTER = FieldType(0xa, 'ptr', 'ctypes.c_void_p', 'P', True)
+PADDING = FieldType(0xff, 'pad', 'ctypes.c_ubyte', 'X')
 
 
 class Field(object):
@@ -165,19 +167,19 @@ class Field(object):
 
     def is_string(self):  # null terminated
         return self.typename in [
-            FieldType.STRING, FieldType.STRING16, FieldType.STRINGNULL, FieldType.STRING_POINTER]
+            STRING, STRING16, STRINGNULL, STRING_POINTER]
 
     def is_pointer(self):
         return issubclass(self.__class__, PointerField)
 
     def is_zeroes(self):
-        return self.typename == FieldType.ZEROES
+        return self.typename == ZEROES
 
     def is_array(self):  # will be overloaded
-        return self.typename == FieldType.ARRAY or self.typename == FieldType.BYTEARRAY
+        return self.typename == ARRAY or self.typename == BYTEARRAY
 
     def is_integer(self):
-        return self.typename == FieldType.INTEGER or self.typename == FieldType.SMALLINT or self.typename == FieldType.SIGNED_SMALLINT
+        return self.typename == INTEGER or self.typename == SMALLINT or self.typename == SIGNED_SMALLINT
 
     def is_pointer_to_string(self):
         # pointer is Resolved
@@ -203,7 +205,7 @@ class Field(object):
             # TODO should be in type
             return '%s * %d' % (self.typename.ctypes,
                                 len(self) / self.element_size)
-        elif self.typename == FieldType.UNKNOWN:
+        elif self.typename == UNKNOWN:
             return '%s * %d' % (self.typename.ctypes, len(self))
         return self.typename.ctypes
 
@@ -272,7 +274,7 @@ class Field(object):
         if len(self) == 0:
             return '<-haystack no pattern found->'
         if self.is_string():
-            if self.typename == FieldType.STRING16:
+            if self.typename == STRING16:
                 try:
                     bytes = "%s" % (repr(
                         self.struct.bytes[
@@ -298,7 +300,7 @@ class Field(object):
             log.warning('ARRAY in Field type, %s', self.typename)
             log.error('error in 0x%x offset 0x%x', self.struct.address, self.offset)
             bytes = ''.join(['[', ','.join([el.to_string() for el in self.elements]), ']'])
-        elif self.padding or self.typename == FieldType.UNKNOWN:
+        elif self.padding or self.typename == UNKNOWN:
             bytes = self.struct.bytes[self.offset:self.offset + len(self)]
         else:  # bytearray, pointer...
             return self.value
@@ -439,9 +441,6 @@ class ArrayField(Field):
             prefix, self.get_name(), self.get_typename(), comment)
         return fstr
 
-
-def isIntegerType(typ):
-    return typ == FieldType.INTEGER or typ == FieldType.SMALLINT or typ == FieldType.SIGNED_SMALLINT
 
 #def resize(field, new_offset, new_size):
 #    if field.is_pointer():

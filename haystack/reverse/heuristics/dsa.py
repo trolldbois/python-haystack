@@ -9,24 +9,22 @@ import array
 import collections
 
 from haystack.reverse import re_string
-from haystack.reverse.fieldtypes import FieldType, Field, PointerField
+from haystack.reverse import fieldtypes
 from haystack.reverse.heuristics import model
 
 log = logging.getLogger('dsa')
 
-# Field analysis related functions and classes
+# fieldtypes.Field analysis related functions and classes
 
 
 class ZeroFields(model.FieldAnalyser):
-
     """ checks for possible fields, aligned, with WORDSIZE zeros."""
-
     def make_fields(self, structure, offset, size):
         assert(
             offset %
             self._target.get_word_size() == 0)  # vaddr and offset should be aligned
         #log.debug('checking Zeroes')
-        self._typename = FieldType.ZEROES
+        self._typename = fieldtypes.ZEROES
         self._zeroes = '\x00' * self._target.get_word_size()
 
         ret = self._find_zeroes(structure, offset, size)
@@ -35,8 +33,7 @@ class ZeroFields(model.FieldAnalyser):
         return ret
 
     def _find_zeroes(self, structure, offset, size):
-        """ iterate over the bytes until a byte if not \x00
-        """
+        """ iterate over the bytes until a byte if not \x00        """
         bytes = structure.bytes
         # print 'offset:%x blen:%d'%(offset, len(bytes))
         # print repr(bytes)
@@ -84,25 +81,15 @@ class ZeroFields(model.FieldAnalyser):
             else:
                 continue
             # make a field
-            fields.append(
-                Field(
-                    structure,
-                    start +
-                    field[0],
-                    self._typename,
-                    size,
-                    False))
+            fields.append(fieldtypes.Field(structure, start + field[0], self._typename, size, False))
         # we have all fields
         return fields
 
 
 class UTF16Fields(model.FieldAnalyser):
-
     """
     rfinds utf-16-ascii and ascii 7bit
-
     """
-
     def make_fields(self, structure, offset, size):
         assert(offset % self._target.get_word_size() == 0)  # vaddr and offset should be aligned
         #log.debug('checking String')
@@ -113,7 +100,7 @@ class UTF16Fields(model.FieldAnalyser):
             # we force aligned results only.
             index = re_string.rfind_utf16(bytes, offset, size, True, self._target.get_word_size())
             if index > -1:
-                f = Field(structure, offset + index, FieldType.STRING16, size - index, False)
+                f = fieldtypes.Field(structure, offset + index, fieldtypes.STRING16, size - index, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size = index  # reduce unknown field in prefix
@@ -140,9 +127,9 @@ class PrintableAsciiFields(model.FieldAnalyser):
             if index == 0:
                 if (ssize < size) and bytes[offset + index + ssize] == '\x00':  # space for a \x00
                     ssize += 1
-                    f = Field(structure, offset + index, FieldType.STRINGNULL, ssize, False)
+                    f = fieldtypes.Field(structure, offset + index, fieldtypes.STRINGNULL, ssize, False)
                 else:
-                    f = Field(structure, offset + index, FieldType.STRING, ssize, False)
+                    f = fieldtypes.Field(structure, offset + index, fieldtypes.STRING, ssize, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size -= ssize  # reduce unknown field
@@ -183,7 +170,7 @@ class PointerFields(model.FieldAnalyser):
                 continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
-            field = PointerField(structure, offset, FieldType.POINTER, self._target.get_word_size(), False)
+            field = fieldtypes.PointerField(structure, offset, fieldtypes.POINTER, self._target.get_word_size(), False)
             field.value = value
             # TODO: leverage the context._function_names
             # if value in structure._context._function_names:
@@ -234,10 +221,10 @@ class IntegerFields(model.FieldAnalyser):
             endianess)
         # print endianess, val
         if val < 0xffff:
-            field = Field(
+            field = fieldtypes.Field(
                 structure,
                 offset,
-                FieldType.SMALLINT,
+                fieldtypes.SMALLINT,
                 self._target.get_word_size(),
                 False)
             field.value = val
@@ -245,10 +232,10 @@ class IntegerFields(model.FieldAnalyser):
             return field
         # check signed int
         elif (2 ** (self._target.get_word_size() * 8) - 0xffff) < val:
-            field = Field(
+            field = fieldtypes.Field(
                 structure,
                 offset,
-                FieldType.SIGNED_SMALLINT,
+                fieldtypes.SIGNED_SMALLINT,
                 self._target.get_word_size(),
                 False)
             field.value = val
@@ -285,7 +272,7 @@ class FieldReverser(model.AbstractReverser):
         _record.reset()
         fields, gaps = self._analyze(_record)
         _record.add_fields(fields)
-        _record.add_fields(gaps)  # , FieldType.UNKNOWN
+        _record.add_fields(gaps)  # , fieldtypes.UNKNOWN
         _record.set_reverse_level(self._reverse_level)
         return _record
 
@@ -295,7 +282,7 @@ class FieldReverser(model.AbstractReverser):
         # call on analyzers
         fields = []
         nb = -1
-        gaps = [Field(_record, 0, FieldType.UNKNOWN, len(_record), False)]
+        gaps = [fieldtypes.Field(_record, 0, fieldtypes.UNKNOWN, len(_record), False)]
 
         _record.set_reverse_level(10)
 
@@ -343,7 +330,7 @@ class FieldReverser(model.AbstractReverser):
         lastfield_size = len(_record) - nextoffset
         if lastfield_size > 0:
             if lastfield_size < self._target.get_word_size():
-                gap = Field(_record, nextoffset, FieldType.UNKNOWN, lastfield_size, True)
+                gap = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, lastfield_size, True)
                 log.debug('_make_gaps: adding last field at offset %d:%d', gap.offset, gap.offset + len(gap))
                 gaps.append(gap)
             else:
@@ -357,17 +344,17 @@ class FieldReverser(model.AbstractReverser):
                     add (padding + gap) to gaps
                  """
         if nextoffset % self._target.get_word_size() == 0:
-            gap = Field(_record, nextoffset, FieldType.UNKNOWN, endoffset - nextoffset, False)
+            gap = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, endoffset - nextoffset, False)
             log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
         else:
             # unaligned field should be splitted
             s1 = self._target.get_word_size() - nextoffset % self._target.get_word_size()
-            gap1 = Field(_record, nextoffset, FieldType.UNKNOWN, s1, True)
+            gap1 = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, s1, True)
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = Field(_record, nextoffset + s1, FieldType.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = fieldtypes.Field(_record, nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
