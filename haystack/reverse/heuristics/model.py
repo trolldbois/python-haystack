@@ -8,6 +8,7 @@ import time
 
 from haystack.abc import interfaces as hi
 from haystack.reverse.heuristics import interfaces as hri
+from haystack.reverse import context
 
 
 log = logging.getLogger('model')
@@ -37,7 +38,12 @@ class AbstractReverser(hri.IReverser):
 
     def _iterate_contexts(self):
         """ Override to change the list of contexts """
-        for ctx in self._memory_handler.get_cached_context():
+        # for ctx in self._memory_handler.get_cached_context():
+        finder = self._memory_handler.get_heap_finder()
+        heaps = finder.get_heap_mappings()
+        # we need to get then either from memory_handler or from file or from scratch
+        for heap in heaps:
+            ctx = context.get_context_for_address(self._memory_handler, heap.get_marked_heap_address())
             yield ctx
 
     def _iterate_records(self, _context):
@@ -60,7 +66,7 @@ class AbstractReverser(hri.IReverser):
         # run the reverser
         for _context in self._iterate_contexts():
             self._t0 = time.time()
-            self._tl = self._t0
+            self._t1 = self._t0
             self._nb_reversed = 0
             self._nb_from_cache = 0
             # call
@@ -121,9 +127,9 @@ class AbstractReverser(hri.IReverser):
     def _callback(self, total):
         """ callback for human use """
         # every 30 secs, print a statement, save text repr to file.
-        if time.time() - self._tl > 30:
-            tl = time.time()
-            rate = (tl - self._t0) / (1 + self._nb_reversed + self._nb_from_cache)
+        if time.time() - self._t1 > 30:
+            t1 = time.time()
+            rate = (t1 - self._t0) / (1 + self._nb_reversed + self._nb_from_cache)
             _ttg = (total - (self._nb_from_cache + self._nb_reversed)) * rate
             log.info('%2.2f seconds to go (new:%d,cache:%d)', _ttg, self._nb_reversed, self._nb_from_cache)
         return

@@ -68,6 +68,35 @@ int test1(){
 
 int test_double_iter(){
 
+  struct Node * nodes[255];
+
+  for (int i=0;i<255;i++){
+    nodes[i] = (struct Node *) malloc(sizeof(struct Node));
+    nodes[i]->val1 = i;
+    nodes[i]->val2 = i;
+    nodes[i]->list.flink = 0x0;
+    nodes[i]->list.blink = 0x0;
+  }
+
+  // we do a easy list
+  for (int i=1;i<254;i++){
+    nodes[i]->list.flink = &nodes[i+1]->list;
+    nodes[i]->list.blink = &nodes[i-1]->list;
+  }
+  nodes[0]->list.flink = &nodes[1]->list;;
+  nodes[0]->list.blink = 0x0;
+  nodes[254]->list.flink = 0x0;
+  nodes[254]->list.blink = &nodes[253]->list;;
+
+
+  printf("o: start_list %p\n", nodes[0]);
+  printf("o: mid_list %p\n", nodes[127]);
+  printf("o: end_list %p\n", nodes[254]);
+
+};
+
+int test_double_graph_iter(){
+
   struct Node * nodes[32];
 
   for (int i=0;i<32;i++){
@@ -157,6 +186,7 @@ int main(){
 
   test1();
   test_double_iter();
+  test_double_graph_iter();
 
   printf("pid %u\n",getpid());
   fflush(stdout);

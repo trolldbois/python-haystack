@@ -35,7 +35,7 @@
 # create a typename for \xff * 8/16. buffer color ? array of char?
 
 
-- make a TU for the DSASimple bug.use the bytes from that record and create 
+- make a TU for the DSASimple bug.use the bytes from that record and create
 a debug help that prints the resolution criterias for a record/field
 
 - do we trust get_user_allocation or not ? for libc ? for winheap ? YES
@@ -45,13 +45,13 @@ a debug help that prints the resolution criterias for a record/field
 
 - keep the original address in the Ouputters, python output.
 
-++ we also need advanced constraints in the search API to be able to check for next_back == current 
+++ we also need advanced constraints in the search API to be able to check for next_back == current
 - re-correlate the is_valid methods to the record type, so that advanced code-based
 validation is allowed on a record, on top of constraits
 Will require a registation of specific validation functions, and probable access
 to parent nodes 'validation state'.
 
-- finder the text outputter bug. haystack refresh PEB returns different and bad results with a 
+- finder the text outputter bug. haystack refresh PEB returns different and bad results with a
 constraint file. with a string output.
 see field process Heap
 while python outputters give a None value for the pointer, the string outputters will return the first pointer value
@@ -61,13 +61,13 @@ OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string 
 - change Levenshtein for fuzzywuzzy or similar
 
 - following memory_handler changes, the __book cache seems to forget about some ctypes buffers.
-  not cool. on get_context.
-  Function getRef deactivated. it doesnt bug anymore. 
+  not cool. on make_context_for_heap.
+  Function getRef deactivated. it doesnt bug anymore.
   it impacts performance _a lot_ to deactivate the cache.
   To be obseleted ?
   But output_to_python depends on it... TODO
-  
-  
+
+
 - use PEB search to double check that we find all HEAPs in standard scenarios.
 
 - use pycallgraph to cProfile a HEAP validation.
@@ -92,7 +92,7 @@ OK: python /home/other/Compil/python-haystack/scripts/haystack --debug --string 
 Attribute packed is not correct in ctypeslib
 
  - proper way to load constraints and bit-dependant modules is side by side
- 
+
     # A - the caller has to load the proper bit-dependant python code,
     ctypes3 = cls.my_model.import_module("test.src.ctypes3_gen64")
     # my_model is alreadytarget dependant

@@ -9,6 +9,7 @@ import numpy
 import os
 
 from haystack import dump_loader
+from haystack.abc import interfaces
 from haystack.reverse import utils
 from haystack.reverse import config
 from haystack.reverse import structure
@@ -20,16 +21,96 @@ from haystack.reverse import enumerators
 log = logging.getLogger('context')
 
 
-class ReverserContext(object):
+class ProcessContext(object):
     """
-    The ReverserContext is a stateful instance around a Heap.
+    The main context for all heap
+    """
+    def __init__(self, memory_handler):
+        self.memory_handler = memory_handler
+        # init heaps
+        self.memory_handler.get_heap_finder().get_heap_mappings()
+        self.__contextes = {}
+        self.__reversed_types = {}
+        # create the cache folder then
+        self.reset_cache_folder()
+
+    def reset_cache_folder(self):
+        """Removes the cache folder"""
+        dumpname = self.memory_handler.get_name()
+        # create the cache folder
+        cache_folder = config.get_cache_folder_name(dumpname)
+        config.remove_cache_folder(self.memory_handler.get_name())
+        if not os.access(cache_folder, os.F_OK):
+            os.mkdir(cache_folder)
+            log.info("[+] Cache created in %s", cache_folder)
+        else:
+            log.info("[+] Cache exists in %s", cache_folder)
+        # and the record subfolder
+        record_cache = config.get_record_cache_folder_name(dumpname)
+        if not os.access(record_cache, os.F_OK):
+            os.mkdir(record_cache)
+            log.info("[+] Record cache created in %s", record_cache)
+        else:
+            log.info("[+] Record cache exists in %s", record_cache)
+
+    def _set_context_for_heap(self, mmap, ctx):
+        """Caches the HeapContext associated to a IMemoryMapping"""
+        self.__contextes[mmap.get_marked_heap_address()] = ctx
+
+    def get_context_for_heap(self, heap):
+        """Returns the HeapContext associated to a IMemoryMapping"""
+        if not isinstance(heap, interfaces.IMemoryMapping):
+            raise TypeError('heap should be a IMemoryMapping')
+        if not heap.is_marked_as_heap():
+            raise TypeError('heap should be a heap')
+        if heap.get_marked_heap_address() not in self.__contextes:
+            heap_context = self.make_context_for_heap(heap)
+            self._set_context_for_heap(heap, heap_context)
+            return heap_context
+        return self.__contextes[heap.get_marked_heap_address()]
+
+    def list_contextes(self):
+        """Returns all known HeapContext"""
+        return self.__contextes.values()
+
+    def get_reversed_type(self, typename):
+        if typename in self.__reversed_types:
+            return self.__reversed_types[typename]
+        return None
+
+    def add_reversed_type(self, typename, t):
+        self.__reversed_types[typename] = t
+
+    def list_reversed_types(self):
+        return self.__reversed_types.values()
+
+    # was get_context
+    def make_context_for_heap(self, heap):
+        """
+        Make the HeapContext for this heap.
+        This will reverse all user allocations from this HEAP into records.
+        """
+        heap_addr = heap.get_marked_heap_address()
+        try:
+            ctx = HeapContext.cacheLoad(self.memory_handler, heap_addr)
+        except IOError as e:
+            finder = self.memory_handler.get_heap_finder()
+            # heaps are already generated at initialisation of self
+            heap = self.memory_handler.get_mapping_for_address(heap_addr)
+            ctx = HeapContext(self.memory_handler, heap)
+        return ctx
+
+
+class HeapContext(object):
+    """
+    The HeapContext is a stateful instance around a Heap.
     The context contains cache helpers around the reversing of records.
     """
 
     def __init__(self, memory_handler, heap):
         self.memory_handler = memory_handler
         # cache it
-        memory_handler.cache_context_for_heap(heap, self)
+        ### memory_handler.set_context_for_heap(heap, self)
         self.dumpname = memory_handler.get_name()
         self.heap = heap
         self._heap_start = heap.start
@@ -41,7 +122,7 @@ class ReverserContext(object):
         return
 
     def _init2(self):
-        log.info('[+] ReverserContext on heap 0x%x', self.heap.get_marked_heap_address())
+        log.info('[+] HeapContext on heap 0x%x', self.heap.get_marked_heap_address())
         # Check that cache folder exists
         if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
             os.mkdir(config.get_cache_folder_name(self.dumpname))
@@ -180,17 +261,6 @@ class ReverserContext(object):
     def is_known_address(self, address):
         return address in self._structures_addresses
 
-    def getReversedType(self, typename):
-        if typename in self._reversedTypes:
-            return self._reversedTypes[typename]
-        return None
-
-    def addReversedType(self, typename, t):
-        self._reversedTypes[typename] = t
-
-    def listReversedTypes(self):
-        return self._reversedTypes.values()
-
     # name of cache files
     def get_folder_cache(self):
         return config.get_cache_folder_name(self.dumpname)
@@ -263,16 +333,14 @@ class ReverserContext(object):
                 ctx = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
-            log.error(
-                'Error in the context file. File cleaned. Please restart.')
+            log.error('Error in the context file. File cleaned. Please restart.')
             raise RuntimeError('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
         ctx.config = config
         ctx.memory_handler = memory_handler
         ctx.heap = ctx.memory_handler.get_mapping_for_address(ctx._heap_start)
         # cache it
-        memory_handler.cache_context_for_heap(ctx.heap, ctx)
-
+        memory_handler.get_reverse_context()._set_context_for_heap(ctx.heap, ctx)
         ctx._init2()
         return ctx
 
@@ -346,28 +414,9 @@ class ReverserContext(object):
         log.info('\t[.] saved in %2.2f secs' % (tf - t0))
 
 
-# FIXME - get context should be on memory_handler.
-#@deprecated
-def get_context(fname, heap_addr):
-    """
-    Load a dump file, and create a reverser context object.
-    @return context: a ReverserContext
-    """
-    memory_handler = dump_loader.load(fname)
-    try:
-        ctx = ReverserContext.cacheLoad(memory_handler, heap_addr)
-    except IOError as e:
-        finder = memory_handler.get_heap_finder()
-        # force generation of heaps.
-        heaps = finder.get_heap_mappings()
-        heap = memory_handler.get_mapping_for_address(heap_addr)
-        ctx = ReverserContext(memory_handler, heap)
-    return ctx
-
-
 def get_context_for_address(memory_handler, address):
     """
-    Returns the haystack.reverse.context.ReverserContext of the process
+    Returns the haystack.reverse.context.HeapContext of the process
     for the HEAP that hosts this address
     """
     assert isinstance(address, long) or isinstance(address, int)
@@ -389,16 +438,6 @@ def get_context_for_address(memory_handler, address):
                     break
         if not found:
             raise ValueError("Address is not in heap: 0x%x", address)
-    cached = memory_handler.get_cached_context_for_heap(mmap)
-    if cached is not None:
-        return cached
-    # found
-    heap_addr = mmap.get_marked_heap_address()
-    try:
-        ctx = ReverserContext.cacheLoad(memory_handler, heap_addr)
-    except IOError as e:
-        ctx = ReverserContext(memory_handler, mmap)
-    return ctx
-
-if __name__ == '__main__':
-    pass
+    _context = memory_handler.get_reverse_context()
+    heap_context = _context.get_context_for_heap(mmap)
+    return heap_context

@@ -57,13 +57,17 @@ else:
 
 
 
-class struct_Node(ctypes.Structure):
+class struct_ArrayTest1(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
-    ('val1', ctypes.c_uint32),
-    ('PADDING_0', ctypes.c_ubyte * 4),
+    ('array1', ctypes.c_uint32 * 16),
     ('ptr2', POINTER_T(None)),
+    ('char3', ctypes.c_char),
+    ('PADDING_0', ctypes.c_ubyte * 3),
+    ('array4', ctypes.c_uint32 * 16),
+    ('PADDING_1', ctypes.c_ubyte * 4),
+    ('ptr5', POINTER_T(None)),
      ]
 
 __all__ = \
-    ['struct_Node']
+    ['struct_ArrayTest1']

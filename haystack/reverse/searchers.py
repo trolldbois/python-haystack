@@ -174,9 +174,11 @@ class AllocatedWordAlignedSearcher(WordAlignedSearcher):
 def reverse_lookup(opt):
     from haystack.reverse import context
     log.info('[+] Load context')
-    # FIXME, it should be the  heap_addr
+    memory_handler = dump_loader.load(opt.dumpname)
     addr = opt.struct_addr
-    ctx = context.get_context(opt.dumpname, addr)
+    heap = memory_handler.get_mapping_for_address(addr)
+    _context = memory_handler.get_reverse_context()
+    ctx = _context.get_context_for_heap(heap)
 
     log.info('[+] find offsets of struct_addr:%x' % addr)
     i = -1

@@ -14,11 +14,11 @@ struct ArrayTest1 {
 
 
 int test1(){
-  struct ArrayTest1 * test1;
+  struct ArrayTest1 * node;
   node = (struct ArrayTest1 *) malloc(sizeof(struct ArrayTest1));
   node->ptr2 = node;
   node->ptr5 = node;
-  node->char3 = 'X'
+  node->char3 = 'X';
 
   printf("o: test1 %p\n", node);
 

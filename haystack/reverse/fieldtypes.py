@@ -55,16 +55,21 @@ class FieldType(object):
                    'ctypes.POINTER(%s)' % (typ.ctypes), 'P', True)
 
     @classmethod
-    # struct name should be the vaddr... otherwise itgonna be confusing
-    def makeStructField(cls, parent, offset, fields):
+    # struct name should be the vaddr... otherwise it gonna be confusing
+    def makeStructField(cls, parent, offset, typename, fields, field_name=None):
         """
         make a structure type
         """
         import structure
         _address = parent.address + offset
-        newfieldType = FieldTypeStruct('%lx' % _address, fields)
+        if field_name is None:
+            field_name = '%lx' % _address
+        newfieldType = FieldTypeStruct(typename, field_name, fields)
         newfieldType.setStruct(structure.AnonymousRecord(parent._memory_handler, _address, len(newfieldType)))
         newField = Field(parent, offset, newfieldType, len(newfieldType), False)
+        # FIXME should parent be changed on substructure ?
+        # should the offset be changed here too ?
+        # should newfieldType.set_parent() be called too ?
         return newField
 
     def __cmp__(self, other):
@@ -89,8 +94,8 @@ class FieldTypeStruct(FieldType):
     In case we reverse a Big record that has members of known record types.
     """
 
-    def __init__(self, name, fields):
-        super(FieldTypeStruct, self).__init__(self, 0x1, 'struct', name, 'K', isPtr=False)
+    def __init__(self, typename, name, fields):
+        super(FieldTypeStruct, self).__init__(0x1, name, typename, 'K', 'K', isPtr=False)
         self.size = sum([len(f) for f in fields])
         self.elements = fields
         # TODO s2[0].elements[0].typename.elements[0] is no good
@@ -437,3 +442,8 @@ class ArrayField(Field):
 
 def isIntegerType(typ):
     return typ == FieldType.INTEGER or typ == FieldType.SMALLINT or typ == FieldType.SIGNED_SMALLINT
+
+#def resize(field, new_offset, new_size):
+#    if field.is_pointer():
+#        raise TypeError("Cannot resize a pointer field")
+

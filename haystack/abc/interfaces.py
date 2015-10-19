@@ -100,6 +100,7 @@ class IMemoryMapping(object):
     def get_marked_heap_address(self):
         raise NotImplementedError(self)
 
+
 class IMemoryLoader(object):
     """Parse a process memory _memory_handler from a storage concept,
     then identify its ITargetPlatform characteristics
@@ -108,6 +109,7 @@ class IMemoryLoader(object):
     def make_memory_handler(self):
         """Returns an instance of IMemoryHandler """
         raise NotImplementedError(self)
+
 
 class IMemoryHandler(object):
     """Interface for the MemoryHandler class."""
@@ -149,16 +151,7 @@ class IMemoryHandler(object):
         raise NotImplementedError(self)
 
     # reverse helper
-    def cache_context_for_mapping(self, mmap, ctx):
-        """Caches the ReverserContext for a IMemoryMapping"""
-        raise NotImplementedError(self)
-
-    def get_cached_context_for_heap(self, mmap):
-        """Returns the cached ReverserContext for a IMemoryMapping"""
-        raise NotImplementedError(self)
-
-    def get_cached_context(self):
-        """Returns all cached ReverserContext"""
+    def get_reverse_context(self):
         raise NotImplementedError(self)
 
     def get_mapping_for_address(self, vaddr):
@@ -169,11 +162,11 @@ class IMemoryHandler(object):
         """Returns the IMemoryMapping _memory_handler with the name pathname"""
         raise NotImplementedError(self)
 
-    def is_valid_address(self, obj, structType=None):
+    def is_valid_address(self, obj, struct_type=None):
         """Return true is the virtual address is a valid address in a IMemoryMapping"""
         raise NotImplementedError(self)
 
-    def is_valid_address_value(self, addr, structType=None):
+    def is_valid_address_value(self, addr, struct_type=None):
         """Return true is the virtual address is a valid address in a IMemoryMapping"""
         raise NotImplementedError(self)
 
@@ -224,18 +217,18 @@ class IMemoryCache(object):
         """Prints all references to already loaded structs. Useful for debug"""
         raise NotImplementedError(self)
 
-    def hasRef(self, typ, origAddr):
+    def hasRef(self, typ, orig_addr):
         """Check if this type has already been loaded at this address"""
         raise NotImplementedError(self)
 
-    def getRef(self, typ, origAddr):
+    def getRef(self, typ, orig_addr):
         """Returns the reference to the type previously loaded at this address"""
         raise NotImplementedError(self)
 
     def getRefByAddr(self, addr):
         raise NotImplementedError(self)
 
-    def keepRef(self, obj, typ=None, origAddr=None):
+    def keepRef(self, obj, typ=None, orig_addr=None):
         """Keeps a reference for an object of a specific type loaded from a specific
         address.
 
@@ -245,9 +238,10 @@ class IMemoryCache(object):
         # struct.
         raise NotImplementedError(self)
 
-    def delRef(self, typ, origAddr):
+    def delRef(self, typ, orig_addr):
         """Forget about a Ref."""
         raise NotImplementedError(self)
+
 
 class ITargetPlatform(object):
     """The guest platform information for the process memory handled by IMemoryHandler.
@@ -284,11 +278,13 @@ class ITargetPlatform(object):
         """Returns the cpu bits of the host platform"""
         raise NotImplementedError(self)
 
+
 class IHeapFinder(object):
     """
     Parse the IMemoryHandler's list of IMemoryMapping to find process Heaps.
     The IHeapFinder needs to be initialized with a IMemoryHandler.
     """
+
     def get_heap_mappings(self):
         """
         Return the list of heaps that load as heaps
@@ -313,11 +309,13 @@ class IHeapFinder(object):
         """
         raise NotImplementedError(self)
 
+
 class IHeapWalker(object):
     """
     Parse a heap IMemoryMapping for chunks of allocated memory or free chunks in the heap.
     The IHeapWalker needs to be initialized with a IMemoryHandler and a IMemoryMapping
     """
+
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) """
         raise NotImplementedError('Please implement all methods')
@@ -331,6 +329,7 @@ class ICTypesUtils(object):
     """
     Some additional helper methods for ctypes
     """
+
     def formatAddress(self, addr):
         raise NotImplementedError('Please implement all methods')
 
@@ -422,6 +421,7 @@ class IConstraintsConfigHandler(object):
         :return:
         """
 
+
 class IModuleConstraints(object):
     """Defines the constraints configuration for a number of records.
     Each structure is associated to a list of constraint per field of that record.
@@ -441,10 +441,12 @@ class IModuleConstraints(object):
         """
         raise NotImplementedError('Please implement all methods')
 
+
 class IRecordConstraints(object):
     """
     Holds the constraints for fields of a specific record type.
     """
+
     def get_fields(self):
         """get the list of field names."""
         raise NotImplementedError('Please implement all methods')
@@ -453,6 +455,7 @@ class IRecordConstraints(object):
         """get the list of IConstraint for a field"""
         raise NotImplementedError('Please implement all methods')
 
+
 class IConstraint(object):
     """
     Defines a constraint validation test for a field.
@@ -460,13 +463,16 @@ class IConstraint(object):
 
     The test is : "if attr not in <IConstraint instance>"
     """
+
     def __contains__(self, obj):
         raise NotImplementedError('Please implement all methods')
+
 
 class IRecordConstraintsValidator(object):
     """
     The worker class that validates all cp
     """
+
     def is_valid(self, record):
         """
         Checks if each member field of record has coherent data

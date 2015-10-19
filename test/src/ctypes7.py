@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from haystack import model
-from haystack.constraints import RangeValue, NotNull, IgnoreMember
+from haystack.constraints import NotNull
 
-#from test.src.ctypes7_gen64 import *
+
+# from test.src.ctypes7_gen64 import *
 # model.build_python_class_clones(sys.module[__name__])
 
 

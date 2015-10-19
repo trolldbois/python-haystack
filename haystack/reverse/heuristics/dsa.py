@@ -244,7 +244,7 @@ class IntegerFields(model.FieldAnalyser):
             field.endianess = endianess
             return field
         # check signed int
-        elif ((2 ** (self._target.get_word_size() * 8) - 0xffff) < val):
+        elif (2 ** (self._target.get_word_size() * 8) - 0xffff) < val:
             field = Field(
                 structure,
                 offset,

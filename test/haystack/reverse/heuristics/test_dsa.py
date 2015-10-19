@@ -7,6 +7,7 @@ import unittest
 import logging
 
 from haystack import target
+from haystack import dump_loader
 from haystack.abc import interfaces
 
 from haystack.reverse import fieldtypes
@@ -48,6 +49,7 @@ class FS:
     def bytes(self):
         return self._bytes
 
+
 class FakeMemoryHandler(interfaces.IMemoryHandler):
     """Fake memoryhandler for the tests."""
 
@@ -62,6 +64,7 @@ class FakeMemoryHandler(interfaces.IMemoryHandler):
 
     def reset_mappings(self):
         return
+
 
 class TestFieldAnalyser(unittest.TestCase):
 
@@ -201,13 +204,15 @@ class TestFieldAnalyser(unittest.TestCase):
         fields = self.ascii.make_fields(self.test8, 0, len(self.test8))
         self.assertEquals(len([_ for _ in fields]), 0)
 
+
 class TestDSA(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         # context.get_context('test/src/test-ctypes3.dump')
         cls.context = None
-        cls.putty7124 = context.get_context(putty_7124_win7.dumpname, putty_7124_win7.known_heaps[0][0])
+        cls.memory_handler = dump_loader.load(putty_7124_win7.dumpname)
+        cls.putty7124 = context.get_context_for_address(cls.memory_handler, putty_7124_win7.known_heaps[0][0])
         cls.dsa = dsa.FieldReverser(cls.putty7124.memory_handler)
         cls.memory_handler = cls.putty7124.memory_handler
 
@@ -237,7 +242,7 @@ class TestDSA(unittest.TestCase):
         #  print f
 
     def test_utf_16_le_non_null_terminated(self):
-        ''' non-null terminated '''
+        """ non-null terminated """
         # struct_691ed8 in putty.7124.dump
         vaddr = 0x691ed8
         size = 256
@@ -251,7 +256,7 @@ class TestDSA(unittest.TestCase):
         self.assertTrue(fields[1].is_string())
 
     def test_ascii_null_terminated_2(self):
-        ''' null terminated '''
+        """ null terminated """
         # struct_64f328 in putty.7124.dump
         vaddr = 0x64f328
         size = 72
@@ -364,8 +369,6 @@ class TestFieldAnalyserReal(unittest.TestCase):
         for i, f in enumerate(self.test1._fields):
             self.assertGreaterEqual(f.offset, nextoffset)
             nextoffset = f.offset + len(f)
-
-
 
 
 if __name__ == '__main__':

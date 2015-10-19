@@ -27,14 +27,14 @@ def main():
         pass
     print('   **open stdout w** ', app + ".stdout")
     out = file(app + ".stdout", 'w')
-    #pid1 = subprocess.Popen([app], stdout=fn.fileno())
+    # pid1 = subprocess.Popen([app], stdout=fn.fileno())
     print('   **popen process** ', app)
     pid1 = subprocess.Popen([app], bufsize=-1, stdout=out.fileno())
-    print "process",pid1.pid, "was launched"
+    print "process", pid1.pid, "was launched"
     time.sleep(0.9)
-    print("  **end sleep**",pid1.pid)
+    print("  **end sleep**", pid1.pid)
     if not os.access(app + ".stdout", os.F_OK):
-        print " ** preDUMP ** file %s was not written"%app + ".stdout"
+        print " ** preDUMP ** file %s was not written" % app + ".stdout"
     print('   **DUMP** ', pid1.pid)
     memory_dumper.dump(pid1.pid, dumpname)
     print('   **DUMP terminated** ', pid1.pid)
@@ -43,7 +43,7 @@ def main():
     print('   **KILL finished** ', pid1.pid)
     out.close()
     if not os.access(app + ".stdout", os.F_OK):
-        print "file %s was not written"%app + ".stdout"
+        print "file %s was not written" % app + ".stdout"
         with file(app + ".stdout", 'w') as out:
             out.write('plop')
     return

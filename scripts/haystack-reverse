@@ -18,6 +18,8 @@ import os
 
 from haystack import argparse_utils
 from haystack.reverse import config
+from haystack.reverse import context
+from haystack import dump_loader
 
 log = logging.getLogger('haystack-reverse')
 
@@ -31,7 +33,6 @@ def reverse_instances(opt):
 
 def writeReversedTypes(opt):
     return NotImplementedError("obsolete")
-
     """
     reverse types from a memorydump, and write structure definition to file
     :param opt:
@@ -41,7 +42,7 @@ def writeReversedTypes(opt):
     ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
     ctx = signature.makeReversedTypes(ctx, sizeCache)
     outfile = file(config.get_cache_filename(config.REVERSED_TYPES_FILENAME, ctx.dumpname),'w')
-    for revStructType in ctx.listReversedTypes():
+    for revStructType in ctx.list_reversed_types():
         outfile.write(revStructType.to_string())
         #
         #print revStructType._instances
@@ -86,9 +87,9 @@ def show(opt):
     :param opt:
     :return:
     """
-    from haystack.reverse import context
     log.info('[+] Load ctx')
-    ctx = context.get_context(opt.dumpname)
+    memory_handler = dump_loader.load(opt.dumpname)
+    ctx = context.get_context_for_address(memory_handler, opt.address)
     log.info('[+] Find Structure at: @%x', opt.address)
     try:
         st = ctx.get_record_at_address(opt.address)
@@ -105,9 +106,9 @@ def printParents(opt):
     :param opt:
     :return:
     """
-    from haystack.reverse import context
     log.info('[+] Load ctx')
-    ctx = context.get_context(opt.dumpname)
+    memory_handler = dump_loader.load(opt.dumpname)
+    ctx = context.get_context_for_address(memory_handler, opt.address)
     log.info('[+] find offsets of struct_addr:%x', opt.address)
     i = 0
     try:
@@ -122,9 +123,11 @@ def printParents(opt):
     log.info('[+] Found %d structures.'%( i ))
     return
 
+
 def clean(opt):
     log.info('[+] Cleaning cache')
     ctx = config.remove_cache_folder(opt.dumpname)
+
 
 def graph(opt):
     ''' show sorted structure instances groups to gefx '''
@@ -134,6 +137,7 @@ def graph(opt):
     #  signature.graphStructureGroups(ctx, chains, opt.address )
     # TODO change to generic fn, and output graph
     return
+
 
 def argparser():
     rootparser = argparse.ArgumentParser(prog='haystack-reverse',
@@ -189,6 +193,7 @@ def argparser():
     cleanp.set_defaults(func=clean)
 
     return rootparser
+
 
 def main(argv):
 

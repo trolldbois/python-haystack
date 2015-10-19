@@ -434,17 +434,20 @@ class ReversedType(ctypes.Structure):
 
     @classmethod
     def create(cls, _context, name):
-        ctypes_type = _context.getReversedType(name)
+        ctypes_type = _context.get_reversed_type(name)
         if ctypes_type is None:  # make type an register it
-            ctypes_type = type(
-                name, (cls,), {
-                    '_instances': dict()})  # leave _fields_ out
-            _context.addReversedType(name, ctypes_type)
+            ctypes_type = type(name, (cls,), {'_instances': dict()})  # leave _fields_ out
+            _context.add_reversed_type(name, ctypes_type)
         return ctypes_type
 
-    ''' add the instance to be a instance of this type '''
     @classmethod
     def addInstance(cls, anonymousStruct):
+        """
+        add the instance to be a instance of this type
+
+        :param anonymousStruct:
+        :return:
+        """
         vaddr = anonymousStruct._vaddr
         cls._instances[vaddr] = anonymousStruct
 

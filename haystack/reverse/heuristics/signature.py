@@ -50,7 +50,7 @@ class TypeReverser(model.AbstractReverser):
         for _record in _context.listStructures():
             self._signatures.append((_record.address, _record.get_signature(True)))
             self._nb_reversed += 1
-            self._callback()
+            self._callback(1) ## FIXME
         ##
         self._similarities = []
         for i, (addr1, el1) in enumerate(self._signatures[:-1]):
@@ -538,7 +538,7 @@ def makeReversedTypes(context, sizeCache):
                 f.setComment('pointer fixed')
 
     log.info('[+] For new reversed type, fix their definitive fields.')
-    for revStructType in context.listReversedTypes():
+    for revStructType in context.list_reversed_types():
         revStructType.makeFields(context)
 
     # poitners not in the heap
@@ -627,7 +627,7 @@ def fixType(context, chains):
 def fixInstanceType(context, instance, name):
     # TODO if instance.isFixed, return instance.getCtype()
     instance.set_name(name)
-    ctypes_type = context.getReversedType(name)
+    ctypes_type = context.get_reversed_type(name)
     if ctypes_type is None:  # make type
         ctypes_type = structure.ReversedType.create(context, name)
     ctypes_type.addInstance(instance)

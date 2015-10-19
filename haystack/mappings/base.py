@@ -202,6 +202,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
     def read_array(self, address, basetype, count):
         raise NotImplementedError(self)
 
+
 class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     """
     Handler for the concept of process memory.
@@ -236,7 +237,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # finish initialization
         self._heap_finder = None
         self.__optim_get_mapping_for_address()
-        self.__contextes = {}
+        self.__context = None
 
     def get_name(self):
         """Returns the name of the process memory dump we are analysing"""
@@ -303,19 +304,11 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         return False
 
     # reverse helper
-    def cache_context_for_heap(self, mmap, ctx):
-        """Caches the ReverserContext for a IMemoryMapping"""
-        self.__contextes[mmap.get_marked_heap_address()] = ctx
-
-    def get_cached_context_for_heap(self, mmap):
-        """Returns the cached ReverserContext for a IMemoryMapping"""
-        if mmap.get_marked_heap_address() not in self.__contextes:
-            return None
-        return self.__contextes[mmap.get_marked_heap_address()]
-
-    def get_cached_context(self):
-        """Returns all cached ReverserContext"""
-        return self.__contextes.values()
+    def get_reverse_context(self):
+        from haystack.reverse import context
+        if self.__context is None:
+            self.__context = context.ProcessContext(self)
+        return self.__context
 
     def is_valid_address(self, obj, structType=None):  # FIXME is valid pointer
         """
