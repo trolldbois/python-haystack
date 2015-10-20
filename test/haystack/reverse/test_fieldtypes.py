@@ -69,15 +69,23 @@ class TestField(SrcTests):
         fs2.value = start
         fs3 = fieldtypes.PointerField(_record, 1*word_size, fieldtypes.POINTER, word_size, False)
         fs3.value = start
-        new_field = fieldtypes.FieldType.makeStructField(_record, 1*word_size, 'LIST_ENTRY', [fs2, fs3], 'list')
+        # the new field sub record
+        new_field = fieldtypes.RecordField(_record, 1*word_size, 'list', 'LIST_ENTRY', [fs2, fs3])
+        # fieldtypes.FieldType.makeStructField(_record, 1*word_size, 'LIST_ENTRY', [fs2, fs3], 'list')
         # add them
         fields = [f1, new_field, f4]
         _record.add_fields(fields)
         self.assertEqual(len(_record), 40)
+        f1, f2, f3 = _record.get_fields()
+        self.assertEqual(len(f1), word_size)
+        self.assertEqual(len(f2), word_size*2)
+        self.assertEqual(len(f3), word_size)
+
+        self.assertEqual(f2.name, 'list')
+        self.assertIsInstance(f2.typename, fieldtypes.FieldTypeStruct)
+        self.assertEqual(f2.typename.basename, 'LIST_ENTRY')
 
         print _record.to_string()
-        import code
-        code.interact(local=locals())
 
 
 if __name__ == '__main__':

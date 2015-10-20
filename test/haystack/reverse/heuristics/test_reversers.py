@@ -75,7 +75,7 @@ class TestDoubleLinkedReverser(SrcTests):
         one = start.get_fields()[1]
         one = heap_context.get_record_for_address(one.value-one.offset)
         print one.to_string()
-        list_field = [x for x in one.get_fields() if 'list_8' == x.get_name()][0]
+        list_field = [x for x in one.get_fields() if 'list' == x.get_name()][0]
         offset = list_field.offset
         print list_field.typename
         # check the field is at the right offset

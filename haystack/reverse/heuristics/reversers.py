@@ -310,9 +310,9 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         back_field.offset = self._word_size
         next_field.set_name('Next')
         back_field.set_name('Back')
-        nb_fields = [next_field, back_field]
+        sub_fields = [next_field, back_field]
         # make a substructure
-        new_field = fieldtypes.FieldType.makeStructField(_record, offset, 'LIST_ENTRY', nb_fields, 'list')
+        new_field = fieldtypes.RecordField(_record, offset, 'list', 'LIST_ENTRY', sub_fields)
         fields = _record.get_fields()
         fields.remove(next_field)
         fields.remove(back_field)

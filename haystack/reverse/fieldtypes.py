@@ -8,6 +8,8 @@ import logging
 import ctypes
 
 from haystack.reverse import config
+from haystack.reverse import structure
+
 
 """
 the Python classes to represent the guesswork record and field typing of
@@ -87,29 +89,22 @@ class FieldType(object):
         return '<t:%s>' % self.basename
 
 
+
+def make_record_field(typename):
+    return FieldType(0x1, typename, typename, 'K')
+
+
 class FieldTypeStruct(FieldType):
     """
     Fields that are know independent structure.
     In case we reverse a Big record that has members of known record types.
     """
 
-    def __init__(self, typename, name, fields):
-        super(FieldTypeStruct, self).__init__(0x1, name, typename, 'K', isPtr=False)
-        self.size = sum([len(f) for f in fields])
-        self.elements = fields
-        # TODO s2[0].elements[0].typename.elements[0] is no good
+    def __init__(self, typename):
+        super(FieldTypeStruct, self).__init__(0x1, typename, typename, 'K', isPtr=False)
 
-    def get_fields(self):
-        return self.elements
-
-    def setStruct(self, struct):
-        self._struct = struct
-
-    def getStruct(self):
-        return self._struct
-
-    def __len__(self):
-        return self.size
+    def __str__(self):
+        return self.basename
 
 
 class FieldTypeArray(FieldType):
@@ -142,13 +137,13 @@ class Field(object):
     """
     Class that represent a Field instance, a FieldType instance.
     """
-    def __init__(self, astruct, offset, typename, size, isPadding):
+    def __init__(self, astruct, offset, _type, size, isPadding):
         self.struct = astruct
         self.offset = offset
         self.size = size
         # mhh not sure. what about array ?
-        assert isinstance(typename, FieldType)
-        self.typename = typename
+        assert isinstance(_type, FieldType)
+        self.typename = _type
         self._ctype = None
         self.padding = isPadding
         self.typesTested = []
@@ -181,6 +176,9 @@ class Field(object):
     def is_integer(self):
         return self.typename == INTEGER or self.typename == SMALLINT or self.typename == SIGNED_SMALLINT
 
+    def is_record(self):
+        return self.typename == STRUCT
+
     def is_pointer_to_string(self):
         # pointer is Resolved
         if not self.is_pointer():
@@ -205,6 +203,8 @@ class Field(object):
             # TODO should be in type
             return '%s * %d' % (self.typename.ctypes,
                                 len(self) / self.element_size)
+        elif self.is_record():
+            return '%s' % self.typename
         elif self.typename == UNKNOWN:
             return '%s * %d' % (self.typename.ctypes, len(self))
         return self.typename.ctypes
@@ -259,7 +259,7 @@ class Field(object):
             log.warning('self in struct.fields but not found by index()')
         except AttributeError as e:
             pass
-        return '<Field %s offset:%d size:%s t:%s' % (
+        return '<Field %s offset:%d size:%s t:%s>' % (
             i, self.offset, self.size, self.typename)
 
     def getValue(self, maxLen):
@@ -330,13 +330,14 @@ class Field(object):
                                            self.typename.basename,
                                            self.getValue(
                                                config.commentMaxSize))
+        elif self.is_record():
+            comment = '#'
         else:
             # unknown
             comment = '# %s %s else bytes:%s' % (
                 self.comment, self.usercomment, repr(self.getValue(config.commentMaxSize)))
 
-        fstr = "%s( '%s' , %s ), %s\n" % (
-            prefix, self.get_name(), self.get_typename(), comment)
+        fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.get_name(), self.get_typename(), comment)
         return fstr
 
     def __getstate__(self):
@@ -351,7 +352,6 @@ class PointerField(Field):
     """
     represent a pointer field
     """
-
     def __init__(self, *arg, **kwargs):
         super(PointerField, self).__init__(*arg, **kwargs)
         self._pointee = None
@@ -440,6 +440,20 @@ class ArrayField(Field):
         fstr = "%s( '%s' , %s ), %s\n" % (
             prefix, self.get_name(), self.get_typename(), comment)
         return fstr
+
+
+class RecordField(Field, structure.AnonymousRecord):
+    """
+    make a record field
+    """
+    def __init__(self, parent, offset, field_name, typename, fields):
+        size = sum([len(f) for f in fields])
+        _address = parent.address + offset
+        structure.AnonymousRecord.__init__(self, parent._memory_handler, _address, size, prefix=None)
+        Field.__init__(self, parent, offset, FieldTypeStruct(typename), size, False)
+        self.set_name(field_name)
+        self.add_fields(fields)
+        return
 
 
 #def resize(field, new_offset, new_size):

@@ -37,8 +37,8 @@ class ZeroFields(model.FieldAnalyser):
         bytes = structure.bytes
         # print 'offset:%x blen:%d'%(offset, len(bytes))
         # print repr(bytes)
-        assert((offset) % self._target.get_word_size() == 0)
-        #aligned_off = (offset)%self._target_platform.get_word_size()
+        assert(offset % self._target.get_word_size() == 0)
+        # aligned_off = (offset)%self._target_platform.get_word_size()
         start = offset
         # if aligned_off != 0: # align to next
         #    start += (self._target_platform.get_word_size() - aligned_off)

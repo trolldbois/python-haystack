@@ -13,9 +13,13 @@ import sys
 
 import os
 
-
-# FieldType, makeArrayField
 import lrucache
+
+#
+# AnonymousRecord is an instance
+# when we start reversing, we create a RecordType with fields.
+#
+#
 
 log = logging.getLogger('structure')
 
@@ -158,7 +162,7 @@ class StructureNotResolvedError(Exception):
 class AnonymousRecord(object):
     """
     AnonymousRecord in absolute address space.
-    Comparaison between struct is done is relative addresse space.
+    Comparison between struct is done is relative address space.
     """
 
     def __init__(self, memory_handler, _address, size, prefix=None):
@@ -175,6 +179,7 @@ class AnonymousRecord(object):
         self.__address = _address
         self._size = size
         self._reverse_level = 0
+        self._record_type = None
         self.reset()  # set fields
         self.set_name(prefix)
         return
@@ -423,6 +428,27 @@ class %s(ctypes.Structure):  # %s
         if text:
             return ''.join([f.get_signature()[0].sig.upper() for f in self._fields])
         return [f.get_signature()[0] for f in self._fields]
+
+
+class RecordType(object):
+    """
+    The type of a record.
+
+    """
+    def __init__(self, name, size):
+        self.name = name
+        self.__size = int(size)
+        self.__fields = []
+
+    def set_fields(self, fields):
+        self.__fields = fields
+        self.__fields.sort()
+
+    def get_fields(self):
+        return self.__fields
+
+    def __len__(self):
+        return int(self.__size)
 
 
 class ReversedType(ctypes.Structure):
