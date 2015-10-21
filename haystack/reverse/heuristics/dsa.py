@@ -10,6 +10,7 @@ import collections
 
 from haystack.reverse import re_string
 from haystack.reverse import fieldtypes
+from haystack.reverse import structure
 from haystack.reverse.heuristics import model
 
 log = logging.getLogger('dsa')
@@ -78,7 +79,8 @@ class ZeroFields(model.FieldAnalyser):
             else:
                 continue
             # make a field
-            fields.append(fieldtypes.Field(start + field[0], self._typename, size, False))
+            _offset = start + field[0]
+            fields.append(fieldtypes.Field('zerroes_%d' % _offset, _offset, self._typename, size, False))
         # we have all fields
         return fields
 
@@ -97,7 +99,8 @@ class UTF16Fields(model.FieldAnalyser):
             # we force aligned results only.
             index = re_string.rfind_utf16(bytes, offset, size, True, self._word_size)
             if index > -1:
-                f = fieldtypes.Field(offset + index, fieldtypes.STRING16, size - index, False)
+                _offset = offset + index
+                f = fieldtypes.Field('utf16_%d' % _offset, _offset, fieldtypes.STRING16, size - index, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size = index  # reduce unknown field in prefix
@@ -122,11 +125,12 @@ class PrintableAsciiFields(model.FieldAnalyser):
             # print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
             index, ssize = re_string.find_ascii(bytes, offset, size)
             if index == 0:
+                _offset =  offset + index
                 if (ssize < size) and bytes[offset + index + ssize] == '\x00':  # space for a \x00
                     ssize += 1
-                    f = fieldtypes.Field(offset + index, fieldtypes.STRINGNULL, ssize, False)
+                    f = fieldtypes.Field('strnull_%d' % _offset, _offset, fieldtypes.STRINGNULL, ssize, False)
                 else:
-                    f = fieldtypes.Field(offset + index, fieldtypes.STRING, ssize, False)
+                    f = fieldtypes.Field('str_%d' % _offset, _offset, fieldtypes.STRING, ssize, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size -= ssize  # reduce unknown field
@@ -162,7 +166,7 @@ class PointerFields(model.FieldAnalyser):
                 continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
-            field = fieldtypes.PointerField(offset, self._word_size)
+            field = fieldtypes.PointerField('ptr_%d' % offset, offset, self._word_size)
             # TODO: leverage the context._function_names
             # if value in structure._context._function_names:
             #    field.comment = ' %s::%s' % (os.path.basename(self._memory_handler.get_mapping_for_address(value).pathname),
@@ -184,16 +188,16 @@ class IntegerFields(model.FieldAnalyser):
     def make_fields(self, structure, offset, size):
         # iterate on all offsets . NOT assert( size ==
         # self._target_platform.get_word_size())
-        assert(offset %self._word_size == 0)  # vaddr and offset should be aligned
-        #log.debug('checking Integer')
-        bytes = structure.bytes
+        assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
+        # log.debug('checking Integer')
+        my_bytes = structure.bytes
         fields = []
         while size >= self._word_size:
             # print 'checking >'
-            field = self.checkSmallInt(structure, bytes, offset)
+            field = self.check_small_integers(my_bytes, offset)
             if field is None:
                 # print 'checking <'
-                field = self.checkSmallInt(structure, bytes, offset, '>')
+                field = self.check_small_integers(my_bytes, offset, '>')
             # we have a field smallint
             if field is not None:
                 fields.append(field)
@@ -201,20 +205,20 @@ class IntegerFields(model.FieldAnalyser):
             offset += self._word_size
         return fields
 
-    def checkSmallInt(self, structure, bytes, offset, endianess='<'):
+    def check_small_integers(self, my_bytes, offset, endianess='<'):
         """ check for small value in signed and unsigned forms """
-        data = bytes[offset:offset + self._word_size]
+        data = my_bytes[offset:offset + self._word_size]
         val = self._target.get_target_ctypes_utils().unpackWord(data, endianess)
         # print endianess, val
         if val < 0xffff:
-            field = fieldtypes.Field(offset, fieldtypes.SMALLINT, self._word_size, False)
+            field = fieldtypes.Field('small_int_%d' % offset, offset, fieldtypes.SMALLINT, self._word_size, False)
             # FIXME
             field.value = val
             field.endianess = endianess
             return field
         # check signed int
         elif (2 ** (self._word_size * 8) - 0xffff) < val:
-            field = fieldtypes.Field(offset, fieldtypes.SIGNED_SMALLINT, self._word_size, False)
+            field = fieldtypes.Field('small_signed_int_%d' % offset, offset, fieldtypes.SIGNED_SMALLINT, self._word_size, False)
             # FIXME
             field.value = val
             field.endianess = endianess
@@ -249,8 +253,10 @@ class FieldReverser(model.AbstractReverser):
     def reverse_record(self, _context, _record):
         _record.reset()
         fields, gaps = self._analyze(_record)
-        _record.add_fields(fields)
-        _record.add_fields(gaps)  # , fieldtypes.UNKNOWN
+        # _record.add_fields(fields)
+        # _record.add_fields(gaps)  # , fieldtypes.UNKNOWN
+        _record_type = structure.RecordType('struct_%x' % _record.address, len(_record), fields+gaps)
+        _record.set_record_type(_record_type)
         _record.set_reverse_level(self._reverse_level)
         return _record
 
@@ -260,7 +266,7 @@ class FieldReverser(model.AbstractReverser):
         # call on analyzers
         fields = []
         nb = -1
-        gaps = [fieldtypes.Field(0, fieldtypes.UNKNOWN, len(_record), False)]
+        gaps = [fieldtypes.Field('unknown_0', 0, fieldtypes.UNKNOWN, len(_record), False)]
 
         _record.set_reverse_level(10)
 
@@ -308,7 +314,7 @@ class FieldReverser(model.AbstractReverser):
         lastfield_size = len(_record) - nextoffset
         if lastfield_size > 0:
             if lastfield_size < self._word_size:
-                gap = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, lastfield_size, True)
+                gap = fieldtypes.Field('gap_%d' % nextoffset, nextoffset, fieldtypes.UNKNOWN, lastfield_size, True)
                 log.debug('_make_gaps: adding last field at offset %d:%d', gap.offset, gap.offset + len(gap))
                 gaps.append(gap)
             else:
@@ -322,17 +328,17 @@ class FieldReverser(model.AbstractReverser):
                     add (padding + gap) to gaps
                  """
         if nextoffset % self._word_size == 0:
-            gap = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, endoffset - nextoffset, False)
+            gap = fieldtypes.Field('gap_%d' % nextoffset, nextoffset, fieldtypes.UNKNOWN, endoffset - nextoffset, False)
             log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
         else:
             # unaligned field should be splitted
             s1 = self._word_size - nextoffset % self._word_size
-            gap1 = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, s1, True)
+            gap1 = fieldtypes.Field('gap_%d' % nextoffset, nextoffset, fieldtypes.UNKNOWN, s1, True)
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = fieldtypes.Field(nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = fieldtypes.Field('gap_%d' % nextoffset+s1, nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return

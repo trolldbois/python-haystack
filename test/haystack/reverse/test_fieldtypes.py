@@ -50,7 +50,7 @@ class TestField(SrcTests):
 
     def test_is_types(self):
         # def __init__(self, astruct, offset, typename, size, isPadding):
-        ptr = fieldtypes.PointerField(8, 4)
+        ptr = fieldtypes.PointerField('ptr_0', 8, 4)
         self.assertFalse(ptr.is_string())
         self.assertTrue(ptr.is_pointer())
         self.assertFalse(ptr.is_zeroes())
@@ -62,19 +62,21 @@ class TestField(SrcTests):
         _record = structure.AnonymousRecord(self.memory_handler, start, 40)
         word_size = self._target.get_word_size()
 
-        f1 = fieldtypes.Field(0*word_size, fieldtypes.ZEROES, word_size, False)
-        f4 = fieldtypes.Field(3*word_size, fieldtypes.ZEROES, word_size, False)
+        f1 = fieldtypes.Field('f1', 0*word_size, fieldtypes.ZEROES, word_size, False)
+        f4 = fieldtypes.Field('f2', 3*word_size, fieldtypes.ZEROES, word_size, False)
         # offset in the substruct
-        fs2 = fieldtypes.PointerField(0, word_size)
+        fs2 = fieldtypes.PointerField('Back', 0, word_size)
         fs2.value = start
-        fs3 = fieldtypes.PointerField(1*word_size, word_size)
+        fs3 = fieldtypes.PointerField('Next', 1*word_size, word_size)
         fs3.value = start
         # the new field sub record
         new_field = fieldtypes.RecordField(_record, 1*word_size, 'list', 'LIST_ENTRY', [fs2, fs3])
         # fieldtypes.FieldType.makeStructField(_record, 1*word_size, 'LIST_ENTRY', [fs2, fs3], 'list')
         # add them
         fields = [f1, new_field, f4]
-        _record.add_fields(fields)
+        #_record.add_fields(fields)
+        _record_type = structure.RecordType('struct_text', 40, fields)
+        _record.set_record_type(_record_type)
         self.assertEqual(len(_record), 40)
         f1, f2, f3 = _record.get_fields()
         self.assertEqual(len(f1), word_size)
@@ -82,8 +84,8 @@ class TestField(SrcTests):
         self.assertEqual(len(f3), word_size)
 
         self.assertEqual(f2.name, 'list')
-        self.assertIsInstance(f2.typename, fieldtypes.FieldTypeStruct)
-        self.assertEqual(f2.typename.basename, 'LIST_ENTRY')
+        self.assertIsInstance(f2.field_type, fieldtypes.FieldTypeStruct)
+        self.assertEqual(f2.field_type.name, 'LIST_ENTRY')
 
         print _record.to_string()
 
@@ -91,6 +93,7 @@ class TestField(SrcTests):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
+    logging.getLogger("reversers").setLevel(level=logging.DEBUG)
     logging.getLogger("structure").setLevel(level=logging.DEBUG)
     logging.getLogger("field").setLevel(level=logging.DEBUG)
     logging.getLogger("re_string").setLevel(level=logging.DEBUG)

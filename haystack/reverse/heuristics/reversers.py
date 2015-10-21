@@ -120,6 +120,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         self.found = 0
         self.members = set()
         self.lists = {}
+        self._process_context = self._memory_handler.get_reverse_context()
 
     def _is_record_address_in_lists(self, address, field_offset, record_size):
         # there could be multiple list of record of same length,
@@ -178,8 +179,6 @@ class DoubleLinkedListReverser(model.AbstractReverser):
             if _members is not None:
                 self._add_new_list(offset, len(_record), _members)
                 self._nb_reversed += len(_members)
-                # change the type and fields for the whole list of record
-                self._rename_and_split(_context, _members, offset, head_addr)
                 self.found += 1
                 log.debug('0x%x is a linked_list_member in a list of %d members', head_addr, len(_members))
             else:
@@ -220,12 +219,12 @@ class DoubleLinkedListReverser(model.AbstractReverser):
             return False
         ## checking the size of the items
         ## FIXME replace by the size list
-        if len(_context.get_record_for_address(_next-offset)) != size:
-            log.debug('ptr->next size != %s', size)
-            return False
-        if len(_context.get_record_for_address(_back-offset)) != size:
-            log.debug('ptr->back size != %s', size)
-            return False
+        #if len(_context.get_record_for_address(_next-offset)) != size:
+        #    log.debug('ptr->next size != %s', size)
+        #    return False
+        #if len(_context.get_record_for_address(_back-offset)) != size:
+        #    log.debug('ptr->back size != %s', size)
+        #    return False
         return True
 
     def get_two_pointers(self, _context, st_addr, offset=0):
@@ -290,7 +289,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         #print
         return current-offset, members
 
-    def _rename_and_split(self, _context, _members, offset, head_addr):
+    def rename_record_type(self, _members, offset):
         """
         Change the type of the 2 pointers to a substructure.
         Rename the field to reflect this .
@@ -304,16 +303,16 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         """
         # use member[1] instead of head, so that we have a better chance for field types.
         # in head, back pointer is probably a zero value, not a pointer field type.
+        heap = self._memory_handler.get_mapping_for_address(_members[1])
+        _context = self._process_context.get_context_for_heap(heap)
         _record = _context.get_record_for_address(_members[1])
         # we need two pointer fields to create a substructure.
         ## Check if field at offset is a pointer, If so change it name, otherwise split
         old_next = _record.get_field_at_offset(offset)
         old_back = _record.get_field_at_offset(offset+self._word_size)
         #
-        next_field = fieldtypes.PointerField(0, self._word_size)
-        back_field = fieldtypes.PointerField(self._word_size, self._word_size)
-        next_field.set_name('Next')
-        back_field.set_name('Back')
+        next_field = fieldtypes.PointerField('Next', 0, self._word_size)
+        back_field = fieldtypes.PointerField('Back', self._word_size, self._word_size)
         sub_fields = [next_field, back_field]
         # make a substructure
         new_field = fieldtypes.RecordField(_record, offset, 'list', 'LIST_ENTRY', sub_fields)
@@ -321,6 +320,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         fields.remove(old_next)
         if old_next == old_back:
             # its probably a LIST_ENTRY btw.
+            log.debug("old_next == old_back, aborting")
             return
         fields.remove(old_back)
         fields.append(new_field)
@@ -329,41 +329,27 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         # create a new type
         head_addr = _members[0]
         _record_type = structure.RecordType('list_%x' % head_addr, len(_record), fields)
+        log.debug("Created Record Type %s", _record_type.to_string())
 
         # apply the fields template to all members of the list
         for list_item_addr in _members:
+            heap = self._memory_handler.get_mapping_for_address(list_item_addr)
+            _context = self._process_context.get_context_for_heap(heap)
             _item = _context.get_record_for_address(list_item_addr)
             if len(_item) != len(_record):
                 print "x2 linked reverser: len(_item) != len(_record)"
             else:
-                _item.set_type(_record_type)
+                _item.set_record_type(_record_type)
 
         # push the LIST_ENTRY type into the context/memory_handler
         rev_context = self._memory_handler.get_reverse_context()
         rev_context.add_reversed_type(_record_type, _members)
 
         # change the list_head name back
+        heap = self._memory_handler.get_mapping_for_address(head_addr)
+        _context = self._process_context.get_context_for_heap(heap)
         _context.get_record_for_address(head_addr).set_name('list_head')
         pass
-
-    def _split_and_set_pointer_fieldtype(self, _record, offset):
-        # split the old field into 2
-        # set the newly created to pointer type.
-        # reduce the size of the previous old field
-        old_field = _record.get_field_at_offset(offset)
-        old_start_offset = old_field.offset
-        old_end_offset = old_start_offset + len(old_field)
-        assert old_start_offset < offset < old_end_offset
-        assert offset % self._word_size == 0
-        field = fieldtypes.PointerField(offset, self._word_size)
-        # we do not care about the pointer value as we will create a record type and
-        # reload the instance with that type.
-        # check
-        # tail insertion case
-        if field.offset+len(field) == old_end_offset:
-            # reduce old_field
-            old_field.resize()
-        return
 
 
 class PointerGraphReverser(model.AbstractReverser):
@@ -454,7 +440,7 @@ class ArrayFieldsReverser(model.AbstractReverser):
         if _record.get_reverse_level() < 30:
             raise ValueError('The record reverse level needs to be >30')
 
-        log.debug('0x%x: %s', _record.address, _record.get_signature(text=True))
+        log.debug('0x%x: %s', _record.address, _record.get_signature_text())
 
         _record._dirty = True
 
@@ -507,10 +493,12 @@ class ArrayFieldsReverser(model.AbstractReverser):
 
         log.debug('done with aggregateFields')
         _record.reset()
-        _record.add_fields(myfields)
+        # _record.add_fields(myfields)
+        _record_type = structure.RecordType('struct_%x' % _record.address, len(_record), myfields)
+        _record.set_record_type(_record_type)
         _record.set_reverse_level(self._reverse_level)
         # print 'final', self.fields
-        log.debug('0x%x: %s', _record.address, _record.get_signature(text=True))
+        log.debug('0x%x: %s', _record.address, _record.get_signature_text())
         return
 
 

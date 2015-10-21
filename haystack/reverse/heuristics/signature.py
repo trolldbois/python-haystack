@@ -48,7 +48,7 @@ class TypeReverser(model.AbstractReverser):
         import Levenshtein
         log.debug("Gathering all signatures")
         for _record in _context.listStructures():
-            self._signatures.append((_record.address, _record.get_signature(True)))
+            self._signatures.append((_record.address, _record.get_signature_text()))
             self._nb_reversed += 1
             self._callback(1) ## FIXME
         ##
@@ -127,7 +127,7 @@ class SignatureGroupMaker:
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
             # get the signature for the record
-            self._signatures.append((addr, self._context.get_record_for_address(addr).get_signature(True)))
+            self._signatures.append((addr, self._context.get_record_for_address(addr).get_signature_text()))
         return
 
     def make(self):
@@ -491,7 +491,7 @@ def graphStructureGroups(context, chains, originAddr=None):
             _record = context.get_record_for_address(addr)
             pointer_fields = [f for f in _record.get_fields() if f.is_pointer()]
             for f in pointer_fields:
-                addr_child = f.get_value(_record)
+                addr_child = f.get_value_for_field(_record)
                 child = context.get_record_at_address(addr)
                 targets.add(('%x' % addr, '%x' % child.address))
             graph.add_edges_from(targets)
@@ -524,7 +524,7 @@ def makeReversedTypes(heap_context, sizeCache):
         decoder.reverse_record(heap_context, s)
         pointer_fields = [f for f in s.get_fields() if f.is_pointer()]
         for f in pointer_fields:
-            addr = f.get_value(s)
+            addr = f.get_value_for_field(s)
             if addr in heap_context.heap:
                 try:
                     ctypes_type = heap_context.get_record_at_address(
@@ -537,8 +537,8 @@ def makeReversedTypes(heap_context, sizeCache):
                         heap_context.get_record_at_address(addr),
                         getname())
                 #f.setCtype(ctypes.POINTER(ctypes_type))
-                f.set_child_ctype(ctypes.POINTER(ctypes_type))
-                f.setComment('pointer fixed')
+                f.set_pointee_ctype(ctypes.POINTER(ctypes_type))
+                f.set_comment('pointer fixed')
 
     log.info('[+] For new reversed type, fix their definitive fields.')
     for revStructType in heap_context.list_reversed_types():

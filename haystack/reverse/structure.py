@@ -15,6 +15,7 @@ import os
 
 import lrucache
 
+
 #
 # AnonymousRecord is an instance
 # when we start reversing, we create a RecordType with fields.
@@ -179,17 +180,30 @@ class AnonymousRecord(object):
         self.__address = _address
         self._size = size
         self._reverse_level = 0
-        self._record_type = None
+        from haystack.reverse import structure
+        self.__record_type = structure.RecordType('struct_%x' % self.__address, self._size, [])
         self.reset()  # set fields
         self.set_name(prefix)
         return
 
-    def set_name(self, name):
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
         """
         Sets a name for this record.
         :param name: name root for the record
         :return:
         """
+        if name is None:
+            self._name = self.__record_type.name
+        else:
+            self._name = '%s_%x' % (name, self.__address)
+
+    def set_name(self, name):
+        # deprecated
         if name is None:
             self._name = 'struct_%x' % self.__address
         else:
@@ -198,25 +212,19 @@ class AnonymousRecord(object):
     def get_name(self):
         return self._name
 
-    def set_type(self, t):
-        """
-        Assign a reversed record type to this instance.
-        That will change the fields types and render this record immutable.
-        Any change will have to change the type of this record.
-        :param t:
-        :return:
-        """
-        self.__type = t
-        # create instance of these fields.
-        ## self._fields = t.get_fields()
+    @property
+    def address(self):
+        return self.__address
 
-    def get_ctype(self):
-        if self._ctype is None:
-            raise TypeError('Structure has no type')
-        return self._ctype
+    @property  # TODO add a cache property ?
+    def bytes(self):
+        if self._bytes is None:
+            m = self._memory_handler.get_mapping_for_address(self.__address)
+            self._bytes = m.read_bytes(self.__address, self._size)
+            # TODO re_string.Nocopy
+        return self._bytes
 
     def reset(self):
-        self._fields = []
         self._resolved = False
         self._resolvedPointers = False
         self._reverse_level = 0
@@ -225,14 +233,23 @@ class AnonymousRecord(object):
         self._bytes = None
         return
 
-    def add_fields(self, fields):
+    def set_record_type(self, record_type):
         """
-        Assign fields to this structure.
-
-        :param fields: list of fieldtypes.Field
+        Assign a reversed record type to this instance.
+        That will change the fields types and render this record immutable.
+        Any change will have to change the type of this record.
+        :param t:
         :return:
         """
-        self._fields.extend(fields)
+        self.__record_type = record_type
+
+    def get_fields(self):
+        """
+        Return the reversed fields for this record
+
+        :return: list(Field)
+        """
+        return [f for f in self.__record_type.get_fields()]
 
     def saveme(self, _context):
         """
@@ -285,10 +302,10 @@ class AnonymousRecord(object):
         if self.get_reverse_level() < 10:
             raise StructureNotResolvedError("Reverse level %d is too low for record 0x%x", self.get_reverse_level(), self.address)
         # find the field
-        ret = [f for f in self._fields if f.offset == offset]
+        ret = [f for f in self.get_fields() if f.offset == offset]
         if len(ret) == 0:
             # then check for closest match
-            ret = sorted([f for f in self._fields if f.offset < offset])
+            ret = sorted([f for f in self.get_fields() if f.offset < offset])
             if len(ret) == 0:
                 raise ValueError("Offset 0x%x is not in structure?!" % offset)  # not possible
             # the last field standing is the one ( ordered fields)
@@ -303,27 +320,6 @@ class AnonymousRecord(object):
         #ret.sort()
         return ret[0]
 
-    def get_fields(self):
-        """
-        Return the reversed fields for this record
-
-        :return: list(Field)
-        """
-        self._fields.sort()
-        return [f for f in self._fields]
-
-    @property
-    def address(self):
-        return self.__address
-
-    @property  # TODO add a cache property ?
-    def bytes(self):
-        if self._bytes is None:
-            m = self._memory_handler.get_mapping_for_address(self.__address)
-            self._bytes = m.read_bytes(self.__address, self._size)
-            # TODO re_string.Nocopy
-        return self._bytes
-
     def set_memory_handler(self, memory_handler):
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
@@ -336,9 +332,13 @@ class AnonymousRecord(object):
 
     def to_string(self):
         # print self.fields
-        self._fields.sort()
-        fieldsString = '[ \n%s ]' % (''.join([field.to_string(self, '\t') for field in self._fields]))
-        info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature(text=True), len(self))
+        self.get_fields().sort()
+        field_string_lines = []
+        for field in self.get_fields():
+            field_value = self.get_value_for_field(field)
+            field_string_lines.append('\t'+field.to_string(field_value))
+        fieldsString = '[ \n%s ]' % (''.join(field_string_lines))
+        info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature_text(), len(self))
         ctypes_def = '''
 class %s(ctypes.Structure):  # %s
   _fields_ = %s
@@ -368,7 +368,7 @@ class %s(ctypes.Structure):  # %s
         :param i:
         :return:
         """
-        return self._fields[i]
+        return self.get_fields()[i]
 
     def __len__(self):
         """
@@ -417,15 +417,66 @@ class %s(ctypes.Structure):  # %s
 
     ### pieces of codes that need review.
 
-    def get_signature(self, text=False):
-        if text:
-            return ''.join(['%s%d' % (f.get_signature()[0].sig, f.get_signature()[1]) for f in self._fields])
-        return [f.get_signature() for f in self._fields]
+    def get_signature_text(self):
+        return ''.join(['%s%d' % (f.get_signature()[0].signature, f.get_signature()[1]) for f in self.get_fields()])
 
-    def get_type_signature(self, text=False):
-        if text:
-            return ''.join([f.get_signature()[0].sig.upper() for f in self._fields])
-        return [f.get_signature()[0] for f in self._fields]
+    def get_signature(self):
+        return [f.get_signature() for f in self.get_fields()]
+
+    def get_type_signature_text(self):
+        return ''.join([f.get_signature()[0].signature.upper() for f in self.get_fields()])
+
+    def get_type_signature(self):
+        return [f.get_signature()[0] for f in self.get_fields()]
+
+    def get_value_for_field(self, _field, max_len=120):
+        my_bytes = self._get_value_for_field(_field, max_len)
+        if isinstance(my_bytes, str):
+            bl = len(str(my_bytes))
+            if bl >= max_len:
+                my_bytes = my_bytes[:max_len / 2] + '...' + \
+                    my_bytes[-(max_len / 2):]  # idlike to see the end
+        return my_bytes
+
+    def _get_value_for_field(self, _field, max_len=120):
+        from haystack.reverse import fieldtypes
+        word_size = self._target.get_word_size()
+        if len(_field) == 0:
+            return '<-haystack no pattern found->'
+        if _field.is_string():
+            if _field.field_type == fieldtypes.STRING16:
+                try:
+                    my_bytes = "%s" % (repr(self.bytes[_field.offset:_field.offset + _field.size].decode('utf-16')))
+                except UnicodeDecodeError as e:
+                    log.error('ERROR ON : %s', repr(self.bytes[_field.offset:_field.offset + _field.size]))
+                    my_bytes = self.bytes[_field.offset:_field.offset + _field.size]
+            else:
+                my_bytes = "'%s'" % (self.bytes[_field.offset:_field.offset + _field.size])
+        elif _field.is_integer():
+            # what about endianness ?
+            endianess = '<' # FIXME dsa self.endianess
+            data = self.bytes[_field.offset:_field.offset + word_size]
+            val = self._target.get_target_ctypes_utils().unpackWord(data, endianess)
+            return val
+        elif _field.is_zeroes():
+            my_bytes = repr('\\x00'*len(_field))
+        elif _field.is_array():
+            log.warning('ARRAY in Field type, %s', _field.field_type)
+            log.error('error in 0x%x offset 0x%x', self.address, _field.offset)
+            my_bytes = ''.join(['[', ','.join([el.to_string(self) for el in _field.elements]), ']'])
+        elif _field.padding or _field.field_type == fieldtypes.UNKNOWN:
+            my_bytes = self.bytes[_field.offset:_field.offset + len(_field)]
+        elif _field.is_pointer():
+            data = self.bytes[_field.offset:_field.offset + word_size]
+            if len(data) != word_size:
+                print repr(data), len(data)
+                import pdb
+                pdb.set_trace()
+            val = self._target.get_target_ctypes_utils().unpackWord(data)
+            return val
+        else:  # bytearray, pointer...
+            my_bytes = self.bytes[_field.offset:_field.offset + len(_field)]
+        return my_bytes
 
 
 class RecordType(object):
@@ -443,6 +494,21 @@ class RecordType(object):
 
     def __len__(self):
         return int(self.__size)
+
+    def to_string(self):
+        # print self.fields
+        self.__fields.sort()
+        field_string_lines = []
+        for field in self.__fields:
+            field_string_lines.append('\t'+field.to_string(None))
+        fields_string = '[ \n%s ]' % (''.join(field_string_lines))
+        info = 'size:%d' % len(self)
+        ctypes_def = '''
+class %s(ctypes.Structure):  # %s
+  _fields_ = %s
+
+''' % (self.name, info, fields_string)
+        return ctypes_def
 
 
 class ReversedType(ctypes.Structure):

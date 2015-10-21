@@ -65,26 +65,37 @@ class TestDoubleLinkedReverser(SrcTests):
 
         # reverse the list
         self.dllr.reverse()
-
         print mid.to_string()
 
         size = len(mid)
         # there is a list for this size
         self.assertIn(size, self.dllr.lists)
-        # the offset is the same for all
-        # FIXME this should be "entry" LIST ENTRY type with 2 subfields.
+        # is the offset is the same for all item in the list ?
+
+        # produce new types
+        self.assertEqual(self.dllr.lists.keys(), [40])
+        self.assertEqual(self.dllr.lists[40].keys(), [8])
+        # there is only one list of items that size at that offset
+        self.assertEqual( len(self.dllr.lists[40][8]), 1)
+        print self.dllr.lists[40][8][0]
+        self.dllr.rename_record_type(self.dllr.lists[40][8][0], 8)
+
+        print mid.to_string()
+
+        # this should be "entry" LIST ENTRY type with 2 subfields.
         one_ptr = start.get_fields()[1]
         self.assertEqual(one_ptr.name, 'list')
         next_one = one_ptr.get_fields()[0]
         self.assertEqual(next_one.name, 'Next')
         # get the pointer value.
-        one_value = next_one.get_value(one_ptr, word_size)
+        one_value = one_ptr.get_value_for_field(next_one, word_size)
+        print one_value
         # get the pointee record
         one = heap_context.get_record_for_address(one_value-one_ptr.offset)
         print one.to_string()
-        list_field = [x for x in one.get_fields() if 'list' == x.get_name()][0]
+        list_field = [x for x in one.get_fields() if 'list' == x.name][0]
         offset = list_field.offset
-        print list_field.typename
+        print list_field.field_type
         # check the field is at the right offset
         self.assertIn(offset, self.dllr.lists[size])
         # there is only one list for this offset and size of record
@@ -237,7 +248,7 @@ class TestReverseZeus(unittest.TestCase):
 
     def _v(self, record):
         if True:
-            return record.get_signature(text=True)
+            return record.get_signature_text()
         else:
             return record.to_string()
 
@@ -247,14 +258,14 @@ class TestReverseZeus(unittest.TestCase):
         struct_d = self._context.get_record_for_address(self.offset)
         struct_d.reset()
 
-        sig_1 = struct_d.get_signature(text=True)
+        sig_1 = struct_d.get_signature_text()
         # print '1.', self._v(struct_d)
         #self.assertEqual(sig_1, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
 
         # decode bytes contents to find basic types.
         fr = dsa.FieldReverser(self.memory_handler)
         fr.reverse()
-        sig_2 = struct_d.get_signature(text=True)
+        sig_2 = struct_d.get_signature_text()
         # print '2.', self._v(struct_d)
         # no double linked list in here
         #self.assertEqual(sig_2, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
@@ -266,7 +277,7 @@ class TestReverseZeus(unittest.TestCase):
         doublelink = reversers.DoubleLinkedListReverser(self.memory_handler)
         doublelink.reverse()
         #self.assertEqual(doublelink.found, 12)
-        sig_3 = struct_d.get_signature(text=True)
+        sig_3 = struct_d.get_signature_text()
         # print '3.', self._v(struct_d)
         #self.assertEqual(sig_3, 'P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4P4P4P4P4P4P4i4z4i4i4z8P4P4z8P4i4u16z4i4z4P4P4P4P4z64P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z8272P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z176P4u4z180u4z176')
         # print struct_d.to_string()
@@ -276,7 +287,7 @@ class TestReverseZeus(unittest.TestCase):
         # identify pointer relation between structures
         pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
-        sig_4 = struct_d.get_signature(text=True)
+        sig_4 = struct_d.get_signature_text()
         # print '4.', self._v(struct_d)
         # print struct_d.to_string()
         #import code
@@ -285,7 +296,7 @@ class TestReverseZeus(unittest.TestCase):
         # aggregate field of same type in an array
         #afr = reversers.ArrayFieldsReverser(self._context)
         #afr.reverse()
-        #sig_5 = struct_d.get_signature(text=True)
+        #sig_5 = struct_d.get_signature_text()
         # print '5.', self._v(struct_d)
         # print struct_d.to_string()
         #import code
@@ -293,7 +304,7 @@ class TestReverseZeus(unittest.TestCase):
 
         tr = signature.TypeReverser(self.memory_handler)
         tr.reverse()
-        sig_6 = struct_d.get_signature(text=True)
+        sig_6 = struct_d.get_signature_text()
         # print '6.', self._v(struct_d)
         # print "tr._similarities", tr._similarities
         for a,b in tr._similarities:
@@ -331,7 +342,7 @@ class TestReversers(SrcTests):
 
     def _v(self, record):
         if True:
-            return record.get_signature(text=True)
+            return record.get_signature_text()
         else:
             return record.to_string()
 
@@ -344,13 +355,13 @@ class TestReversers(SrcTests):
         #   TypeReverser
 
         struct_d = self._context.get_record_for_address(self.offset)
-        sig_1 = struct_d.get_signature(text=True)
+        sig_1 = struct_d.get_signature_text()
         # print '1.', self._v(struct_d)
 
         # try to find some logical constructs.
         doublelink = reversers.DoubleLinkedListReverser(self.memory_handler)
         doublelink.reverse()
-        sig_2 = struct_d.get_signature(text=True)
+        sig_2 = struct_d.get_signature_text()
         # print '2.', self._v(struct_d)
         # no double linked list in here
         self.assertEqual('', sig_2)
@@ -358,14 +369,14 @@ class TestReversers(SrcTests):
         # decode bytes contents to find basic types.
         fr = dsa.FieldReverser(self.memory_handler)
         fr.reverse()
-        sig_3 = struct_d.get_signature(text=True)
+        sig_3 = struct_d.get_signature_text()
         # print '3.', self._v(struct_d)
         #self.assertEqual(sig_3, 'P8P8P8z24i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8P8P8P8P8P8P8P8P8P8P8P8P8u40P8P8P8P8P8P8P8P8P8P8i8P8T14u2z16P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z16P8')
 
         # identify pointer relation between structures
         pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
-        sig_4 = struct_d.get_signature(text=True)
+        sig_4 = struct_d.get_signature_text()
         # print '4.', self._v(struct_d)
 
         logging.getLogger("reversers").setLevel(logging.DEBUG)
@@ -374,12 +385,12 @@ class TestReversers(SrcTests):
         ## FIXME very very long.
         #afr = reversers.ArrayFieldsReverser(self._context)
         #afr.reverse()
-        #sig_5 = struct_d.get_signature(text=True)
+        #sig_5 = struct_d.get_signature_text()
         # print '5.', self._v(struct_d)
 
         tr = signature.TypeReverser(self.memory_handler)
         tr.reverse()
-        sig_6 = struct_d.get_signature(text=True)
+        sig_6 = struct_d.get_signature_text()
         # print '6.', self._v(struct_d)
         # print "tr._similarities", tr._similarities
         for a,b in tr._similarities:
@@ -420,7 +431,7 @@ class TestGraphReverser(SrcTests):
 
     def _v(self, record):
         if True:
-            return record.get_signature(text=True)
+            return record.get_signature_text()
         else:
             return record.to_string()
 
@@ -498,7 +509,7 @@ class TestTypeReverser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    # logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
     # logging.getLogger("dsa").setLevel(logging.DEBUG)
     # logging.getLogger("winxpheap").setLevel(logging.DEBUG)
