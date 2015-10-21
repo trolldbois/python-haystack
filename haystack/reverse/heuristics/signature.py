@@ -488,8 +488,10 @@ def graphStructureGroups(context, chains, originAddr=None):
             decoder.analyze_fields(record)
             print context.get_record_for_address(addr).to_string()
             targets = set()
-            for f in context.get_record_for_address(addr).get_pointer_fields():
-                addr_child = f._getValue(0)
+            _record = context.get_record_for_address(addr)
+            pointer_fields = [f for f in _record.get_fields() if f.is_pointer()]
+            for f in pointer_fields:
+                addr_child = f.get_value(_record)
                 child = context.get_record_at_address(addr)
                 targets.add(('%x' % addr, '%x' % child.address))
             graph.add_edges_from(targets)
@@ -504,42 +506,43 @@ def graphStructureGroups(context, chains, originAddr=None):
 # TODO next next step, compare struct links in a DiGraph with node ==
 # struct size + pointer index as a field.
 
-def makeReversedTypes(context, sizeCache):
+def makeReversedTypes(heap_context, sizeCache):
     ''' Compare signatures for each size groups.
     Makes a chains out of similar structures. Changes the structure names for a single
     typename when possible. Changes the ctypes types of each pointer field.'''
 
     log.info(
         '[+] Build groups of similar instances, create a reversed type for each group.')
-    for chains in buildStructureGroup(context, sizeCache):
-        fixType(context, chains)
+    for chains in buildStructureGroup(heap_context, sizeCache):
+        fixType(heap_context, chains)
 
     log.info('[+] For each instances, fix pointers fields to newly created types.')
-    decoder = dsa.FieldReverser(context.memory_handler)
-    for s in context.listStructures():
+    decoder = dsa.FieldReverser(heap_context.memory_handler)
+    for s in heap_context.listStructures():
         s.reset()
         ## s.decodeFields()
-        decoder.analyze_fields(s)
-        for f in s.get_pointer_fields():
-            addr = f._getValue(0)
-            if addr in context.heap:
+        decoder.reverse_record(heap_context, s)
+        pointer_fields = [f for f in s.get_fields() if f.is_pointer()]
+        for f in pointer_fields:
+            addr = f.get_value(s)
+            if addr in heap_context.heap:
                 try:
-                    ctypes_type = context.get_record_at_address(
+                    ctypes_type = heap_context.get_record_at_address(
                         addr).get_ctype()
                 # we have escapees, withouth a typed type... saved them from
                 # exception
                 except TypeError as e:
                     ctypes_type = fixInstanceType(
-                        context,
-                        context.get_record_at_address(addr),
+                        heap_context,
+                        heap_context.get_record_at_address(addr),
                         getname())
                 #f.setCtype(ctypes.POINTER(ctypes_type))
                 f.set_child_ctype(ctypes.POINTER(ctypes_type))
                 f.setComment('pointer fixed')
 
     log.info('[+] For new reversed type, fix their definitive fields.')
-    for revStructType in context.list_reversed_types():
-        revStructType.makeFields(context)
+    for revStructType in heap_context.list_reversed_types():
+        revStructType.makeFields(heap_context)
 
     # poitners not in the heap
     # for s in context.listStructures():
@@ -548,7 +551,7 @@ def makeReversedTypes(context, sizeCache):
     #      print s,'has a c_void_p field', f._getValue(0),
     #      print context.getStructureForOffset( f._getValue(0) )
 
-    return context
+    return heap_context
 
 
 def makeSignatures(dumpname):

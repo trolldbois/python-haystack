@@ -20,12 +20,10 @@ log = logging.getLogger('dsa')
 class ZeroFields(model.FieldAnalyser):
     """ checks for possible fields, aligned, with WORDSIZE zeros."""
     def make_fields(self, structure, offset, size):
-        assert(
-            offset %
-            self._target.get_word_size() == 0)  # vaddr and offset should be aligned
-        #log.debug('checking Zeroes')
+        assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
+        # log.debug('checking Zeroes')
         self._typename = fieldtypes.ZEROES
-        self._zeroes = '\x00' * self._target.get_word_size()
+        self._zeroes = '\x00' * self._word_size
 
         ret = self._find_zeroes(structure, offset, size)
 
@@ -37,7 +35,7 @@ class ZeroFields(model.FieldAnalyser):
         bytes = structure.bytes
         # print 'offset:%x blen:%d'%(offset, len(bytes))
         # print repr(bytes)
-        assert(offset % self._target.get_word_size() == 0)
+        assert(offset % self._word_size == 0)
         # aligned_off = (offset)%self._target_platform.get_word_size()
         start = offset
         # if aligned_off != 0: # align to next
@@ -45,11 +43,10 @@ class ZeroFields(model.FieldAnalyser):
         #    size    -= (self._target_platform.get_word_size() - aligned_off)
         # iterate
         matches = array.array('i')
-        for i in range(start, start + size, self._target.get_word_size()):
+        for i in range(start, start + size, self._word_size):
             # PERF TODO: bytes or struct test ?
             # print repr(bytes[start+i:start+i+self._target_platform.get_word_size()])
-            if bytes[
-                    start + i:start + i + self._target.get_word_size()] == self._zeroes:
+            if bytes[start + i:start + i + self._word_size] == self._zeroes:
                 matches.append(start + i)
                 # print matches
         # collate
@@ -59,11 +56,11 @@ class ZeroFields(model.FieldAnalyser):
         fields = []
         # first we need to collate neighbors
         collates = list()
-        prev = matches[0] - self._target.get_word_size()
+        prev = matches[0] - self._word_size
         x = []
         # PERF TODO: whats is algo here
         for i in matches:
-            if i - self._target.get_word_size() == prev:
+            if i - self._word_size == prev:
                 x.append(i)
             else:
                 collates.append(x)
@@ -75,13 +72,13 @@ class ZeroFields(model.FieldAnalyser):
         for field in collates:
             flen = len(field)
             if flen > 1:
-                size = self._target.get_word_size() * flen
+                size = self._word_size * flen
             elif flen == 1:
-                size = self._target.get_word_size()
+                size = self._word_size
             else:
                 continue
             # make a field
-            fields.append(fieldtypes.Field(structure, start + field[0], self._typename, size, False))
+            fields.append(fieldtypes.Field(start + field[0], self._typename, size, False))
         # we have all fields
         return fields
 
@@ -91,21 +88,21 @@ class UTF16Fields(model.FieldAnalyser):
     rfinds utf-16-ascii and ascii 7bit
     """
     def make_fields(self, structure, offset, size):
-        assert(offset % self._target.get_word_size() == 0)  # vaddr and offset should be aligned
+        assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         #log.debug('checking String')
         fields = []
         bytes = structure.bytes
-        while size > self._target.get_word_size():
+        while size > self._word_size:
             # print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
             # we force aligned results only.
-            index = re_string.rfind_utf16(bytes, offset, size, True, self._target.get_word_size())
+            index = re_string.rfind_utf16(bytes, offset, size, True, self._word_size)
             if index > -1:
-                f = fieldtypes.Field(structure, offset + index, fieldtypes.STRING16, size - index, False)
+                f = fieldtypes.Field(offset + index, fieldtypes.STRING16, size - index, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size = index  # reduce unknown field in prefix
             else:
-                size -= self._target.get_word_size()  # reduce unkown field
+                size -= self._word_size  # reduce unkown field
         # look in head
         return fields
 
@@ -117,61 +114,55 @@ class PrintableAsciiFields(model.FieldAnalyser):
     def make_fields(self, structure, offset, size):
         assert(
             offset %
-            self._target.get_word_size() == 0)  # vaddr and offset should be aligned
+            self._word_size == 0)  # vaddr and offset should be aligned
         #log.debug('checking String')
         fields = []
         bytes = structure.bytes
-        while size >= self._target.get_word_size():
+        while size >= self._word_size:
             # print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
             index, ssize = re_string.find_ascii(bytes, offset, size)
             if index == 0:
                 if (ssize < size) and bytes[offset + index + ssize] == '\x00':  # space for a \x00
                     ssize += 1
-                    f = fieldtypes.Field(structure, offset + index, fieldtypes.STRINGNULL, ssize, False)
+                    f = fieldtypes.Field(offset + index, fieldtypes.STRINGNULL, ssize, False)
                 else:
-                    f = fieldtypes.Field(structure, offset + index, fieldtypes.STRING, ssize, False)
+                    f = fieldtypes.Field(offset + index, fieldtypes.STRING, ssize, False)
                 # print repr(structure.bytes[f.offset:f.offset+f.size])
                 fields.append(f)
                 size -= ssize  # reduce unknown field
                 offset += ssize
-                if ssize % self._target.get_word_size():
-                    rest = self._target.get_word_size() - ssize % self._target.get_word_size()
+                if ssize % self._word_size:
+                    rest = self._word_size - ssize % self._word_size
                     size -= rest  # goto next aligned
                     offset += rest
             else:
-                size -= self._target.get_word_size()  # reduce unkown field
-                offset += self._target.get_word_size()
+                size -= self._word_size  # reduce unkown field
+                offset += self._word_size
         # look in head
         return fields
 
 
 class PointerFields(model.FieldAnalyser):
-
-    """ TODO tests """
     """ looks at a word for a pointer value"""
-
     def make_fields(self, structure, offset, size):
         # iterate on all offsets . NOT assert( size ==
         # self._target_platform.get_word_size())
-        assert(
-            offset %
-            self._target.get_word_size() == 0)  # vaddr and offset should be aligned
+        assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         log.debug('checking Pointer')
         bytes = structure.bytes
         fields = []
         ctypes_utils = self._target.get_target_ctypes_utils()
-        while size >= self._target.get_word_size():
-            value = ctypes_utils.unpackWord(bytes[offset:offset + self._target.get_word_size()])
+        while size >= self._word_size:
+            value = ctypes_utils.unpackWord(bytes[offset:offset + self._word_size])
             # check if pointer value is in range of _memory_handler and set self.comment to pathname value of pointer
             # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
             if not self._memory_handler.is_valid_address(value):
-                size -= self._target.get_word_size()
-                offset += self._target.get_word_size()
+                size -= self._word_size
+                offset += self._word_size
                 continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
-            field = fieldtypes.PointerField(structure, offset, fieldtypes.POINTER, self._target.get_word_size(), False)
-            field.value = value
+            field = fieldtypes.PointerField(offset, self._word_size)
             # TODO: leverage the context._function_names
             # if value in structure._context._function_names:
             #    field.comment = ' %s::%s' % (os.path.basename(self._memory_handler.get_mapping_for_address(value).pathname),
@@ -181,8 +172,8 @@ class PointerFields(model.FieldAnalyser):
             field.comment = self._memory_handler.get_mapping_for_address(value).pathname
 
             fields.append(field)
-            size -= self._target.get_word_size()
-            offset += self._target.get_word_size()
+            size -= self._word_size
+            offset += self._word_size
         return fields
 
 
@@ -193,13 +184,11 @@ class IntegerFields(model.FieldAnalyser):
     def make_fields(self, structure, offset, size):
         # iterate on all offsets . NOT assert( size ==
         # self._target_platform.get_word_size())
-        assert(
-            offset %
-            self._target.get_word_size() == 0)  # vaddr and offset should be aligned
+        assert(offset %self._word_size == 0)  # vaddr and offset should be aligned
         #log.debug('checking Integer')
         bytes = structure.bytes
         fields = []
-        while size >= self._target.get_word_size():
+        while size >= self._word_size:
             # print 'checking >'
             field = self.checkSmallInt(structure, bytes, offset)
             if field is None:
@@ -208,36 +197,25 @@ class IntegerFields(model.FieldAnalyser):
             # we have a field smallint
             if field is not None:
                 fields.append(field)
-            size -= self._target.get_word_size()
-            offset += self._target.get_word_size()
+            size -= self._word_size
+            offset += self._word_size
         return fields
 
     def checkSmallInt(self, structure, bytes, offset, endianess='<'):
         """ check for small value in signed and unsigned forms """
-        val = self._target.get_target_ctypes_utils().unpackWord(
-            bytes[
-                offset:offset +
-                self._target.get_word_size()],
-            endianess)
+        data = bytes[offset:offset + self._word_size]
+        val = self._target.get_target_ctypes_utils().unpackWord(data, endianess)
         # print endianess, val
         if val < 0xffff:
-            field = fieldtypes.Field(
-                structure,
-                offset,
-                fieldtypes.SMALLINT,
-                self._target.get_word_size(),
-                False)
+            field = fieldtypes.Field(offset, fieldtypes.SMALLINT, self._word_size, False)
+            # FIXME
             field.value = val
             field.endianess = endianess
             return field
         # check signed int
-        elif (2 ** (self._target.get_word_size() * 8) - 0xffff) < val:
-            field = fieldtypes.Field(
-                structure,
-                offset,
-                fieldtypes.SIGNED_SMALLINT,
-                self._target.get_word_size(),
-                False)
+        elif (2 ** (self._word_size * 8) - 0xffff) < val:
+            field = fieldtypes.Field(offset, fieldtypes.SIGNED_SMALLINT, self._word_size, False)
+            # FIXME
             field.value = val
             field.endianess = endianess
             return field
@@ -282,7 +260,7 @@ class FieldReverser(model.AbstractReverser):
         # call on analyzers
         fields = []
         nb = -1
-        gaps = [fieldtypes.Field(_record, 0, fieldtypes.UNKNOWN, len(_record), False)]
+        gaps = [fieldtypes.Field(0, fieldtypes.UNKNOWN, len(_record), False)]
 
         _record.set_reverse_level(10)
 
@@ -329,8 +307,8 @@ class FieldReverser(model.AbstractReverser):
         # conclude on QUEUE insertion
         lastfield_size = len(_record) - nextoffset
         if lastfield_size > 0:
-            if lastfield_size < self._target.get_word_size():
-                gap = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, lastfield_size, True)
+            if lastfield_size < self._word_size:
+                gap = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, lastfield_size, True)
                 log.debug('_make_gaps: adding last field at offset %d:%d', gap.offset, gap.offset + len(gap))
                 gaps.append(gap)
             else:
@@ -343,18 +321,18 @@ class FieldReverser(model.AbstractReverser):
                 if nextoffset is not aligned
                     add (padding + gap) to gaps
                  """
-        if nextoffset % self._target.get_word_size() == 0:
-            gap = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, endoffset - nextoffset, False)
+        if nextoffset % self._word_size == 0:
+            gap = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, endoffset - nextoffset, False)
             log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
         else:
             # unaligned field should be splitted
-            s1 = self._target.get_word_size() - nextoffset % self._target.get_word_size()
-            gap1 = fieldtypes.Field(_record, nextoffset, fieldtypes.UNKNOWN, s1, True)
+            s1 = self._word_size - nextoffset % self._word_size
+            gap1 = fieldtypes.Field(nextoffset, fieldtypes.UNKNOWN, s1, True)
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = fieldtypes.Field(_record, nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = fieldtypes.Field(nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
@@ -364,13 +342,13 @@ class IntegerArrayFields(model.FieldAnalyser):
 
     """ TODO """
 
-    def make_fields(self, structure, offset, size):
+    def make_fields(self, _record, offset, size):
         # this should be last resort
-        bytes = self.struct.bytes[self.offset:self.offset + self.size]
+        bytes = _record.bytes[offset:offset + self.size]
         size = len(bytes)
         if size < 4:
             return False
-        ctr = collections.Counter([bytes[i:i + self._target.get_word_size()] for i in range(len(bytes))])
+        ctr = collections.Counter([bytes[i:i + self._word_size] for i in range(len(bytes))])
         floor = max(1, int(size * .1))  # 10 % variation in values
         #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
         commons = ctr.most_common()
@@ -378,6 +356,7 @@ class IntegerArrayFields(model.FieldAnalyser):
             return False  # too many different values
         # few values. it migth be an array
         self.size = size
+        # FIXME
         self.values = bytes
         self.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
         return True

@@ -22,19 +22,6 @@ log = logging.getLogger('field')
 # Field related functions and classes
 
 
-def findFirstNot(s, c):
-    for i in xrange(len(s)):
-        if s[i] != c:
-            return i
-    return -1
-
-
-def makeArrayField(parent, fields):
-    #vaddr = parent.vaddr+firstField.offset
-    newField = ArrayField(parent, fields)
-    return newField
-
-
 class FieldType(object):
     """
     Represents the type of a field.
@@ -52,26 +39,7 @@ class FieldType(object):
     def makePOINTER(cls, typ):
         if typ == STRING:
             return STRING_POINTER
-        return cls(typ._id + 0xa, typ.basename + '_ptr',
-                   'ctypes.POINTER(%s)' % (typ.ctypes), 'P', True)
-
-    @classmethod
-    # struct name should be the vaddr... otherwise it gonna be confusing
-    def makeStructField(cls, parent, offset, typename, fields, field_name=None):
-        """
-        make a structure type
-        """
-        import structure
-        _address = parent.address + offset
-        if field_name is None:
-            field_name = '%lx' % _address
-        newfieldType = FieldTypeStruct(typename, field_name, fields)
-        newfieldType.setStruct(structure.AnonymousRecord(parent._memory_handler, _address, len(newfieldType)))
-        newField = Field(parent, offset, newfieldType, len(newfieldType), False)
-        # FIXME should parent be changed on substructure ?
-        # should the offset be changed here too ?
-        # should newfieldType.set_parent() be called too ?
-        return newField
+        return cls(typ._id + 0xa, typ.basename + '_ptr', 'ctypes.POINTER(%s)' % (typ.ctypes), 'P', True)
 
     def __cmp__(self, other):
         try:
@@ -87,11 +55,6 @@ class FieldType(object):
 
     def __repr__(self):
         return '<t:%s>' % self.basename
-
-
-
-def make_record_field(typename):
-    return FieldType(0x1, typename, typename, 'K')
 
 
 class FieldTypeStruct(FieldType):
@@ -137,15 +100,14 @@ class Field(object):
     """
     Class that represent a Field instance, a FieldType instance.
     """
-    def __init__(self, astruct, offset, _type, size, isPadding):
-        self.struct = astruct
+    def __init__(self, offset, _type, size, is_padding):
         self.offset = offset
         self.size = size
         # mhh not sure. what about array ?
         assert isinstance(_type, FieldType)
         self.typename = _type
         self._ctype = None
-        self.padding = isPadding
+        self.padding = is_padding
         self.typesTested = []
         self.value = None
         self.comment = ''
@@ -161,8 +123,7 @@ class Field(object):
         return self.usercomment
 
     def is_string(self):  # null terminated
-        return self.typename in [
-            STRING, STRING16, STRINGNULL, STRING_POINTER]
+        return self.typename in [STRING, STRING16, STRINGNULL, STRING_POINTER]
 
     def is_pointer(self):
         return issubclass(self.__class__, PointerField)
@@ -251,76 +212,67 @@ class Field(object):
         return str(self)
 
     def __str__(self):
-        i = 'new'
-        try:
-            if self in self.struct._fields:
-                i = self.struct._fields.index(self)
-        except ValueError as e:
-            log.warning('self in struct.fields but not found by index()')
-        except AttributeError as e:
-            pass
-        return '<Field %s offset:%d size:%s t:%s>' % (
-            i, self.offset, self.size, self.typename)
+        return '<Field offset:%d size:%s t:%s>' % (self.offset, self.size, self.typename)
 
-    def getValue(self, maxLen):
-        bytes = self._getValue(maxLen)
-        bl = len(str(bytes))
-        if bl >= maxLen:
-            bytes = bytes[:maxLen / 2] + '...' + \
-                bytes[-(maxLen / 2):]  # idlike to see the end
+    def get_value(self, _record, maxLen=120):
+        bytes = self._get_value(_record, maxLen)
+        if isinstance(bytes, str):
+            bl = len(str(bytes))
+            if bl >= maxLen:
+                bytes = bytes[:maxLen / 2] + '...' + \
+                    bytes[-(maxLen / 2):]  # idlike to see the end
         return bytes
 
-    def _getValue(self, maxLen):
+    def _get_value(self, _record, maxLen=120):
+        word_size = _record._target.get_word_size()
         if len(self) == 0:
             return '<-haystack no pattern found->'
         if self.is_string():
             if self.typename == STRING16:
                 try:
-                    bytes = "%s" % (repr(
-                        self.struct.bytes[
-                            self.offset:self.offset + self.size].decode('utf-16')))
+                    my_bytes = "%s" % (repr(_record.bytes[self.offset:self.offset + self.size].decode('utf-16')))
                 except UnicodeDecodeError as e:
-                    log.error(
-                        'ERROR ON : %s' %
-                        (repr(
-                            self.struct.bytes[
-                                self.offset:self.offset +
-                                self.size])))
-                    bytes = self.struct.bytes[
-                        self.offset:self.offset +
-                        self.size]
+                    log.error('ERROR ON : %s', repr(_record.bytes[self.offset:self.offset + self.size]))
+                    my_bytes = _record.bytes[self.offset:self.offset + self.size]
             else:
-                bytes = "'%s'" % (
-                    self.struct.bytes[self.offset:self.offset + self.size])
+                my_bytes = "'%s'" % (_record.bytes[self.offset:self.offset + self.size])
         elif self.is_integer():
-            return self.value
+            # what about endianness ?
+            endianess = '<' # FIXME dsa self.endianess
+            data = _record.bytes[self.offset:self.offset + word_size]
+            val = _record._target.get_target_ctypes_utils().unpackWord(data, endianess)
+            return val
         elif self.is_zeroes():
-            bytes = repr(self.value)  # '\\x00'*len(self)
+            my_bytes = repr('\\x00'*len(self))
         elif self.is_array():
             log.warning('ARRAY in Field type, %s', self.typename)
-            log.error('error in 0x%x offset 0x%x', self.struct.address, self.offset)
-            bytes = ''.join(['[', ','.join([el.to_string() for el in self.elements]), ']'])
+            log.error('error in 0x%x offset 0x%x', _record.address, self.offset)
+            my_bytes = ''.join(['[', ','.join([el.to_string(_record) for el in self.elements]), ']'])
         elif self.padding or self.typename == UNKNOWN:
-            bytes = self.struct.bytes[self.offset:self.offset + len(self)]
+            my_bytes = _record.bytes[self.offset:self.offset + len(self)]
+        elif self.is_pointer():
+            data = _record.bytes[self.offset:self.offset + word_size]
+            if len(data) != word_size:
+                print repr(data), len(data)
+                import pdb
+                pdb.set_trace()
+            val = _record._target.get_target_ctypes_utils().unpackWord(data)
+            return val
         else:  # bytearray, pointer...
-            return self.value
-        return bytes
+            my_bytes = _record.bytes[self.offset:self.offset + len(self)]
+        return my_bytes
 
     def get_signature(self):
         return (self.typename, self.size)
 
-    def to_string(self, prefix=''):
+    def to_string(self, _record, prefix=''):
         # log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
         #    %(self.isPointer(), self.isInteger(), self.isZeroes(), self.padding, self.typename.basename) )
-
+        value = self.get_value(_record, config.commentMaxSize)
         if self.is_pointer():
-            comment = '# @ 0x%0.8x %s %s' % (
-                self.value, self.comment, self.usercomment)
+            comment = '# @ 0x%0.8x %s %s' % (value, self.comment, self.usercomment)
         elif self.is_integer():
-            comment = '#  0x%x %s %s' % (self.getValue(
-                config.commentMaxSize),
-                self.comment,
-                self.usercomment)
+            comment = '#  0x%x %s %s' % (value, self.comment, self.usercomment)
         elif self.is_zeroes():
             comment = '''# %s %s zeroes: '\\x00'*%d''' % (
                 self.comment, self.usercomment, len(self))
@@ -328,14 +280,13 @@ class Field(object):
             comment = '#  %s %s %s: %s' % (self.comment,
                                            self.usercomment,
                                            self.typename.basename,
-                                           self.getValue(
-                                               config.commentMaxSize))
+                                           self.get_value(_record, config.commentMaxSize))
         elif self.is_record():
             comment = '#'
         else:
             # unknown
             comment = '# %s %s else bytes:%s' % (
-                self.comment, self.usercomment, repr(self.getValue(config.commentMaxSize)))
+                self.comment, self.usercomment, repr(self.get_value(_record, config.commentMaxSize)))
 
         fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.get_name(), self.get_typename(), comment)
         return fstr
@@ -352,8 +303,8 @@ class PointerField(Field):
     """
     represent a pointer field
     """
-    def __init__(self, *arg, **kwargs):
-        super(PointerField, self).__init__(*arg, **kwargs)
+    def __init__(self, offset, size):
+        super(PointerField, self).__init__(offset, POINTER, size, False)
         self._pointee = None
 
     def set_pointee(self, pointee_field):
@@ -393,8 +344,7 @@ class ArrayField(Field):
     Represents an array field.
     """
     # , basicTypename, basicTypeSize ): # use first element to get that info
-    def __init__(self, astruct, elements):
-        self.struct = astruct
+    def __init__(self, elements):
         self.offset = elements[0].offset
         self.typename = FieldTypeArray(elements[0].typename.basename)
 
@@ -405,7 +355,7 @@ class ArrayField(Field):
 
         self.size = self.basicTypeSize * len(self.elements)
 
-        super(ArrayField, self).__init__(astruct, self.offset, self.typename, self.size, False)
+        super(ArrayField, self).__init__(self.offset, self.typename, self.size, False)
 
         self.padding = False
         self.value = None
@@ -422,21 +372,20 @@ class ArrayField(Field):
     def get_typename(self):
         return '%s * %d' % (self.basicTypename.ctypes, self.nbElements)
 
-    def _getValue(self, maxLen):
+    def _get_value(self, _record, maxLen=120):
         # show number of elements and elements types
-        #bytes= ''.join(['[',','.join([str(el._getValue(10)) for el in self.elements]),']'])
         bytes = '%d x ' % (len(
             self.elements)) + ''.join(['[', ','.join([el.to_string('') for el in self.elements]), ']'])
         # thats for structFields
         #bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.typename for el in el0.typename.elements]),']'])
         return bytes
 
-    def to_string(self, prefix):
+    def to_string(self, _record, prefix=''):
         log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
                   % (self.is_pointer(), self.is_integer(), self.is_zeroes(), self.padding, self.typename.basename))
         #
         comment = '# %s %s array:%s' % (
-            self.comment, self.usercomment, self.getValue(config.commentMaxSize))
+            self.comment, self.usercomment, self.get_value(_record, config.commentMaxSize))
         fstr = "%s( '%s' , %s ), %s\n" % (
             prefix, self.get_name(), self.get_typename(), comment)
         return fstr
@@ -450,13 +399,18 @@ class RecordField(Field, structure.AnonymousRecord):
         size = sum([len(f) for f in fields])
         _address = parent.address + offset
         structure.AnonymousRecord.__init__(self, parent._memory_handler, _address, size, prefix=None)
-        Field.__init__(self, parent, offset, FieldTypeStruct(typename), size, False)
+        Field.__init__(self, offset, FieldTypeStruct(typename), size, False)
         self.set_name(field_name)
         self.add_fields(fields)
         return
 
-
-#def resize(field, new_offset, new_size):
-#    if field.is_pointer():
-#        raise TypeError("Cannot resize a pointer field")
-
+#    def to_string(self, *args):
+#        # print self.fields
+#        fieldsString = '[ \n%s ]' % (''.join([field.to_string(self, '\t') for field in self.get_fields()]))
+#        info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature(), len(self))
+#        ctypes_def = '''
+#class %s(ctypes.Structure):  # %s
+#  _fields_ = %s
+#
+#''' % (self.get_name(), info, fieldsString)
+#        return ctypes_def

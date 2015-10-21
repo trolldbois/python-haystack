@@ -168,16 +168,17 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         """
         offset = _field.offset
         ptr_value = _field.offset + _record.address
+        size = len(_record)
         # check if the ptr is a known member at this offset
         if self._is_record_address_in_lists(_record.address, offset, len(_record)):
             self._nb_from_cache += 1
-        elif self.is_linked_list_member(_context, ptr_value, offset):
+        elif self.is_linked_list_member(_context, ptr_value, offset, size):
             # _members will contain record's address for this offset, back and next.
-            head_addr, _members = self.iterate_list(_context, ptr_value, offset)
+            head_addr, _members = self.iterate_list(_context, ptr_value, offset, size)
             if _members is not None:
                 self._add_new_list(offset, len(_record), _members)
                 self._nb_reversed += len(_members)
-                # set names
+                # change the type and fields for the whole list of record
                 self._rename_and_split(_context, _members, offset, head_addr)
                 self.found += 1
                 log.debug('0x%x is a linked_list_member in a list of %d members', head_addr, len(_members))
@@ -186,7 +187,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         else:
             log.debug('0x%x is not a linked_list_member', ptr_value)
 
-    def is_linked_list_member(self, _context, ptr_value, offset):
+    def is_linked_list_member(self, _context, ptr_value, offset, size):
         """
         Checks if this address hold a DoubleLinkedPointer record with forward and backward pointers.
         with b=ptr_value-offset, pointers are valid for a->b<-c
@@ -217,6 +218,14 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         if not (cbn and cnb):
             log.debug('ptr->next->previous not met on cbn(%s) or cnb(%s)', cbn, cnb)
             return False
+        ## checking the size of the items
+        ## FIXME replace by the size list
+        if len(_context.get_record_for_address(_next-offset)) != size:
+            log.debug('ptr->next size != %s', size)
+            return False
+        if len(_context.get_record_for_address(_back-offset)) != size:
+            log.debug('ptr->back size != %s', size)
+            return False
         return True
 
     def get_two_pointers(self, _context, st_addr, offset=0):
@@ -230,7 +239,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         _bytes = m.read_bytes(st_addr + offset, 2 * self._target.get_word_size())
         return struct.unpack(fmt, _bytes)
 
-    def iterate_list(self, _context, _address, offset):
+    def iterate_list(self, _context, _address, offset, size):
         """
         Iterate the list starting at _address.
 
@@ -242,14 +251,14 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         :return:
         """
         # FIXME, we are missing a and d
-        if not self.is_linked_list_member(_context, _address, offset):
+        if not self.is_linked_list_member(_context, _address, offset, size):
             return None, None
         ends = []
         members = [_address-offset]
         _next, _back = self.get_two_pointers(_context, _address)
         current = _address
         # check that  a->_address<->_next<-c are part of the list
-        while self.is_linked_list_member(_context, _next, offset):
+        while self.is_linked_list_member(_context, _next, offset, size):
             if _next-offset in members:
                 log.debug('loop from 0x%x to member 0x%x', current-offset, _next-offset)
                 break
@@ -263,7 +272,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
 
         # now the other side
         current = _address
-        while self.is_linked_list_member(_context, _back, offset):
+        while self.is_linked_list_member(_context, _back, offset, size):
             if _back-offset in members:
                 log.debug('loop from 0x%x to member 0x%x', current-offset, _back-offset)
                 break
@@ -298,32 +307,41 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         _record = _context.get_record_for_address(_members[1])
         # we need two pointer fields to create a substructure.
         ## Check if field at offset is a pointer, If so change it name, otherwise split
-        next_field = _record.get_field_at_offset(offset)
-        if not (next_field.offset == offset and next_field.is_pointer()):
-            raise TypeError("we cannot deal with Next not being a pointer type field")
-        # now split the back field if required (often the case in head cases)
-        back_field = _record.get_field_at_offset(offset+self._word_size)
-        if not (back_field.offset == offset+self._word_size and back_field.is_pointer()):
-            raise TypeError("we cannot deal with Next not being a pointer type field")
-        # change the offsets,
-        next_field.offset = 0
-        back_field.offset = self._word_size
+        old_next = _record.get_field_at_offset(offset)
+        old_back = _record.get_field_at_offset(offset+self._word_size)
+        #
+        next_field = fieldtypes.PointerField(0, self._word_size)
+        back_field = fieldtypes.PointerField(self._word_size, self._word_size)
         next_field.set_name('Next')
         back_field.set_name('Back')
         sub_fields = [next_field, back_field]
         # make a substructure
         new_field = fieldtypes.RecordField(_record, offset, 'list', 'LIST_ENTRY', sub_fields)
-        fields = _record.get_fields()
-        fields.remove(next_field)
-        fields.remove(back_field)
+        fields = [x for x in _record.get_fields()]
+        fields.remove(old_next)
+        if old_next == old_back:
+            # its probably a LIST_ENTRY btw.
+            return
+        fields.remove(old_back)
         fields.append(new_field)
-        _record.reset()
-        _record.add_fields(fields)
-        # TODO change pointee type name
-        # TODO agg. Next and Back field into a LIST_ENTRY type.
-        # we also need to steal a NULL pointer field sometimes from an aggregated field
+        fields.sort()
+
+        # create a new type
+        head_addr = _members[0]
+        _record_type = structure.RecordType('list_%x' % head_addr, len(_record), fields)
+
+        # apply the fields template to all members of the list
+        for list_item_addr in _members:
+            _item = _context.get_record_for_address(list_item_addr)
+            if len(_item) != len(_record):
+                print "x2 linked reverser: len(_item) != len(_record)"
+            else:
+                _item.set_type(_record_type)
+
         # push the LIST_ENTRY type into the context/memory_handler
-        ### fieldtypes.FieldType.makeStructField(_record,fields[0].offset,fields)
+        rev_context = self._memory_handler.get_reverse_context()
+        rev_context.add_reversed_type(_record_type, _members)
+
         # change the list_head name back
         _context.get_record_for_address(head_addr).set_name('list_head')
         pass
@@ -337,17 +355,15 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         old_end_offset = old_start_offset + len(old_field)
         assert old_start_offset < offset < old_end_offset
         assert offset % self._word_size == 0
-        field = fieldtypes.PointerField(_record, offset, pointertypes.FieldType.POINTER, self._word_size, False)
+        field = fieldtypes.PointerField(offset, self._word_size)
         # we do not care about the pointer value as we will create a record type and
         # reload the instance with that type.
-        #field.value = value
         # check
         # tail insertion case
         if field.offset+len(field) == old_end_offset:
             # reduce old_field
             old_field.resize()
         return
-
 
 
 class PointerGraphReverser(model.AbstractReverser):
@@ -403,8 +419,9 @@ class PointerGraphReverser(model.AbstractReverser):
         # targets = set(( '%x'%ptr_value, '%x'%child.target_struct_addr )
         # for child in struct.getPointerFields()) #target_struct_addr
         # target_struct_addr
-        #targets = set(('%x' % ptr_value, '%x' % child._child_addr) for child in _record.get_pointer_fields())
-        for f in _record.get_pointer_fields():
+
+        pointer_fields = [f for f in _record.get_fields() if f.is_pointer()]
+        for f in pointer_fields:
             pointee_addr = f._child_addr
             # we always feed these two
             self._graph.add_edge(hex(_record.address), hex(pointee_addr))
@@ -474,18 +491,15 @@ class ArrayFieldsReverser(model.AbstractReverser):
                     #otherFields = [ self.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ]
                     # need global ref to compare substructure signature to
                     # other anonstructure
-                    firstField = fieldtypes.FieldType.makeStructField(
-                        _record,
-                        fields[0].offset, 'typename',
-                        fields)
+                    firstField = fieldtypes.RecordField(_record, fields[0].offset, 'unk', 'typename', fields)
                     myelements.append(firstField)
-                array = fieldtypes.makeArrayField(_record, myelements)
+                array = fieldtypes.ArrayField(myelements)
                 myfields.append(array)
                 #log.debug('array of structure %s'%(array))
             elif len(fieldTypesAndSizes) == 1:  # make array of elements or
                 log.debug("found array of %s",  _record._fields[0].typename.basename)
                 fields = [_record._fields.pop(0) for i in range(nb)]
-                array = fieldtypes.makeArrayField(_record, fields)
+                array = fieldtypes.ArrayField(fields)
                 myfields.append(array)
                 #log.debug('array of elements %s'%(array))
             else:  # TODO DEBUG internal struct
@@ -537,27 +551,20 @@ class InlineRecordReverser(model.AbstractReverser):
                 log.debug('substructure with sig %s', ''.join([ft.sig[0] for ft in fieldTypes]))
                 myelements = []
                 for i in range(nb):
-                    fields = [
-                        _record._fields.pop(0) for i in range(
-                            len(fieldTypes))]  # nb-1 left
+                    fields = [_record._fields.pop(0) for i in range(len(fieldTypes))]  # nb-1 left
                     # otherFields = [ _record.fields.pop(0) for i in range((nb-1)*len(fieldTypesAndSizes)) ]
                     # need global ref to compare substructure signature to
                     # other anonstructure
-                    firstField = fieldtypes.FieldType.makeStructField(
-                        _record,
-                        fields[0].offset, 'typename',
-                        fields)
+                    firstField = fieldtypes.RecordField(_record, fields[0].offset, 'unk', 'typename', fields)
                     myelements.append(firstField)
-                array = fieldtypes.makeArrayField(_record, myelements)
+                array = fieldtypes.ArrayField(myelements)
                 myfields.append(array)
                 # log.debug('array of structure %s'%(array))
             # make array of elements obase on same base type
             elif len(fieldTypes) == 1:
-                log.debug(
-                    'found array of %s' %
-                    (_record._fields[0].typename.basename))
+                log.debug('found array of %s', _record._fields[0].typename.basename)
                 fields = [_record._fields.pop(0) for i in range(nb)]
-                array = fieldtypes.makeArrayField(_record, fields)
+                array = fieldtypes.ArrayField(fields)
                 myfields.append(array)
                 # log.debug('array of elements %s'%(array))
             else:  # TODO DEBUG internal struct

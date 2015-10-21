@@ -34,10 +34,10 @@ class PointerFieldReverser(model.AbstractReverser):
         """
         # If you want to cache resolved infos, it still should be decided by
         # the caller
-        pointerFields = _record.get_pointer_fields()
-        log.debug('got %d pointerfields' % (len(pointerFields)))
-        for field in pointerFields:
-            value = field.value
+        pointer_fields = [field for field in _record.get_fields() if field.is_pointer()]
+        log.debug('got %d pointerfields', len(pointer_fields))
+        for field in pointer_fields:
+            value = field.get_value(_record)
             field.set_child_addr(value)  # default
             # FIXME field.set_resolved() # What ?
             # + if value is unaligned, mark it as cheesy

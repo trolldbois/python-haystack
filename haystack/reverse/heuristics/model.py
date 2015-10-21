@@ -167,6 +167,7 @@ class FieldAnalyser(object):
             raise TypeError('memory_handler should be an IMemoryHandler')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
+        self._word_size = self._target.get_word_size()
 
     def make_fields(self, structure, offset, size):
         """

@@ -198,13 +198,17 @@ class AnonymousRecord(object):
     def get_name(self):
         return self._name
 
-    def set_ctype(self, t):
+    def set_type(self, t):
         """
-        Assign a known ctype record type to this instance
+        Assign a reversed record type to this instance.
+        That will change the fields types and render this record immutable.
+        Any change will have to change the type of this record.
         :param t:
         :return:
         """
-        self._ctype = t
+        self.__type = t
+        # create instance of these fields.
+        ## self._fields = t.get_fields()
 
     def get_ctype(self):
         if self._ctype is None:
@@ -305,15 +309,8 @@ class AnonymousRecord(object):
 
         :return: list(Field)
         """
+        self._fields.sort()
         return [f for f in self._fields]
-
-    def get_pointer_fields(self):
-        """
-        Return the list of fields that are pointer type fields
-
-        :return: list(Field)
-        """
-        return [f for f in self._fields if f.is_pointer()]
 
     @property
     def address(self):
@@ -329,6 +326,7 @@ class AnonymousRecord(object):
 
     def set_memory_handler(self, memory_handler):
         self._memory_handler = memory_handler
+        self._target = self._memory_handler.get_target_platform()
 
     def get_reverse_level(self):
         return self._reverse_level
@@ -339,7 +337,7 @@ class AnonymousRecord(object):
     def to_string(self):
         # print self.fields
         self._fields.sort()
-        fieldsString = '[ \n%s ]' % (''.join([field.to_string('\t') for field in self._fields]))
+        fieldsString = '[ \n%s ]' % (''.join([field.to_string(self, '\t') for field in self._fields]))
         info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature(text=True), len(self))
         ctypes_def = '''
 class %s(ctypes.Structure):  # %s
@@ -435,17 +433,13 @@ class RecordType(object):
     The type of a record.
 
     """
-    def __init__(self, name, size):
+    def __init__(self, name, size, fields):
         self.name = name
         self.__size = int(size)
-        self.__fields = []
-
-    def set_fields(self, fields):
         self.__fields = fields
-        self.__fields.sort()
 
     def get_fields(self):
-        return self.__fields
+        return [x for x in self.__fields]
 
     def __len__(self):
         return int(self.__size)

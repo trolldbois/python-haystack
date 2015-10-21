@@ -50,7 +50,7 @@ class TestField(SrcTests):
 
     def test_is_types(self):
         # def __init__(self, astruct, offset, typename, size, isPadding):
-        ptr = fieldtypes.PointerField(self.st, 8, fieldtypes.POINTER, 4, False)
+        ptr = fieldtypes.PointerField(8, 4)
         self.assertFalse(ptr.is_string())
         self.assertTrue(ptr.is_pointer())
         self.assertFalse(ptr.is_zeroes())
@@ -62,12 +62,12 @@ class TestField(SrcTests):
         _record = structure.AnonymousRecord(self.memory_handler, start, 40)
         word_size = self._target.get_word_size()
 
-        f1 = fieldtypes.Field(structure, 0*word_size, fieldtypes.ZEROES, word_size, False)
-        f4 = fieldtypes.Field(structure, 3*word_size, fieldtypes.ZEROES, word_size, False)
+        f1 = fieldtypes.Field(0*word_size, fieldtypes.ZEROES, word_size, False)
+        f4 = fieldtypes.Field(3*word_size, fieldtypes.ZEROES, word_size, False)
         # offset in the substruct
-        fs2 = fieldtypes.PointerField(_record, 0, fieldtypes.POINTER, word_size, False)
+        fs2 = fieldtypes.PointerField(0, word_size)
         fs2.value = start
-        fs3 = fieldtypes.PointerField(_record, 1*word_size, fieldtypes.POINTER, word_size, False)
+        fs3 = fieldtypes.PointerField(1*word_size, word_size)
         fs3.value = start
         # the new field sub record
         new_field = fieldtypes.RecordField(_record, 1*word_size, 'list', 'LIST_ENTRY', [fs2, fs3])

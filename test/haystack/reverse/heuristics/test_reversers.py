@@ -47,6 +47,7 @@ class TestDoubleLinkedReverser(SrcTests):
         #config.remove_cache_folder(cls.dumpname)
 
     def test_reverse(self):
+        word_size = self.memory_handler.get_target_platform().get_word_size()
         process_context = self.memory_handler.get_reverse_context()
 
         start = self.offsets['start_list'][0]
@@ -72,8 +73,14 @@ class TestDoubleLinkedReverser(SrcTests):
         self.assertIn(size, self.dllr.lists)
         # the offset is the same for all
         # FIXME this should be "entry" LIST ENTRY type with 2 subfields.
-        one = start.get_fields()[1]
-        one = heap_context.get_record_for_address(one.value-one.offset)
+        one_ptr = start.get_fields()[1]
+        self.assertEqual(one_ptr.name, 'list')
+        next_one = one_ptr.get_fields()[0]
+        self.assertEqual(next_one.name, 'Next')
+        # get the pointer value.
+        one_value = next_one.get_value(one_ptr, word_size)
+        # get the pointee record
+        one = heap_context.get_record_for_address(one_value-one_ptr.offset)
         print one.to_string()
         list_field = [x for x in one.get_fields() if 'list' == x.get_name()][0]
         offset = list_field.offset
@@ -90,6 +97,7 @@ class TestDoubleLinkedReverser(SrcTests):
         self.assertEqual(mid.address, my_list[127])
         self.assertEqual(end.address, my_list[254])
 
+        reversers.save_headers(heap_context)
         #import code
         #code.interact(local=locals())
 
