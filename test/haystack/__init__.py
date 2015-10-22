@@ -50,6 +50,11 @@ class SrcTests(unittest.TestCase):
                 fields = line[3:].split(' ')
                 k, v = fields[0], fields[1].strip()
                 sizes[name] = v
+            elif line.startswith('rs: '):
+                # sizeof record
+                fields = line[4:].split(' ')
+                name, v = fields[0], int(fields[1].strip())
+                sizes[name] = v
         cls.values = values
         cls.offsets = offsets
         cls.sizes = sizes

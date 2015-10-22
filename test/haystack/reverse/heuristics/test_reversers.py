@@ -46,72 +46,254 @@ class TestDoubleLinkedReverser(SrcTests):
         self.dllr = None
         #config.remove_cache_folder(cls.dumpname)
 
-    def test_reverse(self):
+    def test_double_iter(self):
+        """test node1 <-> node2 <-> ... <-> node255 """
         word_size = self.memory_handler.get_target_platform().get_word_size()
         process_context = self.memory_handler.get_reverse_context()
 
-        start = self.offsets['start_list'][0]
-        mid = self.offsets['mid_list'][0]
-        end = self.offsets['end_list'][0]
+        start_addr = self.offsets['start_list'][0]
+        mid_addr = self.offsets['mid_list'][0]
+        end_addr = self.offsets['end_list'][0]
 
-        heap = self.memory_handler.get_mapping_for_address(start)
+        heap = self.memory_handler.get_mapping_for_address(start_addr)
         heap_context = process_context.get_context_for_heap(heap)
         self.assertIsNotNone(heap_context)
 
-        start = heap_context.get_record_for_address(start)
-        mid = heap_context.get_record_for_address(mid)
-        end = heap_context.get_record_for_address(end)
-        print mid.to_string()
-
+        start = heap_context.get_record_for_address(start_addr)
+        mid = heap_context.get_record_for_address(mid_addr)
+        end = heap_context.get_record_for_address(end_addr)
+        # print mid.to_string()
         # reverse the list
         self.dllr.reverse()
         print mid.to_string()
-
         size = len(mid)
         # there is a list for this size
         self.assertIn(size, self.dllr.lists)
         # is the offset is the same for all item in the list ?
 
-        # produce new types
-        self.assertEqual(self.dllr.lists.keys(), [40])
-        self.assertEqual(self.dllr.lists[40].keys(), [8])
-        # there is only one list of items that size at that offset
-        self.assertEqual( len(self.dllr.lists[40][8]), 1)
-        print self.dllr.lists[40][8][0]
-        self.dllr.rename_record_type(self.dllr.lists[40][8][0], 8)
+        ## self.dllr.debug_lists()
+        log.debug("start: %x size: %d", start_addr, self.sizes['start_list'])
+        log.debug("end: %x size: %d", end_addr, self.sizes['end_list'])
 
-        print mid.to_string()
+        # the second field should be "ptr_8"
+        self.assertEqual(start.get_fields()[0], start.get_field('zerroes_0'))
+        self.assertEqual(start.get_fields()[1], start.get_field('ptr_8'))
+        self.assertEqual(start.get_fields()[2], start.get_field('zerroes_16'))
+        self.assertEqual(mid.get_fields()[0], mid.get_field('small_int_0'))
+        self.assertEqual(mid.get_fields()[1], mid.get_field('ptr_8'))
+        self.assertEqual(mid.get_fields()[2], mid.get_field('ptr_16'))
+        self.assertEqual(end.get_fields()[0], end.get_field('small_int_0'))
+        self.assertEqual(end.get_fields()[1], end.get_field('zerroes_8'))
+        self.assertEqual(end.get_fields()[2], end.get_field('ptr_16'))
 
-        # this should be "entry" LIST ENTRY type with 2 subfields.
-        one_ptr = start.get_fields()[1]
-        self.assertEqual(one_ptr.name, 'list')
-        next_one = one_ptr.get_fields()[0]
-        self.assertEqual(next_one.name, 'Next')
-        # get the pointer value.
-        one_value = one_ptr.get_value_for_field(next_one, word_size)
-        print one_value
-        # get the pointee record
-        one = heap_context.get_record_for_address(one_value-one_ptr.offset)
-        print one.to_string()
-        list_field = [x for x in one.get_fields() if 'list' == x.name][0]
-        offset = list_field.offset
-        print list_field.field_type
-        # check the field is at the right offset
-        self.assertIn(offset, self.dllr.lists[size])
-        # there is only one list for this offset and size of record
-        self.assertEqual(1, len(self.dllr.lists[size][offset]))
-        # there are 255 elements in it
-        self.assertEqual(255, len(self.dllr.lists[size][offset][0]))
-        my_list = self.dllr.lists[size][offset][0]
+        # while the item is of size 32, we have padding. making 40
+        members_list = [l for l in self.dllr.lists[40][8] if len(l) == 255][0]
+        self.assertEqual(len(members_list), 255)
+        # check head
+        self.assertEqual(members_list[0], start_addr)
+        self.assertEqual(members_list[-1], end_addr)
         # check that our list order is correct
-        self.assertEqual(start.address, my_list[0])
-        self.assertEqual(mid.address, my_list[127])
-        self.assertEqual(end.address, my_list[254])
+        self.assertEqual(start.address, members_list[0])
+        self.assertEqual(mid.address, members_list[127])
+        self.assertEqual(end.address, members_list[254])
 
-        reversers.save_headers(heap_context)
-        #import code
-        #code.interact(local=locals())
+        # reverse the types for the list of items 40, at offset 8
+        offset = 8
+        self.dllr.rename_record_type(members_list, offset)
 
+        # now the second field should be "entry" LIST ENTRY type with 2 subfields.
+        one_ptr = start.get_fields()[1]
+        self.assertEqual(start.get_fields()[1], start.get_field('list'))
+        self.assertEqual(one_ptr.name, 'list')
+        self.assertEqual(mid.get_fields()[1], mid.get_field('list'))
+        self.assertEqual(end.get_fields()[1], end.get_field('list'))
+
+        # but also types should be the same across list members
+        self.assertEqual(start.get_fields()[1], end.get_field('list'))
+        self.assertEqual(start.record_type, end.record_type)
+        self.assertEqual(mid.record_type, end.record_type)
+        # and get_fields produce different list of the same fields
+        self.assertEqual(start.get_fields(), end.get_fields())
+
+        # get the pointer value and iterate over each item
+        item_list_entry_addr = start_addr+offset
+        for i in range(1, 255):
+            # get the pointee record
+            next_item = heap_context.get_record_for_address(item_list_entry_addr-offset)
+            # still of the same size, record_type and such
+            self.assertEqual(len(next_item), size)
+            self.assertEqual(start.record_type, next_item.record_type)
+            self.assertEqual(next_item.get_fields()[1], next_item.get_field('list'))
+            # anyway, start->list has 2 members
+            item_list_entry = next_item.get_field('list')
+            self.assertEqual(len(item_list_entry.get_fields()), 2)
+            # check the names
+            self.assertEqual(item_list_entry.get_fields()[0], item_list_entry.get_field('Next'))
+            self.assertEqual(item_list_entry.get_fields()[1], item_list_entry.get_field('Back'))
+            # get the next list item
+            next_one = item_list_entry.get_field('Next')
+            item_value = item_list_entry.get_value_for_field(next_one, word_size)
+            #print i, hex(item_value-offset)
+            self.assertEqual(item_value-offset, members_list[i])
+            item_list_entry_addr = item_value
+
+        # we should be at last item
+        self.assertEqual(item_list_entry_addr-offset, end.address)
+
+    def test_double_iter_with_head(self):
+        """// test head -> node1 <-> node2 <-> ... <-> node16"""
+        word_size = self.memory_handler.get_target_platform().get_word_size()
+        process_context = self.memory_handler.get_reverse_context()
+
+        head_addr = self.offsets['head_start_list'][0]
+        first_addr = self.offsets['head_first_item'][0]
+        last_addr = self.offsets['head_last_item'][0]
+
+        heap = self.memory_handler.get_mapping_for_address(head_addr)
+        heap_context = process_context.get_context_for_heap(heap)
+        self.assertIsNotNone(heap_context)
+
+        head = heap_context.get_record_for_address(head_addr)
+        first = heap_context.get_record_for_address(first_addr)
+        last = heap_context.get_record_for_address(last_addr)
+        # print mid.to_string()
+        # reverse the list
+        self.dllr.reverse()
+        # print first.to_string()
+        # print last.to_string()
+        size = len(last)
+        # there is a list for this size
+        self.assertIn(size, self.dllr.lists)
+        # is the offset is the same for all item in the list ?
+
+        ## self.dllr.debug_lists()
+        log.debug("head: %x size: %d", head_addr, self.sizes['head_start_list'])
+        log.debug("first: %x size: %d", first_addr, self.sizes['head_first_item'])
+        log.debug("end: %x size: %d", last_addr, self.sizes['head_last_item'])
+
+        # reverse the types for the list of items 40, at offset 8
+        offset = 8
+        # while the item is of size 32, we have padding. making 40
+        # we need the list with first_addr in it
+        members_list = [l for l in self.dllr.lists[40][8] if first_addr in l][0]
+        self.assertEqual(len(members_list), 16)
+        # check head
+        self.assertEqual(members_list[0], first_addr)
+        self.assertEqual(members_list[-1], last_addr)
+        # the head is not in the list, because head as a different size
+        self.assertNotEqual(len(head), len(first))
+        self.assertNotIn(head_addr, members_list)
+
+        # reverse
+        self.dllr.rename_record_type(members_list, offset)
+
+        # get the pointer value and iterate over each item
+        item_list_entry_addr = first_addr+offset
+        for i in range(1, 16):
+            # get the pointee record
+            next_item = heap_context.get_record_for_address(item_list_entry_addr-offset)
+            # still of the same size, record_type and such
+            self.assertEqual(len(next_item), size)
+            self.assertEqual(first.record_type, next_item.record_type)
+            self.assertEqual(next_item.get_fields()[1], next_item.get_field('list'))
+            # anyway, start->list has 2 members
+            item_list_entry = next_item.get_field('list')
+            self.assertEqual(len(item_list_entry.get_fields()), 2)
+            # check the names
+            self.assertEqual(item_list_entry.get_fields()[0], item_list_entry.get_field('Next'))
+            self.assertEqual(item_list_entry.get_fields()[1], item_list_entry.get_field('Back'))
+            # get the next list item
+            next_one = item_list_entry.get_field('Next')
+            item_value = item_list_entry.get_value_for_field(next_one, word_size)
+            #print i, hex(item_value-offset)
+            self.assertEqual(item_value-offset, members_list[i])
+            item_list_entry_addr = item_value
+
+        # we should be at last item
+        self.assertEqual(item_list_entry_addr-offset, last.address)
+
+    def test_double_iter_loop_with_head(self):
+        """// test head <-> node1 <-> node2 <-> ... <-> node16 <-> head <-> node1 <-> ...."""
+        word_size = self.memory_handler.get_target_platform().get_word_size()
+        process_context = self.memory_handler.get_reverse_context()
+
+        head_addr = self.offsets['head_loop_start_list'][0]
+        first_addr = self.offsets['head_loop_first_item'][0]
+        last_addr = self.offsets['head_loop_last_item'][0]
+
+        heap = self.memory_handler.get_mapping_for_address(head_addr)
+        heap_context = process_context.get_context_for_heap(heap)
+        self.assertIsNotNone(heap_context)
+
+        head = heap_context.get_record_for_address(head_addr)
+        first = heap_context.get_record_for_address(first_addr)
+        last = heap_context.get_record_for_address(last_addr)
+        # reverse the list
+        self.dllr.reverse()
+        size = len(last)
+        # there is a list for this size
+        self.assertIn(size, self.dllr.lists)
+        log.debug("head: %x size: %d", head_addr, self.sizes['head_loop_start_list'])
+        log.debug("first: %x size: %d", first_addr, self.sizes['head_loop_first_item'])
+        log.debug("end: %x size: %d", last_addr, self.sizes['head_loop_last_item'])
+
+        # reverse the types for the list of items 40, at offset 8
+        offset = 8
+        # while the item is of size 32, we have padding. making 40
+        # we need the list with first_addr in it
+        members_list = [l for l in self.dllr.lists[40][8] if first_addr in l][0]
+        self.assertEqual(len(members_list), 16)
+        # check first
+        self.assertEqual(members_list[0], first_addr)
+        self.assertEqual(members_list[-1], last_addr)
+        # the head is not in the list, because head as a different size
+        self.assertNotEqual(len(head), len(first))
+        self.assertNotIn(head_addr, members_list)
+        # etc...
+
+    def test_double_iter_loop_with_head_insertion(self):
+        """// test head -> node1 <-> node2 <-> ... <-> node16 <-> node1 <-> node2 ..."""
+        process_context = self.memory_handler.get_reverse_context()
+
+        head_addr = self.offsets['loop_head_insert'][0]
+        first_addr = self.offsets['loop_first_item'][0]
+        last_addr = self.offsets['loop_last_item'][0]
+
+        heap = self.memory_handler.get_mapping_for_address(head_addr)
+        heap_context = process_context.get_context_for_heap(heap)
+        self.assertIsNotNone(heap_context)
+
+        head = heap_context.get_record_for_address(head_addr)
+        first = heap_context.get_record_for_address(first_addr)
+        last = heap_context.get_record_for_address(last_addr)
+        # reverse the list
+        self.dllr.reverse()
+        size = len(last)
+        # there is a list for this size
+        self.assertIn(size, self.dllr.lists)
+
+        self.dllr.debug_lists()
+        log.debug("head: %x size: %d", head_addr, self.sizes['loop_head_insert'])
+        log.debug("first: %x size: %d", first_addr, self.sizes['loop_first_item'])
+        log.debug("end: %x size: %d", last_addr, self.sizes['loop_last_item'])
+
+        # reverse the types for the list of items 40, at offset 8
+        offset = 8
+        # while the item is of size 32, we have padding. making 40
+        # we need the list with first_addr in it
+        members_list = [l for l in self.dllr.lists[40][8] if first_addr in l][0]
+        self.assertEqual(len(members_list), 16)
+        # check that first is in list.
+        # but first is not nessarly [0] due to full loop
+        ind_first = members_list.index(first_addr)
+        ind_last = members_list.index(last_addr)
+        list_size = len(members_list)
+        # but last is before first, for sure.
+        self.assertEqual(list_size % ind_first, list_size % (ind_last+1))
+        # the head is not in the list, because head as a different size
+        self.assertNotEqual(len(head), len(first))
+        self.assertNotIn(head_addr, members_list)
+        # etc...
 
 
 class TestStructureSizes(SrcTests):
@@ -509,7 +691,8 @@ class TestTypeReverser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    # logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("test_reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
     # logging.getLogger("dsa").setLevel(logging.DEBUG)
     # logging.getLogger("winxpheap").setLevel(logging.DEBUG)

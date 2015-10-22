@@ -216,6 +216,10 @@ class AnonymousRecord(object):
     def address(self):
         return self.__address
 
+    @property
+    def record_type(self):
+        return self.__record_type
+
     @property  # TODO add a cache property ?
     def bytes(self):
         if self._bytes is None:
@@ -249,7 +253,27 @@ class AnonymousRecord(object):
 
         :return: list(Field)
         """
-        return [f for f in self.__record_type.get_fields()]
+        # we have to check for RecordField
+        # return [f for f in self.__record_type.get_fields()]
+        from haystack.reverse import fieldtypes
+        _fields = []
+        for f in self.__record_type.get_fields():
+            if f.is_record():
+                _fields.append(fieldtypes.RecordField(self, f.offset, f.name, f.field_type.name, f.get_fields()))
+            else:
+                _fields.append(f)
+        return _fields
+
+    def get_field(self, name):
+        """
+        Return the field named id
+        :param name:
+        :return:
+        """
+        for f in self.get_fields():
+            if f.name == name:
+                return f
+        raise ValueError('No such field named %s', name)
 
     def saveme(self, _context):
         """

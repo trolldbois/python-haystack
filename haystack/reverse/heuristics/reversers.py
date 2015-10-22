@@ -217,14 +217,13 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         if not (cbn and cnb):
             log.debug('ptr->next->previous not met on cbn(%s) or cnb(%s)', cbn, cnb)
             return False
-        ## checking the size of the items
-        ## FIXME replace by the size list
-        #if len(_context.get_record_for_address(_next-offset)) != size:
-        #    log.debug('ptr->next size != %s', size)
-        #    return False
-        #if len(_context.get_record_for_address(_back-offset)) != size:
-        #    log.debug('ptr->back size != %s', size)
-        #    return False
+        # checking the size of the items
+        if len(_context.get_record_for_address(_next-offset)) != size:
+            log.debug('ptr->next size != %s', size)
+            return False
+        if len(_context.get_record_for_address(_back-offset)) != size:
+            log.debug('ptr->back size != %s', size)
+            return False
         return True
 
     def get_two_pointers(self, _context, st_addr, offset=0):
@@ -350,6 +349,14 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         _context = self._process_context.get_context_for_heap(heap)
         _context.get_record_for_address(head_addr).set_name('list_head')
         pass
+
+    def debug_lists(self):
+        for size, v in self.lists.items():
+            log.debug("Lists of items of size %d: %d lists", size, len(v))
+            for offset, res in v.items():
+                log.debug("\tLists at offset %d: %d lists", offset, len(res))
+                for _list in res:
+                    log.debug("%s items:\t[%s]", len(_list), ','.join([hex(addr) for addr in _list]))
 
 
 class PointerGraphReverser(model.AbstractReverser):

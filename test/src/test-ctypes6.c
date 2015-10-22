@@ -32,15 +32,14 @@ struct Node
 };
 
 
-
-int test1(){
-
+void test1(){
+  // test Head-> node1 <-> node2
   struct usual * usual;
   usual = (struct usual *) malloc(sizeof(struct usual));
   strcpy(usual->txt, "This a string with a test this is a test string");
   usual->val1 = 0x0aaaaaaa;
   usual->val2 = 0x0ffffff0;
-
+  //
   struct Node * node1;
   struct Node * node2;
   node1 = (struct Node *) malloc(sizeof(struct Node));
@@ -49,27 +48,28 @@ int test1(){
   node2 = (struct Node *) malloc(sizeof(struct Node));
   node2->val1 = 0xdeadbabe;
   node2->val2 = 0xffffffff;
-
+  //
   node1->list.flink = &node2->list;
   node1->list.blink = (struct entry *) 0;
-
+  //
   node2->list.flink = (struct entry *) 0;
   node2->list.blink = &node1->list;
-
+  //
   usual->root.flink = &node1->list;
   usual->root.blink = &node1->list;
-
+  //
   printf("o: test1 %p\n", usual);
   printf("o: test2 %p\n", node1);
   printf("o: test3 %p\n", node2);
-
-  return 0;
+  printf("rs: test1 %zu\n", sizeof(struct usual));
+  printf("rs: test2 %zu\n", sizeof(struct Node));
+  printf("rs: test3 %zu\n", sizeof(struct Node));
+  return;
 }
 
-int test_double_iter(){
-
+void test_double_iter(){
+  // test node1 <-> node2 <-> ... <-> node255
   struct Node * nodes[255];
-
   for (int i=0;i<255;i++){
     nodes[i] = (struct Node *) malloc(sizeof(struct Node));
     nodes[i]->val1 = i;
@@ -77,26 +77,136 @@ int test_double_iter(){
     nodes[i]->list.flink = 0x0;
     nodes[i]->list.blink = 0x0;
   }
-
   // we do a easy list
   for (int i=1;i<254;i++){
     nodes[i]->list.flink = &nodes[i+1]->list;
     nodes[i]->list.blink = &nodes[i-1]->list;
   }
-  nodes[0]->list.flink = &nodes[1]->list;;
+  nodes[0]->list.flink = &nodes[1]->list;
   nodes[0]->list.blink = 0x0;
   nodes[254]->list.flink = 0x0;
-  nodes[254]->list.blink = &nodes[253]->list;;
-
-
+  nodes[254]->list.blink = &nodes[253]->list;
+  //
   printf("o: start_list %p\n", nodes[0]);
   printf("o: mid_list %p\n", nodes[127]);
   printf("o: end_list %p\n", nodes[254]);
-
+  printf("rs: start_list %zu\n", sizeof(struct Node));
+  printf("rs: end_list %zu\n", sizeof(struct Node));
+  return;
 };
 
-int test_double_graph_iter(){
+void test_double_iter_with_head(){
+  // test head -> node1 <-> node2 <-> ... <-> node16
+  struct usual * head;
+  struct Node * nodes[16];
+  // head
+  head = (struct usual *) malloc(sizeof(struct usual));
+  head->val1 = 0xabababab;
+  head->val2 = 0xdddddddd;
+  // nodes
+  for (int i=0;i<16;i++){
+    nodes[i] = (struct Node *) malloc(sizeof(struct Node));
+    nodes[i]->val1 = i;
+    nodes[i]->val2 = i;
+    nodes[i]->list.flink = 0x0;
+    nodes[i]->list.blink = 0x0;
+  }
+  // we do a easy list
+  for (int i=1;i<16;i++){
+    nodes[i]->list.flink = &nodes[i+1]->list;
+    nodes[i]->list.blink = &nodes[i-1]->list;
+  }
+  nodes[0]->list.flink = &nodes[1]->list;
+  nodes[0]->list.blink = &head->root; // head sentinel
+  nodes[15]->list.flink = 0x0; // null sentinel
+  nodes[15]->list.blink = &nodes[14]->list;
+  // head finish
+  head->root.flink = &nodes[0]->list;
+  head->root.blink = &head->root; // &nodes[15]->list;
+  //
+  printf("o: head_start_list %p\n", head);
+  printf("o: head_first_item %p\n", nodes[0]);
+  printf("o: head_last_item %p\n", nodes[15]);
+  printf("rs: head_start_list %zu\n", sizeof(struct usual));
+  printf("rs: head_first_item %zu\n", sizeof(struct Node));
+  printf("rs: head_last_item %zu\n", sizeof(struct Node));
+  return;
+};
 
+void test_double_iter_loop_with_head(){
+  // test head <-> node1 <-> node2 <-> ... <-> node16 <-> head <-> node1 <-> ....
+  struct usual * head;
+  struct Node * nodes[16];
+  // head
+  head = (struct usual *) malloc(sizeof(struct usual));
+  head->val1 = 0xabababab;
+  head->val2 = 0xdddddddd;
+  // nodes
+  for (int i=0;i<16;i++){
+    nodes[i] = (struct Node *) malloc(sizeof(struct Node));
+    nodes[i]->val1 = i;
+    nodes[i]->val2 = i;
+    nodes[i]->list.flink = 0x0;
+    nodes[i]->list.blink = 0x0;
+  }
+  // we do a easy list
+  for (int i=1;i<16;i++){
+    nodes[i]->list.flink = &nodes[i+1]->list;
+    nodes[i]->list.blink = &nodes[i-1]->list;
+  }
+  nodes[0]->list.flink = &nodes[1]->list;
+  nodes[0]->list.blink = &head->root; // head sentinel
+  nodes[15]->list.flink = &head->root; // head sentinel
+  nodes[15]->list.blink = &nodes[14]->list;
+  // head finish
+  head->root.flink = &nodes[0]->list;
+  head->root.blink = &nodes[15]->list;
+  //
+  printf("o: head_loop_start_list %p\n", head);
+  printf("o: head_loop_first_item %p\n", nodes[0]);
+  printf("o: head_loop_last_item %p\n", nodes[15]);
+  printf("rs: head_loop_start_list %zu\n", sizeof(struct usual));
+  printf("rs: head_loop_first_item %zu\n", sizeof(struct Node));
+  printf("rs: head_loop_last_item %zu\n", sizeof(struct Node));
+  return;
+};
+
+void test_double_iter_loop_with_head_insertion(){
+  // test head -> node1 <-> node2 <-> ... <-> node16 <-> node1 <-> node2 ...
+  struct usual * head;
+  struct Node * nodes[16];
+
+  head = (struct usual *) malloc(sizeof(struct usual));
+
+  for (int i=0;i<16;i++){
+    nodes[i] = (struct Node *) malloc(sizeof(struct Node));
+    nodes[i]->val1 = i;
+    nodes[i]->val2 = i;
+    nodes[i]->list.flink = 0x0;
+    nodes[i]->list.blink = 0x0;
+  }
+  // we do a easy list
+  for (int i=1;i<16;i++){
+    nodes[i]->list.flink = &nodes[i+1]->list;
+    nodes[i]->list.blink = &nodes[i-1]->list;
+  }
+  // create a loop
+  nodes[0]->list.flink = &nodes[1]->list;
+  nodes[0]->list.blink = &nodes[15]->list;
+  nodes[15]->list.flink = &nodes[0]->list;
+  nodes[15]->list.blink = &nodes[14]->list;
+  //
+  printf("o: loop_head_insert %p\n", head);
+  printf("o: loop_first_item %p\n", nodes[0]);
+  printf("o: loop_last_item %p\n", nodes[15]);
+  printf("rs: loop_head_insert %zu\n", sizeof(struct usual));
+  printf("rs: loop_first_item %zu\n", sizeof(struct Node));
+  printf("rs: loop_last_item %zu\n", sizeof(struct Node));
+  return;
+};
+
+void test_double_graph_iter(){
+  // test graph.
   struct Node * nodes[32];
 
   for (int i=0;i<32;i++){
@@ -177,7 +287,7 @@ int test_double_graph_iter(){
   printf("o: rootB %p\n", nodes[7]);
   printf("o: rootC %p\n", nodes[22]);
 
-  return 0;
+  return;
 }
 
 
@@ -186,6 +296,9 @@ int main(){
 
   test1();
   test_double_iter();
+  test_double_iter_with_head();
+  test_double_iter_loop_with_head();
+  test_double_iter_loop_with_head_insertion();
   test_double_graph_iter();
 
   printf("pid %u\n",getpid());

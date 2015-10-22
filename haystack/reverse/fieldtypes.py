@@ -196,11 +196,11 @@ class Field(object):
                 return -1
             elif self.offset > other.offset:
                 return 1
-            elif (self.offset, self.size, self.field_type) == (other.offset, other.size, other.typename):
+            elif (self.offset, self.size, self.field_type) == (other.offset, other.size, other.field_type):
                 return 0
             # last chance, expensive cmp
             return cmp((self.offset, self.size, self.field_type),
-                       (other.offset, other.size, other.typename))
+                       (other.offset, other.size, other.field_type))
         except AttributeError as e:
             # if not isinstance(other, Field):
             return -1
@@ -336,19 +336,23 @@ class RecordField(Field, structure.AnonymousRecord):
     """
     make a record field
     """
-    def __init__(self, parent, offset, field_name, typename, fields):
+    def __init__(self, parent, offset, field_name, field_type, fields):
         size = sum([len(f) for f in fields])
         _address = parent.address + offset
         structure.AnonymousRecord.__init__(self, parent._memory_handler, _address, size, prefix=None)
-        Field.__init__(self, field_name, offset, FieldTypeStruct(typename), size, False)
+        Field.__init__(self, field_name, offset, FieldTypeStruct(field_type), size, False)
         structure.AnonymousRecord.set_name(self, field_name)
         #structure.AnonymousRecord.add_fields(self, fields)
-        _record_type = structure.RecordType(typename, size,fields)
+        _record_type = structure.RecordType(field_type, size,fields)
         self.set_record_type(_record_type)
         return
 
     def get_typename(self):
         return '%s' % self.field_type
+
+    @property
+    def address(self):
+        raise NotImplementedError('You cannot call address on a subrecord')
 
 
 #    def to_string(self, *args):

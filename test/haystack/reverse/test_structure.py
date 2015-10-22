@@ -11,6 +11,7 @@ import os
 from haystack.reverse import context
 from haystack.reverse import config
 from haystack.reverse import structure
+from haystack.reverse import fieldtypes
 from haystack.reverse.heuristics import dsa
 from haystack.reverse.heuristics import pointertypes
 from haystack import dump_loader
@@ -149,6 +150,24 @@ class TestStructure2(unittest.TestCase):
             self.dsa.reverse_record(self.context, s)
             log.debug(s.to_string())
         self.assertTrue(True)  # test no error
+
+    def test_get_fields(self):
+        _record = structure.AnonymousRecord(self.memory_handler, 0xdeadbeef, 40)
+        word_size = self.target.get_word_size()
+
+        f1 = fieldtypes.Field('f1', 0*word_size, fieldtypes.ZEROES, word_size, False)
+        f2 = fieldtypes.Field('f2', 1*word_size, fieldtypes.ZEROES, word_size, False)
+        fields = [f1, f2]
+        _record_type = structure.RecordType('struct_test', 2*word_size, fields)
+        _record.set_record_type(_record_type)
+        # same fields
+        self.assertEqual(f1, _record.get_fields()[0])
+        self.assertEqual(f1, _record.get_field('f1'))
+        # get_fields return a new list of fields
+        x = _record.get_fields()
+        self.assertEqual(x, _record.get_fields())
+        x.pop(0)
+        self.assertNotEqual(x, _record.get_fields())
 
 
 if __name__ == '__main__':

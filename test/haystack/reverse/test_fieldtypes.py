@@ -57,6 +57,20 @@ class TestField(SrcTests):
         self.assertFalse(ptr.is_array())
         self.assertFalse(ptr.is_integer())
 
+    def test_equals(self):
+        start = self.offsets['start_list'][0]
+        _record = structure.AnonymousRecord(self.memory_handler, start, 40)
+        word_size = self._target.get_word_size()
+
+        f1 = fieldtypes.Field('f1', 0*word_size, fieldtypes.ZEROES, word_size, False)
+        f2 = fieldtypes.Field('f2', 1*word_size, fieldtypes.ZEROES, word_size, False)
+        fields = [f1, f2]
+        _record_type = structure.RecordType('struct_text', 2*word_size, fields)
+        _record.set_record_type(_record_type)
+
+        self.assertEqual(f1, _record.get_fields()[0])
+        self.assertEqual(f1, _record.get_field('f1'))
+
     def test_subtype(self):
         start = self.offsets['start_list'][0]
         _record = structure.AnonymousRecord(self.memory_handler, start, 40)
