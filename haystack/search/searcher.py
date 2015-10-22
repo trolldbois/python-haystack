@@ -58,12 +58,7 @@ class RecordSearcher(object):
         """
         outputs = []
         for m in self._target_mappings:
-            outputs.extend(
-                self._search_in(
-                    m,
-                    struct_type,
-                    nb=max_res-len(outputs),
-                    depth=max_depth))
+            outputs.extend(self._search_in(m, struct_type, nb=max_res-len(outputs), depth=max_depth))
             # check out
             if len(outputs) >= max_res:
                 break
@@ -97,7 +92,7 @@ class RecordSearcher(object):
         for addr, size in walker.get_user_allocations():
             # FIXME, heap walker should give a hint
             # minimum chunk size varies...
-            #if size != struct_size:
+            # if size != struct_size:
             if size < struct_size:
                 log.debug("size %d < struct_size %d", size, struct_size)
                 continue
@@ -113,10 +108,9 @@ class RecordSearcher(object):
             for offset in utils.xrange(start, end, plen):
                 # a - load and validate the record
                 # DEBUG
-                #offset = addr
+                # offset = addr
                 log.debug('load_at(%d) ', offset)
-                instance, validated = self._load_at(
-                    mem_map, offset, struct_type, depth)
+                instance, validated = self._load_at(mem_map, offset, struct_type, depth)
                 if validated:
                     log.debug("found instance @ 0x%lx", offset)
                     # do stuff with it.
@@ -180,23 +174,10 @@ class AnyOffsetRecordSearcher(RecordSearcher):
         :param update_cb: callback function to call for each valid result
         :return:
         """
-        if not isinstance(memory_handler, interfaces.IMemoryHandler):
-            raise TypeError("Feed me a IMemoryHandler")
-        if my_constraints and not isinstance(my_constraints, interfaces.IModuleConstraints):
-            raise TypeError("Feed me a IModuleConstraints")
-        if target_mappings is not None and not isinstance(target_mappings, list):
-            raise TypeError("Feed me a list of IMemoryMapping")
-        elif target_mappings is None:
+        if target_mappings is None:
             # default to all heaps
             target_mappings = memory_handler.get_mappings()
-        self._memory_handler = memory_handler
-        self._my_constraints = my_constraints
-        self._target_mappings = target_mappings
-        self._update_cb = update_cb
-        log.debug(
-            'StructFinder created for %s. Search Perimeter on %d mappings.',
-            self._memory_handler.get_name(),
-            len(self._target_mappings))
+        super(AnyOffsetRecordSearcher, self).__init__(memory_handler, my_constraints, target_mappings, update_cb)
         return
 
     def _search_in(self, mem_map, struct_type, nb=10, depth=99, align=None):
@@ -236,13 +217,11 @@ class AnyOffsetRecordSearcher(RecordSearcher):
             # print a debug message every now and then
             if offset % (1024 << 6) == 0:
                 p2 = offset - start
-                log.debug('processed %d bytes    - %02.02f test/sec',
-                          p2, (p2 - p) / (plen * (time.time() - t0)))
+                log.debug('processed %d bytes    - %02.02f test/sec', p2, (p2 - p) / (plen * (time.time() - t0)))
                 t0 = time.time()
                 p = p2
             # a - load and validate the record
-            instance, validated = self._load_at(
-                mem_map, offset, struct_type, depth)
+            instance, validated = self._load_at(mem_map, offset, struct_type, depth)
             if validated:
                 log.debug("found instance @ 0x%lx", offset)
                 # do stuff with it.

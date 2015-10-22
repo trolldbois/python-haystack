@@ -55,9 +55,10 @@ def get_record_type_fields(record_type):
         yield (f[0], f[1])
     raise StopIteration
 
+
 class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     """
-    This is the main class, to be inherited by all ctypes structure.
+    This is the main class, to be inherited by all ctypes record validators.
     It adds a generic validation framework, based on simple assertion,
     and on more complex constraint on members values.
     """
@@ -80,13 +81,23 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         self._target = self._memory_handler.get_target_platform()
         self._ctypes = self._target.get_target_ctypes()
         self._utils = self._target.get_target_ctypes_utils()
-        self._constraints = my_constraints
+        self._constraints_base = None
+        self._constraints_dynamic = None
+        if my_constraints is not None:
+            self._constraints_base = my_constraints.get_constraints()
+            self._constraints_dynamic = my_constraints.get_dynamic_constraints()
 
     def _get_constraints_for(self, record):
         n = record.__class__.__name__
-        if self._constraints and n in self._constraints:
-            return self._constraints[n]
+        if self._constraints_base and n in self._constraints_base:
+            return self._constraints_base[n]
         return dict()
+
+    def _get_dynamic_constraints_for(self, record):
+        n = record.__class__.__name__
+        if self._constraints_dynamic and n in self._constraints_dynamic:
+            return self._constraints_dynamic[n]
+        return None
 
     def get_orig_addr(self, record):
         """ returns the vaddr of this instance."""
@@ -124,35 +135,24 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             raise TypeError('Feed me a record')
         valid = self._is_valid(record, self._get_constraints_for(record))
         log.debug('-- <%s> isValid = %s', record.__class__.__name__, valid)
-        return valid
+        # check dynamic constraints last.
+        if valid:
+            return self._is_valid_dynamic_constraints(record)
+        return False
+
+    def _is_valid_dynamic_constraints(self, record):
+        dynamic_constraints = self._get_dynamic_constraints_for(record)
+        if dynamic_constraints:
+            return dynamic_constraints.is_valid(record)
+        return True
 
     def _is_valid(self, record, record_constraints):
         """ real implementation.    check expectedValues first, then the other fields """
         log.debug(' -- <%s> isValid --', record.__class__.__name__)
         done = []
-        log.debug("constraints are on %s", record_constraints)
-        # check all fields inline
-        #for attrname, attrtype in get_fields(record):
-        #    attr = getattr(record, attrname)
-        #    ignore = False
-        #    # shorcut ignores
-        #    if attrname in record_constraints:
-        #        for constraint in record_constraints[attrname]:
-        #            if constraint is constraints.IgnoreMember:
-        #                log.debug('ignoring %s as requested', attrname)
-        #                ignore = True
-        #                break
-        #            elif isinstance(constraint, constraints.ListLimitDepthValidation):
-        #                max_depth = constraint.max_depth
-        #                log.debug('setting max_depth %d as requested', max_depth)
-        #        continue
-        #    if ignore:
-        #        continue
-        #    # validate the attr
-        #    if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):
-        #        return False
-
         # we check constrained field first to stop early if possible
+        # then we test the other fields
+        log.debug("constraints are on %s", record_constraints)
         _fieldsTuple = get_fields(record)
         myfields = dict(_fieldsTuple)
         for attrname, _constraints in record_constraints.iteritems():
@@ -174,9 +174,8 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 continue
             if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):
                 return False
-        # check the rest for validation
-        todo = [(name, typ)
-                for name, typ in get_fields(record) if name not in done]
+        # check the other fields for validation
+        todo = [(name, typ) for name, typ in get_fields(record) if name not in done]
         for attrname, attrtype, in todo:
             attr = getattr(record, attrname)
             if not self._is_valid_attr(attr, attrname, attrtype, record_constraints):

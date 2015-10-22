@@ -18,7 +18,7 @@ __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
 from test.haystack import SrcTests
-
+from haystack import constraints
 
 class TestLoadMembers(SrcTests):
 
@@ -31,7 +31,8 @@ class TestLoadMembers(SrcTests):
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
         self.my_model = self.memory_handler.get_model()
-        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, dict())
+        _constraints = constraints.ModuleConstraints() # empty
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, _constraints)
         self.ctypes_gen32 = self.my_model.import_module("test.src.ctypes5_gen32")
 
     def tearDown(self):
@@ -139,7 +140,8 @@ class TestRealSSH(unittest.TestCase):
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()
         self.my_model = self.memory_handler.get_model()
-        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler,dict())
+        _constraints = constraints.ModuleConstraints() # empty
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, _constraints)
         try:
             self.sslsnoop = self.my_model.import_module("sslsnoop")
         except ImportError:

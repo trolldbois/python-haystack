@@ -25,15 +25,15 @@ class TestConstraints(unittest.TestCase):
 
     def test_read(self):
         parser = constraints.ConstraintsConfigHandler()
-        _constraints = parser.read('test/structures/good.constraints')
-
-        for st, stc in _constraints.items():
+        module_constraints = parser.read('test/structures/good.constraints')
+        config_constraints = module_constraints.get_constraints()
+        for st, stc in config_constraints.items():
             log.debug("structure: %s", st)
             for field, c in stc.items():
                 log.debug("\t field: %s constraint: %s", field, c)
 
-        self.assertIn('Struct2', _constraints.keys())
-        s2c = _constraints['Struct2']
+        self.assertIn('Struct2', config_constraints.keys())
+        s2c = config_constraints['Struct2']
         self.assertNotIn('fieldC', s2c.keys())
         self.assertIn('field0', s2c.keys())
         self.assertIn('field1', s2c.keys())

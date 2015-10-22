@@ -19,6 +19,7 @@ import re
 
 log = logging.getLogger('constraints')
 
+
 from haystack.abc import interfaces
 
 
@@ -57,8 +58,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         # each section anem is the name of the target structure
         for struct_name in parser.sections():
             log.debug('handling structure %s', struct_name)
-            if struct_name not in _constraints:
-                _constraints[struct_name] = RecordConstraints()
+            record_constraints = RecordConstraints()
             # each config entry is a field and its IConstraint
             for field, value in parser.items(struct_name):
                 log.debug('%s: field %s ::= %s', struct_name, field, value)
@@ -68,12 +68,14 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
                     raise ValueError("%s: struct_name: %s Field: %s constraint: %s" % (
                                      e.message, struct_name, field, value))
                 # each field can only have one IConstraint (which can be a list of)
-                if field not in _constraints[struct_name]:
-                    _constraints[struct_name][field] = []
+                if field not in record_constraints:
+                    record_constraints[field] = []
                 if isinstance(value, list):
-                    _constraints[struct_name][field].extend(value)
+                    record_constraints[field].extend(value)
                 else:
-                    _constraints[struct_name][field].append(value)
+                    record_constraints[field].append(value)
+            # we set it
+            _constraints.set_constraints(struct_name, record_constraints)
         return _constraints
 
     def _parse(self, value):
@@ -167,18 +169,49 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         return ret
 
 
-class ModuleConstraints(interfaces.IModuleConstraints, dict):
+class ModuleConstraints(interfaces.IModuleConstraints):
     """
     Holds the constraints for all record types of a module.
     """
-    def get_records(self):
-        """get the list of record names."""
-        return self.keys()
+    def __init__(self):
+        self.__constraints = {}
+        self.__dynamics = {}
 
-    def get_constraints_for_record(self, record_name):
-        """get the list of IConstraint for all fields of
+    def get_constraints(self):
         """
-        return self[record_name]
+        get the list of IConstraint for all fields of record_name
+
+        :return the list of IConstraint for that record
+        """
+        return self.__constraints
+
+    def set_constraints(self, record_type_name, record_constraints):
+        """
+        Add constraints for that record_type name
+        :param record_type_name:
+        :param record_constraints:
+        :return:
+        """
+        self.__constraints[record_type_name] = record_constraints
+
+    def get_dynamic_constraints(self):
+        """
+        get the IRecordTypeDynamicConstraintsValidator for record_type_name
+
+        :return the list of IRecordTypeDynamicConstraintsValidator
+        """
+        return self.__dynamics
+
+    def set_dynamic_constraints(self, record_type_name, record_constraints):
+        """
+        Add dynamic constraints validator for that record_type name
+        :param record_type_name: str
+        :param record_constraints: IRecordTypeDynamicConstraintsValidator
+        :return:
+        """
+        assert isinstance(record_constraints, interfaces.IRecordTypeDynamicConstraintsValidator)
+        self.__dynamics[record_type_name] = record_constraints
+
 
 class RecordConstraints(interfaces.IRecordConstraints, dict):
     """
@@ -193,6 +226,7 @@ class RecordConstraints(interfaces.IRecordConstraints, dict):
         """
         return self[field_name]
 
+
 class IgnoreMember(interfaces.IConstraint):
 
     """
@@ -203,6 +237,7 @@ class IgnoreMember(interfaces.IConstraint):
 
     def __contains__(self, obj):
         return True
+
 
 class ListLimitDepthValidation(interfaces.IConstraint):
 

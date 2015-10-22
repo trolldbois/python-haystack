@@ -113,7 +113,6 @@ class KnownRecordTypeReverser(model.AbstractReverser):
         self.__record_names = record_names
         self.__constraints = record_constraints
         self.__search_results = {}
-        self.__constraints = []
 
     def _iterate_records(self, _context):
         for x in self.__record_names:

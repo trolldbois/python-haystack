@@ -432,12 +432,36 @@ class IModuleConstraints(object):
     x['struct_1']['field1'] contains a list of contraints.
     """
 
-    def get_records(self):
-        """get the list of record names."""
+    def get_constraints(self):
+        """
+        get the list of record_type_name,IConstraint for all fields of
+        :return dict
+        """
         raise NotImplementedError('Please implement all methods')
 
-    def get_constraints_for_record(self, record_name):
-        """get the list of IConstraint for all fields of
+    def set_constraints(self, record_type_name, record_constraints):
+        """
+        Add constraints for that record_type name
+        :param record_type_name:
+        :param record_constraints:
+        :return
+        """
+        raise NotImplementedError('Please implement all methods')
+
+    def get_dynamic_constraints(self):
+        """
+        get the record_type_name,IRecordTypeDynamicConstraintsValidator
+
+        :return dict
+        """
+        raise NotImplementedError('Please implement all methods')
+
+    def set_dynamic_constraints(self, record_type_name, record_constraints):
+        """
+        Add dynamic constraints validator for that record_type name
+        :param record_type_name: str
+        :param record_constraints: IRecordTypeDynamicConstraintsValidator
+        :return:
         """
         raise NotImplementedError('Please implement all methods')
 
@@ -508,3 +532,20 @@ class IRecordConstraintsValidator(object):
         :return:
         """
         raise NotImplementedError('Please implement all methods')
+
+
+class IRecordTypeDynamicConstraintsValidator(object):
+    """
+    A record-type-based constraints validation class
+    """
+    def get_record_type_name(self):
+        """Return the name of the record_type for which these advanced checks can occur"""
+        raise NotImplementedError('Please implement all methods')
+
+    def is_valid(self, record):
+        """
+        Advanced checks that cannot be expressed in the constraints files
+        """
+        raise NotImplementedError('Please implement all methods')
+
+    # TODO get_list_tuples
