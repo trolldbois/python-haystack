@@ -89,7 +89,7 @@ class TestListStructTest6(SrcTests):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     # logging.getLogger("listmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("root").setLevel(level=logging.DEBUG)

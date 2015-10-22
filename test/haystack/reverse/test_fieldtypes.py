@@ -92,11 +92,11 @@ class TestField(SrcTests):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
-    logging.getLogger("reversers").setLevel(level=logging.DEBUG)
-    logging.getLogger("structure").setLevel(level=logging.DEBUG)
-    logging.getLogger("field").setLevel(level=logging.DEBUG)
-    logging.getLogger("re_string").setLevel(level=logging.DEBUG)
+    # logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
+    # logging.getLogger("reversers").setLevel(level=logging.DEBUG)
+    # logging.getLogger("structure").setLevel(level=logging.DEBUG)
+    # logging.getLogger("field").setLevel(level=logging.DEBUG)
+    # logging.getLogger("re_string").setLevel(level=logging.DEBUG)
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)

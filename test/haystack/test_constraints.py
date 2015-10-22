@@ -92,5 +92,5 @@ class TestConstraints(unittest.TestCase):
         self.assertEquals(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)

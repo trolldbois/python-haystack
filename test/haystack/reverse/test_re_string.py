@@ -192,7 +192,7 @@ class TestReString(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger("re_string").setLevel(level=logging.DEBUG)
+    # logging.getLogger("re_string").setLevel(level=logging.DEBUG)
     unittest.main(verbosity=0)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)

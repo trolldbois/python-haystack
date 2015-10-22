@@ -472,7 +472,7 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     #logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
     # logging.getLogger('testwalker').setLevel(level=logging.DEBUG)
-    logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
+    # logging.getLogger('testwinxpwalker').setLevel(level=logging.DEBUG)
     #logging.getLogger('winheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     # logging.getLogger('win7heap').setLevel(level=logging.DEBUG)

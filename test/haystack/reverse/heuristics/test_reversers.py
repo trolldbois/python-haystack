@@ -379,7 +379,7 @@ class TestReversers(SrcTests):
         sig_4 = struct_d.get_signature_text()
         # print '4.', self._v(struct_d)
 
-        logging.getLogger("reversers").setLevel(logging.DEBUG)
+        #logging.getLogger("reversers").setLevel(logging.DEBUG)
 
         # aggregate field of same type in an array
         ## FIXME very very long.
@@ -509,7 +509,7 @@ class TestTypeReverser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger("reversers").setLevel(logging.DEBUG)
+    # logging.getLogger("reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
     # logging.getLogger("dsa").setLevel(logging.DEBUG)
     # logging.getLogger("winxpheap").setLevel(logging.DEBUG)

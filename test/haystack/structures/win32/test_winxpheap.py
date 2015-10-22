@@ -262,7 +262,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     #logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger('testwinxpheap').setLevel(level=logging.DEBUG)
+    # logging.getLogger('testwinxpheap').setLevel(level=logging.DEBUG)
     #logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
     #logging.getLogger('winxpheapwalker').setLevel(level=logging.DEBUG)
     #logging.getLogger('listmodel').setLevel(level=logging.DEBUG)
