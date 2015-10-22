@@ -69,12 +69,13 @@ class TestLibcHeapWalker(unittest.TestCase):
     def test_get_user_allocations(self):
         # we should have 3 structures + 1 empty chunks
         allocs = self.walker.get_user_allocations()
-        self.assertEquals(len(allocs), 35 + 255)
+        self.assertEquals(len(allocs), 35 + 255 + 16 + 16 + 16 + 3 )
 
     def test_get_free_chunks(self):
         # the empty chunk
         free = self.walker.get_free_chunks()
         self.assertEquals(len(free), 1)
+
 
 class TestLibcHeapWalkerBigger(unittest.TestCase):
     """ Test the libc heap walker on a bigger test case,

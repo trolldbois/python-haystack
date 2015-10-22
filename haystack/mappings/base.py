@@ -231,7 +231,8 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         self.__name = name
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
-        self.__model = model.Model(self)
+        self.__user_model = model.Model(self)
+        self.__internal_model = model.Model(self)
         # FIXME reduce open files.
         self.__required_maps = []
         # finish initialization
@@ -259,7 +260,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
 
     def get_model(self):
         """Returns the Model cache."""
-        return self.__model
+        return self.__user_model
 
     # FIXME incorrect API
     def _get_mapping(self, pathname):
