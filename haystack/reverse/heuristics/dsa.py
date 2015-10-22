@@ -338,7 +338,7 @@ class FieldReverser(model.AbstractReverser):
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = fieldtypes.Field('gap_%d' % nextoffset+s1, nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = fieldtypes.Field('gap_%d' % (nextoffset + s1), nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return

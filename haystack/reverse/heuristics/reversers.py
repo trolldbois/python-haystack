@@ -337,7 +337,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
             _context = self._process_context.get_context_for_heap(heap)
             _item = _context.get_record_for_address(list_item_addr)
             if len(_item) != len(_record):
-                print "x2 linked reverser: len(_item) != len(_record)"
+                log.warning("x2 linked reverser: len(_item) != len(_record)")
             else:
                 _item.set_record_type(_record_type)
 

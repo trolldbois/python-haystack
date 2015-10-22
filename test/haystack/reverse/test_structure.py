@@ -101,7 +101,7 @@ class TestStructure(unittest.TestCase):
             for name, value in members.items():
                 if name in ['_size', '_memory_handler', '_name', '_vaddr', '_target']:
                     self.assertNotIn(value, [None, False])
-                elif name in ['_dirty', '_AnonymousRecord__address']:
+                elif name in ['_dirty', '_AnonymousRecord__address', '_AnonymousRecord__record_type']:
                     self.assertTrue(value)
                 elif name in ['_fields']:
                     self.assertEquals(value, list())
