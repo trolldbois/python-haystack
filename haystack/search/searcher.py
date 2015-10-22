@@ -9,6 +9,7 @@ from haystack import listmodel
 
 log = logging.getLogger('searcher')
 
+
 class RecordSearcher(object):
     """
     Generic record type searcher.
@@ -149,6 +150,7 @@ class RecordSearcher(object):
             log.debug("Address not validated")
             validated = False
         return instance, validated
+
 
 class RecordLoader(RecordSearcher):
     """

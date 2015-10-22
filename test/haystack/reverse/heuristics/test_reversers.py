@@ -10,6 +10,7 @@ import unittest
 import sys
 
 from haystack import dump_loader
+from haystack import constraints
 from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse.heuristics import dsa
@@ -20,8 +21,48 @@ from haystack.reverse.heuristics import pointertypes
 from test.testfiles import ssh_1_i386_linux
 from test.testfiles import zeus_856_svchost_exe
 from test.haystack import SrcTests
+from test.src import ctypes6
 
 log = logging.getLogger("test_reversers")
+
+
+class TestKnownRecordTypeReverser(SrcTests):
+
+    def setUp(self):
+        dumpname = 'test/src/test-ctypes6.64.dump'
+        self.memory_handler = dump_loader.load(dumpname)
+        process_context = self.memory_handler.get_reverse_context()
+        process_context.reset_cache_folder()
+        # load TU values
+        self._load_offsets_values(self.memory_handler.get_name())
+        ##
+
+    def tearDown(self):
+        self.memory_handler.reset_mappings()
+        self.memory_handler = None
+        self.dllr = None
+        #config.remove_cache_folder(cls.dumpname)
+
+    def test_preload(self):
+        sys.path.append('test/src/')
+
+        my_model = self.memory_handler.get_model()
+        ctypes6_gen64 = my_model.import_module("ctypes6_gen64")
+
+        handler = constraints.ConstraintsConfigHandler()
+        my_constraints = handler.read('test/src/ctypes6.constraints')
+
+        x64_validator = ctypes6.CTypes6Validator(self.memory_handler, my_constraints, ctypes6_gen64)
+
+        record_names = ['ctypes6_gen64.%s' % n for n in ctypes6_gen64.__all__]
+
+        krtr = reversers.KnownRecordTypeReverser(self.memory_handler, record_names, my_constraints)
+        krtr.reverse()
+        ## TODO enforce better constraints, and a dynamic Contraints engine
+        results = krtr.get_search_results()
+        for record_name, addresses in results.items():
+            print record_name, len(addresses)
+        pass
 
 
 class TestDoubleLinkedReverser(SrcTests):

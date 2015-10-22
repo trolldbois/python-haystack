@@ -94,6 +94,50 @@ class BasicCachingReverser(model.AbstractReverser):
         return
 
 
+class KnownRecordTypeReverser(model.AbstractReverser):
+    """
+    Use the list of record type name provided to try to identify know records.
+
+    The ProcessContext model must have been loaded with the appropriate ctypes module
+        memory_handler.get_reverse_context().get_model().import_module(*args)
+    then any ctypes.Structure or Union of these module can be searched for.
+
+    This reverser should be use as a second step in the reverse process.
+    """
+
+    REVERSE_LEVEL = 2
+
+    def __init__(self, _memory_handler, record_names, record_constraints):
+        super(KnownRecordTypeReverser, self).__init__(_memory_handler)
+        self._process_context = self._memory_handler.get_reverse_context()
+        self.__record_names = record_names
+        self.__constraints = record_constraints
+        self.__search_results = {}
+        self.__constraints = []
+
+    def _iterate_records(self, _context):
+        for x in self.__record_names:
+            yield x
+
+    def reverse_record(self, _context, record_name):
+        """
+        _record is actually a record_type_name
+        """
+        from haystack.search import api
+        modulename, sep, classname = record_name.rpartition('.')
+        module = self._memory_handler.get_model().import_module(modulename)
+        record_type = getattr(module, classname)
+        # now launch the search
+        results = api.search_record(self._memory_handler, record_type, self.__constraints, False)
+
+        addresses = [addr for _, addr in results]
+        self.__search_results[record_name] = addresses
+        return
+
+    def get_search_results(self):
+        return self.__search_results
+
+
 class DoubleLinkedListReverser(model.AbstractReverser):
     """
     Identify double Linked list. ( list, vector, ... )

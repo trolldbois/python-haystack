@@ -8,7 +8,7 @@ import time
 import numpy
 import os
 
-from haystack import dump_loader
+from haystack import model
 from haystack.abc import interfaces
 from haystack.reverse import utils
 from haystack.reverse import config
@@ -31,6 +31,8 @@ class ProcessContext(object):
         self.memory_handler.get_heap_finder().get_heap_mappings()
         self.__contextes = {}
         self.__reversed_types = {}
+        # see bug #17 self.__model = model.Model(self.memory_handler)
+        # no need for that
         # create the cache folder then
         self.reset_cache_folder()
 

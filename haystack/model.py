@@ -38,8 +38,10 @@ log = logging.getLogger('model')
 class NotValid(Exception):
     pass
 
+
 class LoadException(Exception):
     pass
+
 
 class Model(object):
 
@@ -154,6 +156,7 @@ class Model(object):
         """
         return self.__modules[name]
 
+
 def copy_generated_classes(src_module, dst_module):
     """Copies the ctypes Records of a module into another module.
     Is equivalent to "from src import *" but with less clutter.
@@ -181,6 +184,7 @@ def copy_generated_classes(src_module, dst_module):
             src_module.__dict__),
             src_module.__name__))
     return
+
 
 def import_module_for_target_ctypes(module_name, target_ctypes):
     """

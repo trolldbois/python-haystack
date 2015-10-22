@@ -14,6 +14,7 @@ from haystack import dump_loader
 from test.src import ctypes6
 from test.haystack import SrcTests
 
+
 class TestListStructTest6(SrcTests):
     """
     """
