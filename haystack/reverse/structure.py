@@ -488,6 +488,7 @@ class RecordType(object):
         self.name = name
         self.__size = int(size)
         self.__fields = fields
+        self.__fields.sort()
 
     def get_fields(self):
         return [x for x in self.__fields]
