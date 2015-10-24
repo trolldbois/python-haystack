@@ -16,6 +16,7 @@ from haystack.reverse import pattern
 from haystack.reverse.heuristics import model
 from haystack.reverse.heuristics import dsa
 from haystack.reverse.heuristics import pointertypes
+from haystack.reverse.heuristics import signature
 
 """
 BasicCachingReverser:
@@ -331,6 +332,12 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         #print
         return current-offset, members
 
+    def find_common_type_signature(self, members):
+        rev = signature.CommonTypeReverser(self._memory_handler, members)
+        rev.reverse()
+        best_sig, best_addr = rev.calculate()
+        return best_addr
+
     def rename_record_type(self, _members, offset):
         """
         Change the type of the 2 pointers to a substructure.
@@ -343,11 +350,14 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         :param head_addr:
         :return:
         """
+        # we look at each item and get the most common signature between all items
+        best_member = self.find_common_type_signature(_members)
+
         # use member[1] instead of head, so that we have a better chance for field types.
         # in head, back pointer is probably a zero value, not a pointer field type.
-        heap = self._memory_handler.get_mapping_for_address(_members[1])
+        heap = self._memory_handler.get_mapping_for_address(best_member)
         _context = self._process_context.get_context_for_heap(heap)
-        _record = _context.get_record_for_address(_members[1])
+        _record = _context.get_record_for_address(best_member)
         # we need two pointer fields to create a substructure.
         ## Check if field at offset is a pointer, If so change it name, otherwise split
         old_next = _record.get_field_at_offset(offset)
@@ -391,7 +401,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         heap = self._memory_handler.get_mapping_for_address(head_addr)
         _context = self._process_context.get_context_for_heap(heap)
         _context.get_record_for_address(head_addr).set_name('list_head')
-        pass
+        return _record_type
 
     def debug_lists(self):
         for size, v in self.lists.items():

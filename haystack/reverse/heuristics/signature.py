@@ -101,6 +101,55 @@ class TypeReverser(model.AbstractReverser):
         _record.set_reverse_level(self._reverse_level)
         return
 
+
+class CommonTypeReverser(model.AbstractReverser):
+    """
+    From a list of records addresse, find the most common signature.
+    """
+    REVERSE_LEVEL = 31
+
+    def __init__(self, memory_handler, members):
+        super(CommonTypeReverser, self).__init__(memory_handler)
+        self._members = members
+        self._members_by_context = {}
+        process_context = self._memory_handler.get_reverse_context()
+        # organise the list
+        for record_addr in self._members:
+            heap = self._memory_handler.get_mapping_for_address(record_addr)
+            heap_context = process_context.get_context_for_heap(heap)
+            if heap_context not in self._members_by_context:
+                self._members_by_context[heap_context] = []
+            self._members_by_context[heap_context].append(record_addr)
+        # out
+        self._signatures = {}
+        self._similarities = []
+
+    def _iterate_contexts(self):
+        for c in self._members_by_context.keys():
+            yield c
+
+    def _iterate_records(self, _context):
+        for item_addr in self._members_by_context[_context]:
+            yield _context.get_record_for_address(item_addr)
+
+    def reverse_record(self, _context, _record):
+        record_signature = _record.get_signature_text()
+        if record_signature not in self._signatures:
+            self._signatures[record_signature] = []
+        self._signatures[record_signature].append(_record.address)
+
+    def calculate(self):
+        #
+        res = [(len(v), k) for k,v in self._signatures.items()]
+        res.sort(reverse=True)
+        total = len(self._members)
+        best_count = res[0][0]
+        best_sig = res[0][1]
+        best_addr = self._signatures[best_sig][0]
+        log.debug('best match %d/%d is %s: 0x%x', best_count, total, best_sig, best_addr)
+        return best_sig, best_addr
+
+
 # TODO a Group maker based on field pointer memorymappings and structure
 # instance/sizes...
 
@@ -247,11 +296,10 @@ class StructureSizeCache:
 
 
 class SignatureMaker(searchers.AbstractSearcher):
-
-    '''
+    """
     make a condensed signature of the mapping.
     We could then search the signature file for a specific signature
-    '''
+    """
 
     NULL = 0x1
     POINTER = 0x2

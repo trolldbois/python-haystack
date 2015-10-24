@@ -701,6 +701,15 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         offset = 8
         self.assertEqual(rev.lists[size_records][offset][0], expected)
 
+        # rename all lists
+        for size, offset_lists in rev.lists.items():
+            for offset, multiple_lists in offset_lists.items():
+                for members_list in multiple_lists:
+                    nb = len(members_list)
+                    rt = rev.rename_record_type(members_list, offset)
+                    log.debug('%d members for : %s', nb, rt.to_string())
+
+
         pass
 
 
@@ -733,6 +742,7 @@ class TestTypeReverser(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("signature").setLevel(logging.DEBUG)
     logging.getLogger("test_reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
     # logging.getLogger("dsa").setLevel(logging.DEBUG)
