@@ -22,6 +22,7 @@ from haystack import types
 
 log = logging.getLogger('utils')
 
+
 class Utils(interfaces.ICTypesUtils):
 
     def __init__(self, _target_ctypes):

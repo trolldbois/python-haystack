@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from haystack import listmodel
+from haystack.abc import interfaces
 
 
 class CTypes6Validator(listmodel.ListModel):
@@ -14,3 +15,30 @@ class CTypes6Validator(listmodel.ListModel):
             self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
         elif self._target.get_word_size() == 8:
             self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+
+
+class NodeDynamicValidator(interfaces.IRecordTypeDynamicConstraintsValidator):
+    def is_valid(self, _record):
+        if _record.val1 != 0xdeadbeef:
+            return False
+        if _record.val2 != 0xffffffff:
+            return False
+        return True
+
+
+class EntryDynamicValidator(interfaces.IRecordTypeDynamicConstraintsValidator):
+    """Only validates head and tail"""
+    def __init__(self, memory_handler):
+        self.memory_handler = memory_handler
+        self.ctypes_utils = memory_handler.get_target_platform().get_target_ctypes_utils()
+
+    def is_valid(self, _record):
+        flink = self.ctypes_utils.get_pointee_address(_record.flink)
+        blink = self.ctypes_utils.get_pointee_address(_record.blink)
+        if flink == 0 and blink != 0:
+            # head elements
+            return True
+        if blink == 0 and flink != 0:
+            # tail elements
+            return True
+        return False

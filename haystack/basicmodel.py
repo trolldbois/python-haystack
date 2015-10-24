@@ -143,6 +143,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     def _is_valid_dynamic_constraints(self, record):
         dynamic_constraints = self._get_dynamic_constraints_for(record)
         if dynamic_constraints:
+            log.debug("dynamic constraints are %s", dynamic_constraints)
             return dynamic_constraints.is_valid(record)
         return True
 
@@ -194,22 +195,16 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                         'basicType: %s %s %s bad value not in record_constraints[attrname]:',
                         attrname, attrtype, repr(attr))
                     return False
-            log.debug(
-                'basicType: %s %s %s ok',
-                attrname, attrtype, repr(attr))
+            log.debug('basicType: %s %s %s ok', attrname, attrtype, repr(attr))
             return True
         # b)
         elif self._ctypes.is_struct_type(attrtype) or self._ctypes.is_union_type(attrtype):
             # do i need to load it first ? becaus it should be memcopied with
             # the super()..
             if not self.is_valid(attr):
-                log.debug(
-                    'structType: %s %s %s isValid FALSE' %
-                    (attrname, attrtype, repr(attr)))
+                log.debug('structType: %s %s %s isValid FALSE', attrname, attrtype, repr(attr))
                 return False
-            log.debug(
-                'structType: %s %s %s isValid TRUE' %
-                (attrname, attrtype, repr(attr)))
+            log.debug('structType: %s %s %s isValid TRUE', attrname, attrtype, repr(attr))
             return True
         # c)
         elif self._ctypes.is_array_of_basic_type(attrtype):
@@ -219,15 +214,11 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                         'basicArray: %s %s %s - bad value not in record_constraints[attrname]:',
                         attrname, attrtype, type(attr))
                     return False
-            log.debug(
-                'basicArray: %s is arraytype %s we decided it was valid',
-                attrname,
-                type(attr))
+            log.debug('basicArray: %s is arraytype %s we decided it was valid', attrname, type(attr))
             return True
         # d)
         elif self._ctypes.is_array_type(attrtype):
-            log.debug('array: %s is arraytype %s recurse validate', attrname,
-                                                                      repr(attr))
+            log.debug('array: %s is arraytype %s recurse validate', attrname, repr(attr))
             attrLen = len(attr)
             if attrLen == 0:
                 return True
@@ -235,8 +226,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             for i in range(0, attrLen):
                 # FIXME BUG DOES NOT WORK - offsetof("%s[%d]") is called,
                 # and %s exists, not %s[%d]
-                if not self._is_valid_attr(attr[i], "%s[%d]" % (attrname, i), elType,
-                                         record_constraints):
+                if not self._is_valid_attr(attr[i], "%s[%d]" % (attrname, i), elType, record_constraints):
                     return False
             return True
         # e)
@@ -247,21 +237,17 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 if not bool(myaddress):
                     if not ((None in record_constraints[attrname]) or
                             (0 in record_constraints[attrname])):
-                        log.debug('str: %s %s %s isNULL - NOT EXPECTED',
-                            attrname, attrtype, repr(attr))
+                        log.debug('str: %s %s %s isNULL - NOT EXPECTED', attrname, attrtype, repr(attr))
                         return False
-                    log.debug('str: %s %s %s isNULL - OK', attrname, attrtype,
-                                                             repr(attr))
+                    log.debug('str: %s %s %s isNULL - OK', attrname, attrtype, repr(attr))
                     # e.1)
                     return True
             if (myaddress != 0 and
                     not self._memory_handler.is_valid_address_value(myaddress)):
-                log.debug('str: %s %s %s 0x%lx INVALID', attrname, attrtype,
-                                                           repr(attr), myaddress)
+                log.debug('str: %s %s %s 0x%lx INVALID', attrname, attrtype, repr(attr), myaddress)
                 # e.2)
                 return False
-            log.debug('str: %s %s %s is at 0x%lx OK', attrname, attrtype,
-                                                        repr(attr), myaddress)
+            log.debug('str: %s %s %s is at 0x%lx OK', attrname, attrtype, repr(attr), myaddress)
             # e.3)
             return True
         # f)
@@ -270,17 +256,13 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             #log.debug('_is_valid_attr:0x%x name: %s', myaddress, attrname)
             if attrname in record_constraints:
                 # test if NULL is an option
-                log.debug('self._ctypes.is_pointer_type: bool(attr):%s attr:%s',
-                    bool(attr), attr)
+                log.debug('self._ctypes.is_pointer_type: bool(attr):%s attr:%s', bool(attr), attr)
                 if not bool(myaddress):
-                    if not ((None in record_constraints[attrname]) or
-                            (0 in record_constraints[attrname])):
-                        log.debug('ptr: %s %s %s isNULL - NOT EXPECTED',
-                            attrname, attrtype, repr(attr))
+                    if not ((None in record_constraints[attrname]) or (0 in record_constraints[attrname])):
+                        log.debug('ptr: %s %s %s isNULL - NOT EXPECTED', attrname, attrtype, repr(attr))
                         # f.1) expectedValues specifies NULL to be invalid
                         return False
-                    log.debug('ptr: %s %s %s isNULL - OK', attrname, attrtype,
-                                                             repr(attr))
+                    log.debug('ptr: %s %s %s isNULL - OK', attrname, attrtype, repr(attr))
                     # f.2) expectedValues specifies NULL to be valid
                     return True
             _attrType = None
@@ -291,7 +273,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 if (myaddress != 0 and
                         not self._memory_handler.is_valid_address_value(myaddress)):
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer',
-                        attrname, attrtype, repr(attr), myaddress)
+                              attrname, attrtype, repr(attr), myaddress)
                     # f.3) address must be valid, no type requirement
                     return False
             else:

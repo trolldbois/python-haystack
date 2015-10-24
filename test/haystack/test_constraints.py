@@ -7,8 +7,10 @@ import logging
 import unittest
 
 from haystack import constraints
-from haystack import target
-import haystack.model
+from haystack import dump_loader
+from haystack import basicmodel
+from test.haystack import SrcTests
+from test.src import ctypes6
 
 log = logging.getLogger("test_constraints")
 
@@ -91,6 +93,101 @@ class TestConstraints(unittest.TestCase):
         self.assertTrue(isinstance(field8, list))
         self.assertEquals(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
 
+
+class TestConstraints6(SrcTests):
+
+    def setUp(self):
+        dumpname = 'test/src/test-ctypes6.64.dump'
+        self.memory_handler = dump_loader.load(dumpname)
+        self.my_model = self.memory_handler.get_model()
+        self.ctypes_gen64 = self.my_model.import_module("test.src.ctypes6_gen64")
+        # load TU values
+        self._load_offsets_values(self.memory_handler.get_name())
+        ##
+
+    def tearDown(self):
+        self.memory_handler.reset_mappings()
+        self.memory_handler = None
+
+    def test_dynamic_constraints(self):
+
+        # the constraints are imposed through code.
+        dyna_validator = ctypes6.NodeDynamicValidator()
+        module_constraints = constraints.ModuleConstraints()
+        module_constraints.set_dynamic_constraints('struct_Node', dyna_validator)
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, module_constraints)
+
+        # should be valid.
+        node1 = self.offsets['test2'][0]
+        for instance_addr in [node1]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertTrue(self.validator.is_valid(node))
+
+        # should be invalid.
+        node2 = self.offsets['test3'][0]  # 0xdeadbabe
+        items1 = self.offsets['mid_list'][0]
+        items2 = self.offsets['end_list'][0]
+        for instance_addr in [items1, items2, node2]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertFalse(self.validator.is_valid(node))
+
+    def test_dynamic_sub_constraints(self):
+
+        # the constraints are imposed through code.
+        # this one only accepts head and tail struct_entry values.
+        entry_validator = ctypes6.EntryDynamicValidator(self.memory_handler)
+        module_constraints = constraints.ModuleConstraints()
+        module_constraints.set_dynamic_constraints('struct_entry', entry_validator)
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, module_constraints)
+
+        # should be valid. its the head
+        node1 = self.offsets['test2'][0]  # head
+        node2 = self.offsets['test3'][0]  # tail
+        items1 = self.offsets['start_list'][0]
+        items2 = self.offsets['end_list'][0]
+        for instance_addr in [node1, node2, items1, items2]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertTrue(self.validator.is_valid(node))
+
+        # should be invalid.
+        items_mid = self.offsets['mid_list'][0]
+        head_first = self.offsets['head_loop_first_item'][0]
+        head_last = self.offsets['head_loop_last_item'][0]
+        for instance_addr in [items_mid, head_first, head_last]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertFalse(self.validator.is_valid(node))
+
+    def test_config_constraints(self):
+
+        # the constraints are imposed through config file.
+        parser = constraints.ConstraintsConfigHandler()
+        module_constraints = parser.read('test/src/ctypes6.constraints')
+        self.validator = basicmodel.CTypesRecordConstraintValidator(self.memory_handler, module_constraints)
+
+        # should be valid.
+        node1 = self.offsets['test2'][0]
+        node2 = self.offsets['test3'][0]  # 0xdeadbabe
+        for instance_addr in [node1, node2]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertTrue(self.validator.is_valid(node))
+
+        # should be invalid.
+        items1 = self.offsets['mid_list'][0]
+        items2 = self.offsets['end_list'][0]
+        for instance_addr in [items1, items2]:
+            m = self.memory_handler.get_mapping_for_address(instance_addr)
+            node = m.read_struct(instance_addr, self.ctypes_gen64.struct_Node)
+            self.assertFalse(self.validator.is_valid(node))
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    # logging.getLogger("constraints").setLevel(logging.DEBUG)
+    # logging.getLogger("basicmodel").setLevel(logging.DEBUG)
+    # logging.getLogger("listmodel").setLevel(logging.DEBUG)
     unittest.main(verbosity=2)
