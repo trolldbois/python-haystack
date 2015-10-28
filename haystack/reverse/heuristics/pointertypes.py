@@ -99,7 +99,8 @@ class PointerFieldReverser(model.AbstractReverser):
             # later we would need to use tgt_field.ctypes depending on field
             # offset
             field.set_pointee_ctype(tgt.name)
-            field.name = '%s_%s_%d' % (tgt.name, tgt_field.name, field.offset)
+            # field.name = '%s_%s_%d' % (tgt.name, tgt_field.name, field.offset)
+            field.name = 'ptr_%s_%d' % (tgt.name, field.offset)
             # all
 
         _record.set_reverse_level(self._reverse_level)
