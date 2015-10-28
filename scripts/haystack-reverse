@@ -19,6 +19,8 @@ import os
 from haystack import argparse_utils
 from haystack.reverse import config
 from haystack.reverse import context
+from haystack.reverse.heuristics import reversers
+from haystack.reverse.heuristics import signature
 from haystack import dump_loader
 
 log = logging.getLogger('haystack-reverse')
@@ -26,9 +28,9 @@ log = logging.getLogger('haystack-reverse')
 
 
 def reverse_instances(opt):
-    import reversers
     # go through the 4 step process. Double linked list, basic type, Pointers and graph.
-    ctx = reversers.reverse_instances(opt.dumpname)
+    memory_handler = dump_loader.load(opt.dumpname)
+    ctx = reversers.reverse_instances(memory_handler)
     return
 
 def writeReversedTypes(opt):
@@ -38,7 +40,6 @@ def writeReversedTypes(opt):
     :param opt:
     :return:
     """
-    import signature
     ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
     ctx = signature.makeReversedTypes(ctx, sizeCache)
     outfile = file(config.get_cache_filename(config.REVERSED_TYPES_FILENAME, ctx.dumpname),'w')
@@ -61,7 +62,6 @@ def groupStructures(opt):
     :param opt:
     :return:
     """
-    import signature
     ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
     for chains in signature.buildStructureGroup(ctx, sizeCache, opt.size ):
         signature.printStructureGroups(ctx, chains, opt.address )
@@ -73,7 +73,6 @@ def saveSignatures(opt):
     :param opt:
     :return:
     """
-    import signature
     ctx, sig = signature.makeSignatures(opt.dumpname)
     outfile = config.get_cache_filename(config.SIGNATURES_FILENAME, ctx.dumpname)
     file(outfile,'w').write(sig)

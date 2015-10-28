@@ -36,12 +36,43 @@ class ProcessContext(object):
         # create the cache folder then
         self.reset_cache_folder()
 
+    # def get_functions_pointers(self):
+    #     try:
+    #         return self.get_cache_radare()
+    #     except IOError as e:
+    #         return self.save_cache_radare()
+    #
+    # def get_cache_radare(self):
+    #     dumpname = self.memory_handler.get_name()
+    #     fname = config.get_cache_filename(config.CACHE_FUNCTION_NAMES, dumpname)
+    #     functions = None
+    #     try:
+    #         with file(fname, 'r') as fin:
+    #             functions = pickle.load(fin)
+    #     except EOFError as e:
+    #         os.remove(fname)
+    #         log.error('Error in the radare cache file. File cleaned. Please restart.')
+    #         raise RuntimeError('Error in the radare cache file. File cleaned. Please restart.')
+    #     return functions
+    #
+    # def save_cache_radare(self):
+    #     from haystack.reverse.heuristics import radare
+    #     func = radare.RadareAnalysis(self.memory_handler)
+    #     func.init_all_functions()
+    #     import code
+    #     code.interact(local=locals())
+    #     dumpname = self.memory_handler.get_name()
+    #     fname = config.get_cache_filename(config.CACHE_FUNCTION_NAMES, dumpname)
+    #     with file(fname, 'w') as fout:
+    #         pickle.dump(func.functions, fout)
+    #     return func.functions
+
     def reset_cache_folder(self):
         """Removes the cache folder"""
         dumpname = self.memory_handler.get_name()
         # create the cache folder
         cache_folder = config.get_cache_folder_name(dumpname)
-        config.remove_cache_folder(self.memory_handler.get_name())
+        # config.remove_cache_folder(self.memory_handler.get_name())
         if not os.access(cache_folder, os.F_OK):
             os.mkdir(cache_folder)
             log.info("[+] Cache created in %s", cache_folder)
@@ -64,7 +95,7 @@ class ProcessContext(object):
         if not isinstance(heap, interfaces.IMemoryMapping):
             raise TypeError('heap should be a IMemoryMapping')
         if not heap.is_marked_as_heap():
-            raise TypeError('heap should be a heap')
+            raise TypeError('heap should be a heap: %s', heap)
         if heap.get_marked_heap_address() not in self.__contextes:
             heap_context = self.make_context_for_heap(heap)
             self._set_context_for_heap(heap, heap_context)
@@ -84,7 +115,7 @@ class ProcessContext(object):
         self.__reversed_types[typename] = t
 
     def list_reversed_types(self):
-        return self.__reversed_types.values()
+        return self.__reversed_types.keys()
 
     # was get_context
     def make_context_for_heap(self, heap):
@@ -101,6 +132,10 @@ class ProcessContext(object):
             heap = self.memory_handler.get_mapping_for_address(heap_addr)
             ctx = HeapContext(self.memory_handler, heap)
         return ctx
+
+    def get_filename_cache_headers(self):
+        dumpname = self.memory_handler.get_name()
+        return config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES, dumpname)
 
 
 class HeapContext(object):

@@ -46,7 +46,6 @@ __credits__ = ["Victor Skinner"]
 log = logging.getLogger('memorybase')
 
 
-
 class AMemoryMapping(interfaces.IMemoryMapping):
 
     """

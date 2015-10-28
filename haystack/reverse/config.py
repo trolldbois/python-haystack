@@ -42,11 +42,13 @@ REVERSED_TYPES_FILENAME = 'reversed_types.py'
 SIGNATURES_FILENAME = 'signatures'
 WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
 
+
 def create_cache_folder_name(dumpname):
     folder = get_cache_folder_name(dumpname)
     if not os.access(folder, os.F_OK):
         os.mkdir(folder)
     return
+
 
 def remove_cache_folder(dumpname):
     folder = get_cache_folder_name(dumpname)
@@ -54,11 +56,13 @@ def remove_cache_folder(dumpname):
         shutil.rmtree(folder)
     return
 
+
 def get_cache_folder_name(dumpname):
     root = os.path.abspath(dumpname)
     return os.path.sep.join([root, CACHE_NAME])
 
-def get_cache_filename(typ, dumpname, address):
+
+def get_cache_filename(typ, dumpname, address=None):
     """
     Returns a filename for caching a type of data based on the dump filename.
 
@@ -70,11 +74,8 @@ def get_cache_filename(typ, dumpname, address):
     fname = typ
     if address is not None:
         fname = '%x.%s' % (address, typ)
-    else:
-        log.warning('usage without uuid')
-        import pdb
-        pdb.set_trace()
     return os.path.sep.join([get_cache_folder_name(dumpname), fname])
+
 
 def get_record_cache_folder_name(dumpname):
     """

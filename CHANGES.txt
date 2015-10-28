@@ -18,6 +18,9 @@ Changes to architecture.txt:
 2015-10:
  - cleaning up the reverse API
  - Fix sigsegv bug source in reset_mappings()
+ - Fix the double linked reverser
+ - Cleaned up the reverse/structure module
+ - Added a fun constraints heuristics on reversed types's field.
 
 2015-09:
  - Working on Volatility dump reader

@@ -180,8 +180,7 @@ class AnonymousRecord(object):
         self.__address = _address
         self._size = size
         self._reverse_level = 0
-        from haystack.reverse import structure
-        self.__record_type = structure.RecordType('struct_%x' % self.__address, self._size, [])
+        self.__record_type = RecordType('struct_%x' % self.__address, self._size, [])
         self.reset()  # set fields
         self.set_name(prefix)
         return
@@ -235,9 +234,10 @@ class AnonymousRecord(object):
         self._dirty = True
         self._ctype = None
         self._bytes = None
+        self.__final = False
         return
 
-    def set_record_type(self, record_type):
+    def set_record_type(self, record_type, final_type=False):
         """
         Assign a reversed record type to this instance.
         That will change the fields types and render this record immutable.
@@ -246,6 +246,7 @@ class AnonymousRecord(object):
         :return:
         """
         self.__record_type = record_type
+        self.__final = final_type
 
     def get_fields(self):
         """
@@ -363,11 +364,20 @@ class AnonymousRecord(object):
             field_string_lines.append('\t'+field.to_string(field_value))
         fieldsString = '[ \n%s ]' % (''.join(field_string_lines))
         info = 'rlevel:%d SIG:%s size:%d' % (self.get_reverse_level(), self.get_signature_text(), len(self))
+        final_ctypes = 'ctypes.Structure'
+        # no renaming in instances..
+        # if self.__final:
+        #    final_ctypes = self.__record_type.name
+        #    ctypes_def = '''
+        #%s = %s  # %s
+        #
+        #''' % (self.get_name(), final_ctypes, info)
+        # else:
         ctypes_def = '''
-class %s(ctypes.Structure):  # %s
+class %s(%s):  # %s
   _fields_ = %s
 
-''' % (self.get_name(), info, fieldsString)
+''' % (self.get_name(), final_ctypes, info, fieldsString)
         return ctypes_def
 
     def __contains__(self, other):

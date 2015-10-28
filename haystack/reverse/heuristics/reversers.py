@@ -9,6 +9,7 @@ import os
 
 from haystack.abc import interfaces
 from haystack.reverse import config
+from haystack.reverse import context
 from haystack.reverse import structure
 from haystack.reverse import fieldtypes
 from haystack.reverse import utils
@@ -76,7 +77,7 @@ class BasicCachingReverser(model.AbstractReverser):
         #
         self._todo = sorted(set(self._allocations) - set(self._done_records))
         self._fromcache = len(self._allocations) - len(self._todo)
-        log.info('[+] Adding new raw structures from getUserAllocations cached contents - %d todo', len(self._todo))
+        log.info('[+] Adding new raw structures from user allocations - %d todo', len(self._todo))
         super(BasicCachingReverser, self).reverse_context(_context)
 
     def reverse_record(self, _context, _record):
@@ -388,10 +389,11 @@ class DoubleLinkedListReverser(model.AbstractReverser):
             heap = self._memory_handler.get_mapping_for_address(list_item_addr)
             _context = self._process_context.get_context_for_heap(heap)
             _item = _context.get_record_for_address(list_item_addr)
+            ### KEEP THIS
             if len(_item) != len(_record):
                 log.warning("x2 linked reverser: len(_item) != len(_record)")
             else:
-                _item.set_record_type(_record_type)
+                _item.set_record_type(_record_type, True)
 
         # push the LIST_ENTRY type into the context/memory_handler
         rev_context = self._memory_handler.get_reverse_context()
@@ -410,6 +412,15 @@ class DoubleLinkedListReverser(model.AbstractReverser):
                 log.debug("\tLists at offset %d: %d lists", offset, len(res))
                 for _list in res:
                     log.debug("%s items:\t[%s]", len(_list), ','.join([hex(addr) for addr in _list]))
+
+    def rename_all_lists(self):
+        # rename all lists
+        for size, offset_lists in self.lists.items():
+            for offset, multiple_lists in offset_lists.items():
+                for members_list in multiple_lists:
+                    nb = len(members_list)
+                    rt = self.rename_record_type(members_list, offset)
+                    log.debug('%d members for : %s', nb, rt.to_string())
 
 
 class PointerGraphReverser(model.AbstractReverser):
@@ -474,7 +485,11 @@ class PointerGraphReverser(model.AbstractReverser):
             self._master_graph.add_edge(hex(_record.address), hex(pointee_addr))
             # but we only feed the heaps graph if the target is known
             heap = self._memory_handler.get_mapping_for_address(pointee_addr)
-            heap_context = self._memory_handler.get_reverse_context().get_context_for_heap(heap)
+            try:
+                heap_context = context.get_context_for_address(self._memory_handler, pointee_addr)
+            except ValueError as e:
+                continue
+            #heap_context = self._memory_handler.get_reverse_context().get_context_for_heap(heap)
             if heap_context is None:
                 continue
             try:
@@ -490,6 +505,10 @@ class PointerGraphReverser(model.AbstractReverser):
 class ArrayFieldsReverser(model.AbstractReverser):
     """
     Aggregate fields of similar type into arrays in the record.
+
+    Check d4008 in zeus. nice array
+    d2008 is a major player
+    90688 too
     """
     REVERSE_LEVEL = 200
 
@@ -660,6 +679,38 @@ def refreshOne(context, ptr_value):
     return mystruct
 
 
+def save_process_headers(memory_handler):
+    """
+    Save the python class code definition to file.
+
+    :param ctx:
+    :return:
+    """
+    process_context = memory_handler.get_reverse_context()
+    log.info('[+] saving headers for process')
+    fout = open(process_context.get_filename_cache_headers(), 'w')
+    towrite = []
+    #
+    for r_type in process_context.list_reversed_types():
+        members = process_context.get_reversed_type(r_type)
+        from haystack.reverse.heuristics import constraints
+        rev = constraints.ConstraintsReverser(memory_handler)
+        txt = rev.verify(r_type, members)
+        towrite.extend(txt)
+        towrite.append("# %d members" % len(members))
+        towrite.append(r_type.to_string())
+        if len(towrite) >= 10000:
+            try:
+                fout.write('\n'.join(towrite))
+            except UnicodeDecodeError as e:
+                print 'ERROR on ', r_type
+            towrite = []
+            fout.flush()
+    fout.write('\n'.join(towrite))
+    fout.close()
+    return
+
+
 def save_headers(ctx, addrs=None):
     """
     Save the python class code definition to file.
@@ -700,18 +751,20 @@ def reverse_heap(memory_handler, heap_addr):
     :return:
     """
     from haystack.reverse import context
-    log.debug('[+] Loading the memory dump for HEAP 0x%x', heap_addr)
+    log.info('[+] Loading the memory dump for HEAP 0x%x', heap_addr)
     ctx = context.get_context_for_address(memory_handler, heap_addr)
     try:
         # decode bytes contents to find basic types.
-        log.debug('Reversing Fields')
+        log.info('Reversing Fields')
         fr = dsa.FieldReverser(memory_handler)
         fr.reverse_context(ctx)
 
         # try to find some logical constructs.
-        log.debug('Reversing DoubleLinkedListReverser')
+        log.info('Reversing DoubleLinkedListReverser')
+        # why is this a reverse_context ?
         doublelink = DoubleLinkedListReverser(memory_handler)
         doublelink.reverse_context(ctx)
+        doublelink.rename_all_lists()
 
         # save to file
         save_headers(ctx)
@@ -735,9 +788,9 @@ def reverse_instances(memory_handler):
     :return:
     """
     assert isinstance(memory_handler, interfaces.IMemoryHandler)
-    if True:
+    if False:
         # decode bytes contents to find basic types.
-        log.debug('Reversing Fields')
+        log.info('Reversing Fields')
         fr = dsa.FieldReverser(memory_handler)
         fr.reverse()
         # try to find some logical constructs.
@@ -754,9 +807,11 @@ def reverse_instances(memory_handler):
 
         # then and only then can we look at the PointerFields
         # identify pointer relation between structures
-        log.debug('Reversing PointerFields')
+        log.info('Reversing PointerFields')
         pfr = pointertypes.PointerFieldReverser(memory_handler)
         pfr.reverse()
+
+        # TODO save process type record
 
         # save that
         for heap in heaps:
@@ -765,10 +820,14 @@ def reverse_instances(memory_handler):
             # save to file
             save_headers(ctx)
 
+        save_process_headers(memory_handler)
+
         # and then
         # graph pointer relations between structures
-        log.debug('Reversing PointerGraph')
+        log.info('Reversing PointerGraph')
         ptrgraph = PointerGraphReverser(memory_handler)
         ptrgraph.reverse()
+
+        # todo save graph method
 
     return

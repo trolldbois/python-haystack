@@ -141,6 +141,7 @@ class TestDoubleLinkedReverser(SrcTests):
         # reverse the types for the list of items 40, at offset 8
         offset = 8
         self.dllr.rename_record_type(members_list, offset)
+        # print mid.to_string()
 
         # now the second field should be "entry" LIST ENTRY type with 2 subfields.
         one_ptr = start.get_fields()[1]
@@ -737,6 +738,13 @@ class TestTypeReverser(unittest.TestCase):
         rev.reverse_context(self._context)
         print _record.to_string()
         pass
+
+    def test_otherlink(self):
+        # 0xa6f40, 0xa6f70
+        _record = self._context.get_record_for_address(0xccd00)
+        print _record.to_string()
+        import code
+        code.interact(local=locals())
 
 
 if __name__ == '__main__':

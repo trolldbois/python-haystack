@@ -164,6 +164,11 @@ class PointerFields(model.FieldAnalyser):
                 size -= self._word_size
                 offset += self._word_size
                 continue
+            # 20151026 - if aligned, ignore it
+            if value % self._target.get_word_size():
+                size -= self._word_size
+                offset += self._word_size
+                continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
             field = fieldtypes.PointerField('ptr_%d' % offset, offset, self._word_size)
@@ -238,7 +243,10 @@ class FieldReverser(model.AbstractReverser):
     IntegerFields: if the word value is small ( |x| < 65535 )
     PointerFields: if the word if a possible pointer value
 
-    If the word content does not match theses heuristics, tag the fiel has unknown.
+    If the word content does not match theses heuristics, tag the field has unknown.
+
+    TODO: UTF16 array corrector, if utf16 field is preceded by smallint, aggregate both in utf16,
+     event if not aligned.
     """
     REVERSE_LEVEL = 10
 

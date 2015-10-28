@@ -4,6 +4,7 @@ import logging
 
 from haystack.reverse import context
 from haystack.reverse.heuristics import model
+from haystack.reverse.heuristics import radare
 
 log = logging.getLogger("pointertypes")
 
@@ -19,6 +20,11 @@ class PointerFieldReverser(model.AbstractReverser):
     results are not going to be untertaining.
     """
     REVERSE_LEVEL = 50
+
+    def __init__(self, _memory_handler):
+        super(PointerFieldReverser, self).__init__(_memory_handler)
+        # process_context = self._memory_handler.get_reverse_context()
+        # self.__functions_pointers = process_context.get_functions_pointers()
 
     def reverse_record(self, _context, _record):
         """
@@ -55,6 +61,9 @@ class PointerFieldReverser(model.AbstractReverser):
                 field.set_pointee_ctype('void')
                 # TODO: Function pointer ?
                 field.name = 'ptr_ext_lib_%d' % field.offset
+                # if value in self.__functions_pointers:
+                #    size, bbs, name = self.__functions_pointers[value]
+                #    field.name = 'func_ptr_%s_%d' % (name, field.offset)
                 continue
             tgt = None
             try:
