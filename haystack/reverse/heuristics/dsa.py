@@ -96,8 +96,8 @@ class UTF16Fields(model.FieldAnalyser):
         bytes = structure.bytes
         while size > self._word_size:
             # print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
-            # we force aligned results only.
-            index = re_string.rfind_utf16(bytes, offset, size, True, self._word_size)
+            # we force aligned results only. otherwise er have overlaps
+            index = re_string.rfind_utf16(bytes, offset, size, False, self._word_size)
             if index > -1:
                 _offset = offset + index
                 f = fieldtypes.Field('utf16_%d' % _offset, _offset, fieldtypes.STRING16, size - index, False)
@@ -340,8 +340,13 @@ class FieldReverser(model.AbstractReverser):
             log.debug('_make_gaps: adding field at offset %d:%d', gap.offset, gap.offset + len(gap))
             gaps.append(gap)
         else:
+            # we need a field of endoffset - nextoffset bytes.
             # unaligned field should be splitted
-            s1 = self._word_size - nextoffset % self._word_size
+            size = endoffset - nextoffset
+            if size < self._word_size:
+                s1 = size
+            else:
+                s1 = size - size % self._word_size
             gap1 = fieldtypes.Field('gap_%d' % nextoffset, nextoffset, fieldtypes.UNKNOWN, s1, True)
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
@@ -350,6 +355,33 @@ class FieldReverser(model.AbstractReverser):
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
+
+
+class TextFieldCorrection(model.AbstractReverser):
+    """
+    Second pass on records to fix text fields.
+    a) utf16 could be non aligned. We look for small_int+utf16. and aggregate.
+    b) terminating null bytes. Due to padding there could be more than 1 byte worth. aggregate.
+    c) if record has one null terminated str, Rename record type as cstring. rename/retype parent pointers + comment.
+    """
+    REVERSE_LEVEL = 11
+
+    def reverse_record(self, _context, _record):
+        fields = _record.get_fields()
+        # a) utf16 could be non aligned. We look for small_int+utf16. and aggregate.
+        for i, f1 in enumerate(fields[:-1]):
+            if f1.field_type is not fieldtypes.SMALLINT:
+                continue
+            f2 = fields[i+1]
+            if f2.field_type is not fieldtypes.STRING16:
+                continue
+            # check rfind at the offset 2 bytes before start
+            ret = re_string.rfind_utf16(_record.bytes, f2.offset-2, len(f2) + 2, False, self._word_size)
+            print ret
+            #import code
+            #code.interact(local=locals())
+
+        return _record
 
 
 class IntegerArrayFields(model.FieldAnalyser):
@@ -374,3 +406,5 @@ class IntegerArrayFields(model.FieldAnalyser):
         self.values = bytes
         self.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
         return True
+
+
