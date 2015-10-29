@@ -8,12 +8,12 @@ import os
 import logging
 import unittest
 import sys
-import api
 
 from haystack import dump_loader
 from haystack import constraints
 from haystack.reverse import config
 from haystack.reverse import context
+from haystack.reverse import api
 from haystack.reverse.heuristics import dsa
 from haystack.reverse.heuristics import reversers
 from haystack.reverse.heuristics import signature
