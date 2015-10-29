@@ -9,6 +9,7 @@ import logging
 from haystack.reverse.heuristics import radare
 from test.testfiles import zeus_856_svchost_exe
 
+
 @unittest.skip
 class TestRadare(unittest.TestCase):
 

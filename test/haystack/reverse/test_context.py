@@ -76,8 +76,6 @@ class TestMappingsWindows(SrcTests):
         self.assertEquals(
             context.get_context_for_address(self.memory_handler, 0x0063e123).heap,
             self.memory_handler.get_mapping_for_address(0x005c0000))
-        self.putty.reset()
-        self.putty = None
 
 
 class TestProcessContext(unittest.TestCase):
