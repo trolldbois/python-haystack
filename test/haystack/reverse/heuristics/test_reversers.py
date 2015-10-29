@@ -450,6 +450,7 @@ class TestFullReverse(unittest.TestCase):
         return
 
 
+@unittest.skip
 class TestReverseZeus(unittest.TestCase):
 
     @classmethod
@@ -540,6 +541,7 @@ class TestReverseZeus(unittest.TestCase):
             pass
 
 
+@unittest.skip
 class TestReversers(SrcTests):
 
     def setUp(self):
@@ -757,10 +759,10 @@ class TestTypeReverser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger("reversers").setLevel(logging.DEBUG)
-    logging.getLogger("signature").setLevel(logging.DEBUG)
+    # logging.getLogger("reversers").setLevel(logging.DEBUG)
+    # logging.getLogger("signature").setLevel(logging.DEBUG)
     # logging.getLogger("test_reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
-    logging.getLogger("dsa").setLevel(logging.DEBUG)
+    # logging.getLogger("dsa").setLevel(logging.DEBUG)
     # logging.getLogger("winxpheap").setLevel(logging.DEBUG)
     unittest.main(verbosity=2)
