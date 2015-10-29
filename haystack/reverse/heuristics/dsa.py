@@ -20,20 +20,20 @@ log = logging.getLogger('dsa')
 
 class ZeroFields(model.FieldAnalyser):
     """ checks for possible fields, aligned, with WORDSIZE zeros."""
-    def make_fields(self, structure, offset, size):
+    def make_fields(self, _record, offset, size):
         assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         # log.debug('checking Zeroes')
         self._typename = fieldtypes.ZEROES
         self._zeroes = '\x00' * self._word_size
 
-        ret = self._find_zeroes(structure, offset, size)
+        ret = self._find_zeroes(_record, offset, size)
 
         # TODO if its just a word, we should say its a small int.
         return ret
 
-    def _find_zeroes(self, structure, offset, size):
+    def _find_zeroes(self, _record, offset, size):
         """ iterate over the bytes until a byte if not \x00        """
-        bytes = structure.bytes
+        _bytes = _record.bytes
         # print 'offset:%x blen:%d'%(offset, len(bytes))
         # print repr(bytes)
         assert(offset % self._word_size == 0)
@@ -47,7 +47,7 @@ class ZeroFields(model.FieldAnalyser):
         for i in range(start, start + size, self._word_size):
             # PERF TODO: bytes or struct test ?
             # print repr(bytes[start+i:start+i+self._target_platform.get_word_size()])
-            if bytes[start + i:start + i + self._word_size] == self._zeroes:
+            if _bytes[start + i:start + i + self._word_size] == self._zeroes:
                 matches.append(start + i)
                 # print matches
         # collate
@@ -89,15 +89,15 @@ class UTF16Fields(model.FieldAnalyser):
     """
     rfinds utf-16-ascii and ascii 7bit
     """
-    def make_fields(self, structure, offset, size):
+    def make_fields(self, _record, offset, size):
         assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
-        #log.debug('checking String')
+        # log.debug('checking String')
         fields = []
-        bytes = structure.bytes
+        _bytes = _record.bytes
         while size > self._word_size:
             # print 're_string.rfind_utf16(bytes, %d, %d)'%(offset,size)
             # we force aligned results only. otherwise er have overlaps
-            index = re_string.rfind_utf16(bytes, offset, size, False, self._word_size)
+            index = re_string.rfind_utf16(_bytes, offset, size, False, self._word_size)
             if index > -1:
                 _offset = offset + index
                 f = fieldtypes.Field('utf16_%d' % _offset, _offset, fieldtypes.STRING16, size - index, False)
@@ -114,19 +114,18 @@ class PrintableAsciiFields(model.FieldAnalyser):
 
     """ finds printable ascii fields """
 
-    def make_fields(self, structure, offset, size):
-        assert(
-            offset %
-            self._word_size == 0)  # vaddr and offset should be aligned
-        #log.debug('checking String')
+    def make_fields(self, _record, offset, size):
+        # vaddr and offset should be aligned
+        assert(offset % self._word_size == 0)
+        # log.debug('checking String')
         fields = []
-        bytes = structure.bytes
+        _bytes = _record.bytes
         while size >= self._word_size:
             # print 're_string.find_ascii(bytes, %d, %d)'%(offset,size)
-            index, ssize = re_string.find_ascii(bytes, offset, size)
+            index, ssize = re_string.find_ascii(_bytes, offset, size)
             if index == 0:
-                _offset =  offset + index
-                if (ssize < size) and bytes[offset + index + ssize] == '\x00':  # space for a \x00
+                _offset = offset + index
+                if (ssize < size) and _bytes[offset + index + ssize] == '\x00':  # space for a \x00
                     ssize += 1
                     f = fieldtypes.Field('strnull_%d' % _offset, _offset, fieldtypes.STRINGNULL, ssize, False)
                 else:
@@ -148,16 +147,16 @@ class PrintableAsciiFields(model.FieldAnalyser):
 
 class PointerFields(model.FieldAnalyser):
     """ looks at a word for a pointer value"""
-    def make_fields(self, structure, offset, size):
+    def make_fields(self, _record, offset, size):
         # iterate on all offsets . NOT assert( size ==
         # self._target_platform.get_word_size())
         assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         log.debug('checking Pointer')
-        bytes = structure.bytes
+        _bytes = _record.bytes
         fields = []
         ctypes_utils = self._target.get_target_ctypes_utils()
         while size >= self._word_size:
-            value = ctypes_utils.unpackWord(bytes[offset:offset + self._word_size])
+            value = ctypes_utils.unpackWord(_bytes[offset:offset + self._word_size])
             # check if pointer value is in range of _memory_handler and set self.comment to pathname value of pointer
             # TODO : if bytes 1 & 3 == \x00, maybe utf16 string
             if not self._memory_handler.is_valid_address(value):
@@ -190,12 +189,12 @@ class IntegerFields(model.FieldAnalyser):
 
     """ looks at a word for a small int value"""
 
-    def make_fields(self, structure, offset, size):
+    def make_fields(self, _record, offset, size):
         # iterate on all offsets . NOT assert( size ==
         # self._target_platform.get_word_size())
         assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         # log.debug('checking Integer')
-        my_bytes = structure.bytes
+        my_bytes = _record.bytes
         fields = []
         while size >= self._word_size:
             # print 'checking >'
@@ -223,7 +222,8 @@ class IntegerFields(model.FieldAnalyser):
             return field
         # check signed int
         elif (2 ** (self._word_size * 8) - 0xffff) < val:
-            field = fieldtypes.Field('small_signed_int_%d' % offset, offset, fieldtypes.SIGNED_SMALLINT, self._word_size, False)
+            _name = 'small_signed_int_%d' % offset
+            field = fieldtypes.Field(_name, offset, fieldtypes.SIGNED_SMALLINT, self._word_size, False)
             # FIXME
             field.value = val
             field.endianess = endianess
@@ -314,7 +314,7 @@ class FieldReverser(model.AbstractReverser):
                 log.debug('%s < %s ' % (f.offset, nextoffset))
                 log.debug(fields[i + 1])
                 log.error("need to TU the fields gap with utf8 text")
-                assert(False)  # f.offset < nextoffset # No overlaps authorised
+                assert False  # f.offset < nextoffset # No overlaps authorised
                 # fields.remove(f)
             # do next field
             nextoffset = f.offset + len(f)
@@ -368,7 +368,8 @@ class TextFieldCorrection(model.AbstractReverser):
 
     def reverse_record(self, _context, _record):
         fields = _record.get_fields()
-        if False: # corrected in non-aligned FieldReverser
+        if False:
+            # corrected in non-aligned FieldReverser
             # a) utf16 could be non aligned. We look for small_int+utf16. and aggregate.
             for i, f1 in enumerate(fields[:-1]):
                 if f1.field_type is not fieldtypes.SMALLINT:
@@ -397,11 +398,11 @@ class IntegerArrayFields(model.FieldAnalyser):
 
     def make_fields(self, _record, offset, size):
         # this should be last resort
-        bytes = _record.bytes[offset:offset + self.size]
-        size = len(bytes)
+        _bytes = _record.bytes[offset:offset + self.size]
+        size = len(_bytes)
         if size < 4:
             return False
-        ctr = collections.Counter([bytes[i:i + self._word_size] for i in range(len(bytes))])
+        ctr = collections.Counter([_bytes[i:i + self._word_size] for i in range(len(_bytes))])
         floor = max(1, int(size * .1))  # 10 % variation in values
         #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
         commons = ctr.most_common()
@@ -410,7 +411,7 @@ class IntegerArrayFields(model.FieldAnalyser):
         # few values. it migth be an array
         self.size = size
         # FIXME
-        self.values = bytes
+        self.values = _bytes
         self.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
         return True
 
