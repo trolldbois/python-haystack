@@ -79,8 +79,12 @@ class FieldTypeArray(FieldType):
     """
     An array type
     """
-    def __init__(self, _type):
-        super(FieldTypeArray, self).__init__(0x60, 'array_%s' % _type.name, 'a')
+    def __init__(self, item_type, item_size, nb_items):
+        super(FieldTypeArray, self).__init__(0x60, '%s*%d' % (item_type.name, nb_items), 'a')
+        self.nb_items = nb_items
+        self.item_type = item_type
+        self.item_size = item_size
+        self.size = item_size*nb_items
 
 
 class RecordTypePointer(FieldType):
@@ -180,8 +184,7 @@ class Field(object):
             return '%s * %d' % (self.field_type.name, len(self))
         elif self.is_array():
             # TODO should be in type
-            return '%s * %d' % (self.field_type.name,
-                                len(self) / self.element_size)
+            return '%s * %d' % (self.field_type.name, len(self) / self.nb_items)
         elif self.field_type == UNKNOWN:
             return '%s * %d' % (self.field_type.name, len(self))
         return self.field_type.name
@@ -221,9 +224,9 @@ class Field(object):
         if value is None:
             value = 0
         if self.is_pointer():
-            comment = '# @ 0x%0.8x %s %s' % (value, self.comment, self.comment)
+            comment = '# @ 0x%0.8x %s' % (value, self.comment)
         elif self.is_integer():
-            comment = '# 0x%x %s %s' % (value, self.comment, self.comment)
+            comment = '# 0x%x %s' % (value, self.comment)
         elif self.is_zeroes():
             comment = '''# %s zeroes: '\\x00'*%d''' % (self.comment, len(self))
         elif self.is_string():
@@ -285,51 +288,35 @@ class ArrayField(Field):
     Represents an array field.
     """
     # , basicTypename, basicTypeSize ): # use first element to get that info
-    def __init__(self, elements):
-        self.offset = elements[0].offset
-        self.field_type = FieldTypeArray(elements[0].typename.basename)
+    def __init__(self, name, offset, item_type, item_size, nb_item):
+        size = item_size * nb_item
+        super(ArrayField, self).__init__(name, offset, FieldTypeArray(item_type, item_size, nb_item), size, False)
 
-        self.elements = elements
-        self.nbElements = len(elements)
-        self.basicTypeSize = len(elements[0])
-        self.basicTypename = elements[0].typename
-
-        self.size = self.basicTypeSize * len(self.elements)
-
-        super(ArrayField, self).__init__(self.offset, self.field_type, self.size, False)
-
-        self.padding = False
-        self.value = None
-        self.comment = ''
-        self.usercomment = ''
-        self.decoded = True
+    def get_typename(self):
+        return self.field_type.name
 
     def is_array(self):
         return True
 
-    def get_ctype(self):
-        return self._ctype
-
-    def get_typename(self):
-        return '%s * %d' % (self.basicTypename.ctypes, self.nbElements)
-
     def _get_value(self, _record, maxLen=120):
-        # show number of elements and elements types
-        bytes = '%d x ' % (len(
-            self.elements)) + ''.join(['[', ','.join([el.to_string('') for el in self.elements]), ']'])
-        # thats for structFields
-        #bytes= '%d x '%(len(self.elements)) + ''.join(['[',','.join([el.typename for el in el0.typename.elements]),']'])
-        return bytes
+        return None
 
     def to_string(self, _record, prefix=''):
-        log.debug('isPointer:%s isInteger:%s isZeroes:%s padding:%s typ:%s'
-                  % (self.is_pointer(), self.is_integer(), self.is_zeroes(), self.padding, self.field_type.name))
+        item_type = self.field_type.item_type
+        # log.debug('P:%s I:%s Z:%s typ:%s' % (item_type.is_pointer(), item_type.is_integer(), item_type.is_zeroes(), item_type.name))
+        log.debug("array type: %s", item_type.name)
         #
-        comment = '# %s %s array:%s' % (
-            self.comment, self.usercomment, self.get_value(_record, config.commentMaxSize))
-        fstr = "%s( '%s' , %s ), %s\n" % (
-            prefix, self.name, self.get_typename(), comment)
+        comment = '# %s array' % self.comment
+        fstr = "%s( '%s' , %s ), %s\n" % (prefix, self.name, self.get_typename(), comment)
         return fstr
+
+
+class ZeroField(ArrayField):
+    """
+    Represents an array field of zeroes.
+    """
+    def __init__(self, name, offset, nb_item):
+        super(ZeroField, self).__init__(name, offset, ZEROES, 1, nb_item)
 
 
 class RecordField(Field, structure.AnonymousRecord):

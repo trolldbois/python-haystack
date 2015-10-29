@@ -21,6 +21,8 @@ Changes to architecture.txt:
  - Fix the double linked reverser
  - Cleaned up the reverse/structure module
  - Added a fun constraints heuristics on reversed types's field.
+ - is zeus in c30000.headers_values.py ?
+ 
 
 2015-09:
  - Working on Volatility dump reader

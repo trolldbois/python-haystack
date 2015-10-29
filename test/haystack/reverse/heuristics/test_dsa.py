@@ -154,6 +154,13 @@ class TestFieldAnalyser(unittest.TestCase):
         fields = self.utf16.make_fields(self.test6, 0, len(self.test6))
         self.assertEquals(len([_ for _ in fields]), 0)
 
+    def test_complex_utf(self):
+        fields = self.utf16.make_fields(self.test9, 0, len(self.test9))
+        #self.assertEquals(len([_ for _ in fields]), 0)
+        print len([_ for _ in fields]), 0
+        import code
+        code.interact(local=locals())
+
     def test_small_int(self):
         ''' we default to word_size == 4 '''
         smallints = ['\xff\xff\xff\xff', '\x02\xff\xff\xff', ]
@@ -372,13 +379,42 @@ class TestFieldAnalyserReal(unittest.TestCase):
             nextoffset = f.offset + len(f)
 
 
+class TestTextFieldCorrection(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from haystack import dump_loader
+        cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
+        cls.heap_context = context.get_context_for_address(cls.memory_handler, 0x90000)
+        cls.target = cls.memory_handler.get_target_platform()
+
+    def test_utf16_1(self):
+        # struct_a4188 SIG:z4T108
+        # class struct_a4028(ctypes.Structure):  # rlevel:50 SIG:T84z4 size:88
+        # struct_943f8 SIG:T20i4T20z4
+        _record = self.heap_context.get_record_for_address(0xb2e38)
+        _record.reset()
+        _dsa = dsa.FieldReverser(self.memory_handler)
+        _dsa.reverse_record(self.heap_context, _record)
+
+        #import code
+        #code.interact(local=locals())
+
+        print _record.to_string()
+
+        b = 'D\x00c\x00o\x00m\x00L\x00a\x00u\x00n\x00c\x00h\x00\x00\x00T\x00e\x00r\x00m\x00S\x00e\x00r\x00v\x00i\x00c\x00e\x00\x00\x00\x00\x00'
+        rev = dsa.TextFieldCorrection(self.memory_handler)
+        rev.reverse_record(self.heap_context, _record)
+
+
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     # logging.getLogger('test_field_analyser').setLevel(level=logging.DEBUG)
     # logging.getLogger("test_fieldtypes").setLevel(level=logging.DEBUG)
     # logging.getLogger("structure").setLevel(level=logging.DEBUG)
     # logging.getLogger("field").setLevel(level=logging.DEBUG)
-    # logging.getLogger("dsa").setLevel(level=logging.DEBUG)
+    logging.getLogger("dsa").setLevel(level=logging.DEBUG)
     # logging.getLogger("re_string").setLevel(level=logging.DEBUG)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)

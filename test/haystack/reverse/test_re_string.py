@@ -32,6 +32,7 @@ class TestReString(unittest.TestCase):
         cls.test8 = 'C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00\\\x00S\x00y\x00s\x00t\x00e\x00m\x003\x002\x00\\\x00D\x00r\x00i\x00v\x00e\x00r\x00S\x00t\x00o\x00r\x00e\x00\x00\x00\xf1/\xa6\x08\x00\x00\x00\x88,\x00\x00\x00C\x00:\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00 \x00(\x00x\x008\x006\x00)\x00\x00\x00P\x00u\x00T\x00Y\x00'
         cls.test9 = '\x01\x01@\x00C\x00:\x00\\\x00W\x00i\x00n\x00d\x00o\x00w\x00s\x00'
         cls.test10 = '''\x4C\x6F\xEF\x63\x20\x4A\x61\x71\x75\x65\x6D\x65\x74'''
+        cls.test11 = 'D\x00c\x00o\x00m\x00L\x00a\x00u\x00n\x00c\x00h\x00\x00\x00T\x00e\x00r\x00m\x00S\x00e\x00r\x00v\x00i\x00c\x00e\x00\x00\x00\x00\x00'
 
     def setUp(self):
         pass
@@ -160,6 +161,11 @@ class TestReString(unittest.TestCase):
         # non aligned middle field ?
         # TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0,
         # len(self.test9) ))
+        ##
+        # self.assertEqual(0, re_string.rfind_utf16(self.test11, 0, 48, False, 4))
+        print re_string.rfind_utf16(self.test11, 0, 44, False, 4)
+        import code
+        code.interact(local=locals())
 
     def test_find_ascii(self):
         self.assertEquals(

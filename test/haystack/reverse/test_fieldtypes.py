@@ -48,6 +48,15 @@ class TestField(SrcTests):
     def tearDown(self):
         pass
 
+    def test_zeroes(self):
+        z1 = fieldtypes.ZeroField('one', 0, 1)
+        self.assertEqual(len(z1), 1)
+        self.assertIn('ctypes.c_ubyte*1 )', z1.to_string('\x00\x00\x00\x00'))
+
+        z2 = fieldtypes.ZeroField('two', 0, 2)
+        self.assertEqual(len(z2), 2)
+        self.assertIn('ctypes.c_ubyte*2 )', z2.to_string('\x00\x00\x00\x00'))
+
     def test_is_types(self):
         # def __init__(self, astruct, offset, typename, size, isPadding):
         ptr = fieldtypes.PointerField('ptr_0', 8, 4)

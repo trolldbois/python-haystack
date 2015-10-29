@@ -495,9 +495,7 @@ class %s(%s):  # %s
         elif _field.is_zeroes():
             my_bytes = repr('\\x00'*len(_field))
         elif _field.is_array():
-            log.warning('ARRAY in Field type, %s', _field.field_type)
-            log.error('error in 0x%x offset 0x%x', self.address, _field.offset)
-            my_bytes = ''.join(['[', ','.join([el.to_string(self) for el in _field.elements]), ']'])
+            my_bytes = self.bytes[_field.offset:_field.offset + len(_field)]
         elif _field.padding or _field.field_type == fieldtypes.UNKNOWN:
             my_bytes = self.bytes[_field.offset:_field.offset + len(_field)]
         elif _field.is_pointer():

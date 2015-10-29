@@ -80,7 +80,7 @@ class ZeroFields(model.FieldAnalyser):
                 continue
             # make a field
             _offset = start + field[0]
-            fields.append(fieldtypes.Field('zerroes_%d' % _offset, _offset, self._typename, size, False))
+            fields.append(fieldtypes.ZeroField('zerroes_%d' % _offset, _offset, size))
         # we have all fields
         return fields
 
@@ -351,7 +351,7 @@ class FieldReverser(model.AbstractReverser):
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = fieldtypes.Field('gap_%d' % (nextoffset + s1), nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, False)
+                gap2 = fieldtypes.Field('gap_%d' % (nextoffset + s1), nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, True)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
