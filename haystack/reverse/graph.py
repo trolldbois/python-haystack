@@ -174,7 +174,7 @@ def clean(digraph):
     orig = list(set(graph.nodes()) & stack_addrs_txt)
     print 'stacknodes orig', len(orig)
 
-    # identify strongly referenced structures
+    # identify strongly referenced allocators
     degreesList = [(bigGraph.in_degree(node), node)
                    for node in bigGraph.nodes()]
     degreesList.sort(reverse=True)

@@ -347,7 +347,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
 
     def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels):
         """
-        Use iterator_fn to iterate on the list structures. (as in struct__LIST_ENTRY)
+        Use iterator_fn to iterate on the list allocators. (as in struct__LIST_ENTRY)
         For each list entry address:
             + verify if the entry address is a sentinel value or already parsed.
             + calculate <list_entry_address> - offset to find the real list entry address

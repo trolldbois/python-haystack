@@ -201,7 +201,7 @@ class HeapContext(object):
             [(long(vaddr), s) for vaddr, s in structure.cache_load_all_lazy(self)])
         log.info('[+] Loaded %d cached records addresses from disk', len(self._structures))
 
-        # If we are missing some structures from the cache loading
+        # If we are missing some allocators from the cache loading
         # then recreated them in cache from Allocated memory
         nb_missing = len(self._structures_addresses) - len(self._structures)
         if nb_missing != 0:
@@ -274,12 +274,12 @@ class HeapContext(object):
         return map(long, self._pointers_values)
 
     def listStructuresAddrForPointerValue(self, ptr_value):
-        '''Returns the list of structures addresses with a member with this pointer value '''
+        '''Returns the list of allocators addresses with a member with this pointer value '''
         return sorted(set([int(self.get_record_address_at_address(offset))
                            for offset in self.listOffsetsForPointerValue(ptr_value)]))
 
     def listStructuresForPointerValue(self, ptr_value):
-        '''Returns the list of structures with a member with this pointer value '''
+        '''Returns the list of allocators with a member with this pointer value '''
         return [self._list_records()[addr]
                 for addr in self.listStructuresAddrForPointerValue(ptr_value)]
 
@@ -434,7 +434,7 @@ class HeapContext(object):
         if self._structures is None:
             log.debug('No loading has been done, not saving anything')
             return
-        # dump all structures
+        # dump all allocators
         for i, s in enumerate(self._structures.values()):
             try:
                 s.saveme(self)

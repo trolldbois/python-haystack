@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-:mod:`haystack` -- a package to search known C or ctypes structures in memory.
+:mod:`haystack` -- a package to search known C or ctypes allocators in memory.
 ==============================================================================
 .. module:: haystack
     :platform: Unix, Windows
-    :synopsys: Search, reverse C/ctypes structures from memory.
+    :synopsys: Search, reverse C/ctypes allocators from memory.
 .. moduleauthor:: Loic Jaquemet <loic.jaquemet+python [at] gmail.com>
 
 Available subpackages
@@ -13,7 +13,7 @@ Available subpackages
 gui
     An attempt to make a Qt4 GUI.
 reverse
-    Framework to reverse engineer memory structures
+    Framework to reverse engineer memory allocators
 
 """
 

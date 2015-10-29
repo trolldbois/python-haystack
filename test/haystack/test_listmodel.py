@@ -56,7 +56,7 @@ class TestListStructTest6(SrcTests):
         # we know its a double linked list, so we can iterate it.
         nodes_addrs = [
             el for el in self.x32_validator._iterate_double_linked_list(self.usual.root)]
-        # test that we have a list of two structures in a list
+        # test that we have a list of two allocators in a list
         self.assertEquals(len(nodes_addrs), 2)
         return
 

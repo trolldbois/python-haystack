@@ -18,7 +18,7 @@ from haystack import types
 
 
 def make_types(ctypes):
-    # make some structures.
+    # make some allocators.
 
     class St(ctypes.Structure):
         _fields_ = [('a', ctypes.c_int)]

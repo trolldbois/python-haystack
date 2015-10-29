@@ -368,18 +368,25 @@ class TextFieldCorrection(model.AbstractReverser):
 
     def reverse_record(self, _context, _record):
         fields = _record.get_fields()
-        # a) utf16 could be non aligned. We look for small_int+utf16. and aggregate.
-        for i, f1 in enumerate(fields[:-1]):
-            if f1.field_type is not fieldtypes.SMALLINT:
-                continue
-            f2 = fields[i+1]
-            if f2.field_type is not fieldtypes.STRING16:
-                continue
-            # check rfind at the offset 2 bytes before start
-            ret = re_string.rfind_utf16(_record.bytes, f2.offset-2, len(f2) + 2, False, self._word_size)
-            print ret
-            #import code
-            #code.interact(local=locals())
+        if False: # corrected in non-aligned FieldReverser
+            # a) utf16 could be non aligned. We look for small_int+utf16. and aggregate.
+            for i, f1 in enumerate(fields[:-1]):
+                if f1.field_type is not fieldtypes.SMALLINT:
+                    continue
+                f2 = fields[i+1]
+                if f2.field_type is not fieldtypes.STRING16:
+                    continue
+        # b) terminating null bytes. Due to padding there could be more than 1 byte worth. aggregate.
+        if len(fields) > 1:
+            f1, f2 = fields[-2:]
+            if f2.is_zeroes() and len(f2) == 4:
+                if f1.is_string() and f1.field_type == fieldtypes.STRING16:
+                    ## FIXME: DO WHAT ? aggregate ? set zerroes as padding ?
+                    # set f2 as padding. ???
+                    pass
+        # c) if record has one null terminated str, Rename record type as cstring. rename/retype parent pointers + comment.
+        if len(fields) == 2 and fields[0].is_string() and fields[1].is_zeroes():
+            _record.set_name('string')
 
         return _record
 

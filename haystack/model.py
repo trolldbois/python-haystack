@@ -10,8 +10,8 @@ Defines
         LoadableMembersUnion
         CString.
 
-        helpers function to import structures or to create duplicate
-Plain Old Python Objects from ctypes structures modules.
+        helpers function to import allocators or to create duplicate
+Plain Old Python Objects from ctypes allocators modules.
 
     NotValid(Exception)
     LoadException(Exception)

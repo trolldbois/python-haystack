@@ -44,11 +44,11 @@ save_headers:
     Save the python class code definition to file.
 
 reverse_instances:
-        # we use common allocators to find structures.
+        # we use common allocators to find allocators.
         use DoubleLinkedListReverser to try to find some double linked lists records
         use FieldReverser to decode bytes contents to find basic types
-        use PointerFieldReverser to identify pointer relation between structures
-        use PointerGraphReverser to graph pointer relations between structures
+        use PointerFieldReverser to identify pointer relation between allocators
+        use PointerGraphReverser to graph pointer relations between allocators
         save guessed records' python code definition to file
 """
 
@@ -57,7 +57,7 @@ log = logging.getLogger('reversers')
 
 class BasicCachingReverser(model.AbstractReverser):
     """
-    Uses heapwalker to get user allocations into structures in cache.
+    Uses heapwalker to get user allocations into allocators in cache.
     This reverser should be use as a first step in the reverse process.
     """
 
@@ -77,7 +77,7 @@ class BasicCachingReverser(model.AbstractReverser):
         #
         self._todo = sorted(set(self._allocations) - set(self._done_records))
         self._fromcache = len(self._allocations) - len(self._todo)
-        log.info('[+] Adding new raw structures from user allocations - %d todo', len(self._todo))
+        log.info('[+] Adding new raw allocators from user allocations - %d todo', len(self._todo))
         super(BasicCachingReverser, self).reverse_context(_context)
 
     def reverse_record(self, _context, _record):
@@ -806,7 +806,7 @@ def reverse_instances(memory_handler):
             reverse_heap(memory_handler, heap_addr)
 
         # then and only then can we look at the PointerFields
-        # identify pointer relation between structures
+        # identify pointer relation between allocators
         log.info('Reversing PointerFields')
         pfr = pointertypes.PointerFieldReverser(memory_handler)
         pfr.reverse()
@@ -823,7 +823,7 @@ def reverse_instances(memory_handler):
         save_process_headers(memory_handler)
 
         # and then
-        # graph pointer relations between structures
+        # graph pointer relations between allocators
         log.info('Reversing PointerGraph')
         ptrgraph = PointerGraphReverser(memory_handler)
         ptrgraph.reverse()

@@ -318,6 +318,9 @@ class ZeroField(ArrayField):
     def __init__(self, name, offset, nb_item):
         super(ZeroField, self).__init__(name, offset, ZEROES, 1, nb_item)
 
+    def is_zeroes(self):
+        return True
+
 
 class RecordField(Field, structure.AnonymousRecord):
     """

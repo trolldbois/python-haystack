@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Expected testing structures."""
+"""Expected testing allocators."""
 
 import ctypes
 import logging

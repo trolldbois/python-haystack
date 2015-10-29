@@ -88,7 +88,7 @@ class Ui_Search_Structure(object):
         self.label_2.setText(
             QtGui.QApplication.translate(
                 "Search_Structure",
-                "Registered structures :",
+                "Registered allocators :",
                 None,
                 QtGui.QApplication.UnicodeUTF8))
         self.label_2.setObjectName(_fromUtf8("label_2"))

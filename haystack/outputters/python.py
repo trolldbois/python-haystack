@@ -23,7 +23,7 @@ class PythonOutputter(Outputter):
     def parse(self, obj, prefix='', depth=50):
         """
         Returns a Plain Old python object as a perfect copy of this self._ctypes object.
-        array would be lists, pointers, inner structures, and circular
+        array would be lists, pointers, inner allocators, and circular
         reference should be handled nicely.
         """
         # get self class.
@@ -38,7 +38,7 @@ class PythonOutputter(Outputter):
                 obj_module = self._model.get_pythoned_module(obj_module_name)
             my_class = getattr(obj_module, "%s_py" % obj_class_name)
         except AttributeError as e:
-            log.warning('did you forget to register your python structures ?')
+            log.warning('did you forget to register your python allocators ?')
             raise
         my_self = my_class()
         my_address = self._ctypes.addressof(obj)

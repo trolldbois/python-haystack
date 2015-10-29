@@ -101,7 +101,7 @@ def show(opt):
 
 def printParents(opt):
     """
-    print the parental structures
+    print the parental allocators
     :param opt:
     :return:
     """
@@ -117,9 +117,9 @@ def printParents(opt):
             print st.to_string()
             i+=1
     except ValueError,e:
-        log.info('[+] Found no structures.')
+        log.info('[+] Found no allocators.')
         return
-    log.info('[+] Found %d structures.'%( i ))
+    log.info('[+] Found %d allocators.'%( i ))
     return
 
 
@@ -140,7 +140,7 @@ def graph(opt):
 
 def argparser():
     rootparser = argparse.ArgumentParser(prog='haystack-reverse',
-                                         description='Several tools to reverse engineer structures on the heap.')
+                                         description='Several tools to reverse engineer allocators on the heap.')
 
     rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
     rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
@@ -148,7 +148,7 @@ def argparser():
     subparsers = rootparser.add_subparsers(help='sub-command help')
 
     instances = subparsers.add_parser('instances',
-                                      help='List all structures instances with virtual address, member types guess and info.')
+                                      help='List all allocators instances with virtual address, member types guess and info.')
     instances.set_defaults(func=reverse_instances)
 
     # not refactored yet
@@ -165,7 +165,7 @@ def argparser():
     #groupparser.set_defaults(func=groupStructures)
 
     # not refactored yet
-    #parent = subparsers.add_parser('parent', help='Print the parent structures pointing to the structure located at this address.')
+    #parent = subparsers.add_parser('parent', help='Print the parent allocators pointing to the structure located at this address.')
     #parent.add_argument('address', type=argparse_utils.int16, action='store', default=None,
     #                    help='Hex address of the child structure.')
     #parent.set_defaults(func=printParents)

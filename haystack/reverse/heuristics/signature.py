@@ -94,7 +94,7 @@ class TypeReverser(model.AbstractReverser):
     def reverse_record(self, _context, _record):
         # TODO: add minimum reversing level check before running
         # writing to file
-        # for ptr_value,anon in context.structures.items():
+        # for ptr_value,anon in context.allocators.items():
         #self._pfa.analyze_fields(_record)
         sig = _record.get_signature()
         address = _record.address
@@ -167,7 +167,7 @@ class SignatureGroupMaker:
 
     def _init_signatures(self):
         # get text signature for Counter to parse
-        # need to force resolve of structures
+        # need to force resolve of allocators
         self._signatures = []
         decoder = dsa.FieldReverser(self._context.memory_handler)
         for addr in map(long, self._structures_addresses):
@@ -231,7 +231,7 @@ class SignatureGroupMaker:
 
 class StructureSizeCache:
 
-    """Loads structures, get their signature (and size) and sort them in
+    """Loads allocators, get their signature (and size) and sort them in
     fast files dictionaries."""
 
     def __init__(self, ctx):
@@ -450,7 +450,7 @@ lib["isbn"] = re.compile("(?:[\d]-?){9}[\dxX]")
 
 
 def makeSizeCaches(dumpname):
-    ''' gets all structures instances from the dump, order them by size.'''
+    ''' gets all allocators instances from the dump, order them by size.'''
     from haystack.reverse import context
     log.debug('\t[-] Loading the context for a dumpname.')
     ctx = context.get_context(dumpname)
@@ -463,15 +463,15 @@ def makeSizeCaches(dumpname):
 
 def buildStructureGroup(context, sizeCache, optsize=None):
     ''' Iterate of structure instances grouped by size, find similar signatures,
-    and outputs a list of groups of similar structures instances.'''
-    log.debug("\t[-] Group structures's signatures by sizes.")
+    and outputs a list of groups of similar allocators instances.'''
+    log.debug("\t[-] Group allocators's signatures by sizes.")
     sgms = []
     #
     for size, lst in sizeCache:
         if optsize is not None:
             if size != optsize:
                 continue  # ignore different size
-        log.debug("\t[-] Group signatures for structures of size %d" % (size))
+        log.debug("\t[-] Group signatures for allocators of size %d" % (size))
         sgm = SignatureGroupMaker(context, 'structs.%x' % (size), lst)
         if sgm.isPersisted():
             sgm.load()
@@ -556,7 +556,7 @@ def graphStructureGroups(context, chains, originAddr=None):
 
 def makeReversedTypes(heap_context, sizeCache):
     ''' Compare signatures for each size groups.
-    Makes a chains out of similar structures. Changes the structure names for a single
+    Makes a chains out of similar allocators. Changes the structure names for a single
     typename when possible. Changes the ctypes types of each pointer field.'''
 
     log.info(
@@ -615,13 +615,13 @@ def makeSignatures(dumpname):
 
 
 def makeGroupSignature(context, sizeCache):
-    ''' From the structures cache ordered by size, group similar instances together. '''
-    log.info("[+] Group structures's signatures by sizes.")
+    ''' From the allocators cache ordered by size, group similar instances together. '''
+    log.info("[+] Group allocators's signatures by sizes.")
     sgms = []
     try:
         for size, lst in sizeCache:
             log.debug(
-                "[+] Group signatures for structures of size %d" %
+                "[+] Group signatures for allocators of size %d" %
                 (size))
             sgm = SignatureGroupMaker(context, 'structs.%x' % (size), lst)
             sgm.make()

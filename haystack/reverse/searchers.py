@@ -186,9 +186,9 @@ def reverse_lookup(opt):
     try:
         structs = ctx.listStructuresForPointerValue(addr)
     except ValueError as e:
-        log.info('[+] Found no structures.')
+        log.info('[+] Found no allocators.')
         return
-    log.info('[+] Found %d structures.' % (len(structs)))
+    log.info('[+] Found %d allocators.' % (len(structs)))
     for st in structs:
         st.decodeFields()
         print st.to_string()
@@ -248,7 +248,7 @@ def argparser():
     subparsers = rootparser.add_subparsers(help='sub-command help')
     reverse = subparsers.add_parser(
         'reverse',
-        help='reverse pointer lookup - find structures that contains struct_addr value')
+        help='reverse pointer lookup - find allocators that contains struct_addr value')
     reverse.add_argument(
         'struct_addr',
         type=argparse_utils.int16,

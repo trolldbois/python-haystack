@@ -100,7 +100,7 @@ class TestMapper(unittest.TestCase):
         self.assertEquals(memory_handler.get_target_platform().get_os_name(), 'winxp')
 
         ctypes = memory_handler.get_target_platform().get_target_ctypes()
-        from haystack.structures.win32 import winxp_32
+        from haystack.allocators.win32 import winxp_32
         #print ctypes
         for m in memory_handler.get_mappings():
             data = m.read_word(m.start + 8)

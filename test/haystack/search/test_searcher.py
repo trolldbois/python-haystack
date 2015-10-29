@@ -19,7 +19,7 @@ class TestApiWin32Dump(unittest.TestCase):
     #modulename = "test/src/putty.py"
 
     def setUp(self):
-        self.classname = 'haystack.structures.win32.win7heap.HEAP'
+        self.classname = 'haystack.allocators.win32.win7heap.HEAP'
         self.known_heaps = [(0x00390000, 8956), (0x00540000, 868),
                             (0x00580000, 111933), (0x005c0000, 1704080),
                             (0x01ef0000, 604), (0x02010000, 61348),

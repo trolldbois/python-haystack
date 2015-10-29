@@ -56,7 +56,7 @@ class RecursiveTextOutputter(Outputter):
         return s
 
     def _attrToString(self, attr, field, attrtype, prefix, depth=-1):
-        """This should produce strings, based on self._ctypes structures. No pyOBJ"""
+        """This should produce strings, based on self._ctypes allocators. No pyOBJ"""
         s = ''
         if self._ctypes.is_basic_type(attrtype):
             if self._ctypes.is_basic_ctype(type(attr)):

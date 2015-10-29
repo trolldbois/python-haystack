@@ -391,19 +391,32 @@ class TestTextFieldCorrection(unittest.TestCase):
         # struct_a4188 SIG:z4T108
         # class struct_a4028(ctypes.Structure):  # rlevel:50 SIG:T84z4 size:88
         # struct_943f8 SIG:T20i4T20z4
-        _record = self.heap_context.get_record_for_address(0xb2e38)
+        # _record = self.heap_context.get_record_for_address(0xb2e38)
+        _record = self.heap_context.get_record_for_address(0x943f8)
         _record.reset()
         _dsa = dsa.FieldReverser(self.memory_handler)
         _dsa.reverse_record(self.heap_context, _record)
-
-        #import code
-        #code.interact(local=locals())
-
-        print _record.to_string()
-
         b = 'D\x00c\x00o\x00m\x00L\x00a\x00u\x00n\x00c\x00h\x00\x00\x00T\x00e\x00r\x00m\x00S\x00e\x00r\x00v\x00i\x00c\x00e\x00\x00\x00\x00\x00'
         rev = dsa.TextFieldCorrection(self.memory_handler)
         rev.reverse_record(self.heap_context, _record)
+        fields = _record.get_fields()
+        self.assertEqual(len(fields), 3)
+        self.assertTrue(fields[0].is_string())
+        self.assertTrue(fields[1].is_string())
+        self.assertTrue(fields[2].is_zeroes())
+
+        print _record.to_string()
+
+    def test_utf16_2(self):
+        _record = self.heap_context.get_record_for_address(0xa4028)
+        _record.reset()
+        _dsa = dsa.FieldReverser(self.memory_handler)
+        _dsa.reverse_record(self.heap_context, _record)
+        rev = dsa.TextFieldCorrection(self.memory_handler)
+        rev.reverse_record(self.heap_context, _record)
+        fields = _record.get_fields()
+
+        print _record.to_string()
 
 
 

@@ -28,7 +28,7 @@ CACHE_STACK_VALUES = 'stack.pointers.values'
 CACHE_ALL_PTRS_ADDRS = 'all.pointers.offsets'
 CACHE_ALL_PTRS_VALUES = 'all.pointers.values'
 CACHE_FUNCTION_NAMES = 'names.pointers.functions'
-CACHE_STRUCTURES = 'structures'
+CACHE_STRUCTURES = 'allocators'
 CACHE_MALLOC_CHUNKS_ADDRS = 'mchunks.addrs'
 CACHE_MALLOC_CHUNKS_SIZES = 'mchunks.sizes'
 CACHE_CONTEXT = 'ctx'
@@ -79,7 +79,7 @@ def get_cache_filename(typ, dumpname, address=None):
 
 def get_record_cache_folder_name(dumpname):
     """
-    Returns a dirname for caching the structures based on the dump filename.
+    Returns a dirname for caching the allocators based on the dump filename.
 
     dumpname: the dump file name.
     """

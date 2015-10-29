@@ -508,7 +508,7 @@ class TestReverseZeus(unittest.TestCase):
         #import code
         #code.interact(local=locals())
 
-        # identify pointer relation between structures
+        # identify pointer relation between allocators
         pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
         sig_4 = struct_d.get_signature_text()
@@ -597,7 +597,7 @@ class TestReversers(SrcTests):
         # print '3.', self._v(struct_d)
         #self.assertEqual(sig_3, 'P8P8P8z24i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z40i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8i8z8P8P8P8P8P8P8P8P8P8P8P8P8u40P8P8P8P8P8P8P8P8P8P8i8P8T14u2z16P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z8P8z16P8')
 
-        # identify pointer relation between structures
+        # identify pointer relation between allocators
         pfr = pointertypes.PointerFieldReverser(self.memory_handler)
         pfr.reverse()
         sig_4 = struct_d.get_signature_text()
@@ -743,8 +743,8 @@ class TestTypeReverser(unittest.TestCase):
         # 0xa6f40, 0xa6f70
         _record = self._context.get_record_for_address(0xccd00)
         print _record.to_string()
-        import code
-        code.interact(local=locals())
+        #import code
+        #code.interact(local=locals())
 
 
 if __name__ == '__main__':

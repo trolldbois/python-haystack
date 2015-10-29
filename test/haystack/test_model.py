@@ -34,10 +34,10 @@ class TestCopyModule(unittest.TestCase):
     def test_register_module(self):
         """
         Register module allows for python types to be created as a python friendly
-        clone to ctypes structures.
+        clone to ctypes allocators.
         """
-        bad = self.my_model.import_module("test.structures.bad")
-        good = self.my_model.import_module("test.structures.good")
+        bad = self.my_model.import_module("test.allocators.bad")
+        good = self.my_model.import_module("test.allocators.good")
 
         # register the module
         self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
@@ -55,19 +55,19 @@ class TestCopyModule(unittest.TestCase):
 
     def test_reset(self):
         """Reset the model cache. All classes should have been removed."""
-        good = self.my_model.import_module("test.structures.good")
+        good = self.my_model.import_module("test.allocators.good")
 
-        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertNotIn("test.allocators.good", self.my_model.get_pythoned_modules().keys())
         self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
         self.assertNotIn('Struct2_py', good.__dict__.keys())
         self.my_model.build_python_class_clones(good)
-        self.assertIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertIn("test.allocators.good", self.my_model.get_pythoned_modules().keys())
         self.assertIn(good, self.my_model.get_pythoned_modules().values())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
         self.my_model.reset()
         self.assertNotIn(good, self.my_model.get_pythoned_modules().values())
-        self.assertNotIn("test.structures.good", self.my_model.get_pythoned_modules().keys())
+        self.assertNotIn("test.allocators.good", self.my_model.get_pythoned_modules().keys())
         self.assertIn('Struct2_py', good.__dict__.keys())
 
 

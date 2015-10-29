@@ -54,7 +54,7 @@ class HeapFinder(object):
                                                        update_cb=partial(self.print_cb, self.memory_handler))
         ## DEBUG
         # DEBUG PEB search
-        #peb = my_model.import_module('haystack.structures.win32.winxp_32_peb')
+        #peb = my_model.import_module('haystack.allocators.win32.winxp_32_peb')
         ##DEBUG
         heap_record_name = self._init_heap_record_name()
         heap_struct = getattr(heap_module, heap_record_name)
@@ -116,9 +116,9 @@ class HeapFinder(object):
 class Win7HeapFinder(HeapFinder):
     def _init_module_name(self, memory_handler):
         if 64 == memory_handler.get_target_platform().get_cpu_bits():
-            module_name = 'haystack.structures.win32.win7_64'
+            module_name = 'haystack.allocators.win32.win7_64'
         else:
-            module_name = 'haystack.structures.win32.win7_32'
+            module_name = 'haystack.allocators.win32.win7_32'
         return module_name
 
     def _init_constraints_filename(self, heap_module):
@@ -130,9 +130,9 @@ class Win7HeapFinder(HeapFinder):
 class WinXPHeapFinder(HeapFinder):
     def _init_module_name(self, memory_handler):
         if 64 == memory_handler.get_target_platform().get_cpu_bits():
-            module_name = 'haystack.structures.win32.winxp_64'
+            module_name = 'haystack.allocators.win32.winxp_64'
         else:
-            module_name = 'haystack.structures.win32.winxp_32'
+            module_name = 'haystack.allocators.win32.winxp_32'
         return module_name
 
     def _init_constraints_filename(self, heap_module):
@@ -143,7 +143,7 @@ class WinXPHeapFinder(HeapFinder):
 
 class LibcHeapFinder(HeapFinder):
     def _init_module_name(self, memory_handler):
-        module_name = 'haystack.structures.libc.ctypes_malloc'
+        module_name = 'haystack.allocators.libc.ctypes_malloc'
         log.error("this doesn't not work on libc heap")
         return module_name
 

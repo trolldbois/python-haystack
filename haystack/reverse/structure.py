@@ -196,6 +196,7 @@ class AnonymousRecord(object):
         :param name: name root for the record
         :return:
         """
+        print "setter"
         if name is None:
             self._name = self.__record_type.name
         else:
@@ -204,7 +205,7 @@ class AnonymousRecord(object):
     def set_name(self, name):
         # deprecated
         if name is None:
-            self._name = 'struct_%x' % self.__address
+            self._name = self.__record_type.name
         else:
             self._name = '%s_%x' % (name, self.__address)
 

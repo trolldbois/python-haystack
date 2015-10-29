@@ -34,7 +34,7 @@ class PointerFieldReverser(model.AbstractReverser):
         + if value is unaligned, mark it as cheesy
         + ask _memory_handler for the context for that value
             - if context covers a data lib, it would give function names, .data , .text ( CodeContext )
-            - if context covers a HEAP/heap extension (one context for multiple mmap possible) it would give structures
+            - if context covers a HEAP/heap extension (one context for multiple mmap possible) it would give allocators
         + ask context for the target structure or code info
             - if retobj is structure, enrich pointer with info
         """

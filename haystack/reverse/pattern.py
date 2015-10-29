@@ -824,18 +824,18 @@ class PinnedPointersMapper:
             resolved_for_sig = [pp for pp in self.resolved if pp.sig == sig]
             unresolved_for_sig = [
                 pp for pp in self.unresolved if pp.sig == sig]
-            log.debug('Pin anonymous structures on %s' % (sig))
+            log.debug('Pin anonymous allocators on %s' % (sig))
             pinned = [AnonymousStructRange(pp, self.word_size) for pp in resolved_for_sig]
-            log.debug('Create list of structures addresses for %s' % (sig))
+            log.debug('Create list of allocators addresses for %s' % (sig))
             pinned_start = [pp.getAddress() for pp in resolved_for_sig]
             # if sorted(pinned_start) != pinned_start:
             #  log.error('Damn !')
             #  raise ValueError('iscrewedupbadlyhere')
-            log.debug('Pin probable anonymous structures on %s' % (sig))
+            log.debug('Pin probable anonymous allocators on %s' % (sig))
             pinned_lightly = [
                 AnonymousStructRange(pp, self.word_size) for pp in unresolved_for_sig]
             log.debug(
-                'Create list of probable structures addresses for %s' %
+                'Create list of probable allocators addresses for %s' %
                 (sig))
             pinned_lightly_start = [pp.getAddress()
                                     for pp in unresolved_for_sig]
@@ -848,7 +848,7 @@ class PinnedPointersMapper:
         return caches
 
     def _pinResolved(self, caches):
-        #log.debug('Overlapping sequences can happen. we will filter them later using a tree of structures.')
+        #log.debug('Overlapping sequences can happen. we will filter them later using a tree of allocators.')
         # for i, pp in enumerate(pinned):
         #  if pp.start in pinned[i+1:]:
         #    pass
@@ -857,7 +857,7 @@ class PinnedPointersMapper:
         # pinned_lightly_start
 
         # In each anon structure Pa, get each pointers value.
-        # If the value is in the list of structures head addresses, we have a start of struct (mostly true)
+        # If the value is in the list of allocators head addresses, we have a start of struct (mostly true)
         #   we check Related Struct in the other signatures to see if everybody agrees.
         #  the parent in sig A (Pa) should point to children type in sig A (Ca)
         #  the parent in sig B (Pb) should point to children type in sig B (Cb)

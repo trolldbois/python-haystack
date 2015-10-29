@@ -182,7 +182,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
 
     @classmethod
     def _detect_cpu_arch_elf(cls, mappings):
-        from haystack.structures.libc.ctypes_elf import struct_Elf_Ehdr
+        from haystack.allocators.libc.ctypes_elf import struct_Elf_Ehdr
         # find an executable image and get the ELF header
         for m in mappings:
             # FIXME

@@ -33,7 +33,7 @@ import logging
 from haystack import target
 from haystack import model
 from haystack.abc import interfaces
-from haystack.structures import heapwalker
+from haystack.allocators import heapwalker
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

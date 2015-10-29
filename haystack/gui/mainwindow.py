@@ -229,7 +229,7 @@ class Ui_MainWindow(object):
         self.menu_tools_list_structures.setText(
             QtGui.QApplication.translate(
                 "MainWindow",
-                "List structures allocations",
+                "List allocators allocations",
                 None,
                 QtGui.QApplication.UnicodeUTF8))
         self.menu_tools_list_structures.setObjectName(

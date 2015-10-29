@@ -319,7 +319,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     def load_members(self, record, max_depth):
         """
         The validity of the members will be assessed.
-        Each members that can be ( structures, pointers), will be evaluated for
+        Each members that can be ( allocators, pointers), will be evaluated for
         validity and loaded recursively.
 
         :param record: the record to load

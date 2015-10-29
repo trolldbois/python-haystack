@@ -19,8 +19,8 @@ log = logging.getLogger('re_string')
 
 #
 # TODO: need a rfind-style function (rfind_utf16). otherwise O(n2) is laughing on you in struct/fields evaluation.
-# TODO: put heuristics of fields determination and structures algos in subpackages.
-# Field and structures should be POPOs - not controllers.
+# TODO: put heuristics of fields determination and allocators algos in subpackages.
+# Field and allocators should be POPOs - not controllers.
 #
 #
 

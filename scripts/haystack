@@ -31,7 +31,7 @@ def argparser():
         Builds the argparse tree.
         See the command line --help .
     """
-    rootparser = argparse.ArgumentParser(prog='haystack', description='Live memory tools on heap structures.')
+    rootparser = argparse.ArgumentParser(prog='haystack', description='Live memory tools on heap allocators.')
     rootparser.add_argument('--debug', dest='debug', action='store_const', const=True, help='setLevel to DEBUG')
     rootparser.add_argument('--quiet', dest='quiet', action='store_const', const=True, help='setLevel to ERROR only')
     rootparser.add_argument('--interactive', dest='interactive', action='store_const', const=True, help='drop to python command line after action')

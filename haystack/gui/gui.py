@@ -170,7 +170,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
     def loadMapping(self, mapping, mappings):
         '''
         update the widget with a new mapping
-        we also have to keep a reference to all _memory_handler to be able to search for structures..
+        we also have to keep a reference to all _memory_handler to be able to search for allocators..
         '''
         self._init()  # pass if not self._dirty
         self.mapping = mapping

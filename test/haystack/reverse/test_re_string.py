@@ -164,8 +164,6 @@ class TestReString(unittest.TestCase):
         ##
         # self.assertEqual(0, re_string.rfind_utf16(self.test11, 0, 48, False, 4))
         print re_string.rfind_utf16(self.test11, 0, 44, False, 4)
-        import code
-        code.interact(local=locals())
 
     def test_find_ascii(self):
         self.assertEquals(

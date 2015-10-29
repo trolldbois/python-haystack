@@ -39,7 +39,7 @@ def make(opts):
     # refresh
     if len(ctx.structures) != len(ctx.structures_addresses):
         log.info(
-            '[+] Refreshing from %d structures cached' %
+            '[+] Refreshing from %d allocators cached' %
             (len(
                 ctx.structures)))
         # FIXME, I think its now an heapwalker, not a reverser
@@ -47,7 +47,7 @@ def make(opts):
         ctx = mallocRev.reverse(ctx)
         mallocRev.check_inuse(ctx)
         log.info(
-            '[+] Final %d structures from malloc blocs' %
+            '[+] Final %d allocators from malloc blocs' %
             (len(
                 ctx.structures)))
     finder = ctx.get_memory_handler().get_heap_finder()
@@ -59,13 +59,13 @@ def make(opts):
     log.info('[+] finding diff values with %s' % (opts.dump2))
     addrs = cmd_cmp(heap1, heap2, heap1.start)
 
-    # now compare with structures addresses
+    # now compare with allocators addresses
     structures = []
     realloc = 0
     log.info('[+] Looking at %d differences' % (len(addrs)))
     st = []
     # joined iteration, found structure affected
-    # use info from malloc : structures.start + .size
+    # use info from malloc : allocators.start + .size
     addr_iter = iter(addrs)
     structs_addr_iter = iter(ctx.malloc_addresses)
     structs_size_iter = iter(ctx.malloc_sizes)
@@ -135,11 +135,11 @@ def print_diff_files(opts, context, newmappings, structures):
         # TODO, in toString(), pointer value should be in comment, to check for
         # pointer change, when same pointed struct.
         st.decodeFields()
-        #st.resolvePointers(ctx.structures_addresses, ctx.structures)
+        #st.resolvePointers(ctx.structures_addresses, ctx.allocators)
         # st._aggregateFields()
         st2.reset()  # clean previous state
         st2.decodeFields()
-        #st2.resolvePointers(ctx.structures_addresses, ctx.structures)
+        #st2.resolvePointers(ctx.structures_addresses, ctx.allocators)
         # st2._aggregateFields()
         # write the files
         f1.write(st.to_string())
@@ -151,7 +151,7 @@ def print_diff_files(opts, context, newmappings, structures):
     print
     f1.close()
     f2.close()
-    log.info('[+] diffed structures dumped in %s %s' % (d1out, d2out))
+    log.info('[+] diffed allocators dumped in %s %s' % (d1out, d2out))
 
 
 def cmd_cmp(heap1, heap2, baseOffset):
