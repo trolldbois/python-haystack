@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
+import api
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
@@ -30,7 +31,7 @@ log = logging.getLogger('haystack-reverse')
 def reverse_instances(opt):
     # go through the 4 step process. Double linked list, basic type, Pointers and graph.
     memory_handler = dump_loader.load(opt.dumpname)
-    ctx = reversers.reverse_instances(memory_handler)
+    ctx = api.reverse_instances(memory_handler)
     return
 
 def writeReversedTypes(opt):

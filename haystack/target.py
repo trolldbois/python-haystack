@@ -20,6 +20,7 @@ TARGET_TRIPLETS = [
     ('x86_64-pc-win', (8, 8, 8)),
 ]
 
+
 class TargetPlatform(interfaces.ITargetPlatform):
     """The guest platform information for the process memory handled by IMemoryHandler.
     Immutable, its characteristics should be set once at creation time.
@@ -257,6 +258,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
 
 
 __LOCAL_PLATFORM = None
+
 
 def _make_target_platform_local():
     """

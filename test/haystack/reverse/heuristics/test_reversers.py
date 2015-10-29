@@ -8,6 +8,7 @@ import os
 import logging
 import unittest
 import sys
+import api
 
 from haystack import dump_loader
 from haystack import constraints
@@ -429,7 +430,7 @@ class TestFullReverse(unittest.TestCase):
 
     def test_reverse_heap(self):
         log.info('START test test_reverseInstances')
-        ctx = reversers.reverse_heap(self.memory_handler, ssh_1_i386_linux.known_heaps[0][0])
+        ctx = api.reverse_heap(self.memory_handler, ssh_1_i386_linux.known_heaps[0][0])
 
         memory_handler = self.memory_handler
         finder = memory_handler.get_heap_finder()
@@ -460,7 +461,7 @@ class TestReverseZeus(unittest.TestCase):
         ##
         cls.offset = zeus_856_svchost_exe.known_records[0][0]
         cls._context = context.get_context_for_address(cls.memory_handler, cls.offset)
-        reversers.reverse_instances(cls.memory_handler)
+        api.reverse_instances(cls.memory_handler)
         return
 
     @classmethod

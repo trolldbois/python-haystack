@@ -156,10 +156,7 @@ class TestFieldAnalyser(unittest.TestCase):
 
     def test_complex_utf(self):
         fields = self.utf16.make_fields(self.test9, 0, len(self.test9))
-        #self.assertEquals(len([_ for _ in fields]), 0)
-        print len([_ for _ in fields]), 0
-        import code
-        code.interact(local=locals())
+        self.assertEquals(len([_ for _ in fields]), 2)
 
     def test_small_int(self):
         ''' we default to word_size == 4 '''

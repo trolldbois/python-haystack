@@ -64,19 +64,18 @@ class TestMappingsWindows(SrcTests):
 
         :return:
         """
-        memory_handler = self.putty.memory_handler
         # print ''.join(['%s\n'%(m) for m in _memory_handler])
         with self.assertRaises(ValueError):
-            context.get_context_for_address(memory_handler, 0x0)
+            context.get_context_for_address(self.memory_handler, 0x0)
         with self.assertRaises(ValueError):
-            context.get_context_for_address(memory_handler, 0xb76e12d3)
+            context.get_context_for_address(self.memory_handler, 0xb76e12d3)
         #[heap] children
         self.assertEquals(
-            context.get_context_for_address(memory_handler, 0x0062d000).heap,
-            memory_handler.get_mapping_for_address(0x005c0000))
+            context.get_context_for_address(self.memory_handler, 0x0062d000).heap,
+            self.memory_handler.get_mapping_for_address(0x005c0000))
         self.assertEquals(
-            context.get_context_for_address(memory_handler, 0x0063e123).heap,
-            memory_handler.get_mapping_for_address(0x005c0000))
+            context.get_context_for_address(self.memory_handler, 0x0063e123).heap,
+            self.memory_handler.get_mapping_for_address(0x005c0000))
         self.putty.reset()
         self.putty = None
 

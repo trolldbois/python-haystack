@@ -27,7 +27,7 @@ class TestConstraints(unittest.TestCase):
 
     def test_read(self):
         parser = constraints.ConstraintsConfigHandler()
-        module_constraints = parser.read('test/allocators/good.constraints')
+        module_constraints = parser.read('test/structures/good.constraints')
         config_constraints = module_constraints.get_constraints()
         for st, stc in config_constraints.items():
             log.debug("structure: %s", st)
