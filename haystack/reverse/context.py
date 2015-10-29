@@ -79,6 +79,11 @@ class ProcessContext(object):
         else:
             log.info("[+] Cache exists in %s", cache_folder)
         # and the record subfolder
+        self.reset_record_cache_folder()
+
+    def reset_record_cache_folder(self):
+        # and the record subfolder
+        dumpname = self.memory_handler.get_name()
         record_cache = config.get_record_cache_folder_name(dumpname)
         if not os.access(record_cache, os.F_OK):
             os.mkdir(record_cache)
