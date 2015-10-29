@@ -48,14 +48,16 @@ class TypeReverser(model.AbstractReverser):
         import Levenshtein
         log.debug("Gathering all signatures")
         for _record in _context.listStructures():
-            self._signatures.append((_record.address, _record.get_signature_text()))
+            self._signatures.append((len(_record), _record.address, _record.get_signature_text()))
             self._nb_reversed += 1
             self._callback(1) ## FIXME
         ##
         self._similarities = []
-        for i, (addr1, el1) in enumerate(self._signatures[:-1]):
+        for i, (size1, addr1, el1) in enumerate(self._signatures[:-1]):
             log.debug("Comparing signatures with %s", el1)
-            for addr2, el2 in self._signatures[i + 1:]:
+            for size2, addr2, el2 in self._signatures[i + 1:]:
+                if abs(size1 - size2) > 4*self._word_size:
+                    continue
                 lev = Levenshtein.ratio(el1, el2)  # seqmatcher ?
                 if lev > 0.75:
                     #self._similarities.append( ((addr1,el1),(addr2,el2)) )
