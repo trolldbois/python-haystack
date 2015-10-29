@@ -5,14 +5,6 @@
 
 from setuptools import setup
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
-
 import distutils.cmd
 import distutils.log
 import subprocess
@@ -28,7 +20,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
     user_options = []
     #    # The format is (long option, short option, description).
     #    ('pylint-rcfile=', None, 'path to Pylint _target_platform file'),
-    #]
+    # ]
 
     def initialize_options(self):
         """Set default values for options."""
@@ -116,7 +108,6 @@ setup(name="haystack",
       dependency_links=[#"https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
-                        "https://github.com/trolldbois/sslsnoop/tarball/master#egg=sslsnoop-trunk",
                         "https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite= "test.alltests",
