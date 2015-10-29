@@ -49,6 +49,8 @@ class AbstractReverser(hri.IReverser):
     def _iterate_records(self, _context):
         """ Override to change the list of record for this _context """
         for _record in _context.listStructures():
+            if _record.get_reverse_level() >= self.get_reverse_level():
+                continue
             yield _record
 
     def _iterate_fields(self, _context, _record):

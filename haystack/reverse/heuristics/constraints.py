@@ -61,6 +61,6 @@ class ConstraintsReverser(object):
                 # ignore the field in that case.
                 continue
             counter = Counter(values)
-            print 'field: %s values: %s' % (field.name, counter)
+            # print 'field: %s values: %s' % (field.name, counter)
             lines.append('# field: %s values: %s' % (field.name, counter))
         return lines
