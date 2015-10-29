@@ -8,7 +8,6 @@ import time
 import numpy
 import os
 
-from haystack import model
 from haystack.abc import interfaces
 from haystack.reverse import utils
 from haystack.reverse import config
@@ -31,6 +30,7 @@ class ProcessContext(object):
         self.memory_handler.get_heap_finder().get_heap_mappings()
         self.__contextes = {}
         self.__reversed_types = {}
+        self.__record_graph = None
         # see bug #17 self.__model = model.Model(self.memory_handler)
         # no need for that
         # create the cache folder then
@@ -121,6 +121,31 @@ class ProcessContext(object):
 
     def list_reversed_types(self):
         return self.__reversed_types.keys()
+
+    def _load_graph_cache(self):
+        from haystack.reverse.heuristics import reversers
+        graph_rev = reversers.PointerGraphReverser(self.memory_handler)
+        self.__record_graph = graph_rev.load_process_graph()
+
+    def get_predecessors(self, record):
+        """
+        Returns the list of record pointing to this record.
+
+        :param: record
+        :return list
+        """
+        if self.__record_graph is None:
+            self._load_graph_cache()
+        predecessors_label = self.__record_graph.predecessors(hex(record.address))
+        records = []
+        for label in predecessors_label:
+            if label[-1] == 'L':
+                label = label[:-1]
+            record_addr = int(label, 16)
+            heap = self.memory_handler.get_mapping_for_address(record_addr)
+            heap_context = self.get_context_for_heap(heap)
+            records.append(heap_context.get_record_for_address(record_addr))
+        return records
 
     # was get_context
     def make_context_for_heap(self, heap):

@@ -57,6 +57,17 @@ class TestField(SrcTests):
         self.assertEqual(len(z2), 2)
         self.assertIn('ctypes.c_ubyte*2 )', z2.to_string('\x00\x00\x00\x00'))
 
+    def test_gaps(self):
+        g1 = fieldtypes.Field('gap_0', 0, fieldtypes.UNKNOWN, 1, False)
+        self.assertEqual(len(g1), 1)
+        self.assertTrue(g1.is_gap())
+        print g1.to_string('\x00\x00\x00\x00')
+        self.assertIn('ctypes.c_ubyte*1 )', g1.to_string('\x00\x00\x00\x00'))
+
+        g2 = fieldtypes.Field('gap_0', 0, fieldtypes.UNKNOWN, 2, False)
+        self.assertEqual(len(g2), 2)
+        self.assertIn('ctypes.c_ubyte*2 )', g2.to_string('\x00\x00\x00\x00'))
+
     def test_is_types(self):
         # def __init__(self, astruct, offset, typename, size, isPadding):
         ptr = fieldtypes.PointerField('ptr_0', 8, 4)

@@ -3,6 +3,7 @@
 import logging
 
 from haystack.abc import interfaces
+from haystack.reverse import context
 from haystack.reverse.heuristics import reversers
 from haystack.reverse.heuristics import dsa
 from haystack.reverse.heuristics import pointertypes
@@ -155,3 +156,29 @@ def reverse_instances(memory_handler):
 
     # todo save graph method
     return
+
+
+def get_record_at_address(memory_handler, record_address):
+    """
+    Returns the record athe specified address.
+
+    :param memory_handler:
+    :param record_address:
+    :return:
+    """
+    heap_context = context.get_context_for_address(memory_handler, record_address)
+    return heap_context.get_record_at_address(record_address)
+
+
+def get_record_predecessors(memory_handler, record):
+    """
+    Returns the predecessors of this record.
+
+    :param memory_handler:
+    :param record:
+    :return:
+    """
+    # TODO check graph has been generated
+    process_context = memory_handler.get_reverse_context()
+    _records = process_context.get_predecessors(record)
+    return _records

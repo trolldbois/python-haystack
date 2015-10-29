@@ -498,6 +498,14 @@ class PointerGraphReverser(model.AbstractReverser):
             self._heaps_graph.add_edge(hex(_record.address), hex(pointee_addr))
         return
 
+    def load_process_graph(self):
+        import networkx
+        dumpname = self._memory_handler.get_name()
+        fname = os.path.sep.join([config.get_cache_folder_name(dumpname), config.CACHE_GRAPH])
+        my_graph = networkx.readwrite.gexf.read_gexf(fname)
+        return my_graph
+
+
 
 class ArrayFieldsReverser(model.AbstractReverser):
     """

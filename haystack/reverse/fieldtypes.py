@@ -179,14 +179,17 @@ class Field(object):
     def is_record(self):
         return self.field_type == STRUCT
 
+    def is_gap(self):
+        return self.field_type == UNKNOWN
+
     def get_typename(self):
         if self.is_string() or self.is_zeroes():
-            return '%s * %d' % (self.field_type.name, len(self))
+            return '%s*%d' % (self.field_type.name, len(self))
         elif self.is_array():
             # TODO should be in type
-            return '%s * %d' % (self.field_type.name, len(self) / self.nb_items)
+            return '%s*%d' % (self.field_type.name, len(self) / self.nb_items)
         elif self.field_type == UNKNOWN:
-            return '%s * %d' % (self.field_type.name, len(self))
+            return '%s*%d' % (self.field_type.name, len(self))
         return self.field_type.name
 
     def __hash__(self):
@@ -237,7 +240,7 @@ class Field(object):
             # unknown
             comment = '# %s else bytes:%s' % (self.comment, repr(value))
         # prep the string
-        fstr = "( '%s' , %s ), %s\n" % (self.name, self.field_type.name, comment)
+        fstr = "( '%s' , %s ), %s\n" % (self.name, self.get_typename(), comment)
         return fstr
 
 
