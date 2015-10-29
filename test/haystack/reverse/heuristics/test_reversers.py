@@ -679,6 +679,9 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
 
     def test_doublelink(self):
         # reverse first with dsa
+        _record = self._context.get_record_for_address(0xccd00)
+        _record.reset()
+
         revdsa = dsa.FieldReverser(self.memory_handler)
         revdsa.reverse()
 
@@ -690,8 +693,10 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         #_record = self._context.get_record_for_address(0xccd28)
         _record = self._context.get_record_for_address(0xccd00)
         print _record.to_string()
-        _record.set_reverse_level(10)
+        #_record.set_reverse_level(9)
+        ##
         rev.reverse_record(self._context, _record)
+
         print _record.to_string()
         n1 = self._context.get_record_for_address(0x000ccae8)
         print n1.to_string()
@@ -701,6 +706,8 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         size_records = len(tail)
         # offset = 8
         offset = 8
+        rev.rename_all_lists()
+
         self.assertEqual(rev.lists[size_records][offset][0], expected)
 
         # rename all lists
@@ -750,10 +757,10 @@ class TestTypeReverser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    # logging.getLogger("reversers").setLevel(logging.DEBUG)
-    # logging.getLogger("signature").setLevel(logging.DEBUG)
+    logging.getLogger("reversers").setLevel(logging.DEBUG)
+    logging.getLogger("signature").setLevel(logging.DEBUG)
     # logging.getLogger("test_reversers").setLevel(logging.DEBUG)
     # logging.getLogger("structure").setLevel(logging.DEBUG)
-    # logging.getLogger("dsa").setLevel(logging.DEBUG)
+    logging.getLogger("dsa").setLevel(logging.DEBUG)
     # logging.getLogger("winxpheap").setLevel(logging.DEBUG)
     unittest.main(verbosity=2)

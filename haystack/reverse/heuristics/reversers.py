@@ -371,7 +371,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         if old_next == old_back:
             # its probably a LIST_ENTRY btw.
             log.debug("old_next == old_back, aborting")
-            return
+            return _record.record_type
         fields.remove(old_back)
         fields.append(new_field)
         fields.sort()
