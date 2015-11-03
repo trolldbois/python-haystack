@@ -169,7 +169,7 @@ def reverse_instances(memory_handler):
     ptrgraph = reversers.PointerGraphReverser(memory_handler)
     ptrgraph.reverse()
 
-    log.info('Analysis results are in ', config.get_cache_folder_name(memory_handler.get_name()))
+    log.info('Analysis results are in %s', config.get_cache_folder_name(memory_handler.get_name()))
     return memory_handler.get_reverse_context()
 
 
