@@ -3,13 +3,6 @@
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
-import api
-
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
-__doc__ = '''
-  Reverse heap analysis.
-'''
 
 import argparse
 import logging
@@ -20,177 +13,135 @@ import os
 from haystack import argparse_utils
 from haystack.reverse import config
 from haystack.reverse import context
-from haystack.reverse.heuristics import reversers
-from haystack.reverse.heuristics import signature
+from haystack.reverse import api
 from haystack import dump_loader
 
 log = logging.getLogger('haystack-reverse')
 
 
-
 def reverse_instances(opt):
+    """
+    Initialise the reverse cache.
+
+    :param opt:
+    :return:
+    """
     # go through the 4 step process. Double linked list, basic type, Pointers and graph.
     memory_handler = dump_loader.load(opt.dumpname)
     ctx = api.reverse_instances(memory_handler)
     return
 
-def writeReversedTypes(opt):
-    return NotImplementedError("obsolete")
-    """
-    reverse types from a memorydump, and write structure definition to file
-    :param opt:
-    :return:
-    """
-    ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
-    ctx = signature.makeReversedTypes(ctx, sizeCache)
-    outfile = file(config.get_cache_filename(config.REVERSED_TYPES_FILENAME, ctx.dumpname),'w')
-    for revStructType in ctx.list_reversed_types():
-        outfile.write(revStructType.to_string())
-        #
-        #print revStructType._instances
-        #for a,lst in revStructType._instances.items():
-        #    print lst.__dict__
-        #    for i in lst:
-        #        print i
-        #        outfile.write(i.toString())
-    outfile.close()
-    log.info('[+] Wrote to %s', outfile.name)
-    return
 
-def groupStructures(opt):
+def show_reversed_types(opt):
     """
-    show sorted structure instances groups to stdout
-    :param opt:
-    :return:
-    """
-    ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
-    for chains in signature.buildStructureGroup(ctx, sizeCache, opt.size ):
-        signature.printStructureGroups(ctx, chains, opt.address )
-    return
+    Show the list of reversed records types after reverse_instances.
 
-def saveSignatures(opt):
-    """
-    translate a memdump into a signature based file NULL,POINTERS,OTHERS
     :param opt:
     :return:
     """
-    ctx, sig = signature.makeSignatures(opt.dumpname)
-    outfile = config.get_cache_filename(config.SIGNATURES_FILENAME, ctx.dumpname)
-    file(outfile,'w').write(sig)
-    log.info('[+] Signature written to %s'%(outfile))
+    memory_handler = dump_loader.load(opt.dumpname)
+    process_context = api.reverse_instances(memory_handler)
+    for record_type in process_context.list_reversed_types():
+        # FIXME use a file outputer for stdout ?
+        print record_type.to_string()
     return
 
 
-def show(opt):
+def list_strings(opt):
     """
-    Show a structure
+    List all record fields that have been reversed as strings.
     :param opt:
     :return:
     """
-    log.info('[+] Load ctx')
+    memory_handler = dump_loader.load(opt.dumpname)
+    process_context = memory_handler.get_reverse_context()
+    # look at each record in each structure for strings
+    for heap_context in process_context.list_contextes():
+        for record in heap_context.listStructures():
+            for field in record.get_fields():
+                addr = record.address + field.offset
+                if field.is_string():
+                    maxlen = len(field)
+                    value = record.get_value_for_field(field, maxlen+10)
+                    print('0x%x,0x%x bytes,%s\n' % (addr, maxlen, value))
+    return
+
+
+def show_record(opt):
+    """
+    Show the record for a specific address.
+    :param opt:
+    :return:
+    """
     memory_handler = dump_loader.load(opt.dumpname)
     ctx = context.get_context_for_address(memory_handler, opt.address)
-    log.info('[+] Find Structure at: @%x', opt.address)
+    log.info('[+] Found record at: @%x', opt.address)
     try:
         st = ctx.get_record_at_address(opt.address)
-        st.decodeFields()
         print st.to_string()
-    except ValueError,e:
-        log.info('[+] Found no structure.')
+    except ValueError as e:
+        log.info('[+] Found no record at: @%x', opt.address)
         return
     return
 
-def printParents(opt):
+
+def show_predecessor(opt):
     """
-    print the parental allocators
+    Show the predecessors that point to a record at a particular address.
     :param opt:
     :return:
     """
-    log.info('[+] Load ctx')
     memory_handler = dump_loader.load(opt.dumpname)
     ctx = context.get_context_for_address(memory_handler, opt.address)
-    log.info('[+] find offsets of struct_addr:%x', opt.address)
-    i = 0
     try:
-        child_address = ctx.get_record_address_at_address(opt.address)
-        for st in ctx.listStructuresForPointerValue(child_address):
-            st.decodeFields()
-            print st.to_string()
-            i+=1
-    except ValueError,e:
-        log.info('[+] Found no allocators.')
+        child_record = ctx.get_record_at_address(opt.address)
+    except ValueError as e:
+        log.info('[+] Found no record at: @%x', opt.address)
         return
-    log.info('[+] Found %d allocators.'%( i ))
+
+    log.info('[+] Showing predecessors of record at: 0x%x', opt.address)
+    records = api.get_record_predecessors(memory_handler, child_record)
+
+    for p_record in records:
+        print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
     return
 
 
 def clean(opt):
-    log.info('[+] Cleaning cache')
-    ctx = config.remove_cache_folder(opt.dumpname)
-
-
-def graph(opt):
-    ''' show sorted structure instances groups to gefx '''
-    #log.info('[+] Graphing')
-    #ctx, sizeCache = signature.makeSizeCaches(opt.dumpname)
-    #for chains in signature.buildStructureGroup(ctx, sizeCache, opt.size ):
-    #  signature.graphStructureGroups(ctx, chains, opt.address )
-    # TODO change to generic fn, and output graph
-    return
+    log.info("Removing cache folder %s", config.get_cache_folder_name(opt.dumpname))
+    config.remove_cache_folder(opt.dumpname)
 
 
 def argparser():
     rootparser = argparse.ArgumentParser(prog='haystack-reverse',
-                                         description='Several tools to reverse engineer allocators on the heap.')
+                                         description='Several tools to reverse engineer records from heap.')
 
     rootparser.add_argument('--debug', action='store_true', help='Debug mode on.')
-    rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Source memory dump by haystack.')
+    rootparser.add_argument('dumpname', type=argparse_utils.readable, action='store', help='Memory dump filename')
 
     subparsers = rootparser.add_subparsers(help='sub-command help')
 
-    instances = subparsers.add_parser('instances',
-                                      help='List all allocators instances with virtual address, member types guess and info.')
+    instances = subparsers.add_parser('analyze', help='Step 1. Run heuristics to reverse allocations record types')
     instances.set_defaults(func=reverse_instances)
 
-    # not refactored yet
-    typemap = subparsers.add_parser('typemap',
-                                    help='Try to reverse generic types from instances\' similarities.')
-    typemap.set_defaults(func=writeReversedTypes)
+    typemap = subparsers.add_parser('types', help='Show reversed record types')
+    typemap.set_defaults(func=show_reversed_types)
 
-    # not refactored yet
-    #groupparser = subparsers.add_parser('group', help='Show structure instances groups by size and signature.')
-    #groupparser.add_argument('--size', type=int, action='store', default=None,
-    #                         help='Limit to a specific structure size')
-    #groupparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None,
-    #                         help='Limit to structure similar to the structure pointed at <address>')
-    #groupparser.set_defaults(func=groupStructures)
+    strings = subparsers.add_parser('strings', help='Show fields that are assumed to be strings types')
+    strings.set_defaults(func=list_strings)
 
-    # not refactored yet
-    #parent = subparsers.add_parser('parent', help='Print the parent allocators pointing to the structure located at this address.')
-    #parent.add_argument('address', type=argparse_utils.int16, action='store', default=None,
-    #                    help='Hex address of the child structure.')
-    #parent.set_defaults(func=printParents)
+    show_parser = subparsers.add_parser('show', help='Show one record instance')
+    show_parser.add_argument('address', type=argparse_utils.int16, action='store', default=None,
+                            help='Specify the address of the record, or encompassed by the record')
+    show_parser.set_defaults(func=show_record)
 
-    # not refactored yet
-    #graphparser = subparsers.add_parser('graph', help='DISABLED - Show sorted structure instances groups by size and signature in a graph.')
-    #graphparser.add_argument('--size', type=int, action='store', default=None,
-    #                         help='Limit to a specific structure size')
-    #graphparser.add_argument('--address', type=argparse_utils.int16, action='store', default=None,
-    #                         help='Limit to structure similar to the structure pointed at <address>')
-    #graphparser.set_defaults(func=graph)
+    parent = subparsers.add_parser('parents', help='List the predecessors pointing to the record at this address')
+    parent.add_argument('address', type=argparse_utils.int16, action='store', default=None,
+                        help='Hex address of the child structure')
+    parent.set_defaults(func=show_predecessor)
 
-    # not refactored yet
-    #showparser = subparsers.add_parser('show', help='Show one structure instance.')
-    #showparser.add_argument('address', type=argparse_utils.int16, action='store', default=None,
-    #                        help='Specify the address of the structure, or of a structure member.')
-    #showparser.set_defaults(func=show)
-
-    # FIXME delete ?
-    makesig = subparsers.add_parser('makesig', help='Create a simple signature file of the heap - NULL, POINTERS, OTHER VALUES.')
-    makesig.set_defaults(func=saveSignatures)
-
-    cleanp = subparsers.add_parser('clean', help='Clean the memory dump from cached info.')
-    cleanp.set_defaults(func=clean)
+    clean_parser = subparsers.add_parser('clean', help='Clean the memory dump from cached info.')
+    clean_parser.set_defaults(func=clean)
 
     return rootparser
 
@@ -200,24 +151,14 @@ def main(argv):
     parser = argparser()
     opts = parser.parse_args(argv)
 
-    level=logging.WARNING
-    if opts.debug :
-        level=logging.DEBUG
+    if opts.debug:
+        level = logging.DEBUG
         flog = os.path.normpath('log')
         logging.basicConfig(level=level, filename=flog, filemode='w')
-        logging.getLogger('haystack-reverse').setLevel(logging.DEBUG)
-        logging.getLogger('signature').setLevel(logging.DEBUG)
-        logging.getLogger('reversers').setLevel(logging.DEBUG)
-        print ('[+] **** COMPLETE debug log to %s'%(flog))
+        print ('[+] **** COMPLETE debug log to %s' % flog)
     else:
-        logging.getLogger('haystack-reverse').setLevel(logging.INFO)
-        logging.getLogger('signature').setLevel(logging.INFO)
-        logging.getLogger('reversers').setLevel(logging.INFO)
-        logging.getLogger('ctx').setLevel(logging.INFO)
-    sh=logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
-    logging.getLogger('signature').addHandler( sh )
-    logging.getLogger('reversers').addHandler( sh )
-    logging.getLogger('haystack-reverse').addHandler( sh )
+        level = logging.INFO
+        logging.basicConfig(level=level)
 
     opts.func(opts)
     return
@@ -225,5 +166,3 @@ def main(argv):
 if __name__ == "__main__":
     sys.path.append(os.getcwd())
     main(sys.argv[1:])
-
-

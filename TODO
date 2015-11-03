@@ -1,7 +1,23 @@
 
 
+List of heuristics:
+- BasicCachingReverser: use heapwalker to organise heap user allocations chunks into raw records.
+- AbstractReverser: Abtract controller
+- FieldReverser: basic types on fields
+- TextFieldCorrection: correction for text fields
+- PointerFieldReverser: pointer type metadata enrichment
+- KnownRecordTypeReverser: Apply Haystack search API
+- DoubleLinkedListReverser: identify records type with double link list
+- PointerGraphReverser: Create graph of records using pointer as edges
+- ArrayFieldsReverser: TODO
+- InlineRecordReverser: TODO (sub record type)
+- TypeReverser: TODO compare records signatures to match types.
+- CommonTypeReverser: Used by x2LinkedReverser to determine best types from a list of similar record
+- WriteRecordToFile: TODO save to file
+
+
 1) integrate pattern and signature modules in the reverse API
-2) add a Reverser that takes and search for known records types.
+2) add a Reverser that takes and search for known records types. - Done
 
 # apply librairies structures/know structures search against heap before running anything else.
 # that should cut our reverse time way down

@@ -3,6 +3,7 @@
 import logging
 
 from haystack.abc import interfaces
+from haystack.reverse import config
 from haystack.reverse import context
 from haystack.reverse.heuristics import reversers
 from haystack.reverse.heuristics import dsa
@@ -84,36 +85,36 @@ def reverse_heap(memory_handler, heap_addr):
     """
     from haystack.reverse import context
     log.info('[+] Loading the memory dump for HEAP 0x%x', heap_addr)
-    ctx = context.get_context_for_address(memory_handler, heap_addr)
+    heap_context = context.get_context_for_address(memory_handler, heap_addr)
     try:
         # decode bytes contents to find basic types.
         log.info('Reversing Fields')
         fr = dsa.FieldReverser(memory_handler)
-        fr.reverse_context(ctx)
+        fr.reverse_context(heap_context)
 
         log.info('Fixing Text Fields')
         tfc = dsa.TextFieldCorrection(memory_handler)
-        tfc.reverse_context(ctx)
+        tfc.reverse_context(heap_context)
 
         # try to find some logical constructs.
         log.info('Reversing DoubleLinkedListReverser')
         # why is this a reverse_context ?
         doublelink = reversers.DoubleLinkedListReverser(memory_handler)
-        doublelink.reverse_context(ctx)
+        doublelink.reverse_context(heap_context)
         doublelink.rename_all_lists()
 
         # save to file
-        save_headers(ctx)
+        save_headers(heap_context)
 
         # etc
     except KeyboardInterrupt as e:
         # except IOError,e:
         log.warning(e)
-        log.info('[+] %d structs extracted' % (ctx.get_record_count()))
+        log.info('[+] %d structs extracted' % (heap_context.get_record_count()))
         raise e
         pass
     pass
-    return ctx
+    return heap_context
 
 
 def reverse_instances(memory_handler):
@@ -126,10 +127,25 @@ def reverse_instances(memory_handler):
     assert isinstance(memory_handler, interfaces.IMemoryHandler)
     finder = memory_handler.get_heap_finder()
     heaps = finder.get_heap_mappings()
-    for heap in heaps:
-        heap_addr = heap.get_marked_heap_address()
-        # reverse all fields in all records from that heap
-        reverse_heap(memory_handler, heap_addr)
+    #for heap in heaps:
+    #    heap_addr = heap.get_marked_heap_address()
+    #    # reverse all fields in all records from that heap
+    #    ## reverse_heap(memory_handler, heap_addr)
+
+    log.info('Reversing Fields')
+    fr = dsa.FieldReverser(memory_handler)
+    fr.reverse()
+
+    log.info('Fixing Text Fields')
+    tfc = dsa.TextFieldCorrection(memory_handler)
+    tfc.reverse()
+
+    # try to find some logical constructs.
+    log.info('Reversing DoubleLinkedListReverser')
+    # why is this a reverse_context ?
+    doublelink = reversers.DoubleLinkedListReverser(memory_handler)
+    doublelink.reverse()
+    doublelink.rename_all_lists()
 
     # then and only then can we look at the PointerFields
     # identify pointer relation between allocators
@@ -137,25 +153,24 @@ def reverse_instances(memory_handler):
     pfr = pointertypes.PointerFieldReverser(memory_handler)
     pfr.reverse()
 
-    # TODO save process type record
-
     # save that
+    log.info('Saving reversed records instances')
     for heap in heaps:
         ctx = memory_handler.get_reverse_context().get_context_for_heap(heap)
         ctx.save_structures()
         # save to file
         save_headers(ctx)
 
+    log.info('Saving reversed records types')
     save_process_headers(memory_handler)
 
-    # and then
     # graph pointer relations between allocators
     log.info('Reversing PointerGraph')
     ptrgraph = reversers.PointerGraphReverser(memory_handler)
     ptrgraph.reverse()
 
-    # todo save graph method
-    return
+    log.info('Analysis results are in ', config.get_cache_folder_name(memory_handler.get_name()))
+    return memory_handler.get_reverse_context()
 
 
 def get_record_at_address(memory_handler, record_address):
@@ -178,7 +193,6 @@ def get_record_predecessors(memory_handler, record):
     :param record:
     :return:
     """
-    # TODO check graph has been generated
     process_context = memory_handler.get_reverse_context()
     _records = process_context.get_predecessors(record)
     return _records

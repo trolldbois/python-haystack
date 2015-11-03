@@ -553,9 +553,10 @@ def graphStructureGroups(context, chains, originAddr=None):
             context.dumpname))
 
 
+
+# FIXME ongoing TypeReverser
 # TODO next next step, compare struct links in a DiGraph with node ==
 # struct size + pointer index as a field.
-
 def makeReversedTypes(heap_context, sizeCache):
     ''' Compare signatures for each size groups.
     Makes a chains out of similar allocators. Changes the structure names for a single
