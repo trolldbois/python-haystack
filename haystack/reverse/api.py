@@ -12,38 +12,6 @@ from haystack.reverse.heuristics import pointertypes
 log = logging.getLogger('reverse.api')
 
 
-def save_process_headers(memory_handler):
-    """
-        Save the python class code definition to file.
-
-    :param memory_handler:
-    :return:
-    """
-    process_context = memory_handler.get_reverse_context()
-    log.info('[+] saving headers for process')
-    fout = open(process_context.get_filename_cache_headers(), 'w')
-    towrite = []
-    #
-    for r_type in process_context.list_reversed_types():
-        members = process_context.get_reversed_type(r_type)
-        from haystack.reverse.heuristics import constraints
-        rev = constraints.ConstraintsReverser(memory_handler)
-        txt = rev.verify(r_type, members)
-        towrite.extend(txt)
-        towrite.append("# %d members" % len(members))
-        towrite.append(r_type.to_string())
-        if len(towrite) >= 10000:
-            try:
-                fout.write('\n'.join(towrite))
-            except UnicodeDecodeError as e:
-                print 'ERROR on ', r_type
-            towrite = []
-            fout.flush()
-    fout.write('\n'.join(towrite))
-    fout.close()
-    return
-
-
 def save_headers(heap_context, addrs=None):
     """
     Save the python class code definition to file.
@@ -162,7 +130,7 @@ def reverse_instances(memory_handler):
         save_headers(ctx)
 
     log.info('Saving reversed records types')
-    save_process_headers(memory_handler)
+    process_context.save_process_headers(memory_handler)
 
     # graph pointer relations between allocators
     log.info('Reversing PointerGraph')

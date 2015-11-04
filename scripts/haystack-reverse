@@ -40,7 +40,7 @@ def show_reversed_types(opt):
     :return:
     """
     memory_handler = dump_loader.load(opt.dumpname)
-    process_context = api.reverse_instances(memory_handler)
+    process_context = memory_handler.get_reverse_context()
     for record_type in process_context.list_reversed_types():
         # FIXME use a file outputer for stdout ?
         print record_type.to_string()
@@ -75,10 +75,29 @@ def show_record(opt):
     """
     memory_handler = dump_loader.load(opt.dumpname)
     ctx = context.get_context_for_address(memory_handler, opt.address)
-    log.info('[+] Found record at: @%x', opt.address)
     try:
         st = ctx.get_record_at_address(opt.address)
+        log.info('[+] Found record at: @%x', opt.address)
         print st.to_string()
+    except ValueError as e:
+        log.info('[+] Found no record at: @%x', opt.address)
+        return
+    return
+
+
+def show_hex(opt):
+    """
+    Show the Hex values for the record at that address.
+    :param opt:
+    :return:
+    """
+    memory_handler = dump_loader.load(opt.dumpname)
+    process_context = memory_handler.get_reverse_context()
+    ctx = context.get_context_for_address(memory_handler, opt.address)
+    try:
+        st = ctx.get_record_at_address(opt.address)
+        log.info('[+] Found record at: @%x', opt.address)
+        print repr(st.bytes)
     except ValueError as e:
         log.info('[+] Found no record at: @%x', opt.address)
         return
@@ -134,6 +153,11 @@ def argparser():
     show_parser.add_argument('address', type=argparse_utils.int16, action='store', default=None,
                             help='Specify the address of the record, or encompassed by the record')
     show_parser.set_defaults(func=show_record)
+
+    hex_parser = subparsers.add_parser('hex', help='Show the bytes for one record instance')
+    hex_parser.add_argument('address', type=argparse_utils.int16, action='store', default=None,
+                            help='Specify the address of the record, or encompassed by the record')
+    hex_parser.set_defaults(func=show_hex)
 
     parent = subparsers.add_parser('parents', help='List the predecessors pointing to the record at this address')
     parent.add_argument('address', type=argparse_utils.int16, action='store', default=None,

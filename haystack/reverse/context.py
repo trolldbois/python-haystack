@@ -27,8 +27,10 @@ class ProcessContext(object):
     def __init__(self, memory_handler):
         self.memory_handler = memory_handler
         # init heaps
-        self.memory_handler.get_heap_finder().get_heap_mappings()
         self.__contextes = {}
+        for heap in self.memory_handler.get_heap_finder().get_heap_mappings():
+            self.get_context_for_heap(heap)
+        # init reversed types
         self.__reversed_types = {}
         self.__record_graph = None
         # see bug #17 self.__model = model.Model(self.memory_handler)
@@ -107,6 +109,21 @@ class ProcessContext(object):
             return heap_context
         return self.__contextes[heap.get_marked_heap_address()]
 
+    def make_context_for_heap(self, heap):
+        """
+        Make the HeapContext for this heap.
+        This will reverse all user allocations from this HEAP into records.
+        """
+        heap_addr = heap.get_marked_heap_address()
+        try:
+            ctx = HeapContext.cacheLoad(self.memory_handler, heap_addr)
+            log.info("Cache avoided HeapContext initialisation")
+        except IOError as e:
+            # heaps are already generated at initialisation of self
+            heap = self.memory_handler.get_mapping_for_address(heap_addr)
+            ctx = HeapContext(self.memory_handler, heap)
+        return ctx
+
     def list_contextes(self):
         """Returns all known HeapContext"""
         return self.__contextes.values()
@@ -121,6 +138,35 @@ class ProcessContext(object):
 
     def list_reversed_types(self):
         return self.__reversed_types.keys()
+
+    def _load_reversed_types(self):
+        self.__reversed_types = pickle.load()
+
+    def save_reversed_types(self):
+        """
+        Save the python class code definition to file.
+        """
+        fout = open(self.get_filename_cache_headers(), 'w')
+        towrite = []
+        #
+        for r_type in self.list_reversed_types():
+            members = self.get_reversed_type(r_type)
+            from haystack.reverse.heuristics import constraints
+            rev = constraints.ConstraintsReverser(self.memory_handler)
+            txt = rev.verify(r_type, members)
+            towrite.extend(txt)
+            towrite.append("# %d members" % len(members))
+            towrite.append(r_type.to_string())
+            if len(towrite) >= 10000:
+                try:
+                    fout.write('\n'.join(towrite))
+                except UnicodeDecodeError as e:
+                    print 'ERROR on ', r_type
+                towrite = []
+                fout.flush()
+        fout.write('\n'.join(towrite))
+        fout.close()
+        return
 
     def _load_graph_cache(self):
         from haystack.reverse.heuristics import reversers
@@ -146,22 +192,6 @@ class ProcessContext(object):
             heap_context = self.get_context_for_heap(heap)
             records.append(heap_context.get_record_for_address(record_addr))
         return records
-
-    # was get_context
-    def make_context_for_heap(self, heap):
-        """
-        Make the HeapContext for this heap.
-        This will reverse all user allocations from this HEAP into records.
-        """
-        heap_addr = heap.get_marked_heap_address()
-        try:
-            ctx = HeapContext.cacheLoad(self.memory_handler, heap_addr)
-        except IOError as e:
-            finder = self.memory_handler.get_heap_finder()
-            # heaps are already generated at initialisation of self
-            heap = self.memory_handler.get_mapping_for_address(heap_addr)
-            ctx = HeapContext(self.memory_handler, heap)
-        return ctx
 
     def get_filename_cache_headers(self):
         dumpname = self.memory_handler.get_name()
@@ -406,8 +436,7 @@ class HeapContext(object):
         ctx.config = config
         ctx.memory_handler = memory_handler
         ctx.heap = ctx.memory_handler.get_mapping_for_address(ctx._heap_start)
-        # cache it
-        memory_handler.get_reverse_context()._set_context_for_heap(ctx.heap, ctx)
+        # and initialize
         ctx._init2()
         return ctx
 
@@ -424,29 +453,13 @@ class HeapContext(object):
             raise e
 
     def reset(self):
-        self.memory_handler.reset_mappings()
         try:
             cache_context_filename = self.get_filename_cache_context()
             os.remove(cache_context_filename)
         except OSError as e:
             pass
-        try:
-            if not os.access(config.CACHE_STRUCT_DIR, os.F_OK):
-                return
-            record_cache_folder = self.get_folder_cache_structures()
-            for r, d, files in os.walk(record_cache_folder):
-                for f in files:
-                    os.remove(os.path.join(r, f))
-                os.rmdir(r)
-        except OSError as e:
-            pass
 
     def __getstate__(self):
-        """The important things to pickle are:
-               dumpname
-               _heap_start
-           Ignore the rest
-        """
         d = dict()
         d['dumpname'] = self.__dict__['dumpname']
         d['_heap_start'] = self.__dict__['_heap_start']

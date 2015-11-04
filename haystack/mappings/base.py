@@ -307,6 +307,9 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     def get_reverse_context(self):
         from haystack.reverse import context
         if self.__context is None:
+            # try to cache load
+
+            # otherwise, create an empty one.
             self.__context = context.ProcessContext(self)
         return self.__context
 

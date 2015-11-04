@@ -55,7 +55,6 @@ class TestStructure(unittest.TestCase):
         return
 
     def tearDown(self):
-        self.context.reset()
         return
 
     def test_decodeFields(self):
@@ -141,7 +140,6 @@ class TestStructure2(unittest.TestCase):
         return
 
     def tearDown(self):
-        self.context.reset()
         return
 
     def test_string_overlap(self):
