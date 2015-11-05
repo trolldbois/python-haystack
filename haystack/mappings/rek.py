@@ -18,9 +18,6 @@ from haystack.mappings import base
 from haystack.abc import interfaces
 from haystack import target
 
-from rekall import session
-from rekall import plugins
-
 log = logging.getLogger('rekall')
 
 
@@ -79,6 +76,8 @@ class RekallProcessMapper(interfaces.IMemoryLoader):
         self._init_rekall()
 
     def _init_rekall(self):
+        from rekall import session
+        from rekall import plugins
         s = session.Session(
                 filename = self.imgname,
                 autodetect=["rsds"],
@@ -110,7 +109,6 @@ class RekallProcessMapper(interfaces.IMemoryLoader):
                 if vad.u.VadFlags.PrivateMemory == 1 or not vad.ControlArea:
                     pathname = ''
                 else:
-                    # FIXME, push that to volatility plugin too.
                     try:
                         file_obj = vad.ControlArea.FilePointer
                         if file_obj:

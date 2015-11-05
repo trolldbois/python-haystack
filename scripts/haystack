@@ -105,7 +105,7 @@ def main(argv):
         log.warning('the JSON feature is experimental and probably wont work.')
     try:
         opts.func(opts)
-    except ImportError,e:
+    except ImportError as e:
         log.error('Structure type does not exists.')
         log.error('sys.path is %s'%sys.path)
         print e

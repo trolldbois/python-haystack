@@ -116,7 +116,9 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
         import volatility.addrspace as addrspace
         registry.register_global_options(config, commands.Command)
         registry.register_global_options(config, addrspace.BaseAddressSpace)
-        config.parse_options()
+        # Dying because it cannot parse argv options
+        # apparently, it was not required to parse options. hey.
+        # config.parse_options()
         config.PROFILE = self.profile
         #_target_platform.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s" % self.imgname
@@ -126,16 +128,12 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
 
         import volatility.plugins.vadinfo as vadinfo
 
-        #import code
-        #print _target_platform.__dict__
-        # code.interact(local=locals())
-
         command = vadinfo.VADWalk(config)
         command.render_text = partial(my_render_text, self, command)
         command.execute()
         # works now.
-        # for x in self._memory_handler:
-        #    print x
+        for x in self._memory_handler.get_mappings():
+            print x
         #import code
         # code.interact(local=locals())
 
@@ -173,8 +171,16 @@ def my_render_text(mapper, cmd, outfd, data):
             pathname = ''
             if vad.u.VadFlags.PrivateMemory == 1 or not vad.ControlArea:
                 pathname = ''
-            elif vad.FileObject:
-                pathname = str(vad.FileObject.FileName or '')
+            else:
+                # FIXME, push that to volatility plugin too.
+                try:
+                    file_obj = vad.ControlArea.FilePointer
+                    if file_obj:
+                        pathname = file_obj.FileName or "Pagefile-backed section"
+                except AttributeError:
+                    pass
+            #elif vad.FileObject:
+            #    pathname = str(vad.FileObject.FileName or '')
 
             pmap = VolatilityProcessMappingA(
                 address_space,
