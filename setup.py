@@ -49,10 +49,8 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         return p.returncode
 
 
-
-
 setup(name="haystack",
-      version="0.30",
+      version="0.31",
       description="Search C Structures in a process' memory",
       long_description=open("README.md").read(),
       url="http://packages.python.org/haystack/",
