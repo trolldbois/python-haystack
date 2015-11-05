@@ -199,7 +199,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             return True
         # b)
         elif self._ctypes.is_struct_type(attrtype) or self._ctypes.is_union_type(attrtype):
-            # do i need to load it first ? becaus it should be memcopied with
+            # do i need to load it first ? because it should be memcopied with
             # the super()..
             if not self.is_valid(attr):
                 log.debug('structType: %s %s %s isValid FALSE', attrname, attrtype, repr(attr))
@@ -235,15 +235,13 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             if attrname in record_constraints:
                 # test if NULL is an option
                 if not bool(myaddress):
-                    if not ((None in record_constraints[attrname]) or
-                            (0 in record_constraints[attrname])):
+                    if not ((None in record_constraints[attrname]) or (0 in record_constraints[attrname])):
                         log.debug('str: %s %s %s isNULL - NOT EXPECTED', attrname, attrtype, repr(attr))
                         return False
                     log.debug('str: %s %s %s isNULL - OK', attrname, attrtype, repr(attr))
                     # e.1)
                     return True
-            if (myaddress != 0 and
-                    not self._memory_handler.is_valid_address_value(myaddress)):
+            if myaddress != 0 and not self._memory_handler.is_valid_address_value(myaddress):
                 log.debug('str: %s %s %s 0x%lx INVALID', attrname, attrtype, repr(attr), myaddress)
                 # e.2)
                 return False
@@ -266,12 +264,9 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                     # f.2) expectedValues specifies NULL to be valid
                     return True
             _attrType = None
-            if (self._ctypes.is_pointer_to_void_type(attrtype) or
-                    self._ctypes.is_function_type(attrtype)):
-                log.debug(
-                    'Its a simple type. Checking address only. attr=%s', attr)
-                if (myaddress != 0 and
-                        not self._memory_handler.is_valid_address_value(myaddress)):
+            if self._ctypes.is_pointer_to_void_type(attrtype) or self._ctypes.is_function_type(attrtype):
+                log.debug('Its a simple type. Checking address only. attr=%s', attr)
+                if (myaddress != 0 and not self._memory_handler.is_valid_address_value(myaddress)):
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer',
                               attrname, attrtype, repr(attr), myaddress)
                     # f.3) address must be valid, no type requirement
@@ -279,8 +274,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             else:
                 # test valid address mapping
                 _attrType = self._utils.get_subtype(attrtype)
-            if (myaddress != 0 and
-                    not self._memory_handler.is_valid_address(attr, _attrType)):
+            if myaddress != 0 and not self._memory_handler.is_valid_address(attr, _attrType):
                 log.debug('ptr: %s %s %s 0x%lx INVALID', attrname, attrtype,
                                                            repr(attr), self._utils.get_pointee_address(attr))
                 # f.4) its a pointer, but not valid in our _memory_handler for this
@@ -304,7 +298,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         ) OR struct type OR union type
         """
         target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        return ((bool(attr) and not self._ctypes.is_pointer_to_void_type(attrtype)))
+        return bool(attr) and not self._ctypes.is_pointer_to_void_type(attrtype)
         # return ( (bool(attr) and
         #    (self._ctypes.is_pointer_to_struct_type(attrtype) or
         #     self._ctypes.is_pointer_to_union_type(attrtype) or
@@ -367,29 +361,24 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     def _load_member(self, record, attr, attrname, attrtype, record_constraints, max_depth):
         # skip static void_p data members
         if not self._is_loadable_member(attr, attrname, attrtype):
-            log.debug("%s %s not loadable bool(attr) = %s", attrname, attrtype,
-                                                              bool(attr))
+            log.debug("%s %s not loadable bool(attr) = %s", attrname, attrtype, bool(attr))
             return True
         # load it, fields are valid
         elif self._ctypes.is_struct_type(attrtype) or self._ctypes.is_union_type(attrtype):
             # its an embedded record. Bytes are already loaded.
             offset = self._utils.offsetof(type(record), attrname)
-            log.debug('st: %s %s is STRUCT at @%x', attrname, attrtype,
-                                                      record._orig_address_ + offset)
+            log.debug('st: %s %s is STRUCT at @%x', attrname, attrtype, record._orig_address_ + offset)
             # TODO pydoc for impl.
             attr._orig_address_ = record._orig_address_ + offset
             if not self.load_members(attr, max_depth - 1):
-                log.debug(
-                    "st: %s %s not valid, error while loading inner struct",
-                    attrname, attrtype)
+                log.debug("st: %s %s not valid, error while loading inner struct", attrname, attrtype)
                 return False
             log.debug("st: %s %s inner struct LOADED ", attrname, attrtype)
             return True
         elif self._ctypes.is_array_of_basic_type(attrtype):
             return True
         elif self._ctypes.is_array_type(attrtype):
-            log.debug('a: %s is arraytype %s recurse load', attrname,
-                                                              repr(attr))
+            log.debug('a: %s is arraytype %s recurse load', attrname, repr(attr))
             attrLen = len(attr)
             if attrLen == 0:
                 return True
@@ -399,8 +388,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 # offsetof("%s[%d]") is called, and %s exists, not %s[%d]
                 # if not self._load_member(attr[i], "%s[%d]"%(attrname,i),
                 # elType, _memory_handler, maxDepth):
-                if not self._load_member(record,
-                        attr[i], attrname, elType, record_constraints, max_depth):
+                if not self._load_member(record, attr[i], attrname, elType, record_constraints, max_depth):
                     return False
             return True
         # we have PointerType here . Basic or complex
@@ -428,24 +416,19 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 log.debug("%s %s loading from references cache %s/0x%lx", attrname,
                                                                             attr, self._ctypes.CString, attr_obj_address)
                 return True
-            max_size = min(
-                self.MAX_CSTRING_SIZE,
-                memoryMap.end -
-                attr_obj_address)
+            max_size = min(self.MAX_CSTRING_SIZE, memoryMap.end - attr_obj_address)
             log.debug('%s %s is defined as a CString, loading %d bytes from 0x%lx '
                       'is_valid_address %s', attrname, attr, max_size, attr_obj_address,
                                                self._memory_handler.is_valid_address_value(attr_obj_address))
-            txt, truncated = memoryMap.read_cstring(attr_obj_address, max_size)
+            #txt, truncated = memoryMap.read_cstring(attr_obj_address, max_size)
+            # 2015-11-05 FIX #20 - read string or wide char string
+            txt, truncated = attr.read_string(memoryMap, attr_obj_address, max_size)
             if truncated:
-                log.warning(
-                    'buffer size was too small for this CString: %d',
-                    max_size)
+                log.warning('buffer size was too small for this CString: %d', max_size)
 
             # that will SEGFAULT attr.string = txt - instead keepRef to String
             self._memory_handler.keepRef(txt, self._ctypes.CString, attr_obj_address)
-            log.debug(
-                'kept CString ref for "%s" at @%x',
-                txt, attr_obj_address)
+            log.debug('kept CString ref for "%s" at @%x', txt, attr_obj_address)
             return True
         # not functionType, it's not loadable
         elif self._ctypes.is_pointer_type(attrtype):
@@ -458,22 +441,16 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             memoryMap = self._memory_handler.is_valid_address(attr, _attrType)
             if not memoryMap:
                 # big BUG Badaboum, why did pointer changed validity/value ?
-                log.warning(
-                    "%s %s not loadable 0x%lx but VALID ",
-                    attrname, attr, attr_obj_address)
+                log.warning("%s %s not loadable 0x%lx but VALID ", attrname, attr, attr_obj_address)
                 return True
 
             ref = self._memory_handler.getRef(_attrType, attr_obj_address)
             if ref is not None:
-                log.debug(
-                    "%s %s loading from references cache %s/0x%lx",
-                    attrname, attr, _attrType, attr_obj_address)
+                log.debug("%s %s loading from references cache %s/0x%lx", attrname, attr, _attrType, attr_obj_address)
                 # DO NOT CHANGE STUFF SOUPID attr.contents = ref. attr.contents
                 # will SEGFAULT
                 return True
-            log.debug(
-                "%s %s loading from 0x%lx (is_valid_address: %s)",
-                attrname, attr, attr_obj_address, memoryMap)
+            log.debug("%s %s loading from 0x%lx (is_valid_address: %s)", attrname, attr, attr_obj_address, memoryMap)
             # Read the struct in memory and make a copy to play with.
             # DO NOT COPY THE STRUCT, we have a working readStruct for that...
             # ERRROR
@@ -484,9 +461,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             # save that validated and loaded ref and original addr so we dont
             # need to recopy it later
             self._memory_handler.keepRef(contents, _attrType, attr_obj_address)
-            log.debug(
-                "keepRef %s.%s @%x",
-                _attrType, attrname, attr_obj_address)
+            log.debug("keepRef %s.%s @%x", _attrType, attrname, attr_obj_address)
             log.debug(
                 "%s %s loaded memcopy from 0x%lx to 0x%lx",
                 attrname,
@@ -495,20 +470,16 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 self._utils.get_pointee_address(attr))
             # recursive validation checks on new struct
             if not bool(attr):
-                log.warning(
-                    'Member %s is null after copy: %s',
-                    attrname, attr)
+                log.warning('Member %s is null after copy: %s', attrname, attr)
                 return True
             # go and load the pointed struct members recursively
             subtype = self._utils.get_subtype(attrtype)
-            if (self._ctypes.is_basic_type(subtype) or
-                    self._ctypes.is_array_of_basic_type(subtype)):
+            if self._ctypes.is_basic_type(subtype) or self._ctypes.is_array_of_basic_type(subtype):
                 # do nothing
                 return True
-            elif (self._ctypes.is_array_type(subtype) or
-                  self._ctypes.is_pointer_type(subtype)):
-                return self._load_member( # FIXME
-                    record, contents, 'pointee', subtype, record_constraints, max_depth - 1)
+            elif self._ctypes.is_array_type(subtype) or self._ctypes.is_pointer_type(subtype):
+                # FIXME
+                return self._load_member(record, contents, 'pointee', subtype, record_constraints, max_depth - 1)
             log.debug('d: %d load_members recursively on pointer %s' % (max_depth, attrname))
             if not self.load_members(contents, max_depth - 1):
                 log.debug('member %s was not loaded' % attrname)

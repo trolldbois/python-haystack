@@ -15,6 +15,13 @@ List of heuristics:
 - CommonTypeReverser: Used by x2LinkedReverser to determine best types from a list of similar record
 - WriteRecordToFile: TODO save to file
 
+FIX the predecessors search. Most strings pointer in example are starting non-aligned <address> + 1.
+Because the size is on <address>
+But it doesn't seem like the POinterEnumerator checks for that :??
+Check for 0xc329f8/0xc329f9 . present in memap 0xc30000
+It seems the PointerEnumerator does not work. ???
+And maybe we need to reverse the aligned check on DSA FieldReverser, or create an advanced one.
+-> definitively an solution. but what does it break ?
 
 1) integrate pattern and signature modules in the reverse API
 2) add a Reverser that takes and search for known records types. - Done

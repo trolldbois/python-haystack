@@ -143,7 +143,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         return
 
     def read_cstring(self, address, max_size, chunk_length=256):
-        ''' identic to process.readCString '''
+        """ Read character up to max_size until a \x00 byte is found """
         string = []
         size = 0
         truncated = False

@@ -33,7 +33,7 @@ class TestKnownRecordTypeReverser(SrcTests):
         dumpname = 'test/src/test-ctypes6.64.dump'
         self.memory_handler = dump_loader.load(dumpname)
         process_context = self.memory_handler.get_reverse_context()
-        process_context.reset_record_cache_folder()
+        process_context.create_record_cache_folder()
         # load TU values
         self._load_offsets_values(self.memory_handler.get_name())
         ##
@@ -72,7 +72,7 @@ class TestDoubleLinkedReverser(SrcTests):
         dumpname = 'test/src/test-ctypes6.64.dump'
         self.memory_handler = dump_loader.load(dumpname)
         process_context = self.memory_handler.get_reverse_context()
-        process_context.reset_record_cache_folder()
+        process_context.create_record_cache_folder()
         # load TU values
         self._load_offsets_values(self.memory_handler.get_name())
         ##
@@ -458,7 +458,7 @@ class TestReverseZeus(unittest.TestCase):
         cls.dumpname = zeus_856_svchost_exe.dumpname
         cls.memory_handler = dump_loader.load(zeus_856_svchost_exe.dumpname)
         cls.process_context = cls.memory_handler.get_reverse_context()
-        cls.process_context.reset_record_cache_folder()
+        cls.process_context.create_record_cache_folder()
         ##
         cls.offset = zeus_856_svchost_exe.known_records[0][0]
         cls._context = context.get_context_for_address(cls.memory_handler, cls.offset)

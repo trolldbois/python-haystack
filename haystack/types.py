@@ -300,7 +300,6 @@ class CTypesProxy(object):
         used with the adequate CTypesProxy.
         """
         class CString(self.__real_ctypes.Union):
-
             """
             This is our own implementation of a string for ctypes.
             ctypes.c_char_p can not be used for memory parsing, as it tries to load
@@ -314,8 +313,70 @@ class CTypesProxy(object):
                 ("ptr", self.POINTER(self.c_ubyte))
             ]
             _type_ = 's'  # fake it
+
+            def read_string(self, memoryMap, address, max_size, chunk_length=256):
+                """ Read character up to max_size until a \x00 byte is found """
+                string = []
+                size = 0
+                truncated = False
+                while True:
+                    done = False
+                    data = memoryMap.read_bytes(address, chunk_length)
+                    if '\0' in data:
+                        done = True
+                        data = data[:data.index('\0')]
+                    if max_size <= size + chunk_length:
+                        data = data[:(max_size - size)]
+                        string.append(data)
+                        truncated = True
+                        break
+                    string.append(data)
+                    if done:
+                        break
+                    size += chunk_length
+                    address += chunk_length
+                return ''.join(string), truncated
         # and there we have it. We can load basicmodel
         self.CString = CString
+
+        class CWString(self.__real_ctypes.Union):
+            """
+            This is our own implementation of a wide char string for ctypes.
+            ctypes.c_char_p can not be used for memory parsing, as it tries to load
+            the string itself without checking for pointer validation.
+
+            it's basically a Union of a string and a pointer.
+            """
+            _fields_ = [
+                ("string", self.c_wchar_p),
+                ("ptr", self.POINTER(self.c_ubyte))
+            ]
+            _type_ = 's'  # fake it
+
+            def read_string(self, memoryMap, address, max_size, chunk_length=256):
+                """ Read character up to max_size until a \x00\x00 byte is found """
+                string = []
+                size = 0
+                truncated = False
+                while True:
+                    done = False
+                    data = memoryMap.read_bytes(address, chunk_length)
+                    if '\0\0' in data:
+                        done = True
+                        data = data[:data.index('\0\0')]
+                    if max_size <= size + chunk_length:
+                        data = data[:(max_size - size)]
+                        string.append(data)
+                        truncated = True
+                        break
+                    string.append(data)
+                    if done:
+                        break
+                    size += chunk_length
+                    address += chunk_length
+                return ''.join(string), truncated
+        # and there we have it. We can load basicmodel
+        self.CWString = CWString
 
         # change CTypesRecordConstraintValidator structure given the loaded plugins
         #import basicmodel
@@ -501,7 +562,7 @@ class CTypesProxy(object):
     @check_arg_is_type
     def is_cstring_type(self, objtype):
         """Checks if an object is our CString."""
-        return issubclass(objtype, self.CString)
+        return issubclass(objtype, self.CString) or issubclass(objtype, self.CWString)
 
     @check_arg_is_type
     def is_function_type(self, objtype):
@@ -580,7 +641,8 @@ class CTypesProxy(object):
         if objtype == self.c_longdouble:
             return False
         # force ignore the CString construct
-        if objtype == self.CString:
+        #if objtype == self.CString:
+        if self.is_cstring_type(objtype):
             return False
         return issubclass(objtype, self.get_real_ctypes_member('Union'))
 

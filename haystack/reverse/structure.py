@@ -430,7 +430,7 @@ class %s(%s):  # %s
         """
         d = self.__dict__.copy()
         try:
-            d['dumpname'] = os.path.normpath(self._memory_handler.name)
+            d['dumpname'] = os.path.normpath(self._memory_handler.get_name())
         except AttributeError as e:
             #log.error('no _memory_handler name in %s \n attribute error for %s %x \n %s'%(d, self.__class__, self.vaddr, e))
             d['dumpname'] = None

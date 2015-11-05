@@ -93,8 +93,7 @@ def reverse_instances(memory_handler):
     :return:
     """
     assert isinstance(memory_handler, interfaces.IMemoryHandler)
-    finder = memory_handler.get_heap_finder()
-    heaps = finder.get_heap_mappings()
+    process_context = memory_handler.get_reverse_context()
     #for heap in heaps:
     #    heap_addr = heap.get_marked_heap_address()
     #    # reverse all fields in all records from that heap
@@ -123,14 +122,13 @@ def reverse_instances(memory_handler):
 
     # save that
     log.info('Saving reversed records instances')
-    for heap in heaps:
-        ctx = memory_handler.get_reverse_context().get_context_for_heap(heap)
-        ctx.save_structures()
+    for heap_context in process_context.list_contextes():
+        heap_context.save_structures()
         # save to file
-        save_headers(ctx)
+        save_headers(heap_context)
 
     log.info('Saving reversed records types')
-    process_context.save_process_headers(memory_handler)
+    process_context.save_reversed_types()
 
     # graph pointer relations between allocators
     log.info('Reversing PointerGraph')
@@ -138,7 +136,7 @@ def reverse_instances(memory_handler):
     ptrgraph.reverse()
 
     log.info('Analysis results are in %s', config.get_cache_folder_name(memory_handler.get_name()))
-    return memory_handler.get_reverse_context()
+    return process_context
 
 
 def get_record_at_address(memory_handler, record_address):

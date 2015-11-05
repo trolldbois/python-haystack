@@ -56,6 +56,7 @@ def list_strings(opt):
     memory_handler = dump_loader.load(opt.dumpname)
     process_context = memory_handler.get_reverse_context()
     # look at each record in each structure for strings
+    print('Heap_address,Size,txt')
     for heap_context in process_context.list_contextes():
         for record in heap_context.listStructures():
             for field in record.get_fields():
@@ -63,7 +64,11 @@ def list_strings(opt):
                 if field.is_string():
                     maxlen = len(field)
                     value = record.get_value_for_field(field, maxlen+10)
-                    print('0x%x,0x%x bytes,%s\n' % (addr, maxlen, value))
+                    try:
+                        print('0x%x,0x%x bytes,%s' % (addr, maxlen, value))
+                    except IOError as e:
+                        # ignore the pipe errors
+                        return
     return
 
 
@@ -92,7 +97,6 @@ def show_hex(opt):
     :return:
     """
     memory_handler = dump_loader.load(opt.dumpname)
-    process_context = memory_handler.get_reverse_context()
     ctx = context.get_context_for_address(memory_handler, opt.address)
     try:
         st = ctx.get_record_at_address(opt.address)
@@ -123,6 +127,27 @@ def show_predecessor(opt):
 
     for p_record in records:
         print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
+
+    # DEBUG pointer found by pontersearcher
+    # print '---'
+    # process_context = memory_handler.get_reverse_context()
+    # for heap_context in process_context.list_contextes():
+    #    p_records = heap_context.listStructuresForPointerValue(child_record.address)
+    #    if len(p_records) == 0:
+    #        continue
+    #    else:
+    #        for p_record in p_records:
+    #            print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
+
+    # for heap_context in process_context.list_contextes():
+    # heap = memory_handler.get_mapping_for_address(0xc30000)
+    # finder = memory_handler.get_heap_finder()
+    # heap_walker = finder.get_heap_walker(heap)
+    # heap_context = process_context.get_context_for_heap(heap)
+    # offsets, values = heap_context.get_heap_pointers_from_allocated(heap_walker)
+    # for addr in map(long, offsets):
+    #     print hex(addr),
+    # print ''
     return
 
 

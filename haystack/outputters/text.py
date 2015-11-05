@@ -99,15 +99,14 @@ class RecursiveTextOutputter(Outputter):
         elif self._ctypes.is_cstring_type(attrtype):
             if not bool(attr.ptr):
                 return "<NULLPTR>"
-            if self._memory_handler.hasRef(
-                    self._ctypes.CString, self._utils.get_pointee_address(attr.ptr)):
+            if self._memory_handler.hasRef(self._ctypes.CString, self._utils.get_pointee_address(attr.ptr)):
                 s = self._memory_handler.getRef(
                     self._ctypes.CString,
                     self._utils.get_pointee_address(
                         attr.ptr))
             else:
                 raise Exception('This CString was not in cache')
-            s = '"%s" , #(CString)' % (s)
+            s = '"%s" , # (%s)' % (s, attrtype.__name__)
         elif self._ctypes.is_pointer_type(attrtype):
             myaddress = self._utils.get_pointee_address(attr)
             myaddress_fmt = self._utils.formatAddress(myaddress)

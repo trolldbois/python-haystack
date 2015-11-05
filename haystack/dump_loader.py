@@ -61,7 +61,7 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
     def __init__(self, dumpname, cpu=None, os_name=None):
         self._cpu_bits = cpu
         self._os_name = os_name
-        self.dumpname = os.path.normpath(dumpname)
+        self.dumpname = os.path.abspath(dumpname)
         self._memory_handler = None
         if not self._is_valid():
             raise ValueError(
@@ -219,7 +219,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
     def __init__(self, dumpname, maps_to_load=None, cpu=None, os_name=None):
         self._cpu_bits = cpu
         self._os_name = os_name
-        self.dumpname = os.path.normpath(dumpname)
+        self.dumpname = os.path.abspath(dumpname)
         self._memory_handler = None
         if not self._is_valid():
             raise ValueError(
@@ -241,6 +241,7 @@ class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
             raise LazyLoadingException(
                 os.path.sep.join([self.archive, self.filePrefix + mmap_fname]))
             # TODO FIX with name only, not file()
+
 
 class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
     """
@@ -270,12 +271,11 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
         self._memory_handler.reset_mappings()
         return
 
+
 def load(dumpname, cpu=None, os_name=None):
     """Loads a haystack dump."""
-    memdump = VeryLazyProcessMemoryDumpLoader( # LazyProcessMemoryDumpLoader(
-        os.path.normpath(dumpname),
-        cpu=cpu,
-        os_name=os_name)
+    dumpname = os.path.abspath(dumpname)
+    memdump = VeryLazyProcessMemoryDumpLoader(dumpname, cpu=cpu, os_name=os_name)
     log.debug('%d dump file loaded' % len(memdump.make_memory_handler()))
     # excep mmap.error - to much openfile - increase ulimit
     return memdump.make_memory_handler()

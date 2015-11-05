@@ -119,7 +119,7 @@ def get_cache_heap_pointers(ctx, enumerator):
         int_array_save(heap_addrs_fname, heap_addrs)
         int_array_save(heap_values_fname, heap_values)
     else:
-        log.info('[+] Loading from cache %d pointers %d unique', len(heap_values), len(set(heap_values)))
+        log.debug('[+] Loading from cache %d pointers %d unique', len(heap_values), len(set(heap_values)))
     return heap_addrs, heap_values
 
 
@@ -139,7 +139,7 @@ def cache_get_user_allocations(ctx, heap_walker):
     addrs = int_array_cache(f_addrs)
     sizes = int_array_cache(f_sizes)
     if addrs is None or sizes is None:
-        log.info('[+] Making new cache - getting allocated chunks from heap ')
+        log.debug('[+] Making new cache - getting allocated chunks from heap ')
         # TODO : HeapWalker + order addresses ASC ...
         # allocations = sorted(heapwalker.get_user_allocations(_memory_handler, heap))
         # TODO 2 , allocations should be triaged by mmapping ( heap.start ) before write2disk.
@@ -156,8 +156,8 @@ def cache_get_user_allocations(ctx, heap_walker):
         addrs = int_array_save(f_addrs, addrs)
         sizes = int_array_save(f_sizes, sizes)
     else:
-        log.info('[+] Loading from cache')
-    log.info('\t[-] we have %d allocated chunks', len(addrs))
+        log.debug('[+] Loading from cache')
+    log.debug('\t[-] we have %d allocated chunks', len(addrs))
     return addrs, sizes
 
 

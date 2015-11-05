@@ -36,7 +36,7 @@ class ProcessContext(object):
         # see bug #17 self.__model = model.Model(self.memory_handler)
         # no need for that
         # create the cache folder then
-        self.reset_cache_folder()
+        self.create_cache_folder()
 
     # def get_functions_pointers(self):
     #     try:
@@ -69,7 +69,7 @@ class ProcessContext(object):
     #         pickle.dump(func.functions, fout)
     #     return func.functions
 
-    def reset_cache_folder(self):
+    def create_cache_folder(self):
         """Removes the cache folder"""
         dumpname = self.memory_handler.get_name()
         # create the cache folder
@@ -79,11 +79,11 @@ class ProcessContext(object):
             os.mkdir(cache_folder)
             log.info("[+] Cache created in %s", cache_folder)
         else:
-            log.info("[+] Cache exists in %s", cache_folder)
+            log.debug("[+] Cache exists in %s", cache_folder)
         # and the record subfolder
-        self.reset_record_cache_folder()
+        self.create_record_cache_folder()
 
-    def reset_record_cache_folder(self):
+    def create_record_cache_folder(self):
         # and the record subfolder
         dumpname = self.memory_handler.get_name()
         record_cache = config.get_record_cache_folder_name(dumpname)
@@ -91,7 +91,7 @@ class ProcessContext(object):
             os.mkdir(record_cache)
             log.info("[+] Record cache created in %s", record_cache)
         else:
-            log.info("[+] Record cache exists in %s", record_cache)
+            log.debug("[+] Record cache exists in %s", record_cache)
 
     def _set_context_for_heap(self, mmap, ctx):
         """Caches the HeapContext associated to a IMemoryMapping"""
@@ -117,7 +117,7 @@ class ProcessContext(object):
         heap_addr = heap.get_marked_heap_address()
         try:
             ctx = HeapContext.cacheLoad(self.memory_handler, heap_addr)
-            log.info("Cache avoided HeapContext initialisation")
+            log.debug("Cache avoided HeapContext initialisation")
         except IOError as e:
             # heaps are already generated at initialisation of self
             heap = self.memory_handler.get_mapping_for_address(heap_addr)
@@ -139,8 +139,8 @@ class ProcessContext(object):
     def list_reversed_types(self):
         return self.__reversed_types.keys()
 
-    def _load_reversed_types(self):
-        self.__reversed_types = pickle.load()
+    #def _load_reversed_types(self):
+    #    self.__reversed_types = pickle.load()
 
     def save_reversed_types(self):
         """
@@ -219,7 +219,7 @@ class HeapContext(object):
         return
 
     def _init2(self):
-        log.info('[+] HeapContext on heap 0x%x', self.heap.get_marked_heap_address())
+        log.debug('[+] HeapContext on heap 0x%x', self.heap.get_marked_heap_address())
         # Check that cache folder exists
         if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
             os.mkdir(config.get_cache_folder_name(self.dumpname))
@@ -227,13 +227,13 @@ class HeapContext(object):
         finder = self.memory_handler.get_heap_finder()
         heap_walker = finder.get_heap_walker(self.heap)
 
-        log.info('[+] Searching pointers in heap')
+        log.debug('[+] Searching pointers in heap')
         # get all pointers found in from allocated space.
         all_offsets, all_values = self.get_heap_pointers_from_allocated(heap_walker)
         self._pointers_values = all_values
         self._pointers_offsets = all_offsets
 
-        log.info('[+] Gathering allocated heap chunks')
+        log.debug('[+] Gathering allocated heap chunks')
         res = utils.cache_get_user_allocations(self, heap_walker)
         self._structures_addresses, self._structures_sizes = res
 
@@ -256,20 +256,19 @@ class HeapContext(object):
             return self._structures
 
         # otherwise cache Load
-        log.info('[+] Loading cached records list')
-        self._structures = dict(
-            [(long(vaddr), s) for vaddr, s in structure.cache_load_all_lazy(self)])
-        log.info('[+] Loaded %d cached records addresses from disk', len(self._structures))
+        log.debug('[+] Loading cached records list')
+        self._structures = dict([(long(vaddr), s) for vaddr, s in structure.cache_load_all_lazy(self)])
+        log.debug('[+] Loaded %d cached records addresses from disk', len(self._structures))
 
         # If we are missing some allocators from the cache loading
         # then recreated them in cache from Allocated memory
         nb_missing = len(self._structures_addresses) - len(self._structures)
         if nb_missing != 0:
             from haystack.reverse.heuristics import reversers
-
-            log.info('[+] Missing cached records %d' % nb_missing)
+            log.debug('[+] Missing cached records %d' % nb_missing)
             if nb_missing < 10:
-                log.warning('TO check missing:%d unique: %d', nb_missing, len(set(self._structures_addresses) - set(self._structures)))
+                nb_unique = len(set(self._structures_addresses) - set(self._structures))
+                log.warning('TO check missing:%d unique:%d', nb_missing, nb_unique)
             # use BasicCachingReverser to get user blocks
             cache_reverse = reversers.BasicCachingReverser(self.memory_handler)
             _ = cache_reverse.reverse_context(self)
@@ -422,7 +421,7 @@ class HeapContext(object):
 
     @classmethod
     def cacheLoad(cls, memory_handler, heap_addr):
-        dumpname = os.path.normpath(memory_handler.get_name())
+        dumpname = os.path.abspath(memory_handler.get_name())
         config.create_cache_folder_name(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname, heap_addr)
         try:

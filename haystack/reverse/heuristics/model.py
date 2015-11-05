@@ -78,7 +78,7 @@ class AbstractReverser(hri.IReverser):
         # closing statements
         total = self._nb_from_cache + self._nb_reversed
         ts = time.time() - self._t0
-        log.info('[+] %s: END %d records in %2.0fs (new:%d,cache:%d)', self, total, ts, self._nb_reversed, self._nb_from_cache)
+        log.debug('[+] %s: END %d records in %2.0fs (new:%d,cache:%d)', self, total, ts, self._nb_reversed, self._nb_from_cache)
         ####
         return
 
@@ -98,7 +98,7 @@ class AbstractReverser(hri.IReverser):
         # closing statements
         total = self._nb_from_cache + self._nb_reversed
         ts = time.time() - t0
-        log.info('[+] %s: END time:%2.0fs Heap:0x%x records:%d (new:%d,cache:%d)', self, ts, _context._heap_start, ts, self._nb_reversed, self._nb_from_cache)
+        log.debug('[+] %s: END time:%2.0fs Heap:0x%x records:%d (new:%d,cache:%d)', self, ts, _context._heap_start, ts, self._nb_reversed, self._nb_from_cache)
         return
 
     def reverse_record(self, _context, _record):

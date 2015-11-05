@@ -163,11 +163,14 @@ class PointerFields(model.FieldAnalyser):
                 size -= self._word_size
                 offset += self._word_size
                 continue
-            # 20151026 - if aligned, ignore it
-            if value % self._target.get_word_size():
-                size -= self._word_size
-                offset += self._word_size
-                continue
+            # FIXME 20151103 dont ignore it
+            # what will it break ?
+            if False:
+                # 20151026 - if aligned, ignore it
+                if value % self._target.get_word_size():
+                    size -= self._word_size
+                    offset += self._word_size
+                    continue
             # we have a pointer
             log.debug('checkPointer offset:%s value:%s' % (offset, hex(value)))
             field = fieldtypes.PointerField('ptr_%d' % offset, offset, self._word_size)
