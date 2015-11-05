@@ -13,10 +13,10 @@ from haystack.dbg import PtraceDebugger
 from haystack import dump_loader
 from haystack.abc import interfaces
 from haystack.mappings import base
-from haystack.mappings.file import FileBackedMemoryMapping
-from haystack.mappings.file import MemoryDumpMemoryMapping
-from haystack.mappings.process import readProcessMappings
-from haystack.mappings.vol import VolatilityProcessMapper
+from haystack.mappings import file
+from haystack.mappings import process
+from haystack.mappings import vol
+from haystack.mappings import rek
 
 log = logging.getLogger('mapper')
 
@@ -33,11 +33,13 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
     """Build MemoryMappings from a PID or a haystack memory dump."""
 
     def __init__(self, pid=None, mmap=True, memfile=None,
-                 baseOffset=None, dumpname=None, volname=None):
+                 baseOffset=None, dumpname=None, volname=None, rekallname=None):
         memory_handler = None
         if not (volname is None) and not (pid is None):
-            memory_handler = self._init_volatility(dumpname, "WinXPSP2x86", pid)
-        if not (pid is None):
+            memory_handler = self._init_volatility(volname, "WinXPSP2x86", pid)
+        elif not (rekallname is None) and not (pid is None):
+            memory_handler = self._init_rekall(rekallname, pid)
+        elif not (pid is None):
             memory_handler = self._init_pid(pid, mmap)
         elif not (memfile is None):
             memory_handler = self._init_memfile(memfile, baseOffset)
@@ -63,7 +65,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
     def _init_memfile(memfile, baseOffset):
         size = os.fstat(memfile.fileno()).st_size
         if size > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
-            mem = FileBackedMemoryMapping(
+            mem = file.FileBackedMemoryMapping(
                 memfile,
                 baseOffset,
                 baseOffset +
@@ -71,7 +73,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
             log.warning(
                 'Dump file size is big. Using file backend memory mapping. Its gonna be slooow')
         else:
-            mem = MemoryDumpMemoryMapping(
+            mem = file.MemoryDumpMemoryMapping(
                 memfile,
                 baseOffset,
                 baseOffset +
@@ -84,12 +86,12 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
         if not isinstance(pid, (int, long)):
             raise TypeError('PID should be a number')
         dbg = PtraceDebugger()
-        process = dbg.addProcess(pid, is_attached=False)
-        if process is None:
+        my_process = dbg.addProcess(pid, is_attached=False)
+        if my_process is None:
             log.error("Error initializing Process debugging for %d" % pid)
             raise IOError
             # ptrace exception is raised before that
-        _memory_handler = readProcessMappings(process)
+        _memory_handler = process.readProcessMappings(my_process)
         t0 = time.time()
         for m in _memory_handler:
             if mmap:
@@ -98,7 +100,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
                 log.debug('mmap() : %d' % (len(m.mmap())))
         if mmap:
             # mmap done, we can release process...
-            process.cont()
+            my_process.cont()
             log.info(
                 'MemoryHandler mmaped, process released after %02.02f secs' %
                 (time.time() - t0))
@@ -106,6 +108,12 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
 
     @staticmethod
     def _init_volatility(volname, profile, pid):
-        mapper = VolatilityProcessMapper(volname, profile, pid)
+        mapper = vol.VolatilityProcessMapper(volname, profile, pid)
+        _memory_handler = mapper.make_memory_handler()
+        return _memory_handler
+
+    @staticmethod
+    def _init_rekall(volname, pid):
+        mapper = rek.RekallProcessMapper(volname, pid)
         _memory_handler = mapper.make_memory_handler()
         return _memory_handler

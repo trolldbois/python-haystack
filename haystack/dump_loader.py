@@ -64,9 +64,7 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
         self.dumpname = os.path.abspath(dumpname)
         self._memory_handler = None
         if not self._is_valid():
-            raise ValueError(
-                'memory dump not valid for %s ' %
-                (self.__class__))
+            raise ValueError('memory dump not valid for %s ' % self.__class__)
 
     def make_memory_handler(self):
         if self._memory_handler is None:

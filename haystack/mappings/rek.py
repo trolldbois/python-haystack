@@ -45,29 +45,24 @@ class RekallProcessMappingA(base.AMemoryMapping):
 
     def read_word(self, addr):
         ws = self._target_platform.get_word_size()
-        data = self._backend.zread(addr, ws)
+        data = self._backend.read(addr, ws)
         if ws == 4:
             return struct.unpack('I', data)[0]
         elif ws == 8:
             return struct.unpack('Q', data)[0]
 
     def read_bytes(self, addr, size):
-        return self._backend.zread(addr, size)
+        return self._backend.read(addr, size)
 
     def read_struct(self, addr, struct):
         size = self._target_platform.get_target_ctypes().sizeof(struct)
-        instance = struct.from_buffer_copy(self._backend.zread(addr, size))
+        instance = struct.from_buffer_copy(self._backend.read(addr, size))
         instance._orig_address_ = addr
         return instance
 
     def read_array(self, addr, basetype, count):
         size = self._target_platform.get_target_ctypes().sizeof(basetype * count)
-        array = (
-            basetype *
-            count).from_buffer_copy(
-            self._backend.zread(
-                addr,
-                size))
+        array = (basetype *count).from_buffer_copy(self._backend.read(addr, size))
         return array
 
     def reset(self):
@@ -77,6 +72,7 @@ class RekallProcessMappingA(base.AMemoryMapping):
 class RekallProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, imgname, pid):
+        log.debug("RekallProcessMapper %s %p",imgname, pid)
         self.pid = pid
         self.imgname = imgname
         self._memory_handler = None
@@ -152,8 +148,6 @@ class RekallProcessMapper(interfaces.IMemoryLoader):
 
         memory_handler = base.MemoryHandler(maps, self._target, self.imgname)
         self._memory_handler = memory_handler
-        import code
-        code.interact(local=locals())
 
     def make_memory_handler(self):
         return self._memory_handler

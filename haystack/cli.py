@@ -11,23 +11,22 @@ from haystack import constraints
 from haystack.search import api
 from haystack.memory_mapper import MemoryHandlerFactory
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
 log = logging.getLogger('abouchet')
+
 
 class HaystackError(Exception):
     pass
+
 
 def _get_memory_handler(args):
     if args.volname is not None:
         memory_handler = MemoryHandlerFactory(
             pid=args.pid,
-            volname=args.volname).make_memory_handler()
+            volname=args.volname.name).make_memory_handler()
+    elif args.rekallname is not None:
+        memory_handler = MemoryHandlerFactory(
+            pid=args.pid,
+            rekallname=args.rekallname.name).make_memory_handler()
     elif args.pid is not None:
         memory_handler = MemoryHandlerFactory(pid=args.pid, mmap=args.mmap).make_memory_handler()
     elif args.dumpname is not None:
@@ -42,6 +41,7 @@ def _get_memory_handler(args):
             'Please validate the argparser. I couldnt find any useful information in your args.')
     return memory_handler
 
+
 def _get_output_style(args):
     rtype = None
     if args.human:
@@ -51,6 +51,7 @@ def _get_output_style(args):
     elif args.pickled:
         rtype = 'pickled'
     return rtype
+
 
 def search_cmdline(args):
     """ Internal cmdline mojo. """
@@ -88,6 +89,7 @@ def search_cmdline(args):
         raise ValueError('unknown output format')
     print ret
     return
+
 
 def refresh(args):
     """
@@ -140,6 +142,7 @@ def refresh(args):
     if args.validate:
         print 'Validated', validation
     return
+
 
 def check_varname_for_type(memory_handler, varname, struct_type):
     done = []

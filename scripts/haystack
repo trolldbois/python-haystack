@@ -41,7 +41,8 @@ def argparser():
     target.add_argument('--pid', type=int, help='Target PID')
     target.add_argument('--memfile', type=argparse.FileType('r'), help='Use a file memory dump instead of a live process ID')
     target.add_argument('--dumpname', type=argparse_utils.readable, help='Use a haystack memory dump instead of a live process ID')
-    target.add_argument('--volname', type=argparse.FileType('r'), help='Use a OS memory dump')
+    target.add_argument('--volname', type=argparse.FileType('r'), help='Use a OS memory dump with Volatility')
+    target.add_argument('--rekallname', type=argparse.FileType('r'), help='Use a OS memory dump with Rekall')
 
     #FIXME
     rootparser.add_argument('--volpid', type=int, help='Target PID for the OS --volname memory parser')
@@ -94,11 +95,10 @@ def main(argv):
     else:
         logging.basicConfig(level=level)
 
-    if opts.volname:
+    if opts.volname or opts.rekallname:
         opts.pid = opts.volpid
 
     sh = logging.StreamHandler(sys.stdout) # 2.6, 2.7 compat
-    # logging.getLogger('abouchet').addHandler( sh )
     logging.getLogger('haystack').addHandler(sh)
 
     if opts.json:
