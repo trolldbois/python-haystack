@@ -171,5 +171,5 @@ PERMS_PROTECTION = dict(enumerate([
 ]))
 
 
-RekallProcessMapper('/home/other/outputs/vol/zeus.vmem', 856)
+# RekallProcessMapper('/home/other/outputs/vol/zeus.vmem', 856)
 # RekallProcessMapper('~/outputs/vol/victoria-v8.kcore.img', 1)
