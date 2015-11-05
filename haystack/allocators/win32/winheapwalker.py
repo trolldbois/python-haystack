@@ -26,6 +26,9 @@ class WinHeapWalker(heapwalker.HeapWalker):
     FTH allocation in Heap.LocalData[n].SegmentInfo.CachedItems
     Virtual allocation
     """
+    # def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
+    #    super(WinHeapWalker, self).__init__(memory_handler, heap_module, heap_mapping, heap_module_constraints)
+    #    self._free_chunks = None
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.

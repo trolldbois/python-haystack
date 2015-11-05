@@ -4,17 +4,16 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
 import ctypes
 import logging
+
 import os
 import pickle
-import sys
 
 from haystack.mappings.process import readProcessMappings
 
 log = logging.getLogger('libdl')
+
 
 class Dl_info(ctypes.Structure):
     _fields_ = [
@@ -42,13 +41,16 @@ def getMappings():
 
 
 def reverseLocalFonctionPointerNames(context):
-    ''' reverse fn pointer names by trying to rebase the ptr value to a local ld_open.
+    """
+    reverse fn pointer names by trying to rebase the ptr value to a local ld_open.
 
     load local memdump
     map all librairies
     go through all pointers in librairies
     try to dl_addr the pointers by rebasing.
-    '''
+    :param context:
+    :return:
+    """
     fsave = context.config.getCacheFilename(
         context.config.CACHE_FUNCTION_NAMES,
         context.dumpname)

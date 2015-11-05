@@ -10,8 +10,6 @@ from haystack.search import searcher
 
 log = logging.getLogger('heapwalker')
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
 
 class HeapWalker(interfaces.IHeapWalker):
 
@@ -35,6 +33,7 @@ class HeapWalker(interfaces.IHeapWalker):
     def get_free_chunks(self):
         """ returns all free chunks in the heap (addr,size) """
         raise NotImplementedError('Please implement all methods')
+
 
 class HeapFinder(interfaces.IHeapFinder):
 
@@ -179,5 +178,4 @@ def make_heap_finder(memory_handler):
         from haystack.allocators.win32 import win7heapwalker
         return win7heapwalker.Win7HeapFinder(memory_handler)
     else:
-        raise NotImplementedError(
-            'Heap Walker not found for os %s', os_name)
+        raise NotImplementedError('Heap Walker not found for os %s', os_name)

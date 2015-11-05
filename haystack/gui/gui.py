@@ -14,7 +14,8 @@ import os
 import statushandler
 from haystack import dump_loader
 from haystack import argparse_utils
-import signature
+from haystack.reverse import searchers
+from haystack.reverse.heuristics import signature
 from PyQt4 import QtGui, QtCore
 from haystack.gui import view
 from haystack.gui import widgets
@@ -190,13 +191,12 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
 
     def searchValue(self, value):
         ''' value is what type ? '''
-        resultGroup = QtGui.QGraphicsItemGroup(
-        )  # self.graphicsView.GetScene().createItemGroup(items)
-        log.debug(
-            'parsing %s mapping for value %s' %
-            (self.mapping_name, value))
+        # self.graphicsView.GetScene().createItemGroup(items)
+        resultGroup = QtGui.QGraphicsItemGroup()
+        log.debug('parsing %s mapping for value %s', self.mapping_name, value)
         found = 0
         for res in self.mapping.search(value):
+            offset, instance = res
             found += 1
             resultGroup.addToGroup(
                 widgets.Word(
@@ -214,7 +214,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         log.info('search %s mapping for pointer' % (self.mapping_name))
         found = 0
         start = self.mapping.start
-        searcher = searcher.PointerSearcher(self.mapping)
+        searcher = searchers.PointerSearcher(self.mapping)
         for vaddr in searcher:
             # searcher should return [(offset, value)]
             word = self.mapping.read_word(vaddr)
@@ -238,7 +238,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         found = 0
         tmpnull = []
         start = self.mapping.start
-        searcher = searcher.NullSearcher(self.mapping)
+        searcher = searchers.NullSearcher(self.mapping)
         for vaddr in searcher:
             offset = vaddr - start
             tmpnull.append(offset / searcher.WORDSIZE)
@@ -279,7 +279,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         # import sslsnoop #?
         # self.mapping.unmmap()
         # DEBUG stop at the first instance, lazy me
-        instances = api.searchIn(
+        instances = api.search_in(
             structType,
             mappings=self.mappings,
             targetMappings=[
