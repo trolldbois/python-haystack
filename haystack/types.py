@@ -12,6 +12,7 @@ log = logging.getLogger('types')
 # let's use a cache
 __PROXIES = {}
 
+
 def load_ctypes_default():
     """Load a wrapper around the ctypes local platform."""
     # get the hosts' types
@@ -19,6 +20,7 @@ def load_ctypes_default():
     pointersize = ctypes.sizeof(ctypes.c_void_p)
     longdoublesize = ctypes.sizeof(ctypes.c_longdouble)
     return build_ctypes_proxy(longsize, pointersize, longdoublesize)
+
 
 def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     """Make a ctypes proxy with these charateristics."""
@@ -29,9 +31,11 @@ def build_ctypes_proxy(longsize, pointersize, longdoublesize):
     __PROXIES[(longsize, pointersize, longdoublesize)] = instance
     return instance
 
+
 def is_ctypes_instance(obj):
     """Checks if an object is a ctypes type object"""
     return issubclass(type(obj), ctypes.Structure) or issubclass(type(obj), ctypes.Union)
+
 
 def check_arg_is_type(func):
     def check_arg(self, objtype):
@@ -116,9 +120,7 @@ class CTypesProxy(object):
             self.c_long = self.__real_ctypes.c_int64
             self.c_ulong = self.__real_ctypes.c_uint64
         else:
-            raise NotImplementedError(
-                'long size of %d is not handled' %
-                (self.__longsize))
+            raise NotImplementedError('long size of %d is not handled' % self.__longsize)
 
     def __set_float(self):
         SIZE = self.__longdoublesize
@@ -133,37 +135,30 @@ class CTypesProxy(object):
         #    return
 
         class c_longdouble(self.__real_ctypes.Union):
-
-            """This is our own implementation of a longdouble.
+            """
+            This is our own implementation of a longdouble.
             It could be anywhere from 64(win) to 80 bits, stored as 8, 12,
-            or 16 bytes."""
+            or 16 bytes.
+            """
             _pack_ = True
-            _fields_ = [
-                ("physical", self.c_ubyte * SIZE)
-            ]
+            _fields_ = [("physical", self.c_ubyte * SIZE)]
             _type_ = 'g'  # fake it
             # we can cast 8 bytes long double in 16 bytes long double
             if HOSTSIZE > SIZE:
                 def __eq__(thisself, other):
-                    v = self.get_real_ctypes_member('c_longdouble').from_address(
-                        self.addressof(thisself)).value
+                    v = self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)).value
                     return v == other
 
                 def __repr__(thisself):
-                    return repr(self.get_real_ctypes_member(
-                        'c_longdouble').from_address(self.addressof(thisself)))
+                    return repr(self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)))
 
                 @property
                 def value(thisself):
-                    return self.get_real_ctypes_member(
-                        'c_longdouble').from_address(self.addressof(thisself)).value
+                    return self.get_real_ctypes_member('c_longdouble').from_address(self.addressof(thisself)).value
             else:
                 # good luck with that.
                 def __eq__(thisself, other):
-                    other2 = (
-                        self.c_ubyte *
-                        SIZE).from_address(
-                        self.addressof(other))
+                    other2 = (self.c_ubyte *SIZE).from_address(self.addressof(other))
                     for i in range(SIZE):
                         if thisself[i] != other2[i]:
                             return False
@@ -254,22 +249,20 @@ class CTypesProxy(object):
                 @property
                 def contents(myself):
                     return myself._subtype_.from_address(myself.value)
-                    #raise TypeError('This is not a ctypes pointer.')
+                    # raise TypeError('This is not a ctypes pointer.')
 
                 def __init__(myself, _value=None):
                     if _value is None:
                         myself.value = 0
                         return
                     if not isinstance(_value, subtype):
-                        raise TypeError(
-                            '%s expected, not %s' %
-                            (subtype, type(_value)))
+                        raise TypeError('%s expected, not %s' % (subtype, type(_value)))
                     myself.value = my_ctypes.addressof(_value)
-                    #raise TypeError('This is not a ctypes pointer.')
+                    # raise TypeError('This is not a ctypes pointer.')
 
             _class = type('LP_%d_%s' % (POINTERSIZE, clsname), (_T,), {})
             my_ctypes._pointer_type_cache[pointee] = _class
-            # additionnaly register this type in this module fo pickling
+            # additionally register this type in this module fo pickling
             setattr(sys.modules[__name__], clsname, _class)
             return _class
         # end of POINTER_T
@@ -278,7 +271,7 @@ class CTypesProxy(object):
         self._pointer_type_cache.clear()
         self.c_void_p = self.POINTER(None)
         # c_void_p is a simple type
-        #self.c_void_p = type('c_void_p', (_T_Simple,),{})
+        # self.c_void_p = type('c_void_p', (_T_Simple,),{})
         # other are different
         self.c_char_p = self.POINTER(self.c_char)
         self.c_wchar_p = self.POINTER(self.c_wchar)
@@ -308,7 +301,6 @@ class CTypesProxy(object):
             it's basically a Union of a string and a pointer.
             """
             _fields_ = [
-                #("string", self.__real_ctypes.original_c_char_p),
                 ("string", self.c_char_p),
                 ("ptr", self.POINTER(self.c_ubyte))
             ]
@@ -378,48 +370,15 @@ class CTypesProxy(object):
         # and there we have it. We can load basicmodel
         self.CWString = CWString
 
-        # change CTypesRecordConstraintValidator structure given the loaded plugins
-        #import basicmodel
-        #if True:
-        #    import listmodel
-        #    heritance = tuple(
-        #        [listmodel.ListModel, basicmodel.CTypesRecordConstraintValidator])
-        #else:
-        #    heritance = tuple([basicmodel.CTypesRecordConstraintValidator])
-        #self.LoadableMembers = type('CTypesRecordConstraintValidator', heritance, {})
-
-        #class LoadableMembersUnion(
-        #        self.__real_ctypes.Union, self.LoadableMembers):
-        #    pass
-
-        #class LoadableMembersStructure(
-        #        self.__real_ctypes.Structure, self.LoadableMembers):
-        #    pass
-
-        # create local POPO ( lodableMembers )
-        #createPOPOClasses(sys.modules[__name__] )
-        #from haystack.outputters import python
-        #self.LoadableMembersStructure_py = type(
-        #    '%s.%s_py' %
-        #    (__name__, LoadableMembersStructure), (python.pyObj,), {})
-        #self.LoadableMembersUnion_py = type(
-        #    '%s.%s_py' %
-        #    (__name__, LoadableMembersUnion), (python.pyObj,), {})
-        # register CTypesRecordConstraintValidator
-
-        # we need model to be initialised.
-        #self.Structure = LoadableMembersStructure
-        #self.Union = LoadableMembersUnion
-
         return
 
     def __set_utils_types(self):
         """Creates some types to compare to"""
         self.__arrayt = type(self.c_byte * 1)
-        #self.__cfuncptrt = type(type(self.memmove))
+        # self.__cfuncptrt = type(type(self.memmove))
         # class _p(self.Structure):
         #    pass
-        #self.__ptrt = type(self.POINTER(_p))
+        # self.__ptrt = type(self.POINTER(_p))
         self.__basic_types_name = {
             'c_bool': '?',
             'c_char': 'c',
@@ -437,7 +396,7 @@ class CTypesProxy(object):
             'c_longdouble': 'g',
             'c_char_p': 's',
             'c_void_p': 'P',
-            #'c_void': 'P', ## void in array is void_p ##DEBUG
+            # 'c_void': 'P', ## void in array is void_p ##DEBUG
         }
         if self.__longsize == 4:
             # long == int
@@ -452,18 +411,15 @@ class CTypesProxy(object):
                                             'long': 'q',
                                             'c_void': 'Q'})
         # we need to account for the possible changes in c_longdouble
-        self.__basic_types = set(
-            [getattr(self, k) for k in self.__basic_types_name.keys() if hasattr(self, k)])
+        self.__basic_types = set([getattr(self, k) for k in self.__basic_types_name.keys() if hasattr(self, k)])
         return
 
     def __cast(self, obj, next_type):
         # obj and next_type have to be our instances
         if not isinstance(obj, self._T_Simple):
-            raise TypeError(
-                '%s is not a haystack ctypes pointer', type(obj))
+            raise TypeError('%s is not a haystack ctypes pointer', type(obj))
         if not issubclass(next_type, self._T_Simple):
-            raise TypeError(
-                '%s is not a haystack ctypes pointer', next_type)
+            raise TypeError('%s is not a haystack ctypes pointer', next_type)
         instance = next_type()
         instance.value = obj.value
         return instance
@@ -481,21 +437,22 @@ class CTypesProxy(object):
                 pass
 
         def fn_FUNC_T(*args):
-            _class = type(
-                'FN_%d_CFunctionType' %
-                (self.__pointersize), (_FUNC_T,), {})
+            _class = type('FN_%d_CFunctionType' %(self.__pointersize), (_FUNC_T,), {})
             return _class
         self.CFUNCTYPE = fn_FUNC_T
         self.__cfuncptrt = _FUNC_T
         return
 
-    def _p_type(s):
-        ''' ??? '''
-        #FIXME: Something about self reference in structure fields from
-        #ctypeslib.
-        #Check if still used
+    def _p_type(self):
+        """
+        Used when ctypeslib produce a record with a pointer reference to the same record
+        :return:
+        """
+        # FIXME: Something about self reference in structure fields from
+        # ctypeslib.
+        # Check if still used
         import inspect
-        return dict(inspect.getmembers(self, isclass))[s]
+        return dict(inspect.getmembers(self, inspect.isclass))[self]
 
     def get_real_ctypes_member(self, typename):
         return getattr(self.__real_ctypes, typename)
@@ -539,8 +496,7 @@ class CTypesProxy(object):
     @check_arg_is_type
     def is_array_of_basic_type(self, objtype):
         """Checks if an object is a ctype array of basic types."""
-        return (self.is_array_type(objtype) and hasattr(objtype, '_type_')
-                and self.is_basic_type(objtype._type_))
+        return self.is_array_type(objtype) and hasattr(objtype, '_type_') and self.is_basic_type(objtype._type_)
 
     @check_arg_is_type
     def is_basic_type(self, objtype):
@@ -579,42 +535,37 @@ class CTypesProxy(object):
             return True
         if hasattr(objtype, '_type_'):
             # all basic types, pointers and array have a _type_
-            return not (self.is_basic_type(objtype) or
-                        self.is_array_type(objtype))  # kinda true. I guess.
+            return not (self.is_basic_type(objtype) or self.is_array_type(objtype))  # kinda true. I guess.
         # remaining case
-        return (self.is_function_type(objtype))
+        return self.is_function_type(objtype)
 
     @check_arg_is_type
     def is_pointer_to_array_type(self, objtype):
         """Checks if an object is a pointer to a BasicType"""
         if hasattr(objtype, '_subtype_'):  # haystack
             return self.is_array_type(objtype._subtype_)
-        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
-                and self.is_array_type(objtype._type_))
+        return self.is_pointer_type(objtype) and hasattr(objtype, '_type_') and self.is_array_type(objtype._type_)
 
     @check_arg_is_type
     def is_pointer_to_basic_type(self, objtype):
         """Checks if an object is a pointer to a BasicType"""
         if hasattr(objtype, '_subtype_'):  # haystack
             return self.is_basic_type(objtype._subtype_)
-        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
-                and self.is_basic_type(objtype._type_))
+        return self.is_pointer_type(objtype) and hasattr(objtype, '_type_') and self.is_basic_type(objtype._type_)
 
     @check_arg_is_type
     def is_pointer_to_struct_type(self, objtype):
         """Checks if an object is a pointer to a Structure"""
         if hasattr(objtype, '_subtype_'):
             return self.is_struct_type(objtype._subtype_)
-        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
-                and self.is_struct_type(objtype._type_))
+        return self.is_pointer_type(objtype) and hasattr(objtype, '_type_') and self.is_struct_type(objtype._type_)
 
     @check_arg_is_type
     def is_pointer_to_union_type(self, objtype):
         """Checks if an object is a pointer to a Union"""
         if hasattr(objtype, '_subtype_'):
             return self.is_union_type(objtype._subtype_)
-        return (self.is_pointer_type(objtype) and hasattr(objtype, '_type_')
-                and self.is_union_type(objtype._type_))
+        return self.is_pointer_type(objtype) and hasattr(objtype, '_type_') and self.is_union_type(objtype._type_)
 
     @check_arg_is_type
     def is_pointer_to_void_type(self, objtype):
@@ -626,8 +577,7 @@ class CTypesProxy(object):
         # FIXME: DOCME what are these cases ? not auto-loading ?
         # self.POINTER(None) is required, because sometimes, c_void_p !=
         # c_void_p :)
-        return objtype in [
-            self.c_char_p, self.c_wchar_p, self.c_void_p, self.POINTER(None)]
+        return objtype in [self.c_char_p, self.c_wchar_p, self.c_void_p, self.POINTER(None)]
 
     @check_arg_is_type
     def is_struct_type(self, objtype):
