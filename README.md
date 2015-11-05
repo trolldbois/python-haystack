@@ -8,6 +8,7 @@
 Quick Start:
 ============
 [Quick usage guide](docs/Haystack basic usage.ipynb) in the docs/ folder.
+[Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
 
 Introduction:
 =============
@@ -18,18 +19,17 @@ C structure matching.
 The first function/API is the SEARCH function.
  - It gives the ability to search for known record types in a process memory dump (or live process's memory)
 
-**alpha-stage**
 The second function/API is the REVERSE function.
- - It aims at giving a reverse engineering look
-at a memory dump, focusing on reconstruction, classification of classic
-C structures from memory. Heap analysis. Dynamic types definition.
+ - It aims at helping an analyst in reverse engineering the memory records types present in a process heap.
+It focuses on reconstruction, classification of classic C structures from memory. 
+It attempts to recreate types definition.
 
 How to get a memory dump:
 =========================
 
 While technically you could use a third party tool, haystack actually
 need memory mapping information to work with.
-So there is a dumping tool included::
+So there is a dumping tool included:
 
     $ sudo haystack-dump dump <pid> dumps/myssh.dump
 
@@ -41,6 +41,7 @@ containing each memory map in a separate file :
 
 Or you can write a `haystack.abc.IMemoryMapping` implementation for your favorite format.
 There is already a beta volatility support in `haystack.mappings.vol`
+And there is a volatility-to-haystack process dump in `haystack.mappings.vol2map`
 
 Search for known structures:
 ============================
@@ -83,11 +84,17 @@ Example:
     myfield: [1,0xff]
     ptr_field: NotNull
 
+Dynamic constraints definition:
+-------------------------------
+You can also create more complex constraints using python code by implementing
+a `haystack.abc.interface.IRecordTypeDynamicConstraintsValidator` class and feeding it to 
+the `ModuleConstraints.set_dynamic_constraints` 
+
 
 Command line example:
 ---------------------
 
-**sslsnoop repository needs an update to be compatible with releases > v0.20 - pending** 
+**sslsnoop repository needs an update to be compatible with releases > v0.30 - pending** 
 
 For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
@@ -130,10 +137,8 @@ C Headers.
 Or define your python ctypes record by hand.
 
 
-Heap analysis / MemoryHandler Reverser / MemoryHandler forensics:
+Heap analysis / forensics:
 ===================================================
-
-**alpha-stage-not-working** 
 
 Quick info:
  The `haystack-reverse` tool parse the heap for allocator structures, pointers
@@ -141,36 +146,46 @@ Quick info:
  Given all the previous information, it can extract instances
  and helps you in classifying and defining structures types.
 
+IPython notebook usage guide:
+ [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
 
 Command line example:
 --------------------
-This will create several files in the folder containing <yourdumpname>:
+The first step is to launch the analysis process with the `analyze` command.
+This will create several files in the `cache/` folder in the memory dump folder:
 
-    $ python haystack-reverse <yourdumpfolder> instances
-    $ python haystack-reverse haystack/test/src/test-ctypes6.64.dump instances
+    $ python haystack-reverse haystack/test/src/test-ctypes6.64.dump analyze
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache/structs
 
-The most interesting one being the `<yourdumpfolder>/cache/headers_values.py` that
+This will create a few files. The most interesting one being the `<yourdumpfolder>/cache/xxxxx.headers_values.py` that
 gives you an ctypes listing of all found structures, with guesstimates
 on fields types.
 
 A `<yourdumpfolder>/cache/graph.gexf` file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
+Other commands are listed below.
 
-Show ordered list of structures, by similarities:
+Show the list of heuristicly reversed record types:
 
-    $ python haystack-reverse <yourdumpname> show
+    $ python haystack-reverse <yourdumpname> types
 
-Show only structures of size *324*::
+Show the list of strings field in record:
 
-    $ python haystack-reverse <yourdumpname> show --size 324 
+    $ python haystack-reverse <yourdumpname> strings
 
+Show the record for a specific address:
 
-Write to file an attempt to reversed the original types hierachy:
+    $ python haystack-reverse <yourdumpname> show 0x00ab0000
 
-    $ python haystack-reverse <yourdumpname> typemap 
+Show the bytes hexadecimal values for the record for a specific address:
+
+    $ python haystack-reverse <yourdumpname> hex 0x00ab0000
+
+Show the record, if any, that has a pointer to the record sitting at a specific address:
+
+    $ python haystack-reverse <yourdumpname> parents 0x00ab0000
 
 Clean the cache created :
 
