@@ -124,9 +124,11 @@ def show_predecessor(opt):
 
     log.info('[+] Showing predecessors of record at: 0x%x', opt.address)
     records = api.get_record_predecessors(memory_handler, child_record)
-
-    for p_record in records:
-        print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
+    if len(records) == 0:
+        print '# [+] No parents records found.'
+    else:
+        for p_record in records:
+            print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
 
     # DEBUG pointer found by pontersearcher
     # print '---'

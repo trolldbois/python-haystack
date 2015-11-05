@@ -125,7 +125,7 @@ the search dialog.
 python API example:
 ----------------------------------
 
-See the [quick usage guide](docs/docs/Haystack basic usage.ipynb)
+See the [quick usage guide](docs/Haystack basic usage.ipynb)
 
 
 How to define your own structures:
@@ -141,13 +141,13 @@ Heap analysis / forensics:
 ===================================================
 
 Quick info:
- The `haystack-reverse` tool parse the heap for allocator structures, pointers
+ - The `haystack-reverse` tool parse the heap for allocator structures, pointers
  values, small integers and text (ascii/utf).
  Given all the previous information, it can extract instances
  and helps you in classifying and defining structures types.
 
 IPython notebook usage guide:
- [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
+ - [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
 
 Command line example:
 --------------------

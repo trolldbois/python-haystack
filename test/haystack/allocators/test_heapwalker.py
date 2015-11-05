@@ -44,7 +44,7 @@ class TestWalkers(unittest.TestCase):
 
     def test_make_heap_finder(self):
         libc_hf_64 = heapwalker.make_heap_finder(self.libc_mh_64)
-        self.assertEqual(libc_hf_64._memory_handler.get_name(), 'test/src/test-ctypes3.64.dump')
+        self.assertIn('test/src/test-ctypes3.64.dump', libc_hf_64._memory_handler.get_name(), )
         target = libc_hf_64._memory_handler.get_target_platform()
         self.assertEqual(target.get_os_name(), 'linux')
         self.assertEqual(target.get_cpu_bits(), 64)
