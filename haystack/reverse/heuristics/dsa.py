@@ -354,7 +354,9 @@ class FieldReverser(model.AbstractReverser):
             log.debug('_make_gaps: Unaligned field at offset %d:%d', gap1.offset, gap1.offset + len(gap1))
             gaps.append(gap1)
             if nextoffset + s1 < endoffset:
-                gap2 = fieldtypes.Field('gap_%d' % (nextoffset + s1), nextoffset + s1, fieldtypes.UNKNOWN, endoffset - nextoffset - s1, True)
+                _offset = nextoffset + s1
+                _size = endoffset - nextoffset - s1
+                gap2 = fieldtypes.Field('gap_%d' % _offset, _offset, fieldtypes.UNKNOWN, _size, True)
                 log.debug('_make_gaps: adding field at offset %d:%d', gap2.offset, gap2.offset + len(gap2))
                 gaps.append(gap2)
         return
@@ -385,10 +387,11 @@ class TextFieldCorrection(model.AbstractReverser):
             f1, f2 = fields[-2:]
             if f2.is_zeroes() and len(f2) == 4:
                 if f1.is_string() and f1.field_type == fieldtypes.STRING16:
-                    ## FIXME: DO WHAT ? aggregate ? set zerroes as padding ?
+                    # FIXME: DO WHAT ? aggregate ? set zerroes as padding ?
                     # set f2 as padding. ???
                     pass
-        # c) if record has one null terminated str, Rename record type as cstring. rename/retype parent pointers + comment.
+        # c) if record has one null terminated str, Rename record type as cstring.
+        # rename/retype parent pointers + comment.
         if len(fields) == 2 and fields[0].is_string() and fields[1].is_zeroes():
             _record.set_name('string')
 
@@ -396,26 +399,24 @@ class TextFieldCorrection(model.AbstractReverser):
 
 
 class IntegerArrayFields(model.FieldAnalyser):
-
     """ TODO """
 
     def make_fields(self, _record, offset, size):
         # this should be last resort
-        _bytes = _record.bytes[offset:offset + self.size]
-        size = len(_bytes)
+        my_bytes = _record.bytes[offset:offset + size]
+        size = len(my_bytes)
         if size < 4:
             return False
-        ctr = collections.Counter([_bytes[i:i + self._word_size] for i in range(len(_bytes))])
+        ctr = collections.Counter([my_bytes[i:i + self._word_size] for i in range(len(my_bytes))])
         floor = max(1, int(size * .1))  # 10 % variation in values
-        #commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
+        # commons = [ c for c,nb in ctr.most_common() if nb > 2 ]
         commons = ctr.most_common()
         if len(commons) > floor:
             return False  # too many different values
         # few values. it migth be an array
-        self.size = size
         # FIXME
-        self.values = _bytes
-        self.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
+        # _record.values = my_bytes
+        # _record.comment = '10%% var in values: %s' % (','.join([repr(v) for v, nb in commons]))
         return True
 
 
