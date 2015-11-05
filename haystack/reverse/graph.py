@@ -4,15 +4,20 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
 from collections import defaultdict
 
 import networkx
+import argparse
+import logging
+import os
+import sys
 
 import matplotlib.pyplot as plt
+from haystack import argparse_utils
+from haystack import dump_loader
+from haystack.reverse import config
 from haystack.reverse import context
-from reversers import *  # by the pickle of my thumb
+from haystack.reverse import utils
 
 """
 Graph tools to represent allocations in a graph.
@@ -27,13 +32,12 @@ def printGraph(G, gname):
     h = networkx.DiGraph()
     h.add_edges_from(G.edges())
     networkx.draw_graphviz(h)
-    fname = os.path.sep.join(
-        [config.imgCacheDir, 'graph_%s.png' % (gname)])
+    fname = os.path.sep.join([config.imgCacheDir, 'graph_%s.png' % gname])
     plt.savefig(fname)
     plt.clf()
-    fname = os.path.sep.join(
-        [config.cacheDir, 'graph_%s.gexf' % (gname)])
+    fname = os.path.sep.join([config.cacheDir, 'graph_%s.gexf' % gname])
     networkx.readwrite.gexf.write_gexf(h, fname)
+    return
 
 # extract graph
 
@@ -54,11 +58,6 @@ def save_graph_headers(ctx, graph, fname):
     towrite = []
     structs = [ctx.structures[int(addr, 16)] for addr in graph.nodes()]
     for anon in structs:
-        anon.decodeFields()
-        anon.resolvePointers()
-        # FIXME rework, usage of obselete function
-        # anon.pointerResolved=True
-        anon._aggregateFields()
         print anon
         towrite.append(anon.to_string())
         if len(towrite) >= 10000:
@@ -79,11 +78,11 @@ def make(opts):
     # if __name__ == '__main__':
     # if False:
     #ctx = context.get_context('../../outputs/skype.1.a')
-    ctx = context.get_context(opts.dumpname)
+    memory_handler = dump_loader.load(opts.dumpname)
 
     #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
     digraph = networkx.readwrite.gexf.read_gexf(opts.gexf.name)
-    finder = ctx.get_memory_handler().get_heap_finder()
+    finder = memory_handler.get_heap_finder()
     heap = finder.get_heap_mappings()[0]
 
     # only add heap structure with links
@@ -106,8 +105,7 @@ def clean(digraph):
     graph = networkx.Graph(digraph)  # undirected
     subgraphs = networkx.algorithms.components.connected.connected_component_subgraphs(
         graph)
-    isolates1 = set(utils.flatten(g.nodes()
-                                  for g in subgraphs if len(g) == 1))  # self connected
+    isolates1 = set(utils.flatten(g.nodes() for g in subgraphs if len(g) == 1))  # self connected
     isolates2 = set(utils.flatten(g.nodes() for g in subgraphs if len(g) == 2))
     isolates3 = set(utils.flatten(g.nodes() for g in subgraphs if len(g) == 3))
     digraph.remove_nodes_from(isolates1)
@@ -285,9 +283,7 @@ def main(argv):
     # logging.getLogger('structure').setLevel(logging.INFO)
     # logging.getLogger('field').setLevel(logging.INFO)
     # logging.getLogger('progressive').setLevel(logging.INFO)
-    logging.getLogger('graph').addHandler(
-        logging.StreamHandler(
-            stream=sys.stdout))
+    logging.getLogger('graph').addHandler(logging.StreamHandler(stream=sys.stdout))
 
     log.info('[+] output log to %s' % flog)
 
