@@ -167,7 +167,10 @@ class MemoryDumper:
             # dump all the maps
             log.debug('Dump %s', m)
             with open(mmap_fname, 'wb') as mmap_fout:
-                mmap_fout.write(m.mmap().get_byte_buffer())
+                try:
+                    mmap_fout.write(m.mmap().get_byte_buffer())
+                except Exception as e:
+                    raise IOError(e)
         # dump all the metadata
         self.index.write('%s\n' % m)
         return
