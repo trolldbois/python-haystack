@@ -85,7 +85,10 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
     def __init__(self, imgname, profile, pid):
         self.pid = pid
         self.imgname = imgname
+        # FIXME for some reason volatility is able to autodetect.
+        # but not with this piece of code.
         self.profile = profile
+        #self.profile = None
         self._memory_handler = None
         self._unload_volatility()
         self._init_volatility()
@@ -114,11 +117,16 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
         config = conf.ConfObject()
         import volatility.commands as commands
         import volatility.addrspace as addrspace
+        import volatility.utils as volutils
         registry.register_global_options(config, commands.Command)
         registry.register_global_options(config, addrspace.BaseAddressSpace)
         # Dying because it cannot parse argv options
         # apparently, it was not required to parse options. hey.
         # config.parse_options()
+        #addr_space = volutils.load_as(config,astype = 'any')
+        #print config.PROFILE
+        #import code
+        #code.interact(local=locals())
         config.PROFILE = self.profile
         #_target_platform.LOCATION = "file:///media/memory/private/image.dmp"
         config.LOCATION = "file://%s" % self.imgname
@@ -132,10 +140,10 @@ class VolatilityProcessMapper(interfaces.IMemoryLoader):
         command.render_text = partial(my_render_text, self, command)
         command.execute()
         # works now.
-        for x in self._memory_handler.get_mappings():
-            print x
+        #for x in self._memory_handler.get_mappings():
+        #    print x
         #import code
-        # code.interact(local=locals())
+        #code.interact(local=locals())
 
     def make_memory_handler(self):
         return self._memory_handler
@@ -195,6 +203,10 @@ def my_render_text(mapper, cmd, outfd, data):
             maps.append(pmap)
 
     # get the platform
+    ## FIXME, use imageinfo, or find the automation in vol.py
+    #import code
+    #code.interact(local=locals())
+
     if mapper.config.PROFILE == "WinXPSP2x86":
         mapper._target = target.TargetPlatform.make_target_win_32('winxp')
     memory_handler = MemoryHandler(maps, mapper._target, mapper.imgname)

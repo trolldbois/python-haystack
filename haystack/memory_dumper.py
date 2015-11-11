@@ -23,56 +23,30 @@ __status__ = "Production"
 log = logging.getLogger('dumper')
 
 
-def archiveTypes(s):
-    """Validates TYPE args to check if the dump type is correct."""
-    if s not in MemoryDumper.ARCHIVE_TYPES:
-        raise ValueError
-    return s
-
-
 class MemoryDumper:
     """
     Dumps a process memory maps to a tgz
     """
     ARCHIVE_TYPES = ["dir", "tar", "gztar"]
 
-    def __init__(self, pid, dest, archiveType="dir", compact=False):
+    def __init__(self, pid, dest):
         self._pid = pid
         self._dest = os.path.normpath(dest)
-        self._archive_type = archiveType
-        self._compact_dump = compact
+        self.dbg = None
+        self.mappings = None
 
-    def getMappings(self):
-        """Returns the MemoryMappings."""
-        return self.mappings
-
-    def connectProcess(self):
-        """Connect the debugguer to the process and gets the memory _memory_handler
+    def make_mappings(self):
+        """Connect the debugguer to the process and gets the memory mappings
         metadata."""
-        self.dbg = dbg.PtraceDebugger()
-        self.process = self.dbg.addProcess(self._pid, is_attached=False)
-        if self.process is None:
-            log.error(
-                "Error initializing Process debugging for %d" %
-                self._pid)
-            raise IOError
-            # ptrace exception is raised before that
-        self.mappings = readProcessMappings(self.process)
-        log.debug('_memory_handler read. Dropping ptrace on pid.')
+        self.dbg = dbg.get_debugger(self._pid)
+        self.mappings = readProcessMappings(self.dbg.get_process())
+        log.debug('Memory Mappings read. Dropping ptrace on pid.')
         return
 
     def dump(self, dest=None):
         """Dumps the source memory mapping to the target dump place."""
         if dest is not None:
             self._dest = os.path.normpath(dest)
-        if self._archive_type == "dir":
-            self._dump_to_dir()
-        else:
-            self._dump_to_file()
-        return self._dest
-
-    def _dump_to_dir(self):
-        """Dump memory _memory_handler to files in a directory."""
         if os.path.isfile(self._dest):
             raise TypeError('target is a file. You asked for a directory dump. '
                             'Please delete the file.')
@@ -82,23 +56,13 @@ class MemoryDumper:
         self._free_process()
         return
 
-    def _dump_to_file(self):
-        """Dump memory _memory_handler to an archive."""
-        if os.path.isdir(self._dest):
-            raise TypeError('Target is a dir. You asked for a file dump. '
-                            'Please delete the dir.')
-        tmpdir = tempfile.mkdtemp()
-        self._dump_all_mappings(tmpdir)
-        self._free_process()
-        self._make_archive(tmpdir, self._dest)
-        return
-
     def _dump_all_mappings_winapp(self, destdir):
+        # TODO TEST
         # winappdbg
         self.index = file(os.path.join(destdir, 'mappings'), 'w+')
         # test dump only the heap
         err = 0
-        memory_maps = self.process.generate_memory_snaphost()
+        memory_maps = self.dbg.get_process().generate_memory_snaphost()
         for mbi in memory_maps:
             # TODO
             try:
@@ -114,29 +78,20 @@ class MemoryDumper:
     def _dump_all_mappings(self, destdir):
         """Iterates on all _memory_handler and dumps them to file."""
         self.index = file(os.path.join(destdir, 'mappings'), 'w+')
-        # test dump only the heap
         err = 0
-        # print '\n'.join([str(m) for m in self._memory_handler])
-        if self._compact_dump:
-            finder = self.mappings.get_heap_finder()
-            self.__required = finder.get_heap_mappings()
-            # FIXME
-            self.__required.append(self.mappings.get_stack())
         for m in self.mappings:
             try:
                 self._dump_mapping(m, destdir)
             except IOError as e:
                 err += 1
                 log.warning(e)
-                pass  # no se how to read windows
+                pass
         log.debug('%d mapping in error, destdir: %s', err, destdir)
         self.index.close()
         return
 
     def _free_process(self):
         """continue() the process."""
-        self.process.cont()
-        self.dbg.deleteProcess(process=self.process)
         self.dbg.quit()
         return
 
@@ -151,71 +106,44 @@ class MemoryDumper:
             return
         # make filename
         # We don't really care about the filename but we need to be coherent.
-        mname = b'%s-%s' % (my_utils.formatAddress(m.start),
-                            my_utils.formatAddress(m.end))
+        mname = b'%s-%s' % (my_utils.formatAddress(m.start), my_utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)
-        # dumping the memorymap content if required.
-        if self._compact_dump:
-            # only dumps useful ( stack, heap, binary for arch detection
-            if m in self.__required:
-                with open(mmap_fname, 'wb') as mmap_fout:
-                    mmap_fout.write(m.mmap().get_byte_buffer())
-                log.debug('Dump %s', m)
-            else:
-                log.debug('Ignore %s', m)
-        else:
-            # dump all the maps
-            log.debug('Dump %s', m)
-            with open(mmap_fname, 'wb') as mmap_fout:
-                try:
-                    mmap_fout.write(m.mmap().get_byte_buffer())
-                except Exception as e:
-                    raise IOError(e)
+        # dumping the memorymap
+        log.debug('Dump %s', m)
+        with open(mmap_fname, 'wb') as mmap_fout:
+            try:
+                mmap_fout.write(m.mmap().get_byte_buffer())
+            except Exception as e:
+                raise IOError(e)
         # dump all the metadata
         self.index.write('%s\n' % m)
         return
 
-    def _make_archive(self, srcdir, name):
-        """Make an archive file."""
-        log.debug('Making a archive ')
-        tmpdir = tempfile.mkdtemp()
-        tmpname = os.path.join(tmpdir, os.path.basename(name))
-        log.debug('running shutil.make_archive')
-        archive = shutil.make_archive(tmpname, self._archive_type, srcdir)
-        shutil.move(archive, name)
-        shutil.rmtree(tmpdir)
-        shutil.rmtree(srcdir)
-        return
 
+def dump(pid, outfile):
+    """Dumps a process memory to Haystack dump format."""
+    dumper = MemoryDumper(pid, outfile)
+    dumper.make_mappings()
+    dumper.dump()
+    log.info('Process %d memory dumped to folder %s', pid, outfile)
+    return outfile
 
-def dump(pid, outfile, typ="dir", compact=False):
-    """Dumps a process memory _memory_handler to Haystack dump format."""
-    dumper = MemoryDumper(pid, outfile, typ, compact)
-    dumper.connectProcess()
-    destname = dumper.dump()
-    log.info('Process %d memory _memory_handler dumped to file %s', dumper._pid, destname)
-    return destname
 
 def _dump(opt):
     """Dumps a process memory _memory_handler to Haystack dump format."""
-    return dump(opt.pid, opt.dumpname, opt.type)
+    return dump(opt.pid, opt.dumpname)
+
 
 def argparser():
     dump_parser = argparse.ArgumentParser(prog='memory_dumper',
                                           description="dump a pid's memory to file.")
     dump_parser.add_argument('pid', type=int, action='store',
                              help='Target PID.')
-    dump_parser.add_argument('--compact', action='store_const', const=True,
-                             help='Only dump a small number of maps '
-                                  '(heap,stack,exec).')
-    dump_parser.add_argument('--type', type=archiveTypes, action='store',
-                             default="dir",
-                             help='Dump in "gztar","tar" or "dir" format. '
-                                  'Defaults to "dir".')
     dump_parser.add_argument('dumpname', action='store', help='The dump name.')
     dump_parser.set_defaults(func=_dump)
 
     return dump_parser
+
 
 def main(argv):
     logging.basicConfig(level=logging.DEBUG)

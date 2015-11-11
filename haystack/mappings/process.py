@@ -96,7 +96,10 @@ class ProcessMemoryMapping(AMemoryMapping):
         return not (self._local_mmap is None)
 
     def mmap(self):
-        ''' mmap-ed access gives a 20% perf increase on by tests '''
+        """
+         mmap-ed access gives a 20% perf increase on by tests
+        :return:
+        """
         # DO NOT USE ptrace.process.readArray on 64 bits.
         # It breaks stuff.
         # probably a bad cast statement on c_char_p
@@ -105,18 +108,9 @@ class ProcessMemoryMapping(AMemoryMapping):
         my_ctypes = self._target_platform.get_target_ctypes()
         my_utils = self._target_platform.get_target_ctypes_utils()
         if not self.isMmaped():
-            # self._process().readArray(self.start, my_ctypes.c_ubyte, len(self) ) # keep ref
-            # self._local_mmap_content = self._process().readArray(self.start,
-            # my_ctypes.c_ubyte, len(self) ) # keep ref
-            self._local_mmap_content = my_utils.bytes2array(
-                self._process().readBytes(
-                    self.start,
-                    len(self)),
-                my_ctypes.c_ubyte)
+            self._local_mmap_content = my_utils.bytes2array(self._process().read_bytes(self.start, len(self)), my_ctypes.c_ubyte)
             log.debug('type array %s' % (type(self._local_mmap_content)))
-            self._local_mmap = LocalMemoryMapping.fromAddress(
-                self, my_ctypes.addressof(
-                    self._local_mmap_content))
+            self._local_mmap = LocalMemoryMapping.fromAddress(self, my_ctypes.addressof(self._local_mmap_content))
             self._base = self._local_mmap
         return self._local_mmap
 
@@ -148,12 +142,9 @@ def readProcessMappings(process):
 
     May raise a ProcessError.
     """
-    maps = []
-    if not dbg.HAS_PROC:
-        return maps
     try:
-        mapsfile = dbg.openProc(process.pid)
-    except dbg.ProcError as err:
+        mapsfile = process.get_mappings_line()
+    except dbg.ProcessError as err:
         raise dbg.ProcessError(process, "Unable to read process maps: %s" % err)
 
     mappings = []
@@ -163,30 +154,20 @@ def readProcessMappings(process):
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
-                raise dbg.ProcessError(
-                    process,
-                    "Unable to parse memory mapping: %r" %
-                    line)
+                raise dbg.ProcessError(process, "Unable to parse memory mapping: %r" % line)
             log.debug('readProcessMappings %s' % (str(match.groups())))
-            _map = ProcessMemoryMapping(
-                # cfg,
-                process,
-                int(match.group(1), 16),
-                int(match.group(2), 16),
-                match.group(3),
-                int(match.group(4), 16),
-                int(match.group(5), 16),
-                int(match.group(6), 16),
-                int(match.group(7)),
-                match.group(8))
+            _map = ProcessMemoryMapping(process, int(match.group(1), 16), int(match.group(2), 16),
+                                        match.group(3), int(match.group(4), 16), int(match.group(5), 16),
+                                        int(match.group(6), 16), int(match.group(7)), match.group(8))
             mappings.append(_map)
     finally:
         if isinstance(mapsfile, file):
             mapsfile.close()
     # create the memory_handler for self
     _target_platform = target.TargetPlatform.make_target_platform_local()
-    _memory_handler = MemoryHandler(mappings, _target_platform, 'localhost-%d'% process.pid)
+    _memory_handler = MemoryHandler(mappings, _target_platform, 'localhost-%d' % process.get_pid())
     return _memory_handler
+
 
 def read_local_process_mappings():
     class P:

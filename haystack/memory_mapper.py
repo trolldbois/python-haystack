@@ -86,7 +86,7 @@ class MemoryHandlerFactory(interfaces.IMemoryLoader):
         if not isinstance(pid, (int, long)):
             raise TypeError('PID should be a number')
         dbg = PtraceDebugger()
-        my_process = dbg.addProcess(pid, is_attached=False)
+        my_process = dbg.open_process(pid, is_attached=False)
         if my_process is None:
             log.error("Error initializing Process debugging for %d" % pid)
             raise IOError
