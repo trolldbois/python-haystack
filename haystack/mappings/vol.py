@@ -11,6 +11,7 @@ http://www.dfrws.org/2007/proceedings/p62-dolan-gavitt.pdf
 """
 
 import logging
+import sys
 import struct
 from functools import partial
 
@@ -18,13 +19,6 @@ from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.abc import interfaces
 from haystack import target
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-__credits__ = ["Victor Skinner"]
 
 log = logging.getLogger('volmapping')
 
@@ -78,7 +72,6 @@ class VolatilityProcessMappingA(AMemoryMapping):
     def reset(self):
         pass
 
-import sys
 
 class VolatilityProcessMapper(interfaces.IMemoryLoader):
 

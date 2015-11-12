@@ -17,29 +17,55 @@ class HaystackError(Exception):
     pass
 
 
-def search_record(memory_handler, struct_type, search_constraints=None, extended_search=False):
+def search_record(memory_handler, record_type, search_constraints=None, extended_search=False):
     """
     Search a record in the memory dump of a process represented
     by memory_handler.
 
-    the record type must have been imported using haystack functions.
+    The record type must have been imported using haystack functions.
 
-    if constraints exists, they will be considered during the search.
+    If constraints exists, they will be considered during the search.
 
     :param memory_handler: IMemoryHandler
-    :param struct_type: a ctypes.Structure or ctypes.Union from a module imported by haystack
+    :param record_type: a ctypes.Structure or ctypes.Union from a module imported by haystack
     :param search_constraints: IModuleConstraints to be considered during the search
     :param extended_search: boolean, use allocated chunks only per default (False)
     :rtype a list of (ctypes records, memory offset)
     """
     if extended_search:
         my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler, search_constraints)
-        return my_searcher.search(struct_type)
+        return my_searcher.search(record_type)
     my_searcher = searcher.RecordSearcher(memory_handler, search_constraints)
-    return my_searcher.search(struct_type)
+    return my_searcher.search(record_type)
 
 
-#FIXME TODO change for results == ctypes
+def search_record_hint(memory_handler, record_type, hint, search_constraints=None, extended_search=False):
+    """
+    Search a record in the memory dump of a process, but only on the memory page containing the hinted address.
+
+    The record type must have been imported using haystack functions.
+
+    If constraints exists, they will be considered during the search.
+
+    :param memory_handler: IMemoryHandler
+    :param record_type: a ctypes.Structure or ctypes.Union from a module imported by haystack
+    :param search_constraints: IModuleConstraints to be considered during the search
+    :param extended_search: boolean, use allocated chunks only per default (False)
+    :rtype a list of (ctypes records, memory offset)
+    """
+    hint_mapping = memory_handler.get_mapping_for_address(hint)
+    if extended_search:
+        my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler,
+                                                       my_constraints=search_constraints,
+                                                       target_mappings=[hint_mapping])
+        return my_searcher.search(record_type)
+    my_searcher = searcher.RecordSearcher(memory_handler,
+                                          my_constraints=search_constraints,
+                                          target_mappings=[hint_mapping])
+    return my_searcher.search(record_type)
+
+
+# FIXME TODO change for results == ctypes
 def output_to_string(memory_handler, results):
     """
     Transform ctypes results in a string format
@@ -56,6 +82,7 @@ def output_to_string(memory_handler, results):
         pass
     ret += ']'
     return ret
+
 
 def output_to_python(memory_handler, results):
     """
@@ -81,6 +108,7 @@ def output_to_python(memory_handler, results):
             'Bug in framework, some Ctypes are still in the return results. Please Report test unit.')
     return ret
 
+
 def output_to_json(memory_handler, results):
     """
     Transform ctypes results in a json format
@@ -93,6 +121,7 @@ def output_to_json(memory_handler, results):
     ret = output_to_python(memory_handler, results)
     # cirular refs kills it check_circular=False,
     return json.dumps(ret, default=python.json_encode_pyobj)
+
 
 def output_to_pickle(memory_handler, results):
     """
@@ -107,6 +136,7 @@ def output_to_pickle(memory_handler, results):
     #import code
     #code.interact(local=locals())
     return pickle.dumps(ret)
+
 
 def load_record(memory_handler, struct_type, memory_address, load_constraints=None):
     """
@@ -124,6 +154,7 @@ def load_record(memory_handler, struct_type, memory_address, load_constraints=No
     # we need to give target_mappings so not to trigger a heap resolution
     my_loader = searcher.RecordLoader(memory_handler, load_constraints, target_mappings=memory_handler.get_mappings())
     return my_loader.load(struct_type, memory_address)
+
 
 def validate_record(memory_handler, instance, record_constraints=None, max_depth=10):
     """

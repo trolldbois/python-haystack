@@ -145,11 +145,8 @@ def argparser():
     return dump_parser
 
 
-def main(argv):
+def main():
     logging.basicConfig(level=logging.DEBUG)
     parser = argparser()
-    opts = parser.parse_args(argv)
+    opts = parser.parse_args(sys.argv[1:])
     opts.func(opts)
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

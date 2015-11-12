@@ -3,6 +3,8 @@
 
 import logging
 import platform
+import time
+
 
 try:
     import ptrace
@@ -243,5 +245,20 @@ def get_debugger(pid):
         return MyWinAppDebugger(pid)
 
 
-class ProcessError(Exception):
-    pass
+def make_local_process_memory_handler(pid, use_mmap=True):
+    if not isinstance(pid, (int, long)):
+        raise TypeError('PID should be a number')
+    from haystack.mappings import process
+    my_debugger = get_debugger(pid)
+    _memory_handler = process.readProcessMappings(my_debugger.get_process())
+    t0 = time.time()
+    for m in _memory_handler:
+        if use_mmap:
+            # force to mmap the memory in local space
+            m.mmap()
+            log.debug('mmap() size:%d', len(m.mmap()))
+    if use_mmap:
+        # mmap done, we can release process...
+        my_debugger.get_process().resume()
+        log.info('MemoryHandler mmaped, process released after %02.02f secs', time.time() - t0)
+    return _memory_handler

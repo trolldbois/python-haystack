@@ -9,6 +9,7 @@ rekall backed memory_handler.
 """
 
 
+import os
 import sys
 import logging
 import struct
@@ -165,3 +166,51 @@ PERMS_PROTECTION = dict(enumerate([
 
 # RekallProcessMapper('/home/other/outputs/vol/zeus.vmem', 856)
 # RekallProcessMapper('~/outputs/vol/victoria-v8.kcore.img', 1)
+
+def rekall_dump_to_haystack(filename, pid, output_folder_name):
+    # rek.py -f vol/zeus.vmem vaddump -p 856 --dump-dir vol/zeus.vmem.856.dump/ > vol/zeus.vmem.856.dump/mappings.vol
+    # rek2map.py vol/zeus.vmem.856.dump/mappings.vol > vol/zeus.vmem.856.dump/mappings
+    # vaddummp
+    log.debug("rekall_dump_to_haystack %s %p", filename, pid)
+    if not os.access(output_folder_name, os.F_OK):
+        os.mkdir(output_folder_name)
+    from rekall import session
+    from rekall import plugins
+    from rekall.ui import json_renderer
+    s = session.Session(
+            filename = filename,
+            autodetect=["rsds"],
+            logger=logging.getLogger(),
+            profile_path=[
+                "http://profiles.rekall-forensic.com"
+            ])
+
+    task_plugin = s.plugins.vaddump(pid=pid, dump_dir=output_folder_name)
+    # get a renderer.
+    renderer = json_renderer.JsonRenderer()
+    task_plugin.render(renderer)
+    print renderer
+    maps = []
+    # FIXME get stdout in here.
+    with open(filename,'r') as fin:
+        entries = fin.readlines()
+        i_start = entries[0].index('Start')
+        i_end = entries[0].index('End')
+        i_path = entries[0].index('Result')
+        fmt = b'0x%08x'
+        if i_end - i_start > 12:
+            fmt = b'0x%016x'
+        for i, line in enumerate(entries[2:]):
+            start = int(line[i_start:i_end].strip(), 16)
+            end = int(line[i_end:i_path].strip(), 16) + 1
+            path = line[i_path:].strip()
+            o_path = "%s-%s" % (fmt % start, fmt % end)
+            # rename file
+            try:
+                os.rename(path, o_path)
+            except OSError, e:
+                sys.stderr.write('File rename error\n')
+            # offset is unknown.
+            print '%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i)
+
+    pass
