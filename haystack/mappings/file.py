@@ -226,12 +226,10 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     # self._target_platform.get_word_type() is not involved.
                     heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(
                         id(self._local_mmap_bytebuffer) + 2 * (ctypes.sizeof(ctypes.c_ulong))))[0]
-                    self._local_mmap_content = (
-                        ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
+                    self._local_mmap_content = (ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
                 else:  # fallback with no creepy hacks
-                    log.warning(
-                        'MemoryHandler Mapping content mmap-ed() (double copy of %s) : %s' %
-                        (self._memdump.__class__, self))
+                    log.warning('MemoryHandler Mapping content mmap-ed() (double copy of %s) : %s',
+                        self._memdump.__class__, self)
                     # we have the bytes
                     local_mmap_bytebuffer = mmap.mmap(
                         self._memdump.fileno(),
@@ -239,18 +237,12 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                         access=mmap.ACCESS_READ)
                     self._memdump.close()
                     # we need an ctypes
-                    self._local_mmap_content = utils.bytes2array(
-                        local_mmap_bytebuffer,
-                        ctypes.c_ubyte)
+                    self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
             else:  # dumpfile, file inside targz ... any read() API really
                 print self.__class__
-                self._local_mmap_content = utils.bytes2array(
-                    self._memdump.read(),
-                    ctypes.c_ubyte)
+                self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)
                 self._memdump.close()
-                log.warning(
-                    'MemoryHandler Mapping content copied to ctypes array : %s' %
-                    (self))
+                log.warning('MemoryHandler Mapping content copied to ctypes array : %s', self)
             # make that _base
             self._base = LocalMemoryMapping.fromAddress(
                 self, ctypes.addressof(

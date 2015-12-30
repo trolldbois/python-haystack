@@ -70,3 +70,8 @@ BeingDebugged: [0,1]
 #NumberOfHeaps: [RangeValue(1,128)]
 OSMajorVersion: [5]
 OSMinorVersion: [1]
+
+
+# DEBUG Cuckoo partial dumps
+[union__HEAP_LOCK_0]
+CriticalSection: IgnoreMember
