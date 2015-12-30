@@ -150,7 +150,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if not self._ctypes.is_pointer_type(flink_type):
             raise TypeError('The %s field is not a pointer.', forward)
         if sentinels is None:
-            sentinels = [0] # Null pointer
+            sentinels = {[0]} # Null pointer
         # ok - save that structure information
         self._single_link_list_types[record_type] = (forward, sentinels)
         return
@@ -203,7 +203,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if not self._ctypes.is_pointer_type(blink_type):
             raise TypeError('The %s field is not a pointer.', backward)
         if sentinels is None:
-            sentinels = [0] # Null pointer
+            sentinels = {[0]} # Null pointer
         # ok - save that structure information
         self._double_link_list_types[record_type] = (forward, backward, sentinels)
         return
@@ -294,27 +294,31 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 ret.append((field_name, entries[0], entries[1], entries[2]))
         return ret
 
-    def iterate_list_from_field(self, record, fieldname):
+    def iterate_list_from_field(self, record, fieldname, sentinels=None):
         """
         Iterate over the items of the list designated by fieldname in record.
         :param record:
         :param fieldname:
+        :param sentinels: values that stop the iteration
         :return:
         """
         link_info = self._get_list_info_for_field_for(type(record), fieldname)
-        return self._iterate_list_from_field_with_link_info(record, link_info)
+        return self._iterate_list_from_field_with_link_info(record, link_info, sentinels)
 
-    def _iterate_list_from_field_with_link_info(self, record, link_info):
+    def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None):
         """
          iterates over all entry of a double linked list.
          we do not return record in the list.
 
         :param record:
         :param link_info:
+        :param sentinels: values that stop the iteration
         :return:
         """
         if not isinstance(record, ctypes.Structure) and not isinstance(record, ctypes.Union):
             raise TypeError('Feed me a ctypes record instance')
+        if sentinels is None:
+            sentinels = set()
         fieldname, pointee_record_type, lefn, offset = link_info
         # get the double linked list field name
         head = getattr(record, fieldname)
@@ -327,11 +331,11 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if self.is_single_linked_list_type(field_record_type):
             iterator_fn = self._iterate_single_linked_list
             # stop at the first sign of a previously found list entry
-            _,sentinels = self.get_single_linked_list_type(type(head))
+            _, gbl_sentinels = self.get_single_linked_list_type(type(head))
         elif self.is_double_linked_list_type(field_record_type):
             iterator_fn = self._iterate_double_linked_list
             # stop at the first sign of a previously found list entry
-            _, _, sentinels = self.get_double_linked_list_type(type(head))
+            _, _, gbl_sentinels = self.get_double_linked_list_type(type(head))
         else:
             raise RuntimeError("Field %s was defined as linked link entry record type %s, but not registered" % (
                                 fieldname,
@@ -340,9 +344,9 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # @ of the fieldname in record. This can be different from offset.
         head_address = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
         # stop at the first sign of a previously found list entry
-        done = [s for s in sentinels] + [head_address]
-        # log.info('Ignore headAddress self.%s at 0x%0.8x'%(fieldname, headAddr))
-        log.debug("_iterate_list_from_field_with_link_info from %s at offset %d->%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
+        done = sentinels | gbl_sentinels | {head_address}
+        log.debug('Ignore head_address self.%s at 0x%0.8x' % (fieldname, head_address))
+        log.debug("_iterate_list_from_field_with_link_info Field:%s at offset:%d st_size:%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
         return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done)
 
     def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels):
@@ -373,25 +377,30 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 continue
             elif list_member_address in sentinels:
                 continue
-            # save it
-            sentinels.append(list_member_address)
-            # log.info('Read %s at 0x%0.8x instead of 0x%0.8x'%(fieldname, link, entry))
             # use cache if possible, avoid loops.
             st = self._memory_handler.getRef(pointee_record_type, list_member_address)
             # st._orig_address_ = link
             if st is not None:
-                # we return
+                # we return the cached value
                 log.debug('_iterate_list_from_field_inner getRef returned cached value on 0x%x', list_member_address)
                 yield st
             else:
                 memoryMap = self._memory_handler.is_valid_address_value(list_member_address, pointee_record_type)
                 if memoryMap == False:
-                    log.error("_iterate_list_from_field_with_link_info: the link of this linked list has a bad value")
-                    raise ValueError('ValueError: the link of this linked list has a bad value')
+                    log.error('_iterate_list_from_field_inner: bad value link_addr: 0x%x', entry)
+                    log.error('_iterate_list_from_field_inner: bad value link_addr-offset: 0x%x', list_member_address)
+                    log.debug('sentinels values: {%s}', ','.join([hex(s) for s in sentinels]))
+                    log.debug('entry on sentinels: %s', entry in sentinels)
+                    log.debug('list_member_address in sentinels: %s', list_member_address in sentinels)
+                    # import code
+                    # code.interact(local=locals())
+                    raise ValueError('the link of this linked list has a bad value: 0x%x' % entry)
                 st = memoryMap.read_struct(list_member_address, pointee_record_type)
                 st._orig_address_ = list_member_address
                 self._memory_handler.keepRef(st, pointee_record_type, list_member_address)
                 yield st
+            # save the last address as a sentinel
+            sentinels.add(list_member_address)
 
         raise StopIteration
 
@@ -403,14 +412,14 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :return:
         """
         # stop when Null
-        done = [0]
+        done = {0}
         if sentinels is None:
-            sentinels = []
+            sentinels = {}
         obj = record
         record_type = type(record)
         # we ignore the sentinels here, as this is an internal iterator
         forward, backward, _ = self.get_double_linked_list_type(record_type)
-        log.debug("sentinels %s", str([hex(s) for s in sentinels]))
+        log.debug("sentinels {%s}", [hex(s) for s in sentinels])
         # make the stack
         stack = []
         for fieldname in [forward, backward]:
@@ -425,7 +434,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             for addr in stack:
                 if addr in done or addr in sentinels:
                     continue
-                done.append(addr)
+                done.add(addr)
                 memory_map = self._memory_handler.is_valid_address_value(addr, record_type)
                 if memory_map is False:
                     log.error("_iterate_double_linked_list: the link of this linked list has a bad value: 0x%x", addr)
@@ -451,7 +460,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :return:
         """
         # stop when Null
-        done = [0]
+        done = {0}
         obj = record
         record_type = type(record)
         # we ignore the sentinels here as this is an internal iterator
@@ -462,7 +471,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         log.debug('_iterate_single_linked_list <%s>/0x%x', link.__class__.__name__, addr)
         nb = 0
         while addr not in done and addr not in sentinels:
-            done.append(addr)
+            done.add(addr)
             memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
             if memoryMap == False:
                 log.error("_iterate_single_linked_list: the link of this linked list has a bad value")

@@ -105,7 +105,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # LIST_ENTRY
         # the lists usually use end of mapping as a sentinel.
         # we have to use all mappings instead of heaps, because of a circular dependency
-        sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
+        #sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
+        sentinels = set([mapping.end for mapping in self._memory_handler.get_mappings()])
         self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
 
         # HEAP_SEGMENT

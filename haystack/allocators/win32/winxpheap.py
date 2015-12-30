@@ -155,8 +155,9 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # the lists usually use end of mapping as a sentinel.
         # we have to use all mappings instead of heaps, because of a circular dependency
         # FIXME, type definition should probably not contain sentinels.
-        sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
-        sentinels.append(0xffffffff)
+        # sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
+        sentinels = set([mapping.end for mapping in self._memory_handler.get_mappings()])
+        sentinels.add(0xffffffff)
 
         self.register_double_linked_list_record_type(self.win_heap.struct__LIST_ENTRY, 'Flink', 'Blink', sentinels)
         #
@@ -175,7 +176,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
 
         #class struct__SLIST_HEADER_0(ctypes.Structure):
         #    ('Next', SINGLE_LIST_ENTRY),
-        self.register_single_linked_list_record_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
+        self.register_single_linked_list_record_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', sentinels)
         #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
         #self.register_single_linked_list_record_type(self.win_heap.union__SLIST_HEADER, '_1')
         #self.register_single_linked_list_record_type(self.win_heap.struct__SLIST_HEADER_0, 'Next')
@@ -186,7 +187,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # what the fuck is pointed record type of listHead ?
         #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
-        self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
+        self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', sentinels)
         self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
 
         return
@@ -271,15 +272,17 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             #    raise RuntimeError('HEAP.FrontEndHeap.ListHead._1.Next.Next has a bad address %x' % lal_start_addr)
             #first_entry = m.read_struct(first_entry_addr, self.win_heap.struct__HEAP_ENTRY)
             # res.append((first_entry._orig_address_, first_entry.Size * self._target.get_word_size()))
+
             # every list head is a sentinel, as head of list
-            sentinels = [lal_entry_addr]
+            # + <end of mapping> - chunk_size
+            sentinels = {lal_entry_addr} | set([mapping.end - chunk_size for mapping in self._memory_handler.get_mappings()])
 
             #for j, freeblock in enumerate(self._iterate_list_from_field_inner(iterator_fn,
             #                                         first_entry,
             #                                         self.win_heap.struct__HEAP_ENTRY_0_0,
             #                                         offset,
             #                                         sentinels)):
-            for j, freeblock in enumerate(self.iterate_list_from_field(entry, 'Next')):
+            for j, freeblock in enumerate(self.iterate_list_from_field(entry, 'Next', sentinels)):
                 res.append((freeblock._orig_address_, chunk_size))
                 log.debug('HEAP.LAL[%d][%d]: size:0x%x @0x%x', i, j, chunk_size, freeblock._orig_address_)
 
@@ -344,7 +347,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             # every list head is a sentinel, as head of list
             # FIXME:
             ## if i == 0, 1 or 2, size is not related to the index i
-            sentinels = [freelists_addr + i*size_heap_entry]
+            sentinels = {freelists_addr + i*size_heap_entry}
             # FIXME: backend heap ?
             # if record.FrontEndHeapType == 0
             #    record.CommitRoutine != 0
