@@ -962,7 +962,9 @@ import os
 import mmap
 import logging
 
+
 log = logging.getLogger("minidump")
+
 
 class MDMP_Mapper(interfaces.IMemoryLoader):
     """Container:
@@ -980,12 +982,10 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
     """
 
     def __init__(self, filename):
-        construct_data = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
+        construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
         self.filename = filename
         self._init_mappings(construct_data)
-
-        print target
 
     def _init_mappings(self, construct_data):
         content_file = open(self.filename, 'rb')
@@ -1041,7 +1041,6 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
 
     def make_memory_handler(self):
         return self._memory_handler
-
 
 
 if __name__ == "__main__":

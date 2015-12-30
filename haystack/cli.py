@@ -26,18 +26,21 @@ SEARCH_DESC = 'Search for instance of a record_type in the allocated memory of a
 SHOW_DESC = 'Cast the bytes at this address into a record_type. '
 WATCH_DESC = 'Cast the bytes at this address into a record_type and refresh regularly. '
 DUMP_DESC = 'Extract the process dump from the OS memory dump in haystack format. '
+REVERSE_DESC = 'Reverse the data structure from the process memory'
 
 # some dumptype constants
 DUMPTYPE_BASE = 'haystack'
 DUMPTYPE_VOLATILITY = 'volatility'
 DUMPTYPE_REKALL = 'rekall'
 DUMPTYPE_LIVE = 'live'
+DUMPTYPE_MINIDUMP = 'minidump'
 
 # the description of the dump type
 DUMPTYPE_BASE_DESC = 'The process dump is a folder produced by a haystack-dump script.'
 DUMPTYPE_VOL_DESC = 'The process dump is a volatility OS dump. The PID is the targeted process.'
 DUMPTYPE_REKALL_DESC = 'The process dump is a rekall OS dump. The PID is the targeted process.'
 DUMPTYPE_LIVE_DESC = 'The PID must be a running process.'
+DUMPTYPE_MINIDUMP_DESC = 'The process dump is a Minidump (MDMP) process dump.'
 
 
 class HaystackError(Exception):
@@ -56,6 +59,10 @@ def _get_memory_handler(opts):
         memory_handler = mapper.make_memory_handler()
     elif opts.dumptype == DUMPTYPE_LIVE:
         memory_handler = dbg.make_local_process_memory_handler(pid=opts.pid, use_mmap=opts.mmap)
+    elif opts.dumptype == DUMPTYPE_MINIDUMP:
+        from haystack.mappings import minidump
+        loader = minidump.MDMP_Mapper(opts.dump_filename)
+        memory_handler = loader.make_memory_handler()
     else:
         raise RuntimeError('dump type has no case support. %s', opts.dumptype)
     return memory_handler
@@ -249,6 +256,16 @@ def watch(args):
         py_obj = output[0][0]
 
 
+def reverse_cmdline(args):
+    """ Reverse """
+    from haystack.reverse import api as rapi
+    # get the memory handler adequate for the type requested
+    memory_handler = _get_memory_handler(args)
+    # do the search
+    rapi.reverse_instances(memory_handler)
+    return
+
+
 def base_argparser(program_name, description):
     """ Base options shared by all console scripts """
     rootparser = argparse.ArgumentParser(prog=program_name, description=description)
@@ -307,6 +324,11 @@ def dump_argparser(dump_parser):
     dump_parser.add_argument('output_folder_name', type=str, help='Output to this memory dump folder')
     dump_parser.set_defaults(func=dump_process)
     return dump_parser
+
+
+def reverse_argparser(reverse_parser):
+    reverse_parser.set_defaults(func=reverse_cmdline)
+    return reverse_parser
 
 
 def output_argparser(rootparser):
@@ -525,3 +547,51 @@ def rekall_dump():
     # execute function
     opts.func(opts)
     return
+
+
+def minidump_reverse():
+    argv = sys.argv[1:]
+    desc = REVERSE_DESC + DUMPTYPE_MINIDUMP_DESC
+    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
+    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
+    reverse_argparser(rootparser)
+    opts = rootparser.parse_args(argv)
+    opts.dumptype = DUMPTYPE_MINIDUMP
+    # apply verbosity
+    set_logging_level(opts)
+    # execute function
+    opts.func(opts)
+    return
+
+
+def minidump_search():
+    argv = sys.argv[1:]
+    desc = SEARCH_DESC + DUMPTYPE_MINIDUMP_DESC
+    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
+    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
+    search_argparser(rootparser)
+    output_argparser(rootparser)
+    opts = rootparser.parse_args(argv)
+    opts.dumptype = DUMPTYPE_MINIDUMP
+    # apply verbosity
+    set_logging_level(opts)
+    # execute function
+    opts.func(opts)
+    return
+
+
+def minidump_show():
+    argv = sys.argv[1:]
+    desc = SHOW_DESC + DUMPTYPE_MINIDUMP_DESC
+    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
+    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
+    show_argparser(rootparser)
+    output_argparser(rootparser)
+    opts = rootparser.parse_args(argv)
+    opts.dumptype = DUMPTYPE_MINIDUMP
+    # apply verbosity
+    set_logging_level(opts)
+    # execute function
+    opts.func(opts)
+    return
+
