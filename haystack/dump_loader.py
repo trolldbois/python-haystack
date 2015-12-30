@@ -271,12 +271,18 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
 
 
 def load(dumpname, cpu=None, os_name=None):
-    """Loads a haystack dump."""
+    """Loads a process memory dump."""
     dumpname = os.path.abspath(dumpname)
-    memdump = VeryLazyProcessMemoryDumpLoader(dumpname, cpu=cpu, os_name=os_name)
-    log.debug('%d dump file loaded' % len(memdump.make_memory_handler()))
+    mapper = None
+    if os.path.isdir(dumpname):
+        mapper = VeryLazyProcessMemoryDumpLoader(dumpname, cpu=cpu, os_name=os_name)
+    elif os.path.isfile(dumpname):
+        # try minidump
+        from haystack.mappings import minidump
+        mapper = minidump.MDMP_Mapper(dumpname)
+    log.debug('%d dump file loaded' % len(mapper.make_memory_handler()))
     # excep mmap.error - to much openfile - increase ulimit
-    return memdump.make_memory_handler()
+    return mapper.make_memory_handler()
 
 
 

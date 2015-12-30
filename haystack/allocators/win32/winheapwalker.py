@@ -95,8 +95,9 @@ class WinHeapWalker(heapwalker.HeapWalker):
                         m.start, self._heap_mapping.start)
                     child_heaps.add(m)
                     pass
-            self._child_heaps = child_heaps
+            self._child_heaps = list(child_heaps)
         # TODO: add information from used user chunks
+        self._child_heaps.sort()
         log.debug('get_heap_children_mmaps b')
         return self._child_heaps
 

@@ -87,6 +87,9 @@ class TargetPlatform(interfaces.ITargetPlatform):
                 'platform not supported for word size == %d' %
                 (self.get_word_size()))
 
+    def __str__(self):
+        return 'Target: OS:%s CPU:%s WordSize:%d' % (self.get_os_name(), self.get_cpu_bits(), self.get_word_size())
+
     @classmethod
     def _detect_os(cls, mappings):
         """Arch independent way to assess the os of a captured process"""

@@ -24,8 +24,9 @@ log = logging.getLogger('haytack-find-heap')
 
 
 class HeapFinder(object):
-    def __init__(self):
+    def __init__(self, memory_handler):
         print 'Using %s' % self.__class__.__name__
+        self.memory_handler = memory_handler
         pass
 
     def _init_module_name(self, memory_handler):
@@ -38,8 +39,6 @@ class HeapFinder(object):
         raise NotImplementedError('_init_heap_record_name')
 
     def search_heap(self, memdumpname):
-        # we need a memory dump loader
-        self.memory_handler = dump_loader.load(memdumpname)
         my_model = self.memory_handler.get_model()
         module_name = self._init_module_name(self.memory_handler)
         # import the module with the right arch
@@ -69,6 +68,7 @@ class HeapFinder(object):
                 # FIXME output_to are stupid
                 #print haystack.output_to_string(memory_handler, res)
                 results.append(res)
+
         return results
 
     def search_heap_direct(self, memdumpname, start_address_mapping):
@@ -109,8 +109,18 @@ class HeapFinder(object):
             m = memory_handler.get_mapping_for_address(addr)
             if addr != m.start:
                 heap_not_at_start = ' (!)'
-            print 'HEAP at 0x%x%s\tsize: 0x%x map: %s' % (addr, heap_not_at_start, len(m), m)
+            print '[+] %s' % heap_not_at_start, m
             #print x
+            # print children
+            # Mark as heap for later use
+            m.mark_as_heap(address)
+            #
+            finder = memory_handler.get_heap_finder()
+            walker = finder.get_heap_walker(m)
+            children = walker.get_heap_children_mmaps()
+            if len(children) > 0:
+                for child in children:
+                    print '\t[-] ', child
 
 
 class Win7HeapFinder(HeapFinder):
@@ -127,6 +137,7 @@ class Win7HeapFinder(HeapFinder):
     def _init_heap_record_name(self):
         return 'HEAP'
 
+
 class WinXPHeapFinder(HeapFinder):
     def _init_module_name(self, memory_handler):
         if 64 == memory_handler.get_target_platform().get_cpu_bits():
@@ -140,6 +151,7 @@ class WinXPHeapFinder(HeapFinder):
 
     def _init_heap_record_name(self):
         return 'HEAP'
+
 
 class LibcHeapFinder(HeapFinder):
     def _init_module_name(self, memory_handler):
@@ -163,16 +175,30 @@ def main(argv):
 
     opts = parser.parse_args(argv)
 
+    # we need a memory dump loader
+    memory_handler = dump_loader.load(opts.dumpname)
+
     #if 'libc' == opts.host:
     #    my_finder = LibcHeapFinder()
     #el
     if 'winxp' == opts.host:
-        my_finder = WinXPHeapFinder()
+        my_finder = WinXPHeapFinder(memory_handler)
     elif 'win7' == opts.host:
-        my_finder = Win7HeapFinder()
+        my_finder = Win7HeapFinder(memory_handler)
     else:
         raise ValueError('not such heap finder for %s' % opts.host)
 
+    # Show Target information
+    print memory_handler.get_target_platform()
+
+    # show all memory mappings
+    print 'Process mappings:'
+    print '@start     @stop       File Offset M:m   '
+    for m in memory_handler.get_mappings():
+        print m
+
+    # Then show heaps
+    print 'Heaps and their children mapping:'
     memdumpname = opts.dumpname
     if opts.address is None:
         if my_finder.search_heap(memdumpname) is not None:
