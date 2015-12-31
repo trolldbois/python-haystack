@@ -99,6 +99,8 @@ class HeapFinder(interfaces.IHeapFinder):
         # on ly return first results in each mapping
         log.debug("_search_heap in %s", mapping)
         res = my_searcher._search_in(mapping, self._heap_type, nb=1, align=0x1000)
+        # DEBUG PEB search
+        #res = my_searcher._search_in(mapping, peb.struct__PEB, nb=1, align=0x1000)
         if len(res) > 0:
             instance, address = res[0]
             mapping.mark_as_heap(address)
