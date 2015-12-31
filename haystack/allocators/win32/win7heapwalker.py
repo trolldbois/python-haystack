@@ -39,6 +39,7 @@ class Win7HeapWalker(winheapwalker.WinHeapWalker):
 
         self._heap = self._heap_mapping.read_struct(address, self._heap_module.HEAP)
         self._validator = self._heap_module.Win7HeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
+
         if not self._validator.load_members(self._heap, 1):
             raise TypeError('load_members(HEAP) returned False')
 

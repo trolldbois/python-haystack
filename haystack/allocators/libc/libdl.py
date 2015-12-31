@@ -10,7 +10,7 @@ import logging
 import os
 import pickle
 
-from haystack.mappings.process import readProcessMappings
+from haystack.mappings.process import make_process_memory_handler
 
 log = logging.getLogger('libdl')
 
@@ -35,7 +35,7 @@ class Dummy():
 def getMappings():
     me = Dummy()
     me.pid = os.getpid()
-    return readProcessMappings(me)
+    return make_process_memory_handler(me)
 
 # TODO FIXME: make a non-batch version
 

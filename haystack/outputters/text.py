@@ -33,6 +33,17 @@ class RecursiveTextOutputter(Outputter):
         """
         # TODO: use a ref table to stop loops on parsed instance,
         #             depth kinda sux.
+        # if obj._orig_address_ in self._addr_cache:
+        addr = self._ctypes.addressof(obj)
+        if addr in self._addr_cache:
+            if type(obj) in self._addr_cache[addr]:
+                #depth = min(depth, 1)
+                s = "{}, # ...already shown..."
+                self._addr_cache[addr].append(type(obj))
+                return s
+        else:
+            self._addr_cache[addr] = []
+        self._addr_cache[addr].append(type(obj))
         if depth <= 0:
             return 'None, # DEPTH LIMIT REACHED'
         if hasattr(obj, 'toString'):
@@ -53,6 +64,7 @@ class RecursiveTextOutputter(Outputter):
                                        prefix,
                                        depth))
         s += '\n' + prefix + '}'
+        self._addr_cache = {}
         return s
 
     def _attrToString(self, attr, field, attrtype, prefix, depth=-1):

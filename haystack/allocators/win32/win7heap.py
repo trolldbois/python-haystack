@@ -8,10 +8,13 @@ Distinction between reserved and committed memory.
 Committing memory == mapping/backing the virtual memory.
 Uncommitted memory is tracked using UCR entries and segments.
 
-heap_size = heap.Counters.TotalMemoryReserved
-committed_size = heap.Segment.LastValidEntry -  heap.Segment.FirstEntry
+heap_size_including_ucr = heap.Counters.TotalMemoryReserved
+segment_space +/- = heap.Segment.LastValidEntry -  heap.Segment.FirstEntry
 committed_size = heap.Counters.TotalMemoryCommitted
-ucr_size= heap.Counters.TotalMemoryReserved - heap.Counters.TotalMemoryCommitted
+sum_ucr_size = heap.Counters.TotalMemoryReserved - heap.Counters.TotalMemoryCommitted
+
+heap.Counters.TotalMemoryReserved == heap.LastValidEntry - heap.BaseAddress
+UCR and UCRSegments included.
 
 Win7 Heap manager uses either Frontend allocator or Backend allocator.
 Default Frontend allocator is Low Fragmentation Heap (LFH).
@@ -25,11 +28,35 @@ There can be multiple segment in one heap.
 Each segment has a FirstEntry (chunk) and LastValidEntry.
 FirstEntry <= chunks <= UCR < LastValidEntry
 
+Heap is a segment.
+Heap.SegmentList.Flink 0x580010L
+Heap.SegmentList.Blink 0x1f00010L
+Heap.SegmentList is at offset 0xa8
+
+Heap.SegmentListEntry.Flink 0x1f00010L
+Heap.SegmentListEntry.Blink 0x5800a8L
+Heap.SegmentListEntry is at offset 0x10
+
+    >>> hex(type(walker._heap).SegmentList.offset)
+    '0xa8'
+    >>> hex(type(walker._heap).SegmentListEntry.offset)
+    '0x10'
+
+So some segment pages ('children mapping') can be found by iterating Segments.
+But in some case, the Heap mapping is punched with holes due to Uncommitted Pages. (memory acquisition problem??)
+So there is only one segment, which LastValidEntry is > at the mapping end address
+Is that a memory acquisition issue ?
+
+Segment: UCRSegmentList
+Heap: UCRList
+
 You can fetch chunks tuple(address,size) with HEAP.get_chunks .
 
 You can fetch ctypes segments with HEAP.get_segment_list
 You can fetch free ctypes UCR segments with HEAP.get_UCR_segment_list
 You can fetch a segment UCR segments with HEAP_SEGMENT.get_UCR_segment_list
+
+
 
 """
 
@@ -40,7 +67,6 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-"""ensure ctypes basic types are subverted"""
 
 import ctypes
 import logging
@@ -49,37 +75,6 @@ from haystack import model
 from haystack.abc import interfaces
 from haystack.allocators.win32 import winheap
 
-
-
-# pylint: disable=pointeless-string-statement
-'''
-# Critical structs are
-_LIST_ENTRY
-_LFH_BLOCK_ZONE
-_HEAP_PSEUDO_TAG_ENTRY
-_HEAP_LOCK
-_HEAPTABLE
-_SLIST_HEADER
-_SINGLE_LIST_ENTRY
-_HEAP_ENTRY
-_HEAP_COUNTERS
-_HEAP_TUNING_PARAMETERS
-_HEAP_SEGMENT
-_HEAP
-_HEAP_ENTRY_EXTRA
-_HEAP_FREE_ENTRY
-_HEAP_LIST_LOOKUP
-_HEAP_LOOKASIDE
-_INTERLOCK_SEQ
-_HEAP_TAG_ENTRY
-_HEAP_UCR_DESCRIPTOR
-_HEAP_USERDATA_HEADER
-_HEAP_VIRTUAL_ALLOC_ENTRY
-_HEAP_LOCAL_SEGMENT_INFO
-_HEAP_LOCAL_DATA
-_HEAP_SUBSEGMENT
-_LFH_HEAP
-'''
 
 log = logging.getLogger('win7heap')
 
@@ -105,8 +100,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # LIST_ENTRY
         # the lists usually use end of mapping as a sentinel.
         # we have to use all mappings instead of heaps, because of a circular dependency
-        #sentinels = [mapping.end-0x10 for mapping in self._memory_handler.get_mappings()]
-        sentinels = set([mapping.end for mapping in self._memory_handler.get_mappings()])
+        sentinels = set([mapping.end-0x10 for mapping in self._memory_handler.get_mappings()])
+        # sentinels = set() #set([mapping.end for mapping in self._memory_handler.get_mappings()])
         self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
 
         # HEAP_SEGMENT
@@ -114,6 +109,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
         # FIXME, use offset size base on self._target.get_word_size()
         self.register_linked_list_field_and_type(self.win_heap.HEAP_SEGMENT, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = -8
+        # as a facility HEAP contains HEAP_SEGMENT. But will also force parsing the list at HEAP loading time
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = -8
         #HEAP_SEGMENT._listHead_ = [
         #        ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
         #HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
@@ -131,6 +128,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         #                   ('VirtualAllocdBlocks', HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)]
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'SegmentList', self.win_heap.HEAP_SEGMENT, 'SegmentListEntry') # offset = -16
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = 0
+        # there is also a list of segments
+        self.register_linked_list_field_and_type(self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry', self.win_heap.HEAP_SEGMENT, 'UCRSegmentList')
         # for get_freelists. offset is sizeof(HEAP_ENTRY)
         ## self.register_linked_list_field_and_type(self.win_heap.HEAP, 'FreeLists', self.win_heap.HEAP_FREE_ENTRY, 'FreeList') # offset =  -8
         if self._target.get_word_size() == 4:
@@ -150,6 +149,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
     def HEAP_get_segment_list(self, record):
         """returns a list of all segment attached to one Heap structure."""
         segments = list()
+        # self heap is already one segment, but it listed in the list
+        # segment = self.win_heap.HEAP_SEGMENT.from_buffer(record)
+        # now the list content.
         for segment in self.iterate_list_from_field(record, 'SegmentList'):
             segment_addr = segment._orig_address_
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)

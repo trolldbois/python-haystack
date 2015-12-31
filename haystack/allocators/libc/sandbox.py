@@ -17,7 +17,7 @@ import os
 
 offset = 0xb6b3ef68 - 0xb68b1000
 
-from haystack.mappings.process import readProcessMappings
+from haystack.mappings.process import make_process_memory_handler
 from haystack.reverse import context
 
 
@@ -41,7 +41,7 @@ class Dl_info(ctypes.Structure):
 def getMappings():
     me = Dummy()
     me.pid = os.getpid()
-    return readProcessMappings(me)
+    return make_process_memory_handler(me)
 
 
 def test1():

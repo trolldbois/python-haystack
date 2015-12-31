@@ -24,6 +24,88 @@ from haystack.abc import interfaces
 log = logging.getLogger('winheap')
 
 
+class Win_Heap(object):
+    def __init__(self, memory_handler, walker):
+        self.walker = walker
+        self.heap = walker._heap
+        validator = walker._validator
+
+
+class UCR_List(object):
+    # based on win7 heap_segment
+    def __init__(self, ctypes_ucrlist):
+        self.ucrs = ctypes_ucrlist
+
+    def to_string(self, prefix=''):
+        s = []
+        for ucr in self.ucrs:
+            s.append('%sUCR: 0x%0.8x-0x%0.8x => size:0x%x' % (prefix, ucr.Address.value, ucr.Address.value + ucr.Size, ucr.Size))
+            ## ucr_segment == heap_segment => heap, its a trap.
+        return '\r\n'.join(s)
+
+
+class Segment(object):
+    # based on win7 heap_segment
+    # a segment can have multiple mappings
+
+    def __init__(self, memory_handler, ctypes_segment, ucr_info):
+        self.start = ctypes_segment.FirstEntry.value
+        self.end = ctypes_segment.LastValidEntry.value
+        # UCR.
+        self.nb_pages = ctypes_segment.NumberOfPages
+        self.uncommitted_pages = ctypes_segment.NumberOfUnCommittedPages
+        self.uncommitted_ranges = ctypes_segment.NumberOfUnCommittedRanges
+        self.committed_pages = self.nb_pages - self.uncommitted_pages
+        self.committed_size = self.committed_pages * 4096
+        self.committed_size2 = self.end - self.start
+        self.ucrs = []
+        for ucr in ucr_info:
+            if self.start <= ucr.Address.value <= self.end:
+                self.ucrs.append((ucr.Address.value, ucr.Size))
+                self.committed_size2 -= ucr.Size
+                pass
+        # self.committed_size == self.committed_size2
+        # stats from chunks
+        self.s_allocated, self.s_allocated_overhead = None, None
+        self.s_free, self.s_free_overhead = None, None
+        self.s_overhead, self.s_sum = None, None
+        self.mappings = self._init_mappings(memory_handler)
+        return
+
+    def _init_mappings(self, memory_handler):
+        mappings = []
+        for m in memory_handler.get_mappings():
+            if self.start <= m.start < self.end:
+                mappings.append(m)
+            elif self.start in m:
+                mappings.append(m)
+        return mappings
+
+    def set_ressource_usage(self, occupied_res, free_res):
+        # do the stats
+        self.s_allocated, self.s_allocated_overhead = occupied_res.get(self.start, (0, 0))
+        self.s_free, self.s_free_overhead = free_res.get(self.start, (0, 0))
+        self.s_overhead = self.s_allocated_overhead + self.s_free_overhead
+        self.s_sum = self.s_allocated + self.s_free + self.s_overhead
+        return
+
+    def to_string(self, prefix=''):
+        nb = self.uncommitted_pages
+        s = '%sSegment: 0x%0.8x-0x%0.8x size:0x%x' % (prefix, self.start, self.end, self.end-self.start)
+        s += "\r\n%s\tNumberOfUnCommittedPages %d => size:0x%x" % (prefix, nb, nb*4096)
+        s += "\r\n%s\tNumberOfUnCommittedRanges %d " % (prefix, self.uncommitted_ranges)
+        s += '\r\n%s\tcommitted pages size: 0x%x cnt:%d/%d' % (prefix, self.committed_size, self.committed_pages, self.nb_pages)
+        if_error = '' if self.committed_size2 == self.s_sum else '!! '
+        s += '\r\n%s\t%sExpected committed size:0x%x' % (prefix, if_error, self.committed_size2)
+        s += '\r\n%s\t%sVerified committed size:0x%x alloc:0x%x free:0x%x overhead:0x%x' % (prefix, if_error, self.s_sum, self.s_allocated, self.s_free, self.s_overhead)
+        s += '\r\n%s\tMappings used:' % prefix
+        for m in self.mappings:
+            s += '\r\n%s\t\t%s' % (prefix, m)
+        # FALSE due to holes (lastValidEntry - m.end) == ctypes_heap.NumberOfUnCommittedPages * 4096:
+        return s
+
+
+
 class WinHeapValidator(listmodel.ListModel):
     """
     this listmodel Validator will register know important list fields
@@ -44,8 +126,12 @@ class WinHeapValidator(listmodel.ListModel):
         HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
+        # TODO sentinels
+        # size = self._ctypes.sizeof( self.win_heap.HEAP_UCR_DESCRIPTOR)
+        size = 0x10
+        sentinels = set([mapping.end-size for mapping in self._memory_handler.get_mappings()])
         ucrs = list()
-        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList'):
+        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList', sentinels):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -76,7 +162,7 @@ class WinHeapValidator(listmodel.ListModel):
                 valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
         return vallocs
 
-    def HEAP_get_free_UCR_segment_list(self, record):
+    def HEAP_get_UCRanges_list(self, record):
         """Returns a list of available UCR segments for this heap.
         HEAP.UCRList is a linked list to all UCRSegments
 
@@ -91,6 +177,27 @@ class WinHeapValidator(listmodel.ListModel):
                 ucr_struct_addr, ucr_addr, ucr.Size))
             ucrs.append(ucr)
         return ucrs
+
+    def UNUSED_HEAP_get_UCRange_segment_list(self, record):
+        """
+        Returns a list of uncommited segment for this UCR.
+        HEAP.UCRList->SegmentEntry is a linked list to all UCRSegments
+
+        """
+        expected_type = 'HEAP_UCR_DESCRIPTOR'
+        if expected_type not in str(type(record)):
+            raise TypeError('record %s should be of type %s' % (record, expected_type))
+        entries = list()
+        for entry in self.iterate_list_from_field(record, 'SegmentEntry'):
+            entry_struct_addr = entry._orig_address_
+            entry_addr = self._utils.get_pointee_address(entry.BaseAddress)
+            first = entry.FirstEntry.value
+            last = entry.LastValidEntry.value
+            size = last - first
+            log.debug("Heap.UCRList.SegmentEntry: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+                entry_struct_addr, entry_addr, size))
+            entries.append(entry)
+        return entries
 
     def HEAP_get_chunks(self, record):
         """

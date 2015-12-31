@@ -26,19 +26,18 @@ log = logging.getLogger("gbd")
 
 
 class IProcessDebugger(object):
-    def open_process(self, pid):
+    def get_process(self):
         raise NotImplementedError(self)
 
     def quit(self):
         raise NotImplementedError(self)
 
-    @staticmethod
-    def get_mappings_line(pid):
-        raise NotImplementedError()
-
 
 class IProcess(object):
     def get_pid(self):
+        raise NotImplementedError(self)
+
+    def get_mappings_line(self):
         raise NotImplementedError(self)
 
     def read_word(self, address):
@@ -56,7 +55,7 @@ class IProcess(object):
 
 class MyPTraceDebugger(IProcessDebugger):
     def __init__(self, pid):
-        # /proc mappings debugguer
+        # /proc mappings debugger
         if not os_tools.HAS_PROC:
             raise TypeError('We only support /proc ptrace')
         # ptrace debugguer
@@ -250,7 +249,7 @@ def make_local_process_memory_handler(pid, use_mmap=True):
         raise TypeError('PID should be a number')
     from haystack.mappings import process
     my_debugger = get_debugger(pid)
-    _memory_handler = process.readProcessMappings(my_debugger.get_process())
+    _memory_handler = process.make_process_memory_handler(my_debugger.get_process())
     t0 = time.time()
     for m in _memory_handler:
         if use_mmap:

@@ -108,8 +108,13 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         return self.start <= address < self.end
 
     def __str__(self):
-        text = ' '.join([self._utils.formatAddress(self.start), self._utils.formatAddress(self.end), self.permissions,
-                         '0x%0.8x' % self.offset, '%0.2x:%0.2x' % (self.major_device, self.minor_device), '%0.7d' % self.inode, str(self.pathname)])
+        start = self._utils.formatAddress(self.start)
+        end = self._utils.formatAddress(self.end)
+        size = 'size:0x%0.8x' % (self.end-self.start)
+        offset = 'offset:0x%0.8x' % self.offset
+        device = '%0.2x:%0.2x' % (self.major_device, self.minor_device)
+        inode = 'inode:%0.7d' % self.inode
+        text = ' '.join([start, end, self.permissions, size, offset, device, inode, str(self.pathname)])
         return text
 
     __repr__ = __str__

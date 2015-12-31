@@ -192,9 +192,7 @@ class CTypesProxy(object):
             replacement_type = self.__real_ctypes.c_uint64
             replacement_type_char = self.__real_ctypes.c_uint64._type_
         else:
-            raise NotImplementedError(
-                'pointer size of %d is not handled' %
-                (self.__pointersize))
+            raise NotImplementedError('pointer size of %d is not handled' % self.__pointersize)
         POINTERSIZE = self.__pointersize
         # required to access _ctypes
         import _ctypes
@@ -224,7 +222,7 @@ class CTypesProxy(object):
             # specific case for c_void_p
             subtype = pointee
             if pointee is None:  # VOID pointer type. c_void_p.
-                clsname = 'LP_%d_c_void_p'%POINTERSIZE
+                clsname = 'LP_%d_c_void_p' % POINTERSIZE
                 _class = type(clsname, (_T_Simple,), {})
                 _class._subtype_ = type(None)
                 my_ctypes._pointer_type_cache[pointee] = _class
@@ -416,10 +414,11 @@ class CTypesProxy(object):
 
     def __cast(self, obj, next_type):
         # obj and next_type have to be our instances
+        # FIXME: probably buggy
         if not isinstance(obj, self._T_Simple):
-            raise TypeError('%s is not a haystack ctypes pointer', type(obj))
+            raise TypeError('%s is not a haystack ctypes pointer' % type(obj))
         if not issubclass(next_type, self._T_Simple):
-            raise TypeError('%s is not a haystack ctypes pointer', next_type)
+            raise TypeError('%s is not a haystack ctypes pointer' % next_type)
         instance = next_type()
         instance.value = obj.value
         return instance

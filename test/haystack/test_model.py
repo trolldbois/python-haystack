@@ -14,7 +14,7 @@ class TestCopyModule(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler= process.read_local_process_mappings()
+        cls.memory_handler = process.make_local_memory_handler()
         cls.my_target = cls.memory_handler.get_target_platform()
         cls.my_model = model.Model(cls.memory_handler)
 

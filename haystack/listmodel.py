@@ -150,7 +150,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if not self._ctypes.is_pointer_type(flink_type):
             raise TypeError('The %s field is not a pointer.', forward)
         if sentinels is None:
-            sentinels = {[0]} # Null pointer
+            sentinels = {0} # Null pointer
         # ok - save that structure information
         self._single_link_list_types[record_type] = (forward, sentinels)
         return
@@ -203,7 +203,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if not self._ctypes.is_pointer_type(blink_type):
             raise TypeError('The %s field is not a pointer.', backward)
         if sentinels is None:
-            sentinels = {[0]} # Null pointer
+            sentinels = {0} # Null pointer
         # ok - save that structure information
         self._double_link_list_types[record_type] = (forward, backward, sentinels)
         return
@@ -257,6 +257,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # care offset is now positive
         offset = self._utils.offsetof(list_entry_type, list_entry_field_name)
         self._list_fields[record_type][field_name] = (list_entry_type, list_entry_field_name, offset)
+        return
 
     def _get_list_info_for_field_for(self, record_type, fieldname):
         """
@@ -268,7 +269,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         for x in self._get_list_fields(record_type):
             if x[0] == fieldname:
                 return x
-        raise ValueError('No such registered field')
+        raise ValueError('No such registered list field: %s for type: %s' % (fieldname, record_type))
 
     def _get_list_fields(self, record_type):
         """
@@ -372,10 +373,13 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         for entry in iterator_fn(head, sentinels):
             # @ of the list member record
             list_member_address = entry - offset
+            log.debug('iterate on entry 0x%x, offset 0x%x res: 0x%x', entry, offset, list_member_address)
             # entry is not null. We also ignore record (head_address).
             if entry in sentinels:
+                log.debug('entry 0x%x in sentinel, skipping', entry)
                 continue
             elif list_member_address in sentinels:
+                log.debug('list_member_address 0x%x in sentinel, skipping', list_member_address)
                 continue
             # use cache if possible, avoid loops.
             st = self._memory_handler.getRef(pointee_record_type, list_member_address)
@@ -387,9 +391,9 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             else:
                 memoryMap = self._memory_handler.is_valid_address_value(list_member_address, pointee_record_type)
                 if memoryMap == False:
-                    log.error('_iterate_list_from_field_inner: bad value link_addr: 0x%x', entry)
-                    log.error('_iterate_list_from_field_inner: bad value link_addr-offset: 0x%x', list_member_address)
-                    log.debug('sentinels values: {%s}', ','.join([hex(s) for s in sentinels]))
+                    type_size = self._ctypes.sizeof(pointee_record_type)
+                    log.error('_iterate_list_from_field_inner: bad value link_addr: 0x%x size: 0x%x', list_member_address, type_size)
+                    log.debug('sentinels: {%s}', ','.join(['0x%0.8x' % s for s in sentinels]))
                     log.debug('entry on sentinels: %s', entry in sentinels)
                     log.debug('list_member_address in sentinels: %s', list_member_address in sentinels)
                     # import code
@@ -419,20 +423,22 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         record_type = type(record)
         # we ignore the sentinels here, as this is an internal iterator
         forward, backward, _ = self.get_double_linked_list_type(record_type)
-        log.debug("sentinels {%s}", [hex(s) for s in sentinels])
+        log.debug('sentinels: {%s}', ','.join(['0x%0.8x' % s for s in sentinels]))
         # make the stack
-        stack = []
+        stack = set()
         for fieldname in [forward, backward]:
             link = getattr(obj, fieldname)
             addr = self._utils.get_pointee_address(link)
-            stack.append(addr)
+            stack.add(addr)
         # go trough the tree
         while 1:
-            new_nodes = []
+            new_nodes = set()
             if len(stack) == 0:
+                log.debug('x2_list: empty stack, stop iteration')
                 break
             for addr in stack:
                 if addr in done or addr in sentinels:
+                    log.debug('x2_list: addr: 0x%x in done or sentinels', addr)
                     continue
                 done.add(addr)
                 memory_map = self._memory_handler.is_valid_address_value(addr, record_type)
@@ -445,10 +451,12 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 log.debug("keepRefx2 %s.%s: @%x", record_type.__name__, fieldname, addr)
                 yield addr
                 # next
-                new_nodes.append(self._utils.get_pointee_address(getattr(st, forward)))
-                new_nodes.append(self._utils.get_pointee_address(getattr(st, backward)))
-                log.debug('_iterate_double_linked_list %s <%s>/0x%x', forward, link.__class__.__name__, addr)
-                log.debug('_iterate_double_linked_list %s <%s>/0x%x', backward, link.__class__.__name__, addr)
+                f_addr = self._utils.get_pointee_address(getattr(st, forward))
+                b_addr = self._utils.get_pointee_address(getattr(st, backward))
+                new_nodes.add(f_addr)
+                new_nodes.add(b_addr)
+                log.debug('_iterate_double_linked_list %s <%s>/0x%x', forward, link.__class__.__name__, f_addr)
+                log.debug('_iterate_double_linked_list %s <%s>/0x%x', backward, link.__class__.__name__, b_addr)
             stack = new_nodes
         raise StopIteration
 

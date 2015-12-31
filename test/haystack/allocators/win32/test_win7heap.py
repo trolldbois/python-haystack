@@ -103,7 +103,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertTrue(finder._is_heap(h, addr))
         validator = finder.get_heap_validator()
 
-        ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
+        ucrs = validator.HEAP_get_UCRanges_list(heap)
         self.assertEquals(heap.UCRIndex.value, 0x5c0590)
         self.assertEquals(heap.Counters.TotalUCRs, 1)
         # in this example, there is one UCR in 1 segment.
@@ -132,7 +132,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertTrue(finder._is_heap(h, addr))
             validator = finder.get_heap_validator()
             # get free UCRS from heap
-            reserved_ucrs = validator.HEAP_get_free_UCR_segment_list(heap)
+            reserved_ucrs = validator.HEAP_get_UCRanges_list(heap)
             all_ucrs = []
             # UCR size should add on all UCR for all segments
             for segment in validator.HEAP_get_segment_list(heap):

@@ -30,7 +30,7 @@ else:
     ctypes._pointer_t_type_cache = {}
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint32 
+        fake_ptr_base_type = ctypes.c_uint32
         # specific case for c_void_p
         if pointee is None: # VOID pointer type. c_void_p.
             pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
@@ -51,7 +51,7 @@ else:
                 raise TypeError('This is not a ctypes pointer.')
             def __init__(self, **args):
                 raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(4, clsname), (_T,),{}) 
+        _class = type('LP_%d_%s'%(4, clsname), (_T,),{})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
 

@@ -11,7 +11,7 @@ import tempfile
 
 import os
 from haystack import dbg
-from haystack.mappings.process import readProcessMappings
+from haystack.mappings.process import make_process_memory_handler
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -39,7 +39,7 @@ class MemoryDumper:
         """Connect the debugguer to the process and gets the memory mappings
         metadata."""
         self.dbg = dbg.get_debugger(self._pid)
-        self.mappings = readProcessMappings(self.dbg.get_process())
+        self.mappings = make_process_memory_handler(self.dbg.get_process())
         log.debug('Memory Mappings read. Dropping ptrace on pid.')
         return
 

@@ -14,7 +14,7 @@ from haystack import dump_loader
 from haystack import listmodel
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
-from haystack.mappings.process import read_local_process_mappings
+from haystack.mappings.process import make_local_memory_handler
 
 log = logging.getLogger('test_memory_mapping')
 
@@ -47,7 +47,7 @@ class TestMmapHack(unittest.TestCase):
         heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x' % (heapmap))
-        maps = read_local_process_mappings()
+        maps = make_local_memory_handler()
         ret = [m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)
@@ -73,8 +73,8 @@ class TestMmapHack(unittest.TestCase):
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
-        log.debug('MMAP HACK: heapmap: 0x%0.8x' % (heapmap))
-        maps = read_local_process_mappings()
+        log.debug('MMAP HACK: heapmap: 0x%0.8x', heapmap)
+        maps = make_local_memory_handler()
         ret = [m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)

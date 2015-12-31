@@ -105,6 +105,26 @@ class HeapFinder(interfaces.IHeapFinder):
             return instance, address
         return None
 
+    def search_heap(self):
+        # on ly return first results in each mapping
+        results = []
+        for mapping in self._memory_handler.get_mappings():
+            res = self._search_heap(mapping)
+            if res:
+                results.append(res)
+        return results
+
+    def search_heap_direct(self, start_address_mapping):
+        """ return a ctypes heap struct mapped at address on the mapping"""
+        m = self._memory_handler.get_mapping_for_address(start_address_mapping)
+        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
+                                                       self._heap_module_constraints,
+                                                       [m])
+        # on ly return first results in each mapping
+        log.debug("_search_heap_direct in %s", start_address_mapping)
+        results = my_searcher._load_at(m, start_address_mapping, self._heap_type, depth=5)
+        return results
+
     def _read_heap(self, mapping, addr):
         """ return a ctypes heap struct mapped at address on the mapping"""
         heap = mapping.read_struct(addr, self._heap_type)

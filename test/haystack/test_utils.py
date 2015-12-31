@@ -20,7 +20,7 @@ from haystack import model
 from haystack import utils
 from haystack import types
 from haystack import target
-from haystack.mappings.process import readProcessMappings
+from haystack.mappings.process import make_process_memory_handler, make_local_memory_handler
 
 
 class TestHelpers(unittest.TestCase):
@@ -40,14 +40,8 @@ class TestHelpers(unittest.TestCase):
         ctypes5_gen64 = haystack.model.import_module_for_target_ctypes("test.src.ctypes5_gen64", my_ctypes)
         # kinda chicken and egg here...
 
-        class P:
-            pid = os.getpid()
-
-            def readBytes(self, addr, size):
-                import ctypes
-                return ctypes.string_at(addr, size)
         # one call
-        mappings = readProcessMappings(P())
+        mappings = make_local_memory_handler()
         m = mappings.get_mappings()[0]
 
         # struct a - basic types

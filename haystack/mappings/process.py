@@ -133,7 +133,7 @@ class ProcessMemoryMapping(AMemoryMapping):
         return d
 
 
-def readProcessMappings(process):
+def make_process_memory_handler(process):
     """
     Read all memory mappings of the specified process.
 
@@ -142,10 +142,9 @@ def readProcessMappings(process):
 
     May raise a ProcessError.
     """
-    try:
-        mapsfile = process.get_mappings_line()
-    except dbg.ProcessError as err:
-        raise dbg.ProcessError(process, "Unable to read process maps: %s" % err)
+    if not isinstance(process, dbg.IProcess):
+        raise TypeError('dbg.IProcess expected')
+    mapsfile = process.get_mappings_line()
 
     mappings = []
     try:
@@ -154,7 +153,7 @@ def readProcessMappings(process):
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
-                raise dbg.ProcessError(process, "Unable to parse memory mapping: %r" % line)
+                raise IOError(process, "Unable to parse memory mapping: %r" % line)
             log.debug('readProcessMappings %s' % (str(match.groups())))
             _map = ProcessMemoryMapping(process, int(match.group(1), 16), int(match.group(2), 16),
                                         match.group(3), int(match.group(4), 16), int(match.group(5), 16),
@@ -169,12 +168,21 @@ def readProcessMappings(process):
     return _memory_handler
 
 
-def read_local_process_mappings():
-    class P:
-        pid = os.getpid()
-        # we need that for the machine arch read.
+__LOCAL_MAPPINGS = None
 
-        def readBytes(self, addr, size):
-            return ctypes.string_at(addr, size)
 
-    return readProcessMappings(P())  # memory_mapping
+def make_local_memory_handler():
+    global __LOCAL_MAPPINGS
+    if __LOCAL_MAPPINGS is None:
+        __LOCAL_MAPPINGS = make_process_memory_handler(dbg.get_debugger(os.getpid()))
+    return __LOCAL_MAPPINGS
+    #class P(dbg.IProcess):
+    #    def get_pid(self):
+    #        return os.getpid()
+    #
+    #    def get_mapping_lines(self):
+    #        return os.getpid()
+    #
+    #    def read_bytes(self, addr, size):
+    #        return ctypes.string_at(addr, size)
+    #return readProcessMappings(P())  # memory_mapping

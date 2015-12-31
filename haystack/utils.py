@@ -60,17 +60,9 @@ class Utils(interfaces.ICTypesUtils):
             ret = self.__local_process_memory_handler.is_valid_address(obj, structType)
             if ret:
                 return ret
-
-        class P:
-            pid = os.getpid()
-            # we need that for the machine arch read.
-
-            def readBytes(self, addr, size):
-                return self.__ctypes.string_at(addr, size)
-
         # loading dependencies
-        from haystack.mappings.process import readProcessMappings
-        memory_handler = readProcessMappings(P())  # memory_mapping
+        from haystack.mappings.process import make_local_memory_handler
+        memory_handler = make_local_memory_handler()
         self.__local_process_memory_handler = memory_handler
         return self.__local_process_memory_handler.is_valid_address(obj, structType)
 
