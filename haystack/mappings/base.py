@@ -122,6 +122,9 @@ class AMemoryMapping(interfaces.IMemoryMapping):
     def __len__(self):
         return int(self.end - self.start)
 
+    def __gt__(self, o):
+        return self.start > o.start
+
     def search(self, bytestr):
         bytestr_len = len(bytestr)
         buf_len = 64 * 1024
@@ -227,7 +230,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             raise TypeError('Please feed me a list of IMemoryMapping')
         if not isinstance(_target, interfaces.ITargetPlatform):
             raise TypeError('Please feed me a ITargetPlatform')
-        self._mappings = mapping_list
+        self._mappings = sorted(mapping_list)
         self._target = _target
         for m in self._mappings:
             m.set_target_platform(self._target)

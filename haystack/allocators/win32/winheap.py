@@ -18,10 +18,15 @@ import logging
 
 from haystack import model
 from haystack import listmodel
-from haystack.abc import interfaces
 
 
 log = logging.getLogger('winheap')
+
+FrontEndHeapType = {
+    0: "BACKEND",
+    1: "LOOK_ASIDE",
+    2: "LOW_FRAGMENTATION",
+    }
 
 
 class Win_Heap(object):
@@ -34,21 +39,32 @@ class Win_Heap(object):
 class UCR_List(object):
     # based on win7 heap_segment
     def __init__(self, ctypes_ucrlist):
-        self.ucrs = ctypes_ucrlist
+        self.ucrs = [UCR(u) for u in ctypes_ucrlist]
 
     def to_string(self, prefix=''):
         s = []
         for ucr in self.ucrs:
-            s.append('%sUCR: 0x%0.8x-0x%0.8x => size:0x%x' % (prefix, ucr.Address.value, ucr.Address.value + ucr.Size, ucr.Size))
+            #s.append('%sUCR: 0x%0.8x-0x%0.8x => size:0x%x' % (prefix, ucr.Address.value, ucr.Address.value + ucr.Size, ucr.Size))
+            s.append('%sUCR: 0x%0.8x-0x%0.8x => size:0x%x' % (prefix, ucr.address, ucr.end, ucr.size))
             ## ucr_segment == heap_segment => heap, its a trap.
         return '\r\n'.join(s)
+
+    def __iter__(self):
+        for u in self.ucrs:
+            yield u
+
+class UCR(object):
+    def __init__(self, ucr):
+        self.address = ucr.Address.value if hasattr(ucr.Address, 'value') else ucr.Address
+        self.size = ucr.Size
+        self.end = self.address + self.size
 
 
 class Segment(object):
     # based on win7 heap_segment
     # a segment can have multiple mappings
 
-    def __init__(self, memory_handler, ctypes_segment, ucr_info):
+    def __init__(self, memory_handler, ctypes_segment):
         self.start = ctypes_segment.FirstEntry.value
         self.end = ctypes_segment.LastValidEntry.value
         # UCR.
@@ -57,19 +73,23 @@ class Segment(object):
         self.uncommitted_ranges = ctypes_segment.NumberOfUnCommittedRanges
         self.committed_pages = self.nb_pages - self.uncommitted_pages
         self.committed_size = self.committed_pages * 4096
+        # gets reduced by set_ucr()
         self.committed_size2 = self.end - self.start
         self.ucrs = []
-        for ucr in ucr_info:
-            if self.start <= ucr.Address.value <= self.end:
-                self.ucrs.append((ucr.Address.value, ucr.Size))
-                self.committed_size2 -= ucr.Size
-                pass
-        # self.committed_size == self.committed_size2
         # stats from chunks
         self.s_allocated, self.s_allocated_overhead = None, None
         self.s_free, self.s_free_overhead = None, None
         self.s_overhead, self.s_sum = None, None
         self.mappings = self._init_mappings(memory_handler)
+        return
+
+    def set_ucr(self, ucr_info):
+        for ucr in ucr_info:
+            if self.start <= ucr.address <= self.end:
+                self.ucrs.append((ucr.address, ucr.size))
+                self.committed_size2 -= ucr.size
+                pass
+        # self.committed_size == self.committed_size2
         return
 
     def _init_mappings(self, memory_handler):
@@ -264,6 +284,22 @@ class WinHeapValidator(listmodel.ListModel):
                 chunk_addr += chunk_header.Size * 8
         return (allocated, free)
 
+    def HEAP_get_lookaside_chunks(self, record):
+        """
+        WinXP Only
+         heap->FrontEndheap is a list of 128 HEAP_LOOKASIDE
+         lookasidelist[n] block is of size n*8 and used to store (n-1)*8 byte blocks (remaining 8 bytes is used for header
+
+         Most of the time, with FrontEndHeapType == 1 and LockVariable != 0,
+            then TotalFreeSize*4 == FreeLists totals, event with LAL present.
+        """
+        raise NotImplementedError
+
+    def HEAP_get_LFH_chunks(self, record):
+        """
+        Win7 only
+        """
+        raise NotImplementedError
 
     def HEAP_get_frontend_chunks(self, record):
         """ windows xp ?
@@ -280,78 +316,22 @@ class WinHeapValidator(listmodel.ListModel):
             BackEndHeapFree
 
         """
-        #res = list()
         all_free = list()
         all_committed = list()
         log.debug('HEAP_get_frontend_chunks')
-        ptr = record.FrontEndHeap
-        addr = self._utils.get_pointee_address(ptr)
-        if record.FrontEndHeapType == 1:  # windows XP per default
+        if record.FrontEndHeapType == 0:
+            # Backend allocators, nothing to do with Frontend.
+            return [],[]
+        elif record.FrontEndHeapType == 1:  # windows XP per default
             lal_free_c = self.HEAP_get_lookaside_chunks(record)
             all_free.extend(lal_free_c)
-            #(allocated_c, free_c) = self.HEAP_get_chunks(record)
-            #freelist_free_c = self.HEAP_get_freelists(record)
-            #all_free = set(lal_free_c + free_c + freelist_free_c)
-            #all_committed = set(allocated_c) - set(all_free)
-            # TODO delete this ptr from the heap-segment entries chunks
-            #for x in range(128):
-            #    log.debug('finding lookaside %d at @%x' % (x, addr))
-            #    m = self._memory_handler.get_mapping_for_address(addr)
-            #    st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
-            #    # load members on self.FrontEndHeap car c'est un void *
-            #    #for free in st.iterateList('ListHead'):  # single link list.
-            #    #for free in self.iterate_list_from_field(st, 'ListHead'):
-            #    listHead = st.ListHead._1
-            #    listHead._orig_address_ = addr
-            #    for free in self.iterate_list_from_field(listHead, 'Next'):
-            #        # TODO delete this free from the heap-segment entries chunks
-            #        # is that supposed to be a FREE_ENTRY ?
-            #        # or a struct__HEAP_LOOKASIDE ?
-            #        log.debug('free')
-            #        all_free.append(free)  # ???
-            #        pass
-            #    addr += ctypes.sizeof(self.win_heap.HEAP_LOOKASIDE)
+            # TODO committed ?
         elif record.FrontEndHeapType == 2:  # win7 per default
-            log.debug('finding frontend at @%x' % (addr))
-            m = self._memory_handler.get_mapping_for_address(addr)
-            st = m.read_struct(addr, self.win_heap.LFH_HEAP)
-            # LFH is a big chunk allocated by the backend allocator, called subsegment
-            # but rechopped as small chunks of a heapbin.
-            # Active subsegment hold that big chunk.
-            #
-            #
-            # load members on self.FrontEndHeap car c'est un void *
-            if not self.load_members(st, 1):
-                log.error('Error on loading frontend')
-                raise model.NotValid('Frontend load at @%x is not valid', addr)
-
-            # log.debug(st.LocalData[0].toString())
-            #
-            # 128 HEAP_LOCAL_SEGMENT_INFO
-            for sinfo in st.LocalData[0].SegmentInfo:
-                # TODO , what about ActiveSubsegment ?
-                for items_ptr in sinfo.CachedItems:  # 16 caches items max
-                    items_addr = self._utils.get_pointee_address(items_ptr)
-                    if not bool(items_addr):
-                        #log.debug('NULL pointer items')
-                        continue
-                    m = self._memory_handler.get_mapping_for_address(items_addr)
-                    subsegment = m.read_struct(items_addr, self.win_heap.HEAP_SUBSEGMENT)
-                    # log.debug(subsegment)
-                    # TODO current subsegment.SFreeListEntry is on error at some depth.
-                    # bad pointer value on the second subsegment
-                    chunks = self.HEAP_SUBSEGMENT_get_userblocks(subsegment)
-                    free = self.HEAP_SUBSEGMENT_get_freeblocks(subsegment)
-                    committed = set(chunks) - set(free)
-                    all_free.extend(free)
-                    all_committed.extend(committed)
-                    log.debug(
-                        'subseg: 0x%0.8x, commit: %d chunks free: %d chunks' %
-                        (items_addr, len(committed), len(free)))
+            committed, free = self.HEAP_get_LFH_chunks(record)
+            all_free.extend(free)
+            all_committed.extend(committed)
         else:
-            # print 'FrontEndHeapType == %d'%(self.FrontEndHeapType)
-            #raise StopIteration
-            pass
+            raise ValueError('FrontEndHeapType should be 0,1,2 not %d' % record.FrontEndHeapType)
         return all_committed, all_free
 
     # HEAP_SUBSEGMENT
@@ -487,12 +467,14 @@ class WinHeapValidator(listmodel.ListModel):
         """returns a decoded copy """
         # contains the Size
         # 32 bits: struct__HEAP_ENTRY_0_0
-        # FIXME BUG, we need to use _0_0_0_0 for 64 bits, otherwise
-        # we are reading bad data
         # 64 bits: struct__HEAP_ENTRY_0_0_0_0
-        chunk_len = ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY_0_0)
-        chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer_copy(chunk_header)
-        #chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer(chunk_header)
+        if self._target.get_cpu_bits() == 32:
+            struct_type = self.win_heap.struct__HEAP_ENTRY_0_0
+        elif self._target.get_cpu_bits() == 64:
+            struct_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
+        chunk_len = ctypes.sizeof(struct_type)
+        chunk_header_decoded = struct_type.from_buffer_copy(chunk_header)
+        # chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer(chunk_header)
         # decode the heap entry chunk header with the heap.Encoding
         working_array = (
             ctypes.c_ubyte *
@@ -543,3 +525,91 @@ class WinHeapValidator(listmodel.ListModel):
             # FIXME: use word_size from self._target
             res.append((freeblock._orig_address_, chunk_header.Size * 8))
         return res
+
+    def print_heap_analysis(self, heap, verbose):
+        addr = heap._orig_address_
+        heap_not_at_start = ''
+        m = self._memory_handler.get_mapping_for_address(addr)
+        if addr != m.start:
+            heap_not_at_start = ' (!) '
+
+        print '[+] %sHEAP:0x%0.8x' % (heap_not_at_start, addr), m
+        if not verbose:
+            return
+        #
+        print '\tFrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN')
+
+        finder = self._memory_handler.get_heap_finder()
+        walker = finder.get_heap_walker(m)
+        ucrs = self.print_heap_analysis_details(heap, walker)
+        self.print_segments_analysis(heap, walker, ucrs)
+
+    def print_heap_analysis_details(self, heap, walker):
+        # check counters, sizes...
+        # show UCR ranges at heap levels,
+        # win7: UCRList
+        # winxp: UnusedUCR, UCRSegments
+        raise NotImplementedError()
+
+    def print_segments_analysis(self, heap, walker, ucrs):
+        # show segments details
+        raise NotImplementedError()
+
+    def print_mapping_children_analysis(self, heap):
+        # look at children from free/allocations POV
+        addr = heap._orig_address_
+        m = self._memory_handler.get_mapping_for_address(addr)
+        print '[+] ', m
+        finder = self._memory_handler.get_heap_finder()
+        walker = finder.get_heap_walker(m)
+        children = walker.get_heap_children_mmaps()
+
+        # get allocated/free stats by mappings
+        overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
+        occupied_res = count_by_mapping(self._memory_handler, walker.get_user_allocations(), overhead_size)
+        free_res = count_by_mapping(self._memory_handler, walker.get_free_chunks(), overhead_size)
+
+        allocated, allocated_overhead = occupied_res.get(m, (0, 0))
+        free, free_overhead = free_res.get(m, (0, 0))
+        overhead = allocated_overhead + free_overhead
+        sum_ = allocated + free + overhead
+        print "\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_)
+        for child in children:
+            print '\t[-] ', child
+            allocated, allocated_overhead = occupied_res.get(child, (0, 0))
+            free, free_overhead = free_res.get(child, (0, 0))
+            overhead = allocated_overhead + free_overhead
+            sum_ = allocated + free + overhead
+            print "\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_)
+
+
+def count_by_mapping(memory_handler, chunksize_tuple, overhead_size):
+    res = {}
+    for addr, size in chunksize_tuple:
+        m = memory_handler.get_mapping_for_address(addr)
+        if m not in res:
+            # (size,overhead)
+            res[m] = (0, 0)
+        tsize, overhead = res[m]
+        tsize += size
+        overhead += overhead_size # size of win chunk header
+        res[m] = (tsize, overhead)
+    return res
+
+
+def count_by_segment(segment_list, chunksize_tuple, overhead_size):
+    res = {}
+    for addr, size in chunksize_tuple:
+        for s in segment_list:
+            if s.FirstEntry.value <= addr <= s.LastValidEntry.value:
+                # we found the segment
+                key = s.FirstEntry.value
+                if key not in res:
+                    # (size,overhead)
+                    res[key] = (0, 0)
+                tsize, overhead = res[key]
+                tsize += size
+                overhead += overhead_size # size of win chunk header
+                res[key] = (tsize, overhead)
+                break
+    return res

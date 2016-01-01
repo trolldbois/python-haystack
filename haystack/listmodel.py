@@ -28,6 +28,11 @@ C code example:
         int hi;
         struct SListEntry siblings;
     }
+    struct Items2 {
+        int hi;
+        struct SListEntry list_of_items;
+        int ho;
+    }
 
     /* For double linked lists */
     struct DoubleListEntry {
@@ -51,6 +56,7 @@ Registration usage:
 In case of a single link list of siblings:
     register_single_linked_list_record_type(struct_SListEntry, 'next')
     register_linked_list_field_and_type(struct_Items, 'list_of_items', struct_Items, 'list_of_items')
+    register_linked_list_pointer_and_type(struct_Items2, 'list_of_items', struct_Items2, 'list_of_items')
 
 In case of a single link list:
     register_single_linked_list_record_type(struct_SListEntry, 'next')
@@ -269,7 +275,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         for x in self._get_list_fields(record_type):
             if x[0] == fieldname:
                 return x
-        raise ValueError('No such registered list field: %s for type: %s' % (fieldname, record_type))
+        raise ValueError('No such registered list field: %s for type: %s' % (fieldname, record_type.__name__))
 
     def _get_list_fields(self, record_type):
         """
@@ -325,8 +331,21 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         head = getattr(record, fieldname)
         # and its record_type
         field_record_type = type(head)
-        ## DEBUG use registration instead
-        ##field_record_type = pointee_record_type
+
+        # if the field is a pointer, assume that the root of the list is the pointee
+        if self._ctypes.is_pointer_type(field_record_type):
+            log.debug('Pointer field %s for list', fieldname)
+            head_addr = self._utils.get_pointee_address(head)
+            if head_addr == 0:
+                return []
+            memory_map = self._memory_handler.is_valid_address_value(head_addr, pointee_record_type)
+            if memory_map is False:
+                log.error("_iterate_list_pointer_field: the root of this linked list has a bad value: 0x%x", head_addr)
+                raise ValueError('ValueError: the root of this linked list has a bad value: 0x%x' % head_addr)
+            head = memory_map.read_struct(head_addr, pointee_record_type)
+            field_record_type = type(head)
+            self._memory_handler.keepRef(head, pointee_record_type, head_addr)
+
         # check that forward and backwards link field name were registered
         iterator_fn = None
         if self.is_single_linked_list_type(field_record_type):

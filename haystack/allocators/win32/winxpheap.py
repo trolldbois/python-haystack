@@ -111,12 +111,9 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-import ctypes
 import logging
 
 from haystack.abc import interfaces
-from haystack import model
-from haystack import utils
 from haystack.allocators.win32 import winheap
 
 log = logging.getLogger('winxpheap')
@@ -188,7 +185,16 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
         self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', sentinels)
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
+        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UCRSegments', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
+
+        # UCR
+        # ('UnusedUnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)), Next, Address, Size
+        self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', sentinels)
+        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UnusedUnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SEGMENT, 'UnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+        ##self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+
 
         return
 
@@ -389,29 +395,53 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP):
             raise TypeError('record should be a heap')
         ucrs = []
-        segments = []
-        ucr_addr = self._utils.get_pointee_address(record.UCRSegments)
-        if ucr_addr == 0:
-            return ucrs
-        # record.segments is a pointer to s single list
-        # the field has a different name from win7
-        #struct__HEAP_UCR_SEGMENT._fields_ = [
-        #('Next', POINTER_T(struct__HEAP_UCR_SEGMENT)),
-        m = self._memory_handler.get_mapping_for_address(ucr_addr)
-        if not m:
-            log.debug("found a non valid UCRSegments pointer at %x", ucr_addr)
-            raise ValueError("found a non valid UCRSegments pointer at %x" % ucr_addr)
-        root_ucr = m.read_struct(ucr_addr, self.win_heap.struct__HEAP_UCR_SEGMENT)
-        self._memory_handler.keepRef(ucr_addr, self.win_heap.struct__HEAP_UCR_SEGMENT, ucr_addr)
-        # FIXME what is this hack
-        root_ucr._orig_address_ = ucr_addr
-        ucrs.append(ucr_addr)
-        for ucr in self.iterate_list_from_field(root_ucr, 'UCRSegments'):
+        for ucr in self.iterate_list_from_field(record, 'UCRSegments'):
             ucr_struct_addr = ucr._orig_address_
-            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            log.debug("Segment.UCRSegmentList: 0x%0.8x reserved_size: 0x%0.5x committed_size: 0x%0.5x" % (
+                ucr_struct_addr, ucr.SizeReservedSize, ucr.CommittedSize))
+            ucrs.append(ucr)
+        return ucrs
+
+    def HEAP_get_UCRanges_list(self, record):
+        """
+        Returns a list of available UCR ranges for this heap.
+        HEAP.UnusedUnCommittedRanges is a linked list to all UCRSegments
+        ('UnusedUnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)),
+        They are often null. Address == 0, Size == 0
+
+        """
+        if not isinstance(record, self.win_heap.struct__HEAP):
+            raise TypeError('record should be a heap')
+        ucrs = []
+        for ucr in self.iterate_list_from_field(record, 'UnusedUnCommittedRanges'):
+            ucr_struct_addr = ucr._orig_address_
+            ucr_addr = ucr.Address
             # UCR.Size are not chunks sizes. NOT *8
-            log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+            log.debug("Heap.UnusedUnCommittedRanges: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
                 ucr_struct_addr, ucr_addr, ucr.Size))
+            if ucr_addr == 0:
+                # ignore it
+                continue
+            ucrs.append(ucr)
+        return ucrs
+
+    def SEGMENT_get_UCR_list(self, record):
+        """Returns a list of UCR segments for this segment.
+        SEGMENT.UnCommittedRanges is a linked list to UCRs for this segment.
+        Some may have Size == 0.
+        """
+        if not isinstance(record, self.win_heap.struct__HEAP_SEGMENT):
+            raise TypeError('record should be a heap')
+        ucrs = []
+        for ucr in self.iterate_list_from_field(record, 'UnCommittedRanges'):
+            ucr_struct_addr = ucr._orig_address_
+            ucr_addr = ucr.Address
+            # UCR.Size are not chunks sizes. NOT *8
+            log.debug("Heap.UnusedUnCommittedRanges: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+                ucr_struct_addr, ucr_addr, ucr.Size))
+            if ucr_addr == 0:
+                # ignore it
+                continue
             ucrs.append(ucr)
         return ucrs
 
@@ -478,3 +508,51 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
                         chunk_addr = last_addr
                 chunk_addr += size * 8
         return (allocated, free)
+
+
+    def print_heap_analysis_details(self, heap, walker):
+        # size & space calculated from heap info
+        # winXP
+        # Heap's unuseduncommitted ranges
+        # Heap.UnusedUnCommittedRanges
+        ucrs = self.HEAP_get_UCRanges_list(heap)
+        ucr_list = winheap.UCR_List(ucrs)
+        print '\tUnused UCR: %d' % (len(ucrs))
+        print ucr_list.to_string('\t\t')
+        # Heap.UCRSegments
+        ucrsegments = self.get_UCR_segment_list(heap)
+        print "\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments])))
+        for ucr_segment in ucrsegments:
+            print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
+            # print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
+        return ucrs
+
+    def print_segments_analysis(self, heap, walker, ucrs):
+
+        # heap is a segment
+        segments = self.HEAP_get_segment_list(heap)
+
+        overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
+        # get allocated/free stats by segment
+        occupied_res2 = winheap.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
+        free_res2 = winheap.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
+
+        print "\tSegmentList: %d" % len(segments)
+        for segment in segments:
+            p_segment = winheap.Segment(self._memory_handler, segment)
+            # add segments's ucr
+            ucrsegments = self.SEGMENT_get_UCR_list(segment)
+            ucrs.extend(ucrsegments)
+            ucr_list = winheap.UCR_List(ucrs)
+            p_segment.set_ucr(ucr_list)
+            p_segment.set_ressource_usage(occupied_res2, free_res2)
+            print p_segment.to_string('\t\t')
+            # if UCR, then
+            # in XP, UCR segments are in HEAP.
+            # ucrsegments = validator.get_UCR_segment_list(segment)
+            ucrsegments = self.SEGMENT_get_UCR_list(segment)
+            print "\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments])))
+            for ucr_segment in ucrsegments:
+                print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
+                #print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
+            #
