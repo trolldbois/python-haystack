@@ -100,7 +100,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # LIST_ENTRY
         # the lists usually use end of mapping as a sentinel.
         # we have to use all mappings instead of heaps, because of a circular dependency
-        sentinels = set([mapping.end-0x10 for mapping in self._memory_handler.get_mappings()])
+        #sentinels = set([mapping.end-0x10 for mapping in self._memory_handler.get_mappings()])
+        sentinels = set()
+
         # sentinels = set() #set([mapping.end for mapping in self._memory_handler.get_mappings()])
         self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
         self.register_single_linked_list_record_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', sentinels)
@@ -109,9 +111,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
         # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
         # FIXME, use offset size base on self._target.get_word_size()
-        self.register_linked_list_field_and_type(self.win_heap.HEAP_SEGMENT, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = -8
+        self.register_linked_list_field_and_type(self.win_heap.HEAP_SEGMENT, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry') # offset = -8
         # as a facility HEAP contains HEAP_SEGMENT. But will also force parsing the list at HEAP loading time
-        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = -8
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry') # offset = -8
         #HEAP_SEGMENT._listHead_ = [
         #        ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
         #HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
