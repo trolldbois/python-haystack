@@ -301,7 +301,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 ret.append((field_name, entries[0], entries[1], entries[2]))
         return ret
 
-    def iterate_list_from_field(self, record, fieldname, sentinels=None):
+    def iterate_list_from_field(self, record, fieldname, sentinels=None, ignore_head=True):
         """
         Iterate over the items of the list designated by fieldname in record.
         :param record:
@@ -310,9 +310,9 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :return:
         """
         link_info = self._get_list_info_for_field_for(type(record), fieldname)
-        return self._iterate_list_from_field_with_link_info(record, link_info, sentinels)
+        return self._iterate_list_from_field_with_link_info(record, link_info, sentinels, ignore_head)
 
-    def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None):
+    def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None, ignore_head=True):
         """
          iterates over all entry of a double linked list.
          we do not return record in the list.
@@ -364,8 +364,13 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         # @ of the fieldname in record. This can be different from offset.
         head_address = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
         # stop at the first sign of a previously found list entry
-        done = sentinels | gbl_sentinels | {head_address}
-        log.debug('Ignore head_address self.%s at 0x%0.8x' % (fieldname, head_address))
+        if ignore_head:
+            done = sentinels | gbl_sentinels | {head_address}
+            log.debug('Ignore head_address self.%s at 0x%0.8x' % (fieldname, head_address))
+        else:
+            done = sentinels | gbl_sentinels
+            log.debug('NOT Ignoring head_address self.%s at 0x%0.8x' % (fieldname, head_address))
+        #
         log.debug("_iterate_list_from_field_with_link_info Field:%s at offset:%d st_size:%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
         return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done)
 
