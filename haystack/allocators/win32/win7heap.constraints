@@ -69,3 +69,8 @@ LocalData: IgnoreMember
 # bad pointer value on the second subsegment
 [struct__HEAP_SUBSEGMENT]
 SFreeListEntry: IgnoreMember
+
+
+# Signature is always 0xF0E0D0C0.
+#[struct__HEAP_USERDATA_HEADER_0_0]
+#Signature: [0xF0E0D0C0]
