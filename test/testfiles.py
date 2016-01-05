@@ -74,7 +74,7 @@ zeus_1668_vmtoolsd_exe.known_heaps = [(0x00150000, 0x100000), # k
 # .FrontEndHeap: null,
 # .FrontEndHeapType == 0
 
-
+# First Entry, Last Entry
 zeus_1668_vmtoolsd_exe.known_segments = [(0x150680, 0x250000),
                                          (0x250680, 0x260000),
                                          (0x3f0680, 0x400000),
@@ -135,6 +135,22 @@ putty_1_win7.known_heaps = [(0x00390000, 0x3000),
                             # from free stuf - erroneous
                             #( 0x0061a000, 1200),
                             ]
+
+# heap, ucr_start, ucr_end, ucr_size
+putty_1_win7.known_ucr = {0x00390000: [(0x00393000, 0x003a0000, 0xd000)],
+                          0x00540000: [(0x00541000, 0x00580000, 0x3f000)],
+                          0x00580000: [(0x00589000, 0x00590000, 0x7000),
+                                       (0x01f12000, 0x02000000, 0xee000)],
+                          0x005c0000: [(0x006b1000, 0x006c0000, 0xf000)],
+                          0x01ef0000: [(0x01ef1000, 0x01f00000, 0xf000)],
+                          0x02010000: [(0x02031000, 0x02050000, 0x1f000)],
+                          0x02080000: [(0x035c2000, 0x036a0000, 0xde000)], # ???
+                          0x021f0000: [(0x021f6000, 0x02230000, 0x3a000)],
+                          0x03360000: [(0x03361000, 0x033a0000, 0x3f000)],
+                          0x04030000: [(0x04031000, 0x04070000, 0x3f000)],
+                          0x04110000: [(0x04111000, 0x04150000, 0x3f000)],
+                          0x041c0000: [(0x041c1000, 0x04200000, 0x3f000)],
+                          }
 
 putty_7124_win7 = TestDump('test/dumps/putty/putty.7124.dump')
 putty_7124_win7.known_heaps = [(0x260000, 0x21000),
