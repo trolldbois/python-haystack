@@ -119,35 +119,31 @@ class TestWin7Heap(unittest.TestCase):
         ucr_size = reserved_size - committed_size
         self.assertEquals(ucr.Size, ucr_size)
 
-    @unittest.skip('because its buggy')
-    def test_get_UCR_segment_list_all(self):
-        # FIXME: look at previous version to debug what was going on with UCR
-        # get an UCR refresher too. is it linked to holes in memory mappings?
+    def test_HEAP_get_UCRanges_list(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         win7heap = finder._heap_module
-        my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
-        for addr, size in putty_1_win7.known_heaps:
-            h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
-            self.assertTrue(finder._is_heap(h, addr))
+        # get an example
+        for heap_addr, ucr_list in putty_1_win7.known_ucr.items():
+            # get the heap
+            h = self.memory_handler.get_mapping_for_address(heap_addr)
+            heap = h.read_struct(heap_addr, win7heap.HEAP)
+            self.assertTrue(finder._is_heap(h, heap_addr))
             validator = finder.get_heap_validator()
-            # get free UCRS from heap
+            # get UCRList from heap
+            # TODO TotalUCRs == Total UCRS from UCRSegments. Not from Heap UCRList
             reserved_ucrs = validator.HEAP_get_UCRanges_list(heap)
-            all_ucrs = []
-            # UCR size should add on all UCR for all segments
-            for segment in validator.HEAP_get_segment_list(heap):
-                all_ucrs.extend(validator.get_UCR_segment_list(segment))
-            total_ucr_size = sum([ucr.Size for ucr in all_ucrs])
-            # sum of all existing UCR. not just free UCR
-            # FIXME, HEAP_SEGMENT_get_UCR_segment_list is not working
-            self.assertEquals(len(all_ucrs), heap.Counters.TotalUCRs)
+            self.assertEquals(len(reserved_ucrs), heap.Counters.TotalUCRs, "Bad count for heap 0x%x" % heap_addr)
+            self.assertEquals(len(ucr_list), heap.Counters.TotalUCRs)
             # check numbers.
             reserved_size = heap.Counters.TotalMemoryReserved
             committed_size = heap.Counters.TotalMemoryCommitted
             ucr_size = reserved_size - committed_size
-            self.assertEquals(total_ucr_size, ucr_size)
-            # print 'heap:0x%x size:0x%x' % (addr, size)
-            # print 'heap.Counters.TotalUCRs', heap.Counters.TotalUCRs
+            self.assertEquals(ucr_size, ucr_size)
+            # TODO: what is a LargeUCR
+            ucr_total_size = sum([ucr.Size for ucr in reserved_ucrs if ucr.Size >= 512*1024])
+            self.assertEquals(ucr_total_size, heap.Counters.TotalMemoryLargeUCR)
+
+
 
     def test_get_segment_list(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
@@ -346,6 +342,7 @@ class TestWin7Heap(unittest.TestCase):
         # FIXME: check more.
 
     def test_get_vallocs(self):
+        # test/dumps/keepass.live.prod 0x00410000
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         win7heap = finder._heap_module
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()

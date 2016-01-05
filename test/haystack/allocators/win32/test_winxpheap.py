@@ -214,6 +214,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
         # test the heaps
         _heaps = self._heap_finder.get_heap_mappings()
         segments = []
+        log.debug('')
         for heap in _heaps:
             heap_addr = heap.get_marked_heap_address()
             log.debug(
@@ -234,7 +235,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 # BaseAddress = heap address most of the time
                 # except when the segment is a secondary allocated segment for the heap
                 # in that case the BaseAddress is the segment itself
-                log.debug("HEAP: 0x%x SEGMENT:0x%x BA:0x%x", heap.start, segment._orig_address_, segment.BaseAddress.value)
+                log.debug("HEAP: 0x%x SEGMENT:0x%x BaseAddress:0x%x", heap.start, segment._orig_address_, segment.BaseAddress.value)
                 self.assertTrue(segment.BaseAddress.value in [segment._orig_address_, heap.start])
             # in this heap
             # heap.LastSegmentIndex should be i
@@ -261,6 +262,8 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    logging.getLogger('testwinxpheap').setLevel(logging.DEBUG)
+
     #logging.basicConfig(level=logging.DEBUG)
     # logging.getLogger('testwinxpheap').setLevel(level=logging.DEBUG)
     #logging.getLogger('winxpheap').setLevel(level=logging.DEBUG)
