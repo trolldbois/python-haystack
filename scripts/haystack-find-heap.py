@@ -83,7 +83,7 @@ def one_heap(opts, finder):
     if opts.verbose:
         out = text.RecursiveTextOutputter(finder._memory_handler)
         # out = python.PythonOutputter(finder._memory_handler)
-        print out.parse(ctypes_heap, depth=1)
+        print out.parse(ctypes_heap, depth=2)
     print 'Valid =', valid
     # fake it
     m = finder._memory_handler.get_mapping_for_address(address)
@@ -94,7 +94,5 @@ def one_heap(opts, finder):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    # logging.basicConfig(level=logging.DEBUG)
     main(sys.argv[1:])
 
