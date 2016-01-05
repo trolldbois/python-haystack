@@ -312,6 +312,43 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         link_info = self._get_list_info_for_field_for(type(record), fieldname)
         return self._iterate_list_from_field_with_link_info(record, link_info, sentinels, ignore_head)
 
+    def iterate_list_from_pointer_field(self, record, fieldname, sentinels=None, ignore_head=False):
+        """
+        Iterate over the items of the list designated by fieldname (a pointer) in record.
+        Do not ignore head, by default.
+
+        :param record:
+        :param fieldname:
+        :param sentinels: values that stop the iteration
+        :return:
+        """
+        fieldname, pointee_record_type, lefn, offset = self._get_list_info_for_field_for(type(record), fieldname)
+        # get the linked list field name
+        head = getattr(record, fieldname)
+        # and its record_type
+        field_record_type = type(head)
+        # if the field is a pointer, assume that the root of the list is the pointee
+        if not self._ctypes.is_pointer_type(field_record_type):
+            raise TypeError('Field %s should be a pointer' % fieldname)
+        pointee_type = self._ctypes.get_pointee_type(field_record_type)
+        if not self._ctypes.is_struct_type(pointee_type):
+            raise TypeError('Field %s should be a pointer to a structure')
+        # if pointee_type != pointee_record_type:
+        #     raise TypeError('Field %s was registered for %s but found %s' % (fieldname, pointee_record_type, pointee_type))
+        log.debug('field %s if a pointer to a list of %s', fieldname, pointee_record_type)
+        head_addr = self._utils.get_pointee_address(head)
+        if head_addr == 0:
+            return []
+        memory_map = self._memory_handler.is_valid_address_value(head_addr, pointee_record_type)
+        if memory_map is False:
+            log.error("_iterate_list_pointer_field: the root of this linked list has a bad value: 0x%x", head_addr)
+            raise ValueError('ValueError: the root of this linked list has a bad value: 0x%x' % head_addr)
+        head = memory_map.read_struct(head_addr, pointee_record_type)
+        self._memory_handler.keepRef(head, pointee_record_type, head_addr)
+        #
+        link_info = lefn, pointee_record_type, lefn, offset
+        return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head)
+
     def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None, ignore_head=True):
         """
          iterates over all entry of a double linked list.
@@ -327,24 +364,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         if sentinels is None:
             sentinels = set()
         fieldname, pointee_record_type, lefn, offset = link_info
-        # get the double linked list field name
+        # get the list field name
         head = getattr(record, fieldname)
         # and its record_type
         field_record_type = type(head)
-
-        # if the field is a pointer, assume that the root of the list is the pointee
-        if self._ctypes.is_pointer_type(field_record_type):
-            log.debug('Pointer field %s for list', fieldname)
-            head_addr = self._utils.get_pointee_address(head)
-            if head_addr == 0:
-                return []
-            memory_map = self._memory_handler.is_valid_address_value(head_addr, pointee_record_type)
-            if memory_map is False:
-                log.error("_iterate_list_pointer_field: the root of this linked list has a bad value: 0x%x", head_addr)
-                raise ValueError('ValueError: the root of this linked list has a bad value: 0x%x' % head_addr)
-            head = memory_map.read_struct(head_addr, pointee_record_type)
-            field_record_type = type(head)
-            self._memory_handler.keepRef(head, pointee_record_type, head_addr)
 
         # check that forward and backwards link field name were registered
         iterator_fn = None
@@ -370,6 +393,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         else:
             done = sentinels | gbl_sentinels
             log.debug('NOT Ignoring head_address self.%s at 0x%0.8x' % (fieldname, head_address))
+            # TODO, TU that.
         #
         log.debug("_iterate_list_from_field_with_link_info Field:%s at offset:%d st_size:%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
         return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done)
@@ -420,8 +444,6 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                     log.debug('sentinels: {%s}', ','.join(['0x%0.8x' % s for s in sentinels]))
                     log.debug('entry on sentinels: %s', entry in sentinels)
                     log.debug('list_member_address in sentinels: %s', list_member_address in sentinels)
-                    # import code
-                    # code.interact(local=locals())
                     raise ValueError('the link of this linked list has a bad value: 0x%x' % entry)
                 st = memoryMap.read_struct(list_member_address, pointee_record_type)
                 st._orig_address_ = list_member_address
@@ -507,7 +529,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
             if memoryMap == False:
                 log.error("_iterate_single_linked_list: the link of this linked list has a bad value")
-                raise ValueError('ValueError: the link of this linked list has a bad value')
+                raise ValueError('ValueError: the link of this linked list has a bad value: 0x%x' % addr)
             st = memoryMap.read_struct(addr, record_type)
             st._orig_address_ = addr
             self._memory_handler.keepRef(st, record_type, addr)

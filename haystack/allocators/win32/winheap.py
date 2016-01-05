@@ -16,9 +16,7 @@ __status__ = "Production"
 import ctypes
 import logging
 
-from haystack import model
 from haystack import listmodel
-
 
 log = logging.getLogger('winheap')
 
@@ -65,8 +63,11 @@ class Segment(object):
     # a segment can have multiple mappings
 
     def __init__(self, memory_handler, ctypes_segment):
-        self.start = ctypes_segment.FirstEntry.value
-        self.end = ctypes_segment.LastValidEntry.value
+        _utils = memory_handler.get_target_platform().get_target_ctypes_utils()
+        self.start = _utils.get_pointee_address(ctypes_segment.FirstEntry)
+        self.end = _utils.get_pointee_address(ctypes_segment.LastValidEntry)
+        #self.start = ctypes_segment.FirstEntry.value
+        #self.end = ctypes_segment.LastValidEntry.value
         # UCR.
         self.nb_pages = ctypes_segment.NumberOfPages
         self.uncommitted_pages = ctypes_segment.NumberOfUnCommittedPages
@@ -125,33 +126,48 @@ class Segment(object):
         return s
 
 
-
 class WinHeapValidator(listmodel.ListModel):
     """
     this listmodel Validator will register know important list fields
-    in the win7 HEAP,
-    [ FIXME TODO and apply constraints ? ]
+    in the windows HEAP,
     and be used to validate the loading of these allocators.
-    This class contains all helper functions used to parse the win7heap allocators.
+    This class contains all helper functions used to parse the windows heap allocators.
+    Common code between winXP and win7
     """
 
-    #def _init_heap_module(self):
-    #    self.win_heap = module
 
     def HEAP_get_segment_list(self, record):
         raise NotImplementedError('code differs between XP and 7')
+
+    def HEAP_get_virtual_allocated_blocks_list(self, record):
+        """
+        Returns a list of addr,commited_size, reserved_size virtual allocated entries.
+        """
+        vallocs = list()
+        for valloc in self.iterate_list_from_field(record, 'VirtualAllocdBlocks'):
+            addr = valloc._orig_address_
+            # committed
+            c_size = valloc.CommitSize
+            # requested
+            r_size = valloc.ReserveSize
+            vallocs.append((addr, c_size, r_size))
+            log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (addr, c_size, r_size))
+        return vallocs
+
+    ## TODO HEAP UCR and Segment UCR are the same.
+    # rename functions to show that better.
+    # some heap UCR will not be listed in segment ucr and vice-versa
+    # get_ucr == get_ucr_from_heap + get_ucr_from_segment
 
     def get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
-        # TODO sentinels
-        # size = self._ctypes.sizeof( self.win_heap.HEAP_UCR_DESCRIPTOR)
-        size = 0x10
-        sentinels = set([mapping.end-size for mapping in self._memory_handler.get_mappings()])
+        # the record at end_segment-0x10 is not actually invalid.
+        # it is a valid HEAP_UCR_DESCRIPTOR. Most of the time, with a Size of 0.
         ucrs = list()
-        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList', sentinels):
+        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = self._utils.get_pointee_address(ucr.Address)
             # UCR.Size are not chunks sizes. NOT *8
@@ -160,30 +176,10 @@ class WinHeapValidator(listmodel.ListModel):
             ucrs.append(ucr)
         return ucrs
 
-    def HEAP_get_virtual_allocated_blocks_list(self, record):
-        """Returns a list of addr,size virtual allocated entries.
-
-        TODO: need some working on.
-        """
-        vallocs = list()
-        for valloc in self.iterate_list_from_field(record, 'VirtualAllocdBlocks'):
-            # FIXME - we should probably return [] on 0 sized entry
-            addr = valloc._orig_address_
-            size = valloc.CommitSize
-            if size == 0:
-                continue
-            #('Entry', LIST_ENTRY),
-            #('ExtraStuff', HEAP_ENTRY_EXTRA),
-            #('CommitSize', ctypes.c_uint32),
-            #('ReserveSize', ctypes.c_uint32),
-            #('BusyBlock', HEAP_ENTRY),
-            vallocs.append((addr, size))
-            log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
-                valloc._orig_address_, valloc.CommitSize, valloc.ReserveSize))
-        return vallocs
-
     def HEAP_get_UCRanges_list(self, record):
-        """Returns a list of available UCR segments for this heap.
+        """
+        win7
+        Returns a list of available UCR segments for this heap.
         HEAP.UCRList is a linked list to all UCRSegments
 
         """
@@ -244,12 +240,10 @@ class WinHeapValidator(listmodel.ListModel):
 
             chunk_addr = first_addr
             log.debug('reading chunk from %x to %x', first_addr, last_addr)
-            while (chunk_addr < last_addr):
+            while chunk_addr < last_addr:
                 if chunk_addr in skiplist:
                     size = skiplist[chunk_addr]
-                    log.debug(
-                        'Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x',
-                        chunk_addr, size, chunk_addr + size)
+                    log.debug('Skipping 0x%0.8x - skip %0.5x bytes to 0x%0.8x', chunk_addr, size, chunk_addr + size)
                     chunk_addr += size
                     continue
                 chunk_header = self._memory_handler.getRef(self.win_heap.HEAP_ENTRY, chunk_addr)
@@ -270,19 +264,17 @@ class WinHeapValidator(listmodel.ListModel):
                     chunk_header._orig_address_ = chunk_addr
                 if record.EncodeFlagMask:  # heap.EncodeFlagMask
                     chunk_header = self.HEAP_ENTRY_decode(chunk_header, record)
-                #log.debug('\t\tEntry: 0x%0.8x\n%s'%( chunk_addr, chunk_header))
-
-                if ((chunk_header.Flags & 1) == 1):
-                    log.debug(
-                        'Chunk 0x%0.8x is in use size: %0.5x' %
-                        (chunk_addr, chunk_header.Size * 8))
-                    allocated.append((chunk_addr, chunk_header.Size * 8))
+                # test if chunk is allocated or free
+                if (chunk_header.Flags & 1) == 1:
+                    allocated.append((chunk_addr, chunk_header.Size * self._word_size_x2))
                 else:
-                    log.debug('Chunk 0x%0.8x is FREE' % (chunk_addr))
-                    free.append((chunk_addr, chunk_header.Size * 8))
+                    if chunk_header.Size == 0:
+                        log.warning("Null sized free chunk at 0x%0.8x - exiting", chunk_addr)
+                        break
+                    free.append((chunk_addr, chunk_header.Size * self._word_size_x2))
                     pass
-                chunk_addr += chunk_header.Size * 8
-        return (allocated, free)
+                chunk_addr += chunk_header.Size * self._word_size_x2
+        return allocated, free
 
     def HEAP_get_lookaside_chunks(self, record):
         """
@@ -347,9 +339,7 @@ class WinHeapValidator(listmodel.ListModel):
         st = record._3._0
         # its basically an array of self.BlockCount blocks of self.BlockSize*8
         # bytes.
-        log.debug(
-            'fetching %d blocks of %d bytes' %
-            (st.BlockCount, st.BlockSize * 8))
+        log.debug('fetching %d blocks of %d bytes' % (st.BlockCount, st.BlockSize * 8))
         # UserBlocks points to HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( HEAP_USERDATA_HEADER ) = 0x10
         # each chunk starts with a 8 byte header + n user-writeable data
         # user writable chunk starts with 2 bytes for next offset
@@ -464,49 +454,40 @@ class WinHeapValidator(listmodel.ListModel):
         #raise StopIteration
 
     def HEAP_ENTRY_decode(self, chunk_header, heap):
-        """returns a decoded copy """
-        # contains the Size
+        """returns a decoded copy of the HEAP_ENTRY/HEAP_FREE_ENTRY"""
         # 32 bits: struct__HEAP_ENTRY_0_0
-        # 64 bits: struct__HEAP_ENTRY_0_0_0_0
+        # 64 bits: struct__HEAP_ENTRY_0_0_0_0 (not aligned on offset 0)
         if self._target.get_cpu_bits() == 32:
             struct_type = self.win_heap.struct__HEAP_ENTRY_0_0
+            heap_entry = chunk_header._0._0
+            encoding = heap.Encoding._0._0
         elif self._target.get_cpu_bits() == 64:
+            # Taking care of alignment issues on x64
             struct_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
-        chunk_len = ctypes.sizeof(struct_type)
-        chunk_header_decoded = struct_type.from_buffer_copy(chunk_header)
-        # chunk_header_decoded = self.win_heap.struct__HEAP_ENTRY_0_0.from_buffer(chunk_header)
+            heap_entry = chunk_header._0._0._1._0
+            encoding = heap.Encoding._0._0._1._0
+        else:
+            raise NotImplementedError("Platform not supported")
+        chunk_len = ctypes.sizeof(heap_entry)
+        chunk_header_decoded = struct_type.from_buffer_copy(heap_entry)
         # decode the heap entry chunk header with the heap.Encoding
-        working_array = (
-            ctypes.c_ubyte *
-            chunk_len).from_buffer(chunk_header_decoded)
-        encoding_array = (
-            ctypes.c_ubyte *
-            chunk_len).from_buffer_copy(
-            heap.Encoding)
+        working_array = (ctypes.c_ubyte * chunk_len).from_buffer(chunk_header_decoded)
+        encoding_array = (ctypes.c_ubyte * chunk_len).from_buffer(encoding)
         # check if (heap.Encoding & working_array)
-        s = 0
-        for i in range(chunk_len):
-            s += working_array[i] & encoding_array[i]
-        # if s == 0: #DEBUG TODO
-        #    print 'NOT ENCODED !!!',hex(ctypes.addressof(heap))
-        #    return chunk_header
+        if True:
+            s = 0
+            for i in range(chunk_len):
+                s += working_array[i] & encoding_array[i]
+            if s == 0:
+                log.error('HEAP_ENTRY 0x%x NOT ENCODED || BUG: %s', chunk_header._orig_address_, hex(heap._orig_address_))
+                return chunk_header_decoded
+        # decode
         for i in range(chunk_len):
             working_array[i] ^= encoding_array[i]
         return chunk_header_decoded
 
-    def _get_chunk(self, entry_addr):
-        m = self._memory_handler.get_mapping_for_address(entry_addr)
-        chunk_header = m.read_struct(entry_addr, self.win_heap.HEAP_ENTRY)
-        self._memory_handler.keepRef(chunk_header, self.win_heap.HEAP_ENTRY, entry_addr)
-        # FIXME what is this hack
-        chunk_header._orig_address_ = entry_addr
-        return chunk_header
-
     def HEAP_get_freelists(self, record):
         """Returns the list of free chunks.
-
-        This method is very important because its used by memory_memory_handler to
-        load _memory_handler that contains subsegment of a heap.
 
         Understanding_the_LFH.pdf page 18 ++
         We iterate on HEAP.FreeLists to get ALL free blocks.
@@ -514,17 +495,28 @@ class WinHeapValidator(listmodel.ListModel):
         @returns freeblock_addr : the address of the HEAP_ENTRY (chunk header)
             size : the size of the free chunk + HEAP_ENTRY header size, in blocks.
         """
-        # FIXME: we should use get_segmentlist to coallescce segment in one heap
-        # memory mapping. Not free chunks.
         res = list()
         for freeblock in self.iterate_list_from_field(record, 'FreeLists'):
+            # freeblock is typed with the linked list type, we need the root type
+            # HEAP_FREE_ENTRY and HEAP_ENTRY have the same layout. Simplification.
+            # freeblock2 = self.win_heap.HEAP_FREE_ENTRY.from_buffer(freeblock)
+            freeblock2 = self.win_heap.HEAP_ENTRY.from_buffer(freeblock)
             if record.EncodeFlagMask:
-                chunk_header = self.HEAP_ENTRY_decode(freeblock, record)
+                chunk_header = self.HEAP_ENTRY_decode(freeblock2, record)
+            else:
+                # TODO? winxp ?
+                chunk_header = freeblock2._0._0 # 32b
             # size = header + freespace
-            # FIXME: possible undeclared/masked value
-            # FIXME: use word_size from self._target
-            res.append((freeblock._orig_address_, chunk_header.Size * 8))
+            res.append((freeblock._orig_address_, chunk_header.Size * self._word_size_x2))
         return res
+
+    def UNUSED_get_chunk(self, entry_addr):
+        m = self._memory_handler.get_mapping_for_address(entry_addr)
+        chunk_header = m.read_struct(entry_addr, self.win_heap.HEAP_ENTRY)
+        self._memory_handler.keepRef(chunk_header, self.win_heap.HEAP_ENTRY, entry_addr)
+        # FIXME what is this hack
+        chunk_header._orig_address_ = entry_addr
+        return chunk_header
 
     def print_heap_analysis(self, heap, verbose):
         addr = heap._orig_address_
@@ -538,17 +530,21 @@ class WinHeapValidator(listmodel.ListModel):
             return
         #
         print '\tFrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN')
+        self.print_frontend_analysis_details(heap)
 
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(m)
-        ucrs = self.print_heap_analysis_details(heap, walker)
+        ucrs = self.print_heap_analysis_details(heap)
         self.print_segments_analysis(heap, walker, ucrs)
 
-    def print_heap_analysis_details(self, heap, walker):
+    def print_heap_analysis_details(self, heap):
         # check counters, sizes...
         # show UCR ranges at heap levels,
         # win7: UCRList
         # winxp: UnusedUCR, UCRSegments
+        raise NotImplementedError()
+
+    def print_frontend_analysis_details(self, heap):
         raise NotImplementedError()
 
     def print_segments_analysis(self, heap, walker, ucrs):
@@ -566,8 +562,8 @@ class WinHeapValidator(listmodel.ListModel):
 
         # get allocated/free stats by mappings
         overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
-        occupied_res = count_by_mapping(self._memory_handler, walker.get_user_allocations(), overhead_size)
-        free_res = count_by_mapping(self._memory_handler, walker.get_free_chunks(), overhead_size)
+        occupied_res = self.count_by_mapping(walker.get_user_allocations(), overhead_size)
+        free_res = self.count_by_mapping(walker.get_free_chunks(), overhead_size)
 
         allocated, allocated_overhead = occupied_res.get(m, (0, 0))
         free, free_overhead = free_res.get(m, (0, 0))
@@ -581,35 +577,36 @@ class WinHeapValidator(listmodel.ListModel):
             overhead = allocated_overhead + free_overhead
             sum_ = allocated + free + overhead
             print "\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_)
+        return
 
+    def count_by_mapping(self, chunksize_tuple, overhead_size):
+        res = {}
+        for addr, size in chunksize_tuple:
+            m = self._memory_handler.get_mapping_for_address(addr)
+            if m not in res:
+                # (size,overhead)
+                res[m] = (0, 0)
+            tsize, overhead = res[m]
+            tsize += size
+            overhead += overhead_size # size of win chunk header
+            res[m] = (tsize, overhead)
+        return res
 
-def count_by_mapping(memory_handler, chunksize_tuple, overhead_size):
-    res = {}
-    for addr, size in chunksize_tuple:
-        m = memory_handler.get_mapping_for_address(addr)
-        if m not in res:
-            # (size,overhead)
-            res[m] = (0, 0)
-        tsize, overhead = res[m]
-        tsize += size
-        overhead += overhead_size # size of win chunk header
-        res[m] = (tsize, overhead)
-    return res
-
-
-def count_by_segment(segment_list, chunksize_tuple, overhead_size):
-    res = {}
-    for addr, size in chunksize_tuple:
-        for s in segment_list:
-            if s.FirstEntry.value <= addr <= s.LastValidEntry.value:
-                # we found the segment
-                key = s.FirstEntry.value
-                if key not in res:
-                    # (size,overhead)
-                    res[key] = (0, 0)
-                tsize, overhead = res[key]
-                tsize += size
-                overhead += overhead_size # size of win chunk header
-                res[key] = (tsize, overhead)
-                break
-    return res
+    def count_by_segment(self, segment_list, chunksize_tuple, overhead_size):
+        res = {}
+        for addr, size in chunksize_tuple:
+            for s in segment_list:
+                start = self._utils.get_pointee_address(s.FirstEntry)
+                end = self._utils.get_pointee_address(s.LastValidEntry)
+                if start <= addr <= end:
+                    # we found the segment
+                    key = start
+                    if key not in res:
+                        # (size,overhead)
+                        res[key] = (0, 0)
+                    tsize, overhead = res[key]
+                    tsize += size
+                    overhead += overhead_size # size of win chunk header
+                    res[key] = (tsize, overhead)
+                    break
+        return res
