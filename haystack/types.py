@@ -539,6 +539,18 @@ class CTypesProxy(object):
         return self.is_function_type(objtype)
 
     @check_arg_is_type
+    def get_pointee_type(self, objtype):
+        """Returns the pointee type of a pointer type"""
+        if not self.is_pointer_type(objtype):
+            raise TypeError('not a pointer type')
+        if hasattr(objtype, '_subtype_'):  # haystack
+            return objtype._subtype_
+        elif hasattr(objtype, '_type_'):
+            return objtype._type_
+        else:
+            raise TypeError('subtype has neither _subtype_ nor _type_ fields.')
+
+    @check_arg_is_type
     def is_pointer_to_array_type(self, objtype):
         """Checks if an object is a pointer to a BasicType"""
         if hasattr(objtype, '_subtype_'):  # haystack
