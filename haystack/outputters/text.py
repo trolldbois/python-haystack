@@ -43,7 +43,7 @@ class RecursiveTextOutputter(Outputter):
         if addr in self._addr_cache:
             if type(obj) in self._addr_cache[addr]:
                 #depth = min(depth, 1)
-                s = "{}, # ...already shown..."
+                s = "{}, # 0x%x ...already shown..." % addr
                 self._addr_cache[addr].append(type(obj))
                 return s
         else:
@@ -71,7 +71,7 @@ class RecursiveTextOutputter(Outputter):
                                        addr + offset,
                                        depth))
         s += '\n' + prefix + '}'
-        self._addr_cache = {}
+        #self._addr_cache = {}
         return s
 
     def _attrToString(self, attr, field, attrtype, prefix, addr, depth=-1):
@@ -91,7 +91,7 @@ class RecursiveTextOutputter(Outputter):
             except TypeError as e:
                 pass
         elif self._ctypes.is_struct_type(attrtype) or self._ctypes.is_union_type(attrtype):
-            s = '%s,' % (self.parse(attr, prefix + '\t', depth - 1, addr_was=addr))
+            s = '%s,' % (self.parse(attr, prefix + '\t', depth, addr_was=addr))
         elif self._ctypes.is_function_type(attrtype):
             # only print address in target space
             myaddress = self._utils.get_pointee_address(attr)
