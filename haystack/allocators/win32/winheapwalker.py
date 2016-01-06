@@ -52,13 +52,13 @@ class WinHeapWalker(heapwalker.HeapWalker):
             lst = vallocs | chunks
             self._allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
             if len(lst) != len(self._allocs):
-                log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(myset)))
+                log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(self._allocs)))
             # need to cut sizeof(HEAP_ENTRY) from address and size
 
             # Duplicate
             free_lists = self._get_freelists()
             # free_lists == free_chunks.
-            self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in lst])
+            self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
             if len(free_chunks) != len(free_lists):
                 log.warning('Weird: len(free_chunks) != len(free_lists)')
             else:
