@@ -40,33 +40,31 @@ class WinHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        # FIXME ? why use a ctypes module here ?
-        sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
-        # get all chunks
-        vallocs, va_free = self._get_virtualallocations()
-        chunks, free_chunks = self._get_chunks()
-        fth_chunks, fth_free = self._get_frontend_chunks()
+        if self._heap.FrontEndHeapType == 0:
+            # Backend
+            vallocs = self._get_virtualallocations()
+            chunks, free_chunks = self._get_chunks()
 
-        # make the user allocated list
-        lst = vallocs + chunks + fth_chunks
-        myset = set([(addr + sublen, size - sublen) for addr, size in lst])
-        if len(lst) != len(myset):
-            log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(myset)))
-        # need to cut sizeof(HEAP_ENTRY) from address and size
-        # self._allocs = numpy.asarray(sorted(myset))
-        self._allocs = sorted(myset)
+            # FIXME ? why report calculation up to here ?
+            sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
 
-        free_lists = self._get_freelists()
-        lst = va_free + free_chunks + fth_free
-        # free_lists == free_chunks.
-        # fth_free is part of 1 chunk of allocated chunks.
-        # FIXME: va_free I have no freaking idea.
-        myset = set([(addr + sublen, size - sublen) for addr, size in lst])
-        if len(free_chunks) != len(free_lists):
-            log.warning('Weird: len(free_chunks) != len(free_lists)')
-        # need to cut sizeof(HEAP_ENTRY) from address and size
-        # self._free_chunks = numpy.asarray(sorted(myset))
-        self._free_chunks = sorted(myset)
+            # make the user allocated list
+            lst = vallocs | chunks
+            self._allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
+            if len(lst) != len(self._allocs):
+                log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(myset)))
+            # need to cut sizeof(HEAP_ENTRY) from address and size
+
+            # Duplicate
+            free_lists = self._get_freelists()
+            # free_lists == free_chunks.
+            self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in lst])
+            if len(free_chunks) != len(free_lists):
+                log.warning('Weird: len(free_chunks) != len(free_lists)')
+            else:
+                log.warning('Duplicate walking of free chunks')
+        else:
+            self._allocs, self._free_chunks = self._get_frontend_chunks()
         return
 
     def get_heap_children_mmaps(self):
@@ -92,20 +90,16 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def _get_virtualallocations(self):
         """ returns addr,size of committed,free vallocs heap entries"""
-        if (self._valloc_committed, self._valloc_free) == (None, None):
+        if self._valloc_committed is None:
             allocs = self._validator.HEAP_get_virtual_allocated_blocks_list(self._heap)
-            self._valloc_committed = [(addr,c_size) for addr, c_size, r_size in allocs]
-            self._valloc_free = []  # FIXME TODO
-            log.debug('\t+ %d vallocated blocks' %(len(self._valloc_committed)))
-            # for block in allocated: #### BAD should return (vaddr,size)
-            #    log.debug( '\t\t- vallocated commit %x reserve %x @%0.8x'%(block.CommitSize, block.ReserveSize, ctypes.addressof(block)))
-            #
-        return self._valloc_committed, self._valloc_free
+            self._valloc_committed = set([(addr, c_size) for addr, c_size, r_size in allocs])
+            log.debug('\t+ %d vallocated blocks' % len(self._valloc_committed))
+        return self._valloc_committed
 
     def _get_chunks(self):
         """ returns addr,size of committed,free heap entries in blocksindex"""
         if (self._backend_committed, self._backend_free) == (None, None):
-            self._backend_committed, self._backend_free = self._validator.HEAP_get_chunks(self._heap)
+            self._backend_committed, self._backend_free = self._validator.get_backend_chunks(self._heap)
             # HEAP_ENTRY.Size is in chunk size. (8 bytes / 16 bytes )
             allocsize = sum([c[1] for c in self._backend_committed])
             freesize = sum([c[1] for c in self._backend_free])
@@ -119,7 +113,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
     def _get_frontend_chunks(self):
         """ returns addr,size of committed,free heap entries in fth heap"""
         if (self._fth_committed, self._fth_free) == (None, None):
-            self._fth_committed, self._fth_free = self._validator.HEAP_get_frontend_chunks(self._heap)
+            self._fth_committed, self._fth_free = self._validator.get_frontend_chunks(self._heap)
             fth_commitsize = sum([c[1] for c in self._fth_committed])
             fth_freesize = sum([c[1] for c in self._fth_free])
             log.debug('\t+ %d frontend chunks, for %d bytes' %(len(self._fth_committed), fth_commitsize))
@@ -131,7 +125,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def _get_freelists(self):
         # FIXME check if freelists and committed backend collides.
-        free_lists = [(freeblock_addr, size) for freeblock_addr,size in self._validator.HEAP_get_freelists(self._heap)]
+        free_lists = set([(freeblock_addr, size) for freeblock_addr,size in self._validator.HEAP_get_freelists(self._heap)])
         freesize = sum([c[1] for c in free_lists])
         log.debug('+ freeLists: nb_free_chunk:0x%0.4x total_size:0x%0.5x', len(free_lists), freesize)
         return free_lists

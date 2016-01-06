@@ -11,7 +11,6 @@ __maintainer__ = "Loic Jaquemet"
 __email__ = "loic.jaquemet+python@gmail.com"
 __status__ = "Production"
 
-"""ensure ctypes basic types are subverted"""
 
 import ctypes
 import logging
@@ -136,7 +135,7 @@ class WinHeapValidator(listmodel.ListModel):
     """
 
 
-    def HEAP_get_segment_list(self, record):
+    def get_segment_list(self, record):
         raise NotImplementedError('code differs between XP and 7')
 
     def HEAP_get_virtual_allocated_blocks_list(self, record):
@@ -215,21 +214,20 @@ class WinHeapValidator(listmodel.ListModel):
             entries.append(entry)
         return entries
 
-    def HEAP_get_chunks(self, record):
+    def get_backend_chunks(self, record):
         """
         Returns a list of tuple(address,size) for all chunks in
          the backend allocator.
         """
+        allocated = set()
+        free = set()
         # FIXME look at segment.LastEntryInSegment
-        allocated = list()
-        free = list()
-        for segment in self.HEAP_get_segment_list(record):
+        for segment in self.get_segment_list(record):
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
             # create the skip list for each segment.
             skiplist = dict()
-            # FIXME, in XP, ucrsegments is in HEAP
-            # in win7 ucrsegmentlist is in heap_segment
+            # FIXME, common UCR management for XP and win7
             for ucr in self.get_UCR_segment_list(segment):
                 ucr_addr = self._utils.get_pointee_address(ucr.Address)
                 # UCR.Size are not chunks sizes. NOT *8
@@ -237,7 +235,14 @@ class WinHeapValidator(listmodel.ListModel):
                 log.debug('adding skiplist from %x to %x', ucr_addr, ucr_addr+ucr.Size)
             #
             log.debug('skiplist has %d items', len(skiplist))
+            _allocated,_free = self._iterate_chunk_list(record, first_addr, last_addr, skiplist)
+            allocated |= _allocated
+            free |= _free
+        return allocated, free
 
+    def _iterate_chunk_list(self, heap, first_addr, last_addr, skiplist):
+            allocated = set()
+            free = set()
             chunk_addr = first_addr
             log.debug('reading chunk from %x to %x', first_addr, last_addr)
             while chunk_addr < last_addr:
@@ -262,21 +267,21 @@ class WinHeapValidator(listmodel.ListModel):
                     self._memory_handler.keepRef(chunk_header, self.win_heap.HEAP_ENTRY, chunk_addr)
                     # FIXME what is this hack
                     chunk_header._orig_address_ = chunk_addr
-                if record.EncodeFlagMask:  # heap.EncodeFlagMask
-                    chunk_header = self.HEAP_ENTRY_decode(chunk_header, record)
+                if heap.EncodeFlagMask:  # heap.EncodeFlagMask
+                    chunk_header = self.HEAP_ENTRY_decode(chunk_header, heap)
                 # test if chunk is allocated or free
                 if (chunk_header.Flags & 1) == 1:
-                    allocated.append((chunk_addr, chunk_header.Size * self._word_size_x2))
+                    allocated.add((chunk_addr, chunk_header.Size * self._word_size_x2))
                 else:
                     if chunk_header.Size == 0:
                         log.warning("Null sized free chunk at 0x%0.8x - exiting", chunk_addr)
                         break
-                    free.append((chunk_addr, chunk_header.Size * self._word_size_x2))
+                    free.add((chunk_addr, chunk_header.Size * self._word_size_x2))
                     pass
                 chunk_addr += chunk_header.Size * self._word_size_x2
-        return allocated, free
+            return allocated, free
 
-    def HEAP_get_lookaside_chunks(self, record):
+    def get_lookaside_chunks(self, record):
         """
         WinXP Only
          heap->FrontEndheap is a list of 128 HEAP_LOOKASIDE
@@ -287,128 +292,34 @@ class WinHeapValidator(listmodel.ListModel):
         """
         raise NotImplementedError
 
-    def HEAP_get_LFH_chunks(self, record):
+    def get_lfh_chunks(self, record):
         """
         Win7 only
         """
         raise NotImplementedError
 
-    def HEAP_get_frontend_chunks(self, record):
-        """ windows xp ?
-            the list of chunks from the frontend are deleted from the segment chunk list.
-
-            Functionnaly, (page 28) LFH_HEAP should be fetched by HEAP_BUCKET calcul
-
-        //position 0x7 in the header denotes
-        //whether the chunk was allocated via
-        //the front-end or the back-end (non-encoded ;) )
-        if(ChunkHeader->UnusedBytes & 0x80)
-            RtlpLowFragHeapFree
-        else
-            BackEndHeapFree
-
+    def get_frontend_chunks(self, heap):
         """
-        all_free = list()
-        all_committed = list()
+        Return the committed and free space from the frontend allocator.
+        Will raise a TypeError if the heap is managed by the backend allocator.
+        :param heap:
+        :return:
+        """
         log.debug('HEAP_get_frontend_chunks')
-        if record.FrontEndHeapType == 0:
+        if heap.FrontEndHeapType == 0:
             # Backend allocators, nothing to do with Frontend.
-            return [],[]
-        elif record.FrontEndHeapType == 1:  # windows XP per default
-            lal_free_c = self.HEAP_get_lookaside_chunks(record)
-            all_free.extend(lal_free_c)
+            raise TypeError('FrontEndHeapType says this is a backend heap')
+        elif heap.FrontEndHeapType == 1:  # windows XP per default
+            lal_free_c = self.get_lookaside_chunks(heap)
+            return set(), lal_free_c
             # TODO committed ?
-        elif record.FrontEndHeapType == 2:  # win7 per default
-            committed, free = self.HEAP_get_LFH_chunks(record)
-            all_free.extend(free)
-            all_committed.extend(committed)
+        elif heap.FrontEndHeapType == 2:  # win7 per default
+            _c, _f = self.get_lfh_chunks(heap)
+            # remove the unused parts
+            allocs = set([(c[0], c[1]) for c in _c])
+            return allocs, _f
         else:
-            raise ValueError('FrontEndHeapType should be 0,1,2 not %d' % record.FrontEndHeapType)
-        return all_committed, all_free
-
-    # HEAP_SUBSEGMENT
-    def HEAP_SUBSEGMENT_get_userblocks(self, record):
-        """
-        AggregateExchg contains info on userblocks, number left, depth
-        """
-        userblocks_addr = self._utils.get_pointee_address(record.UserBlocks)
-        if not bool(userblocks_addr):
-            log.debug('Userblocks is null')
-            return []
-        # the structure is astructure in an unnamed union of self
-        st = record._3._0
-        # its basically an array of self.BlockCount blocks of self.BlockSize*8
-        # bytes.
-        log.debug('fetching %d blocks of %d bytes' % (st.BlockCount, st.BlockSize * 8))
-        # UserBlocks points to HEAP_USERDATA_HEADER. Real user data blocks will starts after sizeof( HEAP_USERDATA_HEADER ) = 0x10
-        # each chunk starts with a 8 byte header + n user-writeable data
-        # user writable chunk starts with 2 bytes for next offset
-        # basically, first committed block is first.
-        # ( page 38 )
-        userblocks = [
-            (userblocks_addr +
-             0x10 +
-             st.BlockSize *
-             8 *
-             i,
-             st.BlockSize *
-             8) for i in range(
-                st.BlockCount)]
-        #
-        # we need to substract non allocated blocks
-        # self.AggregateExchg.Depth counts how many blocks are remaining free
-        # if self.AggregateExchg.FreeEntryOffset == 0x2, there a are no commited
-        # blocks
-        return userblocks
-
-    def HEAP_SUBSEGMENT_get_freeblocks(self, record):
-        """
-        Use AggregateExchg.Depth and NextFreeoffset to fetch the head, then traverse the links
-        """
-        userblocks_addr = self._utils.get_pointee_address(record.UserBlocks)
-        if not bool(userblocks_addr):
-            return []
-        # structure is in a structure in an union
-        # struct_c__S__INTERLOCK_SEQ_Ua_Sa_0
-        aggExchange = record.AggregateExchg._0._0
-        if aggExchange.FreeEntryOffset == 0x2:
-            log.debug(' * FirstFreeOffset==0x2 Depth==%d', aggExchange.Depth)
-        # self.AggregateExchg.Depth the size of UserBlock divided by the HeapBucket size
-        # self.AggregateExchg.FreeEntryOffset starts at 0x2 (blocks), which means 0x10 bytes after UserBlocks
-        # see Understanding LFH page 14
-        # nextoffset of user data is at current + offset*8 + len(HEAP_ENTRY)
-        # the structure is astructure in an unnamed union of self
-        st = record._3._0
-        freeblocks = [(userblocks_addr +
-                       (aggExchange.FreeEntryOffset *
-                        8) +
-                       st.BlockSize *
-                       8 *
-                       i, st.BlockSize *
-                       8) for i in range(aggExchange.Depth)]
-        return freeblocks
-        ###
-
-        #ptr = utils.get_pointee_address(self.AggregateExchg.FreeEntryOffset)
-        # for i in range(self.AggregateExchg.Depth):
-        #    free.append( userBlocks+ 8*ptr)
-        #    ## ptr = m.readWord( userBlocks+ 8*ptr+8 ) ?????
-        # return blocks
-
-        #free = []
-        #ptr = subseg.FreeEntryOffset
-        # subseg.depth.times {
-        #    free << (up + 8*ptr)
-        #    ptr = @dbg.memory[up + 8*ptr + 8, 2].unpack('v')[0]
-        #}
-        #@foo ||= 0
-        #@foo += 1
-        #p @foo if @foo % 10 == 0#
-        #
-        #up += 0x10
-        #list -= free
-        # list.each { |p| @chunks[p+8] = bs*8 - (@cp.decode_c_struct('HEAP_ENTRY', @dbg.memory, p).unusedbytes & 0x7f) }
-        # end
+            raise ValueError('FrontEndHeapType should be 0,1,2 not %d' % heap.FrontEndHeapType)
 
     def HEAP_getFreeLists_by_blocksindex(self, record):
         """ Understanding_the_LFH.pdf page 21
@@ -529,13 +440,13 @@ class WinHeapValidator(listmodel.ListModel):
         if not verbose:
             return
         #
-        print '\tFrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN')
-        self.print_frontend_analysis_details(heap)
+        print '    FrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN')
 
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(m)
         ucrs = self.print_heap_analysis_details(heap)
         self.print_segments_analysis(heap, walker, ucrs)
+        self.print_frontend_analysis_details(heap)
 
     def print_heap_analysis_details(self, heap):
         # check counters, sizes...
@@ -593,6 +504,7 @@ class WinHeapValidator(listmodel.ListModel):
         return res
 
     def count_by_segment(self, segment_list, chunksize_tuple, overhead_size):
+        # change segments_list to [(start,end)]
         res = {}
         for addr, size in chunksize_tuple:
             for s in segment_list:

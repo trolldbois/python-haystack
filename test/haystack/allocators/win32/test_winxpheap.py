@@ -169,7 +169,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 # in that case the freelists is going to fail/return 0
                 #with self.assertRaises(ValueError):
                 free_size_sum = 0
-                for addr, size in self._validator.HEAP_get_lookaside_chunks(my_heap):
+                for addr, size in self._validator.get_lookaside_chunks(my_heap):
                     free_size_sum += size
                     #self.assertEquals(free_size_sum, my_heap.TotalFreeSize*8*2) # FIXME magic values
                     #self.assertTrue(False)
@@ -180,7 +180,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                     self.assertTrue(self._memory_handler.is_valid_address_value(addr))
                 # in that case we can check the freelists
                 free_size_sum = 0
-                for addr, size in self._validator.HEAP_get_lookaside_chunks(my_heap):
+                for addr, size in self._validator.get_lookaside_chunks(my_heap):
                     free_size_sum += size
 
                 if my_heap.FrontEndHeapType == 1:
@@ -221,7 +221,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 '==== walking heap num: %0.2d @ %0.8x' %
                 (self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr))
             walker = self._heap_finder.get_heap_walker(heap)
-            for i, segment in enumerate(self._validator.HEAP_get_segment_list(walker._heap)):
+            for i, segment in enumerate(self._validator.get_segment_list(walker._heap)):
                 s, e = segment.FirstEntry.value, segment.LastValidEntry.value
                 segments.append((s, e))
                 #ss = self.parser.parse(segment)

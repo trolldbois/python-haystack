@@ -200,7 +200,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
 
     # 2015-06-30 modified for windows xp
     #('Segments', POINTER_T(struct__HEAP_SEGMENT) * 64),
-    def HEAP_get_segment_list(self, record):
+    def get_segment_list(self, record):
         """returns a list of all segment attached to one Heap structure."""
         segments = list()
         # record.segments is a list of 64 struct__HEAP_SEGMENT pointers
@@ -224,7 +224,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             segments.append(segment)
         return segments
 
-    def HEAP_get_lookaside_chunks(self, record):
+    def get_lookaside_chunks(self, record):
         """
          heap->FrontEndheap is a list of 128 HEAP_LOOKASIDE
          lookasidelist[n] block is of size n*8 and used to store (n-1)*8 byte blocks (remaining 8 bytes is used for header
@@ -395,7 +395,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_field(record, 'UCRSegments'):
+        for ucr in self.iterate_list_from_pointer_field(record, 'UCRSegments'):
             ucr_struct_addr = ucr._orig_address_
             log.debug("Segment.UCRSegmentList: 0x%0.8x reserved_size: 0x%0.5x committed_size: 0x%0.5x" % (
                 ucr_struct_addr, ucr.SizeReservedSize, ucr.CommittedSize))
@@ -413,7 +413,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_field(record, 'UnusedUnCommittedRanges'):
+        for ucr in self.iterate_list_from_pointer_field(record, 'UnusedUnCommittedRanges'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = ucr.Address
             # UCR.Size are not chunks sizes. NOT *8
@@ -433,7 +433,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP_SEGMENT):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_field(record, 'UnCommittedRanges'):
+        for ucr in self.iterate_list_from_pointer_field(record, 'UnCommittedRanges'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = ucr.Address
             # UCR.Size are not chunks sizes. NOT *8
@@ -445,7 +445,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             ucrs.append(ucr)
         return ucrs
 
-    def HEAP_get_chunks(self, record):
+    def get_backend_chunks(self, record):
         """
         Returns a list of tuple(address,size) for all chunks in
          the backend allocator.
@@ -453,7 +453,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # FIXME look at segment.LastEntryInSegment
         allocated = list()
         free = list()
-        for segment in self.HEAP_get_segment_list(record):
+        for segment in self.get_segment_list(record):
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
             # create the skip list for each segment.
@@ -529,7 +529,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
     def print_segments_analysis(self, heap, walker, ucrs):
 
         # heap is a segment
-        segments = self.HEAP_get_segment_list(heap)
+        segments = self.get_segment_list(heap)
 
         overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
         # get allocated/free stats by segment

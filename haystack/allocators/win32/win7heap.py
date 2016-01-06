@@ -145,34 +145,19 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         self.register_linked_list_field_and_type(self.win_heap.struct__LFH_HEAP, 'SubSegmentZones', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
         self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOCAL_DATA, 'CrtZone', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
         self.register_linked_list_field_and_type(self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SUBSEGMENT, 'UserBlocks', self.win_heap.union__HEAP_USERDATA_HEADER_0, 'SFreeListEntry')
-        if self._target.get_word_size() == 4:
-            self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SUBSEGMENT, 'SFreeListEntry', self.win_heap.struct__HEAP_FREE_ENTRY_0_5, 'FreeList')
-        else:
-            self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SUBSEGMENT, 'SFreeListEntry', self.win_heap.struct__HEAP_FREE_ENTRY_0_2, 'FreeList')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SUBSEGMENT, 'UserBlocks', self.win_heap.struct__HEAP_USERDATA_HEADER_0_0, 'SubSegment')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_USERDATA_HEADER_0_0, 'SubSegment', self.win_heap.struct__HEAP_SUBSEGMENT, 'UserBlocks')
-
-        # HEAP.SegmentList. points to SEGMENT.SegmentListEntry.
-        # SEGMENT.SegmentListEntry. points to HEAP.SegmentList.
-        # you need to ignore the Head in the iterator...
-
-        # HEAP_UCR_DESCRIPTOR
-        #HEAP_UCR_DESCRIPTOR._listMember_ = ['ListEntry']
-        #HEAP_UCR_DESCRIPTOR._listHead_ = [    ('SegmentEntry', HEAP_SEGMENT, 'SegmentListEntry'),    ]
 
 
-    def LFH_HEAP_get_LFH_SubSegment_from_SubSegmentZones(self, lfh_heap):
+    def _get_LFH_SubSegment_from_SubSegmentZones(self, lfh_heap):
         """
         SubSegmentsZones and CrtZone return the same
         :param lfh_heap:
         :return:
         """
         # look at the list of LFH_BLOCK_ZONE
-        for lfh_block in self.iterate_list_from_field(lfh_heap, 'SubSegmentZones'): #, ignore_head=False):
+        for lfh_block in self.iterate_list_from_field(lfh_heap, 'SubSegmentZones', ignore_head=False):
             yield lfh_block
 
-    def LFH_HEAP_get_LFH_SubSegment_from_CrtZone(self, lfh_heap):
+    def _get_LFH_SubSegment_from_CrtZone(self, lfh_heap):
         """
         SubSegmentsZones and CrtZone return the same
         :param lfh_heap:
@@ -184,127 +169,173 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         for lfh_block in self.iterate_list_from_pointer_field(heap_local_data, 'CrtZone'):
             yield lfh_block
 
-    def HEAP_get_LFH_HEAP(self, record):
-        addr = self._utils.get_pointee_address(record.FrontEndHeap)
+    def _get_lfh_heap(self, heap):
+        addr = self._utils.get_pointee_address(heap.FrontEndHeap)
         log.debug('finding frontend at @%x' % addr)
         m = self._memory_handler.get_mapping_for_address(addr)
         lfh_heap = m.read_struct(addr, self.win_heap.LFH_HEAP)
-        if lfh_heap.Heap != record._orig_address_:
+        if lfh_heap.Heap != heap._orig_address_:
             log.error("heap->FrontEndHeap->Heap is not a pointer to heap")
         return lfh_heap
 
-    def HEAP_get_LFH_chunks(self, record):
+    def get_lfh_chunks(self, heap):
         """
         http://www.leviathansecurity.com/blog/understanding-the-windows-allocator-a-redux/
-        """
-        #import pdb
-        #pdb.set_trace()
-        from haystack.outputters import text
-        out = text.RecursiveTextOutputter(self._memory_handler)
-        # out = python.PythonOutputter(finder._memory_handler)
-        # out.parse(ctypes_heap, depth=2)
 
-        log.setLevel(logging.DEBUG)
+        http://rekall-forensic.blogspot.com/2014/12/the-windows-user-mode-heap-and-dns.html
+        The LFH claims sub-segments from the backend allocator.
+        Each subsegment starts with a _HEAP_USERDATA_HEADER and it is followed by
+        an array of allocations of the same size.
+        Each such allocation has a _HEAP_ENTRY at the start.
+        To the backend allocator the subsegments simply look like largish opaque allocations
+        (and are therefore also contained in a backend _HEAP_ENTRY ).
+
+        The LFH reuses the _HEAP_ENTRY struct (again encoded with the heap’s key) to describe each allocation,
+        but since all entries in a subsegments are the same size, there is no need to use
+        Size andPreviousSize to track them.
+
+        The _HEAP_ENTRY.UnusedBytes member describes how many bytes are unused in the allocation (e.g. if the
+        allocation is 20 bytes but the user only wanted 18 bytes there are 2 bytes unused), and also contains flags
+        to indicate if the entry is BUSY or FREE.
+        """
         all_free = set()
         all_committed = set()
-        done = set()
-        lfh_heap = self.HEAP_get_LFH_HEAP(record)
+        lfh_heap = self._get_lfh_heap(heap)
         # look at the list of LFH_BLOCK_ZONE
-        for lfh_block in self.LFH_HEAP_get_LFH_SubSegment_from_SubSegmentZones(lfh_heap):
-
-            print out.parse(lfh_block, depth=1)
-
-            # LFH_BLOCK_ZONE contains a list field to other LFH_BLOCK_ZONE, a FreePointer and a limit
-            end = lfh_block._orig_address_ + self._ctypes.sizeof(lfh_block)
-            fp = self._utils.get_pointee_address(lfh_block.FreePointer)
-            block_length = fp - end
+        for lfh_block in self._get_LFH_SubSegment_from_SubSegmentZones(lfh_heap):
+            start, segments = self.get_lfh_subsegment(lfh_block)
+            if start is None:
+                continue
             subseg_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_SUBSEGMENT)
-            nb_subseg = block_length/subseg_size
-            log.debug('LFH SUBSEGMENT: %s', hex(lfh_block._orig_address_))
-            log.debug('lfh_block.FreePointer: %s', hex(fp))
-            log.debug('lfh_block.Limit: %x', lfh_block.Limit)
-            log.debug('block_length: %s', hex(block_length))
-            log.debug('struct__HEAP_SUBSEGMENT size:%s', hex(subseg_size))
-            log.debug('array of %d HEAP_SUBSEGMENT', nb_subseg)
-            memory_map = self._memory_handler.get_mapping_for_address(lfh_block._orig_address_)
-            segments = memory_map.read_struct(end, self.win_heap.HEAP_SUBSEGMENT*nb_subseg)
             for i, segment in enumerate(segments):
-                segment_addr = end + i*subseg_size
+                segment_addr = start + i*subseg_size
                 segment._orig_address_ = segment_addr
-                log.debug('segment %d at %x', i, segment_addr)
-                # struct__HEAP_SUBSEGMENT_0_0 -> BlockSize
-                offset = self.win_heap.HEAP_SUBSEGMENT._3.offset
-                subseg_stat = memory_map.read_struct(segment_addr+offset, self.win_heap.struct__HEAP_SUBSEGMENT_0_0)
-                block_size = subseg_stat.BlockSize
-                allocation_length = block_size * self._word_size_x2
-                log.debug('block_size: %s', hex(block_size))
-                log.debug('allocation_length: %s', hex(allocation_length))
-                # struct__HEAP_SUBSEGMENT->UserBlocks
-                #for block_1 in self.iterate_list_from_pointer_field(segment, 'UserBlocks'):
-                #    header = self.win_heap.struct__HEAP_USERDATA_HEADER.from_buffer(block_1)
-                #    print out.parse(header)
-                #    print ''
-                #    #if self._target.get_cpu_bits() == 32:
-                #    #    struct_type = self.win_heap.struct__HEAP_ENTRY_0_0
-                #    #elif self._target.get_cpu_bits() == 64:
-                #    #    struct_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
-                #    #chunk_len = ctypes.sizeof(struct_type)
-                #    #chunk_header_decoded = struct_type.from_buffer_copy(block_1)
-                #    #print chunk_header_decoded.Size
-
+                # get the heap entry chunks for that sub segment
+                _c, _f = self.get_lfh_subsegment_heap_chunks(heap, segment)
+                if _c is not None:
+                    all_committed |= _c
+                    all_free |= _f
         return all_committed, all_free
 
-    def HEAP_get_LFH_chunks_old(self, record):
+    def get_lfh_subsegment(self, lfh_block):
         """
+        Return start, sub segments
+        :param lfh_block:
+        :return:
         """
-        import pdb
-        pdb.set_trace()
-        all_free = list()
-        all_committed = list()
-        addr = self._utils.get_pointee_address(record.FrontEndHeap)
-        log.debug('finding frontend at @%x' % (addr))
-        m = self._memory_handler.get_mapping_for_address(addr)
-        st = m.read_struct(addr, self.win_heap.LFH_HEAP)
-        # LFH is a big chunk allocated by the backend allocator, called subsegment
-        # but rechopped as small chunks of a heapbin.
-        # Active subsegment hold that big chunk.
-        #
-        #
-        # load members on self.FrontEndHeap car c'est un void *
-        if not self.load_members(st, 1):
-            log.error('Error on loading frontend')
-            raise model.NotValid('Frontend load at @%x is not valid', addr)
+        lfh_block_addr = lfh_block._orig_address_
+        # LFH_BLOCK_ZONE contains a list field to other LFH_BLOCK_ZONE, a FreePointer and a limit
+        end = lfh_block_addr + self._ctypes.sizeof(lfh_block)
+        fp = self._utils.get_pointee_address(lfh_block.FreePointer)
+        if fp < lfh_block_addr:
+            log.error('got a bad FreePointer value 0x%x' % fp)
+            return None, None
+        # Segments are running from after the lfh_block to the FreePointer
+        subseg_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_SUBSEGMENT)
+        array_size = (fp - end)/subseg_size
+        # in case the pointer is elsewhere
+        memory_map = self._memory_handler.get_mapping_for_address(lfh_block_addr)
+        return end, memory_map.read_struct(end, self.win_heap.HEAP_SUBSEGMENT*array_size)
 
-        # log.debug(st.LocalData[0].toString())
-        #
-        # 128 HEAP_LOCAL_SEGMENT_INFO
-        for sinfo in st.LocalData[0].SegmentInfo:
-            # TODO , what about ActiveSubsegment ?
-            for items_ptr in sinfo.CachedItems:  # 16 caches items max
-                items_addr = self._utils.get_pointee_address(items_ptr)
-                if not bool(items_addr):
-                    #log.debug('NULL pointer items')
-                    continue
-                m = self._memory_handler.get_mapping_for_address(items_addr)
-                subsegment = m.read_struct(items_addr, self.win_heap.HEAP_SUBSEGMENT)
-                # log.debug(subsegment)
-                # TODO current subsegment.SFreeListEntry is on error at some depth.
-                # bad pointer value on the second subsegment
-                chunks = self.HEAP_SUBSEGMENT_get_userblocks(subsegment)
-                free = self.HEAP_SUBSEGMENT_get_freeblocks(subsegment)
-                committed = set(chunks) - set(free)
-                all_free.extend(free)
-                all_committed.extend(committed)
-                log.debug('subseg: 0x%0.8x, commit: %d chunks free: %d chunks' % (items_addr, len(committed), len(free)))
-        return all_committed, all_free
+    def get_lfh_subsegment_heap_chunks(self, heap, segment):
+        """
+        Parse the array of heap_entry from segment->UserBlocks++
+        :param segment: the heap subsegment
+        :return:
+        """
+        free = set()
+        committed = set()
+        # segment.LocalInfo holds pointer to a struct__HEAP_LOCAL_SEGMENT_INFO
+        # segment.UserBlocks holds a pointer to struct__HEAP_USERDATA_HEADER
 
-    def HEAP_get_segment_list(self, record):
+        # all heap entries will have the same size
+        allocation_length = segment._3._0.BlockSize * self._word_size_x2
+        block_count = segment._3._0.BlockCount
+        #print 'allocation_length: %s' % hex(allocation_length),
+        #print 'BlockCount', block_count,
+
+        # LocalInfo
+        # read UserBlocks as USERDATA_HEADER
+        user_blocks_addr = self._utils.get_pointee_address(segment.UserBlocks)
+        if user_blocks_addr == 0:
+            return set(), set()
+        ##if user_blocks_addr in done:
+        ##    break
+        ##done.add(user_blocks_addr)
+
+        # in case userblock is in another mapping
+        _map = self._memory_handler.get_mapping_for_address(user_blocks_addr)
+        if not _map:
+            raise ValueError('Mapping not found for 0x%x' % user_blocks_addr)
+        user_blocks = _map.read_struct(user_blocks_addr, self.win_heap.struct__HEAP_USERDATA_HEADER)
+        if user_blocks._0._1.Signature != 0xf0e0d0c0:
+            log.error("USERDATA_HEADER.Signature: 0x%x", user_blocks._0._1.Signature)
+            raise ValueError('USERDATA_HEADER.Signature not 0xf0e0d0c0')
+        # Validating the backlink from segment.UserBlocks.subsegment
+        _subseg_addr = self._utils.get_pointee_address(user_blocks._0._1.SubSegment)
+        if _subseg_addr != segment._orig_address_:
+            raise ValueError('segment->UserBlocks->Subsegment should be segment')
+
+        header_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_USERDATA_HEADER)
+        ## TODO, is the chunk_type_size actually platform dependant or not?
+        chunk_type_size = self._word_size_x2
+        # we have an array of block_count * HEAP_ENTRY chunks of size allocation_length
+        for i in range(block_count):
+            chunk_addr = user_blocks_addr + header_size + i*allocation_length
+            chunk_header = _map.read_struct(chunk_addr, self.win_heap.struct__HEAP_ENTRY)
+            if heap.EncodeFlagMask:
+                chunk_header = self.HEAP_ENTRY_decode(chunk_header, heap)
+            else:
+                log.error('NOT ENCODED')
+                raise TypeError("LFH should not exists on OS without heap.EncodeFlagMask")
+            # test if chunk is allocated or free
+            if chunk_header.UnusedBytes & 0x38:
+                free.add((chunk_addr + 0x8, allocation_length - 0x8))
+            else:
+                unused_bytes = chunk_header.UnusedBytes & 0x3f - 0x8
+                data_len = allocation_length - unused_bytes
+                if data_len > allocation_length - 0x8:
+                    data_len -= 0x8
+                if data_len <= 0:
+                    log.error('can have allocation < 0: %d' % data_len)
+                    raise ValueError('can have allocation < 0: %d' % data_len)
+                # buf = _map.read_bytes(chunk_addr + chunk_type_size, data_len)
+                # print hex(chunk_addr), buf#, repr(buf)
+                committed.add((chunk_addr + chunk_type_size, data_len, unused_bytes))
+        # print "commited:%d usedsize:0x%x unusedsize:0x%x" % (len(committed), sum([c[1] for c in committed]), sum([c[2] for c in committed])),
+        # print "free:%d size:0x%x" % (len(free), sum([c[1] for c in free]))
+        return committed, free
+
+    def get_lfh_subsegment_heap_chunks_fast(self, subsegment):
+        """
+        Dont validate anything
+        """
+        userblocks_addr = self._utils.get_pointee_address(subsegment.UserBlocks)
+        if not bool(userblocks_addr):
+            log.error('Userblocks is null')
+            return []
+        # the structure is astructure in an unnamed union of self
+        st = subsegment._3._0
+        # its basically an array of self.BlockCount blocks of self.BlockSize*8/16
+        # bytes.
+        allocation_length = st.BlockSize * self._word_size_x2
+        log.debug('fetching %d blocks of %d bytes' % (st.BlockCount, allocation_length))
+        # UserBlocks points to HEAP_USERDATA_HEADER.
+        # Real user data blocks will starts after sizeof( HEAP_USERDATA_HEADER )
+        header_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_USERDATA_HEADER)
+        # each chunk starts with a 8/16 byte header + n user-writeable data
+        # user free writable chunk starts with 2 bytes for next offset
+        userblocks = [(userblocks_addr + header_size + allocation_length * i, allocation_length)
+                       for i in range(st.BlockCount)]
+        return userblocks
+
+    def get_segment_list(self, heap):
         """returns a list of all segment attached to one Heap structure."""
         segments = list()
         # self heap is already one segment, but it listed in the list
         # segment = self.win_heap.HEAP_SEGMENT.from_buffer(record)
         # now the list content.
-        for segment in self.iterate_list_from_field(record, 'SegmentList'):
+        for segment in self.iterate_list_from_field(heap, 'SegmentList'):
             segment_addr = segment._orig_address_
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
@@ -317,6 +348,7 @@ class Win7HeapValidator(winheap.WinHeapValidator):
 
     def print_heap_analysis_details(self, heap):
         # size & space calculated from heap info
+        print '    Backend:'
         ucrs = self.HEAP_get_UCRanges_list(heap)
         ucr_list = winheap.UCR_List(ucrs)
         # heap.Counters.TotalMemoryReserved.value == heap.LastValidEntry.value - heap.BaseAddress.value
@@ -332,19 +364,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             print "\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size)
         return ucrs
 
-    def print_frontend_analysis_details(self, heap):
-        # Frontend Type == LFH
-        if heap.FrontEndHeapType == 2:
-            lfh_heap = self.HEAP_get_LFH_HEAP(heap)
-            blocks_1 = sorted([hex(b._orig_address_) for b in self.LFH_HEAP_get_LFH_SubSegment_from_SubSegmentZones(lfh_heap)])
-            print '\t\tBlocks from lfh_heap->SubSegmentZones: %d\n\t\t\t\t%s' % (len(blocks_1), blocks_1)
-            blocks_2 = sorted([hex(b._orig_address_) for b in self.LFH_HEAP_get_LFH_SubSegment_from_CrtZone(lfh_heap)])
-            print '\t\tBlocks from lfh_heap->LocaData[0].CrtZone: %d\n\t\t\t\t%s' % (len(blocks_2), blocks_2)
-        return
-
     def print_segments_analysis(self, heap, walker, ucrs):
         # heap is a segment
-        segments = self.HEAP_get_segment_list(heap)
+        segments = self.get_segment_list(heap)
         nb_segments = heap.Counters.TotalSegments
         ucr_list = winheap.UCR_List(ucrs)
 
@@ -372,3 +394,50 @@ class Win7HeapValidator(winheap.WinHeapValidator):
                 end = _addr + ucr.Size
                 print "\t\t\t\tUCRSegment 0x%0.8x-0x%0.8x size:0x%x" % (_addr, end, ucr.Size)
             # print ".UCRSegmentList.Blink", hex(heap.UCRSegmentList.Blink.value)
+
+    def print_frontend_analysis_details(self, heap):
+        # Frontend Type == LFH
+        if heap.FrontEndHeapType == 2:
+            print '    FrontEnd: LOW_FRAGMENTATION_HEAP'
+            lfh_heap = self._get_lfh_heap(heap)
+            lfh_blocks = [x for x in self._get_LFH_SubSegment_from_SubSegmentZones(lfh_heap)]
+            blocks_2 = [b for b in self._get_LFH_SubSegment_from_CrtZone(lfh_heap)]
+            print '\t\tLFH Blocks %d/%d' % (len(lfh_blocks), len(blocks_2))
+            _c, _f = self.get_lfh_chunks(heap)
+            c_size = sum([c[1] for c in _c])
+            u_size = sum([c[2] for c in _c])
+            f_size = sum([c[1] for c in _f])
+            print '\t\tLFH CommittedSize:0x%x FreeSize:0x%x Unused:0x%x' % (c_size, f_size, u_size)
+            mappings = set()
+            # we limit the search to UserBlocks, as heap_entries have to be on the same mapping
+            for b in lfh_blocks:
+                total_size = 0
+                start, segments = self.get_lfh_subsegment(b)
+                if start is None:
+                    print '\t\t\tBlock 0x%0.8x SubSegments: 0' % b._orig_address_
+                    continue
+                print '\t\t\tBlock 0x%0.8x SubSegments: %d' % (b._orig_address_, len(segments))
+                for segment in segments:
+                    user_blocks_addr = self._utils.get_pointee_address(segment.UserBlocks)
+                    if user_blocks_addr == 0:
+                        print '\t\t\t\tSubSegment->UserBlocks == NULL'
+                        continue
+                    mappings.add(self._memory_handler.get_mapping_for_address(user_blocks_addr))
+                    allocation_length = segment._3._0.BlockSize * self._word_size_x2
+                    block_count = segment._3._0.BlockCount
+                    header_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_USERDATA_HEADER)
+                    # to the end of last chunk
+                    end = user_blocks_addr + header_size + allocation_length * (block_count + 1)
+                    size = end-user_blocks_addr
+                    print '\t\t\t\tSubSegment 0x%0.8x-0x%0.8x size:0x%x\tchunks: count:%d size:0x%x' % (user_blocks_addr, end, size, block_count, allocation_length)
+                    total_size += size
+                    # occupied_res3 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
+                    # free_res3 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
+
+                # sum of all user blocks for this subsegment
+                print '\t\t\tTotal_committed_size:0x%0.8x' % total_size
+            print '\t\tMappings used:'
+            for m in sorted(mappings, key=lambda x: x.start):
+                print '\t\t\t%s' % m
+        return
+

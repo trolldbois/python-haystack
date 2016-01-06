@@ -71,7 +71,7 @@ class RecursiveTextOutputter(Outputter):
                                        addr + offset,
                                        depth))
         s += '\n' + prefix + '}'
-        #self._addr_cache = {}
+        self._addr_cache = {}
         return s
 
     def _attrToString(self, attr, field, attrtype, prefix, addr, depth=-1):

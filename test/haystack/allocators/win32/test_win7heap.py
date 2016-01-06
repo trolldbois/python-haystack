@@ -155,7 +155,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertTrue(finder._is_heap(h, addr))
         validator = finder.get_heap_validator()
 
-        segments = validator.HEAP_get_segment_list(heap)
+        segments = validator.get_segment_list(heap)
         self.assertEquals(heap.Counters.TotalSegments, 1)
         self.assertEquals(len(segments), heap.Counters.TotalSegments)
         segment = segments[0]
@@ -187,7 +187,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertTrue(finder._is_heap(h, addr))
             validator = finder.get_heap_validator()
 
-            segments = validator.HEAP_get_segment_list(heap)
+            segments = validator.get_segment_list(heap)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
             pages = 0
             total_size = 0
@@ -221,7 +221,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertTrue(finder._is_heap(h, addr))
         validator = finder.get_heap_validator()
 
-        allocated, free = validator.HEAP_get_chunks(heap)
+        allocated, free = validator.get_backend_chunks(heap)
         s_allocated = sum([c[1] for c in allocated])
         s_free = sum([c[1] for c in free])
         total = sorted(allocated + free)
@@ -263,7 +263,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertTrue(finder._is_heap(h, addr))
             validator = finder.get_heap_validator()
 
-            allocated, free = validator.HEAP_get_chunks(heap)
+            allocated, free = validator.get_backend_chunks(heap)
             s_allocated = sum([c[1] for c in allocated])
             s_free = sum([c[1] for c in free])
             total = sorted(allocated + free)
@@ -277,7 +277,7 @@ class TestWin7Heap(unittest.TestCase):
             chunks_size = sum([chunk[1] for chunk in total])
             # chunks are in all segments
             alloc_size = 0
-            for segment in validator.HEAP_get_segment_list(heap):
+            for segment in validator.get_segment_list(heap):
                 valid_alloc_size = (segment.LastValidEntry.value
                                     - segment.FirstEntry.value)
                 alloc_size += valid_alloc_size
@@ -298,7 +298,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertTrue(finder._is_heap(h, addr))
         validator = finder.get_heap_validator()
 
-        allocated, free = validator.HEAP_get_chunks(heap)
+        allocated, free = validator.get_backend_chunks(heap)
         freelists = validator.HEAP_get_freelists(heap)
         free_size = sum([x[1] for x in [(hex(x[0]), x[1]) for x in freelists]])
         free_size2 = sum([x[1] for x in free])
@@ -315,7 +315,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertTrue(finder._is_heap(h, addr))
             validator = finder.get_heap_validator()
 
-            allocated, free = validator.HEAP_get_chunks(heap)
+            allocated, free = validator.get_backend_chunks(heap)
             freelists = validator.HEAP_get_freelists(heap)
             free_size = sum([x[1] for x in
                              [(hex(x[0]), x[1]) for x in freelists]])
@@ -333,7 +333,7 @@ class TestWin7Heap(unittest.TestCase):
         self.assertTrue(finder._is_heap(h, addr))
         validator = finder.get_heap_validator()
 
-        fth_committed, fth_free = validator.HEAP_get_frontend_chunks(heap)
+        fth_committed, fth_free = validator.get_frontend_chunks(heap)
         # SizeInCache : 59224L,
 
         # not much to check...

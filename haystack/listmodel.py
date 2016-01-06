@@ -380,6 +380,8 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # stop at the first sign of a previously found list entry
             _, _, gbl_sentinels = self.get_double_linked_list_type(type(head))
         else:
+            import traceback
+            print traceback.print_stack()
             raise RuntimeError("Field %s was defined as linked link entry record type %s, but not registered" % (
                                 fieldname,
                                 field_record_type))
@@ -398,7 +400,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         log.debug("_iterate_list_from_field_with_link_info Field:%s at offset:%d st_size:%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
         return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done)
 
-    def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels):
+    def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels, ignore_head=True):
         """
         Use iterator_fn to iterate on the list allocators. (as in struct__LIST_ENTRY)
         For each list entry address:
@@ -416,6 +418,9 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param sentinels: values that indicates we should stop iterating.
         :return: pointee_record_type()
         """
+        if not ignore_head:
+            log.debug('NOT Ignoring head')
+            yield head
         # we get all addresses for the instances of the double linked list record_type
         # not, the list_member itself. Only the address of the double linked list field.
         for entry in iterator_fn(head, sentinels):
@@ -620,6 +625,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 if ignore:
                     continue
                 log.debug('d:%d checking listmember %s for %s', max_depth, link_info[0], record.__class__.__name__)
+                # FIXME: choose if its a pointer to list or a list member
                 entry_iterator = self._iterate_list_from_field_with_link_info(record, link_info)
                 self._load_list_entries(record, entry_iterator, max_depth - 1)
         except ValueError, e:
