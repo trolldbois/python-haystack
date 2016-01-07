@@ -156,24 +156,12 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         sentinels = set([mapping.end for mapping in self._memory_handler.get_mappings()])
         sentinels.add(0xffffffff)
 
-        self.register_double_linked_list_record_type(self.win_heap.struct__LIST_ENTRY, 'Flink', 'Blink', sentinels)
+        self.register_single_linked_list_record_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', sentinels)
+        self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
+
         #
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.struct__HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
 
-        # we need a single linked pointer list management
-
-        #class struct__HEAP_LOOKASIDE(ctypes.Structure):
-        #    ('ListHead', SLIST_HEADER),
-
-        #SLIST_HEADER = union__SLIST_HEADER
-
-        #class union__SLIST_HEADER(ctypes.Union):
-        #    ('Alignment', ctypes.c_uint64),
-        #    ('_1', struct__SLIST_HEADER_0),
-
-        #class struct__SLIST_HEADER_0(ctypes.Structure):
-        #    ('Next', SINGLE_LIST_ENTRY),
-        self.register_single_linked_list_record_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', sentinels)
         #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
         #self.register_single_linked_list_record_type(self.win_heap.union__SLIST_HEADER, '_1')
         #self.register_single_linked_list_record_type(self.win_heap.struct__SLIST_HEADER_0, 'Next')
@@ -185,15 +173,15 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
 
         self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', sentinels)
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UCRSegments', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
+       # self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UCRSegments', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
         #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
 
         # UCR
         # ('UnusedUnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)), Next, Address, Size
         self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', sentinels)
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UnusedUnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SEGMENT, 'UnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
-        ##self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UnusedUnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
+        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SEGMENT, 'UnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
 
 
         return
@@ -395,7 +383,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_pointer_field(record, 'UCRSegments'):
+        for ucr in self.iterate_list_from_pointer_field(record.UCRSegments, 'Next'):
             ucr_struct_addr = ucr._orig_address_
             log.debug("Segment.UCRSegmentList: 0x%0.8x reserved_size: 0x%0.5x committed_size: 0x%0.5x" % (
                 ucr_struct_addr, ucr.SizeReservedSize, ucr.CommittedSize))
@@ -413,7 +401,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_pointer_field(record, 'UnusedUnCommittedRanges'):
+        for ucr in self.iterate_list_from_pointer_field(record.UnusedUnCommittedRanges, 'Next'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = ucr.Address
             # UCR.Size are not chunks sizes. NOT *8
@@ -433,7 +421,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         if not isinstance(record, self.win_heap.struct__HEAP_SEGMENT):
             raise TypeError('record should be a heap')
         ucrs = []
-        for ucr in self.iterate_list_from_pointer_field(record, 'UnCommittedRanges'):
+        for ucr in self.iterate_list_from_pointer_field(record.UnCommittedRanges, 'Next'):
             ucr_struct_addr = ucr._orig_address_
             ucr_addr = ucr.Address
             # UCR.Size are not chunks sizes. NOT *8
@@ -451,8 +439,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
          the backend allocator.
         """
         # FIXME look at segment.LastEntryInSegment
-        allocated = list()
-        free = list()
+        allocated = set()
+        free = set()
         for segment in self.get_segment_list(record):
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
@@ -497,17 +485,18 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
                 log.debug('\t\tEntry: 0x%0.8x\n%s', chunk_addr, chunk_header)
                 flags = chunk_header._0._1.Flags
                 size = chunk_header._0._0.Size
+                # FIXME BUSY, BACKEND or FRONTEND
                 if (flags & 1) == 1:
                     log.debug('Chunk 0x%0.8x is in use size: %0.5x', chunk_addr, size * 8)
-                    allocated.append((chunk_addr, size * 8))
+                    allocated.add((chunk_addr, size * 8))
                 else:
                     log.debug('Chunk 0x%0.8x is FREE, size: %0.5x', chunk_addr, size * 8)
-                    free.append((chunk_addr, size * 8))
+                    free.add((chunk_addr, size * 8))
                     if size == 0:
                         log.debug('Free Chunk with 0 size, breaking out')
                         chunk_addr = last_addr
                 chunk_addr += size * 8
-        return (allocated, free)
+        return allocated, free
 
     def print_heap_analysis_details(self, heap):
         # size & space calculated from heap info
@@ -525,6 +514,10 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
             # print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
         return ucrs
+
+    def print_frontend_analysis_details(self, heap):
+        # get_lookaside_chunks
+        return
 
     def print_segments_analysis(self, heap, walker, ucrs):
 

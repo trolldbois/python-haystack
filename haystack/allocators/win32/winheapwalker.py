@@ -44,26 +44,25 @@ class WinHeapWalker(heapwalker.HeapWalker):
             # Backend
             vallocs = self._get_virtualallocations()
             chunks, free_chunks = self._get_chunks()
-
+            # need to cut sizeof(HEAP_ENTRY) from address and size
             # FIXME ? why report calculation up to here ?
             sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
-
             # make the user allocated list
             lst = vallocs | chunks
             self._allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
             if len(lst) != len(self._allocs):
                 log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(self._allocs)))
-            # need to cut sizeof(HEAP_ENTRY) from address and size
-
-            # Duplicate
-            free_lists = self._get_freelists()
             # free_lists == free_chunks.
-            self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
-            if len(free_chunks) != len(free_lists):
-                log.warning('Weird: len(free_chunks) != len(free_lists)')
-            else:
+            if False:
                 log.warning('Duplicate walking of free chunks')
+                free_lists = self._get_freelists()
+                self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
+                if len(free_chunks) != len(free_lists):
+                    log.warning('Weird: len(free_chunks) != len(free_lists)')
+            else:
+                self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_chunks])
         else:
+            # frontend
             self._allocs, self._free_chunks = self._get_frontend_chunks()
         return
 

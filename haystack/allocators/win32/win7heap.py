@@ -78,9 +78,6 @@ from haystack.allocators.win32 import winheap
 
 log = logging.getLogger('win7heap')
 
-############# Start methods overrides #################
-# constraints are in constraints files
-
 class Win7HeapValidator(winheap.WinHeapValidator):
     """
     this listmodel Validator will register know important list fields
@@ -96,55 +93,60 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         if not isinstance(my_constraints, interfaces.IModuleConstraints):
             raise TypeError("Feed me a IModuleConstraints")
         super(Win7HeapValidator, self).__init__(memory_handler, my_constraints)
+        #
         self.win_heap = win7heap_module
-        # LIST_ENTRY
-        # the lists usually use end of mapping as a sentinel.
-        # we have to use all mappings instead of heaps, because of a circular dependency
-        #sentinels = set([mapping.end-0x10 for mapping in self._memory_handler.get_mappings()])
         sentinels = set()
-
-        # sentinels = set() #set([mapping.end for mapping in self._memory_handler.get_mappings()])
-        self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
-        self.register_single_linked_list_record_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', sentinels)
-
-        # HEAP_SEGMENT
-        # HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
-        # HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
-        # FIXME, use offset size base on self._target.get_word_size()
-        self.register_linked_list_field_and_type(self.win_heap.HEAP_SEGMENT, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry') # offset = -8
-        # as a facility HEAP contains HEAP_SEGMENT. But will also force parsing the list at HEAP loading time
-        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry') # offset = -8
-        #HEAP_SEGMENT._listHead_ = [
-        #        ('UCRSegmentList', HEAP_UCR_DESCRIPTOR, 'ListEntry', -8)]
-        #HEAP_UCR_DESCRIPTOR._listHead_ = [ ('SegmentEntry', HEAP_SEGMENT, 'Entry')]
-
-        # HEAP CommitRoutine encoded by a global key
-        # The HEAP handle data structure includes a function pointer field called
-        # CommitRoutine that is called when memory regions within the heap are committed.
-        # Starting with Windows Vista, this field was encoded using a random value that
-        # was also stored as a field in the HEAP handle data structure.
-
-        #HEAP._listHead_ = [('SegmentList', HEAP_SEGMENT, 'SegmentListEntry', -16),
-        #                   ('UCRList', HEAP_UCR_DESCRIPTOR, 'ListEntry', 0),
-        #                   # for get_freelists. offset is sizeof(HEAP_ENTRY)
-        #                   ('FreeLists', HEAP_FREE_ENTRY, 'FreeList', -8),
-        #                   ('VirtualAllocdBlocks', HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry', -8)]
-        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'SegmentList', self.win_heap.HEAP_SEGMENT, 'SegmentListEntry') # offset = -16
-        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry') # offset = 0
-        # there is also a list of segments
-        self.register_linked_list_field_and_type(self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry', self.win_heap.HEAP_SEGMENT, 'UCRSegmentList')
-        # for get_freelists. offset is sizeof(HEAP_ENTRY)
-        ## self.register_linked_list_field_and_type(self.win_heap.HEAP, 'FreeLists', self.win_heap.HEAP_FREE_ENTRY, 'FreeList') # offset =  -8
+        # set some heap_entry
         if self._target.get_word_size() == 4:
-            self.register_linked_list_field_and_type(self.win_heap.HEAP, 'FreeLists', self.win_heap.struct__HEAP_FREE_ENTRY_0_5, 'FreeList')
+            self._lfh_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_1
+            self._free_list_heap_entry_type = self.win_heap.struct__HEAP_FREE_ENTRY_0_5
+            self._sized_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0
+        elif self._target.get_word_size() == 8:
+            self._lfh_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
+            self._free_list_heap_entry_type = self.win_heap.struct__HEAP_FREE_ENTRY_0_2
+            self._sized_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
         else:
-            self.register_linked_list_field_and_type(self.win_heap.HEAP, 'FreeLists', self.win_heap.struct__HEAP_FREE_ENTRY_0_2, 'FreeList')
+            raise TypeError('platform not supported')
+
+        # register list types
+        self.register_single_linked_list_record_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', sentinels)
+        self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
+
+        # Segments
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'SegmentList', self.win_heap.HEAP_SEGMENT, 'SegmentListEntry')
+
+        # UCR
+        # heap is a heap_segment with more info.
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry')
+        self.register_linked_list_field_and_type(self.win_heap.HEAP_SEGMENT, 'UCRSegmentList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry')
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'UCRList', self.win_heap.HEAP_UCR_DESCRIPTOR, 'ListEntry')
+        self.register_linked_list_field_and_type(self.win_heap.HEAP_UCR_DESCRIPTOR, 'SegmentEntry', self.win_heap.HEAP_SEGMENT, 'UCRSegmentList')
+
+        # VALLOCS
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry')
 
+        # HEAP_ENTRY now works for 32 and 64
+        self.register_linked_list_field_and_type(self.win_heap.HEAP, 'FreeLists', self._free_list_heap_entry_type, 'FreeList')
+
         # LFH
-        self.register_linked_list_field_and_type(self.win_heap.struct__LFH_HEAP, 'SubSegmentZones', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
-        self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOCAL_DATA, 'CrtZone', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
-        self.register_linked_list_field_and_type(self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry', self.win_heap.struct__LFH_BLOCK_ZONE, 'ListEntry')
+        self.register_linked_list_field_and_type(self.win_heap.LFH_HEAP, 'SubSegmentZones', self.win_heap.LFH_BLOCK_ZONE, 'ListEntry')
+        #self.register_linked_list_field_and_type(self.win_heap.HEAP_LOCAL_DATA, 'CrtZone', self.win_heap.LFH_BLOCK_ZONE, 'ListEntry')
+        self.register_linked_list_field_and_type(self.win_heap.LFH_BLOCK_ZONE, 'ListEntry', self.win_heap.LFH_BLOCK_ZONE, 'ListEntry')
+
+    def _heap_entry_to_size(self, entry):
+        # save to getRef
+        if self._target.get_word_size() == 4:
+            return entry._0._0
+        elif self._target.get_word_size() == 8:
+            return entry._0._0._1._0
+
+    def _heap_entry_to_lfh(self, entry):
+        # save to getRef
+        if self._target.get_word_size() == 4:
+            return entry._0._1
+        elif self._target.get_word_size() == 8:
+            return entry._0._0._1._0
+        return
 
 
     def _get_LFH_SubSegment_from_SubSegmentZones(self, lfh_heap):
@@ -166,7 +168,7 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # get the local Data
         heap_local_data = lfh_heap.LocalData[0]
         # look at the list of LFH_BLOCK_ZONE
-        for lfh_block in self.iterate_list_from_pointer_field(heap_local_data, 'CrtZone'):
+        for lfh_block in self.iterate_list_from_pointer_field(heap_local_data.CrtZone, 'ListEntry'):
             yield lfh_block
 
     def _get_lfh_heap(self, heap):
@@ -174,8 +176,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         log.debug('finding frontend at @%x' % addr)
         m = self._memory_handler.get_mapping_for_address(addr)
         lfh_heap = m.read_struct(addr, self.win_heap.LFH_HEAP)
-        if lfh_heap.Heap != heap._orig_address_:
-            log.error("heap->FrontEndHeap->Heap is not a pointer to heap")
+        heap_addr = self._utils.get_pointee_address(lfh_heap.Heap)
+        if heap_addr != heap._orig_address_:
+            log.error("heap->FrontEndHeap->Heap 0x%0x is not a pointer to heap" % heap_addr)
         return lfh_heap
 
     def get_lfh_chunks(self, heap):
@@ -282,9 +285,11 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # we have an array of block_count * HEAP_ENTRY chunks of size allocation_length
         for i in range(block_count):
             chunk_addr = user_blocks_addr + header_size + i*allocation_length
-            chunk_header = _map.read_struct(chunk_addr, self.win_heap.struct__HEAP_ENTRY)
+            chunk_header = _map.read_struct(chunk_addr, self.win_heap.HEAP_ENTRY)
             if heap.EncodeFlagMask:
+                # we need chunk_header to a HEAP_ENTRY with UnusedBytes (LFH)
                 chunk_header = self.HEAP_ENTRY_decode(chunk_header, heap)
+                chunk_header = self._heap_entry_to_lfh(chunk_header)
             else:
                 log.error('NOT ENCODED')
                 raise TypeError("LFH should not exists on OS without heap.EncodeFlagMask")
@@ -339,9 +344,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             segment_addr = segment._orig_address_
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
-            log.debug(
-                'Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x' %
-                (segment_addr, first_addr, last_addr))
+            log.debug('Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x' %
+                       (segment_addr, first_addr, last_addr))
             segments.append(segment)
         segments.sort(key=lambda s:self._utils.get_pointee_address(s.FirstEntry))
         return segments
@@ -374,7 +378,6 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # get allocated/free stats by segment
         occupied_res2 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
         free_res2 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
-
         print "\tSegmentList: %d/%d" % (len(segments), nb_segments)
         # print ".SegmentList.Flink", hex(heap.SegmentList.Flink.value)
         # print ".SegmentList.Blink", hex(heap.SegmentList.Blink.value)

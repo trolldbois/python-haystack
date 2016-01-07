@@ -255,11 +255,6 @@ class WinHeapValidator(listmodel.ListModel):
                 if chunk_header is None:  # force read it
                     log.debug('reading chunk from %x', chunk_addr)
                     m = self._memory_handler.get_mapping_for_address(chunk_addr)
-                    # FIXME
-                    # in some case, we have the last chunk pointing to the first byte
-                    # of the next unallocated mapping offset_X.
-                    # in some case, there is a non allocated gap between offset_X and last_addr
-                    # FIXME, the skiplist above should address that.
                     if not m:
                         log.debug("found a non valid chunk pointer at %x", chunk_addr)
                         break
@@ -269,6 +264,7 @@ class WinHeapValidator(listmodel.ListModel):
                     chunk_header._orig_address_ = chunk_addr
                 if heap.EncodeFlagMask:  # heap.EncodeFlagMask
                     chunk_header = self.HEAP_ENTRY_decode(chunk_header, heap)
+                    chunk_header = self._heap_entry_to_size(chunk_header)
                 # test if chunk is allocated or free
                 if (chunk_header.Flags & 1) == 1:
                     allocated.add((chunk_addr, chunk_header.Size * self._word_size_x2))
@@ -365,25 +361,37 @@ class WinHeapValidator(listmodel.ListModel):
         #raise StopIteration
 
     def HEAP_ENTRY_decode(self, chunk_header, heap):
-        """returns a decoded copy of the HEAP_ENTRY/HEAP_FREE_ENTRY"""
+        """
+        returns a decoded copy of the HEAP_ENTRY/HEAP_FREE_ENTRY
+
+        HEAP CommitRoutine encoded by a global key
+        The HEAP handle data structure includes a function pointer field called
+        CommitRoutine that is called when memory regions within the heap are committed.
+        Starting with Windows Vista, this field was encoded using a random value that
+        was also stored as a field in the HEAP handle data structure.
+        """
         # 32 bits: struct__HEAP_ENTRY_0_0
         # 64 bits: struct__HEAP_ENTRY_0_0_0_0 (not aligned on offset 0)
-        if self._target.get_cpu_bits() == 32:
-            struct_type = self.win_heap.struct__HEAP_ENTRY_0_0
-            heap_entry = chunk_header._0._0
-            encoding = heap.Encoding._0._0
-        elif self._target.get_cpu_bits() == 64:
-            # Taking care of alignment issues on x64
-            struct_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
-            heap_entry = chunk_header._0._0._1._0
-            encoding = heap.Encoding._0._0._1._0
-        else:
-            raise NotImplementedError("Platform not supported")
-        chunk_len = ctypes.sizeof(heap_entry)
-        chunk_header_decoded = struct_type.from_buffer_copy(heap_entry)
-        # decode the heap entry chunk header with the heap.Encoding
-        working_array = (ctypes.c_ubyte * chunk_len).from_buffer(chunk_header_decoded)
+        #if self._target.get_cpu_bits() == 32:
+        #    heap_entry = chunk_header._0._0
+        #    encoding = heap.Encoding._0._0
+        #elif self._target.get_cpu_bits() == 64:
+        #    # Taking care of alignment issues on x64
+        #    heap_entry = chunk_header._0._0._1._0
+        #    encoding = heap.Encoding._0._0._1._0
+        #else:
+        #    raise NotImplementedError("Platform not supported")
+        #chunk_len = ctypes.sizeof(heap_entry)
+        #chunk_header_decoded = output_heap_entry_type.from_buffer_copy(heap_entry)
+        ## decode the heap entry chunk header with the heap.Encoding
+
+        chunk_len = self._ctypes.sizeof(self.win_heap.HEAP_ENTRY)
+        encoding = heap.Encoding
         encoding_array = (ctypes.c_ubyte * chunk_len).from_buffer(encoding)
+
+        chunk_header_decoded = self.win_heap.HEAP_ENTRY.from_buffer_copy(chunk_header)
+        working_array = (ctypes.c_ubyte * chunk_len).from_buffer(chunk_header_decoded)
+
         # check if (heap.Encoding & working_array)
         if True:
             s = 0
@@ -411,9 +419,11 @@ class WinHeapValidator(listmodel.ListModel):
             # freeblock is typed with the linked list type, we need the root type
             # HEAP_FREE_ENTRY and HEAP_ENTRY have the same layout. Simplification.
             # freeblock2 = self.win_heap.HEAP_FREE_ENTRY.from_buffer(freeblock)
+            # chunk_header must be a HEAP_ENTRY with size
             freeblock2 = self.win_heap.HEAP_ENTRY.from_buffer(freeblock)
             if record.EncodeFlagMask:
                 chunk_header = self.HEAP_ENTRY_decode(freeblock2, record)
+                chunk_header = self._heap_entry_to_size(chunk_header)
             else:
                 # TODO? winxp ?
                 chunk_header = freeblock2._0._0 # 32b

@@ -312,7 +312,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         link_info = self._get_list_info_for_field_for(type(record), fieldname)
         return self._iterate_list_from_field_with_link_info(record, link_info, sentinels, ignore_head)
 
-    def iterate_list_from_pointer_field(self, record, fieldname, sentinels=None, ignore_head=False):
+    def iterate_list_from_pointer_field(self, pointer_field, target_fieldname, sentinels=None):
         """
         Iterate over the items of the list designated by fieldname (a pointer) in record.
         Do not ignore head, by default.
@@ -322,32 +322,36 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param sentinels: values that stop the iteration
         :return:
         """
-        fieldname, pointee_record_type, lefn, offset = self._get_list_info_for_field_for(type(record), fieldname)
-        # get the linked list field name
-        head = getattr(record, fieldname)
-        # and its record_type
-        field_record_type = type(head)
+        if sentinels is None:
+            sentinels = set()
+        # instead of asking the pointer field to be registered,
+        # we will look up directly the pointee type.
+        # But them how would we know 'which' list to get ? -> target_fieldname in the pointee type.
+        # the pointee type has to be a registered list record type. Not a parent record
+        # therefore, the list is obvious.
+        field_record_type = type(pointer_field)
         # if the field is a pointer, assume that the root of the list is the pointee
         if not self._ctypes.is_pointer_type(field_record_type):
-            raise TypeError('Field %s should be a pointer' % fieldname)
+            raise TypeError('Field should be a pointer')
         pointee_type = self._ctypes.get_pointee_type(field_record_type)
         if not self._ctypes.is_struct_type(pointee_type):
-            raise TypeError('Field %s should be a pointer to a structure')
-        # if pointee_type != pointee_record_type:
-        #     raise TypeError('Field %s was registered for %s but found %s' % (fieldname, pointee_record_type, pointee_type))
-        log.debug('field %s if a pointer to a list of %s', fieldname, pointee_record_type)
-        head_addr = self._utils.get_pointee_address(head)
-        if head_addr == 0:
+            raise TypeError('Field should be a pointer to a structure')
+        if not self.is_single_linked_list_type(pointee_type) \
+                and not self.is_double_linked_list_type(pointee_type)\
+                and pointee_type not in self._list_fields:
+            raise TypeError('Pointee type %s is not a registered list record type' % pointee_type)
+        head_addr = self._utils.get_pointee_address(pointer_field)
+        if head_addr == 0 or head_addr in sentinels:
             return []
-        memory_map = self._memory_handler.is_valid_address_value(head_addr, pointee_record_type)
+        memory_map = self._memory_handler.is_valid_address_value(head_addr, pointee_type)
         if memory_map is False:
             log.error("_iterate_list_pointer_field: the root of this linked list has a bad value: 0x%x", head_addr)
             raise ValueError('ValueError: the root of this linked list has a bad value: 0x%x' % head_addr)
-        head = memory_map.read_struct(head_addr, pointee_record_type)
-        self._memory_handler.keepRef(head, pointee_record_type, head_addr)
+        head = memory_map.read_struct(head_addr, pointee_type)
+        self._memory_handler.keepRef(head, pointee_type, head_addr)
         #
-        link_info = lefn, pointee_record_type, lefn, offset
-        return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head)
+        link_info = self._get_list_info_for_field_for(pointee_type, target_fieldname)
+        return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head=False)
 
     def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None, ignore_head=True):
         """
@@ -368,23 +372,24 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         head = getattr(record, fieldname)
         # and its record_type
         field_record_type = type(head)
-
+        # handle pointer cases
+        if self._ctypes.is_pointer_type(field_record_type):
+            field_record_type = self._ctypes.get_pointee_type(field_record_type)
         # check that forward and backwards link field name were registered
         iterator_fn = None
         if self.is_single_linked_list_type(field_record_type):
             iterator_fn = self._iterate_single_linked_list
             # stop at the first sign of a previously found list entry
-            _, gbl_sentinels = self.get_single_linked_list_type(type(head))
+            _, gbl_sentinels = self.get_single_linked_list_type(field_record_type)
         elif self.is_double_linked_list_type(field_record_type):
             iterator_fn = self._iterate_double_linked_list
             # stop at the first sign of a previously found list entry
-            _, _, gbl_sentinels = self.get_double_linked_list_type(type(head))
+            _, _, gbl_sentinels = self.get_double_linked_list_type(field_record_type)
         else:
             import traceback
             print traceback.print_stack()
             raise RuntimeError("Field %s was defined as linked link entry record type %s, but not registered" % (
-                                fieldname,
-                                field_record_type))
+                                fieldname, field_record_type))
         # now that this is cleared, lets iterate.
         # @ of the fieldname in record. This can be different from offset.
         head_address = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
@@ -520,22 +525,29 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         """
         # stop when Null
         done = {0}
-        obj = record
         record_type = type(record)
-        # we ignore the sentinels here as this is an internal iterator
-        fieldname, _ = self.get_single_linked_list_type(record_type)
-        # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
-        link = getattr(obj, fieldname)
-        addr = self._utils.get_pointee_address(link)
-        log.debug('_iterate_single_linked_list <%s>/0x%x', link.__class__.__name__, addr)
+        # handle pointer cases
+        if self._ctypes.is_pointer_type(record_type):
+            record_type = self._ctypes.get_pointee_type(record_type)
+            # we ignore the sentinels here as this is an internal iterator
+            fieldname, _ = self.get_single_linked_list_type(record_type)
+            addr = self._utils.get_pointee_address(record)
+            log.debug('_iterate_single_linked_list <%s>/0x%x', record_type.__name__, addr)
+        else:
+            # we ignore the sentinels here as this is an internal iterator
+            fieldname, _ = self.get_single_linked_list_type(record_type)
+            # log.debug("sentinels %s", str([hex(s) for s in sentinels]))
+            link = getattr(record, fieldname)
+            addr = self._utils.get_pointee_address(link)
+            log.debug('_iterate_single_linked_list <%s>/0x%x', link.__class__.__name__, addr)
         nb = 0
         while addr not in done and addr not in sentinels:
             done.add(addr)
-            memoryMap = self._memory_handler.is_valid_address_value(addr, record_type)
-            if memoryMap == False:
+            _map = self._memory_handler.is_valid_address_value(addr, record_type)
+            if not _map:
                 log.error("_iterate_single_linked_list: the link of this linked list has a bad value")
                 raise ValueError('ValueError: the link of this linked list has a bad value: 0x%x' % addr)
-            st = memoryMap.read_struct(addr, record_type)
+            st = _map.read_struct(addr, record_type)
             st._orig_address_ = addr
             self._memory_handler.keepRef(st, record_type, addr)
             log.debug("keepRefx2 %s.%s: @%x", record_type.__name__, fieldname, addr)
