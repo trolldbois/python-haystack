@@ -148,6 +148,78 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             return entry._0._0._1._0
         return
 
+    def collect_all_ucrs(self, heap):
+        ucrs = set()
+        for segment in self.get_segment_list(heap):
+            for ucr in self.get_UCR_segment_list(segment):
+                ucr_addr = self._utils.get_pointee_address(ucr.Address)
+                ucr_size = ucr.Size
+                ucrs.add((ucr_addr, ucr_size))
+        # UCRList
+        for ucr in self.HEAP_get_UCRanges_list(heap):
+            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            ucr_size = ucr.Size
+            ucrs.add((ucr_addr, ucr_size))
+        return ucrs
+
+    def get_UCR_segment_list(self, segment):
+        """Returns a list of UCR segments for this segment.
+        HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
+        Some may have Size == 0.
+        """
+        if not isinstance(segment, self.win_heap.HEAP_SEGMENT) and not isinstance(segment, self.win_heap.HEAP):
+            raise TypeError('record should be a heap_segment, not %s' % segment)
+        # the record at end_segment-0x10 is not actually invalid.
+        # it is a valid HEAP_UCR_DESCRIPTOR. Most of the time, with a Size of 0.
+        ucrs = list()
+        for ucr in self.iterate_list_from_field(segment, 'UCRSegmentList'):
+            ucr_struct_addr = ucr._orig_address_
+            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            # UCR.Size are not chunks sizes. NOT *8
+            log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+                ucr_struct_addr, ucr_addr, ucr.Size))
+            ucrs.append(ucr)
+        return ucrs
+
+    def HEAP_get_UCRanges_list(self, heap):
+        """
+        win7
+        Returns a list of available UCR segments for this heap.
+        HEAP.UCRList is a linked list to all UCRSegments
+
+        """
+        if not isinstance(heap, self.win_heap.HEAP):
+            raise TypeError('record should be a heap, not %s' % heap)
+        ucrs = list()
+        for ucr in self.iterate_list_from_field(heap, 'UCRList'):
+            ucr_struct_addr = ucr._orig_address_
+            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            # UCR.Size are not chunks sizes. NOT *8
+            log.debug("Heap.UCRList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+                ucr_struct_addr, ucr_addr, ucr.Size))
+            ucrs.append(ucr)
+        return ucrs
+
+    def UNUSED_HEAP_get_UCRange_segment_list(self, record):
+        """
+        Returns a list of uncommited segment for this UCR.
+        HEAP.UCRList->SegmentEntry is a linked list to all UCRSegments
+
+        """
+        expected_type = 'HEAP_UCR_DESCRIPTOR'
+        if expected_type not in str(type(record)):
+            raise TypeError('record %s should be of type %s' % (record, expected_type))
+        entries = list()
+        for entry in self.iterate_list_from_field(record, 'SegmentEntry'):
+            entry_struct_addr = entry._orig_address_
+            entry_addr = self._utils.get_pointee_address(entry.BaseAddress)
+            first = entry.FirstEntry.value
+            last = entry.LastValidEntry.value
+            size = last - first
+            log.debug("Heap.UCRList.SegmentEntry: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
+                entry_struct_addr, entry_addr, size))
+            entries.append(entry)
+        return entries
 
     def _get_LFH_SubSegment_from_SubSegmentZones(self, lfh_heap):
         """
@@ -230,8 +302,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # LFH_BLOCK_ZONE contains a list field to other LFH_BLOCK_ZONE, a FreePointer and a limit
         end = lfh_block_addr + self._ctypes.sizeof(lfh_block)
         fp = self._utils.get_pointee_address(lfh_block.FreePointer)
-        if fp < lfh_block_addr:
-            log.error('got a bad FreePointer value 0x%x' % fp)
+        # that is a sentinels.
+        if fp == (0x10 + self._ctypes.sizeof(lfh_block)):
+            log.debug('Got a special FreePointer value 0x%x' % fp)
             return None, None
         # Segments are running from after the lfh_block to the FreePointer
         subseg_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_SUBSEGMENT)
@@ -379,10 +452,6 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         occupied_res2 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
         free_res2 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
         print "\tSegmentList: %d/%d" % (len(segments), nb_segments)
-        # print ".SegmentList.Flink", hex(heap.SegmentList.Flink.value)
-        # print ".SegmentList.Blink", hex(heap.SegmentList.Blink.value)
-        # print ".SegmentListEntry.Flink", hex(heap.SegmentListEntry.Flink.value)
-        # print ".SegmentListEntry.Blink", hex(heap.SegmentListEntry.Blink.value)
         for segment in segments:
             p_segment = winheap.Segment(self._memory_handler, segment)
             p_segment.set_ucr(ucr_list)

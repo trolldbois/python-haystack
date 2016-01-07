@@ -158,84 +158,28 @@ class WinHeapValidator(listmodel.ListModel):
     # some heap UCR will not be listed in segment ucr and vice-versa
     # get_ucr == get_ucr_from_heap + get_ucr_from_segment
 
-    def get_UCR_segment_list(self, record):
-        """Returns a list of UCR segments for this segment.
-        HEAP_SEGMENT.UCRSegmentList is a linked list to UCRs for this segment.
-        Some may have Size == 0.
-        """
-        # the record at end_segment-0x10 is not actually invalid.
-        # it is a valid HEAP_UCR_DESCRIPTOR. Most of the time, with a Size of 0.
-        ucrs = list()
-        for ucr in self.iterate_list_from_field(record, 'UCRSegmentList'):
-            ucr_struct_addr = ucr._orig_address_
-            ucr_addr = self._utils.get_pointee_address(ucr.Address)
-            # UCR.Size are not chunks sizes. NOT *8
-            log.debug("Segment.UCRSegmentList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
-                ucr_struct_addr, ucr_addr, ucr.Size))
-            ucrs.append(ucr)
-        return ucrs
+    def collect_all_ucrs(self, heap):
+        raise NotImplementedError
 
-    def HEAP_get_UCRanges_list(self, record):
-        """
-        win7
-        Returns a list of available UCR segments for this heap.
-        HEAP.UCRList is a linked list to all UCRSegments
-
-        """
-        # TODO: exclude UCR segment from valid pointer values in _memory_handler.
-        ucrs = list()
-        for ucr in self.iterate_list_from_field(record, 'UCRList'):
-            ucr_struct_addr = ucr._orig_address_
-            ucr_addr = self._utils.get_pointee_address(ucr.Address)
-            # UCR.Size are not chunks sizes. NOT *8
-            log.debug("Heap.UCRList: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
-                ucr_struct_addr, ucr_addr, ucr.Size))
-            ucrs.append(ucr)
-        return ucrs
-
-    def UNUSED_HEAP_get_UCRange_segment_list(self, record):
-        """
-        Returns a list of uncommited segment for this UCR.
-        HEAP.UCRList->SegmentEntry is a linked list to all UCRSegments
-
-        """
-        expected_type = 'HEAP_UCR_DESCRIPTOR'
-        if expected_type not in str(type(record)):
-            raise TypeError('record %s should be of type %s' % (record, expected_type))
-        entries = list()
-        for entry in self.iterate_list_from_field(record, 'SegmentEntry'):
-            entry_struct_addr = entry._orig_address_
-            entry_addr = self._utils.get_pointee_address(entry.BaseAddress)
-            first = entry.FirstEntry.value
-            last = entry.LastValidEntry.value
-            size = last - first
-            log.debug("Heap.UCRList.SegmentEntry: 0x%0.8x addr: 0x%0.8x size: 0x%0.5x" % (
-                entry_struct_addr, entry_addr, size))
-            entries.append(entry)
-        return entries
-
-    def get_backend_chunks(self, record):
+    def get_backend_chunks(self, heap):
         """
         Returns a list of tuple(address,size) for all chunks in
          the backend allocator.
         """
         allocated = set()
         free = set()
-        # FIXME look at segment.LastEntryInSegment
-        for segment in self.get_segment_list(record):
+        ucrs = self.collect_all_ucrs(heap)
+        skiplist = dict()
+        # common UCR management for XP and win7
+        for ucr_addr, ucr_size in ucrs:
+            skiplist[ucr_addr] = ucr_size
+            log.debug('adding skiplist from %x to %x', ucr_addr, ucr_addr+ucr_size)
+        log.debug('skiplist has %d items', len(skiplist))
+        # now parse all segment
+        for segment in self.get_segment_list(heap):
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
-            # create the skip list for each segment.
-            skiplist = dict()
-            # FIXME, common UCR management for XP and win7
-            for ucr in self.get_UCR_segment_list(segment):
-                ucr_addr = self._utils.get_pointee_address(ucr.Address)
-                # UCR.Size are not chunks sizes. NOT *8
-                skiplist[ucr_addr] = ucr.Size
-                log.debug('adding skiplist from %x to %x', ucr_addr, ucr_addr+ucr.Size)
-            #
-            log.debug('skiplist has %d items', len(skiplist))
-            _allocated,_free = self._iterate_chunk_list(record, first_addr, last_addr, skiplist)
+            _allocated,_free = self._iterate_chunk_list(heap, first_addr, last_addr, skiplist)
             allocated |= _allocated
             free |= _free
         return allocated, free
@@ -262,19 +206,26 @@ class WinHeapValidator(listmodel.ListModel):
                     self._memory_handler.keepRef(chunk_header, self.win_heap.HEAP_ENTRY, chunk_addr)
                     # FIXME what is this hack
                     chunk_header._orig_address_ = chunk_addr
-                if heap.EncodeFlagMask:  # heap.EncodeFlagMask
+                if hasattr(heap, 'EncodeFlagMask'):  # heap.EncodeFlagMask
                     chunk_header = self.HEAP_ENTRY_decode(chunk_header, heap)
                     chunk_header = self._heap_entry_to_size(chunk_header)
-                # test if chunk is allocated or free
-                if (chunk_header.Flags & 1) == 1:
-                    allocated.add((chunk_addr, chunk_header.Size * self._word_size_x2))
+                    # test if chunk is allocated or free
+                    flags = chunk_header.Flags
+                    size = chunk_header.Size
                 else:
-                    if chunk_header.Size == 0:
+                    # winxp
+                    flags = chunk_header._0._1.Flags
+                    size = chunk_header._0._0.Size
+                if (flags & 1) == 1:
+                    allocated.add((chunk_addr, size * self._word_size_x2))
+                else:
+                    if size == 0:
                         log.warning("Null sized free chunk at 0x%0.8x - exiting", chunk_addr)
                         break
-                    free.add((chunk_addr, chunk_header.Size * self._word_size_x2))
+                    free.add((chunk_addr, size * self._word_size_x2))
                     pass
-                chunk_addr += chunk_header.Size * self._word_size_x2
+
+                chunk_addr += size * self._word_size_x2
             return allocated, free
 
     def get_lookaside_chunks(self, record):

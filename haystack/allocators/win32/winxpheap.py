@@ -375,13 +375,33 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
     def HEAP_ENTRY_decode(self, chunk_header, heap):
         return chunk_header
 
+    def collect_all_ucrs(self, heap):
+        ucrs = set()
+        # UnCommittedRanges
+        for segment in self.get_segment_list(heap):
+            for ucr in self.SEGMENT_get_UCR_list(segment):
+                ucr_addr = self._utils.get_pointee_address(ucr.Address)
+                ucr_size = ucr.Size
+                ucrs.add((ucr_addr, ucr_size))
+        # UCRSegments
+        for ucr in self.get_UCR_segment_list(heap):
+            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            ucr_size = ucr.Size
+            ucrs.add((ucr_addr, ucr_size))
+        # UnusedUnCommittedRanges
+        for ucr in self.HEAP_get_UCRanges_list(heap):
+            ucr_addr = self._utils.get_pointee_address(ucr.Address)
+            ucr_size = ucr.Size
+            ucrs.add((ucr_addr, ucr_size))
+        return ucrs
+
     def get_UCR_segment_list(self, record):
         """Returns a list of UCR segments for this segment.
         HEAP.UCRSegments is a linked list to UCRs for this segment.
         Some may have Size == 0.
         """
         if not isinstance(record, self.win_heap.struct__HEAP):
-            raise TypeError('record should be a heap')
+            raise TypeError('record should be a heap, not %s' % record)
         ucrs = []
         for ucr in self.iterate_list_from_pointer_field(record.UCRSegments, 'Next'):
             ucr_struct_addr = ucr._orig_address_
@@ -433,7 +453,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             ucrs.append(ucr)
         return ucrs
 
-    def get_backend_chunks(self, record):
+    def get_backend_chunks2(self, record):
         """
         Returns a list of tuple(address,size) for all chunks in
          the backend allocator.
@@ -503,6 +523,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # winXP
         # Heap's unuseduncommitted ranges
         # Heap.UnusedUnCommittedRanges
+        # size & space calculated from heap info
+        print '    Backend:'
         ucrs = self.HEAP_get_UCRanges_list(heap)
         ucr_list = winheap.UCR_List(ucrs)
         print '\tUnused UCR: %d' % (len(ucrs))
@@ -513,11 +535,14 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         for ucr_segment in ucrsegments:
             print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
             # print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
+        # Virtual Allocations
+        vallocs = self.HEAP_get_virtual_allocated_blocks_list(heap)
+        print '\tVAllocations: %d' % len(vallocs)
+        for addr, c_size, r_size in vallocs:
+            diff = '' if c_size == r_size else '!!'
+            # print "vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
+            print "\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size)
         return ucrs
-
-    def print_frontend_analysis_details(self, heap):
-        # get_lookaside_chunks
-        return
 
     def print_segments_analysis(self, heap, walker, ucrs):
 
@@ -548,3 +573,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
                 print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
                 #print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
             #
+
+    def print_frontend_analysis_details(self, heap):
+        # get_lookaside_chunks
+        return
+
