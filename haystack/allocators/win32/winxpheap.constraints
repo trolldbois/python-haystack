@@ -43,6 +43,9 @@ UnusedUnCommittedRanges: IgnoreMember
 #FrontEndHeap – A pointer to the associated front-end heap. This will either be NULL or
 # a pointer to a _LFH_HEAP structure when running under Windows 7.
 
+# ignore union
+[struct__HEAP_LOCK]
+Lock: IgnoreMember
 
 [struct__HEAP_SEGMENT]
 Signature: [0xffeeffee]
