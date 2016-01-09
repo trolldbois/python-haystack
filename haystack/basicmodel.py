@@ -80,7 +80,8 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
         # 8 in x32, 16 in x64
-        self._word_size_x2 = self._target.get_cpu_bits()/4
+        self._word_size = self._target.get_word_size()
+        self._word_size_x2 = self._target.get_word_size() * 2
         self._ctypes = self._target.get_target_ctypes()
         self._utils = self._target.get_target_ctypes_utils()
         self._constraints_base = None
