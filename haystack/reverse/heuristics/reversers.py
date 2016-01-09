@@ -86,6 +86,7 @@ class BasicCachingReverser(model.AbstractReverser):
         self._loaded += 1
         if size < 0:
             log.error("Negative allocation size")
+            raise ValueError("Negative allocation size")
         mystruct = structure.AnonymousRecord(_context.memory_handler, ptr_value, size)
         _context._structures[ptr_value] = mystruct
         # cache to disk

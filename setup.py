@@ -89,6 +89,7 @@ setup(name="haystack",
           'console_scripts': [
               'haystack-search = haystack.cli:main_search',
               'haystack-show = haystack.cli:main_show',
+              'haystack-reverse = haystack.cli:main_reverse',
               'haystack-live-dump = haystack.memory_dumper:main',
               'haystack-live-search = haystack.cli:live_search',
               'haystack-live-show = haystack.cli:live_show',
@@ -107,7 +108,7 @@ setup(name="haystack",
       scripts=[ #"scripts/haystack",
                "scripts/haystack-gui",
                #"scripts/haystack-dump",
-               "scripts/haystack-reverse",
+               #"scripts/haystack-reverse",
                "scripts/haystack-find-heap.py"],
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434

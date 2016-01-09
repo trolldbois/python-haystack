@@ -401,6 +401,21 @@ def main_show():
     return
 
 
+def main_reverse():
+    argv = sys.argv[1:]
+    desc = REVERSE_DESC + DUMPTYPE_BASE_DESC
+    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
+    rootparser.add_argument('dump_folder_name', type=argparse_utils.readable, help='Use this memory dump folder')
+    reverse_argparser(rootparser)
+    opts = rootparser.parse_args(argv)
+    opts.dumptype = DUMPTYPE_BASE
+    # apply verbosity
+    set_logging_level(opts)
+    # execute function
+    opts.func(opts)
+    return
+
+
 def live_search():
     argv = sys.argv[1:]
     desc = SEARCH_DESC + DUMPTYPE_LIVE_DESC

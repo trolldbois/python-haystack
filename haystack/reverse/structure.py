@@ -178,6 +178,8 @@ class AnonymousRecord(object):
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
         self.__address = _address
+        if size <= 0:
+            raise ValueError("a record should have a positive size")
         self._size = size
         self._reverse_level = 0
         self.__record_type = RecordType('struct_%x' % self.__address, self._size, [])

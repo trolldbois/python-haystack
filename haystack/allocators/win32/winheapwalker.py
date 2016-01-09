@@ -51,15 +51,19 @@ class WinHeapWalker(heapwalker.HeapWalker):
         """
         # Backend
         vallocs = self._get_virtualallocations()
+        self._check_sizes(vallocs)
         chunks, free_chunks = self._get_chunks()
+        self._check_sizes(chunks)
+        self._check_sizes(free_chunks)
         # need to cut sizeof(HEAP_ENTRY) from address and size
         # FIXME ? why report calculation up to here ?
         sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
         # make the user allocated list
-        lst = vallocs | chunks
-        backend_allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
-        if len(lst) != len(backend_allocs):
-            log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(backend_allocs)))
+        # lst = vallocs | chunks
+        chunks2 = set([(addr + sublen, size - sublen) for addr, size in chunks])
+        backend_allocs = vallocs | chunks2
+
+        self._check_sizes(backend_allocs)
 
         # free_lists == free_chunks.
         if False:
@@ -77,6 +81,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
             self._free_chunks = backend_free_chunks
         else:
             front_allocs, front_free_chunks = self._get_frontend_chunks()
+            self._check_sizes(front_allocs)
+            self._check_sizes(front_free_chunks)
             # point to header
             #front_allocs2 = set([(addr + sublen, size - sublen) for addr, size in front_allocs])
             #front_free_chunks2 = set([(addr + sublen, size - sublen) for addr, size in front_free_chunks])
@@ -95,7 +101,14 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 #      reports lfh_free | free_list as free
                 self._allocs = backend_allocs - front_free_chunks2 | front_allocs2
                 self._free_chunks = front_free_chunks2 | backend_free_chunks
+
         return
+
+    def _check_sizes(self, chunks):
+        for addr, size in chunks:
+            if size < 0:
+                print self._heap_mapping
+                raise ValueError("chunk size cannot be negative")
 
     def get_heap_children_mmaps(self):
         """ use free lists to establish the hierarchy between mmaps"""
