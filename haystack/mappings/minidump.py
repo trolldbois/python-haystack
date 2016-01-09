@@ -1009,6 +1009,9 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     map_offset += prev_size
                     start = range.StartOfMemoryRange
                     size = range.DataSize
+                    if map_offset+size > fsize:
+                        log.error('BAD FILE: reducing mapping 0x%x-0x%x size 0x%x -> 0x%x bytes', start, start+size, size, fsize - map_offset)
+                        size = fsize - map_offset
                     end = start + size
                     log.debug("0x%x-0x%x size:0x%x offset_in_file:0x%x", start, start+size, size, map_offset)
                     ## BUG FIXME, offset reading ???

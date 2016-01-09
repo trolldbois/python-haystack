@@ -256,8 +256,14 @@ class WinHeapValidator(listmodel.ListModel):
         Windows XP and Windows Server 2003 introduce the low-fragmentation heap (LFH).
         Win 7 is LFH only, no LAL.
         """
-        # TODO: move LFH back here.
-        raise NotImplementedError
+        # FIXME: move LFH back here.
+        # yes winxp can have a LFH heap, if requested by the app.
+        # https://support.microsoft.com/en-us/kb/929136
+        # but we dont have the symbols in WinXP PDBs....
+        # using the win7 types works pretty good though.
+        log.error('LFH not implemented for this OS')
+        return set(), set()
+
 
     def get_frontend_chunks(self, heap):
         """

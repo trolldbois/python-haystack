@@ -89,7 +89,32 @@ def one_heap(opts, finder):
         print out.parse(ctypes_heap, depth=2)
         print 'Valid =', valid
     if opts.frontend:
-        # TODO
+        heap_addr = ctypes_heap._orig_address_
+        heap_m = memory_handler.get_mapping_for_address(heap_addr)
+        heap_m.mark_as_heap(heap_addr)
+        walker = finder.get_heap_walker(heap_m)
+        win_heap = walker._heap_module
+        _utils = memory_handler.get_ctypes_utils()
+        if ctypes_heap.FrontEndHeapType == 0:
+            log.error('BACKEND HEAP Type')
+        elif ctypes_heap.FrontEndHeapType == 1:
+            lal_start_addr = _utils.get_pointee_address(ctypes_heap.FrontEndHeap)
+            m = memory_handler.is_valid_address(lal_start_addr, win_heap.HEAP_LOOKASIDE * 128)
+            if not m:
+                log.error('HEAP.FrontEndHeap has a bad address %x', lal_start_addr)
+                return set()
+            lal_list = m.read_struct(lal_start_addr, win_heap.HEAP_LOOKASIDE * 128)
+            for i, st in enumerate(lal_list):
+                out.parse(st, depth=2)
+        elif ctypes_heap.FrontEndHeapType == 2 and memory_handler.get_target_platform().get_os_name() != 'winxp':
+            lfh_start_addr = _utils.get_pointee_address(ctypes_heap.FrontEndHeap)
+            m = memory_handler.is_valid_address(lfh_start_addr, win_heap.LFH_HEAP)
+            if not m:
+                log.error('HEAP.FrontEndHeap has a bad address %x', lfh_start_addr)
+                return set()
+            lfh_heap = m.read_struct(lfh_start_addr, win_heap.LFH_HEAP)
+            out.parse(lfh_heap, depth=2)
+
         pass
     # fake it
     m = memory_handler.get_mapping_for_address(address)
