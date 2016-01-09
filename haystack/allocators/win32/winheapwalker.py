@@ -61,8 +61,10 @@ class WinHeapWalker(heapwalker.HeapWalker):
         # make the user allocated list
         # lst = vallocs | chunks
         chunks2 = set([(addr + sublen, size - sublen) for addr, size in chunks])
+        # chunks2 = set([(addr, size) for addr, size in chunks])
         backend_allocs = vallocs | chunks2
 
+        # FIXME, we have a 0 size chunks.
         self._check_sizes(backend_allocs)
 
         # free_lists == free_chunks.
@@ -74,6 +76,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 log.warning('Weird: len(free_chunks) != len(free_lists)')
         else:
             backend_free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_chunks])
+        self._check_sizes(backend_free_chunks)
 
         # frontend too
         if self._heap.FrontEndHeapType == 0:
@@ -89,6 +92,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
             # points to chunk
             front_allocs2 = set([(addr, size ) for addr, size in front_allocs])
             front_free_chunks2 = set([(addr, size) for addr, size in front_free_chunks])
+            self._check_sizes(front_allocs2)
+            self._check_sizes(front_free_chunks2)
 
             if self._heap.FrontEndHeapType == 1:
                 # LAL: reports vallocs and (_get_chunks-lal) as committed
@@ -106,9 +111,9 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def _check_sizes(self, chunks):
         for addr, size in chunks:
-            if size < 0:
+            if size <= 0:
                 print self._heap_mapping
-                raise ValueError("chunk size cannot be negative")
+                raise ValueError("chunk size cannot be negative: 0x%x %d" % (addr,size))
 
     def get_heap_children_mmaps(self):
         """ use free lists to establish the hierarchy between mmaps"""

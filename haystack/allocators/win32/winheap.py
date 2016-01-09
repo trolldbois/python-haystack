@@ -151,6 +151,8 @@ class WinHeapValidator(listmodel.ListModel):
             c_size = valloc.CommitSize
             # requested
             r_size = valloc.ReserveSize
+            if c_size == 0:
+                continue
             vallocs.append((addr, c_size, r_size))
             log.debug("vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (addr, c_size, r_size))
         return vallocs
