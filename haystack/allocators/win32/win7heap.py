@@ -455,7 +455,7 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         for segment in segments:
             p_segment = winheap.Segment(self._memory_handler, segment)
             p_segment.set_ucr(ucr_list)
-            p_segment.set_ressource_usage(occupied_res2, free_res2)
+            p_segment.set_resource_usage(occupied_res2, free_res2)
             print p_segment.to_string('\t\t')
             # if UCR, then
             ucrsegments = self.get_UCR_segment_list(heap)

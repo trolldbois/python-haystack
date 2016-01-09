@@ -70,11 +70,14 @@ class Segment(object):
         # UCR.
         self.nb_pages = ctypes_segment.NumberOfPages
         self.uncommitted_pages = ctypes_segment.NumberOfUnCommittedPages
+        self.uncommitted_size = self.uncommitted_pages * 4096
         self.uncommitted_ranges = ctypes_segment.NumberOfUnCommittedRanges
         self.committed_pages = self.nb_pages - self.uncommitted_pages
         self.committed_size = self.committed_pages * 4096
-        # gets reduced by set_ucr()
+        # !!committed_size2!! is then reduced in set_ucr()
         self.committed_size2 = self.end - self.start
+        # FIXME: but sometimes, in LOOKASIDE, no UCR are found but uncommited pages exists.
+        # then the count is self.committed_size2 -= self.uncommitted_size
         self.ucrs = []
         # stats from chunks
         self.s_allocated, self.s_allocated_overhead = None, None
@@ -101,7 +104,7 @@ class Segment(object):
                 mappings.append(m)
         return mappings
 
-    def set_ressource_usage(self, occupied_res, free_res):
+    def set_resource_usage(self, occupied_res, free_res):
         # do the stats
         self.s_allocated, self.s_allocated_overhead = occupied_res.get(self.start, (0, 0))
         self.s_free, self.s_free_overhead = free_res.get(self.start, (0, 0))
@@ -110,9 +113,8 @@ class Segment(object):
         return
 
     def to_string(self, prefix=''):
-        nb = self.uncommitted_pages
         s = '%sSegment: 0x%0.8x-0x%0.8x size:0x%x' % (prefix, self.start, self.end, self.end-self.start)
-        s += "\r\n%s\tNumberOfUnCommittedPages %d => size:0x%x" % (prefix, nb, nb*4096)
+        s += "\r\n%s\tNumberOfUnCommittedPages %d => size:0x%x" % (prefix, self.uncommitted_pages, self.uncommitted_size)
         s += "\r\n%s\tNumberOfUnCommittedRanges %d " % (prefix, self.uncommitted_ranges)
         s += '\r\n%s\tcommitted pages size: 0x%x cnt:%d/%d' % (prefix, self.committed_size, self.committed_pages, self.nb_pages)
         if_error = '' if self.committed_size2 == self.s_sum else '!! '
@@ -213,14 +215,22 @@ class WinHeapValidator(listmodel.ListModel):
                     flags = chunk_header.Flags
                     size = chunk_header.Size
                 else:
-                    # winxp
-                    flags = chunk_header._0._1.Flags
-                    size = chunk_header._0._0.Size
+                    # winxp 32
+                    if self._word_size == 4:
+                        flags = chunk_header._0._1.Flags
+                        size = chunk_header._0._0.Size
+                    else:
+                        flags = chunk_header._1._0.Flags
+                        size = chunk_header._1._0.Size
+
                 if (flags & 1) == 1:
                     allocated.add((chunk_addr, size * self._word_size_x2))
                 else:
                     if size == 0:
                         log.warning("Null sized free chunk at 0x%0.8x - exiting", chunk_addr)
+                        #p = self._ctypes.pointer(self._ctypes.c_void_p(chunk_addr))
+                        #next = self._utils.get_pointee_address(p)
+                        #print hex(next)
                         break
                     free.add((chunk_addr, size * self._word_size_x2))
                     pass
@@ -241,8 +251,10 @@ class WinHeapValidator(listmodel.ListModel):
 
     def get_lfh_chunks(self, record):
         """
-        Win7 only
+        Windows XP and Windows Server 2003 introduce the low-fragmentation heap (LFH).
+        Win 7 is LFH only, no LAL.
         """
+        # TODO: move LFH back here.
         raise NotImplementedError
 
     def get_frontend_chunks(self, heap):
@@ -259,7 +271,6 @@ class WinHeapValidator(listmodel.ListModel):
         elif heap.FrontEndHeapType == 1:  # windows XP per default
             lal_free_c = self.get_lookaside_chunks(heap)
             return set(), lal_free_c
-            # TODO committed ?
         elif heap.FrontEndHeapType == 2:  # win7 per default
             _c, _f = self.get_lfh_chunks(heap)
             # remove the unused parts

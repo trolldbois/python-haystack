@@ -224,7 +224,7 @@ class TestWin7Heap(unittest.TestCase):
         allocated, free = validator.get_backend_chunks(heap)
         s_allocated = sum([c[1] for c in allocated])
         s_free = sum([c[1] for c in free])
-        total = sorted(allocated + free)
+        total = sorted(allocated | free)
         s_total = sum([c[1] for c in total])
 
         # in this example, its a single continuous segment
@@ -266,7 +266,7 @@ class TestWin7Heap(unittest.TestCase):
             allocated, free = validator.get_backend_chunks(heap)
             s_allocated = sum([c[1] for c in allocated])
             s_free = sum([c[1] for c in free])
-            total = sorted(allocated + free)
+            total = sorted(allocated | free)
             s_total = sum([c[1] for c in total])
             # HEAP counters
             committed_size = heap.Counters.TotalMemoryCommitted

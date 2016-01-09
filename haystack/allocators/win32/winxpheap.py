@@ -159,6 +159,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         self.register_single_linked_list_record_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', sentinels)
         self.register_double_linked_list_record_type(self.win_heap.LIST_ENTRY, 'Flink', 'Blink', sentinels)
 
+        self.register_linked_list_field_and_type(self.win_heap.SINGLE_LIST_ENTRY, 'Next', self.win_heap.SINGLE_LIST_ENTRY, 'Next')
+
         #
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.struct__HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
 
@@ -167,7 +169,15 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         #self.register_single_linked_list_record_type(self.win_heap.struct__SLIST_HEADER_0, 'Next')
         #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.union__SLIST_HEADER, '_1')
         #self.register_linked_list_field_and_type(self.win_heap.union__SLIST_HEADER, '_1', self.win_heap.struct__SLIST_HEADER_0, 'Next')
-        self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead')
+
+        # 32 bits
+        if self._word_size == 4:
+            self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead')
+        else:
+            pass
+        # winxp 64
+        # cast(SLIST_HEADER.Region, SINGLE_LIST_ENTRY ?
+
         #self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_ENTRY, 'ListHead')
         # what the fuck is pointed record type of listHead ?
         #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
@@ -216,6 +226,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         """
          heap->FrontEndheap is a list of 128 HEAP_LOOKASIDE
          lookasidelist[n] block is of size n*8 and used to store (n-1)*8 byte blocks (remaining 8 bytes is used for header
+         lookasidelist[n] for n = 0,1 are not used.
 
          Most of the time, with FrontEndHeapType == 1 and LockVariable != 0,
             then TotalFreeSize*4 == FreeLists totals, event with LAL present.
@@ -225,76 +236,86 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         lal_start_addr = self._utils.get_pointee_address(ptr)
         _t = self.win_heap.HEAP_LOOKASIDE * 128
         m = self._memory_handler.is_valid_address(lal_start_addr, _t)
-        #get_mapping_for_address(lal_start_addr)
         if not m:
-            #raise RuntimeError('HEAP.FrontEndHeap has a bad address %x' % lal_start_addr)
             log.error('HEAP.FrontEndHeap has a bad address %x', lal_start_addr)
-            return []
-        #st = m.read_struct(addr, self.win_heap.HEAP_LOOKASIDE)
+            return set()
         lal_list = m.read_struct(lal_start_addr, _t)
-        lal_entry_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_LOOKASIDE)
+        lal_entry_size = self._ctypes.sizeof(self.win_heap.HEAP_LOOKASIDE)
         #
-        from haystack.outputters.text import RecursiveTextOutputter
-        parser = RecursiveTextOutputter(self._memory_handler)
-
-        res = []
+        all_chunks = set()
         for i, st in enumerate(lal_list):
-            if st.ListHead._1.Next.Next.value == 0:
+            if i == 0 or i == 1:
+                # log.debug("LAL:%d UNUSED", i)
                 continue
-            #chunk_size = i*8 # free_usable_size = (i-1)*8
-            chunk_size = (i-1)*8
-            log.debug("LAL depth:%d chunk_size:0x%x @: 0x%x", st.Depth, chunk_size, st.ListHead._1.Next.Next.value)
-            res.append((st.ListHead._1.Next.Next.value, chunk_size))
-            #continue
-            entry = st.ListHead._1
             lal_entry_addr = lal_start_addr + i*lal_entry_size
-            entry._orig_address_ = lal_entry_addr
-            #for i, lookaside in self.iterate_list_from_field(st, 'ListHead'):
-            #for i, lookaside in enumerate(self.iterate_list_from_field(entry, 'Next')):
-            # CHECK I think its HEAP_ENTRY in LAL
-            #iterator_fn = self._iterate_double_linked_list
-            # size is actually a factor of heap granularity == sizeof(HEAP_ENTRY)
-            #size_heap_entry = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY_0_0)
-            #offset = size_heap_entry
-            # get the first entry
-            #first_entry_addr = entry.Next.Next.value
-            #if first_entry_addr == 0:
-            #    continue
-            #first_entry_addr += 2*self._target.get_word_size()
-            #m = self._memory_handler.is_valid_address(first_entry_addr, self.win_heap.struct__HEAP_ENTRY)
-            #if not m:
-            #    raise RuntimeError('HEAP.FrontEndHeap.ListHead._1.Next.Next has a bad address %x' % lal_start_addr)
-            #first_entry = m.read_struct(first_entry_addr, self.win_heap.struct__HEAP_ENTRY)
-            # res.append((first_entry._orig_address_, first_entry.Size * self._target.get_word_size()))
+            chunk_size = i * 8
+            # - 8 bytes header
+            #self._word_size_x2
+            # get all chunks in this lal
+            this_chunks = set()
+            # x64 is different
+            if self._word_size == 8:
+                # so in x64, not a 64 pointer ? What is ListHead.Region ?
+                # http://doxygen.reactos.org/d5/d52/slist_8c_source.html
+                # http://stackoverflow.com/questions/20003455/windows-x64-intrusive-singly-linked-list
+                # sadly our profiles don't have bitfields.
+                depth = st.ListHead.Alignment & 0xffff
+                first_entry_addr = st.ListHead.Alignment >> 21
+            else:
+                # https://www.insomniasec.com/downloads/publications/Heaps_About_Heaps.ppt
+                depth = st.ListHead._1.Depth
+                first_entry_addr = self._utils.get_pointee_address(st.ListHead._1.Next.Next)
 
-            # every list head is a sentinel, as head of list
-            # + <end of mapping> - chunk_size
-            sentinels = {lal_entry_addr} | set([mapping.end - chunk_size for mapping in self._memory_handler.get_mappings()])
+            # sanity checks
+            if depth == 0 and first_entry_addr != 0:
+                log.warning('depth == 0 and first_entry_addr != 0')
+            elif depth != 0 and first_entry_addr == 0:
+                log.warning('depth == %d and first_entry_addr == 0' % depth)
+            if first_entry_addr == 0:
+                log.debug("LAL:%d depth:%d chunk_size:0x%x nb_chunks:0", i, depth, chunk_size)
+                continue
+            #
+            if True: #self._word_size == 8:
+                # loop through the list.
+                # LAL[2] has a weird pointer.
+                if first_entry_addr & 1:
+                    entry_addr = first_entry_addr ^ 1
+                else:
+                    entry_addr = first_entry_addr
+                # stop when Null
+                # stop on dups. (shouldn't happen)
+                # stop on listed depth (will happen)
+                while entry_addr != 0 and len(this_chunks) < depth:
+                    #
+                    m = self._memory_handler.get_mapping_for_address(entry_addr)
+                    if not m:
+                        log.error('LAL:%d 0x%x is not valid - escaping' % (i, entry_addr))
+                        break
+                    # keep it
+                    this_chunks.add(entry_addr)
+                    # go to next one
+                    st = m.read_struct(entry_addr, self.win_heap.SINGLE_LIST_ENTRY)
+                    entry_addr = self._utils.get_pointee_address(st.Next)
+            else:
+                # FIXME should work, doesn't
+                entry = m.read_struct(first_entry_addr, self.win_heap.SINGLE_LIST_ENTRY)
+                this_chunks.add(first_entry_addr)
+                for j, freeblock in enumerate(self.iterate_list_from_field(entry, 'Next', sentinels=set(), ignore_head=False)):
+                    this_chunks.add(freeblock._orig_address_)
 
-            #for j, freeblock in enumerate(self._iterate_list_from_field_inner(iterator_fn,
-            #                                         first_entry,
-            #                                         self.win_heap.struct__HEAP_ENTRY_0_0,
-            #                                         offset,
-            #                                         sentinels)):
-            for j, freeblock in enumerate(self.iterate_list_from_field(entry, 'Next', sentinels)):
-                res.append((freeblock._orig_address_, chunk_size))
-                log.debug('HEAP.LAL[%d][%d]: size:0x%x @0x%x', i, j, chunk_size, freeblock._orig_address_)
+            #print [hex(a) for a in this_chunks]
 
-                #addr = lookaside._orig_address_
-                #log.debug('finding lookaside %d at @%x', i, addr)
-                #print parser.parse(lookaside)
-                #ucr_addr = self._utils.get_pointee_address(ucr.Address)
-                #listHead = st.ListHead._1
-                #listHead._orig_address_ = addr
-                #for free in self.iterate_list_from_field(listHead, 'Next'):
-                #    # TODO delete this free from the heap-segment entries chunks
-                #    # is that supposed to be a FREE_ENTRY ?
-                #    # or a struct__HEAP_LOOKASIDE ?
-                #    log.debug('free')
-                #    #all_free.append(free)  # ???
-                #    pass
-                #yield addr, 0
-        return res
+            # closure for this LAL
+            nb = len(this_chunks)
+            size = nb*chunk_size
+            if nb != depth:
+                log.warning('Incorrect depth:%d found:%d' % (depth, nb))
+            log.debug("LAL:%d depth:%d chunk_size:0x%x nb_chunks:%d t_size:0x%x", i, depth, chunk_size, nb, size)
+            #print "LAL:%d depth:%d chunk_size:0x%x nb_chunks:%d t_size:0x%x" % (i, depth, chunk_size, nb, size)
+            for addr in this_chunks:
+                all_chunks.add((addr, chunk_size))
+
+        return all_chunks
 
 
     # 2015-06-30 for winXP
@@ -562,7 +583,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             ucrs.extend(ucrsegments)
             ucr_list = winheap.UCR_List(ucrs)
             p_segment.set_ucr(ucr_list)
-            p_segment.set_ressource_usage(occupied_res2, free_res2)
+            p_segment.set_resource_usage(occupied_res2, free_res2)
             print p_segment.to_string('\t\t')
             # if UCR, then
             # in XP, UCR segments are in HEAP.

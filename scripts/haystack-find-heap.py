@@ -25,8 +25,11 @@ def main(argv):
                                           description="Find heaps in a dumpfile")
     parser.add_argument('--osname', '-n', action='store', default=None, choices=['winxp', 'win7'], help='winxp,win7')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose')
-    parser.add_argument('--quiet', dest='quiet', action='store_true', help='Set verbosity to ERROR only')
-    parser.add_argument('--debug', '-d', dest='debug', action='store_true', help='Set verbosity to DEBUG')
+    parser.add_argument('--quiet', action='store_true', help='Set verbosity to ERROR only')
+    parser.add_argument('--debug', '-d', action='store_true', help='Set verbosity to DEBUG')
+    parser.add_argument('--mappings', '-m', action='store_true', help='Show mappings')
+    parser.add_argument('--heap', '-p', action='store_true', help='Show the heap content')
+    parser.add_argument('--frontend', '-f', action='store_true', help='Show the frontend heap content')
     parser.add_argument('dumpname', type=argparse_utils.readable, help='process memory dump name')
     parser.add_argument('address', nargs='?', type=argparse_utils.int16, default=None, help='Load Heap from address (hex)')
 
@@ -41,16 +44,16 @@ def main(argv):
     # Show Target information
     print memory_handler.get_target_platform()
 
-    if opts.address is not None:
-        one_heap(opts, finder)
-        return
-
-    if opts.verbose:
+    if opts.mappings:
         # show all memory mappings
         print 'Process mappings:'
         print '@start     @stop       File Offset M:m   '
         for m in memory_handler.get_mappings():
             print m
+
+    if opts.address is not None:
+        one_heap(opts, finder)
+        return
 
     print 'Probable Process HEAPS:'
     for m in memory_handler.get_mappings():
@@ -61,12 +64,11 @@ def main(argv):
             if heap.Signature == 0xeeffeeff:
                 if addr != m.start:
                     heap_not_at_start = ' (!) '
-                print '[+] %s@0x%0.8x' % (heap_not_at_start, addr), m
+                print '[+] %s 0x%0.8x' % (heap_not_at_start, addr), m
 
     # Then show heap analysis
     print 'Found Heaps:'
 
-    # TODO why not use native heap mappings searcher ?
     results = finder.search_heap()
     for ctypes_heap, addr in results:
         m = memory_handler.get_mapping_for_address(addr)
@@ -78,15 +80,19 @@ def main(argv):
 
 def one_heap(opts, finder):
     address = opts.address
+    memory_handler = finder._memory_handler
     # just return the heap
     ctypes_heap, valid = finder.search_heap_direct(address)
-    if opts.verbose:
+    if opts.heap:
         out = text.RecursiveTextOutputter(finder._memory_handler)
         # out = python.PythonOutputter(finder._memory_handler)
         print out.parse(ctypes_heap, depth=2)
-    print 'Valid =', valid
+        print 'Valid =', valid
+    if opts.frontend:
+        # TODO
+        pass
     # fake it
-    m = finder._memory_handler.get_mapping_for_address(address)
+    m = memory_handler.get_mapping_for_address(address)
     m.mark_as_heap(address)
     validator = finder.get_heap_validator()
     validator.print_heap_analysis(ctypes_heap, opts.verbose)

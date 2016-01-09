@@ -40,30 +40,61 @@ class WinHeapWalker(heapwalker.HeapWalker):
         return self._free_chunks
 
     def _set_chunk_lists(self):
-        if self._heap.FrontEndHeapType == 0:
-            # Backend
-            vallocs = self._get_virtualallocations()
-            chunks, free_chunks = self._get_chunks()
-            # need to cut sizeof(HEAP_ENTRY) from address and size
-            # FIXME ? why report calculation up to here ?
-            sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
-            # make the user allocated list
-            lst = vallocs | chunks
-            self._allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
-            if len(lst) != len(self._allocs):
-                log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(self._allocs)))
-            # free_lists == free_chunks.
-            if False:
-                log.warning('Duplicate walking of free chunks')
-                free_lists = self._get_freelists()
-                self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
-                if len(free_chunks) != len(free_lists):
-                    log.warning('Weird: len(free_chunks) != len(free_lists)')
-            else:
-                self._free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_chunks])
+        """
+        If its a backend, reports vallocs, _get_chunks and get_free_list
+        If its a frontend,
+        LAL: reports vallocs and (_get_chunks-lal) as committed
+             reports lal | free_list as free
+        LFH: reports vallocs and (_get_chunks-lfh_free | lfh_committed) as committed
+             reports lfh_free | free_list as free
+        :return:
+        """
+        # Backend
+        vallocs = self._get_virtualallocations()
+        chunks, free_chunks = self._get_chunks()
+        # need to cut sizeof(HEAP_ENTRY) from address and size
+        # FIXME ? why report calculation up to here ?
+        sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
+        # make the user allocated list
+        lst = vallocs | chunks
+        backend_allocs = set([(addr + sublen, size - sublen) for addr, size in lst])
+        if len(lst) != len(backend_allocs):
+            log.warning('NON unique referenced user chunks found. Please enquire. %d != %d' % (len(lst), len(backend_allocs)))
+
+        # free_lists == free_chunks.
+        if False:
+            log.warning('Duplicate walking of free chunks')
+            free_lists = self._get_freelists()
+            backend_free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
+            if len(free_chunks) != len(free_lists):
+                log.warning('Weird: len(free_chunks) != len(free_lists)')
         else:
-            # frontend
-            self._allocs, self._free_chunks = self._get_frontend_chunks()
+            backend_free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_chunks])
+
+        # frontend too
+        if self._heap.FrontEndHeapType == 0:
+            self._allocs = backend_allocs
+            self._free_chunks = backend_free_chunks
+        else:
+            front_allocs, front_free_chunks = self._get_frontend_chunks()
+            # point to header
+            #front_allocs2 = set([(addr + sublen, size - sublen) for addr, size in front_allocs])
+            #front_free_chunks2 = set([(addr + sublen, size - sublen) for addr, size in front_free_chunks])
+            # points to chunk
+            front_allocs2 = set([(addr, size ) for addr, size in front_allocs])
+            front_free_chunks2 = set([(addr, size) for addr, size in front_free_chunks])
+
+            if self._heap.FrontEndHeapType == 1:
+                # LAL: reports vallocs and (_get_chunks-lal) as committed
+                #      reports lal | free_list as free
+                # TODO + overhead
+                self._allocs = backend_allocs - front_free_chunks2
+                self._free_chunks = front_free_chunks2 | backend_free_chunks
+            elif self._heap.FrontEndHeapType == 2:
+                # LFH: reports vallocs and (_get_chunks-lfh_free | lfh_committed) as committed
+                #      reports lfh_free | free_list as free
+                self._allocs = backend_allocs - front_free_chunks2 | front_allocs2
+                self._free_chunks = front_free_chunks2 | backend_free_chunks
         return
 
     def get_heap_children_mmaps(self):
