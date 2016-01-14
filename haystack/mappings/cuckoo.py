@@ -155,10 +155,8 @@ class CuckooProcessMapper(interfaces.IMemoryLoader):
                 self._target = target.TargetPlatform.make_target_linux_64()
 
         log.debug("target: %s", self._target)
-        # create a folder for it
+        # Use a folder name for its cache later on
         h_name = self.filename + ".d"
-        if not os.path.exists(h_name):
-            os.mkdir(h_name)
         memory_handler = base.MemoryHandler(self.mappings, self._target, h_name)
         self._memory_handler = memory_handler
 
@@ -188,7 +186,7 @@ if __name__ == '__main__':
     logging.getLogger("model").setLevel(logging.INFO)
     logging.getLogger("python").setLevel(logging.INFO)
 
-    fname = sys.argv[1] # '/home/jal/Compil/python-haystack/test/dumps/cuckoo/1144-1.dmp'
+    fname = sys.argv[1]
     mapper = CuckooProcessMapper(fname)
     handler = mapper.make_memory_handler()
     finder = handler.get_heap_finder()

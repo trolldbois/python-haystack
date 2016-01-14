@@ -43,16 +43,21 @@ SIGNATURES_FILENAME = 'signatures'
 WORDS_FOR_REVERSE_TYPES_FILE = 'data/words.100'
 
 
-def create_cache_folder_name(dumpname):
+def create_cache_folder(dumpname):
+    root = os.path.abspath(dumpname)
+    if not os.path.isdir(root):
+        os.mkdir(root)
     folder = get_cache_folder_name(dumpname)
-    if not os.access(folder, os.F_OK):
+    if not os.path.isdir(folder):
         os.mkdir(folder)
+    if not os.access(folder, os.W_OK):
+        raise IOError('cannot write to %s' % folder)
     return
 
 
 def remove_cache_folder(dumpname):
     folder = get_cache_folder_name(dumpname)
-    if os.access(folder, os.F_OK):
+    if os.path.isdir(folder):
         shutil.rmtree(folder)
     return
 
@@ -85,3 +90,12 @@ def get_record_cache_folder_name(dumpname):
     """
     root = os.path.abspath(dumpname)
     return os.path.sep.join([root, CACHE_NAME, CACHE_STRUCT_DIR])
+
+
+def create_record_cache_folder(dumpname):
+    folder = get_record_cache_folder_name(dumpname)
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    if not os.access(folder, os.W_OK):
+        raise IOError('cannot write to %s' % folder)
+    return
