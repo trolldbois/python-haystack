@@ -453,7 +453,6 @@ class PointerGraphReverser(model.AbstractReverser):
         import networkx
         # we only need the addresses...
         self._graph = networkx.DiGraph()
-        log.info('[+] Heap 0x%x Graph += %d Nodes', _context._heap_start, self._graph.number_of_nodes())
         t0 = time.time()
         tl = t0
         for _record in _context.listStructures():
@@ -464,6 +463,7 @@ class PointerGraphReverser(model.AbstractReverser):
             self.reverse_record(_context, _record)
             # output headers
         #
+        log.info('[+] Heap 0x%x Graph += %d Nodes', _context._heap_start, self._graph.number_of_nodes())
         log.info('[+] Heap 0x%x Graph += %d Edges', _context._heap_start, self._graph.number_of_edges())
         networkx.readwrite.gexf.write_gexf(self._graph, _context.get_filename_cache_graph())
         ##

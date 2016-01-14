@@ -36,7 +36,7 @@ class ProcessContext(object):
         # see bug #17 self.__model = model.Model(self.memory_handler)
         # no need for that
         # create the cache folder then
-        self.create_cache_folder()
+        self.create_cache_folders()
 
     # def get_functions_pointers(self):
     #     try:
@@ -69,29 +69,18 @@ class ProcessContext(object):
     #         pickle.dump(func.functions, fout)
     #     return func.functions
 
-    def create_cache_folder(self):
+    def create_cache_folders(self):
         """Removes the cache folder"""
         dumpname = self.memory_handler.get_name()
         # create the cache folder
-        cache_folder = config.get_cache_folder_name(dumpname)
-        # config.remove_cache_folder(self.memory_handler.get_name())
-        if not os.access(cache_folder, os.F_OK):
-            os.mkdir(cache_folder)
-            log.info("[+] Cache created in %s", cache_folder)
-        else:
-            log.debug("[+] Cache exists in %s", cache_folder)
+        config.create_cache_folder(dumpname)
         # and the record subfolder
         self.create_record_cache_folder()
 
     def create_record_cache_folder(self):
         # and the record subfolder
         dumpname = self.memory_handler.get_name()
-        record_cache = config.get_record_cache_folder_name(dumpname)
-        if not os.access(record_cache, os.F_OK):
-            os.mkdir(record_cache)
-            log.info("[+] Record cache created in %s", record_cache)
-        else:
-            log.debug("[+] Record cache exists in %s", record_cache)
+        config.create_record_cache_folder(dumpname)
 
     def _set_context_for_heap(self, mmap, ctx):
         """Caches the HeapContext associated to a IMemoryMapping"""
@@ -147,10 +136,14 @@ class ProcessContext(object):
         Save the python class code definition to file.
         """
         fout = open(self.get_filename_cache_headers(), 'w')
-        towrite = []
+        towrite = ['# This file contains record types deduplicated by instance',
+                   '# Unique values for each field of the record are listed']
         #
-        for r_type in self.list_reversed_types():
+        nb_total = 0
+        nb_unique = 0
+        for nb_unique, r_type in enumerate(self.list_reversed_types()):
             members = self.get_reversed_type(r_type)
+            nb_total += len(members)
             from haystack.reverse.heuristics import constraints
             rev = constraints.ConstraintsReverser(self.memory_handler)
             txt = rev.verify(r_type, members)
@@ -164,6 +157,8 @@ class ProcessContext(object):
                     print 'ERROR on ', r_type
                 towrite = []
                 fout.flush()
+        # add some stats
+        towrite.insert(2, '# Stats: unique_types:%d total_instances:%d' % (nb_unique, nb_total))
         fout.write('\n'.join(towrite))
         fout.close()
         return
@@ -221,8 +216,8 @@ class HeapContext(object):
     def _init2(self):
         log.debug('[+] HeapContext on heap 0x%x', self.heap.get_marked_heap_address())
         # Check that cache folder exists
-        if not os.access(config.get_cache_folder_name(self.dumpname), os.F_OK):
-            os.mkdir(config.get_cache_folder_name(self.dumpname))
+        config.create_cache_folder(self.dumpname)
+
         # we need a heap walker to parse all allocations
         finder = self.memory_handler.get_heap_finder()
         heap_walker = finder.get_heap_walker(self.heap)
@@ -422,7 +417,7 @@ class HeapContext(object):
     @classmethod
     def cacheLoad(cls, memory_handler, heap_addr):
         dumpname = os.path.abspath(memory_handler.get_name())
-        config.create_cache_folder_name(dumpname)
+        config.create_cache_folder(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname, heap_addr)
         try:
             with file(context_cache, 'r') as fin:

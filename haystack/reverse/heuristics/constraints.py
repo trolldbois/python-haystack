@@ -43,6 +43,7 @@ class ConstraintsReverser(object):
             new_record = structure.AnonymousRecord(self.__memory_handler, _item.address, len(_item), prefix=None)
             new_record.set_record_type(_record_type, True)
             records.append(new_record)
+        lines.append('# instances: [%s]' % (','.join(['0x%x' % addr for addr in members])))
 
         # check fields values
         for i, field in enumerate(_record_type.get_fields()):

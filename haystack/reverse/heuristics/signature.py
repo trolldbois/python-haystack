@@ -78,10 +78,7 @@ class TypeReverser(model.AbstractReverser):
 
     def persist(self, _context):
         outdir = _context.get_folder_cache()
-        if not os.path.isdir(outdir):
-            os.mkdir(outdir)
-        if not os.access(outdir, os.W_OK):
-            raise IOError('cant write to %s' % outdir)
+        config.create_cache_folder(outdir)
         #
         outname = _context.get_filename_cache_signatures()
         #outname = os.path.sep.join([outdir, self._name])
@@ -204,10 +201,7 @@ class SignatureGroupMaker:
         outdir = config.get_cache_filename(
             config.CACHE_SIGNATURE_GROUPS_DIR,
             self._context.dumpname)
-        if not os.path.isdir(outdir):
-            os.mkdir(outdir)
-        if not os.access(outdir, os.W_OK):
-            raise IOError('cant write to %s' % (outdir))
+        config.create_cache_folder(outdir)
         #
         outname = os.path.sep.join([outdir, self._name])
         ar = utils.int_array_save(outname, self._similarities)
@@ -262,10 +256,7 @@ class StructureSizeCache:
         outdir = config.get_cache_filename(
             config.CACHE_SIGNATURE_SIZES_DIR,
             self._context.dumpname)
-        if not os.path.isdir(outdir):
-            os.mkdir(outdir)
-        if not os.access(outdir, os.W_OK):
-            raise IOError('cant write to %s' % (outdir))
+        config.create_cache_folder(outdir)
         #
         sizes = map(int, set(self._context._malloc_sizes))
         arrays = dict([(s, []) for s in sizes])
