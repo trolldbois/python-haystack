@@ -996,8 +996,18 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     access=mmap.ACCESS_READ)
         log.debug("fsize: %d", fsize)
         maps = []
+        #
+        # get the named modules
+        named_modules = {}
+        for directory in construct_data.MINIDUMP_DIRECTORY:
+            if directory.StreamType == 'ModuleListStream':
+                for _range in directory.DirectoryData.MINIDUMP_MODULE:
+                    start = _range.BaseOfImage
+                    size = _range.SizeOfImage
+                    for page_start in range(start, start+size, 0x1000):
+                        named_modules[page_start] = (size, _range.ModuleName)
         # BUG ?
-        # the last mapping is incomplete, and seems to be the PE file.
+        # the last mapping is sometimes incomplete, and seems to be the PE file.
         for directory in construct_data.MINIDUMP_DIRECTORY:
             if directory.StreamType == 'Memory64ListStream':
                 #print directory
@@ -1005,17 +1015,20 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                 offset = directory.DirectoryData.BaseRva
                 map_offset = offset
                 prev_size = 0
-                for range in directory.DirectoryData.MINIDUMP_MEMORY_DESCRIPTOR64:
+                for _range in directory.DirectoryData.MINIDUMP_MEMORY_DESCRIPTOR64:
                     map_offset += prev_size
-                    start = range.StartOfMemoryRange
-                    size = range.DataSize
+                    start = _range.StartOfMemoryRange
+                    size = _range.DataSize
                     if map_offset+size > fsize:
                         log.error('BAD FILE: reducing mapping 0x%x-0x%x size 0x%x -> 0x%x bytes', start, start+size, size, fsize - map_offset)
                         size = fsize - map_offset
                     end = start + size
                     log.debug("0x%x-0x%x size:0x%x offset_in_file:0x%x", start, start+size, size, map_offset)
                     ## BUG FIXME, offset reading ???
-                    maps.append(cuckoo.MMapProcessMapping(mmap_content, start, end, '', map_offset))
+                    name = ''
+                    if start in named_modules:
+                        name = named_modules[start][1]
+                    maps.append(cuckoo.MMapProcessMapping(mmap_content, start, end, name, map_offset))
                     prev_size = size
             elif directory.StreamType == 'MemoryInfoListStream':
                 ## absent ?
