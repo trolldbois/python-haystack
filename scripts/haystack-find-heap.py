@@ -8,6 +8,7 @@ import argparse
 from haystack import dump_loader
 from haystack import argparse_utils
 from haystack.outputters import text
+import struct
 
 
 
@@ -62,8 +63,7 @@ def main(argv):
             heap_not_at_start = ''
             for os, bits, offset in [('winxp', 32, 8), ('winxp', 64, 16),
                                      ('win7', 32, 100), ('win7', 64, 160)]:
-                #FIXME signature = m.read_bytes(addr+offset, 4)
-                signature = m.read_word(addr+offset)
+                signature = struct.unpack('I',m.read_bytes(addr+offset, 4))[0]
                 if signature == 0xeeffeeff:
                     if addr != m.start:
                         heap_not_at_start = ' (!) '
