@@ -24,6 +24,7 @@ def main(argv):
     parser = argparse.ArgumentParser(prog='haystack-find-heap',
                                           description="Find heaps in a dumpfile")
     parser.add_argument('--osname', '-n', action='store', default=None, choices=['winxp', 'win7'], help='winxp,win7')
+    parser.add_argument('--bits', '-b', type=int, action='store', default=None, choices=[32, 64], help='32,64')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose')
     parser.add_argument('--quiet', action='store_true', help='Set verbosity to ERROR only')
     parser.add_argument('--debug', '-d', action='store_true', help='Set verbosity to DEBUG')
@@ -38,7 +39,7 @@ def main(argv):
     cli.set_logging_level(opts)
 
     #
-    memory_handler = dump_loader.load(opts.dumpname, os_name=opts.osname)
+    memory_handler = dump_loader.load(opts.dumpname, os_name=opts.osname, cpu=opts.bits)
     finder = memory_handler.get_heap_finder()
 
     # Show Target information

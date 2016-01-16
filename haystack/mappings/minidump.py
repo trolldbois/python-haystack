@@ -981,10 +981,12 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                         DataSize = 4096
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, cpu, os_name):
         construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
         self.filename = filename
+        self.cpu = cpu
+        self.os_name = os_name
         self._init_mappings(construct_data)
 
     def _init_mappings(self, construct_data):
@@ -1033,16 +1035,26 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
             elif directory.StreamType == 'MemoryInfoListStream':
                 ## absent ?
                 print directory
-            elif directory.StreamType == 'SystemInfoStream':
+        # target
+        for directory in construct_data.MINIDUMP_DIRECTORY:
+            if directory.StreamType == 'SystemInfoStream':
                 data = directory.DirectoryData
                 if data.MajorVersion == 5:
                     os_name = 'winxp'
                 else:
                     os_name = 'win7'
-                if 'X86' in data.ProcessorArchitecture:
+                if self.cpu is None:
+                    if 'X86' in data.ProcessorArchitecture:
+                        self._target = target.TargetPlatform.make_target_win_32(os_name)
+                    else:
+                        self._target = target.TargetPlatform.make_target_win_64(os_name)
+                elif self.cpu == 32:
                     self._target = target.TargetPlatform.make_target_win_32(os_name)
-                else:
+                elif self.cpu == 64:
                     self._target = target.TargetPlatform.make_target_win_64(os_name)
+                else:
+                    raise ValueError(self.cpu)
+                break
         #
         self.mappings = maps
         log.debug("nb maps: %d", len(self.mappings))
