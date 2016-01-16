@@ -43,7 +43,7 @@ def main(argv):
     finder = memory_handler.get_heap_finder()
 
     # Show Target information
-    print memory_handler.get_target_platform()
+    print 'Auto-resolved', memory_handler.get_target_platform()
 
     if opts.mappings:
         # show all memory mappings
@@ -60,12 +60,13 @@ def main(argv):
     for m in memory_handler.get_mappings():
         for addr in range(m.start, m.end, 0x1000):
             heap_not_at_start = ''
-            heap = finder._read_heap(m, addr)
-            # print hex(heap.Signature)
-            if heap.Signature == 0xeeffeeff:
-                if addr != m.start:
-                    heap_not_at_start = ' (!) '
-                print '[+] %s 0x%0.8x' % (heap_not_at_start, addr), m
+            for os, bits, offset in [('winxp', 32, 8), ('winxp', 64, 16),
+                                     ('win7', 32, 100), ('win7', 64, 160)]:
+                signature = m.read_word(addr+offset)
+                if signature == 0xeeffeeff:
+                    if addr != m.start:
+                        heap_not_at_start = ' (!) '
+                    print '[+] %s %dbits  %s 0x%0.8x' % (os, bits, heap_not_at_start, addr), m
 
     # Then show heap analysis
     print 'Found Heaps:'
