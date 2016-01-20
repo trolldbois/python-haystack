@@ -170,21 +170,9 @@ def make_process_memory_handler(process):
 
 __LOCAL_MAPPINGS = None
 
-
-class P(dbg.IProcess):
-    def get_pid(self):
-        return os.getpid()
-
-    def get_mapping_lines(self):
-        return os.getpid()
-
-    def read_bytes(self, addr, size):
-        return ctypes.string_at(addr, size)
-
 def make_local_memory_handler():
     global __LOCAL_MAPPINGS
     if __LOCAL_MAPPINGS is None:
         # __LOCAL_MAPPINGS = make_process_memory_handler(dbg.get_debugger(os.getpid()))
         __LOCAL_MAPPINGS = make_process_memory_handler(dbg.MyPTraceProcess(os.getpid(), None))
-    #return readProcessMappings(P())  # memory_mapping
     return __LOCAL_MAPPINGS
