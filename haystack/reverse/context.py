@@ -28,7 +28,7 @@ class ProcessContext(object):
         self.memory_handler = memory_handler
         # init heaps
         self.__contextes = {}
-        for heap in self.memory_handler.get_heap_finder().get_heap_mappings():
+        for heap in self.memory_handler.get_heap_finder().list_heap_walkers():
             self.get_context_for_heap(heap)
         # init reversed types
         self.__reversed_types = {}
@@ -498,11 +498,11 @@ def get_context_for_address(memory_handler, address):
     if not mmap:
         raise ValueError("Invalid address: 0x%x", address)
     finder = memory_handler.get_heap_finder()
-    if mmap not in finder.get_heap_mappings():
+    if mmap not in finder.list_heap_walkers():
         # addr is not a heap addr,
         found = False
         # or its in a child heap (win7)
-        for h in finder.get_heap_mappings():
+        for h in finder.list_heap_walkers():
             # FIXME : use a get_children or something
             # winHeapwalker.get_heap_children_mmaps
             if hasattr(h, '_children'):

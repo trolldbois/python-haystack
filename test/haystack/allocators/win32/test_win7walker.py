@@ -44,7 +44,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
-        _heaps = self._heap_finder.get_heap_mappings()
+        _heaps = self._heap_finder.list_heap_walkers()
         heap_sums = dict([(heap, list())
                           for heap in _heaps])
         child_heaps = dict()
@@ -100,7 +100,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ check if memory_mapping gives heaps sorted by index. """
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
         for i, m in enumerate(heaps):
             # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
@@ -244,7 +244,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         self.assertEquals(self._memory_handler.get_target_system(), 'win32')
 
         full = list()
-        for heap in finder.get_heap_mappings():
+        for heap in finder.list_heap_walkers():
             walker = finder.get_heap_walker(heap)
             my_chunks = list()
 
@@ -376,7 +376,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
 
-        for m in finder.get_heap_mappings():
+        for m in finder.list_heap_walkers():
             #
             walker = finder.get_heap_walker(m)
             total = 0

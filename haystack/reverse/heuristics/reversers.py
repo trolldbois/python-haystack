@@ -455,16 +455,17 @@ class PointerGraphReverser(model.AbstractReverser):
         self._graph = networkx.DiGraph()
         t0 = time.time()
         tl = t0
+        context_heap = hex(_context._heap_start)
         for _record in _context.listStructures():
             # in all case
-            self._graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
-            self._master_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
-            self._heaps_graph.add_node(hex(_record.address), heap=_context._heap_start, weight=len(_record))
+            self._graph.add_node(hex(_record.address), heap=context_heap, weight=len(_record))
+            self._master_graph.add_node(hex(_record.address), heap=context_heap, weight=len(_record))
+            self._heaps_graph.add_node(hex(_record.address), heap=context_heap, weight=len(_record))
             self.reverse_record(_context, _record)
             # output headers
         #
-        log.info('[+] Heap 0x%x Graph += %d Nodes', _context._heap_start, self._graph.number_of_nodes())
-        log.info('[+] Heap 0x%x Graph += %d Edges', _context._heap_start, self._graph.number_of_edges())
+        log.info('[+] Heap %s Graph += %d Nodes', context_heap, self._graph.number_of_nodes())
+        log.info('[+] Heap %s Graph += %d Edges', context_heap, self._graph.number_of_edges())
         networkx.readwrite.gexf.write_gexf(self._graph, _context.get_filename_cache_graph())
         ##
         return
@@ -479,7 +480,10 @@ class PointerGraphReverser(model.AbstractReverser):
         for f in pointer_fields:
             pointee_addr = f._child_addr
             # we always feed these two
+            # TODO: if a Node is out of heap/segment, replace it by a virtual node & color representing
+            # the foreign heap/segment
             self._graph.add_edge(hex(_record.address), hex(pointee_addr))
+            # add a colored node
             self._master_graph.add_edge(hex(_record.address), hex(pointee_addr))
             # but we only feed the heaps graph if the target is known
             heap = self._memory_handler.get_mapping_for_address(pointee_addr)
@@ -490,6 +494,11 @@ class PointerGraphReverser(model.AbstractReverser):
             #heap_context = self._memory_handler.get_reverse_context().get_context_for_heap(heap)
             if heap_context is None:
                 continue
+            # add a heap color
+            context_heap = hex(heap_context._heap_start)
+            self._graph.add_node(hex(pointee_addr), heap=context_heap)
+            self._master_graph.add_node(hex(pointee_addr), heap=context_heap)
+            self._heaps_graph.add_node(hex(pointee_addr), heap=context_heap)
             try:
                 pointee = heap_context.get_record_at_address(pointee_addr)
             except IndexError as e:
@@ -497,6 +506,10 @@ class PointerGraphReverser(model.AbstractReverser):
             except ValueError as e:
                 continue
             self._heaps_graph.add_edge(hex(_record.address), hex(pointee_addr))
+            # add a weight
+            self._graph.add_node(hex(pointee_addr), weight=len(_record))
+            self._master_graph.add_node(hex(pointee_addr), weight=len(_record))
+            self._heaps_graph.add_node(hex(pointee_addr), weight=len(_record))
         return
 
     def load_process_graph(self):

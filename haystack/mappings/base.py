@@ -77,8 +77,6 @@ class AMemoryMapping(interfaces.IMemoryMapping):
 
     def __init__(self, start, end, permissions, offset,
                  major_device, minor_device, inode, pathname):
-        self._target_platform = target.TargetPlatform.make_target_platform_local()
-        self._utils = self._target_platform.get_target_ctypes_utils()
         self.start = start
         self.end = end
         self.permissions = permissions
@@ -90,26 +88,15 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         self._is_heap = False
         self._is_heap_addr = None
 
-    def get_target_platform(self):
-        """
-        :rtype: ITargetPlatform
-        """
-        return self._target_platform
-
-    def set_target_platform(self, target):
-        """
-        :param target: ITargetPlatform
-        """
-        self._target_platform = target
-        self._utils = self._target_platform.get_target_ctypes_utils()
-        return
+    def set_ctypes(self, _ctypes):
+        self._ctypes = _ctypes
 
     def __contains__(self, address):
         return self.start <= address < self.end
 
     def __str__(self):
-        start = self._utils.formatAddress(self.start)
-        end = self._utils.formatAddress(self.end)
+        start = '0x%0.8x' % self.start
+        end = '0x%0.8x' % self.end
         size = 'size:0x%0.8x' % (self.end-self.start)
         offset = 'offset:0x%0.8x' % self.offset
         device = '%0.2x:%0.2x' % (self.major_device, self.minor_device)
@@ -232,14 +219,14 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             raise TypeError('Please feed me a ITargetPlatform')
         self._mappings = sorted(mapping_list)
         self._target = _target
-        for m in self._mappings:
-            m.set_target_platform(self._target)
+        for m in mapping_list:
+            m.set_ctypes(self._target.get_target_ctypes())
         self._utils = self._target.get_target_ctypes_utils()
         self.__name = name
         # book register to keep references to ctypes memory buffers
         self.__book = _book()
-        self.__user_model = model.Model(self)
-        self.__internal_model = model.Model(self)
+        self.__user_model = model.Model(self._target.get_target_ctypes())
+        self.__internal_model = model.Model(self._target.get_target_ctypes())
         # FIXME reduce open files.
         self.__required_maps = []
         # finish initialization
@@ -260,10 +247,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if self._heap_finder is None:
             self._heap_finder = heapwalker.make_heap_finder(self)
         return self._heap_finder
-
-    def get_ctypes_utils(self):
-        """Returns the Utils toolkit."""
-        return self._utils
 
     def get_model(self):
         """Returns the Model cache."""
@@ -468,4 +451,3 @@ class _book(object):
 
     def delRef(self, typ, addr):
         del self.refs[(typ, addr)]
-

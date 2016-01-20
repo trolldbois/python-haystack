@@ -46,7 +46,7 @@ class TestApiWin32Dump(unittest.TestCase):
         my_utils = my_target.get_target_ctypes_utils()
         my_model = self.memory_handler.get_model()
         finder = self.memory_handler.get_heap_finder()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         my_heap = [ x for x in heaps if x.start == self.known_heaps[0][0]][0]
         heapwalker = finder.get_heap_walker(heaps[0])
         win7heap = heapwalker._heap

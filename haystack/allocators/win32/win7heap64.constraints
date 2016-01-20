@@ -1,0 +1,76 @@
+[struct__HEAP_SEGMENT]
+SegmentSignature: [0xffeeffee]
+# Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+LastValidEntry: IgnoreMember
+# points of end of mapping -0xf, need to ignore at validation time.
+UCRSegmentList: [ListLimitDepthValidation(5)]
+
+# HEAP_SEGMENT.UCRSegmentList. points to HEAP_UCR_DESCRIPTOR.SegmentEntry.
+# HEAP_UCR_DESCRIPTOR.SegmentEntry. points to HEAP_SEGMENT.UCRSegmentList.
+
+# HEAP_ENTRY
+
+#only 32bits
+# SubSegmentCode is a encoded c_void_p, ignore its value
+# [struct__HEAP_ENTRY_0_1]
+# SubSegmentCode: IgnoreMember
+
+
+#only 32bits
+# another to ignore because of encoded pointer.
+[struct__HEAP_FREE_ENTRY_0_1]
+SubSegmentCode: IgnoreMember
+
+# HEAP
+# HEAP CommitRoutine encoded by a global key
+# The HEAP handle data structure includes a function pointer field called
+# CommitRoutine that is called when memory regions within the heap are committed.
+# Starting with Windows Vista, this field was encoded using a random value that
+# was also stored as a field in the HEAP handle data structure.
+
+## Undertanding the LFH
+#EncodeFlagMask – A value that is used to determine if a heap chunk header is encoded.
+# This value is initially set to 0x100000 by RtlpCreateHeapEncoding() in RtlCreateHeap().
+#Encoding – Used in an XOR operation to encode the chunk headers, preventing
+# predictable meta-data corruption.
+#BlocksIndex – This is a _HEAP_LIST_LOOKUP structure that is used for a variety of
+# purposes. Due to its importance, it will be discussed in greater detail later in this
+# document.
+#FreeLists – A special linked-list that contains pointers to ALL of the free chunks for this
+# heap. It can almost be thought of as a heap cache, but for chunks of every size (and no
+# single associated bitmap).
+#FrontEndHeapType – An integer is initially set to 0x0, and is subsequently assigned a
+# value of 0x2, indicating the use of a LFH. Note: Windows 7 does not actually have
+# support for using Lookaside Lists.
+#FrontEndHeap – A pointer to the associated front-end heap. This will either be NULL or
+# a pointer to a _LFH_HEAP structure when running under Windows 7.
+
+#[HEAP]
+[struct__HEAP]
+Signature: [0xeeffeeff]
+FrontEndHeapType: [0, 1, 2]
+CommitRoutine: IgnoreMember
+# HEAP segment was aggregated into HEAP
+# Ignore the LastValidEntry pointer. It sometimes points to UCR (unmmaped)
+LastValidEntry: IgnoreMember
+#FreeLists: IgnoreMember
+
+# HEAP_UCR_DESCRIPTOR per definition, reserved space is not maped.
+[struct__HEAP_UCR_DESCRIPTOR]
+Address: IgnoreMember
+
+# HEAP_LOCAL_SEGMENT_INFO
+# HEAP_LOCAL_SEGMENT_INFO.LocalData should be a pointer, but the values are small ints ?
+# HEAP_LOCAL_SEGMENT_INFO.LocalData == 0x3 ?
+[struct__HEAP_LOCAL_SEGMENT_INFO]
+LocalData: IgnoreMember
+
+# TODO current subsegment.SFreeListEntry is on error at some depth.
+# bad pointer value on the second subsegment
+[struct__HEAP_SUBSEGMENT]
+SFreeListEntry: IgnoreMember
+
+
+# Signature is always 0xF0E0D0C0.
+#[struct__HEAP_USERDATA_HEADER_0_0]
+#Signature: [0xF0E0D0C0]

@@ -51,7 +51,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
-        _heaps = self._heap_finder.get_heap_mappings()
+        _heaps = self._heap_finder.list_heap_walkers()
         heap_sums = dict([(heap, list())
                           for heap in _heaps])
         child_heaps = dict()
@@ -108,7 +108,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         """
         # self.skipTest('known_ok')
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         #print [hex(x.start) for x in heaps]
         #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
         self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
@@ -130,7 +130,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         winxpheap = finder._heap_module
         # heap = self._memory_handler.get_mapping_for_address(0x00390000)
         # Mark all heaps
-        for heap in finder.get_heap_mappings():
+        for heap in finder.list_heap_walkers():
             pass
         # do the one test
         for heap in [heap]:
@@ -211,7 +211,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
     def test_get_chunks(self):
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
         addr = zeus_1668_vmtoolsd_exe.known_heaps[0][0]
-        for heap in finder.get_heap_mappings():
+        for heap in finder.list_heap_walkers():
             log.debug('Looking at chunks in 0x%x', heap.get_marked_heap_address())
             #   for heap in [self._memory_handler.get_mapping_for_address(addr)]:
             walker = finder.get_heap_walker(heap)
@@ -268,7 +268,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         self.assertEquals(self._memory_handler.get_target_platform().get_os_name(), 'winxp')
 
         full = list()
-        for heap in finder.get_heap_mappings():
+        for heap in finder.list_heap_walkers():
             walker = finder.get_heap_walker(heap)
             my_chunks = list()
 
@@ -375,7 +375,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         validator = finder.get_heap_validator()
 
         found = []
-        for mapping in finder.get_heap_mappings():
+        for mapping in finder.list_heap_walkers():
             addr = mapping.get_marked_heap_address()
             found.append(addr, )
             heap = mapping.read_struct(addr, winheap.HEAP)
@@ -407,7 +407,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         """ For each known _HEAP, load all user Allocation and compare the number of allocated bytes. """
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
 
-        for m in finder.get_heap_mappings():
+        for m in finder.list_heap_walkers():
             #
             walker = finder.get_heap_walker(m)
             total = 0

@@ -1027,7 +1027,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     end = start + size
                     log.debug("0x%x-0x%x size:0x%x offset_in_file:0x%x", start, start+size, size, map_offset)
                     ## BUG FIXME, offset reading ???
-                    name = ''
+                    name = 'None'
                     if start in named_modules:
                         name = named_modules[start][1]
                     maps.append(cuckoo.MMapProcessMapping(mmap_content, start, end, name, map_offset))
@@ -1043,6 +1043,8 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     os_name = 'winxp'
                 else:
                     os_name = 'win7'
+                # FIXME, whatever the minidump says is the base ground
+                # the heapfinder would have to make a difference.
                 if self.cpu is None:
                     if 'X86' in data.ProcessorArchitecture:
                         self._target = target.TargetPlatform.make_target_win_32(os_name)
@@ -1073,6 +1075,6 @@ if __name__ == "__main__":
     import sys
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
     print x
-    mapper = MDMP_Mapper(sys.argv[1])
+    mapper = MDMP_Mapper(sys.argv[1], None, None)
     import code
     code.interact(local=locals())

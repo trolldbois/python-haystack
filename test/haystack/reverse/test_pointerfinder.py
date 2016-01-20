@@ -162,7 +162,7 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         heap = heaps[0]
         heap_addr = heap.get_marked_heap_address()
         # create the enumerator on the whole mapping
@@ -201,7 +201,7 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         heap = heaps[0]
         log.debug('heap is %s', heap)
         heap_walker = finder.get_heap_walker(heap)
@@ -241,7 +241,7 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         all_heaps_addrs = []
         for heap in heaps:
             #if heap.start != 0x03360000:
@@ -277,7 +277,7 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
         all_heaps_addrs = []
         for heap in heaps:
             #if heap.start != 0x03360000:

@@ -57,7 +57,7 @@ class MMapProcessMapping(base.AMemoryMapping):
         self.offset = offset
 
     def read_word(self, addr):
-        ws = self._target_platform.get_word_size()
+        ws = self._ctypes.sizeof(self._ctypes.c_void_p)
         self._backend.seek(self.offset + addr - self.start, 0)
         data = self._backend.read(ws)
         if ws == 4:
@@ -70,14 +70,14 @@ class MMapProcessMapping(base.AMemoryMapping):
         return self._backend.read(size)
 
     def read_struct(self, addr, struct):
-        size = self._target_platform.get_target_ctypes().sizeof(struct)
+        size = self._ctypes.sizeof(struct)
         self._backend.seek(self.offset + addr - self.start, 0)
         instance = struct.from_buffer_copy(self._backend.read(size))
         instance._orig_address_ = addr
         return instance
 
     def read_array(self, addr, basetype, count):
-        size = self._target_platform.get_target_ctypes().sizeof(basetype * count)
+        size = self._ctypes.sizeof(basetype * count)
         self._backend.seek(self.offset + addr - self.start, 0)
         array = (basetype *count).from_buffer_copy(self._backend.read(size))
         return array
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     mapper = CuckooProcessMapper(fname)
     handler = mapper.make_memory_handler()
     finder = handler.get_heap_finder()
-    heaps = finder.get_heap_mappings()
+    heaps = finder.list_heap_walkers()
     print "heaps", heaps
 
     from haystack import api

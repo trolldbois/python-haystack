@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-""" Win 7 heap structure - from LGPL metasm.
+"""
+Win 7 heap structure validation
 See docs/win32_heap for all supporting documentation.
 
 The Heap Manager organizes its virtual memory using heap segments.
@@ -60,23 +61,15 @@ You can fetch a segment UCR segments with HEAP_SEGMENT.get_UCR_segment_list
 
 """
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__status__ = "Production"
 
-
-import ctypes
 import logging
 
-from haystack import model
 from haystack.abc import interfaces
 from haystack.allocators.win32 import winheap
 
 
 log = logging.getLogger('win7heap')
+
 
 class Win7HeapValidator(winheap.WinHeapValidator):
     """
@@ -87,21 +80,27 @@ class Win7HeapValidator(winheap.WinHeapValidator):
     This class contains all helper functions used to parse the win7heap allocators.
     """
 
-    def __init__(self, memory_handler, my_constraints, win7heap_module):
+    def __init__(self, memory_handler, my_constraints, target_platform, win7heap_module):
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError("Feed me a IMemoryHandler")
         if not isinstance(my_constraints, interfaces.IModuleConstraints):
             raise TypeError("Feed me a IModuleConstraints")
-        super(Win7HeapValidator, self).__init__(memory_handler, my_constraints)
-        #
+        if not isinstance(target_platform, interfaces.ITargetPlatform):
+            raise TypeError("Feed me a ITargetPlatform")
+        self._ctypes = target_platform.get_target_ctypes()
+        super(Win7HeapValidator, self).__init__(memory_handler, my_constraints, self._ctypes)
+        # 8 in x32, 16 in x64
+        self._word_size = target_platform.get_word_size()
+        self._word_size_x2 = self._word_size * 2
         self.win_heap = win7heap_module
         sentinels = set()
         # set some heap_entry
-        if self._target.get_word_size() == 4:
+        log.debug('Win7HeapValidator: bits:%d', self._word_size)
+        if self._word_size == 4:
             self._lfh_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_1
             self._free_list_heap_entry_type = self.win_heap.struct__HEAP_FREE_ENTRY_0_5
             self._sized_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0
-        elif self._target.get_word_size() == 8:
+        elif self._word_size == 8:
             self._lfh_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
             self._free_list_heap_entry_type = self.win_heap.struct__HEAP_FREE_ENTRY_0_2
             self._sized_heap_entry_type = self.win_heap.struct__HEAP_ENTRY_0_0_0_0
@@ -135,16 +134,16 @@ class Win7HeapValidator(winheap.WinHeapValidator):
 
     def _heap_entry_to_size(self, entry):
         # save to getRef
-        if self._target.get_word_size() == 4:
+        if self._word_size == 4:
             return entry._0._0
-        elif self._target.get_word_size() == 8:
+        elif self._word_size == 8:
             return entry._0._0._1._0
 
     def _heap_entry_to_lfh(self, entry):
         # save to getRef
-        if self._target.get_word_size() == 4:
+        if self._word_size == 4:
             return entry._0._1
-        elif self._target.get_word_size() == 8:
+        elif self._word_size == 8:
             return entry._0._0._1._0
         return
 
@@ -447,13 +446,13 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         nb_segments = heap.Counters.TotalSegments
         ucr_list = winheap.UCR_List(ucrs)
 
-        overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
+        overhead_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)
         # get allocated/free stats by segment
         occupied_res2 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
         free_res2 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
         print "\tSegmentList: %d/%d" % (len(segments), nb_segments)
         for segment in segments:
-            p_segment = winheap.Segment(self._memory_handler, segment)
+            p_segment = winheap.Segment(self._memory_handler, walker, segment)
             p_segment.set_ucr(ucr_list)
             p_segment.set_resource_usage(occupied_res2, free_res2)
             print p_segment.to_string('\t\t')

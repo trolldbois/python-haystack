@@ -30,7 +30,7 @@ else:
     ctypes._pointer_t_type_cache = {}
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint64 
+        fake_ptr_base_type = ctypes.c_uint64
         # specific case for c_void_p
         if pointee is None: # VOID pointer type. c_void_p.
             pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
@@ -51,7 +51,7 @@ else:
                 raise TypeError('This is not a ctypes pointer.')
             def __init__(self, **args):
                 raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(8, clsname), (_T,),{}) 
+        _class = type('LP_%d_%s'%(8, clsname), (_T,),{})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
 
@@ -787,3 +787,427 @@ __all__ = \
     'struct__HEAP_ENTRY_EXTRA_0_0', 'PPHEAP_ENTRY',
     'PPRTL_CRITICAL_SECTION', 'struct__HEAP_UNCOMMMTTED_RANGE',
     'uint32_t', 'PVOID', 'union__DISPATCHER_HEADER_0_0_1']
+
+
+'''
+class struct__HEAP_COUNTERS(ctypes.Structure):
+    _pack_ = True # source:True
+    _fields_ = [
+    ('TotalMemoryReserved', ctypes.c_uint64),
+    ('TotalMemoryCommitted', ctypes.c_uint64),
+    ('TotalMemoryLargeUCR', ctypes.c_uint64),
+    ('TotalSizeInVirtualBlocks', ctypes.c_uint64),
+    ('TotalSegments', ctypes.c_uint32),
+    ('TotalUCRs', ctypes.c_uint32),
+    ('CommittOps', ctypes.c_uint32),
+    ('DeCommitOps', ctypes.c_uint32),
+    ('LockAcquires', ctypes.c_uint32),
+    ('LockCollisions', ctypes.c_uint32),
+    ('CommitRate', ctypes.c_uint32),
+    ('DecommittRate', ctypes.c_uint32),
+    ('CommitFailures', ctypes.c_uint32),
+    ('InBlockCommitFailures', ctypes.c_uint32),
+    ('CompactHeapCalls', ctypes.c_uint32),
+    ('CompactedUCRs', ctypes.c_uint32),
+    ('AllocAndFreeOps', ctypes.c_uint32),
+    ('InBlockDeccommits', ctypes.c_uint32),
+    ('InBlockDeccomitSize', ctypes.c_uint64),
+    ('HighWatermarkSize', ctypes.c_uint64),
+    ('LastPolledSize', ctypes.c_uint64),
+     ]
+
+HEAP_COUNTERS = struct__HEAP_COUNTERS
+
+class struct__HEAP_TUNING_PARAMETERS(ctypes.Structure):
+    _pack_ = True # source:True
+    _fields_ = [
+    ('CommittThresholdShift', ctypes.c_uint32),
+    ('gap_in_pdb_ofs_4', ctypes.c_ubyte * 4),
+    ('MaxPreCommittThreshold', ctypes.c_uint64),
+     ]
+
+HEAP_TUNING_PARAMETERS = struct__HEAP_TUNING_PARAMETERS
+
+
+class struct__HEAP_LOCAL_DATA(ctypes.Structure):
+    pass
+
+class struct__LFH_HEAP(ctypes.Structure):
+    pass
+
+class struct__USER_MEMORY_CACHE_ENTRY(ctypes.Structure):
+    pass
+
+class union__SLIST_HEADER(ctypes.Union):
+    pass
+
+class struct__SLIST_HEADER_3(ctypes.Structure):
+    pass
+
+class struct__SLIST_HEADER_3_0(ctypes.Structure):
+    pass
+
+class struct__SLIST_HEADER_3_0_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Depth', ctypes.c_uint16, 16),
+    ('Sequence', ctypes.c_uint64, 48),
+    ('HeaderType', ctypes.c_uint64, 1),
+    ('Reserved', ctypes.c_uint64, 3),
+    ('NextEntry', ctypes.c_uint64, 60),
+     ]
+
+struct__SLIST_HEADER_3_0._pack_ = True # source:False
+struct__SLIST_HEADER_3_0._fields_ = [
+    ('_0', struct__SLIST_HEADER_3_0_0),
+]
+
+struct__SLIST_HEADER_3._pack_ = True # source:False
+struct__SLIST_HEADER_3._fields_ = [
+    ('HeaderX64', struct__SLIST_HEADER_3_0),
+]
+
+class struct__SLIST_HEADER_2(ctypes.Structure):
+    pass
+
+class struct__SLIST_HEADER_2_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Depth', ctypes.c_uint16, 16),
+    ('Sequence', ctypes.c_uint64, 48),
+    ('HeaderType', ctypes.c_uint64, 1),
+    ('Init', ctypes.c_uint64, 1),
+    ('Reserved', ctypes.c_uint64, 2),
+    ('NextEntry', ctypes.c_uint64, 60),
+     ]
+
+struct__SLIST_HEADER_2._pack_ = True # source:False
+struct__SLIST_HEADER_2._fields_ = [
+    ('_0', struct__SLIST_HEADER_2_0),
+]
+
+class struct__SLIST_HEADER_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Alignment', ctypes.c_uint64),
+    ('Region', ctypes.c_uint64),
+     ]
+
+class struct__SLIST_HEADER_1(ctypes.Structure):
+    pass
+
+class struct__SLIST_HEADER_1_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Depth', ctypes.c_uint16, 16),
+    ('Sequence', ctypes.c_uint64, 9),
+    ('NextEntry', ctypes.c_uint64, 39),
+    ('HeaderType', ctypes.c_uint64, 1),
+    ('Init', ctypes.c_uint64, 1),
+    ('Reserved', ctypes.c_uint64, 59),
+    ('Region', ctypes.c_uint64, 3),
+     ]
+
+struct__SLIST_HEADER_1._pack_ = True # source:False
+struct__SLIST_HEADER_1._fields_ = [
+    ('_0', struct__SLIST_HEADER_1_0),
+]
+
+union__SLIST_HEADER._pack_ = True # source:True
+union__SLIST_HEADER._fields_ = [
+    ('_0', struct__SLIST_HEADER_0),
+    ('Header8', struct__SLIST_HEADER_1),
+    ('Header16', struct__SLIST_HEADER_2),
+    ('_3', struct__SLIST_HEADER_3),
+]
+
+SLIST_HEADER = union__SLIST_HEADER
+struct__USER_MEMORY_CACHE_ENTRY._pack_ = True # source:True
+struct__USER_MEMORY_CACHE_ENTRY._fields_ = [
+    ('UserBlocks', SLIST_HEADER),
+    ('AvailableBlocks', ctypes.c_uint32),
+    ('gap_in_pdb_ofs_14', ctypes.c_ubyte * 12),
+]
+
+class struct__HEAP_BUCKET(ctypes.Structure):
+    pass
+
+class struct__HEAP_BUCKET_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('UseAffinity', ctypes.c_uint8, 1),
+    ('DebugFlags', ctypes.c_uint8, 2),
+    ('PADDING_0', ctypes.c_uint8, 5),
+     ]
+
+struct__HEAP_BUCKET._pack_ = True # source:True
+struct__HEAP_BUCKET._fields_ = [
+    ('BlockUnits', ctypes.c_uint16),
+    ('SizeIndex', ctypes.c_ubyte),
+    ('_2', struct__HEAP_BUCKET_0),
+]
+
+class union__HEAP_BUCKET_RUN_INFO(ctypes.Union):
+    pass
+
+class struct__HEAP_BUCKET_RUN_INFO_1(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Aggregate64', ctypes.c_int64),
+     ]
+
+class struct__HEAP_BUCKET_RUN_INFO_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Bucket', ctypes.c_uint32),
+    ('RunLength', ctypes.c_uint32),
+     ]
+
+union__HEAP_BUCKET_RUN_INFO._pack_ = True # source:True
+union__HEAP_BUCKET_RUN_INFO._fields_ = [
+    ('_0', struct__HEAP_BUCKET_RUN_INFO_0),
+    ('_1', struct__HEAP_BUCKET_RUN_INFO_1),
+]
+
+HEAP_BUCKET_RUN_INFO = union__HEAP_BUCKET_RUN_INFO
+struct__LFH_HEAP._pack_ = True # source:True
+struct__LFH_HEAP._fields_ = [
+    ('Lock', RTL_CRITICAL_SECTION),
+    ('SubSegmentZones', LIST_ENTRY),
+    ('ZoneBlockSize', ctypes.c_uint64),
+    ('Heap', ctypes.c_uint64),
+    ('SegmentChange', ctypes.c_uint32),
+    ('SegmentCreate', ctypes.c_uint32),
+    ('SegmentInsertInFree', ctypes.c_uint32),
+    ('SegmentDelete', ctypes.c_uint32),
+    ('CacheAllocs', ctypes.c_uint32),
+    ('CacheFrees', ctypes.c_uint32),
+    ('SizeInCache', ctypes.c_uint64),
+    ('RunInfo', HEAP_BUCKET_RUN_INFO),
+    ('UserBlockCache', struct__USER_MEMORY_CACHE_ENTRY * 12),
+    ('Buckets', struct__HEAP_BUCKET * 128),
+    ('LocalData', struct__HEAP_LOCAL_DATA * 1),
+]
+
+class struct__HEAP_LOCAL_SEGMENT_INFO(ctypes.Structure):
+    pass
+
+class struct__HEAP_SUBSEGMENT(ctypes.Structure):
+    pass
+
+class struct__SINGLE_LIST_ENTRY(ctypes.Structure):
+    pass
+
+struct__SINGLE_LIST_ENTRY._pack_ = True # source:True
+struct__SINGLE_LIST_ENTRY._fields_ = [
+    ('Next', POINTER_T(struct__SINGLE_LIST_ENTRY)),
+]
+
+SINGLE_LIST_ENTRY = struct__SINGLE_LIST_ENTRY
+class struct__INTERLOCK_SEQ(ctypes.Structure):
+    pass
+
+class union__INTERLOCK_SEQ_0(ctypes.Union):
+    pass
+
+class struct__INTERLOCK_SEQ_0_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Depth', ctypes.c_uint16),
+    ('FreeEntryOffset', ctypes.c_uint16),
+     ]
+
+class struct__INTERLOCK_SEQ_0_2(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Exchg', ctypes.c_int64),
+     ]
+
+class struct__INTERLOCK_SEQ_0_1(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('OffsetAndDepth', ctypes.c_uint32),
+    ('Sequence', ctypes.c_uint32),
+     ]
+
+union__INTERLOCK_SEQ_0._pack_ = True # source:False
+union__INTERLOCK_SEQ_0._fields_ = [
+    ('_0', struct__INTERLOCK_SEQ_0_0),
+    ('_1', struct__INTERLOCK_SEQ_0_1),
+    ('_2', struct__INTERLOCK_SEQ_0_2),
+]
+
+struct__INTERLOCK_SEQ._pack_ = True # source:True
+struct__INTERLOCK_SEQ._fields_ = [
+    ('_0', union__INTERLOCK_SEQ_0),
+]
+
+INTERLOCK_SEQ = struct__INTERLOCK_SEQ
+class union__HEAP_SUBSEGMENT_0(ctypes.Union):
+    pass
+
+class struct__HEAP_SUBSEGMENT_0_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('BlockSize', ctypes.c_uint16),
+    ('Flags', ctypes.c_uint16),
+    ('BlockCount', ctypes.c_uint16),
+    ('SizeIndex', ctypes.c_ubyte),
+    ('AffinityIndex', ctypes.c_ubyte),
+     ]
+
+union__HEAP_SUBSEGMENT_0._pack_ = True # source:False
+union__HEAP_SUBSEGMENT_0._fields_ = [
+    ('_0', struct__HEAP_SUBSEGMENT_0_0),
+    ('Alignment', ctypes.c_uint32 * 2),
+]
+
+class struct__HEAP_USERDATA_HEADER(ctypes.Structure):
+    pass
+
+class union__HEAP_USERDATA_HEADER_0(ctypes.Union):
+    pass
+
+class struct__HEAP_USERDATA_HEADER_0_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('SubSegment', POINTER_T(struct__HEAP_SUBSEGMENT)),
+    ('Reserved', ctypes.c_uint64),
+    ('SizeIndex', ctypes.c_uint64),
+    ('Signature', ctypes.c_uint64),
+     ]
+
+union__HEAP_USERDATA_HEADER_0._pack_ = True # source:False
+union__HEAP_USERDATA_HEADER_0._fields_ = [
+    ('SFreeListEntry', SINGLE_LIST_ENTRY),
+    ('_1', struct__HEAP_USERDATA_HEADER_0_0),
+]
+
+struct__HEAP_USERDATA_HEADER._pack_ = True # source:True
+struct__HEAP_USERDATA_HEADER._fields_ = [
+    ('_0', union__HEAP_USERDATA_HEADER_0),
+]
+
+struct__HEAP_SUBSEGMENT._pack_ = True # source:True
+struct__HEAP_SUBSEGMENT._fields_ = [
+    ('LocalInfo', POINTER_T(struct__HEAP_LOCAL_SEGMENT_INFO)),
+    ('UserBlocks', POINTER_T(struct__HEAP_USERDATA_HEADER)),
+    ('AggregateExchg', INTERLOCK_SEQ),
+    ('_3', union__HEAP_SUBSEGMENT_0),
+    ('SFreeListEntry', SINGLE_LIST_ENTRY),
+    ('Lock', ctypes.c_uint32),
+    ('gap_in_pdb_ofs_2C', ctypes.c_ubyte * 4),
+]
+
+class union__HEAP_BUCKET_COUNTERS(ctypes.Union):
+    pass
+
+class struct__HEAP_BUCKET_COUNTERS_1(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('Aggregate64', ctypes.c_int64),
+     ]
+
+class struct__HEAP_BUCKET_COUNTERS_0(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('TotalBlocks', ctypes.c_uint32),
+    ('SubSegmentCounts', ctypes.c_uint32),
+     ]
+
+union__HEAP_BUCKET_COUNTERS._pack_ = True # source:True
+union__HEAP_BUCKET_COUNTERS._fields_ = [
+    ('_0', struct__HEAP_BUCKET_COUNTERS_0),
+    ('_1', struct__HEAP_BUCKET_COUNTERS_1),
+]
+
+HEAP_BUCKET_COUNTERS = union__HEAP_BUCKET_COUNTERS
+struct__HEAP_LOCAL_SEGMENT_INFO._pack_ = True # source:True
+struct__HEAP_LOCAL_SEGMENT_INFO._fields_ = [
+    ('Hint', POINTER_T(struct__HEAP_SUBSEGMENT)),
+    ('ActiveSubsegment', POINTER_T(struct__HEAP_SUBSEGMENT)),
+    ('CachedItems', POINTER_T(struct__HEAP_SUBSEGMENT) * 16),
+    ('SListHeader', SLIST_HEADER),
+    ('Counters', HEAP_BUCKET_COUNTERS),
+    ('LocalData', POINTER_T(struct__HEAP_LOCAL_DATA)),
+    ('LastOpSequence', ctypes.c_uint32),
+    ('BucketIndex', ctypes.c_uint16),
+    ('LastUsed', ctypes.c_uint16),
+    ('gap_in_pdb_ofs_B8', ctypes.c_ubyte * 8),
+]
+
+class struct__LFH_BLOCK_ZONE(ctypes.Structure):
+    _pack_ = True # source:True
+    _fields_ = [
+    ('ListEntry', LIST_ENTRY),
+    ('FreePointer', POINTER_T(None)),
+    ('Limit', ctypes.c_uint64),
+     ]
+
+struct__HEAP_LOCAL_DATA._pack_ = True # source:True
+struct__HEAP_LOCAL_DATA._fields_ = [
+    ('DeletedSubSegments', SLIST_HEADER),
+    ('CrtZone', POINTER_T(struct__LFH_BLOCK_ZONE)),
+    ('LowFragHeap', POINTER_T(struct__LFH_HEAP)),
+    ('Sequence', ctypes.c_uint32),
+    ('gap_in_pdb_ofs_24', ctypes.c_ubyte * 12),
+    ('SegmentInfo', struct__HEAP_LOCAL_SEGMENT_INFO * 128),
+]
+
+HEAP_LOCAL_DATA = struct__HEAP_LOCAL_DATA
+PHEAP_LOCAL_DATA = POINTER_T(struct__HEAP_LOCAL_DATA)
+PPHEAP_LOCAL_DATA = POINTER_T(POINTER_T(struct__HEAP_LOCAL_DATA))
+HEAP_LOCAL_SEGMENT_INFO = struct__HEAP_LOCAL_SEGMENT_INFO
+PPHEAP_LOCAL_SEGMENT_INFO = POINTER_T(POINTER_T(struct__HEAP_LOCAL_SEGMENT_INFO))
+PHEAP_LOCAL_SEGMENT_INFO = POINTER_T(struct__HEAP_LOCAL_SEGMENT_INFO)
+HEAP_LOCK = struct__HEAP_LOCK
+PHEAP_LOCK = POINTER_T(struct__HEAP_LOCK)
+PPHEAP_LOCK = POINTER_T(POINTER_T(struct__HEAP_LOCK))
+HEAP_SUBSEGMENT = struct__HEAP_SUBSEGMENT
+PPHEAP_SUBSEGMENT = POINTER_T(POINTER_T(struct__HEAP_SUBSEGMENT))
+PHEAP_SUBSEGMENT = POINTER_T(struct__HEAP_SUBSEGMENT)
+HEAP_USERDATA_HEADER = struct__HEAP_USERDATA_HEADER
+PPHEAP_USERDATA_HEADER = POINTER_T(POINTER_T(struct__HEAP_USERDATA_HEADER))
+PHEAP_USERDATA_HEADER = POINTER_T(struct__HEAP_USERDATA_HEADER)
+LFH_HEAP = struct__LFH_HEAP
+PLFH_HEAP = POINTER_T(struct__LFH_HEAP)
+PPLFH_HEAP = POINTER_T(POINTER_T(struct__LFH_HEAP))
+PPRTL_CRITICAL_SECTION = POINTER_T(POINTER_T(struct__RTL_CRITICAL_SECTION))
+PRTL_CRITICAL_SECTION = POINTER_T(struct__RTL_CRITICAL_SECTION)
+RTL_CRITICAL_SECTION_DEBUG = struct__RTL_CRITICAL_SECTION_DEBUG
+PRTL_CRITICAL_SECTION_DEBUG = POINTER_T(struct__RTL_CRITICAL_SECTION_DEBUG)
+PPRTL_CRITICAL_SECTION_DEBUG = POINTER_T(POINTER_T(struct__RTL_CRITICAL_SECTION_DEBUG))
+PLIST_ENTRY = POINTER_T(struct__LIST_ENTRY)
+PPLIST_ENTRY = POINTER_T(POINTER_T(struct__LIST_ENTRY))
+PSLIST_HEADER = POINTER_T(union__SLIST_HEADER)
+PPSLIST_HEADER = POINTER_T(POINTER_T(union__SLIST_HEADER))
+PSINGLE_LIST_ENTRY = POINTER_T(struct__SINGLE_LIST_ENTRY)
+PPSINGLE_LIST_ENTRY = POINTER_T(POINTER_T(struct__SINGLE_LIST_ENTRY))
+HEAP_TAG_ENTRY = struct__HEAP_TAG_ENTRY
+PPHEAP_TAG_ENTRY = POINTER_T(POINTER_T(struct__HEAP_TAG_ENTRY))
+PHEAP_TAG_ENTRY = POINTER_T(struct__HEAP_TAG_ENTRY)
+PHEAP_BUCKET_COUNTERS = POINTER_T(union__HEAP_BUCKET_COUNTERS)
+PPHEAP_BUCKET_COUNTERS = POINTER_T(POINTER_T(union__HEAP_BUCKET_COUNTERS))
+PPHEAP_BUCKET_RUN_INFO = POINTER_T(POINTER_T(union__HEAP_BUCKET_RUN_INFO))
+PHEAP_BUCKET_RUN_INFO = POINTER_T(union__HEAP_BUCKET_RUN_INFO)
+PINTERLOCK_SEQ = POINTER_T(struct__INTERLOCK_SEQ)
+PPINTERLOCK_SEQ = POINTER_T(POINTER_T(struct__INTERLOCK_SEQ))
+HEAP_BUCKET = struct__HEAP_BUCKET
+PHEAP_BUCKET = POINTER_T(struct__HEAP_BUCKET)
+PPHEAP_BUCKET = POINTER_T(POINTER_T(struct__HEAP_BUCKET))
+PPHEAP_COUNTERS = POINTER_T(POINTER_T(struct__HEAP_COUNTERS))
+PHEAP_COUNTERS = POINTER_T(struct__HEAP_COUNTERS)
+PHEAP_PSEUDO_TAG_ENTRY = POINTER_T(struct__HEAP_PSEUDO_TAG_ENTRY)
+HEAP_PSEUDO_TAG_ENTRY = struct__HEAP_PSEUDO_TAG_ENTRY
+PPHEAP_PSEUDO_TAG_ENTRY = POINTER_T(POINTER_T(struct__HEAP_PSEUDO_TAG_ENTRY))
+PPHEAP_ENTRY = POINTER_T(POINTER_T(struct__HEAP_ENTRY))
+PHEAP_ENTRY = POINTER_T(struct__HEAP_ENTRY)
+PPHEAP_TUNING_PARAMETERS = POINTER_T(POINTER_T(struct__HEAP_TUNING_PARAMETERS))
+PHEAP_TUNING_PARAMETERS = POINTER_T(struct__HEAP_TUNING_PARAMETERS)
+PLFH_BLOCK_ZONE = POINTER_T(struct__LFH_BLOCK_ZONE)
+PPLFH_BLOCK_ZONE = POINTER_T(POINTER_T(struct__LFH_BLOCK_ZONE))
+LFH_BLOCK_ZONE = struct__LFH_BLOCK_ZONE
+USER_MEMORY_CACHE_ENTRY = struct__USER_MEMORY_CACHE_ENTRY
+PPUSER_MEMORY_CACHE_ENTRY = POINTER_T(POINTER_T(struct__USER_MEMORY_CACHE_ENTRY))
+PUSER_MEMORY_CACHE_ENTRY = POINTER_T(struct__USER_MEMORY_CACHE_ENTRY)
+'''

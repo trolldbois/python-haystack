@@ -456,7 +456,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
         memory_handler = dump_loader.load(dumpname)
         # TODO : make a mapping chooser
         finder = memory_handler.get_heap_finder()
-        heap = memory_handler.get_heap_mappings()[0]
+        heap = memory_handler.list_heap_walkers()[0]
         # if len(_memory_handler) > 1:
         #  heap = [m for m in _memory_handler if m.pathname == '[heap]'][0]
         # else:

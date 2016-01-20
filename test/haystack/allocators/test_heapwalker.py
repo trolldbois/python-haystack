@@ -115,13 +115,13 @@ class TestHeapFinder(unittest.TestCase):
         pass
 
     def test_get_heap_mappings(self):
-        heap_0 = self.finder.get_heap_mappings()[0]
+        heap_0 = self.finder.list_heap_walkers()[0]
         self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
         self.assertEquals(heap_0.start, 0xb84e0000)
         self.assertEquals(heap_0.pathname, '[heap]')
 
     def test_get_heaps(self):
-        heaps = self.finder.get_heap_mappings()
+        heaps = self.finder.list_heap_walkers()
         self.assertEquals(len(heaps), 1)
 
     @unittest.skip("TODO linux get_stack code")
@@ -144,7 +144,7 @@ class TestHeapFinder2(unittest.TestCase):
         pass
 
     def test_get_heap_mappings(self):
-        heap_0 = self.finder.get_heap_mappings()[0]
+        heap_0 = self.finder.list_heap_walkers()[0]
         self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
         self.assertEquals(heap_0.start, 0x005c0000)
         self.assertEquals(heap_0.pathname, 'None')
@@ -157,7 +157,7 @@ class TestHeapFinder2(unittest.TestCase):
         # print _memory_handler._target_platform.ctypes.sizeof(x)
 
     def test_get_heaps(self):
-        heaps = self.finder.get_heap_mappings()
+        heaps = self.finder.list_heap_walkers()
         self.assertEquals(len(heaps), 12)
 
     @unittest.skip("TODO win32 get_stack code")

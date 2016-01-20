@@ -25,7 +25,7 @@ class TestRadare(unittest.TestCase):
     def test_radare(self):
         finder = self.memory_handler.get_heap_finder()
         mappings = self.memory_handler.get_mappings()
-        heaps = finder.get_heap_mappings()
+        heaps = finder.list_heap_walkers()
 
         mapping = self.memory_handler.get_mapping_for_address(0x00b70000)
 

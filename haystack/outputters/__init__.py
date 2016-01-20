@@ -6,8 +6,7 @@
 
 """
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
+from haystack import utils
 
 class Outputter(object):
 
@@ -16,7 +15,7 @@ class Outputter(object):
     def __init__(self, memory_handler):
         self._memory_handler = memory_handler
         self._ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        self._utils = self._memory_handler.get_ctypes_utils()
+        self._utils = utils.Utils(self._ctypes)
         self._model = self._memory_handler.get_model()
         self._addr_cache = {}
 

@@ -33,7 +33,7 @@ class TestWin7Heap(unittest.TestCase):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         win7heap = finder._heap_module
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
-        my_utils = self.memory_handler.get_ctypes_utils()
+        my_utils = self.memory_handler.get_target_platform().get_ctypes_utils()
 
         self.assertEquals(my_ctypes.sizeof(win7heap.HEAP_SEGMENT), 64)
         self.assertEquals(my_ctypes.sizeof(win7heap.HEAP_ENTRY), 8)
@@ -87,7 +87,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertTrue(finder._is_heap(h, addr))
 
         finder = self.memory_handler.get_heap_finder()
-        heaps = sorted([(h.start, len(h)) for h in finder.get_heap_mappings()])
+        heaps = sorted([(h.start, len(h)) for h in finder.list_heap_walkers()])
         self.assertEquals(heaps, putty_1_win7.known_heaps)
         self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
 

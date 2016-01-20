@@ -29,21 +29,21 @@ class TestLibcHeapFinder(unittest.TestCase):
     def test_get_heap_mappings(self):
         memory_handler = dump_loader.load('test/src/test-ctypes1.64.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.get_heap_mappings()
+        mappings = heap_finder.list_heap_walkers()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
         memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.get_heap_mappings()
+        mappings = heap_finder.list_heap_walkers()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
         memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.get_heap_mappings()
+        mappings = heap_finder.list_heap_walkers()
         self.assertEqual(len(mappings), 1)
         self.assertEqual(mappings[0].pathname, '[heap]')
         memory_handler.reset_mappings()
@@ -54,7 +54,7 @@ class TestLibcHeapWalker(unittest.TestCase):
     def setUp(self):
         self.memory_handler = dump_loader.load('test/src/test-ctypes6.64.dump')
         self.heap_finder = self.memory_handler.get_heap_finder()
-        self.mappings = self.heap_finder.get_heap_mappings()
+        self.mappings = self.heap_finder.list_heap_walkers()
         self.walker = self.heap_finder.get_heap_walker(self.mappings[0])
 
     def tearDown(self):
@@ -86,8 +86,8 @@ class TestLibcHeapWalkerBigger(unittest.TestCase):
         """ Count all user allocations and free chunks (10 sec)"""
         memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.get_heap_mappings()
-        heaps = heap_finder.get_heap_mappings()
+        mappings = heap_finder.list_heap_walkers()
+        heaps = heap_finder.list_heap_walkers()
         self.assertEquals(len(heaps), 1)
         heap = heaps[0]
         self.assertTrue(heap_finder._is_heap(heap, heap.start))

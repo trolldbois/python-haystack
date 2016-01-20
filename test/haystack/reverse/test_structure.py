@@ -34,7 +34,7 @@ class TestStructure(unittest.TestCase):
         config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(cls.dumpname)
         finder = cls.memory_handler.get_heap_finder()
-        heap = finder.get_heap_mappings()[0]
+        heap = finder.list_heap_walkers()[0]
         heap_addr = heap.get_marked_heap_address()
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()
@@ -119,7 +119,7 @@ class TestStructure2(unittest.TestCase):
         config.remove_cache_folder(cls.dumpname)
         cls.memory_handler = dump_loader.load(cls.dumpname)
         finder = cls.memory_handler.get_heap_finder()
-        heap = finder.get_heap_mappings()[0]
+        heap = finder.list_heap_walkers()[0]
         heap_addr = heap.get_marked_heap_address()
         cls.context = context.get_context_for_address(cls.memory_handler, heap_addr)
         cls.target = cls.context.memory_handler.get_target_platform()

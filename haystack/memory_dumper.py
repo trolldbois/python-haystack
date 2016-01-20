@@ -33,13 +33,13 @@ class MemoryDumper:
         self._pid = pid
         self._dest = os.path.normpath(dest)
         self.dbg = None
-        self.mappings = None
+        self._memory_handler = None
 
     def make_mappings(self):
         """Connect the debugguer to the process and gets the memory mappings
         metadata."""
         self.dbg = dbg.get_debugger(self._pid)
-        self.mappings = make_process_memory_handler(self.dbg.get_process())
+        self._memory_handler = make_process_memory_handler(self.dbg.get_process())
         log.debug('Memory Mappings read. Dropping ptrace on pid.')
         return
 
@@ -79,7 +79,7 @@ class MemoryDumper:
         """Iterates on all _memory_handler and dumps them to file."""
         self.index = file(os.path.join(destdir, 'mappings'), 'w+')
         err = 0
-        for m in self.mappings:
+        for m in self._memory_handler:
             try:
                 self._dump_mapping(m, destdir)
             except IOError as e:
@@ -97,7 +97,8 @@ class MemoryDumper:
 
     def _dump_mapping(self, m, tmpdir):
         """Dump one mapping to one file in one tmpdir."""
-        my_utils = self.mappings.get_ctypes_utils()
+        # FIXME: remove address formatting as a criteria for platform cpu
+        my_utils = self._memory_handler.get_target_platform().get_ctypes_utils()
         if m.permissions[0] != 'r':
             log.debug('Ignore read protected mapping %s', m)
             return

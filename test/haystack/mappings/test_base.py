@@ -102,7 +102,7 @@ class TestMappingsLinux(SrcTests):
     def test_get_mapping_for_address(self):
         finder = self.memory_handler.get_heap_finder()
         self.assertEquals(
-            finder.get_heap_mappings()[0],
+            finder.list_heap_walkers()[0],
             self.memory_handler.get_mapping_for_address(0xb84e02d3))
 
     def test_contains(self):

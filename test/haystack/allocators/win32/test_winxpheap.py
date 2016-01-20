@@ -61,7 +61,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
         """
         # test the heaps
-        _heaps = self._heap_finder.get_heap_mappings()
+        _heaps = self._heap_finder.list_heap_walkers()
         heap_sums = dict([(heap, list())
                           for heap in _heaps])
         child_heaps = dict()
@@ -131,7 +131,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
         """
         # test the heaps
-        _heaps = self._heap_finder.get_heap_mappings()
+        _heaps = self._heap_finder.list_heap_walkers()
         heap_sums = dict([(heap, list())
                           for heap in _heaps])
         child_heaps = dict()
@@ -212,7 +212,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
         """ test the segment iterator """
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
-        _heaps = self._heap_finder.get_heap_mappings()
+        _heaps = self._heap_finder.list_heap_walkers()
         segments = []
         log.debug('')
         for heap in _heaps:
@@ -246,11 +246,11 @@ class TestWinXPHeapValidator(unittest.TestCase):
         return
 
     def test_get_heaps(self):
-        heaps = self._heap_finder.get_heap_mappings()
+        heaps = self._heap_finder.list_heap_walkers()
         self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
 
     def test_is_heaps(self):
-        heaps = self._heap_finder.get_heap_mappings()
+        heaps = self._heap_finder.list_heap_walkers()
         self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
             heap = self._memory_handler.get_mapping_for_address(addr)

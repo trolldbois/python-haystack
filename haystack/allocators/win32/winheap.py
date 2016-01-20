@@ -16,6 +16,7 @@ import ctypes
 import logging
 
 from haystack import listmodel
+from haystack.abc import interfaces
 
 log = logging.getLogger('winheap')
 
@@ -26,7 +27,7 @@ FrontEndHeapType = {
     }
 
 
-class Win_Heap(object):
+class WinHeap(object):
     def __init__(self, memory_handler, walker):
         self.walker = walker
         self.heap = walker._heap
@@ -61,8 +62,10 @@ class Segment(object):
     # based on win7 heap_segment
     # a segment can have multiple mappings
 
-    def __init__(self, memory_handler, ctypes_segment):
-        _utils = memory_handler.get_target_platform().get_target_ctypes_utils()
+    def __init__(self, memory_handler, walker, ctypes_segment):
+        if not isinstance(walker, interfaces.IHeapWalker):
+            raise TypeError('Feed me a IHeapWalker')
+        _utils = walker.get_target_platform().get_target_ctypes_utils()
         self.start = _utils.get_pointee_address(ctypes_segment.FirstEntry)
         self.end = _utils.get_pointee_address(ctypes_segment.LastValidEntry)
         #self.start = ctypes_segment.FirstEntry.value
@@ -410,13 +413,17 @@ class WinHeapValidator(listmodel.ListModel):
         return chunk_header
 
     def print_heap_analysis(self, heap, verbose):
+        process_bits = self._memory_handler.get_target_platform().get_cpu_bits()
+        heap_bits = self._ctypes.sizeof(self._ctypes.c_void_p) * 8
         addr = heap._orig_address_
-        heap_not_at_start = ''
+        special = ''
         m = self._memory_handler.get_mapping_for_address(addr)
         if addr != m.start:
-            heap_not_at_start = ' (!) '
+            special = ' (!) '
+        if heap_bits != process_bits:
+            special += ' (!%d bits heap!) ' % heap_bits
 
-        print '[+] %sHEAP:0x%0.8x' % (heap_not_at_start, addr), m
+        print '[+] %sHEAP:0x%0.8x' % (special, addr), m
         if not verbose:
             return
         #
@@ -452,7 +459,7 @@ class WinHeapValidator(listmodel.ListModel):
         children = walker.get_heap_children_mmaps()
 
         # get allocated/free stats by mappings
-        overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
+        overhead_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)
         occupied_res = self.count_by_mapping(walker.get_user_allocations(), overhead_size)
         free_res = self.count_by_mapping(walker.get_free_chunks(), overhead_size)
 

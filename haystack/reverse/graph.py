@@ -83,7 +83,7 @@ def make(opts):
     #digraph=networkx.readwrite.gexf.read_gexf(  '../../outputs/skype.1.a.gexf')
     digraph = networkx.readwrite.gexf.read_gexf(opts.gexf.name)
     finder = memory_handler.get_heap_finder()
-    heap = finder.get_heap_mappings()[0]
+    heap = finder.list_heap_walkers()[0]
 
     # only add heap structure with links
     edges = [

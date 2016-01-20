@@ -35,15 +35,14 @@ class RecordSearcher(object):
             raise TypeError("Feed me a list of IMemoryMapping")
         elif target_mappings is None:
             # default to all heaps
-            target_mappings = memory_handler.get_heap_finder().get_heap_mappings()
+            target_mappings = memory_handler.get_heap_finder().list_heap_walkers()
         self._memory_handler = memory_handler
         self._my_constraints = my_constraints
         self._target_mappings = target_mappings
         self._update_cb = update_cb
-        log.debug(
-            'StructFinder created for %s. Search Perimeter on %d mappings.',
-            self._memory_handler.get_name(),
-            len(self._target_mappings))
+        log.debug('RecordSearcher created for %s. Search Perimeter on %d mappings.',
+                    self._memory_handler.get_name(),
+                    len(self._target_mappings))
         return
 
     def search(self, struct_type, max_res=10, max_depth=10):
@@ -82,8 +81,8 @@ class RecordSearcher(object):
         # prepare return values
         outputs = []
         # check the word size to use aligned words only
-        plen = self._memory_handler.get_target_platform().get_word_size()
-        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        plen = mem_map.get_target_platform().get_word_size()
+        my_ctypes = mem_map.get_target_platform().get_target_ctypes()
         # where do we look for that structure
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(mem_map)
@@ -132,7 +131,6 @@ class RecordSearcher(object):
         log.debug("Loading %s from 0x%lx " % (struct_type, address))
         instance = mem_map.read_struct(address, struct_type)
         log.debug("Validating %s from 0x%lx " % (struct_type, address))
-        # FIXME why not basicmodel ?
         validator = listmodel.ListModel(self._memory_handler, self._my_constraints)
         # check if data matches
         if validator.load_members(instance, depth):
@@ -195,14 +193,14 @@ class AnyOffsetRecordSearcher(RecordSearcher):
         start = mem_map.start
         end = mem_map.end
         # pointer len for alignment
-        plen = self._memory_handler.get_target_platform().get_word_size()
+        plen = mem_map.get_target_platform().get_word_size()
         # # check the word size to use aligned words only
         if align is None:
             align = plen
         else:
             align = align - align % plen
         # the struct cannot fit after that point.
-        my_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
+        my_ctypes = mem_map.get_target_platform().get_target_ctypes()
         end = end - my_ctypes.sizeof(struct_type) + 1
         if end <= start:
             raise ValueError("The record is too big for this memory mapping")

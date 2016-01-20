@@ -14,6 +14,7 @@ import ctypes
 import logging
 
 from haystack import constraints
+from haystack import utils
 from haystack.abc import interfaces
 
 __author__ = "Loic Jaquemet"
@@ -61,29 +62,31 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
     This is the main class, to be inherited by all ctypes record validators.
     It adds a generic validation framework, based on simple assertion,
     and on more complex constraint on members values.
+
+    FIXME: ConstraintsValidator should be loaded with a memory mapping, not an handler.
+    The target platform is different mapping by mapping. (windows heap 32/64)
     """
     MAX_CSTRING_SIZE = 1024
-    # contraints on values TODO rename _expectedValues_
-    #expectedValues = dict()
 
-    def __init__(self, memory_handler, my_constraints):
+    def __init__(self, memory_handler, my_constraints, target_ctypes=None):
         """
 
         :param memory_handler: IMemoryHandler
         :param my_constraints: IModuleConstraints
+        :param target_ctypes: Ctypes module, could be a different arch.
         :return:
         """
         if not isinstance(memory_handler, interfaces.IMemoryHandler):
             raise TypeError("Feed me a IMemoryHandler")
         if my_constraints and not isinstance(my_constraints, interfaces.IModuleConstraints):
             raise TypeError("Feed me a IModuleConstraints")
+        if target_ctypes is None:
+            target_ctypes = memory_handler.get_target_platform().get_target_ctypes()
+        if not hasattr(target_ctypes, 'c_ubyte'):
+            raise TypeError("Feed me a target_ctypes as Ctypes modules")
         self._memory_handler = memory_handler
-        self._target = self._memory_handler.get_target_platform()
-        # 8 in x32, 16 in x64
-        self._word_size = self._target.get_word_size()
-        self._word_size_x2 = self._target.get_word_size() * 2
-        self._ctypes = self._target.get_target_ctypes()
-        self._utils = self._target.get_target_ctypes_utils()
+        self._ctypes = target_ctypes
+        self._utils = utils.Utils(self._ctypes)
         self._constraints_base = None
         self._constraints_dynamic = None
         if my_constraints is not None:
@@ -244,7 +247,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                     log.debug('str: %s %s %s isNULL - OK', attrname, attrtype, repr(attr))
                     # e.1)
                     return True
-            if myaddress != 0 and not self._memory_handler.is_valid_address_value(myaddress):
+            if myaddress != 0 and not self.is_valid_address_value(myaddress):
                 log.debug('str: %s %s %s 0x%lx INVALID', attrname, attrtype, repr(attr), myaddress)
                 # e.2)
                 return False
@@ -269,7 +272,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             _attrType = None
             if self._ctypes.is_pointer_to_void_type(attrtype) or self._ctypes.is_function_type(attrtype):
                 log.debug('Its a simple type. Checking address only. attr=%s', attr)
-                if (myaddress != 0 and not self._memory_handler.is_valid_address_value(myaddress)):
+                if (myaddress != 0 and not self.is_valid_address_value(myaddress)):
                     log.debug('voidptr: %s %s %s 0x%lx INVALID simple pointer',
                               attrname, attrtype, repr(attr), myaddress)
                     # f.3) address must be valid, no type requirement
@@ -277,7 +280,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             else:
                 # test valid address mapping
                 _attrType = self._utils.get_subtype(attrtype)
-            if myaddress != 0 and not self._memory_handler.is_valid_address(attr, _attrType):
+            if myaddress != 0 and not self.is_valid_address(attr, _attrType):
                 log.debug('ptr: %s %s %s 0x%lx INVALID', attrname, attrtype,
                                                            repr(attr), self._utils.get_pointee_address(attr))
                 # f.4) its a pointer, but not valid in our _memory_handler for this
@@ -300,18 +303,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         AND (pointee is a struct type OR pointee is a union type)
         ) OR struct type OR union type
         """
-        target_ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         return bool(attr) and not self._ctypes.is_pointer_to_void_type(attrtype)
-        # return ( (bool(attr) and
-        #    (self._ctypes.is_pointer_to_struct_type(attrtype) or
-        #     self._ctypes.is_pointer_to_union_type(attrtype) or
-        #     self._ctypes.is_pointer_to_basic_type(attrtype) or
-        #     self._ctypes.is_pointer_to_array_type(attrtype)
-        #    )) or
-        #    self._ctypes.is_union_type(attrtype) or self._ctypes.is_struct_type(attrtype) or
-        #    self._ctypes.is_cstring_type(attrtype) or
-        #    (self._ctypes.is_array_type(attrtype) and not self._ctypes.is_array_of_basic_type(attrtype)))
-        # should we iterate on Basictypes ? no
 
     def load_members(self, record, max_depth):
         """
@@ -328,8 +320,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         """
         if max_depth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
-            log.debug('Struct partially LOADED. %s not loaded',
-                record.__class__.__name__)
+            log.debug('Struct partially LOADED. %s not loaded', record.__class__.__name__)
             return True
         if max_depth > 100:
             raise RuntimeError('max_depth')
@@ -409,7 +400,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
                 log.debug('%s %s is a CString, the pointer is null (validation '
                           'must have occurred earlier)', attrname, attr)
                 return True
-            memoryMap = self._memory_handler.is_valid_address_value(attr_obj_address)
+            memoryMap = self.is_valid_address_value(attr_obj_address)
             if not memoryMap:
                 log.warning('Error on addr while fetching a CString.'
                             'should not happen')
@@ -422,7 +413,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             max_size = min(self.MAX_CSTRING_SIZE, memoryMap.end - attr_obj_address)
             log.debug('%s %s is defined as a CString, loading %d bytes from 0x%lx '
                       'is_valid_address %s', attrname, attr, max_size, attr_obj_address,
-                                               self._memory_handler.is_valid_address_value(attr_obj_address))
+                                               self.is_valid_address_value(attr_obj_address))
             #txt, truncated = memoryMap.read_cstring(attr_obj_address, max_size)
             # 2015-11-05 FIX #20 - read string or wide char string
             txt, truncated = attr.read_string(memoryMap, attr_obj_address, max_size)
@@ -441,7 +432,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             # memcpy and save objet ref + pointer in attr
             # we know the field is considered valid, so if it's not in
             # memory_space, we can ignore it
-            memoryMap = self._memory_handler.is_valid_address(attr, _attrType)
+            memoryMap = self.is_valid_address(attr, _attrType)
             if not memoryMap:
                 # big BUG Badaboum, why did pointer changed validity/value ?
                 log.warning("%s %s not loadable 0x%lx but VALID ", attrname, attr, attr_obj_address)
@@ -492,6 +483,43 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
             return True
         # TATAFN
         return True
+
+    def is_valid_address(self, obj, structType=None):
+        """
+        :param obj: the obj to evaluate.
+        :param structType: the object's type, so the size could be taken in consideration.
+
+        Returns False if the object address is NULL.
+        Returns False if the object address is not in a mapping.
+
+        Returns the mapping in which the object stands otherwise.
+        """
+        # check for null pointers
+        addr = self._utils.get_pointee_address(obj)
+        if addr == 0:
+            return False
+        return self.is_valid_address_value(addr, structType)
+
+    def is_valid_address_value(self, addr, structType=None):
+        """
+        :param addr: the address to evaluate.
+        :param structType: the object's type, so the size could be taken in consideration.
+
+        Returns False if the object address is NULL.
+        Returns False if the object address is not in a mapping.
+        Returns False if the object overflows the mapping.
+
+        Returns the mapping in which the address stands otherwise.
+        """
+        m = self._memory_handler.get_mapping_for_address(addr)
+        log.debug('is_valid_address_value = %x %s' % (addr, m))
+        if m:
+            if structType is not None:
+                s = self._ctypes.sizeof(structType)
+                if (addr + s) < m.start or (addr + s) > m.end:
+                    return False
+            return m
+        return False
 
     def __str__(self):
         return "<CTypesRecordConstraintValidator>"

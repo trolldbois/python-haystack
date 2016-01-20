@@ -26,18 +26,18 @@ log = logging.getLogger('utils')
 class Utils(interfaces.ICTypesUtils):
 
     def __init__(self, _target_ctypes):
-        self.__ctypes = _target_ctypes
+        self._ctypes = _target_ctypes
         assert isinstance(_target_ctypes, types.CTypesProxy)
         self.__local_process_memory_handler = None
 
     def formatAddress(self, addr):
-        if self.__ctypes.sizeof(self.__ctypes.c_void_p) == 8:
+        if self._ctypes.sizeof(self._ctypes.c_void_p) == 8:
             return b'0x%016x' % addr
         else:
             return b'0x%08x' % addr
 
     def unpackWord(self, bytes, endianess='@'):
-        if self.__ctypes.sizeof(self.__ctypes.c_void_p) == 8:
+        if self._ctypes.sizeof(self._ctypes.c_void_p) == 8:
             return struct.unpack('%sQ' % endianess, bytes)[0]
         else:
             return struct.unpack('%sI' % endianess, bytes)[0]
@@ -86,10 +86,10 @@ class Utils(interfaces.ICTypesUtils):
             return obj
         elif not bool(obj):
             return 0
-        elif self.__ctypes.is_function_type(type(obj)):
-            return self.__ctypes.cast(obj, self.__ctypes.c_void_p).value
-        elif self.__ctypes.is_pointer_type(type(obj)):
-            return self.__ctypes.cast(obj, self.__ctypes.c_void_p).value
+        elif self._ctypes.is_function_type(type(obj)):
+            return self._ctypes.cast(obj, self._ctypes.c_void_p).value
+        elif self._ctypes.is_pointer_type(type(obj)):
+            return self._ctypes.cast(obj, self._ctypes.c_void_p).value
             # check for null pointers
             # if bool(obj):
             # FIXME unreachable
@@ -134,12 +134,12 @@ class Utils(interfaces.ICTypesUtils):
         if isinstance(array, str):
             # special case for c_char[]
             return array
-        if not self.__ctypes.is_array_of_basic_instance(array):
+        if not self._ctypes.is_array_of_basic_instance(array):
             raise TypeError('NOT-AN-Basic-Type-ARRAY')
-        if array._type_ in [self.__ctypes.c_int, self.__ctypes.c_uint, self.__ctypes.c_long,
-                            self.__ctypes.c_ulong, self.__ctypes.c_ubyte, self.__ctypes.c_byte]:
+        if array._type_ in [self._ctypes.c_int, self._ctypes.c_uint, self._ctypes.c_long,
+                            self._ctypes.c_ulong, self._ctypes.c_ubyte, self._ctypes.c_byte]:
             return [long(el) for el in array]
-        if array._type_ in [self.__ctypes.c_float, self.__ctypes.c_double, self.__ctypes.c_longdouble]:
+        if array._type_ in [self._ctypes.c_float, self._ctypes.c_double, self._ctypes.c_longdouble]:
             return [float(el) for el in array]
         sb = ''.join([struct.pack(array._type_._type_, el) for el in array])
         return sb
@@ -153,12 +153,12 @@ class Utils(interfaces.ICTypesUtils):
         if isinstance(array, str):
             # special case for c_char[]
             return array
-        if self.__ctypes.is_array_of_basic_instance(array):
+        if self._ctypes.is_array_of_basic_instance(array):
             sb = b''.join([struct.pack(array._type_._type_, el) for el in array])
             return sb
         else:
-            c_size = self.__ctypes.sizeof(array)
-            a2 = (self.__ctypes.c_ubyte * c_size).from_address(self.__ctypes.addressof(array))
+            c_size = self._ctypes.sizeof(array)
+            a2 = (self._ctypes.c_ubyte * c_size).from_address(self._ctypes.addressof(array))
             sb = b''.join([struct.pack('B', el) for el in a2])
             return sb
 
@@ -170,14 +170,14 @@ class Utils(interfaces.ICTypesUtils):
         :param typ: ctypes
         :return: array
         """
-        typLen = self.__ctypes.sizeof(typ)
+        typLen = self._ctypes.sizeof(typ)
         if len(bytes) % typLen != 0:
             raise ValueError('thoses bytes are not an array of %s' % (typ))
         arrayLen = len(bytes) / typLen
         array = (typ * arrayLen)()
         if arrayLen == 0:
             return array
-        fmt = self.__ctypes.get_pack_format()[typ.__name__]
+        fmt = self._ctypes.get_pack_format()[typ.__name__]
         try:
             for i in range(0, arrayLen):
                 array[i] = struct.unpack(

@@ -51,11 +51,11 @@ def make(opts):
             (len(
                 ctx.structures)))
     finder = ctx.get_memory_handler().get_heap_finder()
-    heap1 = finder.get_heap_mappings()[0]
+    heap1 = finder.list_heap_walkers()[0]
     log.info('[+] Loading _memory_handler of %s' % (opts.dump2))
     newmappings = dump_loader.load(opts.dump2)
     finder2 = newmappings.get_heap_finder()
-    heap2 = finder2.get_heap_mappings()[0]
+    heap2 = finder2.list_heap_walkers()[0]
     log.info('[+] finding diff values with %s' % (opts.dump2))
     addrs = cmd_cmp(heap1, heap2, heap1.start)
 

@@ -91,15 +91,6 @@ class IMemoryMapping(object):
     def __len__(self):
         raise NotImplementedError(self)
 
-    def mark_as_heap(self, addr):
-        raise NotImplementedError(self)
-
-    def is_marked_as_heap(self):
-        raise NotImplementedError(self)
-
-    def get_marked_heap_address(self):
-        raise NotImplementedError(self)
-
 
 class IMemoryLoader(object):
     """Parse a process memory _memory_handler from a storage concept,
@@ -125,10 +116,6 @@ class IMemoryHandler(object):
 
     def get_heap_finder(self):
         """Returns the IHeapFinder for that process memory."""
-        raise NotImplementedError(self)
-
-    def get_ctypes_utils(self):
-        """Returns the Utils toolkit."""
         raise NotImplementedError(self)
 
     def get_model(self):
@@ -285,7 +272,7 @@ class IHeapFinder(object):
     The IHeapFinder needs to be initialized with a IMemoryHandler.
     """
 
-    def get_heap_mappings(self):
+    def list_heap_walkers(self):
         """
         Return the list of heaps that load as heaps
 
@@ -315,6 +302,13 @@ class IHeapWalker(object):
     Parse a heap IMemoryMapping for chunks of allocated memory or free chunks in the heap.
     The IHeapWalker needs to be initialized with a IMemoryHandler and a IMemoryMapping
     """
+    def get_target_platform(self):
+        """Returns the ITargetPlatform for that process memory Heap."""
+        raise NotImplementedError(self)
+
+    def get_heap_address(self):
+        """ returns the address of the used heap """
+        raise NotImplementedError('Please implement all methods')
 
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) """

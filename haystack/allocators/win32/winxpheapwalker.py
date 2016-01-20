@@ -11,9 +11,11 @@ import sys
 
 import os
 
+from haystack import constraints
 from haystack import model
-from haystack.allocators import heapwalker
+from haystack import target
 from haystack.allocators.win32 import winheapwalker
+from haystack.allocators.win32 import winxpheap
 
 log = logging.getLogger('winxpheapwalker')
 
@@ -28,88 +30,40 @@ class WinXPHeapWalker(winheapwalker.WinHeapWalker):
     Virtual allocation
     """
 
-    def _init_heap(self, address):
-        self._allocs = None
-        self._free_chunks = None
-        self._child_heaps = None
-
-        self._heap = self._heap_mapping.read_struct(address, self._heap_module.HEAP)
-        self._validator = self._heap_module.WinXPHeapValidator(self._memory_handler, self._heap_module_constraints, self._heap_module)
-        if not self._validator.load_members(self._heap, 1):
-            raise TypeError('load_members(HEAP) returned False')
-
-        log.debug('+ Heap @%0.8x size: %d # %s',
-                  self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
-
-        # placeholders
-        self._backend_committed = None
-        self._backend_free = None
-        self._fth_committed = None
-        self._fth_free = None
-        self._valloc_committed = None
-        self._valloc_free = None
-        return
+    def _create_validator(self):
+        return winxpheap.WinXPHeapValidator(self._memory_handler, self._heap_module_constraints, self._target, self._heap_module)
 
 
-class WinXPHeapFinder(heapwalker.HeapFinder):
-    """
-    _init_heap_validation_depth = 1
-    """
+class WinXPHeapFinder(winheapwalker.WinHeapFinder):
 
-    def _init(self):
-        """
-        Return the heap configuration information
-        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
-        """
-        self._heap_validator = None
-        module_name = 'haystack.allocators.win32.winxpheap'
-        heap_name = 'HEAP'
-        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'winxpheap.constraints')
-        log.debug('constraint_filename :%s', constraint_filename)
-        return module_name, heap_name, constraint_filename
+    def _validator_type(self):
+        return winxpheap.WinXPHeapValidator
 
-    def _import_heap_module(self):
-        """
-        Load the module for this target arch
-        :return: module
-        """
-        # replace the heapwalker version because we need to copy generated classes into the
-        # normal module, for a specific target platform.
-        # the win7heap module should not appears in sys.modules.
-        if 64 == self._target.get_cpu_bits():
-            gen_module_name = 'haystack.allocators.win32.winxp_64'
-        else:
-            gen_module_name = 'haystack.allocators.win32.winxp_32'
-        log.debug('the heap module loaded is %s', gen_module_name)
-        gen_heap_module = self._memory_handler.get_model().import_module(gen_module_name)
-        heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
-        # copy the generated module for x32 or x64 in a 'win7heap' module
-        # FIXME, that is useless I think.
-        model.copy_generated_classes(gen_heap_module, heap_module)
-        return heap_module
+    def _walker_type(self):
+        return WinXPHeapWalker
 
-    def get_heap_mappings(self):
-        """return the list of _memory_handler that load as heaps"""
-        heap_mappings = super(WinXPHeapFinder, self).get_heap_mappings()
-        # FIXME PYDOC  cant remember why we do this.
-        # we sort by Process HeapsListIndex
-        #for mapping in heap_mappings:
-            # why do we get the "children" segments ?
-            #mapping._children = WinXPHeapWalker(
-            #    self._memory_handler,
-            #    self._heap_module,
-            #    mapping,
-            #    self._heap_module_constraints).get_heap_children_mmaps()
-        heap_mappings.sort(
-            key=lambda m: self._read_heap(m, m.get_marked_heap_address()).ProcessHeapsListIndex)
-        return heap_mappings
+    def _make_dual_arch_ctypes(self):
+        # dual arch
+        module_name_32 = 'haystack.allocators.win32.winxp_32'
+        _winxp_32= target.TargetPlatform.make_target_win_32('winxp')
+        _model_32 = model.Model(_winxp_32.get_target_ctypes())
+        _winxp_32_module = _model_32.import_module(module_name_32)
+        # TODO make dual optional
+        module_name_64 = 'haystack.allocators.win32.winxp_64'
+        _winxp_64 = target.TargetPlatform.make_target_win_64('winxp')
+        _model_64 = model.Model(_winxp_64.get_target_ctypes())
+        _winxp_64_module = _model_64.import_module(module_name_64)
 
-    def get_heap_walker(self, heap):
-        return WinXPHeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
+        # different arch have different recors types.
+        parser = constraints.ConstraintsConfigHandler()
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'winxpheap32.constraints')
+        _constraints_32 = parser.read(constraint_filename)
+        constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'winxpheap64.constraints')
+        _constraints_64 = parser.read(constraint_filename)
 
-    def get_heap_validator(self):
-        if self._heap_validator is None:
-            self._heap_validator = self._heap_module.WinXPHeapValidator(self._memory_handler,
-                                                   self._heap_module_constraints,
-                                                   self._heap_module)
-        return self._heap_validator
+        _cpu = dict()
+        _cpu[32] = {'model': _model_32, 'target': _winxp_32, 'module': _winxp_32_module,
+                    'constraints': _constraints_32, 'signature_offset': 8}
+        _cpu[64] = {'model': _model_64, 'target': _winxp_64, 'module': _winxp_64_module,
+                    'constraints': _constraints_64, 'signature_offset': 16}
+        return _cpu

@@ -30,7 +30,6 @@ import sys
 import logging
 import importlib
 
-from haystack import target
 
 log = logging.getLogger('model')
 
@@ -45,8 +44,15 @@ class LoadException(Exception):
 
 class Model(object):
 
-    def __init__(self, memory_handler):
-        self._memory_handler = memory_handler
+    def __init__(self, ctypes_module):
+        """
+
+        :param ctypes_module:
+        :return:
+        """
+        if not hasattr(ctypes_module, 'c_byte'):
+            raise TypeError('Feed me a ctypes module')
+        self._ctypes = ctypes_module
         self.__book = dict()
         self.__modules = dict()
 
@@ -66,11 +72,10 @@ class Model(object):
 
             Mandatory.
         """
-        _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
         _created = 0
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
             # we only need to create python classes for records
-            if issubclass(klass, _ctypes.Structure) or issubclass(klass, _ctypes.Union):
+            if issubclass(klass, self._ctypes.Structure) or issubclass(klass, self._ctypes.Union):
                 from haystack.outputters import python
                 # we have to keep a local (model) ref because the class is being created here.
                 # and we have a targetmodule ref. because it's asked.
@@ -90,7 +95,7 @@ class Model(object):
                     setattr(targetmodule, '%s_py' % name, kpy)
 
                 # add the structure size to the class
-                setattr(kpy, '_len_', _ctypes.sizeof(klass))
+                setattr(kpy, '_len_', self._ctypes.sizeof(klass))
                 _created += 1
         log.debug(
             'created %d POPO types in %s' %
@@ -139,8 +144,7 @@ class Model(object):
         :param module_name:
         :return:
         """
-        _ctypes = self._memory_handler.get_target_platform().get_target_ctypes()
-        mod = import_module_for_target_ctypes(module_name, _ctypes)
+        mod = import_module_for_target_ctypes(module_name, self._ctypes)
         self.__modules[module_name] = mod
         return mod
 

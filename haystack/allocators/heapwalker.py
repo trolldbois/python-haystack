@@ -13,17 +13,36 @@ log = logging.getLogger('heapwalker')
 
 class HeapWalker(interfaces.IHeapWalker):
 
-    def __init__(self, memory_handler, heap_module, heap_mapping, heap_module_constraints):
-        if not heap_mapping.is_marked_as_heap():
-            raise TypeError('Please mark the mapping as heap before use')
+    def __init__(self, memory_handler, target_platform, heap_module, heap_mapping, heap_module_constraints, address):
+        if not isinstance(memory_handler, interfaces.IMemoryHandler):
+            raise TypeError("Feed me a IMemoryHandler")
+        if not isinstance(target_platform, interfaces.ITargetPlatform):
+            raise TypeError("Feed me a ITargetPlatform")
         self._memory_handler = memory_handler
+        self._target = target_platform
         self._heap_module = heap_module
         self._heap_mapping = heap_mapping
         self._heap_module_constraints = heap_module_constraints
-        self._init_heap(heap_mapping.get_marked_heap_address())
+        self._address = address
+        self._init_heap()
 
-    def _init_heap(self, address):
+    def _init_heap(self):
         """ Initialize anything"""
+        raise NotImplementedError('Please implement all methods')
+
+    def get_target_platform(self):
+        """Returns the ITargetPlatform for that process memory."""
+        return self._target
+
+    def get_heap_address(self):
+        return self._address
+
+    def get_heap(self):
+        """ return the ctypes heap struct mapped at address on the mapping"""
+        raise NotImplementedError('Please implement all methods')
+
+    def get_heap_validator(self):
+        """ return the validator """
         raise NotImplementedError('Please implement all methods')
 
     def get_user_allocations(self):
@@ -32,6 +51,10 @@ class HeapWalker(interfaces.IHeapWalker):
 
     def get_free_chunks(self):
         """ returns all free chunks in the heap (addr,size) """
+        raise NotImplementedError('Please implement all methods')
+
+    def __contains__(self, address):
+        """ Does the heap walker or its relevant segments contains this address"""
         raise NotImplementedError('Please implement all methods')
 
 
@@ -100,7 +123,7 @@ class HeapFinder(interfaces.IHeapFinder):
         log.debug("_search_heap in %s", mapping)
         res = my_searcher._search_in(mapping, self._heap_type, nb=1, align=0x1000)
         # DEBUG PEB search
-        #res = my_searcher._search_in(mapping, peb.struct__PEB, nb=1, align=0x1000)
+        # res = my_searcher._search_in(mapping, peb.struct__PEB, nb=1, align=0x1000)
         if len(res) > 0:
             instance, address = res[0]
             mapping.mark_as_heap(address)
@@ -133,48 +156,12 @@ class HeapFinder(interfaces.IHeapFinder):
         return heap
 
     def _is_heap(self, mapping, addr):
-        """
-        test if a mapping is a heap
-        :param mapping: IMemoryMapping
-        :return:
-        """
-        if not isinstance(mapping, interfaces.IMemoryMapping):
-            raise TypeError('Feed me a IMemoryMapping object')
-        if mapping.is_marked_as_heap() and addr == mapping.get_marked_heap_address():
-            return True
-        # we find some backend heap at other addresses
-        heap = self._read_heap(mapping, addr)
-        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
-        log.debug('HeapFinder._is_heap %s %s' % (mapping, load))
-        return load
-
-    def get_heap_module(self):
-        """
-        Returns the heap module.
-        :return:
-        """
-        return self._heap_module
-
-    def get_heap_mappings(self):
-        """return the list of heaps that load as heaps"""
-        if not self.__optim_heaps:
-            self.__optim_heaps = []
-            for mapping in self._memory_handler:
-                # try at offset 0
-                if mapping.is_marked_as_heap():
-                    self.__optim_heaps.append(mapping)
-                else:
-                    # try harder elsewhere in the mapping
-                    res = self._search_heap(mapping)
-                    if res is not None:
-                        self.__optim_heaps.append(mapping)
-            self.__optim_heaps.sort(key=lambda m: m.start)
-        return self.__optim_heaps
-
-    def get_heap_walker(self, heap):
         raise NotImplementedError(self)
 
-    def get_heap_validator(self):
+    def list_heap_walkers(self):
+        raise NotImplementedError(self)
+
+    def get_heap_walker(self, heap):
         raise NotImplementedError(self)
 
 

@@ -44,7 +44,10 @@ def main(argv):
     finder = memory_handler.get_heap_finder()
 
     # Show Target information
-    print 'Auto-resolved', memory_handler.get_target_platform()
+    if opts.bits or opts.osname:
+        print 'Forced target resolution:', memory_handler.get_target_platform()
+    else:
+        print 'Automatic target resolution:', memory_handler.get_target_platform()
 
     if opts.mappings:
         # show all memory mappings
@@ -60,23 +63,21 @@ def main(argv):
     print 'Probable Process HEAPS:'
     for m in memory_handler.get_mappings():
         for addr in range(m.start, m.end, 0x1000):
-            heap_not_at_start = ''
+            special = ''
             for os, bits, offset in [('winxp', 32, 8), ('winxp', 64, 16),
                                      ('win7', 32, 100), ('win7', 64, 160)]:
-                signature = struct.unpack('I',m.read_bytes(addr+offset, 4))[0]
+                signature = struct.unpack('I', m.read_bytes(addr+offset, 4))[0]
                 if signature == 0xeeffeeff:
                     if addr != m.start:
-                        heap_not_at_start = ' (!) '
-                    print '[+] %s %dbits  %s 0x%0.8x' % (os, bits, heap_not_at_start, addr), m
+                        special = ' (!) '
+                    print '[+] %s %dbits  %s 0x%0.8x' % (os, bits, special, addr), m
 
     # Then show heap analysis
     print 'Found Heaps:'
 
-    results = finder.search_heap()
-    for ctypes_heap, addr in results:
-        m = memory_handler.get_mapping_for_address(addr)
-        validator = finder.get_heap_validator()
-        validator.print_heap_analysis(ctypes_heap, opts.verbose)
+    for walker in finder.list_heap_walkers():
+        validator = walker.get_heap_validator()
+        validator.print_heap_analysis(walker.get_heap(), opts.verbose)
 
     return
 
@@ -86,18 +87,17 @@ def one_heap(opts, finder):
     memory_handler = finder._memory_handler
     # just return the heap
     ctypes_heap, valid = finder.search_heap_direct(address)
+    out = text.RecursiveTextOutputter(finder._memory_handler)
+    # out = python.PythonOutputter(finder._memory_handler)
     if opts.heap:
-        out = text.RecursiveTextOutputter(finder._memory_handler)
-        # out = python.PythonOutputter(finder._memory_handler)
         print out.parse(ctypes_heap, depth=2)
         print 'Valid =', valid
     if opts.frontend:
         heap_addr = ctypes_heap._orig_address_
         heap_m = memory_handler.get_mapping_for_address(heap_addr)
-        heap_m.mark_as_heap(heap_addr)
         walker = finder.get_heap_walker(heap_m)
         win_heap = walker._heap_module
-        _utils = memory_handler.get_ctypes_utils()
+        _utils = memory_handler.get_target_platform().get_target_ctypes_utils()
         if ctypes_heap.FrontEndHeapType == 0:
             log.error('BACKEND HEAP Type')
         elif ctypes_heap.FrontEndHeapType == 1:
@@ -120,10 +120,13 @@ def one_heap(opts, finder):
 
         pass
     # fake it
-    m = memory_handler.get_mapping_for_address(address)
-    m.mark_as_heap(address)
-    validator = finder.get_heap_validator()
-    validator.print_heap_analysis(ctypes_heap, opts.verbose)
+    if valid:
+        m = memory_handler.get_mapping_for_address(address)
+        # we force the mapping to be a heap container because we where asked to
+        validator = finder.get_heap_walker(m).get_heap_validator()
+        validator.print_heap_analysis(ctypes_heap, opts.verbose)
+    else:
+        print "Could not load Heap for target", memory_handler.get_target_platform()
     return
 
 

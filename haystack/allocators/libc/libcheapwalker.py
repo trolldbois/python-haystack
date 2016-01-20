@@ -86,7 +86,7 @@ class LibcHeapFinder(heapwalker.HeapFinder):
             return heap, mapping.start
         return None
 
-    def get_heap_mappings(self):
+    def list_heap_walkers(self):
         """return the list of heaps that load as heaps
 
         Full overload of parent, to fix some bugs and prioritize.
