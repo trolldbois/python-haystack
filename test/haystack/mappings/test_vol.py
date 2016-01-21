@@ -66,8 +66,8 @@ class TestMapper(unittest.TestCase):
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        walkers = finder.list_heap_walkers()
+        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
             heap = memory_handler.get_mapping_for_address(addr)
             self.assertTrue(heap.is_marked_as_heap())
@@ -82,8 +82,8 @@ class TestMapper(unittest.TestCase):
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        self.assertEquals(len(heaps), len(zeus_856_svchost_exe.known_heaps))
+        walkers = finder.list_heap_walkers()
+        self.assertEquals(len(walkers), len(zeus_856_svchost_exe.known_heaps))
         for addr, size in zeus_856_svchost_exe.known_heaps:
             heap = memory_handler.get_mapping_for_address(addr)
             self.assertTrue(heap.is_marked_as_heap())
@@ -112,7 +112,7 @@ class TestMapper(unittest.TestCase):
         self.assertEquals(ctypes.sizeof(x), 1416)
         # print x
         finder = memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
         #code.interact(local=locals())
 
 

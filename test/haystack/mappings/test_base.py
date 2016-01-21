@@ -101,9 +101,8 @@ class TestMappingsLinux(SrcTests):
 
     def test_get_mapping_for_address(self):
         finder = self.memory_handler.get_heap_finder()
-        self.assertEquals(
-            finder.list_heap_walkers()[0],
-            self.memory_handler.get_mapping_for_address(0xb84e02d3))
+        walker = finder.list_heap_walkers()[0]
+        self.assertEquals(walker.get_heap_address(), self.memory_handler.get_mapping_for_address(0xb84e02d3).start)
 
     def test_contains(self):
         for m in self.memory_handler:

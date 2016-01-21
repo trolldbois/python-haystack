@@ -359,8 +359,8 @@ class TestStructureSizes(SrcTests):
         self.memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
         self._load_offsets_values(self.memory_handler.get_name())
         finder = self.memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        self.context = context.get_context_for_address(self.memory_handler, heaps[0])
+        walkers = finder.list_heap_walkers()
+        self.context = context.get_context_for_address(self.memory_handler, walkers[0])
         ##
         self.dsa = dsa.FieldReverser(self.memory_handler)
 
@@ -430,9 +430,9 @@ class TestFullReverse(unittest.TestCase):
 
         memory_handler = self.memory_handler
         finder = memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
 
-        self.assertEqual(len(heaps), len(ssh_1_i386_linux.known_heaps))
+        self.assertEqual(len(walkers), len(ssh_1_i386_linux.known_heaps))
         #pointers
         self.assertEqual(2236, len(ctx.listPointerValueInHeap()))
         self.assertEqual(2568, len(ctx.list_allocations_addresses()))

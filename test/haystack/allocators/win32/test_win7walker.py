@@ -44,12 +44,12 @@ class TestWin7HeapWalker(unittest.TestCase):
 
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
-        _heaps = self._heap_finder.list_heap_walkers()
-        heap_sums = dict([(heap, list())
-                          for heap in _heaps])
+        walkers = self._heap_finder.list_heap_walkers()
+        heap_sums = dict([(walker.get_heap_mapping(), list()) for walker in walkers])
         child_heaps = dict()
-        for heap in _heaps:
-            heap_addr = heap.get_marked_heap_address()
+        for heap_walker in walkers:
+            heap_addr = heap_walker.get_heap_address()
+            heap = heap_walker.get_heap_mapping()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x',
                 self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr)
@@ -100,12 +100,11 @@ class TestWin7HeapWalker(unittest.TestCase):
         """ check if memory_mapping gives heaps sorted by index. """
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
-        heaps = finder.list_heap_walkers()
-        self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
-        for i, m in enumerate(heaps):
+        walkers = finder.list_heap_walkers()
+        self.assertEquals(len(walkers), len(putty_1_win7.known_heaps))
+        for i, walker in enumerate(walkers):
             # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
-            self.assertEquals(finder._read_heap(m, m.get_marked_heap_address()).ProcessHeapsListIndex, i + 1,
-                              'ProcessHeaps should have correct indexes')
+            self.assertEquals(walker.get_heap().ProcessHeapsListIndex, i + 1, 'ProcessHeaps should have correct indexes')
         return
 
     def test_get_frontendheap(self):

@@ -61,13 +61,11 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
         """
         # test the heaps
-        _heaps = self._heap_finder.list_heap_walkers()
-        heap_sums = dict([(heap, list())
-                          for heap in _heaps])
-        child_heaps = dict()
+        walkers = self._heap_finder.list_heap_walkers()
         # 0xbc5d0178,
-        for heap in _heaps:
-            heap_addr = heap.get_marked_heap_address()
+        for heap_walker in walkers:
+            heap_addr = heap_walker.get_heap_address()
+            heap = heap_walker.get_heap_mapping()
             # 0x5d09d000
             # .FrontEndHeapType == 1 but freeslists point to nulls
             # .LockVariable is set
@@ -131,13 +129,11 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
         """
         # test the heaps
-        _heaps = self._heap_finder.list_heap_walkers()
-        heap_sums = dict([(heap, list())
-                          for heap in _heaps])
-        child_heaps = dict()
+        walkers = self._heap_finder.list_heap_walkers()
         # 0xbc5d0178,
-        for heap in _heaps:
-            heap_addr = heap.get_marked_heap_address()
+        for heap_walker in walkers:
+            heap_addr = heap_walker.get_heap_address()
+            heap = heap_walker.get_heap_mapping()
             # 0x5d09d000.FrontEndHeapType == 1 but freeslists point to nulls, heap points to null
             # Exception heap.0x5d09d000:"FrontEndHeap": 0x00070688,
             #if 0x5d09d000 == heap_addr:
@@ -212,11 +208,12 @@ class TestWinXPHeapValidator(unittest.TestCase):
         """ test the segment iterator """
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
-        _heaps = self._heap_finder.list_heap_walkers()
         segments = []
-        log.debug('')
-        for heap in _heaps:
-            heap_addr = heap.get_marked_heap_address()
+        walkers = self._heap_finder.list_heap_walkers()
+        # 0xbc5d0178,
+        for heap_walker in walkers:
+            heap_addr = heap_walker.get_heap_address()
+            heap = heap_walker.get_heap_mapping()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
                 (self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr))
@@ -246,18 +243,16 @@ class TestWinXPHeapValidator(unittest.TestCase):
         return
 
     def test_get_heaps(self):
-        heaps = self._heap_finder.list_heap_walkers()
-        self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        walkers = self._heap_finder.list_heap_walkers()
+        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
 
     def test_is_heaps(self):
-        heaps = self._heap_finder.list_heap_walkers()
-        self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        walkers = self._heap_finder.list_heap_walkers()
+        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
             heap = self._memory_handler.get_mapping_for_address(addr)
-            self.assertTrue(heap.is_marked_as_heap())
-            heap_addr = heap.get_marked_heap_address()
-            self.assertTrue(heap_addr is not None)
-            self.assertTrue(self._heap_finder._is_heap(heap, heap_addr))
+            heap_walker = self._heap_finder.get_heap_walker(heap)
+            self.assertIsNotNone(heap_walker)
 
 
 if __name__ == '__main__':

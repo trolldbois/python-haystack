@@ -162,9 +162,10 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        heap = heaps[0]
-        heap_addr = heap.get_marked_heap_address()
+        walkers = finder.list_heap_walkers()
+        walker = walkers[0]
+        heap_addr = walker.get_heap_address()
+        heap = walker.get_heap_mapping()
         # create the enumerator on the whole mapping
         enumerator1 = haystack.reverse.enumerators.WordAlignedEnumerator(heap, matcher, feedback, word_size)
         # collect the pointers
@@ -201,10 +202,8 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        heap = heaps[0]
-        log.debug('heap is %s', heap)
-        heap_walker = finder.get_heap_walker(heap)
+        walkers = finder.list_heap_walkers()
+        heap_walker = walkers[0]
         # create the enumerator on the allocated chunks mapping
         enumerator2 = haystack.reverse.enumerators.AllocatedWordAlignedEnumerator(heap_walker, matcher, feedback, word_size)
         # collect the pointers
@@ -241,13 +240,13 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
         all_heaps_addrs = []
-        for heap in heaps:
+        for walker in walkers:
             #if heap.start != 0x03360000:
             #    continue
+            heap = walker.get_heap_mapping()
             log.debug('heap is %s', heap)
-            heap_walker = finder.get_heap_walker(heap)
             # create the enumerator on the allocated chunks mapping
             enumerator2 = haystack.reverse.enumerators.WordAlignedEnumerator(heap, matcher, feedback, word_size)
             # collect the pointers
@@ -277,13 +276,13 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         feedback = searchers.NoFeedback()
         matcher = haystack.reverse.matchers.PointerEnumerator(self._memory_handler)
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
         all_heaps_addrs = []
-        for heap in heaps:
+        for heap_walker in walkers:
             #if heap.start != 0x03360000:
             #    continue
+            heap = heap_walker.get_heap_mapping()
             log.debug('heap is %s', heap)
-            heap_walker = finder.get_heap_walker(heap)
             # create the enumerator on the allocated chunks mapping
             enumerator2 = haystack.reverse.enumerators.AllocatedWordAlignedEnumerator(heap_walker, matcher, feedback, word_size)
             # collect the pointers
