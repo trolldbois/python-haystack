@@ -52,7 +52,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             heap = heap_walker.get_heap_mapping()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x',
-                self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr)
+                heap_walker.get_heap().ProcessHeapsListIndex, heap_addr)
             walker = self._heap_finder.get_heap_walker(heap)
             for x, s in walker._get_freelists():
                 m = self._memory_handler.get_mapping_for_address(x)
@@ -104,7 +104,6 @@ class TestWin7HeapWalker(unittest.TestCase):
         walkers = finder.list_heap_walkers()
         self.assertEquals(len(walkers), len(putty_1_win7.known_heaps))
         for i, walker in enumerate(walkers):
-            # print '%d @%0.8x'%(finder._read_heap(m).ProcessHeapsListIndex, m.start)
             self.assertEquals(walker.get_heap().ProcessHeapsListIndex, i + 1, 'ProcessHeaps should have correct indexes')
         return
 
@@ -151,6 +150,8 @@ class TestWin7HeapWalker(unittest.TestCase):
                         'UnusedBytes == 0x5, SegmentOffset == %d' %
                         (st._0._1._0.SegmentOffset))
 
+                # FIXME, in child of 0x005c0000. LFH. What are the flags already ?
+                print hex(chunk_addr)
                 self.assertTrue(
                     st._0._1.UnusedBytes & 0x80,
                     'UnusedBytes said this is a BACKEND chunk , Flags | 2')

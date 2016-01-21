@@ -53,6 +53,7 @@ Signature: [0xffeeffee]
 LastValidEntry: IgnoreMember
 # 2015-09-09 from tests. Some old remnant have heap == 0 and signature == 0
 Heap: NotNull
+BaseAddress: NotNull
 #    ('Heap', POINTER_T(struct__HEAP)),
 #    ('BaseAddress', POINTER_T(None)),
 #    ('FirstEntry', POINTER_T(struct__HEAP_ENTRY)),

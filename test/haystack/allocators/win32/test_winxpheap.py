@@ -219,7 +219,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 '==== walking heap num: %0.2d @ %0.8x' %
                 (heap_walker.get_heap().ProcessHeapsListIndex, heap_addr))
             walker = self._heap_finder.get_heap_walker(heap)
-            for i, segment in enumerate(validator.get_segment_list(walker._heap)):
+            for i, segment in enumerate(validator.get_segment_list(walker.get_heap())):
                 s, e = segment.FirstEntry.value, segment.LastValidEntry.value
                 segments.append((s, e))
                 #ss = self.parser.parse(segment)
@@ -234,11 +234,12 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 # except when the segment is a secondary allocated segment for the heap
                 # in that case the BaseAddress is the segment itself
                 log.debug("HEAP: 0x%x SEGMENT:0x%x BaseAddress:0x%x", heap.start, segment._orig_address_, segment.BaseAddress.value)
+                self.assertNotEqual(segment.BaseAddress.value, 0)
                 self.assertTrue(segment.BaseAddress.value in [segment._orig_address_, heap.start])
             # in this heap
             # heap.LastSegmentIndex should be i
-            log.debug("HEAP.LastSegmentIndex: 0x%x SEGMENT i:0x%x", walker._heap.LastSegmentIndex, i)
-            self.assertEquals(walker._heap.LastSegmentIndex, i)
+            log.debug("HEAP.LastSegmentIndex: 0x%x SEGMENT i:0x%x", walker.get_heap().LastSegmentIndex, i)
+            self.assertEquals(walker.get_heap().LastSegmentIndex, i)
         segments.sort()
         self.assertEquals(segments, zeus_1668_vmtoolsd_exe.known_segments)
         return
