@@ -29,7 +29,7 @@ class ProcessContext(object):
         # init heaps
         self.__contextes = {}
         for walker in self.memory_handler.get_heap_finder().list_heap_walkers():
-            self.get_context_for_heap(walker)
+            self.get_context_for_heap_walker(walker)
         # init reversed types
         self.__reversed_types = {}
         self.__record_graph = None
@@ -82,22 +82,38 @@ class ProcessContext(object):
         dumpname = self.memory_handler.get_name()
         config.create_record_cache_folder(dumpname)
 
-    def _set_context_for_heap(self, walker, ctx):
+    def _set_context_for_heap_walker(self, walker, ctx):
         """Caches the HeapContext associated to a IHeapWalker"""
         self.__contextes[walker.get_heap_address()] = ctx
 
-    def get_context_for_heap(self, walker):
+    def get_context_for_heap_walker(self, walker):
         """Returns the HeapContext associated to a Heap represented by a HeapWalker"""
         if not isinstance(walker, interfaces.IHeapWalker):
             raise TypeError('heap should be a IHeapWalker')
         heap_address = walker.get_heap_address()
         if heap_address not in self.__contextes:
-            heap_context = self.make_context_for_heap(walker)
-            self._set_context_for_heap(walker, heap_context)
+            heap_context = self.make_context_for_heap_walker(walker)
+            self._set_context_for_heap_walker(walker, heap_context)
             return heap_context
         return self.__contextes[heap_address]
 
-    def make_context_for_heap(self, walker):
+    def get_context_for_address(self, address):
+        """
+        Returns the haystack.reverse.context.HeapContext of the process
+        for the HEAP that hosts this address
+        """
+        assert isinstance(address, long) or isinstance(address, int)
+        heap_mapping = self.memory_handler.get_mapping_for_address(address)
+        if not heap_mapping:
+            raise ValueError("Invalid address: 0x%x", address)
+        finder = self.memory_handler.get_heap_finder()
+        walker = finder.get_heap_walker(heap_mapping)
+        if not walker:
+            raise ValueError("Address is not in heap: 0x%x", address)
+        heap_context = self.get_context_for_heap_walker(walker)
+        return heap_context
+
+    def make_context_for_heap_walker(self, walker):
         """
         Make the HeapContext for this heap walker.
         This will reverse all user allocations from this HEAP into records.
@@ -183,8 +199,7 @@ class ProcessContext(object):
             if label[-1] == 'L':
                 label = label[:-1]
             record_addr = int(label, 16)
-            heap = self.memory_handler.get_mapping_for_address(record_addr)
-            heap_context = self.get_context_for_heap(heap)
+            heap_context = self.get_context_for_address(record_addr)
             records.append(heap_context.get_record_for_address(record_addr))
         return records
 
@@ -497,31 +512,24 @@ class HeapContext(object):
         tf = time.time()
         log.info('\t[.] saved in %2.2f secs' % (tf - t0))
 
+    def stats(self):
+        return "chunks:%d" % len(self._structures_addresses)
+
 
 def get_context_for_address(memory_handler, address):
     """
     Returns the haystack.reverse.context.HeapContext of the process
     for the HEAP that hosts this address
     """
-    assert isinstance(address, long) or isinstance(address, int)
-    mmap = memory_handler.get_mapping_for_address(address)
-    if not mmap:
-        raise ValueError("Invalid address: 0x%x", address)
-    finder = memory_handler.get_heap_finder()
-    if mmap not in finder.list_heap_walkers():
-        # addr is not a heap addr,
-        found = False
-        # or its in a child heap (win7)
-        for h in finder.list_heap_walkers():
-            # FIXME : use a get_children or something
-            # winHeapwalker.get_heap_children_mmaps
-            if hasattr(h, '_children'):
-                if mmap in h._children:
-                    found = True
-                    mmap = h
-                    break
-        if not found:
-            raise ValueError("Address is not in heap: 0x%x", address)
-    _context = memory_handler.get_reverse_context()
-    heap_context = _context.get_context_for_heap(mmap)
-    return heap_context
+    return memory_handler.get_reverse_context().get_context_for_address(address)
+    #assert isinstance(address, long) or isinstance(address, int)
+    #heap_mapping = memory_handler.get_mapping_for_address(address)
+    #if not heap_mapping:
+    #    raise ValueError("Invalid address: 0x%x", address)
+    #finder = memory_handler.get_heap_finder()
+    # walker = finder.get_heap_walker(heap_mapping)
+    # if not walker:
+    #    raise ValueError("Address is not in heap: 0x%x", address)
+    # _context = memory_handler.get_reverse_context()
+    # heap_context = _context.get_context_for_heap_walker(walker)
+    # return heap_context

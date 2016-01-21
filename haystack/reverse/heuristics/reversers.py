@@ -354,8 +354,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
 
         # use member[1] instead of head, so that we have a better chance for field types.
         # in head, back pointer is probably a zero value, not a pointer field type.
-        heap = self._memory_handler.get_mapping_for_address(best_member)
-        _context = self._process_context.get_context_for_heap(heap)
+        _context = self._process_context.get_context_for_address(best_member)
         _record = _context.get_record_for_address(best_member)
         # we need two pointer fields to create a substructure.
         ## Check if field at offset is a pointer, If so change it name, otherwise split
@@ -384,8 +383,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
 
         # apply the fields template to all members of the list
         for list_item_addr in _members:
-            heap = self._memory_handler.get_mapping_for_address(list_item_addr)
-            _context = self._process_context.get_context_for_heap(heap)
+            _context = self._process_context.get_context_for_address(list_item_addr)
             _item = _context.get_record_for_address(list_item_addr)
             ### KEEP THIS
             if len(_item) != len(_record):
@@ -398,8 +396,7 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         rev_context.add_reversed_type(_record_type, _members)
 
         # change the list_head name back
-        heap = self._memory_handler.get_mapping_for_address(head_addr)
-        _context = self._process_context.get_context_for_heap(heap)
+        _context = self._process_context.get_context_for_address(head_addr)
         _context.get_record_for_address(head_addr).set_name('list_head')
         return _record_type
 

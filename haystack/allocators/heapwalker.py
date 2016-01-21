@@ -75,12 +75,12 @@ class HeapFinder(interfaces.IHeapFinder):
         self._heap_walkers = None
         self._heap_walkers_dict = None
 
-    def get_heap_walker(self, heap):
-        if not isinstance(heap, interfaces.IMemoryMapping):
+    def get_heap_walker(self, mapping):
+        if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
         if not self._heap_walkers_dict:
             self.list_heap_walkers()
-        walker = self._heap_walkers_dict[heap.start]
+        walker = self._heap_walkers_dict[mapping.start]
         return walker
 
     def list_heap_walkers(self):

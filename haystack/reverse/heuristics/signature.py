@@ -114,8 +114,7 @@ class CommonTypeReverser(model.AbstractReverser):
         process_context = self._memory_handler.get_reverse_context()
         # organise the list
         for record_addr in self._members:
-            heap = self._memory_handler.get_mapping_for_address(record_addr)
-            heap_context = process_context.get_context_for_heap(heap)
+            heap_context = process_context.get_context_for_adress(record_addr)
             if heap_context not in self._members_by_context:
                 self._members_by_context[heap_context] = []
             self._members_by_context[heap_context].append(record_addr)

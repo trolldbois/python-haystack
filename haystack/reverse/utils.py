@@ -149,7 +149,7 @@ def cache_get_user_allocations(ctx, heap_walker):
         # in case of a pointer ( bad allocation ) out of a mmapping space.
         # But that is not possible, because we are reporting factual reference to existing address space.
         # OK. heap.start should be deleted from the cache name.
-        allocations = heap_walker.get_user_allocations()
+        allocations = sorted(heap_walker.get_user_allocations())
         if len(allocations) == 0:
             return [],[]
         addrs, sizes = zip(*allocations)

@@ -22,8 +22,7 @@ class ConstraintsReverser(object):
     def activate(self, _record_type, members):
         # apply the fields template to all members of the list
         for list_item_addr in members:
-            heap = self.__memory_handler.get_mapping_for_address(list_item_addr)
-            _context = self.__process_context.get_context_for_heap(heap)
+            _context = self.__process_context.get_context_for_address(list_item_addr)
             _item = _context.get_record_for_address(list_item_addr)
             _item.set_record_type(_record_type, True)
 
@@ -37,8 +36,7 @@ class ConstraintsReverser(object):
         lines = []
         # try to apply the fields template to all members of the list
         for list_item_addr in members:
-            heap = self.__memory_handler.get_mapping_for_address(list_item_addr)
-            _context = self.__process_context.get_context_for_heap(heap)
+            _context = self.__process_context.get_context_for_address(list_item_addr)
             _item = _context.get_record_for_address(list_item_addr)
             new_record = structure.AnonymousRecord(self.__memory_handler, _item.address, len(_item), prefix=None)
             new_record.set_record_type(_record_type, True)

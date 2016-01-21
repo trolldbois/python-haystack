@@ -97,8 +97,7 @@ class TestDoubleLinkedReverser(SrcTests):
         mid_addr = self.offsets['mid_list'][0]
         end_addr = self.offsets['end_list'][0]
 
-        heap = self.memory_handler.get_mapping_for_address(start_addr)
-        heap_context = process_context.get_context_for_heap(heap)
+        heap_context = process_context.get_context_for_address(start_addr)
         self.assertIsNotNone(heap_context)
 
         start = heap_context.get_record_for_address(start_addr)
@@ -192,8 +191,7 @@ class TestDoubleLinkedReverser(SrcTests):
         first_addr = self.offsets['head_first_item'][0]
         last_addr = self.offsets['head_last_item'][0]
 
-        heap = self.memory_handler.get_mapping_for_address(head_addr)
-        heap_context = process_context.get_context_for_heap(heap)
+        heap_context = process_context.get_context_for_address(head_addr)
         self.assertIsNotNone(heap_context)
 
         head = heap_context.get_record_for_address(head_addr)
@@ -264,8 +262,7 @@ class TestDoubleLinkedReverser(SrcTests):
         first_addr = self.offsets['head_loop_first_item'][0]
         last_addr = self.offsets['head_loop_last_item'][0]
 
-        heap = self.memory_handler.get_mapping_for_address(head_addr)
-        heap_context = process_context.get_context_for_heap(heap)
+        heap_context = process_context.get_context_for_address(head_addr)
         self.assertIsNotNone(heap_context)
 
         head = heap_context.get_record_for_address(head_addr)
@@ -302,8 +299,7 @@ class TestDoubleLinkedReverser(SrcTests):
         first_addr = self.offsets['loop_first_item'][0]
         last_addr = self.offsets['loop_last_item'][0]
 
-        heap = self.memory_handler.get_mapping_for_address(head_addr)
-        heap_context = process_context.get_context_for_heap(heap)
+        heap_context = process_context.get_context_for_address(head_addr)
         self.assertIsNotNone(heap_context)
 
         head = heap_context.get_record_for_address(head_addr)
