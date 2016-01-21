@@ -16,7 +16,7 @@ class TestCopyModule(unittest.TestCase):
     def setUpClass(cls):
         cls.memory_handler = process.make_local_memory_handler()
         cls.my_target = cls.memory_handler.get_target_platform()
-        cls.my_model = model.Model(cls.memory_handler)
+        cls.my_model = model.Model(cls.my_target.get_target_ctypes())
 
     @classmethod
     def tearDownClass(cls):

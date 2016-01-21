@@ -30,7 +30,7 @@ Its intended to be retrofittable with ptrace's memory _memory_handler.
 import logging
 
 # haystack
-from haystack import target
+from haystack import utils
 from haystack import model
 from haystack.abc import interfaces
 from haystack.allocators import heapwalker
@@ -90,6 +90,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
 
     def set_ctypes(self, _ctypes):
         self._ctypes = _ctypes
+        self._utils = utils.Utils(_ctypes)
 
     def __contains__(self, address):
         return self.start <= address < self.end

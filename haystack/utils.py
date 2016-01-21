@@ -210,6 +210,8 @@ class Utils(interfaces.ICTypesUtils):
             return cls._subtype_
         return cls._type_
 
+    def get_word_size(self):
+        return self._ctypes.sizeof(self._ctypes.c_void_p)
 
 try:
     # Python 2

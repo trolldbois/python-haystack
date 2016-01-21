@@ -87,10 +87,10 @@ class LibcHeapValidator(listmodel.ListModel):
         pass
 
     def get_mem_addr(self, orig_addr):
-        return orig_addr + 2 * self._target.get_word_size()
+        return orig_addr + 2 * self._utils.get_word_size()
 
     def get_mem_size(self, record):
-        return self.real_size(record) - self._target.get_word_size()
+        return self.real_size(record) - self._utils.get_word_size()
 
     def real_size(self, record):
         return (record.size & ~SIZE_BITS)
@@ -108,7 +108,7 @@ class LibcHeapValidator(listmodel.ListModel):
         """extract p's inuse bit
         doesnt not work on the top one
         """
-        next_addr = self.next_addr(record, orig_addr) + self._target.get_word_size()
+        next_addr = self.next_addr(record, orig_addr) + self._utils.get_word_size()
         mmap = self._memory_handler.is_valid_address_value(next_addr)
         if not mmap:
             return 0
@@ -143,7 +143,7 @@ class LibcHeapValidator(listmodel.ListModel):
         #    return False
         log.debug('is chunk in use ?: %s' % bool(inuse))
 
-        if real_size % self._target.get_word_size() != 0:
+        if real_size % self._utils.get_word_size() != 0:
             # not a good value
             log.debug('real_size is not a WORD SIZE moduli')
             return False

@@ -69,10 +69,8 @@ class LocalMemoryMapping(AMemoryMapping):
             minor_device,
             inode,
             pathname)
-        self._local_mmap = (
-            ctypes.c_ubyte *
-            len(self)).from_address(
-            int(address))  # DEBUG TODO byte or ubyte
+        # DEBUG TODO byte or ubyte
+        self._local_mmap = (ctypes.c_ubyte * len(self)).from_address(int(address))
         self._address = ctypes.addressof(self._local_mmap)
         self._bytebuffer = None
 
@@ -90,8 +88,9 @@ class LocalMemoryMapping(AMemoryMapping):
     def read_word(self, vaddr):
         """Address have to be aligned!"""
         laddr = self._vtop(vaddr)
-        word = self._target_platform.get_word_type().from_address(
-            long(laddr)).value  # is non-aligned a pb ?, indianess is at risk
+        # word = self._target_platform.get_word_type().from_address(long(laddr)).value
+        word = self._ctypes.c_ulong.from_address(long(laddr)).value
+        # is non-aligned a pb ?, indianess is at risk
         return word
 
     def _read_bytes(self, vaddr, size):
@@ -137,6 +136,7 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
+        el.set_ctypes(memoryMapping._ctypes)
         return el
 
     @classmethod
@@ -146,6 +146,7 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
+        el.set_ctypes(memoryMapping._ctypes)
         el.content_array_save_me_from_gc = content_array
         return el
 

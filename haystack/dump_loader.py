@@ -25,12 +25,12 @@ import zipfile  # relatively useless
 import os
 
 import haystack
+from haystack import types
 from haystack.abc import interfaces
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import FilenameBackedMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
-from haystack.mappings.file import MemoryDumpMemoryMapping
 from haystack.target import TargetPlatform
 
 __author__ = "Loic Jaquemet"
@@ -165,9 +165,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             log.debug('Loading %s - %s' % (mmap_fname, mmap_pathname))
             # open the file in the archive
             try:
-                mmap_content_file = self._protected_open_file(
-                    mmap_fname,
-                    mmap_pathname)
+                mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
             except (IOError, KeyError) as e:
                 log.debug('Ignore absent file : %s' % (e))
                 mmap = AMemoryMapping(start, end, permissions, offset,
@@ -248,6 +246,7 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
     def _load_memory_mappings(self):
         """ make the python objects"""
         _mappings = []
+        default_ctypes = types.load_ctypes_default()
         for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
             start, end = int(_start, 16), int(_end, 16)
             offset = int(offset, 16)
@@ -263,6 +262,7 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
             fname = os.path.sep.join([self.dumpname, mmap_fname])
             mmap = FilenameBackedMemoryMapping(fname, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
+            mmap.set_ctypes(default_ctypes)
             _mappings.append(mmap)
         _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
         self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
@@ -280,9 +280,10 @@ def load(dumpname, cpu=None, os_name=None):
         # try minidump
         from haystack.mappings import minidump
         mapper = minidump.MDMP_Mapper(dumpname, cpu=cpu, os_name=os_name)
-    log.debug('%d dump file loaded' % len(mapper.make_memory_handler()))
+    memory_handler = mapper.make_memory_handler()
+    log.debug('%d dump file loaded' % len(memory_handler))
     # excep mmap.error - to much openfile - increase ulimit
-    return mapper.make_memory_handler()
+    return memory_handler
 
 
 

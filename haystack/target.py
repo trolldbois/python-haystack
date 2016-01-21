@@ -73,9 +73,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
         elif self.get_word_size() == 8:
             return self.__ctypes_proxy.c_uint64
         else:
-            raise ValueError(
-                'platform not supported for word size == %d' %
-                (self.get_word_size()))
+            raise ValueError('platform not supported for word size == %d' % (self.get_word_size()))
 
     def get_word_type_char(self):
         if self.get_word_size() == 4:
@@ -198,7 +196,6 @@ class TargetPlatform(interfaces.ITargetPlatform):
             except Exception as e:
                 log.debug('read_bytes failed '+ str(e))
                 raise e
-                continue
             x = struct_Elf_Ehdr.from_buffer_copy(head)
             log.debug('MACHINE:%s pathname:%s' % (x.e_machine, m.pathname))
             if x.e_machine == 3:

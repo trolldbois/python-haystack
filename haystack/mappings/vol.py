@@ -43,7 +43,7 @@ class VolatilityProcessMappingA(AMemoryMapping):
         self._backend = address_space
 
     def read_word(self, addr):
-        ws = self._target_platform.get_word_size()
+        ws = self._utils.get_word_size()
         data = self._backend.zread(addr, ws)
         if ws == 4:
             return struct.unpack('I', data)[0]
@@ -54,13 +54,13 @@ class VolatilityProcessMappingA(AMemoryMapping):
         return self._backend.zread(addr, size)
 
     def read_struct(self, addr, struct):
-        size = self._target_platform.get_target_ctypes().sizeof(struct)
+        size = self._ctypes.sizeof(struct)
         instance = struct.from_buffer_copy(self._backend.zread(addr, size))
         instance._orig_address_ = addr
         return instance
 
     def read_array(self, addr, basetype, count):
-        size = self._target_platform.get_target_ctypes().sizeof(basetype * count)
+        size = self._ctypes.sizeof(basetype * count)
         array = (
             basetype *
             count).from_buffer_copy(
