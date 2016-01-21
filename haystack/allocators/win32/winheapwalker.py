@@ -24,7 +24,6 @@ class WinHeapWalker(heapwalker.HeapWalker):
     """
 
     def _init_heap(self):
-        self._heap = self._heap_mapping.read_struct(self._address, self._heap_module.HEAP)
         log.debug('+ Heap @%0.8x size: %d # %s',self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
         # placeholders
         self._allocs = None
@@ -45,7 +44,8 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def get_heap(self):
         """ return the ctypes heap struct mapped at address on the mapping"""
-        return self._heap
+        # no cache, no segfault.
+        return self._heap_mapping.read_struct(self._address, self._heap_module.HEAP)
 
     def get_heap_validator(self):
         return self._validator
@@ -209,6 +209,31 @@ class WinHeapWalker(heapwalker.HeapWalker):
         log.debug('+ freeLists: nb_free_chunk:0x%0.4x total_size:0x%0.5x', len(free_lists), freesize)
         return free_lists
 
+    def list_used_mappings(self):
+        """
+        A Windows heap is composed of segments
+        Segment cover multiple mappings, with UCR being gaps between mappings.
+        We return the list of mappings in this memory_handler that are used by this heap
+        :return:
+        """
+        boundaries = []
+        for segment in self._validator.get_segment_list(self.get_heap()):
+            start = segment._orig_address_
+            end = self._target.get_target_ctypes_utils().get_pointee_address(segment.LastValidEntry)
+            boundaries.append((start, end))
+        # look at all mappings
+        used = []
+        for m in self._memory_handler.get_mappings():
+            for start, end in boundaries:
+                if m.start <= start < m.end:
+                    # corner case. Segment.start is at an offset
+                    used.append(m)
+                    break
+                elif start <= m.start < end:
+                    used.append(m)
+                    break
+        return used
+
 
 class WinHeapFinder(heapwalker.HeapFinder):
 
@@ -294,3 +319,29 @@ class WinHeapFinder(heapwalker.HeapFinder):
         log.debug("_search_heap_direct in %s", start_address_mapping)
         results = my_searcher._load_at(heap, start_address_mapping, heap_module.HEAP, depth=5)
         return results
+
+    def list_heap_walkers(self):
+        """
+        return the list of heaps that load as heaps
+        Take into account the fact that Segment and mappings exists
+        """
+        if not self._heap_walkers:
+            self._heap_walkers = []
+            self._heap_walkers_dict = dict()
+            for mapping in self._memory_handler:
+                walker = self._find_heap(mapping)
+                if walker:
+                    self._heap_walkers.append(walker)
+                    self._heap_walkers_dict[mapping.start] = walker
+                    self._heap_walkers_dict[walker.get_heap_address()] = walker
+            # sort the list
+            self._heap_walkers.sort(key=lambda walker: walker.get_heap_address())
+            # now look at segment & all used mappings.
+            for walker in self._heap_walkers:
+                # for all 'child' mapping used by a segment of thisHEAP
+                for m in walker.list_used_mappings():
+                    if m.start not in self._heap_walkers_dict:
+                        # point this mapping to the Root Heap walker
+                        self._heap_walkers_dict[m.start] = walker
+                pass
+        return self._heap_walkers

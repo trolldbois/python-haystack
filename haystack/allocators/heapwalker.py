@@ -72,30 +72,31 @@ class HeapFinder(interfaces.IHeapFinder):
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
         # optimisations
-        self._optim_heaps = None
-        self._optim_heaps_dict = None
+        self._heap_walkers = None
+        self._heap_walkers_dict = None
 
     def get_heap_walker(self, heap):
         if not isinstance(heap, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
-        if not self._optim_heaps_dict:
+        if not self._heap_walkers_dict:
             self.list_heap_walkers()
-        walker = self._optim_heaps_dict[heap.start]
+        walker = self._heap_walkers_dict[heap.start]
         return walker
 
     def list_heap_walkers(self):
         """return the list of heaps that load as heaps"""
-        if not self._optim_heaps:
-            self._optim_heaps = []
+        if not self._heap_walkers:
+            self._heap_walkers = []
             for mapping in self._memory_handler:
                 walker = self._find_heap(mapping)
                 if walker:
-                    self._optim_heaps.append(walker)
+                    self._heap_walkers.append(walker)
             # sort the list
-            self._optim_heaps.sort(key=lambda walker: walker.get_heap_address())
+            self._heap_walkers.sort(key=lambda walker: walker.get_heap_address())
             # FIXME, so do we have heaps in the middle of a mapping or not ?
-            self._optim_heaps_dict = dict([(w.get_heap_address(), w) for w in self._optim_heaps])
-        return self._optim_heaps
+            # FIXME: what about segments
+            self._heap_walkers_dict = dict([(w.get_heap_address(), w) for w in self._heap_walkers])
+        return self._heap_walkers
 
     def search_heap_direct(self, start_address_mapping):
         """

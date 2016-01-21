@@ -28,8 +28,8 @@ class ProcessContext(object):
         self.memory_handler = memory_handler
         # init heaps
         self.__contextes = {}
-        for heap in self.memory_handler.get_heap_finder().list_heap_walkers():
-            self.get_context_for_heap(heap)
+        for walker in self.memory_handler.get_heap_finder().list_heap_walkers():
+            self.get_context_for_heap(walker)
         # init reversed types
         self.__reversed_types = {}
         self.__record_graph = None
@@ -82,35 +82,35 @@ class ProcessContext(object):
         dumpname = self.memory_handler.get_name()
         config.create_record_cache_folder(dumpname)
 
-    def _set_context_for_heap(self, mmap, ctx):
-        """Caches the HeapContext associated to a IMemoryMapping"""
-        self.__contextes[mmap.get_marked_heap_address()] = ctx
+    def _set_context_for_heap(self, walker, ctx):
+        """Caches the HeapContext associated to a IHeapWalker"""
+        self.__contextes[walker.get_heap_address()] = ctx
 
-    def get_context_for_heap(self, heap):
-        """Returns the HeapContext associated to a IMemoryMapping"""
-        if not isinstance(heap, interfaces.IMemoryMapping):
-            raise TypeError('heap should be a IMemoryMapping')
-        if not heap.is_marked_as_heap():
-            raise TypeError('heap should be a heap: %s', heap)
-        if heap.get_marked_heap_address() not in self.__contextes:
-            heap_context = self.make_context_for_heap(heap)
-            self._set_context_for_heap(heap, heap_context)
+    def get_context_for_heap(self, walker):
+        """Returns the HeapContext associated to a Heap represented by a HeapWalker"""
+        if not isinstance(walker, interfaces.IHeapWalker):
+            raise TypeError('heap should be a IHeapWalker')
+        heap_address = walker.get_heap_address()
+        if heap_address not in self.__contextes:
+            heap_context = self.make_context_for_heap(walker)
+            self._set_context_for_heap(walker, heap_context)
             return heap_context
-        return self.__contextes[heap.get_marked_heap_address()]
+        return self.__contextes[heap_address]
 
-    def make_context_for_heap(self, heap):
+    def make_context_for_heap(self, walker):
         """
-        Make the HeapContext for this heap.
+        Make the HeapContext for this heap walker.
         This will reverse all user allocations from this HEAP into records.
         """
-        heap_addr = heap.get_marked_heap_address()
+        heap_addr = walker.get_heap_address()
         try:
             ctx = HeapContext.cacheLoad(self.memory_handler, heap_addr)
             log.debug("Cache avoided HeapContext initialisation")
         except IOError as e:
             # heaps are already generated at initialisation of self
-            heap = self.memory_handler.get_mapping_for_address(heap_addr)
-            ctx = HeapContext(self.memory_handler, heap)
+            mapping = self.memory_handler.get_mapping_for_address(heap_addr)
+            walker = self.memory_handler.get_heap_finder().get_heap_walker(mapping)
+            ctx = HeapContext(self.memory_handler, walker)
         return ctx
 
     def list_contextes(self):
@@ -199,13 +199,19 @@ class HeapContext(object):
     The context contains cache helpers around the reversing of records.
     """
 
-    def __init__(self, memory_handler, heap):
+    def __init__(self, memory_handler, walker):
+        """
+
+        :param memory_handler: IMemoryHandler
+        :param walker: IHeapWalker
+        :return:
+        """
         self.memory_handler = memory_handler
         # cache it
         ### memory_handler.set_context_for_heap(heap, self)
         self.dumpname = memory_handler.get_name()
-        self.heap = heap
-        self._heap_start = heap.start
+        self.walker = walker
+        self._heap_start = walker.get_heap_address()
         self._function_names = dict()
         # refresh heap pointers list and allocators chunks
         self._reversedTypes = dict()
@@ -214,26 +220,30 @@ class HeapContext(object):
         return
 
     def _init2(self):
-        log.debug('[+] HeapContext on heap 0x%x', self.heap.get_marked_heap_address())
+        log.debug('[+] HeapContext on heap 0x%x', self._heap_start)
         # Check that cache folder exists
         config.create_cache_folder(self.dumpname)
 
         # we need a heap walker to parse all allocations
-        finder = self.memory_handler.get_heap_finder()
-        heap_walker = finder.get_heap_walker(self.heap)
-
         log.debug('[+] Searching pointers in heap')
         # get all pointers found in from allocated space.
-        all_offsets, all_values = self.get_heap_pointers_from_allocated(heap_walker)
+        all_offsets, all_values = self.get_heap_pointers_from_allocated(self.walker)
         self._pointers_values = all_values
         self._pointers_offsets = all_offsets
 
         log.debug('[+] Gathering allocated heap chunks')
-        res = utils.cache_get_user_allocations(self, heap_walker)
+        res = utils.cache_get_user_allocations(self, self.walker)
         self._structures_addresses, self._structures_sizes = res
 
         # clean a bit the open fd's
+        self.walker = None
         self.memory_handler.reset_mappings()
+        # CAUTION: all heap walker, mappings are resetted.
+        # Segmentation Fault will ensue if we don't restore heap walkers.
+        heap_mapping = self.memory_handler.get_mapping_for_address(self._heap_start)
+        finder = self.memory_handler.get_heap_finder()
+        self.walker = finder.get_heap_walker(heap_mapping)
+
 
         #if self.memory_handler.get_target_platform().get_os_name() not in ['winxp', 'win7']:
         #    log.info('[+] Reversing function pointers names')

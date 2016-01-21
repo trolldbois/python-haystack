@@ -599,8 +599,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             raise TypeError('Feed me a ctypes record instance')
         if max_depth <= 0:
             log.debug('Maximum depth reach. Not loading any deeper members.')
-            log.debug('Struct partially LOADED. %s not loaded',
-                record.__class__.__name__)
+            log.debug('Struct partially LOADED. %s not loaded', record.__class__.__name__)
             return True
         if max_depth > 100:
             raise RuntimeError('max_depth')

@@ -35,6 +35,7 @@ class TestReverseApi(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    logging.getLogger("listmodel").setLevel(logging.DEBUG)
     # logging.getLogger("reversers").setLevel(logging.DEBUG)
     # logging.getLogger("signature").setLevel(logging.DEBUG)
     # logging.getLogger("test_reversers").setLevel(logging.DEBUG)

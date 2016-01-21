@@ -270,6 +270,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         Temporarly closes all file used by this handler.
         :return:
         """
+        log.debug('reset_mappings')
         # clean the book
         self.__book = _book()
         # reset the mappings
