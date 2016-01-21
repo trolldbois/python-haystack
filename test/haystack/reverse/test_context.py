@@ -37,9 +37,8 @@ class TestMappingsLinux(SrcTests):
         with self.assertRaises(ValueError):
             context.get_context_for_address(self.memory_handler, 0xb76e12d3)
         # [heap]
-        self.assertEquals(
-            context.get_context_for_address(self.memory_handler, 0xb84e02d3).heap,
-            self.memory_handler.get_mapping_for_address(0xb84e02d3))
+        heap_address = context.get_context_for_address(self.memory_handler, 0xb84e02d3)._heap_start
+        self.assertEquals(heap_address, self.memory_handler.get_mapping_for_address(0xb84e02d3).start)
 
 
 class TestMappingsWindows(SrcTests):
@@ -70,12 +69,10 @@ class TestMappingsWindows(SrcTests):
         with self.assertRaises(ValueError):
             context.get_context_for_address(self.memory_handler, 0xb76e12d3)
         #[heap] children
-        self.assertEquals(
-            context.get_context_for_address(self.memory_handler, 0x0062d000).heap,
-            self.memory_handler.get_mapping_for_address(0x005c0000))
-        self.assertEquals(
-            context.get_context_for_address(self.memory_handler, 0x0063e123).heap,
-            self.memory_handler.get_mapping_for_address(0x005c0000))
+        heap_address = context.get_context_for_address(self.memory_handler, 0x0062d000)._heap_start
+        self.assertEquals(heap_address, self.memory_handler.get_mapping_for_address(0x005c0000).start)
+        heap_address = context.get_context_for_address(self.memory_handler, 0x0063e123)._heap_start
+        self.assertEquals(heap_address,self.memory_handler.get_mapping_for_address(0x005c0000).start)
 
 
 class TestProcessContext(unittest.TestCase):
