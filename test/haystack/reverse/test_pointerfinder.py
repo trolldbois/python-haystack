@@ -18,7 +18,6 @@ from haystack.reverse import searchers
 import test_pattern
 
 from test.testfiles import zeus_856_svchost_exe
-from test.testfiles import putty_1_win7
 
 import timeit
 import logging
@@ -55,8 +54,8 @@ class TestPointer(test_pattern.SignatureTests):
                                intervals, self.word_size)
         # add a reference to mmap in mmap2
         ammap2 = AMemoryMapping(0xff7dc000, 0xff7dc000+0x1000, '-rwx', 0, 0, 0, 0, 'test_mmap2')
+        ammap2.set_ctypes(self.target.get_target_ctypes())
         mmap2 = LocalMemoryMapping.fromBytebuffer(ammap2, mmap.get_byte_buffer())
-        mmap2.set_target_platform(self.target)
         self._memory_handler = MemoryHandler([mmap, mmap2], self.target, 'test')
         self.mmap2 = mmap2
         return mmap, values
@@ -124,12 +123,10 @@ class TestPointerEnumeratorReal(unittest.TestCase):
 
     def setUp(self):
         self._heap_finder = self._memory_handler.get_heap_finder()
-        self._validator = self._heap_finder.get_heap_validator()
         return
 
     def tearDown(self):
         self._heap_finder = None
-        self._validator = None
         return
 
     def _stats(self, heap_addrs):
