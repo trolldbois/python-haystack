@@ -26,26 +26,26 @@ class TestLibcHeapFinder(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_get_heap_mappings(self):
+    def test_list_heap_walkers(self):
         memory_handler = dump_loader.load('test/src/test-ctypes1.64.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.list_heap_walkers()
-        self.assertEqual(len(mappings), 1)
-        self.assertEqual(mappings[0].pathname, '[heap]')
+        walkers = heap_finder.list_heap_walkers()
+        self.assertEqual(len(walkers), 1)
+        self.assertEqual(walkers[0].get_heap_mapping().pathname, '[heap]')
         memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.list_heap_walkers()
-        self.assertEqual(len(mappings), 1)
-        self.assertEqual(mappings[0].pathname, '[heap]')
+        walkers = heap_finder.list_heap_walkers()
+        self.assertEqual(len(walkers), 1)
+        self.assertEqual(walkers[0].get_heap_mapping().pathname, '[heap]')
         memory_handler.reset_mappings()
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.list_heap_walkers()
-        self.assertEqual(len(mappings), 1)
-        self.assertEqual(mappings[0].pathname, '[heap]')
+        walkers = heap_finder.list_heap_walkers()
+        self.assertEqual(len(walkers), 1)
+        self.assertEqual(walkers[0].get_heap_mapping().pathname, '[heap]')
         memory_handler.reset_mappings()
 
 
@@ -54,14 +54,14 @@ class TestLibcHeapWalker(unittest.TestCase):
     def setUp(self):
         self.memory_handler = dump_loader.load('test/src/test-ctypes6.64.dump')
         self.heap_finder = self.memory_handler.get_heap_finder()
-        self.mappings = self.heap_finder.list_heap_walkers()
-        self.walker = self.heap_finder.get_heap_walker(self.mappings[0])
+        self.walkers = self.heap_finder.list_heap_walkers()
+        self.walker = self.walkers[0]
 
     def tearDown(self):
         self.memory_handler.reset_mappings()
         self.memory_handler = None
         self.heap_finder = None
-        self.mappings = None
+        self.walkers = None
 
     def test_get_heap_walker(self):
         self.assertIn('malloc_chunk', self.walker._heap_module.__dict__.keys())
@@ -86,12 +86,10 @@ class TestLibcHeapWalkerBigger(unittest.TestCase):
         """ Count all user allocations and free chunks (10 sec)"""
         memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
         heap_finder = memory_handler.get_heap_finder()
-        mappings = heap_finder.list_heap_walkers()
-        heaps = heap_finder.list_heap_walkers()
-        self.assertEquals(len(heaps), 1)
-        heap = heaps[0]
-        self.assertTrue(heap_finder._is_heap(heap, heap.start))
         #
+        walkers = heap_finder.list_heap_walkers()
+        self.assertEquals(len(walkers), 1)
+        heap = walkers[0].get_heap_mapping()
         walker = heap_finder.get_heap_walker(heap)
         # test the number of allocations
         allocs = walker.get_user_allocations()

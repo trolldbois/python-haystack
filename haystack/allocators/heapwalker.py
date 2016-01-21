@@ -41,6 +41,10 @@ class HeapWalker(interfaces.IHeapWalker):
         """ return the ctypes heap struct mapped at address on the mapping"""
         raise NotImplementedError('Please implement all methods')
 
+    def get_heap_mapping(self):
+        """ return the mapping containing the root HEAP record"""
+        return self._heap_mapping
+
     def get_heap_validator(self):
         """ return the validator """
         raise NotImplementedError('Please implement all methods')
