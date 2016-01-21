@@ -456,7 +456,7 @@ class WinHeapValidator(listmodel.ListModel):
         print '[+] ', m
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(m)
-        children = walker.get_heap_children_mmaps()
+        children = walker.list_used_mappings()
 
         # get allocated/free stats by mappings
         overhead_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)

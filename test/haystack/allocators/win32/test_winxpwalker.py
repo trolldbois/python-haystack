@@ -69,7 +69,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 heap_sums[m].append((x, s))
             #self.assertEquals( free_size, walker.HEAP().TotalFreeSize)
             # save mmap hierarchy
-            child_heaps[heap] = walker.get_heap_children_mmaps()
+            child_heaps[heap] = walker.list_used_mappings()
 
         # calcul cumulates
         for heap, children in child_heaps.items():
@@ -136,7 +136,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         for heap in [heap]:
             allocs = list()
             walker = finder.get_heap_walker(heap)
-            heap_children = walker.get_heap_children_mmaps()
+            heap_children = walker.list_used_mappings()
             committed, free = walker._get_frontend_chunks()
             # page 37
             # each UserBlock contain a 8 byte header ( first 4 encoded )
@@ -243,7 +243,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
             ##self.assertEquals(mapping, m)
             # actually valid, if m is a children of mapping
             if m != mapping:
-                self.assertIn(m, walker.get_heap_children_mmaps())
+                self.assertIn(m, walker.list_used_mappings())
 
     def assertMappingHierarchy(self, child, parent, comment=None):
         self.assertIn(child, self._heapChildren[parent], comment)

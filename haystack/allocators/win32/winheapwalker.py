@@ -146,27 +146,6 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 print self._heap_mapping
                 raise ValueError("chunk size cannot be negative: 0x%x %d" % (addr,size))
 
-    def get_heap_children_mmaps(self):
-        """ use backend heap chunks to establish the hierarchy between segment and mappings"""
-        if self._child_heaps is None:
-            child_heaps = set()
-            # check addresses of free chunks
-            for _addr, s in self.get_free_chunks():
-                m = self._memory_handler.get_mapping_for_address(_addr)
-                if (m != self._heap_mapping) and (m not in child_heaps):
-                    child_heaps.add(m)
-                    pass
-            # and of allocated / vallocs
-            for _addr, s in self.get_user_allocations():
-                m = self._memory_handler.get_mapping_for_address(_addr)
-                if (m != self._heap_mapping) and (m not in child_heaps):
-                    child_heaps.add(m)
-                    pass
-            self._child_heaps = list(child_heaps)
-        self._child_heaps.sort()
-        log.debug('get_heap_children_mmaps b')
-        return self._child_heaps
-
     def _get_virtualallocations(self):
         """ returns addr,size of committed,free vallocs heap entries"""
         if self._valloc_committed is None:
