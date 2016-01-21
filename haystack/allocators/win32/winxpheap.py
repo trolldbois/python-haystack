@@ -585,9 +585,9 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
                 #if freeblock.Size == 0:
                 #    import code
                 #    code.interact(local=locals())
-                res.append((freeblock._orig_address_, freeblock.Size * self._target.get_word_size()))
+                res.append((freeblock._orig_address_, freeblock.Size * self._word_size))
                 # DEBUG, _orig_address_ has weird addresses
-                log.debug('HEAP.FreeLists[%d][%d]: size:0x%x @0x%x', i, j, freeblock.Size * self._target.get_word_size(), freeblock._orig_address_)
+                log.debug('HEAP.FreeLists[%d][%d]: size:0x%x @0x%x', i, j, freeblock.Size * self._word_size, freeblock._orig_address_)
         return res
 
     def HEAP_ENTRY_decode(self, chunk_header, heap):

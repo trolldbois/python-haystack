@@ -148,7 +148,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
             # and frontendheap does not point to self mapping.
             # frontendheap is the LAL
             #
-            my_heap = self._heap_finder._read_heap(heap, heap_addr)
+            my_heap = heap_walker.get_heap()
 
             if False:
                 log.debug('==== walking heap num: %0.2d @ %0.8x', my_heap.ProcessHeapsListIndex, heap_addr)
@@ -217,7 +217,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
             validator = heap_walker.get_heap_validator()
             log.debug(
                 '==== walking heap num: %0.2d @ %0.8x' %
-                (self._heap_finder._read_heap(heap, heap_addr).ProcessHeapsListIndex, heap_addr))
+                (heap_walker.get_heap().ProcessHeapsListIndex, heap_addr))
             walker = self._heap_finder.get_heap_walker(heap)
             for i, segment in enumerate(validator.get_segment_list(walker._heap)):
                 s, e = segment.FirstEntry.value, segment.LastValidEntry.value

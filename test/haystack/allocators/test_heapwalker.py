@@ -160,7 +160,7 @@ class TestHeapFinder2(unittest.TestCase):
         self.assertEquals(heap_0.start, 0x005c0000)
         self.assertEquals(heap_0.pathname, 'None')
         buf = heap_0.read_bytes(heap_0.start, 500)
-        win7heap = self.finder.get_heap_module()
+        win7heap = walker._heap_module
         x = win7heap.HEAP.from_buffer_copy(buf)
         # print win7heap.HEAP.Signature
         # print repr(buf[100:104])

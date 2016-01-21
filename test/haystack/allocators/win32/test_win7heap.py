@@ -35,7 +35,7 @@ class TestWin7Heap(unittest.TestCase):
         walker = finder.get_heap_walker(mapping)
         win7heap = walker._heap_module
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
-        my_utils = self.memory_handler.get_target_platform().get_ctypes_utils()
+        my_utils = self.memory_handler.get_target_platform().get_target_ctypes_utils()
 
         self.assertEquals(my_ctypes.sizeof(win7heap.HEAP_SEGMENT), 64)
         self.assertEquals(my_ctypes.sizeof(win7heap.HEAP_ENTRY), 8)
