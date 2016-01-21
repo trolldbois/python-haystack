@@ -69,99 +69,44 @@ class HeapFinder(interfaces.IHeapFinder):
             raise TypeError('Feed me a IMemoryHandlerobject')
         self._memory_handler = memory_handler
         self._target = self._memory_handler.get_target_platform()
-        self._heap_module_name, self._heap_class_name, self._heap_constraint_filename = self._init()
-        self._heap_module = self._import_heap_module()
-        self._heap_module_constraints = self._load_heap_constraints()
-        self._heap_validation_depth = self._init_heap_validation_depth()
-        self._heap_type = self._init_heap_type()
         # optimisations
-        self.__optim_heaps = None
-
-    def _init(self):
-        """
-        Return the heap configuration information
-        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
-        """
-        raise NotImplementedError(self)
-
-    def _import_heap_module(self):
-        """
-        Load the module for this target arch
-        :return: module
-        """
-        heap_module = self._memory_handler.get_model().import_module(self._heap_module_name)
-        # FIXME, is that necessary for memory allocation structs ?
-        # not needed
-        # self._memory_handler.get_model().build_python_class_clones(heap_module)
-        return heap_module
-
-    def _load_heap_constraints(self):
-        """
-        Init the constraints on the heap module
-        :return:
-        """
-        parser = constraints.ConstraintsConfigHandler()
-        return parser.read(self._heap_constraint_filename)
-
-    def _init_heap_type(self):
-        """init the internal heap structure type
-        :rtype: ctypes heap structure type
-        """
-        return getattr(self._heap_module, self._heap_class_name)
-
-    def _init_heap_validation_depth(self):
-        """init the internal heap structure type
-        :rtype: ctypes heap structure type
-        """
-        return 1
-
-    def _search_heap(self, mapping):
-        """ return a ctypes heap struct mapped at address on the mapping"""
-        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
-                                                       self._heap_module_constraints)
-        # on ly return first results in each mapping
-        log.debug("_search_heap in %s", mapping)
-        res = my_searcher._search_in(mapping, self._heap_type, nb=1, align=0x1000)
-        # DEBUG PEB search
-        # res = my_searcher._search_in(mapping, peb.struct__PEB, nb=1, align=0x1000)
-        if len(res) > 0:
-            instance, address = res[0]
-            mapping.mark_as_heap(address)
-            return instance, address
-        return None
-
-    def search_heap(self):
-        # on ly return first results in each mapping
-        results = []
-        for mapping in self._memory_handler.get_mappings():
-            res = self._search_heap(mapping)
-            if res:
-                results.append(res)
-        return results
-
-    def search_heap_direct(self, start_address_mapping):
-        """ return a ctypes heap struct mapped at address on the mapping"""
-        m = self._memory_handler.get_mapping_for_address(start_address_mapping)
-        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
-                                                       self._heap_module_constraints,
-                                                       [m])
-        # on ly return first results in each mapping
-        log.debug("_search_heap_direct in %s", start_address_mapping)
-        results = my_searcher._load_at(m, start_address_mapping, self._heap_type, depth=5)
-        return results
-
-    def _read_heap(self, mapping, addr):
-        """ return a ctypes heap struct mapped at address on the mapping"""
-        heap = mapping.read_struct(addr, self._heap_type)
-        return heap
-
-    def _is_heap(self, mapping, addr):
-        raise NotImplementedError(self)
-
-    def list_heap_walkers(self):
-        raise NotImplementedError(self)
+        self._optim_heaps = None
+        self._optim_heaps_dict = None
 
     def get_heap_walker(self, heap):
+        if not isinstance(heap, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
+        if not self._optim_heaps_dict:
+            self.list_heap_walkers()
+        walker = self._optim_heaps_dict[heap.start]
+        return walker
+
+    def list_heap_walkers(self):
+        """return the list of heaps that load as heaps"""
+        if not self._optim_heaps:
+            self._optim_heaps = []
+            for mapping in self._memory_handler:
+                walker = self._find_heap(mapping)
+                if walker:
+                    self._optim_heaps.append(walker)
+            # sort the list
+            self._optim_heaps.sort(key=lambda walker: walker.get_heap_address())
+            # FIXME, so do we have heaps in the middle of a mapping or not ?
+            self._optim_heaps_dict = dict([(w.get_heap_address(), w) for w in self._optim_heaps])
+        return self._optim_heaps
+
+    def search_heap_direct(self, start_address_mapping):
+        """
+        return a ctypes heap struct mapped at address on the mapping
+        Will use the memory handler
+        """
+        raise NotImplementedError(self)
+
+    def _find_heap(self, mapping):
+        """
+        return a ctypes heap struct mapped at address on the mapping.
+        Funny enough, a X64 process could have 32 bits and 64 bits heaps.
+        """
         raise NotImplementedError(self)
 
 

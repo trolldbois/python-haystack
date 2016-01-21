@@ -5,10 +5,14 @@
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import os
 import logging
 import sys
 
+import os
+
+from haystack import constraints
+from haystack.abc import interfaces
+from haystack.search import searcher
 from haystack.allocators import heapwalker
 
 log = logging.getLogger('libcheapwalker')
@@ -46,6 +50,14 @@ class LibcHeapWalker(heapwalker.HeapWalker):
         self._allocs, self._free_chunks = self._heap_validator.get_user_allocations(self._heap_mapping)
 
 
+    def get_heap_validator(self):
+        if self._heap_validator is None:
+            self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler,
+                                                   self._heap_module_constraints,
+                                                   self._heap_module)
+        return self._heap_validator
+
+
 class LibcHeapFinder(heapwalker.HeapFinder):
 
     # def _is_heap(self, _memory_handler, mapping):
@@ -58,71 +70,89 @@ class LibcHeapFinder(heapwalker.HeapFinder):
     #        return True
     #    return False
 
-    def _init(self):
+    def __init__(self, memory_handler):
         """
-        Return the heap configuration information
-        :return: (heap_module_name, heap_class_name, heap_constraint_filename)
+        :param memory_handler: IMemoryHandler
+        :return: HeapFinder
         """
-        self._heap_validator = None
-        module_name = 'haystack.allocators.libc.ctypes_malloc'
-        heap_name = 'malloc_chunk'
+        super(LibcHeapFinder, self).__init__(memory_handler)
+        heap_module_name = 'haystack.allocators.libc.ctypes_malloc'
+        self._heap_module = self._memory_handler.get_model().import_module(heap_module_name)
+        self._heap_name = 'malloc_chunk'
+        self._heap_record = getattr(self._heap_module, self._heap_name)
+
+        parser = constraints.ConstraintsConfigHandler()
         constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'libcheap.constraints')
         log.debug('constraint_filename :%s', constraint_filename)
-        return module_name, heap_name, constraint_filename
+        self._constraints = parser.read(constraint_filename)
 
-    def _init_heap_validation_depth(self):
-        return 20
+        return
 
-    def _search_heap(self, mapping):
+    def search_heap_direct(self, start_address_mapping):
         """
-        The libc mapping on in starting positions
-        :param mapping:
+        return a ctypes heap struct mapped at address on the mapping
+        Will use the memory handler
+        """
+        heap = self._memory_handler.get_mapping_for_address(start_address_mapping)
+        my_searcher = searcher.AnyOffsetRecordSearcher(self._memory_handler,
+                                                       self._constraints,
+                                                       [heap])
+        # on ly return first results in each mapping
+        log.debug("_search_heap_direct in %s", start_address_mapping)
+        results = my_searcher._load_at(heap, start_address_mapping, self._heap_record, depth=20)
+        return results
+
+    def _find_heap(self, mapping):
+        """
+        return a ctypes heap struct mapped at address on the mapping.
+        """
+        if self.__is_heap(mapping):
+            return self.get_heap_walker(mapping)
+        return None
+
+    def __is_heap(self, mapping):
+        """
+        test if a mapping is a heap
+        :param mapping: IMemoryMapping
         :return:
         """
-        log.debug('checking %s', mapping)
-        heap = mapping.read_struct(mapping.start, self._heap_type)
-        load = self.get_heap_validator().load_members(heap, self._heap_validation_depth)
-        if load:
-            return heap, mapping.start
-        return None
+        if not isinstance(mapping, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
+        walker = self.get_heap_walker(mapping)
+        heap = mapping.read_struct(mapping.start, self._heap_record)
+        # validator is (should be) then target-bound
+        validator = walker.get_heap_validator()
+        load = validator.load_members(heap, 20)
+        log.debug('HeapFinder._is_heap %s %s', mapping, load)
+        return load
 
     def list_heap_walkers(self):
         """return the list of heaps that load as heaps
 
         Full overload of parent, to fix some bugs and prioritize.
         """
-        heap_mappings = []
+        heap_walkers = []
         for mapping in self._memory_handler:
             # BUG: python-ptrace read /proc/$$/mem.
             # file.seek does not like long integers like the start address
             # of the vdso or vsyscall mappigns
             if mapping.pathname in ['[vdso]', '[vsyscall]']:
                 log.debug('Ignore system mapping %s', mapping)
-            elif mapping.is_marked_as_heap():
-                heap_mappings.append(mapping)
             else:
-                res = self._search_heap(mapping)
-                if res is not None:
-                    instance, address = res
-                    mapping.mark_as_heap(address)
-                    heap_mappings.append(mapping)
-        heap_mappings.sort(key=lambda m: m.start)
-        # FIXME, isn't there a find() ?
-        i = [
-            i for (
-                i,
-                m) in enumerate(heap_mappings) if m.pathname == '[heap]']
+                walker = self._find_heap(mapping)
+                if walker is not None:
+                    heap_walkers.append(walker)
+        # heap_walkers.sort(key=lambda m: m.start)
+
+        # FIXME, put the [heap] in front
+        i = [i for (i, walker) in enumerate(heap_walkers) if walker._heap_mapping.pathname == '[heap]']
         if len(i) == 1:
-            h = heap_mappings.pop(i[0])
-            heap_mappings.insert(0, h)
-        return heap_mappings
+            h = heap_walkers.pop(i[0])
+            heap_walkers.insert(0, h)
+        return heap_walkers
 
-    def get_heap_walker(self, heap):
-        return LibcHeapWalker(self._memory_handler, self._heap_module, heap, self._heap_module_constraints)
-
-    def get_heap_validator(self):
-        if self._heap_validator is None:
-            self._heap_validator = self._heap_module.LibcHeapValidator(self._memory_handler,
-                                                   self._heap_module_constraints,
-                                                   self._heap_module)
-        return self._heap_validator
+    def get_heap_walker(self, mapping):
+        if not isinstance(mapping, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
+        target_platform = self._memory_handler.get_target_platform()
+        return LibcHeapWalker(self._memory_handler, target_platform, self._heap_module, mapping, self._constraints, mapping.start)

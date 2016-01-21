@@ -280,6 +280,8 @@ def load(dumpname, cpu=None, os_name=None):
         # try minidump
         from haystack.mappings import minidump
         mapper = minidump.MDMP_Mapper(dumpname, cpu=cpu, os_name=os_name)
+    else:
+        raise IOError('couldnt load %s' % dumpname)
     memory_handler = mapper.make_memory_handler()
     log.debug('%d dump file loaded' % len(memory_handler))
     # excep mmap.error - to much openfile - increase ulimit

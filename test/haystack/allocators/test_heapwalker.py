@@ -29,8 +29,10 @@ class TestWalkers(unittest.TestCase):
     def setUpClass(cls):
         cls.libc_mh_64 = dump_loader.load('test/src/test-ctypes3.64.dump')
         cls.libc_mh_32 = dump_loader.load('test/src/test-ctypes3.32.dump')
-        # cls.winxp_mh_32 = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls.winxp_mh_32 = dump_loader.load('test/dumps/minidump/cmd.dmp')
+        cls.winxp_mh_64 = dump_loader.load('test/dumps/minidump/alg.dmp')
         cls.win7_mh_32 = dump_loader.load(putty_1_win7.dumpname)
+        cls.win7_mh_64 = dump_loader.load('test/dumps/keepass.test')
 
     @classmethod
     def tearDownClass(cls):
@@ -79,28 +81,29 @@ class TestWalkers(unittest.TestCase):
         libc_hf_32 = heapwalker.make_heap_finder(self.libc_mh_32)
         libc_32_ctypes = self.libc_mh_32.get_target_platform().get_target_ctypes()
 
-        # winxp_hf_32 = heapwalker.make_heap_finder(self.winxp_mh_32)
-        # winxp_32_ctypes = self.winxp_mh_32.get_target_platform().get_target_ctypes()
+        winxp_hf_32 = heapwalker.make_heap_finder(self.winxp_mh_32)
+        winxp_32_ctypes = self.winxp_mh_32.get_target_platform().get_target_ctypes()
 
-        # winxp_hf_64 = heapwalker.make_heap_finder(self.winxp_mh_64)
-        # winxp_64_ctypes = self.winxp_mh_64.get_target_platform().get_target_ctypes()
+        winxp_hf_64 = heapwalker.make_heap_finder(self.winxp_mh_64)
+        winxp_64_ctypes = self.winxp_mh_64.get_target_platform().get_target_ctypes()
 
         win7_hf_32 = heapwalker.make_heap_finder(self.win7_mh_32)
         win7_32_ctypes = self.win7_mh_32.get_target_platform().get_target_ctypes()
 
-        # win7_hf_64 = heapwalker.make_heap_finder(self.win7_mh_64)
-        # win7_64_ctypes = self.win7_mh_64.get_target_platform().get_target_ctypes()
+        win7_hf_64 = heapwalker.make_heap_finder(self.win7_mh_64)
+        win7_64_ctypes = self.win7_mh_64.get_target_platform().get_target_ctypes()
 
         # 32 bits
-        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_type), 8)
-        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_type), 312)# 0x138
+        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_module.malloc_chunk), 8)
+        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_module.HEAP), 312)# 0x138
         # FIXME dump a winxp?
-        # self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._init_heap_type(), 1430))
+        self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._heap_module.HEAP, 1430))
 
         # 64 bits
-        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._heap_type), 16)
-        # self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._init_heap_type(), 520))
-        # self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._init_heap_type(), 2792)) #   0xae8
+        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64.malloc_chunk), 16)
+        self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._heap_module.HEAP, 520))
+        self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._heap_module.HEAP, 2792)) #   0xae8
+
 
 class TestHeapFinder(unittest.TestCase):
     @classmethod
@@ -115,8 +118,9 @@ class TestHeapFinder(unittest.TestCase):
         pass
 
     def test_get_heap_mappings(self):
-        heap_0 = self.finder.list_heap_walkers()[0]
-        self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
+        walker = self.finder.list_heap_walkers()[0]
+        self.assertTrue(isinstance(walker, interfaces.IHeapWalker))
+        heap_0 = walker._heap_mapping
         self.assertEquals(heap_0.start, 0xb84e0000)
         self.assertEquals(heap_0.pathname, '[heap]')
 
@@ -144,8 +148,9 @@ class TestHeapFinder2(unittest.TestCase):
         pass
 
     def test_get_heap_mappings(self):
-        heap_0 = self.finder.list_heap_walkers()[0]
-        self.assertTrue(isinstance(heap_0, interfaces.IMemoryMapping))
+        walker = self.finder.list_heap_walkers()[0]
+        self.assertTrue(isinstance(walker, interfaces.IHeapWalker))
+        heap_0 = walker._heap_mapping
         self.assertEquals(heap_0.start, 0x005c0000)
         self.assertEquals(heap_0.pathname, 'None')
         buf = heap_0.read_bytes(heap_0.start, 500)
@@ -158,7 +163,7 @@ class TestHeapFinder2(unittest.TestCase):
 
     def test_get_heaps(self):
         heaps = self.finder.list_heap_walkers()
-        self.assertEquals(len(heaps), 12)
+        self.assertEquals(len(heaps), 15)
 
     @unittest.skip("TODO win32 get_stack code")
     def test_get_stack(self):

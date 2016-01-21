@@ -211,22 +211,15 @@ class WinHeapWalker(heapwalker.HeapWalker):
         return free_lists
 
 
-class WinHeapFinder(interfaces.IHeapFinder):
+class WinHeapFinder(heapwalker.HeapFinder):
 
     def __init__(self, memory_handler):
         """
         :param memory_handler: IMemoryHandler
         :return: HeapFinder
         """
-        if not isinstance(memory_handler, interfaces.IMemoryHandler):
-            raise TypeError('Feed me a IMemoryHandlerobject')
-        self._memory_handler = memory_handler
-        # optimisations
-        self.__optim_heaps = None
-        self.__optim_heaps_dict = None
-
+        super(WinHeapFinder, self).__init__(memory_handler)
         self._cpu = self._make_dual_arch_ctypes()
-
         return
 
     def _validator_type(self):
@@ -240,20 +233,6 @@ class WinHeapFinder(interfaces.IHeapFinder):
     def _make_dual_arch_ctypes(self):
         """ return the dual arch reference ctypes """
         raise NotImplementedError('Please implement all methods')
-
-    def list_heap_walkers(self):
-        """return the list of heaps that load as heaps"""
-        if not self.__optim_heaps:
-            self.__optim_heaps = []
-            for mapping in self._memory_handler:
-                walker = self._find_heap(mapping)
-                if walker:
-                    self.__optim_heaps.append(walker)
-            # sort the list
-            self.__optim_heaps.sort(key=lambda walker: walker.get_heap_address())
-            # FIXME, so do we have heaps in the middle of a mapping or not ?
-            self.__optim_heaps_dict = dict([(w.get_heap_address(), w) for w in self.__optim_heaps])
-        return self.__optim_heaps
 
     def _find_heap(self, mapping):
         """
@@ -299,14 +278,6 @@ class WinHeapFinder(interfaces.IHeapFinder):
         load = validator.load_members(heap, 1)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         return load
-
-    def get_heap_walker(self, heap):
-        if not isinstance(heap, interfaces.IMemoryMapping):
-            raise TypeError('Feed me a IMemoryMapping object')
-        if not self.__optim_heaps_dict:
-            self.list_heap_walkers()
-        walker = self.__optim_heaps_dict[heap.start]
-        return walker
 
     def search_heap_direct(self, start_address_mapping):
         """
