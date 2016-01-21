@@ -95,14 +95,19 @@ class TestWalkers(unittest.TestCase):
 
         # 32 bits
         self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_module.malloc_chunk), 8)
-        self.assertEquals(win7_32_ctypes.sizeof(win7_hf_32._heap_module.HEAP), 312)# 0x138
-        # FIXME dump a winxp?
-        self.assertEquals(winxp_32_ctypes.sizeof(winxp_hf_32._heap_module.HEAP, 1430))
+        # winXP
+        walker = winxp_hf_32.list_heap_walkers()[0]
+        self.assertEquals(winxp_32_ctypes.sizeof(walker._heap_module.HEAP), 1430)
+        # win7
+        walker = win7_hf_32.list_heap_walkers()[0]
+        self.assertEquals(win7_32_ctypes.sizeof(walker._heap_module.HEAP), 312)# 0x138
 
         # 64 bits
         self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64.malloc_chunk), 16)
-        self.assertEquals(win7_64_ctypes.sizeof(win7_hf_64._heap_module.HEAP, 520))
-        self.assertEquals(winxp_64_ctypes.sizeof(winxp_hf_64._heap_module.HEAP, 2792)) #   0xae8
+        walker = win7_hf_64.list_heap_walkers()[0]
+        self.assertEquals(win7_64_ctypes.sizeof(walker._heap_module.HEAP), 520)
+        walker = winxp_hf_64.list_heap_walkers()[0]
+        self.assertEquals(winxp_64_ctypes.sizeof(walker._heap_module.HEAP), 2792) #   0xae8
 
 
 class TestHeapFinder(unittest.TestCase):
