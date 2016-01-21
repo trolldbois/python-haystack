@@ -18,6 +18,10 @@ Changes to architecture.txt:
 
 2016-01:
  - Support Minidump format (Windows standard dump format with all memory options)
+ - haystack-find-heap.py script to help debug Windows heap
+ - 90% support of LFH and LAL on winXP 32 and 64 bits.
+ - 90% support of LFH on win7 32 and 64 bits.
+ - 95% support of UCR.
  - Preliminary support of mixed x32/x64 Windows Heap processes
 
 2015-10:
