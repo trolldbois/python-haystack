@@ -15,6 +15,11 @@ Changes to architecture.txt:
     + the IHeapWalker helpers
  - the memory l
 
+
+2016-01:
+ - Support Minidump format (Windows standard dump format with all memory options)
+ - Preliminary support of mixed x32/x64 Windows Heap processes
+
 2015-10:
  - cleaning up the reverse API
  - Fix sigsegv bug source in reset_mappings()
@@ -22,7 +27,7 @@ Changes to architecture.txt:
  - Cleaned up the reverse/structure module
  - Added a fun constraints heuristics on reversed types's field.
  - is zeus in c30000.headers_values.py ?
- 
+
 
 2015-09:
  - Working on Volatility dump reader
@@ -72,7 +77,7 @@ FAILED (errors=7, skipped=7, expected failures=3)
  - Ran 224 tests in 317.901s
 FAILED (failures=2, errors=13, skipped=7, expected failures=3)
 
- 
+
 2015-06:
  - keep track of changes in this file
  - use travis-ci to compile

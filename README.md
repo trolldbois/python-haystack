@@ -27,7 +27,9 @@ It attempts to recreate types definition.
 How to get a memory dump:
 =========================
 
-While technically you could use a third party tool, haystack actually
+On windows, the most straightforward is to get a Minidump. (Sysinternals Process explorer ?)
+
+While technically you could use many third party tool, haystack actually
 need memory mapping information to work with.
 So there is a dumping tool included:
 
