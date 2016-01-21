@@ -5,8 +5,6 @@
 import logging
 
 from haystack.abc import interfaces
-from haystack import constraints
-from haystack.search import searcher
 
 log = logging.getLogger('heapwalker')
 

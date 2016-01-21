@@ -35,7 +35,8 @@ class RecordSearcher(object):
             raise TypeError("Feed me a list of IMemoryMapping")
         elif target_mappings is None:
             # default to all heaps
-            target_mappings = memory_handler.get_heap_finder().list_heap_walkers()
+            target_walkers = memory_handler.get_heap_finder().list_heap_walkers()
+            target_mappings = [walker.get_heap_mapping() for walker in target_walkers]
         self._memory_handler = memory_handler
         self._my_constraints = my_constraints
         self._target_mappings = target_mappings
@@ -80,12 +81,13 @@ class RecordSearcher(object):
         log.debug('look for %s', str(struct_type))
         # prepare return values
         outputs = []
-        # check the word size to use aligned words only
-        plen = mem_map.get_target_platform().get_word_size()
-        my_ctypes = mem_map.get_target_platform().get_target_ctypes()
         # where do we look for that structure
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(mem_map)
+        # check the word size to use aligned words only
+        target = walker.get_target_platform()
+        plen = target.get_word_size()
+        my_ctypes = target.get_target_ctypes()
         struct_size = my_ctypes.sizeof(struct_type)
         # get all allocated chunks
         for addr, size in walker.get_user_allocations():

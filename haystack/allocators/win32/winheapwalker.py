@@ -54,7 +54,6 @@ class WinHeapWalker(heapwalker.HeapWalker):
         """ Does the heap walker or its relevant segments contains this address"""
         raise NotImplementedError('Please implement all methods')
 
-
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
         addr and size EXCLUDES the HEAP_ENTRY header.

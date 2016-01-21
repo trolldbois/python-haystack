@@ -41,15 +41,16 @@ class TestApiWin32Dump(unittest.TestCase):
     def test_load(self):
         # this is kinda stupid, given we are using a heapwalker to
         # find the heap, and testing the heap.
-        my_target = self.memory_handler.get_target_platform()
-        my_ctypes = my_target.get_target_ctypes()
-        my_utils = my_target.get_target_ctypes_utils()
-        my_model = self.memory_handler.get_model()
+
         finder = self.memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
-        my_heap = [ x for x in heaps if x.start == self.known_heaps[0][0]][0]
-        heapwalker = finder.get_heap_walker(heaps[0])
-        win7heap = heapwalker._heap
+        walkers = finder.list_heap_walkers()
+        heaps = [walker.get_heap_mapping() for walker in walkers]
+        my_heap = [x for x in heaps if x.start == self.known_heaps[0][0]][0]
+        heap_mapping = self.memory_handler.get_mapping_for_address(self.known_heaps[0][0])
+        # we want the 32 bits heap record type on 32 bits heap mappings
+        heapwalker = finder.get_heap_walker(heap_mapping)
+        ## Thats a 64 bits heap heapwalker = finder.get_heap_walker(heaps[0])
+
 
         my_loader = searcher.RecordLoader(self.memory_handler)
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
