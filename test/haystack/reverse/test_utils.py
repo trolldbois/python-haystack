@@ -26,8 +26,8 @@ class TestBasicFunctions(unittest.TestCase):
 
         memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
         finder = memory_handler.get_heap_finder()
-        heap = finder.list_heap_walkers()[0]
-        heap_addr = heap.get_marked_heap_address()
+        walker = finder.list_heap_walkers()[0]
+        heap_addr = walker.get_heap_address()
         ctx = context.get_context_for_address(memory_handler, heap_addr)
         lst = ctx._structures_addresses
         # print ['0x%0.8x'%i for i in lst]
