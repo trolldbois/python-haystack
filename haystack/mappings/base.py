@@ -174,16 +174,6 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         vaddr = paddr - pstart
         return vaddr
 
-    def mark_as_heap(self, addr):
-        self._is_heap = True
-        self._is_heap_addr = addr
-
-    def is_marked_as_heap(self):
-        return self._is_heap is True
-
-    def get_marked_heap_address(self):
-        return self._is_heap_addr
-
     # ---- to implement if needed
     def read_word(self, address):
         raise NotImplementedError(self)

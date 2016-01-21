@@ -106,6 +106,7 @@ class SignatureTests(unittest.TestCase):
                 (len(dump), len(dump2)))
         stop = mstart + len(dump2)
         mmap = AMemoryMapping(mstart, stop, '-rwx', 0, 0, 0, 0, 'test_mmap')
+        mmap.set_ctypes(self.target.get_target_ctypes())
         mmap2 = LocalMemoryMapping.fromBytebuffer(mmap, dump2)
         mmap2.set_target_platform(self.target)
         return mmap2, values

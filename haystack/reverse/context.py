@@ -239,6 +239,11 @@ class HeapContext(object):
         # Check that cache folder exists
         config.create_cache_folder(self.dumpname)
 
+        # re-open the heap walker
+        heap_mapping = self.memory_handler.get_mapping_for_address(self._heap_start)
+        finder = self.memory_handler.get_heap_finder()
+        self.walker = finder.get_heap_walker(heap_mapping)
+
         # we need a heap walker to parse all allocations
         log.debug('[+] Searching pointers in heap')
         # get all pointers found in from allocated space.

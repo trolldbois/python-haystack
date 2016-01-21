@@ -29,8 +29,8 @@ class TestField(SrcTests):
         cls.memory_handler = dump_loader.load(cls.dumpname)
         cls._target = cls.memory_handler.get_target_platform()
         finder = cls.memory_handler.get_heap_finder()
-        heap = finder.list_heap_walkers()[0]
-        heap_addr = heap.get_marked_heap_address()
+        heap_walker = finder.list_heap_walkers()[0]
+        heap_addr = heap_walker.get_heap_address()
 
         cls._load_offsets_values(cls.memory_handler.get_name())
 

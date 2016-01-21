@@ -95,7 +95,6 @@ def reverse_instances(memory_handler):
     assert isinstance(memory_handler, interfaces.IMemoryHandler)
     process_context = memory_handler.get_reverse_context()
     #for heap in heaps:
-    #    heap_addr = heap.get_marked_heap_address()
     #    # reverse all fields in all records from that heap
     #    ## reverse_heap(memory_handler, heap_addr)
 

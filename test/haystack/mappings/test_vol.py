@@ -69,11 +69,10 @@ class TestMapper(unittest.TestCase):
         walkers = finder.list_heap_walkers()
         self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
-            heap = memory_handler.get_mapping_for_address(addr)
-            self.assertTrue(heap.is_marked_as_heap())
-            heap_addr = heap.get_marked_heap_address()
-            self.assertTrue(heap_addr is not None)
-            self.assertTrue(finder._is_heap(heap, heap_addr))
+            heap_walker = finder.get_heap_walker(addr)
+            self.assertIsNotNone(heap_walker)
+            heap_addr = heap_walker.get_heap_address()
+            self.assertEqual(heap_addr, addr)
 
     @unittest.skip('number of heaps is still a open question')
     def test_is_heaps_856(self):
@@ -85,11 +84,10 @@ class TestMapper(unittest.TestCase):
         walkers = finder.list_heap_walkers()
         self.assertEquals(len(walkers), len(zeus_856_svchost_exe.known_heaps))
         for addr, size in zeus_856_svchost_exe.known_heaps:
-            heap = memory_handler.get_mapping_for_address(addr)
-            self.assertTrue(heap.is_marked_as_heap())
-            heap_addr = heap.get_marked_heap_address()
-            self.assertTrue(heap_addr is not None)
-            self.assertTrue(finder._is_heap(heap, heap_addr))
+            heap_walker = finder.get_heap_walker(addr)
+            self.assertIsNotNone(heap_walker)
+            heap_addr = heap_walker.get_heap_address()
+            self.assertEqual(heap_addr, addr)
 
     def test_read_mem(self):
         f = '/home/jal/outputs/vol/zeus.vmem'

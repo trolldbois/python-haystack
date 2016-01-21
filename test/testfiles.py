@@ -110,6 +110,7 @@ zeus_856_svchost_exe.known_heaps = [(0x00090000, 0x100000),
                                     (0x001a0000, 0x10000),
                                     (0x00350000, 0x10000),
                                     (0x003b0000, 0x10000),
+                                    # (0x00460000, 0x10000), miscapture ?
                                     (0x00c30000, 0x80000),
                                     (0x00d60000, 0x10000),
                                     (0x00e20000, 0x10000),
@@ -120,7 +121,9 @@ zeus_856_svchost_exe.known_records = [(0x992f0, 14720)]
 
 # putty.1.dump is a win7 32 bits memory dump
 putty_1_win7 = TestDump('test/dumps/putty/putty.1.dump')
-putty_1_win7.known_heaps = [(0x00390000, 0x3000),
+putty_1_win7.known_heaps = [(0x00010000, 0x20000), # 64bits
+                            (0x00300000, 0x00329000), # 64bits
+                            (0x00390000, 0x3000),
                             (0x00540000, 0x1000),
                             (0x00580000, 0x9000),
                             (0x005c0000, 0x59000),
@@ -132,12 +135,15 @@ putty_1_win7.known_heaps = [(0x00390000, 0x3000),
                             (0x04030000, 0x1000),
                             (0x04110000, 0x1000),
                             (0x041c0000, 0x1000),
+                            (0x7efe0000, 0x5000), # 64bits
                             # from free stuf - erroneous
                             #( 0x0061a000, 1200),
                             ]
 
 # heap, ucr_start, ucr_end, ucr_size
-putty_1_win7.known_ucr = {0x00390000: [(0x00393000, 0x003a0000, 0xd000)],
+putty_1_win7.known_ucr = {0x00010000: [(0x00012000, 0x00020000, 0xe000)], # 64 bits
+                          0x00300000: [(0x00329000, 0x00380000, 0x57000)], # 64 bits
+                          0x00390000: [(0x00393000, 0x003a0000, 0xd000)],
                           0x00540000: [(0x00541000, 0x00580000, 0x3f000)],
                           0x00580000: [(0x00589000, 0x00590000, 0x7000),
                                        (0x01f12000, 0x02000000, 0xee000)],
@@ -150,6 +156,7 @@ putty_1_win7.known_ucr = {0x00390000: [(0x00393000, 0x003a0000, 0xd000)],
                           0x04030000: [(0x04031000, 0x04070000, 0x3f000)],
                           0x04110000: [(0x04111000, 0x04150000, 0x3f000)],
                           0x041c0000: [(0x041c1000, 0x04200000, 0x3f000)],
+                          # 0x7efe0000 ...
                           }
 
 putty_7124_win7 = TestDump('test/dumps/putty/putty.7124.dump')

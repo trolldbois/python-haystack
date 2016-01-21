@@ -40,10 +40,10 @@ class AbstractReverser(hri.IReverser):
         """ Override to change the list of contexts """
         # for ctx in self._memory_handler.get_cached_context():
         finder = self._memory_handler.get_heap_finder()
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
         # we need to get then either from memory_handler or from file or from scratch
-        for heap in heaps:
-            ctx = context.get_context_for_address(self._memory_handler, heap.get_marked_heap_address())
+        for heap_walker in walkers:
+            ctx = context.get_context_for_address(self._memory_handler, heap_walker.get_heap_address())
             yield ctx
 
     def _iterate_records(self, _context):

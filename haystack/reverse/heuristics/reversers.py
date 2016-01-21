@@ -192,7 +192,6 @@ class DoubleLinkedListReverser(model.AbstractReverser):
         Check if we find a LIST_ENTRY construct basically at every field.
         Returns fast if _record's reverse level is over this one.
         """
-        log.debug('heap is %s', _context.heap)
         # FIXME, we should check any field offset where a,b is a couple of pointer to the same type
         if _record.get_reverse_level() >= self.get_reverse_level():
             # ignore this record. its already reversed.

@@ -153,9 +153,10 @@ class TestHeapFinder2(unittest.TestCase):
         pass
 
     def test_get_heap_mappings(self):
-        walker = self.finder.list_heap_walkers()[0]
+        m = self.memory_handler.get_mapping_for_address(0x005c0000)
+        walker = self.finder.get_heap_walker(m)
         self.assertTrue(isinstance(walker, interfaces.IHeapWalker))
-        heap_0 = walker._heap_mapping
+        heap_0 = walker.get_heap_mapping()
         self.assertEquals(heap_0.start, 0x005c0000)
         self.assertEquals(heap_0.pathname, 'None')
         buf = heap_0.read_bytes(heap_0.start, 500)
