@@ -499,6 +499,8 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 done.add(addr)
                 memory_map = self._memory_handler.is_valid_address_value(addr, record_type)
                 if memory_map is False:
+                    import pdb
+                    pdb.set_trace()
                     log.error("_iterate_double_linked_list: the link of this linked list has a bad value: 0x%x", addr)
                     raise ValueError('ValueError: the link of this linked list has a bad value: 0x%x' % addr)
                 st = memory_map.read_struct(addr, record_type)

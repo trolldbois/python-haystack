@@ -67,7 +67,8 @@ class TestWin7Heap(unittest.TestCase):
                           '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals(addr, 6029312)
-        heap = h.read_struct(addr, win7heap.HEAP)
+        heap = walker.get_heap()
+        # heap = h.read_struct(addr, win7heap.HEAP)
 
         # check that haystack memory_mapping works
         self.assertEquals(my_ctypes.addressof(h._local_mmap_content),
@@ -81,11 +82,10 @@ class TestWin7Heap(unittest.TestCase):
     def test_is_heap_all(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
-        walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
+            walker = finder.get_heap_walker(h)
+            heap = walker.get_heap()
             # check heap.Signature
             self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
 
@@ -99,11 +99,10 @@ class TestWin7Heap(unittest.TestCase):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
         walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         ucrs = validator.HEAP_get_UCRanges_list(heap)
         self.assertEquals(heap.UCRIndex.value, 0x5c0590)
@@ -124,14 +123,13 @@ class TestWin7Heap(unittest.TestCase):
     def test_HEAP_get_UCRanges_list(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
-        walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
         # get an example
         for heap_addr, ucr_list in putty_1_win7.known_ucr.items():
             # get the heap
             h = self.memory_handler.get_mapping_for_address(heap_addr)
-            heap = h.read_struct(heap_addr, win7heap.HEAP)
+            walker = finder.get_heap_walker(h)
             validator = walker.get_heap_validator()
+            heap = walker.get_heap()
             # get UCRList from heap
             # TODO TotalUCRs == Total UCRS from UCRSegments. Not from Heap UCRList
             reserved_ucrs = validator.HEAP_get_UCRanges_list(heap)
@@ -151,12 +149,12 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_segment_list(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
-        walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
+        self.assertEqual(h, mapping)
+        walker = finder.get_heap_walker(h)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         segments = validator.get_segment_list(heap)
         self.assertEquals(heap.Counters.TotalSegments, 1)
@@ -183,12 +181,11 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_segment_list_all(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
         mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
-        walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
+            walker = finder.get_heap_walker(mapping)
             validator = walker.get_heap_validator()
+            heap = walker.get_heap()
 
             segments = validator.get_segment_list(heap)
             self.assertEquals(len(segments), heap.Counters.TotalSegments)
@@ -216,14 +213,11 @@ class TestWin7Heap(unittest.TestCase):
     def test_get_chunks(self):
         # You have to import after ctypes has been tuned ( mapping loader )
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
-        mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
-        walker = finder.get_heap_walker(mapping)
-        win7heap = walker._heap_module
-
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
+        walker = finder.get_heap_walker(h)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         allocated, free = validator.get_backend_chunks(heap)
         s_allocated = sum([c[1] for c in allocated])
@@ -264,9 +258,10 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
             validator = walker.get_heap_validator()
+            heap = walker.get_heap()
 
+            # BUG is here !!!
             allocated, free = validator.get_backend_chunks(heap)
             s_allocated = sum([c[1] for c in allocated])
             s_free = sum([c[1] for c in free])
@@ -299,8 +294,8 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         allocated, free = validator.get_backend_chunks(heap)
         freelists = validator.HEAP_get_freelists(heap)
@@ -316,8 +311,8 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
             validator = walker.get_heap_validator()
+            heap = walker.get_heap()
 
             allocated, free = validator.get_backend_chunks(heap)
             freelists = validator.HEAP_get_freelists(heap)
@@ -334,8 +329,8 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         fth_committed, fth_free = validator.get_frontend_chunks(heap)
         # SizeInCache : 59224L,
@@ -353,8 +348,8 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         addr = 0x005c0000
         h = self.memory_handler.get_mapping_for_address(addr)
-        heap = h.read_struct(addr, win7heap.HEAP)
         validator = walker.get_heap_validator()
+        heap = walker.get_heap()
 
         valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
 
@@ -369,8 +364,8 @@ class TestWin7Heap(unittest.TestCase):
         win7heap = walker._heap_module
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            heap = h.read_struct(addr, win7heap.HEAP)
             validator = walker.get_heap_validator()
+            heap = walker.get_heap()
 
             valloc_committed = validator.HEAP_get_virtual_allocated_blocks_list(heap)
             size = sum([x.ReserveSize for x in valloc_committed])

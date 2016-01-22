@@ -209,6 +209,7 @@ class WinHeapValidator(listmodel.ListModel):
                     if not m:
                         log.debug("found a non valid chunk pointer at %x", chunk_addr)
                         break
+                    # BUG, a segment could be in a x64 heap
                     chunk_header = m.read_struct(chunk_addr, self.win_heap.HEAP_ENTRY)
                     self._memory_handler.keepRef(chunk_header, self.win_heap.HEAP_ENTRY, chunk_addr)
                     # FIXME what is this hack

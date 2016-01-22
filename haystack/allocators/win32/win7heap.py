@@ -416,10 +416,9 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             segment_addr = segment._orig_address_
             first_addr = self._utils.get_pointee_address(segment.FirstEntry)
             last_addr = self._utils.get_pointee_address(segment.LastValidEntry)
-            log.debug('Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x' %
-                       (segment_addr, first_addr, last_addr))
+            log.debug('Heap.Segment: 0x%0.8x FirstEntry: 0x%0.8x LastValidEntry: 0x%0.8x', segment_addr, first_addr, last_addr)
             segments.append(segment)
-        segments.sort(key=lambda s:self._utils.get_pointee_address(s.FirstEntry))
+        segments.sort(key=lambda s: self._utils.get_pointee_address(s.FirstEntry))
         return segments
 
     def print_heap_analysis_details(self, heap):
