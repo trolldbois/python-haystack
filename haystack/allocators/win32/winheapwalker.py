@@ -278,7 +278,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
                                                 constraints,
                                                 target_platform,
                                                 heap_module)
-        load = validator.load_members(heap, 1)
+        load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         return load
 
