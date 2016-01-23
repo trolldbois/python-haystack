@@ -69,7 +69,8 @@ class TestMapper(unittest.TestCase):
         walkers = finder.list_heap_walkers()
         self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
-            heap_walker = finder.get_heap_walker(addr)
+            heap_mapping = memory_handler.get_mapping_for_address(addr)
+            heap_walker = finder.get_heap_walker(heap_mapping)
             self.assertIsNotNone(heap_walker)
             heap_addr = heap_walker.get_heap_address()
             self.assertEqual(heap_addr, addr)
