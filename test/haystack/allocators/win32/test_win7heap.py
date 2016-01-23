@@ -90,7 +90,7 @@ class TestWin7Heap(unittest.TestCase):
             self.assertEquals(heap.Signature, 4009750271)  # 0xeeffeeff
 
         finder = self.memory_handler.get_heap_finder()
-        heaps = sorted([(h.start, len(h)) for h in finder.list_heap_walkers()])
+        heaps = sorted([(h.get_heap_address(), len(h.get_heap_mapping())) for h in finder.list_heap_walkers()])
         self.assertEquals(heaps, putty_1_win7.known_heaps)
         self.assertEquals(len(heaps), len(putty_1_win7.known_heaps))
 
@@ -133,7 +133,9 @@ class TestWin7Heap(unittest.TestCase):
             # get UCRList from heap
             # TODO TotalUCRs == Total UCRS from UCRSegments. Not from Heap UCRList
             reserved_ucrs = validator.HEAP_get_UCRanges_list(heap)
-            self.assertEquals(len(reserved_ucrs), heap.Counters.TotalUCRs, "Bad count for heap 0x%x" % heap_addr)
+            if len(reserved_ucrs) != heap.Counters.TotalUCRs:
+                _tmp_ucrs = validator.collect_all_ucrs(heap)
+                self.assertEquals(len(_tmp_ucrs), heap.Counters.TotalUCRs) # , "Bad count for heap 0x%x" % heap_addr)
             self.assertEquals(len(ucr_list), heap.Counters.TotalUCRs)
             # check numbers.
             reserved_size = heap.Counters.TotalMemoryReserved
@@ -180,10 +182,9 @@ class TestWin7Heap(unittest.TestCase):
 
     def test_get_segment_list_all(self):
         finder = win7heapwalker.Win7HeapFinder(self.memory_handler)
-        mapping = self.memory_handler.get_mapping_for_address(0x005c0000)
         for addr, size in putty_1_win7.known_heaps:
             h = self.memory_handler.get_mapping_for_address(addr)
-            walker = finder.get_heap_walker(mapping)
+            walker = finder.get_heap_walker(h)
             validator = walker.get_heap_validator()
             heap = walker.get_heap()
 
@@ -193,15 +194,14 @@ class TestWin7Heap(unittest.TestCase):
             total_size = 0
             for segment in segments:
                 self.assertEquals(segment.SegmentSignature, 0xffeeffee)
-                self.assertEquals(segment.Heap.value, addr)
-                self.assertLess(segment.BaseAddress.value,
-                                segment.FirstEntry.value)
-                self.assertLess(segment.FirstEntry.value,
-                                segment.LastValidEntry.value)
-                valid_alloc_size = (segment.LastValidEntry.value
-                                    - segment.FirstEntry.value)
-                meta_size = segment.FirstEntry.value - \
-                    segment.BaseAddress.value
+                self.assertEquals(validator._utils.get_pointee_address(segment.Heap), addr)
+                base_addr = validator._utils.get_pointee_address(segment.BaseAddress)
+                first_entry_addr = validator._utils.get_pointee_address(segment.FirstEntry)
+                last_entry_addr = validator._utils.get_pointee_address(segment.LastValidEntry)
+                self.assertLess(base_addr, first_entry_addr)
+                self.assertLess(first_entry_addr, last_entry_addr)
+                valid_alloc_size = (last_entry_addr - first_entry_addr)
+                meta_size = first_entry_addr - base_addr
                 pages += segment.NumberOfPages
                 total_size += valid_alloc_size + meta_size
             # Heap resutls for all segments
