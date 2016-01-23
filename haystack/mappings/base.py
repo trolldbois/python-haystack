@@ -87,6 +87,8 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         self.pathname = str(pathname)  # fix None
         self._is_heap = False
         self._is_heap_addr = None
+        self._ctypes = None
+        self._utils = None
 
     def set_ctypes(self, _ctypes):
         self._ctypes = _ctypes

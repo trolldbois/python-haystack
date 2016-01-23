@@ -276,6 +276,27 @@ class RangeValue(interfaces.IConstraint):
         return self.low <= obj <= self.high
 
 
+class NotValue(interfaces.IConstraint):
+
+    """
+    Constraint class for the Haystack model.
+    If this constraints is applied on a Structure member,
+    the member has to NOT be the value listed
+    considered as Valid.
+    """
+
+    def __init__(self, not_value):
+        self.not_value = not_value
+
+    def __contains__(self, obj):
+        return self.not_value != obj
+
+    def __eq__(self, obj):
+        if isinstance(obj, NotValue):
+            return self.not_value  == obj.not_value
+        return self.not_value != obj
+
+
 class NotNullComparable(interfaces.IConstraint):
 
     """

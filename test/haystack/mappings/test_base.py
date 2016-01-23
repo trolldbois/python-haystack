@@ -75,6 +75,9 @@ class TestMmapHack(unittest.TestCase):
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x', heapmap)
         maps = make_local_memory_handler()
+        print 'MMAP HACK: heapmap: 0x%0.8x' % heapmap
+        for m in maps:
+            print m
         ret = [m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)

@@ -981,7 +981,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                         DataSize = 4096
     """
 
-    def __init__(self, filename, cpu, os_name):
+    def __init__(self, filename, cpu=None, os_name=None):
         construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
         self.filename = filename
@@ -1036,27 +1036,34 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                 ## absent ?
                 print directory
         # target
-        for directory in construct_data.MINIDUMP_DIRECTORY:
-            if directory.StreamType == 'SystemInfoStream':
-                data = directory.DirectoryData
-                if data.MajorVersion == 5:
-                    os_name = 'winxp'
-                else:
-                    os_name = 'win7'
-                # FIXME, whatever the minidump says is the base ground
-                # the heapfinder would have to make a difference.
-                if self.cpu is None:
-                    if 'X86' in data.ProcessorArchitecture:
-                        self._target = target.TargetPlatform.make_target_win_32(os_name)
+        cpu = os_name = None
+        if self.os_name is None or self.cpu is None:
+            # then resolve it
+            for directory in construct_data.MINIDUMP_DIRECTORY:
+                if directory.StreamType == 'SystemInfoStream':
+                    data = directory.DirectoryData
+                    if data.MajorVersion == 5:
+                        os_name = 'winxp'
                     else:
-                        self._target = target.TargetPlatform.make_target_win_64(os_name)
-                elif self.cpu == 32:
-                    self._target = target.TargetPlatform.make_target_win_32(os_name)
-                elif self.cpu == 64:
-                    self._target = target.TargetPlatform.make_target_win_64(os_name)
-                else:
-                    raise ValueError(self.cpu)
-                break
+                        os_name = 'win7'
+                    # the heapfinder would have to make a difference.
+                    if 'X86' in data.ProcessorArchitecture:
+                        cpu = 32
+                    else:
+                        cpu = 64
+                    break
+        if self.os_name is None:
+            self.os_name = os_name
+        if self.os_name not in ['winxp', 'win7']:
+            raise NotImplementedError('Unsupported os : %s' % self.os_name)
+        if self.cpu is None:
+            self.cpu = cpu
+        # now set the target
+        if self.cpu == 32:
+            self._target = target.TargetPlatform.make_target_win_32(self.os_name)
+        elif self.cpu == 64:
+            self._target = target.TargetPlatform.make_target_win_64(self.os_name)
+
         #
         self.mappings = maps
         log.debug("nb maps: %d", len(self.mappings))

@@ -136,7 +136,8 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.set_ctypes(memoryMapping._ctypes)
+        if memoryMapping._ctypes:
+            el.set_ctypes(memoryMapping._ctypes)
         return el
 
     @classmethod
@@ -146,7 +147,8 @@ class LocalMemoryMapping(AMemoryMapping):
         el = cls(content_address, memoryMapping.start, memoryMapping.end,
                  memoryMapping.permissions, memoryMapping.offset, memoryMapping.major_device, memoryMapping.minor_device,
                  memoryMapping.inode, memoryMapping.pathname)
-        el.set_ctypes(memoryMapping._ctypes)
+        if memoryMapping._ctypes:
+            el.set_ctypes(memoryMapping._ctypes)
         el.content_array_save_me_from_gc = content_array
         return el
 

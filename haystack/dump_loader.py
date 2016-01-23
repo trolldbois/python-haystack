@@ -26,12 +26,12 @@ import os
 
 import haystack
 from haystack import types
+from haystack import target
 from haystack.abc import interfaces
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import FileBackedMemoryMapping
 from haystack.mappings.file import FilenameBackedMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
-from haystack.target import TargetPlatform
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -205,7 +205,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap = FilenameBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset,
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             _mappings.append(mmap)
-        _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
+        _target_platform = target.TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
         self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
         return
 
@@ -264,7 +264,7 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
                                                major_device, minor_device, inode, pathname=mmap_pathname)
             mmap.set_ctypes(default_ctypes)
             _mappings.append(mmap)
-        _target_platform = TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
+        _target_platform = target.TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
         self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
         self._memory_handler.reset_mappings()
         return
