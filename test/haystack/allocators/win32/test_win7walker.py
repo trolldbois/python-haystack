@@ -12,7 +12,7 @@ from haystack.allocators.win32 import win7heapwalker
 
 from test.testfiles import putty_1_win7
 
-log = logging.getLogger('testwalker')
+log = logging.getLogger('testwin7walker')
 
 
 class TestWin7HeapWalker(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestWin7HeapWalker(unittest.TestCase):
     def test_freelists(self):
         """ List all free blocks """
 
-        # TODO test 0x0061a000 for overflow
+        # FIXME: the sum calculation is per segment, not per mapping.
 
         self.assertNotEqual(self._memory_handler, None)
         # test the heaps
@@ -90,10 +90,14 @@ class TestWin7HeapWalker(unittest.TestCase):
 
             maxlen = len(heap)
             cheap = walker.get_heap()
-            self.assertEquals(cheap.TotalFreeSize * 8, total)
             log.debug(
                 'heap: 0x%0.8x free: %0.5x    \texpected: %0.5x    \tmmap len:%0.5x' %
                 (heap.start, total, cheap.TotalFreeSize, maxlen))
+            #if cheap.FrontEndHeapType == 0:
+            self.assertEquals(cheap.TotalFreeSize * 8, total)
+            #else:
+            #    # FIXME
+            #    log.warning('we are not good ar handling 64 b heaps :FH,. backend')
 
         return
 
@@ -103,8 +107,11 @@ class TestWin7HeapWalker(unittest.TestCase):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
         walkers = finder.list_heap_walkers()
         self.assertEquals(len(walkers), len(putty_1_win7.known_heaps))
+        last = 0
         for i, walker in enumerate(walkers):
-            self.assertEquals(walker.get_heap().ProcessHeapsListIndex, i + 1, 'ProcessHeaps should have correct indexes')
+            this = walker.get_heap_address()
+            self.assertLess(last, this, "Heaps are ordered by base address")
+            last = this
         return
 
     def test_get_frontendheap(self):
@@ -393,6 +400,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.getLogger('testwin7walker').setLevel(level=logging.DEBUG)
     unittest.main(verbosity=2)
     #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)
