@@ -343,12 +343,10 @@ class TestWin7HeapWalker(unittest.TestCase):
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
 
         found = []
-        for mapping in self._memory_handler:
-            walker = finder.get_heap_walker(mapping)
-            win7heap = walker._heap_module
-            validator = walker.get_heap_validator()
-            addr = mapping.start
-            heap = mapping.read_struct(addr, win7heap.HEAP)
+        for heap_walker in finder.list_heap_walkers():
+            validator = heap_walker.get_heap_validator()
+            addr = heap_walker.get_heap_address()
+            heap = heap_walker.get_heap()
             if addr in map(lambda x: x[0], putty_1_win7.known_heaps):
                 self.assertTrue(
                     validator.load_members( heap, 50),

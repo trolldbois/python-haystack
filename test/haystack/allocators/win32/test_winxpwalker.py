@@ -106,18 +106,18 @@ class TestWinXPHeapWalker(unittest.TestCase):
         """
         # self.skipTest('known_ok')
         finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
-        heaps = finder.list_heap_walkers()
+        walkers = finder.list_heap_walkers()
         #print [hex(x.start) for x in heaps]
         #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
-        self.assertEquals(len(heaps), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         last = 0
-        for i, m in enumerate(heaps):
-            heap_walker = finder.get_heap_walker(m)
-            heap_addr = m.get_heap_address()
-            this = heap_walker.get_heap().ProcessHeapsListIndex
-            log.debug('%d @%0.8x', this, heap_addr)
+        for i, heap_walker in enumerate(walkers):
+            heap_addr = heap_walker.get_heap_address()
+            # this = heap_walker.get_heap().ProcessHeapsListIndex
+            # log.debug('%d @%0.8x', this, heap_addr)
+            this = heap_addr
             # self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
-            self.assertGreaterEqual(this, last,'ProcessHeaps should have increment indexes')
+            self.assertGreaterEqual(this, last,'heaps are sorted by base address')
             last = this
         return
 
