@@ -984,7 +984,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
     def __init__(self, filename, cpu=None, os_name=None):
         construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
-        self.filename = filename
+        self.filename = os.path.basename(filename)
         self.cpu = cpu
         self.os_name = os_name
         self._init_mappings(construct_data)
