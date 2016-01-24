@@ -9,12 +9,11 @@ class CTypes6Validator(listmodel.ListModel):
         super(CTypes6Validator, self).__init__(memory_handler, my_constraints)
         self.ctypes6 = my_module
         # double linked list management structure type
+        self.register_single_linked_list_record_type(self.ctypes6.struct_slist, 'next')
         self.register_double_linked_list_record_type(self.ctypes6.struct_entry, 'flink', 'blink')
         # heads
-        if self._utils.get_word_size() == 4:
-            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
-        elif self._utils.get_word_size() == 8:
-            self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+        self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
+        self.register_linked_list_field_and_type(self.ctypes6.struct_single_node, 'entry', self.ctypes6.struct_single_node, 'entry')
 
 
 class NodeDynamicValidator(interfaces.IRecordTypeDynamicConstraintsValidator):

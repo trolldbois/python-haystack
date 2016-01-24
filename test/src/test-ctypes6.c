@@ -59,10 +59,10 @@ void test_pointer_to_list(){
   node2 = (struct Node *) malloc(sizeof(struct Node));
   root_node->val1 = 0xbbbbbbbb;
   root_node->val2 = 0xbbbbbbbb;
-  node1->val1 = 0xdeadbeef;
-  node1->val2 = 0xffffffff;
-  node2->val1 = 0xdeadbabe;
-  node2->val2 = 0xffffffff;
+  node1->val1 = 0xbbbbbbbb;
+  node1->val2 = 0xbbbbbbbb;
+  node2->val1 = 0xbbbbbbbb;
+  node2->val2 = 0xbbbbbbbb;
   node1->list.flink = &node2->list;
   node1->list.blink = (struct entry *) 0;
   node2->list.flink = (struct entry *) 0;
@@ -363,6 +363,7 @@ int main(){
   test_double_iter_loop_with_head();
   test_double_iter_loop_with_head_insertion();
   test_double_graph_iter();
+  test_pointer_to_list();
 
   printf("pid %u\n",getpid());
   fflush(stdout);

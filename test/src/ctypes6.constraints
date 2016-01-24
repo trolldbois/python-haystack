@@ -4,8 +4,8 @@ val2: [0x0ffffff0]
 txt: [NotNull]  # text there
 
 [struct_Node]
-val1: [0xdeadbeef, 0xdeadbabe]
-val2: [0xffffffff]
+val1: [0xdeadbeef, 0xdeadbabe, 0xbbbbbbbb]
+val2: [0xffffffff, 0xbbbbbbbb]
 #"list.flink": [0,NotNull]
 #"list.blink": [0,NotNull]
 

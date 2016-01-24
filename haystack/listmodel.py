@@ -350,21 +350,27 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         head = memory_map.read_struct(head_addr, pointee_type)
         self._memory_handler.keepRef(head, pointee_type, head_addr)
         #
-        # check that forward and backwards link field name were registered
-        iterator_fn = None
-        if self.is_single_linked_list_type(pointee_type):
-            iterator_fn = self._iterate_single_linked_list
-            # stop at the first sign of a previously found list entry
-            _, gbl_sentinels = self.get_single_linked_list_type(pointee_type)
-        elif self.is_double_linked_list_type(pointee_type):
-            iterator_fn = self._iterate_double_linked_list
-            # stop at the first sign of a previously found list entry
-            _, _, gbl_sentinels = self.get_double_linked_list_type(pointee_type)
+        ## if type of target_fieldname is registered as a list type
+        if False:
+            link_info = self._get_list_info_for_field_for(pointee_type, target_fieldname)
+            return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head=False)
+        ## else if tar
         else:
-            raise RuntimeError("%s is not a registered list" % pointee_type)
-        #
-        _sentinels = sentinels | gbl_sentinels
-        return self._iterate_list_from_field_inner(iterator_fn, head, pointee_type, 0, _sentinels, ignore_head=False)
+            # check that forward and backwards link field name were registered
+            iterator_fn = None
+            if self.is_single_linked_list_type(pointee_type):
+                iterator_fn = self._iterate_single_linked_list
+                # stop at the first sign of a previously found list entry
+                _, gbl_sentinels = self.get_single_linked_list_type(pointee_type)
+            elif self.is_double_linked_list_type(pointee_type):
+                iterator_fn = self._iterate_double_linked_list
+                # stop at the first sign of a previously found list entry
+                _, _, gbl_sentinels = self.get_double_linked_list_type(pointee_type)
+            else:
+                raise RuntimeError("%s is not a registered list" % pointee_type)
+            #
+            _sentinels = sentinels | gbl_sentinels
+            return self._iterate_list_from_field_inner(iterator_fn, head, pointee_type, 0, _sentinels, ignore_head=False)
 
     def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None, ignore_head=True):
         """
@@ -437,7 +443,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param sentinels: values that indicates we should stop iterating.
         :return: pointee_record_type()
         """
-        if not ignore_head:
+        if True and not ignore_head:
             log.debug('Yield head because NOT Ignoring head in inner')
             if not hasattr(head, '_orig_address_'):
                 import pdb

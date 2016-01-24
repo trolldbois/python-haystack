@@ -51,6 +51,18 @@ class TestListStructTest6(SrcTests):
         self.ctypes6_gen32 = None
         sys.path.remove('test/src/')
 
+    def test_iterate_list_from_pointer_field(self):
+        o_root = self.offsets['test_pointer_to_list'][0]
+        root = self.m.read_struct(o_root, self.ctypes6_gen32.struct_Root)
+        self.assertTrue(self.x32_validator.load_members(root, 10))
+        # we know its a double linked list, so we can iterate it.
+        dnodes_addrs = [ el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_double_list, 'list')]
+        # test that we have a list of two allocators in a list
+        self.assertEquals(len(dnodes_addrs), 3)
+        snodes_addrs = [ el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_single_node, 'entry')]
+        self.assertEquals(len(snodes_addrs), 3)
+        return
+
     def test_iter(self):
         self.assertTrue(self.x32_validator.load_members(self.usual, 10))
         # we know its a double linked list, so we can iterate it.
@@ -90,7 +102,7 @@ class TestListStructTest6(SrcTests):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     # logging.getLogger("listmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("basicmodel").setLevel(level=logging.DEBUG)
     # logging.getLogger("root").setLevel(level=logging.DEBUG)

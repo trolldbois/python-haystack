@@ -168,13 +168,6 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
 
         #
         self.register_linked_list_field_and_type(self.win_heap.HEAP, 'VirtualAllocdBlocks', self.win_heap.struct__HEAP_VIRTUAL_ALLOC_ENTRY, 'Entry') # offset = -8
-
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
-        #self.register_single_linked_list_record_type(self.win_heap.union__SLIST_HEADER, '_1')
-        #self.register_single_linked_list_record_type(self.win_heap.struct__SLIST_HEADER_0, 'Next')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead', self.win_heap.union__SLIST_HEADER, '_1')
-        #self.register_linked_list_field_and_type(self.win_heap.union__SLIST_HEADER, '_1', self.win_heap.struct__SLIST_HEADER_0, 'Next')
-
         # 32 bits
         if self._word_size == 4:
             self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_LOOKASIDE, 'ListHead')
@@ -182,25 +175,12 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             pass
         # winxp 64
         # cast(SLIST_HEADER.Region, SINGLE_LIST_ENTRY ?
-
-        #self.register_linked_list_field_and_type(self.win_heap.struct__SLIST_HEADER_0, 'Next', self.win_heap.struct__HEAP_ENTRY, 'ListHead')
-        # what the fuck is pointed record type of listHead ?
-        #self.register_linked_list_field_and_type(self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next', self.win_heap.struct__SINGLE_LIST_ENTRY, 'Next')
-
         self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', sentinels)
-       # self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UCRSegments', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next', self.win_heap.struct__HEAP_UCR_SEGMENT, 'Next')
 
         # UCR
         # ('UnusedUnCommittedRanges', POINTER_T(struct__HEAP_UNCOMMMTTED_RANGE)), Next, Address, Size
         self.register_single_linked_list_record_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', sentinels)
         self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP, 'UnusedUnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
-        #self.register_linked_list_field_and_type(self.win_heap.struct__HEAP_SEGMENT, 'UnCommittedRanges', self.win_heap.struct__HEAP_UNCOMMMTTED_RANGE, 'Next')
-
-        # FIXME LFH
-        ## self.register_linked_list_field_and_type(self.win_heap.LFH_HEAP, 'SubSegmentZones', self.win_heap.LFH_BLOCK_ZONE, 'ListEntry')
-        ## self.register_linked_list_field_and_type(self.win_heap.LFH_BLOCK_ZONE, 'ListEntry', self.win_heap.LFH_BLOCK_ZONE, 'ListEntry')
 
         return
 
