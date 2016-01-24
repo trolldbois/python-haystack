@@ -447,8 +447,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
 
         overhead_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)
         # get allocated/free stats by segment
-        occupied_res2 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
-        free_res2 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
+        occupied_res2 = self.count_by_segment(segments, walker.get_backend_allocations(), overhead_size)
+        free_res2 = self.count_by_segment(segments, walker.get_backend_free_chunks(), overhead_size)
         print "\tSegmentList: %d/%d" % (len(segments), nb_segments)
         for segment in segments:
             p_segment = winheap.Segment(self._memory_handler, walker, segment)
@@ -499,7 +499,7 @@ class Win7HeapValidator(winheap.WinHeapValidator):
                     # to the end of last chunk
                     end = user_blocks_addr + header_size + allocation_length * (block_count + 1)
                     size = end-user_blocks_addr
-                    print '\t\t\t\tSubSegment 0x%0.8x-0x%0.8x size:0x%x\tchunks: count:%d size:0x%x' % (user_blocks_addr, end, size, block_count, allocation_length)
+                    print '\t\t\t\tSubSegment 0x%0.8x-0x%0.8x size:0x%x chunks: count:%d size:0x%x' % (user_blocks_addr, end, size, block_count, allocation_length)
                     total_size += size
                     # occupied_res3 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
                     # free_res3 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)

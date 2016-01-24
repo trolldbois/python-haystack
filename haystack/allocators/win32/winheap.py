@@ -461,7 +461,7 @@ class WinHeapValidator(listmodel.ListModel):
 
         # get allocated/free stats by mappings
         overhead_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_ENTRY)
-        occupied_res = self.count_by_mapping(walker.get_user_allocations(), overhead_size)
+        occupied_res = self.count_by_mapping(walker.get_baackend_allocations(), overhead_size)
         free_res = self.count_by_mapping(walker.get_free_chunks(), overhead_size)
 
         allocated, allocated_overhead = occupied_res.get(m, (0, 0))

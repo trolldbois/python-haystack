@@ -25,15 +25,19 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def _init_heap(self):
         log.debug('+ Heap @%0.8x size: %d # %s',self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
-        # placeholders
-        self._allocs = None
-        self._free_chunks = None
+        # real allocations from the process pov
+        self._user_allocs = None
+        self._user_free_chunks = None
+        # allocation from the heap backend pov (backend_committed+vallocs)
+        self._backend_allocs = None
+        # heap backend allocations
         self._backend_committed = None
         self._backend_free = None
+        # heap frontend allocation
         self._fth_committed = None
         self._fth_free = None
+        # virtual allocation
         self._valloc_committed = None
-        self._valloc_free = None
         #
         self._validator = self._create_validator()
         return
@@ -54,21 +58,43 @@ class WinHeapWalker(heapwalker.HeapWalker):
         """ Does the heap walker or its relevant segments contains this address"""
         raise NotImplementedError('Please implement all methods')
 
+    def get_backend_allocations(self):
+        """
+        returns all backend allocations
+        """
+        if self._backend_allocs is None:
+            self._set_chunk_lists()
+        return self._backend_allocs
+
     def get_user_allocations(self):
         """ returns all User allocations (addr,size) and only the user writeable part.
         addr and size EXCLUDES the HEAP_ENTRY header.
         """
-        if self._allocs is None:
+        if self._user_allocs is None:
             self._set_chunk_lists()
-        return self._allocs
+        return self._user_allocs
 
-    def get_free_chunks(self):
+    def get_user_free_chunks(self):
         """ returns all free chunks that are not allocated (addr,size) .
                 addr and size EXCLUDES the HEAP_ENTRY header.
         """
-        if self._free_chunks is None:
+        if self._user_free_chunks is None:
             self._set_chunk_lists()
-        return self._free_chunks
+        return self._user_free_chunks
+
+    def get_backend_free_chunks(self):
+        """
+        """
+        if self._backend_free is None:
+            self._set_chunk_lists()
+        return self._backend_free
+
+    def get_frontend_free_chunks(self):
+        """
+        """
+        if self._fth_free is None:
+            self._set_chunk_lists()
+        return self._fth_free
 
     def _set_chunk_lists(self):
         """
@@ -83,36 +109,31 @@ class WinHeapWalker(heapwalker.HeapWalker):
         # Backend
         vallocs = self._get_virtualallocations()
         self._check_sizes(vallocs)
-        chunks, free_chunks = self._get_chunks()
+        chunks, backend_free_chunks = self._get_chunks()
         self._check_sizes(chunks)
-        self._check_sizes(free_chunks)
-        # need to cut sizeof(HEAP_ENTRY) from address and size
-        # FIXME ? why report calculation up to here ?
-        sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
-        # make the user allocated list
-        # lst = vallocs | chunks
-        chunks2 = set([(addr + sublen, size - sublen) for addr, size in chunks])
-        # chunks2 = set([(addr, size) for addr, size in chunks])
-        backend_allocs = vallocs | chunks2
+        self._check_sizes(backend_free_chunks)
 
-        # FIXME, we have a 0 size chunks.
-        self._check_sizes(backend_allocs)
+        # chunk == self._backend_committed
+        self._backend_allocs = vallocs | chunks
+        self._check_sizes(self._backend_allocs)
 
         # free_lists == free_chunks.
+        # either get the _get_free_lists() or use free_chunks. Its the same.
         if False:
             log.warning('Duplicate walking of free chunks')
             free_lists = self._get_freelists()
+            # need to cut sizeof(HEAP_ENTRY) from address and size
+            # FIXME ? why report calculation up to here ?
+            sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
             backend_free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_lists])
-            if len(free_chunks) != len(free_lists):
+            if len(backend_free_chunks) != len(free_lists):
                 log.warning('Weird: len(free_chunks) != len(free_lists)')
-        else:
-            backend_free_chunks = set([(addr + sublen, size - sublen) for addr, size in free_chunks])
-        self._check_sizes(backend_free_chunks)
+            self._check_sizes(backend_free_chunks)
 
-        # frontend too
+        # adjust the user allocations based on if there is a frontend or not
         if self.get_heap().FrontEndHeapType == 0:
-            self._allocs = backend_allocs
-            self._free_chunks = backend_free_chunks
+            self._user_allocs = self._backend_allocs
+            self._user_free_chunks = backend_free_chunks
         else:
             front_allocs, front_free_chunks = self._get_frontend_chunks()
             self._check_sizes(front_allocs)
@@ -121,22 +142,40 @@ class WinHeapWalker(heapwalker.HeapWalker):
             #front_allocs2 = set([(addr + sublen, size - sublen) for addr, size in front_allocs])
             #front_free_chunks2 = set([(addr + sublen, size - sublen) for addr, size in front_free_chunks])
             # points to chunk
-            front_allocs2 = set([(addr, size ) for addr, size in front_allocs])
+            front_allocs2 = set([(addr, size) for addr, size in front_allocs])
             front_free_chunks2 = set([(addr, size) for addr, size in front_free_chunks])
             self._check_sizes(front_allocs2)
             self._check_sizes(front_free_chunks2)
+
+            # print "backend_allocs", hex(sum([s for a, s in self._backend_allocs]))
+            # print "frontend_allocs", hex(sum([s for a, s in front_allocs2]))
+            # print "backend_free_chunks", hex(sum([s for a, s in backend_free_chunks]))
+            # print "frontend_free_chunks", hex(sum([s for a, s in front_free_chunks2]))
+            # import code
+            # code.interact(local=locals())
 
             if self.get_heap().FrontEndHeapType == 1:
                 # LAL: reports vallocs and (_get_chunks-lal) as committed
                 #      reports lal | free_list as free
                 # TODO + overhead
-                self._allocs = backend_allocs - front_free_chunks2
-                self._free_chunks = front_free_chunks2 | backend_free_chunks
+                # FIXME , use same code than LFH ?
+                self._user_allocs = self._backend_allocs - front_free_chunks2
+                self._user_free_chunks = front_free_chunks2 | backend_free_chunks
             elif self.get_heap().FrontEndHeapType == 2:
-                # LFH: reports vallocs and (_get_chunks-lfh_free | lfh_committed) as committed
-                #      reports lfh_free | free_list as free
-                self._allocs = backend_allocs - front_free_chunks2 | front_allocs2
-                self._free_chunks = front_free_chunks2 | backend_free_chunks
+                # free chunks are backend free chunks + frontend free chunks
+                self._user_free_chunks = backend_free_chunks | front_free_chunks2
+                # we only keep backend allocations that are not used by LFH
+                backend_allocs2 = set()
+                for start, size in self._backend_allocs:
+                    end = start + size
+                    lfh_block = False
+                    for front_addr in front_allocs2:
+                        if start <= front_addr < end:
+                            lfh_block = True
+                            break
+                    if not lfh_block:
+                        backend_allocs2.add((start, size))
+                self._user_allocs = backend_allocs2 | front_allocs2
 
         return
 
@@ -157,15 +196,17 @@ class WinHeapWalker(heapwalker.HeapWalker):
     def _get_chunks(self):
         """ returns addr,size of committed,free heap entries in blocksindex"""
         if (self._backend_committed, self._backend_free) == (None, None):
-            self._backend_committed, self._backend_free = self.get_heap_validator().get_backend_chunks(self.get_heap())
+            #self._backend_committed, self._backend_free = self.get_heap_validator().get_backend_chunks(self.get_heap())
+            _backend_committed, _backend_free = self.get_heap_validator().get_backend_chunks(self.get_heap())
             # HEAP_ENTRY.Size is in chunk size. (8 bytes / 16 bytes )
-            allocsize = sum([c[1] for c in self._backend_committed])
-            freesize = sum([c[1] for c in self._backend_free])
-            log.debug('\t+ Segment Chunks: alloc: %0.4d [%0.5d B] free: %0.4d [%0.5d B]' % (
-                len(self._backend_committed), allocsize, len(self._backend_free), freesize))
-            #
-            # for chunk in allocated:
-            #    log.debug( '\t\t- chunk @%0.8x size:%d'%(chunk[0], chunk[1]) )
+            sublen = ctypes.sizeof(self._heap_module.HEAP_ENTRY)
+            # get the proper offset and sizes
+            self._backend_committed = set([(addr + sublen, size - sublen) for addr, size in _backend_committed])
+            self._backend_free = set([(addr + sublen, size - sublen) for addr, size in _backend_free])
+            # allocsize = sum([c[1] for c in self._backend_committed])
+            # freesize = sum([c[1] for c in self._backend_free])
+            # log.debug('\t+ Segment Chunks: alloc: %0.4d [%0.5d B] free: %0.4d [%0.5d B]' % (
+            #    len(self._backend_committed), allocsize, len(self._backend_free), freesize))
         return self._backend_committed, self._backend_free
 
     def _get_frontend_chunks(self):
