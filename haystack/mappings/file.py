@@ -224,7 +224,6 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     self._memdump = None
                     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
                     # this is a local memory hack, so
-                    # self._target_platform.get_word_type() is not involved.
                     heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(
                         id(self._local_mmap_bytebuffer) + 2 * (ctypes.sizeof(ctypes.c_ulong))))[0]
                     self._local_mmap_content = (ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
@@ -355,11 +354,9 @@ class FileBackedMemoryMapping(MemoryDumpMemoryMapping):
     def read_word(self, vaddr):
         """Address have to be aligned!"""
         laddr = self._vtop(vaddr)
-        word = self._target_platform.get_word_type().from_buffer_copy(
-            self._local_mmap[
-                laddr:laddr +
-                self._target_platform.get_word_size()],
-            0).value  # is non-aligned a pb ?
+        size = self._ctypes.sizeof(self._ctypes.c_ulong)
+        word = self._ctypes.c_ulong.from_buffer_copy(self._local_mmap[laddr:laddr + size], 0).value
+        # is non-aligned a pb ?
         return word
 
     def read_array(self, address, basetype, count):
