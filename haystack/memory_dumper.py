@@ -98,7 +98,8 @@ class MemoryDumper:
     def _dump_mapping(self, m, tmpdir):
         """Dump one mapping to one file in one tmpdir."""
         # FIXME: remove address formatting as a criteria for platform cpu
-        my_utils = self._memory_handler.get_target_platform().get_ctypes_utils()
+        # FIXME: found out Linux process cpu instead.
+        my_utils = self._memory_handler.get_target_platform().get_target_ctypes_utils()
         if m.permissions[0] != 'r':
             log.debug('Ignore read protected mapping %s', m)
             return
@@ -106,6 +107,7 @@ class MemoryDumper:
             log.debug('Ignore system mapping %s', m)
             return
         # make filename
+        # FIXME, filename should be done with cpu length info
         # We don't really care about the filename but we need to be coherent.
         mname = b'%s-%s' % (my_utils.formatAddress(m.start), my_utils.formatAddress(m.end))
         mmap_fname = os.path.join(tmpdir, mname)

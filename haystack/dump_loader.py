@@ -137,50 +137,42 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             fields = l.strip().split(' ')
             if '' in fields:
                 fields.remove('')
-            self.metalines.append(
-                (fields[0],
-                 fields[1],
-                    fields[2],
-                    fields[3],
-                    fields[4],
-                    fields[5],
-                    ' '.join(
-                    fields[
-                        6:])))
+            start, end = int(fields[0], 16), int(fields[1], 16)
+            # rebuild filename
+            mmap_fname = "%s-%s" % (fields[0], fields[1])
+            permissions = fields[2]
+            size = int(fields[3].split(':')[1], 16)
+            if size != end-start:
+                raise ValueError('Error in mapping, size incorrect for start:0x%x' % start)
+            offset = int(fields[4].split(':')[1], 16)
+            # get devices nums
+            major_device, minor_device = fields[5].split(':')
+            major_device = int(major_device, 16)
+            minor_device = int(minor_device, 16)
+            inode = int(fields[6].split(':')[1])
+            # pathname
+            pathname = ' '.join(fields[7:])
+            # add to metaline
+            self.metalines.append((mmap_fname, start, end, permissions, size, offset, inode, major_device, minor_device, pathname))
         return
 
     def _load_memory_mappings(self):
         """ make the python objects"""
         _mappings = []
-        for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
-            start, end = int(_start, 16), int(_end, 16)
-            offset = int(offset, 16)
-            inode = int(inode)
-            # rebuild filename
-            mmap_fname = "%s-%s" % (_start, _end)
-            # get devices nums
-            major_device, minor_device = devices.split(':')
-            major_device = int(major_device, 16)
-            minor_device = int(minor_device, 16)
-            log.debug('Loading %s - %s' % (mmap_fname, mmap_pathname))
+        for mmap_fname, start, end, permissions, size, offset, inode, major_device, minor_device, pathname in self.metalines:
+            log.debug('Loading %s - %s' % (mmap_fname, pathname))
             # open the file in the archive
             try:
-                mmap_content_file = self._protected_open_file(mmap_fname, mmap_pathname)
+                mmap_content_file = self._protected_open_file(mmap_fname, pathname)
             except (IOError, KeyError) as e:
                 log.debug('Ignore absent file : %s' % (e))
                 mmap = AMemoryMapping(start, end, permissions, offset,
-                                     major_device, minor_device, inode, pathname=mmap_pathname)
+                                     major_device, minor_device, inode, pathname=pathname)
                 _mappings.append(mmap)
                 continue
-            # except ValueError,e: # explicit non-loading
-            #    log.debug('Ignore useless file : %s'%(e))
-            #    mmap = MemoryMapping(start, end, permissions, offset,
-            #                                                    major_device, minor_device, inode,pathname=mmap_pathname)
-            #    self._memory_handler.append(mmap)
-            #    continue
             except LazyLoadingException as e:
                 mmap = FilenameBackedMemoryMapping(e._filename, start, end, permissions, offset,
-                                                   major_device, minor_device, inode, pathname=mmap_pathname)
+                                                   major_device, minor_device, inode, pathname=pathname)
                 _mappings.append(mmap)
                 continue
 
@@ -188,22 +180,22 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 log.warning(
                     'Using a local memory mapping . Zipfile sux. thx ruby.')
                 mmap = AMemoryMapping(start, end, permissions, offset,
-                                     major_device, minor_device, inode, pathname=mmap_pathname)
+                                     major_device, minor_device, inode, pathname=pathname)
                 mmap = LocalMemoryMapping.fromBytebuffer(
                     mmap,
                     mmap_content_file.read())
             # use file mmap when file is too big
             elif end - start > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
-                log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (mmap_pathname) +
+                log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (pathname) +
                             ' Search will fail. Buffer is needed.')
                 mmap = FileBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset,
-                                               major_device, minor_device, inode, pathname=mmap_pathname)
+                                               major_device, minor_device, inode, pathname=pathname)
             else:
                 # log.debug('Using a MemoryDumpMemoryMapping. small size')
                 # mmap = MemoryDumpMemoryMapping(mmap_content_file, start, end, permissions, offset,
                 log.debug('Always use FilenameBackedMemoryMapping. small size')
                 mmap = FilenameBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset,
-                                               major_device, minor_device, inode, pathname=mmap_pathname)
+                                               major_device, minor_device, inode, pathname=pathname)
             _mappings.append(mmap)
         _target_platform = target.TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)
         self._memory_handler = MemoryHandler(_mappings, _target_platform, self.dumpname)
@@ -247,21 +239,12 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
         """ make the python objects"""
         _mappings = []
         default_ctypes = types.load_ctypes_default()
-        for _start, _end, permissions, offset, devices, inode, mmap_pathname in self.metalines:
-            start, end = int(_start, 16), int(_end, 16)
-            offset = int(offset, 16)
-            inode = int(inode)
-            # rebuild filename
-            mmap_fname = "%s-%s" % (_start, _end)
-            # get devices nums
-            major_device, minor_device = devices.split(':')
-            major_device = int(major_device, 16)
-            minor_device = int(minor_device, 16)
-            log.debug('Loading %s - %s' % (mmap_fname, mmap_pathname))
+        for mmap_fname, start, end, permissions, size, offset, inode, major_device, minor_device, pathname in self.metalines:
+            log.debug('Loading %s - %s' % (mmap_fname, pathname))
             # open the file in the archive
             fname = os.path.sep.join([self.dumpname, mmap_fname])
             mmap = FilenameBackedMemoryMapping(fname, start, end, permissions, offset,
-                                               major_device, minor_device, inode, pathname=mmap_pathname)
+                                               major_device, minor_device, inode, pathname=pathname)
             mmap.set_ctypes(default_ctypes)
             _mappings.append(mmap)
         _target_platform = target.TargetPlatform(_mappings, cpu_bits=self._cpu_bits, os_name=self._os_name)

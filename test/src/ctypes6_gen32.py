@@ -59,6 +59,22 @@ struct_entry._fields_ = [
 ]
 
 Entry = struct_entry
+class struct_slist(ctypes.Structure):
+    pass
+
+struct_slist._pack_ = True # source:False
+struct_slist._fields_ = [
+    ('next', POINTER_T(struct_slist)),
+]
+
+SList = struct_slist
+class struct_single_node(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('val1', ctypes.c_uint32),
+    ('entry', SList),
+     ]
+
 class struct_usual(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
@@ -78,5 +94,15 @@ class struct_Node(ctypes.Structure):
     ('val2', ctypes.c_uint32),
      ]
 
+class struct_Root(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('val1', ctypes.c_uint32),
+    ('ptr_to_double_list', POINTER_T(struct_Node)),
+    ('ptr_to_single_node', POINTER_T(struct_single_node)),
+    ('val2', ctypes.c_uint32),
+     ]
+
 __all__ = \
-    ['Entry', 'struct_entry', 'struct_usual', 'struct_Node']
+    ['struct_Node', 'struct_entry', 'struct_single_node',
+    'struct_Root', 'struct_usual', 'SList', 'struct_slist', 'Entry']

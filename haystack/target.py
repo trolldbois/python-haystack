@@ -218,7 +218,7 @@ class TargetPlatform(interfaces.ITargetPlatform):
         # win  32 bits, 4,4,8
         # linux 32 bits, 4,4,12
         # linux 64 bits, 8,8,16
-        if self.__os_name in [self.WINXP,self.WIN7]:
+        if self.__os_name in [self.WINXP, self.WIN7]:
             return 8
         elif self.__os_name == self.LINUX and self.__word_size == 4:
             return 12
@@ -262,7 +262,7 @@ __LOCAL_PLATFORM = None
 
 def _make_target_platform_local():
     """
-    module paltform is very slow. We need to cache the information.
+    module platform is very slow. We need to cache the information.
     The local platform will not change in between calls :)
     """
     global __LOCAL_PLATFORM

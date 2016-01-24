@@ -13,6 +13,17 @@ struct entry {
   Entry * blink;
 };
 
+typedef struct slist SList;
+
+struct slist {
+  SList * next;
+};
+
+struct single_node
+{
+  unsigned int val1;
+  SList entry;
+};
 
 struct usual
 {
@@ -31,6 +42,58 @@ struct Node
   unsigned int val2;
 };
 
+struct Root
+{
+  unsigned int val1;
+  struct Node * ptr_to_double_list;
+  struct single_node * ptr_to_single_node;
+  unsigned int val2;
+};
+
+
+void test_pointer_to_list(){
+  // test with pointer in root node to test api
+  struct Node * root_node, *node1, *node2;
+  root_node = (struct Node *) malloc(sizeof(struct Node));
+  node1 = (struct Node *) malloc(sizeof(struct Node));
+  node2 = (struct Node *) malloc(sizeof(struct Node));
+  root_node->val1 = 0xbbbbbbbb;
+  root_node->val2 = 0xbbbbbbbb;
+  node1->val1 = 0xdeadbeef;
+  node1->val2 = 0xffffffff;
+  node2->val1 = 0xdeadbabe;
+  node2->val2 = 0xffffffff;
+  node1->list.flink = &node2->list;
+  node1->list.blink = (struct entry *) 0;
+  node2->list.flink = (struct entry *) 0;
+  node2->list.blink = &node1->list;
+  root_node->list.flink = &node1->list;
+  root_node->list.blink = &node2->list;
+  // root_node is our double list
+
+  struct single_node * single_node, *snode1, *snode2;
+  single_node = (struct single_node *) malloc(sizeof(struct single_node));
+  snode1 = (struct single_node *) malloc(sizeof(struct single_node));
+  snode2 = (struct single_node *) malloc(sizeof(struct single_node));
+  single_node->val1 = 0xbbbbbbb0;
+  snode1->val1 = 0xbbbbbbb1;
+  snode2->val1 = 0xbbbbbbb2;
+  single_node->entry.next = &snode1->entry;
+  snode1->entry.next = &snode2->entry;
+  snode2->entry.next = (struct slist *) 0;
+  // single_node is our single list
+
+  struct Root * root;
+  root = (struct Root *) malloc(sizeof(struct Root));
+  root->val1 = 0xbbbbbbbf;
+  root->val1 = 0xfffffffb;
+  root->ptr_to_double_list = root_node;
+  root->ptr_to_single_node = single_node;
+
+  printf("o: test_pointer_to_list %p\n", root);
+
+  return;
+}
 
 void test1(){
   // test Head-> node1 <-> node2

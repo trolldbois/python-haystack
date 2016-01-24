@@ -146,12 +146,16 @@ def make_process_memory_handler(process):
 
     mappings = []
     try:
+        is_64 = False
         # read the mappings
         for line in mapsfile:
             line = line.rstrip()
             match = PROC_MAP_REGEX.match(line)
             if not match:
                 raise IOError(process, "Unable to parse memory mapping: %r" % line)
+            if not is_64 and len(match.group(1)) > 8:
+                is_64 = True
+            #
             log.debug('readProcessMappings %s' % (str(match.groups())))
             _map = ProcessMemoryMapping(process, int(match.group(1), 16), int(match.group(2), 16),
                                         match.group(3), int(match.group(4), 16), int(match.group(5), 16),
@@ -161,16 +165,31 @@ def make_process_memory_handler(process):
         if isinstance(mapsfile, file):
             mapsfile.close()
     # create the memory_handler for self
-    _target_platform = target.TargetPlatform.make_target_platform_local()
+    import sys
+    if 'linux' in sys.platform:
+        os_name = target.TargetPlatform.LINUX
+    else: # sys.platform.startswith('win'):
+        os_name = target.TargetPlatform.WIN7
+    _target_platform = None
+    if is_64:
+        if os_name in [target.TargetPlatform.WINXP, target.TargetPlatform.WIN7]:
+            _target_platform = target.TargetPlatform.make_target_win_64(os_name)
+        elif os_name == target.TargetPlatform.LINUX:
+            _target_platform = target.TargetPlatform.make_target_linux_64()
+    else:
+        if os_name in [target.TargetPlatform.WINXP, target.TargetPlatform.WIN7]:
+            _target_platform = target.TargetPlatform.make_target_win_32(os_name)
+        elif os_name == target.TargetPlatform.LINUX:
+            _target_platform = target.TargetPlatform.make_target_linux_32()
     _memory_handler = MemoryHandler(mappings, _target_platform, 'localhost-%d' % process.get_pid())
     return _memory_handler
 
 
 __LOCAL_MAPPINGS = None
 
+
 def make_local_memory_handler():
     global __LOCAL_MAPPINGS
     if __LOCAL_MAPPINGS is None:
-        # __LOCAL_MAPPINGS = make_process_memory_handler(dbg.get_debugger(os.getpid()))
         __LOCAL_MAPPINGS = make_process_memory_handler(dbg.MyPTraceProcess(os.getpid(), None))
     return __LOCAL_MAPPINGS
