@@ -769,8 +769,8 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
 
         overhead_size = self._memory_handler.get_target_platform().get_target_ctypes().sizeof(self.win_heap.struct__HEAP_ENTRY)
         # get allocated/free stats by segment
-        occupied_res2 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
-        free_res2 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
+        occupied_res2 = self.count_by_segment(segments, walker.get_backend_allocations(), overhead_size)
+        free_res2 = self.count_by_segment(segments, walker.get_backend_free_chunks(), overhead_size)
 
         print "\tSegmentList: %d" % len(segments)
         for segment in segments:

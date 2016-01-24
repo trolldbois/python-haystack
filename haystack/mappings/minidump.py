@@ -984,7 +984,8 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
     def __init__(self, filename, cpu=None, os_name=None):
         construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
-        self.filename = os.path.basename(filename)
+        self.filename = os.path.abspath(filename)
+        self.dumpname = os.path.basename(filename)
         self.cpu = cpu
         self.os_name = os_name
         self._init_mappings(construct_data)
@@ -1069,7 +1070,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
         log.debug("nb maps: %d", len(self.mappings))
         log.debug("target: %s", self._target)
         # Use a folder name for its cache later on
-        h_name = self.filename + ".d"
+        h_name = self.dumpname + ".d"
         memory_handler = base.MemoryHandler(self.mappings, self._target, h_name)
         self._memory_handler = memory_handler
         return
