@@ -188,8 +188,8 @@ def make_process_memory_handler(process):
 __LOCAL_MAPPINGS = None
 
 
-def make_local_memory_handler():
+def make_local_memory_handler(force=False):
     global __LOCAL_MAPPINGS
-    if __LOCAL_MAPPINGS is None:
+    if __LOCAL_MAPPINGS is None or force:
         __LOCAL_MAPPINGS = make_process_memory_handler(dbg.MyPTraceProcess(os.getpid(), None))
     return __LOCAL_MAPPINGS

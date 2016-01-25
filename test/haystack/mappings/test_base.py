@@ -41,7 +41,7 @@ class TestMmapHack(unittest.TestCase):
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x' % heapmap)
-        handler = make_local_memory_handler()
+        handler = make_local_memory_handler(force=True)
         ret = [m for m in handler.get_mappings() if heapmap in m]
         if len(ret) == 0:
             for m in handler.get_mappings():
@@ -65,10 +65,10 @@ class TestMmapHack(unittest.TestCase):
         fin = file(fname)
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
-        heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) +
+        heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x', heapmap)
-        maps = make_local_memory_handler()
+        maps = make_local_memory_handler(force=True)
         # print 'MMAP HACK: heapmap: 0x%0.8x' % heapmap
         # for m in maps:
         #    print m
