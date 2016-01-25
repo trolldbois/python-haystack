@@ -233,8 +233,12 @@ class Test6_x32(_ApiTest):
         handler = constraints.ConstraintsConfigHandler()
         my_constraints = handler.read('test/src/ctypes6.constraints')
         results = haystack.search_record(self.memory_handler, self.node, my_constraints)
-        self.assertEquals(len(results), 2)
-        (node1, offset1), (node2, offset2) = results
+        # 2 from test1
+        # 3 from test_pointer_to_list
+        # the rest have bad values in constrainged fields
+        self.assertEquals(len(results), 2 + 3)
+        # FIXME: that is a weird idea, that allocations are ordered that way
+        (node1, offset1), (node2, offset2) = results[:2]
         self.assertEquals(node1.val1, 0xdeadbeef)
         self.assertEquals(node1.val2, 0xffffffff)
         self.assertEquals(node2.val1, 0xdeadbabe)

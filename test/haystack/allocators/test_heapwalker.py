@@ -32,6 +32,7 @@ class TestWalkers(unittest.TestCase):
         cls.winxp_mh_32 = dump_loader.load('test/dumps/minidump/cmd.dmp')
         cls.winxp_mh_64 = dump_loader.load('test/dumps/minidump/alg.dmp')
         cls.win7_mh_32 = dump_loader.load(putty_1_win7.dumpname)
+        # FIXME, its loaded as a winxp
         cls.win7_mh_64 = dump_loader.load('test/dumps/keepass.test')
 
     @classmethod
@@ -97,13 +98,13 @@ class TestWalkers(unittest.TestCase):
         self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_module.malloc_chunk), 8)
         # winXP
         walker = winxp_hf_32.list_heap_walkers()[0]
-        self.assertEquals(winxp_32_ctypes.sizeof(walker._heap_module.HEAP), 1430)
+        self.assertEquals(winxp_32_ctypes.sizeof(walker._heap_module.HEAP), 1416)
         # win7
         walker = win7_hf_32.list_heap_walkers()[0]
-        self.assertEquals(win7_32_ctypes.sizeof(walker._heap_module.HEAP), 312)# 0x138
+        self.assertEquals(win7_32_ctypes.sizeof(walker._heap_module.HEAP), 520)# 0x138
 
         # 64 bits
-        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64.malloc_chunk), 16)
+        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._heap_module.malloc_chunk), 16)
         walker = win7_hf_64.list_heap_walkers()[0]
         self.assertEquals(win7_64_ctypes.sizeof(walker._heap_module.HEAP), 520)
         walker = winxp_hf_64.list_heap_walkers()[0]

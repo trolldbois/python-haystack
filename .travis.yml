@@ -30,30 +30,41 @@ before_script:
   - mkdir -p test/dumps/ssh
   - mkdir -p test/dumps/vol
   - mkdir -p test/dumps/minidump
+# win7 x32
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
   - unzip -q putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.7124.dump.zip
   - unzip -q putty.7124.dump.zip
   - mv putty.7124.dump test/dumps/putty/
+# win7 x64
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/keepass.test.zip
+  - unzip -q keepass.test.zip
+  - mv keepass.test test/dumps/
+# linux
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
   - tar zxf ssh.1.tgz
   - mv ssh.1 test/dumps/ssh/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
   - tar zxf ssh.x64.6653.dump.tgz
   - mv ssh.x64.6653.dump test/dumps/ssh/
+# process extracted from volatility
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.1668.dump.tgz
   - tar zxf zeus.vmem.1668.dump.tgz
   - mv zeus.vmem.1668.dump test/dumps/vol/
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.856.dump.tgz
   - tar zxf zeus.vmem.856.dump.tgz
   - mv zeus.vmem.856.dump test/dumps/vol/
+# winxp 64
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/cmd.dmp.gz
   - gunzip cmd.dmp.gz
   - mv cmd.dmp test/dumps/minidump
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/alg.dmp.gz
+  - gunzip alg.dmp.gz
+  - mv alg.dmp test/dumps/minidump
 # we need the simple memory tests.
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-0c73e72b3b412cad9a0e7d8e2c00e954049f6b6f.tgz
-  - tar zxf src-e9725507c709f52cd884194e262adf40ec0ef4b1.tgz -C test/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz
+  - tar zxf src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz -C test/
 
 
 script:
