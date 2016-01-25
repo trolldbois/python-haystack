@@ -29,6 +29,7 @@ before_script:
   - mkdir -p test/dumps/putty
   - mkdir -p test/dumps/ssh
   - mkdir -p test/dumps/vol
+  - mkdir -p test/dumps/minidump
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
   - unzip -q putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
@@ -47,6 +48,9 @@ before_script:
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.856.dump.tgz
   - tar zxf zeus.vmem.856.dump.tgz
   - mv zeus.vmem.856.dump test/dumps/vol/
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/cmd.dmp.gz
+  - gunzip cmd.dmp.gz
+  - mv cmd.dmp test/dumps/minidump
 # we need the simple memory tests.
   - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-e9725507c709f52cd884194e262adf40ec0ef4b1.tgz
   - tar zxf src-e9725507c709f52cd884194e262adf40ec0ef4b1.tgz -C test/
