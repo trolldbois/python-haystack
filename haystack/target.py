@@ -1,12 +1,12 @@
-import platform
 import logging
+import platform
+import struct
 import sys
 
 from haystack import types
 from haystack import utils
 from haystack.abc import interfaces
 
-__author__ = 'jal'
 
 log = logging.getLogger("target")
 
@@ -91,55 +91,59 @@ class TargetPlatform(interfaces.ITargetPlatform):
     @classmethod
     def _detect_os(cls, mappings):
         """Arch independent way to assess the os of a captured process"""
-        linux = winxp = win7 = 0
+        scores = {'linux': 0, 'winxp': 0, 'win7': 0}
         for pathname in [m.pathname.lower() for m in mappings
                          if m.pathname is not None and m.pathname != '']:
             if '\\system32\\' in pathname:
-                winxp += 1
-                win7 += 1
+                scores['winxp'] += 1
+                scores['win7'] += 1
             if 'ntdll.dll' in pathname:
-                winxp += 1
-                win7 += 1
+                scores['winxp'] += 1
+                scores['win7'] += 1
             elif 'Documents and Settings' in pathname:
-                winxp += 1
+                scores['winxp'] += 1
             elif 'xpsp2res.dll' in pathname:
-                winxp += 1
+                scores['winxp'] += 1
             elif 'SysWOW64' in pathname:
-                win7 += 1
+                scores['win7'] += 1
             elif '\\wer.dll' in pathname:
-                win7 += 1
+                scores['win7'] += 1
             elif '[heap]' in pathname:
-                linux += 1
+                scores['linux'] += 1
             elif '[vdso]' in pathname:
-                linux += 1
+                scores['linux'] += 1
             elif '/usr/lib/' in pathname:
-                linux += 1
+                scores['linux'] += 1
             elif '/' == pathname[0]:
-                linux += 1
+                scores['linux'] += 1
+        for m in mappings:
+            # winxp versus win7 - try out heap Signature
+            for os_name, bits, offset in [('winxp', 32, 8), ('winxp', 64, 16), ('win7', 32, 100), ('win7', 64, 160)]:
+                signature = struct.unpack('I', m.read_bytes(m.start+offset, 4))[0]
+                if signature == 0xeeffeeff:
+                    scores[os_name] += 1
         # if nothing is found that way, try pefile detection
         # volatility case usually
-        if linux == winxp == win7 == 0:
+        if scores.values() == [0, 0, 0]:
             try:
                 cls._detect_cpu_arch_pe(mappings)
-                winxp += 1
-                win7 += 1
+                scores['winxp'] += 1
+                scores['win7'] += 1
             except NotImplementedError, e:
                 pass
             try:
                 cls._detect_cpu_arch_elf(mappings)
-                linux += 1
+                scores['linux'] += 1
             except NotImplementedError, e:
                 pass
 
-        log.debug(
-            'detect_os: scores linux:%d winxp:%d win7:%d' %
-            (linux, winxp, win7))
-        scores = max(linux, max(winxp, win7))
-        if scores == linux:
+        log.debug('detect_os: scores linux:%d winxp:%d win7:%d', scores['linux'], scores['winxp'], scores['win7'])
+        res = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0]
+        if res[0] == 'linux':
             return cls.LINUX
-        elif scores == winxp:
+        elif res[0] == 'winxp':
             return cls.WINXP
-        elif scores == win7:
+        elif res[0] == 'win7':
             return cls.WIN7
 
     @classmethod
