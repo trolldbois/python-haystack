@@ -217,7 +217,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
             # self.assertNotEquals(free,[])
             for chunk_addr, chunk_size in allocated:
                 # self.assertLess(chunk_size, 0x800) # FIXME ???? sure ?
-                self.assertGreater(
+                self.assertGreaterEqual(
                     chunk_size, 0x8, 'too small chunk_addr == 0x%0.8x size: %d' %
                     (chunk_addr, chunk_size))
             a_sizes = sum([x[1] for x in allocated])
