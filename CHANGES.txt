@@ -22,7 +22,7 @@ Changes to architecture.txt:
  - 90% support of LFH and LAL on winXP 32 and 64 bits.
  - 90% support of LFH on win7 32 and 64 bits.
  - 95% support of UCR.
- - Preliminary support of mixed x32/x64 Windows Heap processes
+ - Support of mixed x32/x64 Windows Heap processes
 
 2015-10:
  - cleaning up the reverse API
