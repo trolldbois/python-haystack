@@ -80,6 +80,9 @@ class HeapFinder(interfaces.IHeapFinder):
             raise TypeError('Feed me a IMemoryMapping object')
         if not self._heap_walkers_dict:
             self.list_heap_walkers()
+        # BUG FIXME reverse
+        if mapping.start not in self._heap_walkers_dict:
+            raise ValueError('mapping not used as a heap')
         walker = self._heap_walkers_dict[mapping.start]
         return walker
 
