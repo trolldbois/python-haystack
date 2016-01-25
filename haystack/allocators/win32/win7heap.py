@@ -227,7 +227,7 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         :return:
         """
         # look at the list of LFH_BLOCK_ZONE
-        for lfh_block in self.iterate_list_from_field(lfh_heap, 'SubSegmentZones', ignore_head=False):
+        for lfh_block in self.iterate_list_from_field(lfh_heap, 'SubSegmentZones'):
             yield lfh_block
 
     def _get_LFH_SubSegment_from_CrtZone(self, lfh_heap):

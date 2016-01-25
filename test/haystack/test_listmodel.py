@@ -56,11 +56,27 @@ class TestListStructTest6(SrcTests):
         root = self.m.read_struct(o_root, self.ctypes6_gen32.struct_Root)
         self.assertTrue(self.x32_validator.load_members(root, 10))
         # we know its a double linked list, so we can iterate it.
-        dnodes_addrs = [ el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_double_list, 'list')]
+        dnodes = [el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_double_list, 'list')]
         # test that we have a list of two allocators in a list
-        self.assertEquals(len(dnodes_addrs), 3)
-        snodes_addrs = [ el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_single_node, 'entry')]
-        self.assertEquals(len(snodes_addrs), 3)
+        self.assertEquals(len(dnodes), 3)
+        for el in dnodes:
+            self.assertIsInstance(el, self.ctypes6_gen32.struct_Node)
+        snodes = [el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_single_node, 'entry')]
+        self.assertEquals(len(snodes), 3)
+        for el in snodes:
+            self.assertIsInstance(el, self.ctypes6_gen32.struct_single_node)
+        return
+
+    def test_iterate_list_from_field(self):
+        o_root = self.offsets['test1'][0]
+        usual = self.m.read_struct(o_root, self.ctypes6_gen32.struct_usual)
+        self.assertTrue(self.x32_validator.load_members(usual, 10))
+        # we want the list of 2 nodes
+        dnodes_addrs = [ el for el in self.x32_validator.iterate_list_from_field(usual, 'root')]
+        self.assertEquals(len(dnodes_addrs), 2)
+        for el in self.x32_validator.iterate_list_from_field(usual, 'root'):
+            self.assertIsInstance(el, self.ctypes6_gen32.struct_Node)
+
         return
 
     def test_iter(self):

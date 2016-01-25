@@ -12,6 +12,7 @@ class CTypes6Validator(listmodel.ListModel):
         self.register_single_linked_list_record_type(self.ctypes6.struct_slist, 'next')
         self.register_double_linked_list_record_type(self.ctypes6.struct_entry, 'flink', 'blink')
         # heads
+        self.register_linked_list_field_and_type(self.ctypes6.struct_usual, 'root', self.ctypes6.struct_Node, 'list')
         self.register_linked_list_field_and_type(self.ctypes6.struct_Node, 'list', self.ctypes6.struct_Node, 'list')
         self.register_linked_list_field_and_type(self.ctypes6.struct_single_node, 'entry', self.ctypes6.struct_single_node, 'entry')
 

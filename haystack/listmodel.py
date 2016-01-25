@@ -56,7 +56,7 @@ Registration usage:
 In case of a single link list of siblings:
     register_single_linked_list_record_type(struct_SListEntry, 'next')
     register_linked_list_field_and_type(struct_Items, 'list_of_items', struct_Items, 'list_of_items')
-    register_linked_list_pointer_and_type(struct_Items2, 'list_of_items', struct_Items2, 'list_of_items')
+    register_linked_list_field_and_type(struct_Items2, 'list_of_items', struct_Items2, 'list_of_items')
 
 In case of a single link list:
     register_single_linked_list_record_type(struct_SListEntry, 'next')
@@ -349,28 +349,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             raise ValueError('ValueError: the root of this linked list has a bad value: 0x%x' % head_addr)
         head = memory_map.read_struct(head_addr, pointee_type)
         self._memory_handler.keepRef(head, pointee_type, head_addr)
-        #
-        ## if type of target_fieldname is registered as a list type
-        if False:
-            link_info = self._get_list_info_for_field_for(pointee_type, target_fieldname)
-            return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head=False)
-        ## else if tar
-        else:
-            # check that forward and backwards link field name were registered
-            iterator_fn = None
-            if self.is_single_linked_list_type(pointee_type):
-                iterator_fn = self._iterate_single_linked_list
-                # stop at the first sign of a previously found list entry
-                _, gbl_sentinels = self.get_single_linked_list_type(pointee_type)
-            elif self.is_double_linked_list_type(pointee_type):
-                iterator_fn = self._iterate_double_linked_list
-                # stop at the first sign of a previously found list entry
-                _, _, gbl_sentinels = self.get_double_linked_list_type(pointee_type)
-            else:
-                raise RuntimeError("%s is not a registered list" % pointee_type)
-            #
-            _sentinels = sentinels | gbl_sentinels
-            return self._iterate_list_from_field_inner(iterator_fn, head, pointee_type, 0, _sentinels, ignore_head=False)
+        # you need to use target_fieldname in pointee_type, to know what is the list.
+        # if type of target_fieldname is registered as a list type
+        link_info = self._get_list_info_for_field_for(pointee_type, target_fieldname)
+        return self._iterate_list_from_field_with_link_info(head, link_info, sentinels, ignore_head=False)
 
     def _iterate_list_from_field_with_link_info(self, record, link_info, sentinels=None, ignore_head=True):
         """
@@ -410,6 +392,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             raise RuntimeError("Field %s was defined as linked link entry record type %s, but not registered" % (
                                 fieldname, field_record_type))
         # now that this is cleared, lets iterate.
+        if not ignore_head:
+            # in case of ENTRY x2 list, head is ENTRY.
+            log.debug('Yield head because NOT Ignoring head in inner')
+            yield record
         # @ of the fieldname in record. This can be different from offset.
         head_address = record._orig_address_ + self._utils.offsetof(type(record), fieldname)
         head._orig_address_ = head_address
@@ -423,9 +409,11 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             # TODO, TU that.
         #
         log.debug("_iterate_list_from_field_with_link_info Field:%s at offset:%d st_size:%d", fieldname, offset, self._ctypes.sizeof(pointee_record_type))
-        return self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done, ignore_head)
+        for x in self._iterate_list_from_field_inner(iterator_fn, head, pointee_record_type, offset, done):
+            yield x
+        raise StopIteration
 
-    def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels, ignore_head=True):
+    def _iterate_list_from_field_inner(self, iterator_fn, head, pointee_record_type, offset, sentinels):
         """
         Use iterator_fn to iterate on the list allocators. (as in struct__LIST_ENTRY)
         For each list entry address:
@@ -443,12 +431,6 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
         :param sentinels: values that indicates we should stop iterating.
         :return: pointee_record_type()
         """
-        if True and not ignore_head:
-            log.debug('Yield head because NOT Ignoring head in inner')
-            if not hasattr(head, '_orig_address_'):
-                import pdb
-                pdb.set_trace()
-            yield head
         # we get all addresses for the instances of the double linked list record_type
         # not, the list_member itself. Only the address of the double linked list field.
         for entry in iterator_fn(head, sentinels):
@@ -484,7 +466,6 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 yield st
             # save the last address as a sentinel
             sentinels.add(list_member_address)
-
         raise StopIteration
 
     def _iterate_double_linked_list(self, record, sentinels=None):
@@ -522,8 +503,6 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 done.add(addr)
                 memory_map = self._memory_handler.is_valid_address_value(addr, record_type)
                 if memory_map is False:
-                    import pdb
-                    pdb.set_trace()
                     log.error("_iterate_double_linked_list: the link of this linked list has a bad value: 0x%x", addr)
                     raise ValueError('ValueError: the link of this linked list has a bad value: 0x%x' % addr)
                 st = memory_map.read_struct(addr, record_type)

@@ -103,8 +103,7 @@ void test1(){
   usual->val1 = 0x0aaaaaaa;
   usual->val2 = 0x0ffffff0;
   //
-  struct Node * node1;
-  struct Node * node2;
+  struct Node * node1, * node2;
   node1 = (struct Node *) malloc(sizeof(struct Node));
   node1->val1 = 0xdeadbeef;
   node1->val2 = 0xffffffff;
