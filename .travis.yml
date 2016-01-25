@@ -52,7 +52,7 @@ before_script:
   - gunzip cmd.dmp.gz
   - mv cmd.dmp test/dumps/minidump
 # we need the simple memory tests.
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-e9725507c709f52cd884194e262adf40ec0ef4b1.tgz
+  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-0c73e72b3b412cad9a0e7d8e2c00e954049f6b6f.tgz
   - tar zxf src-e9725507c709f52cd884194e262adf40ec0ef4b1.tgz -C test/
 
 
