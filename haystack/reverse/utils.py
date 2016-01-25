@@ -24,8 +24,6 @@ def int_array_cache(filename):
         f = file(filename, 'r')
         return numpy.load(f)
     #print 'int_array_cache'
-    #import code
-    #code.interact(local=locals())
     return None
 
 
@@ -45,8 +43,6 @@ def closestFloorValueNumpy(val, lst):
     # Find indices where elements should be inserted to maintain order.
     if isinstance(lst, list):  # TODO delete
         log.warning('misuse of closestFloorValue')
-        #import pdb
-        #pdb.set_trace()
         try:
             # be positive, its a small hit compared to searchsorted on
             # non-numpy array

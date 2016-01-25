@@ -73,8 +73,6 @@ class Utils(interfaces.ICTypesUtils):
         :param obj: a pointer.
         """
         # check for homebrew POINTER
-        #import pdb
-        #pdb.set_trace()
         if hasattr(obj, '_sub_addr_'):
             if callable(obj._sub_addr_):
                 log.debug('obj._sub_addr_: 0x%x', obj._sub_addr_())

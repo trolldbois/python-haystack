@@ -269,10 +269,6 @@ class PointerIntervalSignature:
         # DO NOT SORT LIST. c'est des sequences. pas des sets.
         myname = self.cacheFilenamePrefix + '.pinned'
         log.debug('Reading signature from %s',myname)
-        #import code
-        #code.interact(local=locals())
-        #import pdb
-        #pdb.set_trace()
         sig = utils.int_array_cache(myname)
         if sig is None:
             log.info(
