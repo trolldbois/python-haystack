@@ -4,6 +4,7 @@ networkx
 python-Levenshtein
 # lets try to use system package / will be install in setup
 numpy
+construct
 
 # preptest requires it, not install
 # ctypeslib2
