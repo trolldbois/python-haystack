@@ -73,33 +73,28 @@ class TestWin7HeapWalker(unittest.TestCase):
             finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
             walker = finder.get_heap_walker(heap)
             cheap = walker.get_heap()
-            log.debug(
-                '-- heap 0x%0.8x   free:%0.5x  expected: %0.5x' %
-                (heap.start, free_size, cheap.TotalFreeSize))
+            log.debug('-- heap 0x%0.8x   free:%0.5x  expected: %0.5x', heap.start, free_size, cheap.TotalFreeSize)
             total = free_size
             for child in children:
                 freeblocks = map(lambda x: x[0], heap_sums[child])
                 self.assertEquals(len(freeblocks), len(set(freeblocks)))
                 # print heap_sums[child]
                 free_size = sum(map(lambda x: x[1], heap_sums[child]))
-                log.debug(
-                    '     \_ mmap 0x%0.8x   free:%0.5x ' %
-                    (child.start, free_size))
+                log.debug('     \_ mmap 0x%0.8x   free:%0.5x ', child.start, free_size)
                 self.assertEquals(len(freeblocks), len(set(freeblocks)))
                 total += free_size
-            log.debug('     \= total: free:%0.5x ' % (total))
+            log.debug('     \= total: free:%0.5x ', total)
 
             maxlen = len(heap)
             cheap = walker.get_heap()
-            log.debug(
-                'heap: 0x%0.8x free: %0.5x  expected: %0.5x  mmap len:%0.5x' %
-                (heap.start, total, cheap.TotalFreeSize, maxlen))
-            #if cheap.FrontEndHeapType == 0:
+            log.debug('heap: 0x%0.8x free: %0.5x  expected: %0.5x  mmap len:%0.5x',
+                      heap.start, total, cheap.TotalFreeSize, maxlen)
+            # if cheap.FrontEndHeapType == 0:
             blocksize = walker.get_target_platform().get_word_size() * 2
-            ## ??
+            # ??
             self.assertEquals(cheap.TotalFreeSize * blocksize, total)
-            #print hex(heap.start), cheap.TotalFreeSize * blocksize == total, cheap.TotalFreeSize * blocksize, total
-            #else:
+            # print hex(heap.start), cheap.TotalFreeSize * blocksize == total, cheap.TotalFreeSize * blocksize, total
+            # else:
             #    # FIXME
             #    log.warning('we are not good ar handling 64 b heaps :FH,. backend')
 
@@ -174,9 +169,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             for addr, s in allocs:
                 m = self._memory_handler.get_mapping_for_address(addr)
                 if addr + s > m.end:
-                    self.fail(
-                        'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
-                        (m.start, m.end, addr, s, addr + s))
+                    self.fail('OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' % (m.start, m.end, addr, s, addr + s))
         return
 
     def test_get_chunks(self):
@@ -213,9 +206,6 @@ class TestWin7HeapWalker(unittest.TestCase):
             # actually valid, if m is a children of mapping
             if m != walker._mapping:
                 self.assertIn(m, walker.list_used_mappings())
-
-    def assertMappingHierarchy(self, child, parent, comment=None):
-        self.assertIn(m, self._heapChildren[parent], comment)
 
     # a free chunks size jumps into unknown mmap address space..
     @unittest.expectedFailure
@@ -385,5 +375,5 @@ if __name__ == '__main__':
     # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.getLogger('testwin7walker').setLevel(level=logging.DEBUG)
     unittest.main(verbosity=2)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)
     # unittest.TextTestRunner(verbosity=2).run(suite)
