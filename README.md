@@ -13,8 +13,8 @@ Quick Start:
 Introduction:
 =============
 
-python-haystack is an heap analysis framework, focused on classic
-C structure matching.
+python-haystack is an heap analysis framework, focused on searching and reversing of  
+C structure in allcoated memory.
 
 The first function/API is the SEARCH function.
  - It gives the ability to search for known record types in a process memory dump (or live process's memory)
@@ -42,8 +42,23 @@ containing each memory map in a separate file :
 - 'mappings' file containing memory mappings metadata.  ( mappings )
 
 Or you can write a `haystack.abc.IMemoryMapping` implementation for your favorite format.
-There is already a beta volatility support in `haystack.mappings.vol`
+There is already a beta volatility & rekall support in `haystack.mappings.vol`
 And there is a volatility-to-haystack process dump in `haystack.mappings.vol2map`
+
+Verifying Windows Heap attributes:
+==================================
+
+The tool `haystack-find-heap.py` allows to show details on Windows HEAP. 
+It should support:
+
+- Windows XP 32 bits
+- Windows XP 64 bits
+- Windows 7 32 bits
+- Windows 7 64 bits
+
+and show details of the Look Aside List (LAL) and Low Fragmentation Heap (LFH) frontend.
+
+You might be surprised to see that sometimes, a single process can mix the two types of HEAP (32 & 64).
 
 Search for known structures:
 ============================
