@@ -194,8 +194,9 @@ class Utils(interfaces.ICTypesUtils):
         :param nb_element: the number of element in the array.
         """
         # attr is a pointer and we want to read elementSize of type(attr.contents))
-        if not self.is_address_local(attr):
-            raise TypeError('POINTER NOT LOCAL: %x', attr)
+        ## DEBUG statement
+        # if not self.is_address_local(attr):
+        #    raise TypeError('POINTER NOT LOCAL: %x', attr)
         first_element_addr = self.get_pointee_address(attr)
         array = (type(attr.contents) * nb_element).from_address(first_element_addr)
         # we have an array type starting at attr.contents[0]
