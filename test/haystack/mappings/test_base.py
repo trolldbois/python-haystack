@@ -3,10 +3,10 @@
 
 """Tests haystack.utils ."""
 
-import unittest
 import logging
 import mmap
 import struct
+import unittest
 
 import os
 
@@ -15,10 +15,9 @@ from haystack import listmodel
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import make_local_memory_handler
+from test.haystack import SrcTests
 
 log = logging.getLogger('test_memory_mapping')
-
-from test.haystack import SrcTests
 
 
 class TestMmapHack(unittest.TestCase):
@@ -38,20 +37,23 @@ class TestMmapHack(unittest.TestCase):
         fname = os.path.normpath(os.path.abspath(__file__))
         fin = file(fname)
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
-        fin.close()
-        fin = None
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x' % heapmap)
-        maps = make_local_memory_handler()
-        ret = [m for m in maps if heapmap in m]
+        handler = make_local_memory_handler()
+        ret = [m for m in handler.get_mappings() if heapmap in m]
+        if len(ret) == 0:
+            for m in handler.get_mappings():
+                print m
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)
         # heapmap is a pointer value to this executable?
         self.assertEquals(ret[0].pathname, fname)
 
         self.assertIn('CTypesProxy-8:8:16', str(my_ctypes))
+        fin.close()
+        fin = None
 
     def test_mmap_hack32(self):
         my_target = target.TargetPlatform.make_target_linux_32()
@@ -61,27 +63,23 @@ class TestMmapHack(unittest.TestCase):
         real_ctypes_long = my_ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
         fin = file(fname)
-        local_mmap_bytebuffer = mmap.mmap(
-            fin.fileno(),
-            1024,
-            access=mmap.ACCESS_READ)
-        fin.close()
-        fin = None
+        local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', (real_ctypes_long).from_address(id(local_mmap_bytebuffer) +
                                                                      2 * (my_ctypes.sizeof(real_ctypes_long))))[0]
         log.debug('MMAP HACK: heapmap: 0x%0.8x', heapmap)
         maps = make_local_memory_handler()
-        print 'MMAP HACK: heapmap: 0x%0.8x' % heapmap
-        for m in maps:
-            print m
+        # print 'MMAP HACK: heapmap: 0x%0.8x' % heapmap
+        # for m in maps:
+        #    print m
         ret = [m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)
         # heapmap is a pointer value to this executable?
         self.assertEquals(ret[0].pathname, fname)
-
         self.assertIn('CTypesProxy-4:4:12', str(my_ctypes))
+        fin.close()
+        fin = None
 
 
 class TestMappingsLinux(SrcTests):
