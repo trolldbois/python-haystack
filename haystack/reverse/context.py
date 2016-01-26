@@ -413,6 +413,9 @@ class HeapContext(object):
     def get_filename_cache_signatures(self):
         return config.get_cache_filename(config.CACHE_SIGNATURE_GROUPS_DIR, self.dumpname, self._heap_start)
 
+    def get_filename_cache_strings(self):
+        return config.get_cache_filename(config.CACHE_STRINGS, self.dumpname, self._heap_start)
+
     def get_heap_pointers(self):
         """
         @UNUSED

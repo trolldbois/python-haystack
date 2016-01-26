@@ -658,3 +658,23 @@ class InlineRecordReverser(model.AbstractReverser):
         _record._fields = myfields
         # print 'final', _record.fields
         return
+
+
+class StringsReverser(model.AbstractReverser):
+    """
+    Detect record types in a large one .
+    """
+    REVERSE_LEVEL = 500
+
+    def reverse_context(self, _context):
+        self.fout = open(_context.get_filename_cache_strings(), 'w')
+        super(StringsReverser, self).reverse_context(_context)
+        self.fout.close()
+
+    def reverse_record(self, _context, _record):
+        for field in _record.get_fields():
+            addr = _record.address + field.offset
+            if field.is_string():
+                maxlen = len(field)
+                value = _record.get_value_for_field(field, maxlen+10)
+                self.fout.write("0x%x,%d,%s\n" % (addr, maxlen, value))

@@ -134,6 +134,11 @@ def reverse_instances(memory_handler):
     ptrgraph = reversers.PointerGraphReverser(memory_handler)
     ptrgraph.reverse()
 
+    # extract all strings
+    log.info('Reversing strings')
+    strout = reversers.StringsReverser(memory_handler)
+    strout.reverse()
+
     log.info('Analysis results are in %s', config.get_cache_folder_name(memory_handler.get_name()))
     return process_context
 

@@ -77,7 +77,7 @@ class PointerFieldReverser(model.AbstractReverser):
                 field.name = 'ptr_void_%d' % field.offset
                 continue
             # structure found
-            log.debug('Looking at child id:0x%x str:%s', tgt.address, tgt.to_string())
+            ## log.debug('Looking at child id:0x%x str:%s', tgt.address, tgt.to_string())
             # we always point on structure, not field
             field.set_pointee_addr(tgt.address)
             offset = value - tgt.address

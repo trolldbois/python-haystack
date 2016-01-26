@@ -1070,7 +1070,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
         log.debug("nb maps: %d", len(self.mappings))
         log.debug("target: %s", self._target)
         # Use a folder name for its cache later on
-        h_name = self.dumpname + ".d"
+        h_name = self.filename + ".d"
         memory_handler = base.MemoryHandler(self.mappings, self._target, h_name)
         self._memory_handler = memory_handler
         return
