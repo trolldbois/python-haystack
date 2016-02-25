@@ -421,18 +421,18 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
             self.__book.delRef(typ, origAddr)
         return
 
-    ## TEST Kernel address space
-    # FIXME, X32/X64 dependans, windows only.
-    def rebase_kernel_mapping(self, user_mapping, kernel_space_start_address):
+    def rebase_mapping(self, user_mapping, new_start_address):
+        """
+        Rebase a mapping in a new address space.
+        :param user_mapping:
+        :param new_start_address:
+        :return:
+        """
         if user_mapping not in self._mappings:
             raise ValueError("User mapping not found")
-        # if 0xFFFFF90000000000 <= address <= 0xFFFFF97FFFFFFFFF
-        #if not (0xFFFF080000000000 <= kernel_space_start_address <= 0xFFFFFFFFFFFFFFFF):
-        #    raise ValueError("kernel_space_start_address not a kernel address")
-
         user_mapping = self._mappings[self._mappings.index(user_mapping)]
-        end = kernel_space_start_address + len(user_mapping)
-        user_mapping.start = kernel_space_start_address
+        end = new_start_address + len(user_mapping)
+        user_mapping.start = new_start_address
         user_mapping.end = end
         self._mappings.sort()
         return user_mapping

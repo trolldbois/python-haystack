@@ -353,7 +353,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         old_start = mapping.start
         start = kernel_ptr & 0xFFFFFFFFFFFF0000
         print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
-        self._memory_handler.rebase_kernel_mapping(mapping, start)
+        self._memory_handler.rebase_mapping(mapping, start)
         self._memory_handler.reset_mappings()
         heap = mapping.read_struct(start, heap_module.HEAP)
         # validator is (should be) then target-bound
@@ -364,7 +364,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         if not load:
-            self._memory_handler.rebase_kernel_mapping(mapping, old_start)
+            self._memory_handler.rebase_mapping(mapping, old_start)
             self._memory_handler.reset_mappings()
         return load
 
