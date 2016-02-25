@@ -35,6 +35,7 @@ import os
 import ctypes
 
 # haystack
+import base
 from haystack import utils
 import haystack
 from haystack.mappings.base import AMemoryMapping
@@ -462,3 +463,52 @@ class LazyMmap:
         me = utils.bytes2array(memdump.read(size), ctypes.c_ubyte)
         memdump.close()
         return me
+
+
+class MMapProcessMapping(base.AMemoryMapping):
+    """Process memory mapping using 1 file for all mappings """
+
+    def __init__(self, mmap_content, start, end, permissions='r--',
+                 offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
+        """mmap_content should be """
+        base.AMemoryMapping.__init__(
+            self,
+            start,
+            end,
+            permissions,
+            offset,
+            major_device,
+            minor_device,
+            inode,
+            pathname)
+        self._backend = mmap_content
+        self.offset = offset
+
+    def read_word(self, addr):
+        ws = self._ctypes.sizeof(self._ctypes.c_void_p)
+        self._backend.seek(self.offset + addr - self.start, 0)
+        data = self._backend.read(ws)
+        if ws == 4:
+            return struct.unpack('I', data)[0]
+        elif ws == 8:
+            return struct.unpack('Q', data)[0]
+
+    def read_bytes(self, addr, size):
+        self._backend.seek(self.offset + addr - self.start, 0)
+        return self._backend.read(size)
+
+    def read_struct(self, addr, struct):
+        size = self._ctypes.sizeof(struct)
+        self._backend.seek(self.offset + addr - self.start, 0)
+        instance = struct.from_buffer_copy(self._backend.read(size))
+        instance._orig_address_ = addr
+        return instance
+
+    def read_array(self, addr, basetype, count):
+        size = self._ctypes.sizeof(basetype * count)
+        self._backend.seek(self.offset + addr - self.start, 0)
+        array = (basetype *count).from_buffer_copy(self._backend.read(size))
+        return array
+
+    def reset(self):
+        pass

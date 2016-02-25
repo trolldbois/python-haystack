@@ -26,6 +26,8 @@ from construct import *
 from time import mktime
 from datetime import datetime, timedelta
 
+import file
+
 
 def Hex(base):
     return ExprAdapter(base,
@@ -1031,7 +1033,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     name = 'None'
                     if start in named_modules:
                         name = named_modules[start][1]
-                    maps.append(cuckoo.MMapProcessMapping(mmap_content, start, end, name, map_offset))
+                    maps.append(file.MMapProcessMapping(mmap_content, start, end, name, map_offset))
                     prev_size = size
             elif directory.StreamType == 'MemoryInfoListStream':
                 ## absent ?
