@@ -268,6 +268,8 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # reset the mappings
         for m in self.get_mappings():
             m.reset()
+        # reset the caches too
+        self.__optim_get_mapping_for_address()
 
     def __optim_get_mapping_for_address(self):
         self.__optim_get_mapping_for_address_cache = dict()
@@ -418,6 +420,22 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if (typ, origAddr) in self.__book.refs:
             self.__book.delRef(typ, origAddr)
         return
+
+    ## TEST Kernel address space
+    # FIXME, X32/X64 dependans, windows only.
+    def rebase_kernel_mapping(self, user_mapping, kernel_space_start_address):
+        if user_mapping not in self._mappings:
+            raise ValueError("User mapping not found")
+        # if 0xFFFFF90000000000 <= address <= 0xFFFFF97FFFFFFFFF
+        #if not (0xFFFF080000000000 <= kernel_space_start_address <= 0xFFFFFFFFFFFFFFFF):
+        #    raise ValueError("kernel_space_start_address not a kernel address")
+
+        user_mapping = self._mappings[self._mappings.index(user_mapping)]
+        end = kernel_space_start_address + len(user_mapping)
+        user_mapping.start = kernel_space_start_address
+        user_mapping.end = end
+        self._mappings.sort()
+        return user_mapping
 
 
 class _book(object):

@@ -298,6 +298,15 @@ class WinHeapFinder(heapwalker.HeapFinder):
                                               mapping,
                                               self._cpu[bits]['constraints'],
                                               addr)
+                    elif self.__is_kernel_heap(mapping, addr, bits):
+                        # FIXME
+                        addr = mapping.start
+                        return self._walker_type()(self._memory_handler,
+                                              self._cpu[bits]['target'],
+                                              self._cpu[bits]['module'],
+                                              mapping,
+                                              self._cpu[bits]['constraints'],
+                                              addr)
                     # otherwise try another combination
         return None
 
@@ -323,12 +332,54 @@ class WinHeapFinder(heapwalker.HeapFinder):
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         return load
 
+    def __is_kernel_heap(self, mapping, address, bits):
+        """
+        test if a mapping is a heap in KERNEL space, from a USER space address memory dump
+        :param mapping: IMemoryMapping
+        :return:
+        """
+        if not isinstance(mapping, interfaces.IMemoryMapping):
+            raise TypeError('Feed me a IMemoryMapping object')
+        # switch to the right target
+        heap_module = self._cpu[bits]['module']
+        target_platform = self._cpu[bits]['target']
+        constraints = self._cpu[bits]['constraints']
+        heap = mapping.read_struct(address, heap_module.HEAP)
+        # TEST Kernel address space.
+        kernel_ptr = self._target.get_target_ctypes_utils().get_pointee_address(heap.UnusedUnCommittedRanges)
+        if not self.__is_kernel_session_space(kernel_ptr):
+            return False
+        # Else we found a kernel AS HEAP
+        old_start = mapping.start
+        start = kernel_ptr & 0xFFFFFFFFFFFF0000
+        print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
+        self._memory_handler.rebase_kernel_mapping(mapping, start)
+        self._memory_handler.reset_mappings()
+        heap = mapping.read_struct(start, heap_module.HEAP)
+        # validator is (should be) then target-bound
+        validator = self._validator_type()(self._memory_handler,
+                                                constraints,
+                                                target_platform,
+                                                heap_module)
+        load = validator.load_members(heap, 3)
+        log.debug('HeapFinder._is_heap %s %s', mapping, load)
+        if not load:
+            self._memory_handler.rebase_kernel_mapping(mapping, old_start)
+            self._memory_handler.reset_mappings()
+        return load
+
+    def __is_kernel_session_space(self, address):
+        #return 0xFFFFF90000000000 <= address <= 0xFFFFF97FFFFFFFFF
+        return 0xFFFF080000000000 <= address <= 0xFFFFFFFFFFFFFFFF
+
     def search_heap_direct(self, start_address_mapping):
         """
         return a ctypes heap struct mapped at address on the mapping
         Will use the memory handler
         """
         heap = self._memory_handler.get_mapping_for_address(start_address_mapping)
+        if not heap:
+            raise ValueError("Address not found")
         bits = self._memory_handler.get_target_platform().get_cpu_bits()
         heap_module = self._cpu[bits]['module']
         constraints = self._cpu[bits]['constraints']
@@ -349,6 +400,10 @@ class WinHeapFinder(heapwalker.HeapFinder):
             self._heap_walkers = []
             self._heap_walkers_dict = dict()
             for mapping in self._memory_handler:
+                # walker could be a kernel AS heap, rebased.
+                # Double check we have looked at it already.
+                if mapping.start in self._heap_walkers_dict:
+                    continue
                 walker = self._find_heap(mapping)
                 if walker:
                     self._heap_walkers.append(walker)
