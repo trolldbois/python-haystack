@@ -22,6 +22,7 @@ FrontEndHeapType: [0, 1, 2]
 # was also stored as a field in the HEAP handle data structure.
 # We do want a valid commit routine or Null
 ## CommitRoutine: IgnoreMember
+CommitRoutine: IgnoreMember
 # we have a sentinel value of 0xffffffff
 # some old heap ? old heap segment ? have no valid signature/pointers
 # Segments: IgnoreMember
