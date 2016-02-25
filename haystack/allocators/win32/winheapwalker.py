@@ -346,7 +346,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         constraints = self._cpu[bits]['constraints']
         heap = mapping.read_struct(address, heap_module.HEAP)
         # TEST Kernel address space.
-        kernel_ptr = self._target.get_target_ctypes_utils().get_pointee_address(heap.UnusedUnCommittedRanges)
+        kernel_ptr = target_platform.get_target_ctypes_utils().get_pointee_address(heap.UnusedUnCommittedRanges)
         if not self.__is_kernel_session_space(kernel_ptr):
             return False
         # Else we found a kernel AS HEAP
