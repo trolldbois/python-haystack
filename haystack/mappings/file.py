@@ -78,9 +78,7 @@ class LocalMemoryMapping(AMemoryMapping):
     def _vtop(self, vaddr):
         ret = vaddr - self.start + self._address
         if ret < self._address or ret > (self._address + len(self)):
-            raise ValueError(
-                '0x%0.8x/0x%0.8x is not a valid vaddr for me' %
-                (vaddr, ret))
+            raise ValueError('0x%0.8x/0x%0.8x is not a valid vaddr for me' % (vaddr, ret))
         return ret
 
     def mmap(self):
@@ -202,6 +200,11 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
     def unmmap(self):
         raise NotImplementedError
 
+    def rebase(self, new_start_address):
+        super(MemoryDumpMemoryMapping, self).rebase(new_start_address)
+        if self.is_mmaped():
+            self._base.rebase(new_start_address)
+
     def _mmap(self):
         """ protected api """
         # mmap.mmap has a full bytebuffer API, so we can use it as is for bytebuffer.
@@ -245,9 +248,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                 self._memdump.close()
                 log.warning('MemoryHandler Mapping content copied to ctypes array : %s', self)
             # make that _base
-            self._base = LocalMemoryMapping.fromAddress(
-                self, ctypes.addressof(
-                    self._local_mmap_content))
+            self._base = LocalMemoryMapping.fromAddress(self, ctypes.addressof(self._local_mmap_content))
             log.debug('%s done.' % self.__class__)
         # redirect function calls
         self.read_word = self._base.read_word

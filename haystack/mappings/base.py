@@ -189,6 +189,11 @@ class AMemoryMapping(interfaces.IMemoryMapping):
     def read_array(self, address, basetype, count):
         raise NotImplementedError(self)
 
+    def rebase(self, new_start_address):
+        end = new_start_address + len(self)
+        self.start = new_start_address
+        self.end = end
+
 
 class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
     """
@@ -268,8 +273,6 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         # reset the mappings
         for m in self.get_mappings():
             m.reset()
-        # reset the caches too
-        self.__optim_get_mapping_for_address()
 
     def __optim_get_mapping_for_address(self):
         self.__optim_get_mapping_for_address_cache = dict()
@@ -431,10 +434,13 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if user_mapping not in self._mappings:
             raise ValueError("User mapping not found")
         user_mapping = self._mappings[self._mappings.index(user_mapping)]
-        end = new_start_address + len(user_mapping)
-        user_mapping.start = new_start_address
-        user_mapping.end = end
+        user_mapping.rebase(new_start_address)
+        # end = new_start_address + len(user_mapping)
+        # user_mapping.start = new_start_address
+        # user_mapping.end = end
         self._mappings.sort()
+        # reset the caches too
+        self.__optim_get_mapping_for_address()
         return user_mapping
 
 

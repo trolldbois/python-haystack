@@ -284,6 +284,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         Funny enough, a X64 process could have 32 bits and 64 bits heaps.
         """
         for addr in range(mapping.start, mapping.end, 0x1000):
+            map_start = mapping.start
             # offset of Signature in 32 and 64 bits
             for bits in [32, 64]:
                 offset = self._cpu[bits]['signature_offset']
@@ -299,14 +300,14 @@ class WinHeapFinder(heapwalker.HeapFinder):
                                               self._cpu[bits]['constraints'],
                                               addr)
                     elif self.__is_kernel_heap(mapping, addr, bits):
-                        # FIXME
-                        addr = mapping.start
+                        _heap_offset = addr - map_start
+                        heap_addr = mapping.start + _heap_offset
                         return self._walker_type()(self._memory_handler,
                                               self._cpu[bits]['target'],
                                               self._cpu[bits]['module'],
                                               mapping,
                                               self._cpu[bits]['constraints'],
-                                              addr)
+                                              heap_addr)
                     # otherwise try another combination
         return None
 
@@ -337,6 +338,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         """
         if not isinstance(mapping, interfaces.IMemoryMapping):
             raise TypeError('Feed me a IMemoryMapping object')
+        offset = self._cpu[bits]['signature_offset']
         # switch to the right target
         heap_module = self._cpu[bits]['module']
         target_platform = self._cpu[bits]['target']
@@ -352,17 +354,24 @@ class WinHeapFinder(heapwalker.HeapFinder):
         old_start = mapping.start
         # start = kernel_ptr & 0xFFFFFFFFFFFF0000
         start = kernel_ptr & ((1 << bits) - 0x10000)
-        print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
+        #print '[!] POSSIBLE KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
+        ## print hex(struct.unpack('I', mapping.read_bytes(address+offset, 4))[0])
+        # FIXME: rebase must be recursive on mappings
+        #import pdb
+        #pdb.set_trace()
         self._memory_handler.rebase_mapping(mapping, start)
-        self._memory_handler.reset_mappings()
+        ## print hex(struct.unpack('I', mapping.read_bytes(start+offset, 4))[0])
         heap = mapping.read_struct(start, heap_module.HEAP)
         # validator is (should be) then target-bound
         validator = self._validator_type()(self._memory_handler, constraints, target_platform, heap_module)
         load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         if not load:
+            #import code
+            #code.interact(local=locals())
             self._memory_handler.rebase_mapping(mapping, old_start)
-            self._memory_handler.reset_mappings()
+        else:
+            print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
         return load
 
     def _get_heap_possible_kernel_pointer_from_heap(self, target_platform, heap):

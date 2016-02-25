@@ -62,7 +62,7 @@ class WinXPHeapFinder(winheapwalker.WinHeapFinder):
         _constraints_64 = parser.read(constraint_filename)
 
         # KERNEL AS
-        kas32 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
+        kas32 = (0x8000000, 0xFFFFFFFF)
         kas64 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
 
         _cpu = dict()

@@ -175,9 +175,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 log.warning(
                     'Using a local memory mapping . Zipfile sux. thx ruby.')
                 mmap = AMemoryMapping(start, end, permissions, offset, major_device, minor_device, inode, pathname=pathname)
-                mmap = LocalMemoryMapping.fromBytebuffer(
-                    mmap,
-                    mmap_content_file.read())
+                mmap = LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
             # use file mmap when file is too big
             elif end - start > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (pathname) +
