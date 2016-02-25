@@ -324,10 +324,7 @@ class WinHeapFinder(heapwalker.HeapFinder):
         constraints = self._cpu[bits]['constraints']
         heap = mapping.read_struct(address, heap_module.HEAP)
         # validator is (should be) then target-bound
-        validator = self._validator_type()(self._memory_handler,
-                                                constraints,
-                                                target_platform,
-                                                heap_module)
+        validator = self._validator_type()(self._memory_handler, constraints, target_platform, heap_module)
         load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         return load
@@ -346,21 +343,21 @@ class WinHeapFinder(heapwalker.HeapFinder):
         constraints = self._cpu[bits]['constraints']
         heap = mapping.read_struct(address, heap_module.HEAP)
         # TEST Kernel address space.
-        kernel_ptr = target_platform.get_target_ctypes_utils().get_pointee_address(heap.UnusedUnCommittedRanges)
-        if not self.__is_kernel_session_space(kernel_ptr):
+        # winxp has heap.UnusedUnCommittedRanges
+        # win 7 has heap.BaseAddress
+        kernel_ptr = self._get_heap_possible_kernel_pointer_from_heap(target_platform, heap)
+        if not self.__is_kernel_address_space(bits, kernel_ptr):
             return False
         # Else we found a kernel AS HEAP
         old_start = mapping.start
-        start = kernel_ptr & 0xFFFFFFFFFFFF0000
+        # start = kernel_ptr & 0xFFFFFFFFFFFF0000
+        start = kernel_ptr & ((1 << bits) - 0x10000)
         print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
         self._memory_handler.rebase_mapping(mapping, start)
         self._memory_handler.reset_mappings()
         heap = mapping.read_struct(start, heap_module.HEAP)
         # validator is (should be) then target-bound
-        validator = self._validator_type()(self._memory_handler,
-                                                constraints,
-                                                target_platform,
-                                                heap_module)
+        validator = self._validator_type()(self._memory_handler, constraints, target_platform, heap_module)
         load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         if not load:
@@ -368,9 +365,14 @@ class WinHeapFinder(heapwalker.HeapFinder):
             self._memory_handler.reset_mappings()
         return load
 
-    def __is_kernel_session_space(self, address):
-        #return 0xFFFFF90000000000 <= address <= 0xFFFFF97FFFFFFFFF
-        return 0xFFFF080000000000 <= address <= 0xFFFFFFFFFFFFFFFF
+    def _get_heap_possible_kernel_pointer_from_heap(self, target_platform, heap):
+        raise NotImplementedError
+
+    def __is_kernel_address_space(self, bits, address):
+        # Session space is return 0xFFFFF90000000000 <= address <= 0xFFFFF97FFFFFFFFF
+        start, end = self._cpu[bits]['kernel_as']
+        # return 0xFFFF080000000000 <= address <= 0xFFFFFFFFFFFFFFFF
+        return start <= address <= end
 
     def search_heap_direct(self, start_address_mapping):
         """

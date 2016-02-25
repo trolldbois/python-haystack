@@ -62,9 +62,16 @@ class Win7HeapFinder(winheapwalker.WinHeapFinder):
         constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'win7heap64.constraints')
         _constraints_64 = parser.read(constraint_filename)
 
+        # KERNEL AS
+        kas32 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
+        kas64 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
+
         _cpu = dict()
         _cpu[32] = {'model': _model_32, 'target': _win7_32, 'module': _win7_32_module,
-                    'constraints': _constraints_32, 'signature_offset': 100}
+                    'constraints': _constraints_32, 'signature_offset': 100, 'kernel_as': kas32}
         _cpu[64] = {'model': _model_64, 'target': _win7_64, 'module': _win7_64_module,
-                    'constraints': _constraints_64, 'signature_offset': 160}
+                    'constraints': _constraints_64, 'signature_offset': 160, 'kernel_as': kas64}
         return _cpu
+
+    def _get_heap_possible_kernel_pointer_from_heap(self, target_platform, heap):
+        return target_platform.get_target_ctypes_utils().get_pointee_address(heap.BaseAddress)

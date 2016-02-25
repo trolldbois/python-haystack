@@ -61,9 +61,16 @@ class WinXPHeapFinder(winheapwalker.WinHeapFinder):
         constraint_filename = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'winxpheap64.constraints')
         _constraints_64 = parser.read(constraint_filename)
 
+        # KERNEL AS
+        kas32 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
+        kas64 = (0xFFFF080000000000, 0xFFFFFFFFFFFFFFFF)
+
         _cpu = dict()
         _cpu[32] = {'model': _model_32, 'target': _winxp_32, 'module': _winxp_32_module,
-                    'constraints': _constraints_32, 'signature_offset': 8}
+                    'constraints': _constraints_32, 'signature_offset': 8, 'kernel_as': kas32}
         _cpu[64] = {'model': _model_64, 'target': _winxp_64, 'module': _winxp_64_module,
-                    'constraints': _constraints_64, 'signature_offset': 16}
+                    'constraints': _constraints_64, 'signature_offset': 16, 'kernel_as': kas64}
         return _cpu
+
+    def _get_heap_possible_kernel_pointer_from_heap(self, target_platform, heap):
+        return target_platform.get_target_ctypes_utils().get_pointee_address(heap.UnusedUnCommittedRanges)
