@@ -50,7 +50,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.33",
+      version="0.34",
       description="Search C Structures in a process' memory",
       long_description=open("README.md").read(),
       url="http://packages.python.org/haystack/",
@@ -83,7 +83,10 @@ setup(name="haystack",
                 "haystack.allocators.win32"],
       #package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={"haystack.reverse.heuristics": ['data/words.100'],
-                    "haystack.allocators.win32": ['win7heap.constraints', 'winxpheap.constraints'],
+                    "haystack.allocators.win32": ['win7heap32.constraints',
+                                                  'win7heap64.constraints',
+                                                  'winxpheap32.constraints',
+                                                  'winxpheap64.constraints'],
                     "haystack.allocators.libc": ['libcheap.constraints']},
       entry_points={
           'console_scripts': [
