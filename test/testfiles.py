@@ -136,6 +136,8 @@ putty_1_win7.known_heaps = [(0x00010000, 0x10000), # 64bits
                             (0x04110000, 0x1000),
                             (0x041c0000, 0x1000),
                             (0x7efe0000, 0x5000), # 64bits
+                            (0xfffff900c0580000, 0x3000), # kernel,session
+                            (0xfffff900c0800000, 0xe0000), # kernel,session
                             # from free stuf - erroneous
                             #( 0x0061a000, 1200),
                             ]

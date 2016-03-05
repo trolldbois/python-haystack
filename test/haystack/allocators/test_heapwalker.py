@@ -170,7 +170,7 @@ class TestHeapFinder2(unittest.TestCase):
 
     def test_get_heaps(self):
         heaps = self.finder.list_heap_walkers()
-        self.assertEquals(len(heaps), 15)
+        self.assertEquals(len(heaps), 17)
 
     @unittest.skip("TODO win32 get_stack code")
     def test_get_stack(self):
