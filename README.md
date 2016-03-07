@@ -47,13 +47,13 @@ For live processes
  - `haystack-live-search` search CLI
  - `haystack-live-show` show CLI for a live process
 
-For a Rekall OS memory dump
+For a Rekall memory dump
 ---------------------------
  - `haystack-rekall-search` search CLI for a specific process in a rekall dump
  - `haystack-rekall-show` show CLI
  - `haystack-rekall-dump` dump a specific process to a haystack process dump
 
-For a Rekall OS memory dump
+For a Volatility memory dump
 ---------------------------
  - `haystack-volatility-search`  search CLI for a specific process in a volatility dump
  - `haystack-volatility-show` show CLI
