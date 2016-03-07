@@ -62,9 +62,10 @@ For a Volatility memory dump
 How to get a memory dump:
 =========================
 
-On windows, the most straightforward is to get a Minidump. (Sysinternals Process explorer ?)
-Using procdump.exe, your will produce a file that can be used with the 
-`haystack-minidump-xxx` list of entry points.
+On Windows, the most straightforward is to get a Minidump. The Microsoft Sysinternals 
+suite of tools provide either a CLI (procdump.exe) or a GUI (Process explorer).
+Using one of these (with full memory dump option) you will produce a file 
+that can be used with the `haystack-minidump-xxx` list of entry points.
 
 While technically you could use many third party tool, haystack actually
 need memory mapping information to work with.
@@ -79,13 +80,15 @@ containing each memory map in a separate file :
 - 'mappings' file containing memory mappings metadata.  ( mappings )
 
 Or you can write a `haystack.abc.IMemoryMapping` implementation for your favorite format.
-There is already a beta volatility & rekall support in `haystack.mappings.vol`
-And there is a volatility-to-haystack process dump in `haystack.mappings.vol2map`
+
+Otherwise, if you already have a system memory dump from Volatility or Rekall, 
+you can use the `haystack-rekall-xxx` or `haystack-volatility-xxx` families of
+entry points to extract a specific process memory into a file.
 
 Verifying Windows Heap attributes:
 ==================================
 
-The tool `haystack-find-heap.py` allows to show details on Windows HEAP. 
+The script `haystack-find-heap.py` allows to show details on Windows HEAP. 
 It should support:
 
 - Windows XP 32 bits
@@ -105,20 +108,16 @@ A [quick usage guide](docs/Haystack basic usage.ipynb) is available to go
 over the basic steps to go from a C Header file to a Python ctypes definition.
 Or you can do it yourself, with traditional Python ctypes records.
 
-The search api is available through the `haystack-xxxx` family of scripts but 
+The search api is available through the `haystack-xxx-search` family of scripts but 
 also in an API so that you can embed that search in your own code. 
 
 In short, the haystack search will iterate over every offset of the program's 
 memory to try and find 'valid' offset for that specific record type.
 
-The validity of the record  is determined mostly by inherent constraints, like
-pointer values that should be in a valid address space, or your own constraints 
-that you define in a file.
-
-You can take a look a `haystack/structures/win32/winxpheap.constraints`, where
-the constraints of a Windows XP HEAP are defined.
-
-Obviously, the more constraints, the better the results will be.  
+The validity of the record is determined by type constraints such as:
+- pointer field should have valid address space values
+- user-defined type constraints (see 'Constraints file' section below)
+- etc..
 
 Constraints file:
 -----------------
@@ -138,12 +137,16 @@ Example:
     myfield: [1,0xff]
     ptr_field: NotNull
 
+You can take a look a `haystack/structures/win32/winxpheap32.constraints`, where
+the constraints of a Windows XP HEAP x32 are defined.
+
+Obviously, the more constraints, the better the results will be.
+
 Dynamic constraints definition:
 -------------------------------
 You can also create more complex constraints using python code by implementing
 a `haystack.abc.interface.IRecordTypeDynamicConstraintsValidator` class and feeding it to 
 the `ModuleConstraints.set_dynamic_constraints` 
-
 
 Command line example:
 ---------------------
@@ -177,13 +180,13 @@ the search dialog.
 
 
 python API example:
-----------------------------------
+-------------------
 
 See the [quick usage guide](docs/Haystack basic usage.ipynb)
 
 
 How to define your own structures:
---------------
+----------------------------------
 
 The most easy way is to use ctypeslib to generate ctypes records from
 C Headers.
@@ -192,23 +195,23 @@ Or define your python ctypes record by hand.
 
 
 Heap analysis / forensics:
-===================================================
+==========================
 
 Quick info:
- - The `haystack-reverse` tool parse the heap for allocator structures, pointers
- values, small integers and text (ascii/utf).
- Given all the previous information, it can extract instances
- and helps you in classifying and defining structures types.
+ - The `haystack-xxx-reverse` family of entry points parse the heap for 
+ allocator structures, pointers values, small integers and text (ascii/utf).
+ Given all the previous information, it can extract instances and helps you 
+ in classifying and defining structures types.
 
 IPython notebook usage guide:
  - [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
 
 Command line example:
 --------------------
-The first step is to launch the analysis process with the `analyze` command.
+The first step is to launch the analysis process with the `haystack-xxx-reverse` entry point.
 This will create several files in the `cache/` folder in the memory dump folder:
 
-    $ python haystack-reverse haystack/test/src/test-ctypes6.64.dump analyze
+    $ haystack-reverse haystack/test/src/test-ctypes6.64.dump
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache
     $ ls -l haystack/test/src/test-ctypes6.64.dump/cache/structs
 
@@ -219,7 +222,7 @@ on fields types.
 A `<yourdumpfolder>/cache/graph.gexf` file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
-Other commands are listed below.
+Other outputs of the reverse CLI are listed below.
 
 Show the list of heuristicly reversed record types:
 
@@ -229,9 +232,11 @@ Show the list of strings field in record:
 
     $ python haystack-reverse <yourdumpname> strings
 
+Other related entry points are listed below.
+
 Show the record for a specific address:
 
-    $ python haystack-reverse <yourdumpname> show 0x00ab0000
+    $ haystack-show <yourdumpname> 0x00ab0000
 
 Show the bytes hexadecimal values for the record for a specific address:
 
