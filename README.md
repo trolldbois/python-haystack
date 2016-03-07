@@ -24,16 +24,53 @@ The second function/API is the REVERSE function.
 It focuses on reconstruction, classification of classic C structures from memory. 
 It attempts to recreate types definition.
 
+Scripts & Entry Points:
+=======================
+
+A few entry points exists to handle the format your memory dump.
+
+Memory dump folder produced by `haystack-live-dump`
+---------------------------------------------------
+ - `haystack-search` search CLI
+ - `haystack-show` show CLI for specific record type at a specific address
+ - `haystack-reverse` reverse CLI
+
+Memory dump folder produced by `haystack-live-dump`
+---------------------------------------------------
+ - `haystack-minidump-search` search CLI
+ - `haystack-minidump-show` show CLI
+ - `haystack-minidump-reverse` reverse CLI
+
+For live processes
+------------------
+ - `haystack-live-dump` produce a process memory dump
+ - `haystack-live-search` search CLI
+ - `haystack-live-show` show CLI for a live process
+
+For a Rekall OS memory dump
+---------------------------
+ - `haystack-rekall-search` search CLI for a specific process in a rekall dump
+ - `haystack-rekall-show` show CLI
+ - `haystack-rekall-dump` dump a specific process to a haystack process dump
+
+For a Rekall OS memory dump
+---------------------------
+ - `haystack-volatility-search`  search CLI for a specific process in a volatility dump
+ - `haystack-volatility-show` show CLI
+ - `haystack-volatility-dump` dump a specific process to a haystack process dump
+
 How to get a memory dump:
 =========================
 
 On windows, the most straightforward is to get a Minidump. (Sysinternals Process explorer ?)
+Using procdump.exe, your will produce a file that can be used with the 
+`haystack-minidump-xxx` list of entry points.
 
 While technically you could use many third party tool, haystack actually
 need memory mapping information to work with.
-So there is a dumping tool included:
+So there is a dumping tool included `haystack-live-dump`:
 
-    $ sudo haystack-dump dump <pid> dumps/myssh.dump
+    # haystack-live-dump <pid> myproc.dump
 
 You can easily reproduce the format of the dump, its a folder/archive
 containing each memory map in a separate file :
@@ -68,8 +105,8 @@ A [quick usage guide](docs/Haystack basic usage.ipynb) is available to go
 over the basic steps to go from a C Header file to a Python ctypes definition.
 Or you can do it yourself, with traditional Python ctypes records.
 
-The search api is available through the `haystack` script but also in an API so 
-that you can embed that search in your own code. 
+The search api is available through the `haystack-xxxx` family of scripts but 
+also in an API so that you can embed that search in your own code. 
 
 In short, the haystack search will iterate over every offset of the program's 
 memory to try and find 'valid' offset for that specific record type.
