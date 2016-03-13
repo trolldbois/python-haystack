@@ -8,7 +8,7 @@ from setuptools import setup
 import distutils.cmd
 import distutils.log
 import subprocess
-
+import sys
 
 class PyPrepTestsCommand(distutils.cmd.Command):
     """
@@ -119,13 +119,13 @@ setup(name="haystack",
       ## setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
-      install_requires=["pefile",
-                        "python-ptrace",
+      install_requires=["pefile>=1.2.10_139",
                         # reverse need these.
                         #"numpy",
                         #"networkx",
                         #"python-Levenshtein"
-                        ],
+                        ] + ["python-ptrace>=0.8.1"] if "win" not in sys.platform else []
+                        + ["winappdbg"] if "win" in sys.platform else [],
       dependency_links=[#"https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
