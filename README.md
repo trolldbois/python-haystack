@@ -35,7 +35,7 @@ Memory dump folder produced by `haystack-live-dump`
  - `haystack-show` show CLI for specific record type at a specific address
  - `haystack-reverse` reverse CLI
 
-Memory dump folder produced by `haystack-live-dump`
+Memory dump folder produced by a Minidump tool
 ---------------------------------------------------
  - `haystack-minidump-search` search CLI
  - `haystack-minidump-show` show CLI
@@ -88,7 +88,7 @@ entry points to extract a specific process memory into a file.
 Verifying Windows Heap attributes:
 ==================================
 
-The script `haystack-find-heap.py` allows to show details on Windows HEAP. 
+The entry point `haystack-find-heap` allows to show details on Windows HEAP. 
 It should support:
 
 - Windows XP 32 bits
