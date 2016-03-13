@@ -90,6 +90,7 @@ setup(name="haystack",
                     "haystack.allocators.libc": ['libcheap.constraints']},
       entry_points={
           'console_scripts': [
+              'haystack-find-heap = haystack.cliwin:find_heap',
               'haystack-search = haystack.cli:main_search',
               'haystack-show = haystack.cli:main_show',
               'haystack-reverse = haystack.cli:main_reverse',
@@ -112,7 +113,8 @@ setup(name="haystack",
                # "scripts/haystack-gui",
                #"scripts/haystack-dump",
                #"scripts/haystack-reverse",
-               "scripts/haystack-find-heap.py"],
+               #"scripts/haystack-find-heap.py"
+               ],
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
       # numpy is already installed in travis-ci

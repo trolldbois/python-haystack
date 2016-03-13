@@ -18,10 +18,11 @@ import struct
 Search for HEAP.
 """
 
-log = logging.getLogger('haytack-find-heap')
+log = logging.getLogger('cliwin')
 
 
-def main(argv):
+def find_heap():
+    argv = sys.argv[1:]
     parser = argparse.ArgumentParser(prog='haystack-find-heap',
                                           description="Find heaps in a dumpfile")
     parser.add_argument('--osname', '-n', action='store', default=None, choices=['winxp', 'win7'], help='winxp,win7')
@@ -131,5 +132,5 @@ def one_heap(opts, finder):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    find_heap()
 
