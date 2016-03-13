@@ -1038,6 +1038,10 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
             elif directory.StreamType == 'MemoryInfoListStream':
                 ## absent ?
                 print directory
+        ## FAST FAIL
+        if len(maps) == 0:
+            raise TypeError('This Minidump does not contain Memory64ListStream memory dump. ' +
+                            'Please use full memory dump options in the memory acquisition tool.')
         # target
         cpu = os_name = None
         if self.os_name is None or self.cpu is None:
