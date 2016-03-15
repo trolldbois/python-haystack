@@ -93,11 +93,12 @@ class RecordSearcher(object):
         for addr, size in walker.get_user_allocations():
             # FIXME, heap walker should give a hint
             # minimum chunk size varies...
-            # if size != struct_size:
             if size < struct_size:
                 log.debug("size %d < struct_size %d", size, struct_size)
                 continue
             log.debug("testing 0x%lx", addr)
+            # could change
+            mem_map = self._memory_handler.get_mapping_for_address(addr)
             # try every aligned offset from there to the end of chunk
             start = addr
             end = start + size - struct_size + 1
@@ -108,8 +109,6 @@ class RecordSearcher(object):
             log.debug('xrange(%d, %d, %d) ', start, end, plen)
             for offset in utils.xrange(start, end, plen):
                 # a - load and validate the record
-                # DEBUG
-                # offset = addr
                 log.debug('load_at(%d) ', offset)
                 instance, validated = self._load_at(mem_map, offset, struct_type, depth)
                 if validated:
