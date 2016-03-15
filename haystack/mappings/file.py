@@ -472,16 +472,8 @@ class MMapProcessMapping(base.AMemoryMapping):
     def __init__(self, mmap_content, start, end, permissions='r--',
                  offset=0, major_device=0, minor_device=0, inode=0, pathname=''):
         """mmap_content should be """
-        base.AMemoryMapping.__init__(
-            self,
-            start,
-            end,
-            permissions,
-            offset,
-            major_device,
-            minor_device,
-            inode,
-            pathname)
+        base.AMemoryMapping.__init__(self, start, end, permissions, offset,
+                                     major_device, minor_device, inode, pathname)
         self._backend = mmap_content
         self.offset = offset
 

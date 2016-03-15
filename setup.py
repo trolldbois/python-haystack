@@ -122,6 +122,7 @@ setup(name="haystack",
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile>=1.2.10_139",
+                        "construct",
                         # reverse need these.
                         #"numpy",
                         #"networkx",

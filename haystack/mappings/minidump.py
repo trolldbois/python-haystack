@@ -513,6 +513,27 @@ def MEM_PROTECT(name):
                      PAGE_WRITECOMBINE=0x0400,
                      )
 
+def MEM_PROTECT_to_string(flags):
+    for p in PAGE_ACCESS.keys():
+        if flags[p]:
+            return PAGE_ACCESS[p]
+    return PAGE_ACCESS['PAGE_NOACCESS']
+
+PAGE_ACCESS = {
+    'PAGE_NOACCESS': "---",
+    'PAGE_READONLY': "r--",
+    'PAGE_READWRITE': "rw-",
+    'PAGE_WRITECOPY': "rc-",
+    'PAGE_EXECUTE': "--x",
+    'PAGE_EXECUTE_READ': "r-x",
+    'PAGE_EXECUTE_READWRITE': "rwx",
+    'PAGE_EXECUTE_WRITECOPY': "rcx",
+    #'PAGE_GUARD'=0x0100,
+    #'PAGE_NOCACHE'=0x0200,
+    #'PAGE_WRITECOMBINE'=0x0400,
+}
+
+
 MINIDUMP_MEMORY_INFO = Struct('MINIDUMP_MEMORY_INFO',
                               ULInt64('BaseAddress'),
                               ULInt64('AllocationBase'),
@@ -1001,6 +1022,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                     access=mmap.ACCESS_READ)
         log.debug("fsize: %d", fsize)
         maps = []
+        maps_info = {}
         #
         # get the named modules
         named_modules = {}
@@ -1028,20 +1050,44 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
                         log.error('BAD FILE: reducing mapping 0x%x-0x%x size 0x%x -> 0x%x bytes', start, start+size, size, fsize - map_offset)
                         size = fsize - map_offset
                     end = start + size
-                    log.debug("0x%x-0x%x size:0x%x offset_in_file:0x%x", start, start+size, size, map_offset)
+                    log.debug("Memory64ListStream 0x%x-0x%x size:0x%x offset_in_file:0x%x", start, start+size, size, map_offset)
                     ## BUG FIXME, offset reading ???
                     name = 'None'
                     if start in named_modules:
                         name = named_modules[start][1]
-                    maps.append(file.MMapProcessMapping(mmap_content, start, end, name, map_offset))
+                    maps.append(file.MMapProcessMapping(mmap_content, start, end, offset=map_offset, pathname=name))
                     prev_size = size
             elif directory.StreamType == 'MemoryInfoListStream':
-                ## absent ?
-                print directory
+                ## Collect all metadata information
+                nb_entries = directory.DirectoryData.NumberOfEntries
+                for _range in directory.DirectoryData.MINIDUMP_MEMORY_INFO:
+                    start = _range.BaseAddress
+                    size = _range.RegionSize
+                    log.debug("MemoryInfoListStream 0x%x-0x%x size:0x%x ", start, start+size, size)
+                    maps_info[start] = (_range, start, size)
         ## FAST FAIL
         if len(maps) == 0:
             raise TypeError('This Minidump does not contain Memory64ListStream memory dump. ' +
                             'Please use full memory dump options in the memory acquisition tool.')
+        missing_info = [x.start for x in maps if x.start not in maps_info]
+        if len(missing_info) > 0:
+            log.debug('Missing metadata MemoryInfoListStream. %d mappings missing', len(missing_info))
+        else:
+            # enrich data with MemoryInfoListStream
+            for m in maps:
+                if m.start not in maps_info:
+                    continue
+                # fix permissions
+                info, start, size = maps_info[m.start]
+                del maps_info[m.start]
+                if size != len(m):
+                    log.warning("incorrect size metadata on 0x%x", m.start)
+                m.permissions = MEM_PROTECT_to_string(info.Protect)
+        # Ignore the remaining mappiongs
+        for start, (info, start, size) in maps_info.items():
+            permissions = MEM_PROTECT_to_string(info.Protect)
+            # maps.append(base.AMemoryMapping(start, start+size, permissions, 0, 0, 0, 0, "*unknown*"))
+            log.debug("ignore uncaptured MemoryMapping: %s", base.AMemoryMapping(start, start+size, permissions, 0, 0, 0, 0, "*unknown*"))
         # target
         cpu = os_name = None
         if self.os_name is None or self.cpu is None:
@@ -1073,6 +1119,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
 
         #
         self.mappings = maps
+        self.maps_info = maps_info
         log.debug("nb maps: %d", len(self.mappings))
         log.debug("target: %s", self._target)
         # Use a folder name for its cache later on
@@ -1090,5 +1137,7 @@ if __name__ == "__main__":
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
     print x
     mapper = MDMP_Mapper(sys.argv[1], None, None)
+    for m in mapper.mappings:
+        print m
     import code
     code.interact(local=locals())
