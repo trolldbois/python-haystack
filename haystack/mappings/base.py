@@ -190,6 +190,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
         raise NotImplementedError(self)
 
     def rebase(self, new_start_address):
+        log.debug("rebasing 0x%0.8x -> 0x%0.8x", self.start, new_start_address)
         end = new_start_address + len(self)
         self.start = new_start_address
         self.end = end
@@ -433,6 +434,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         """
         if user_mapping not in self._mappings:
             raise ValueError("User mapping not found")
+        log.debug("rebase_mapping 0x%0.8x -> 0x%0.8x", user_mapping.start, new_start_address)
         user_mapping = self._mappings[self._mappings.index(user_mapping)]
         user_mapping.rebase(new_start_address)
         # end = new_start_address + len(user_mapping)

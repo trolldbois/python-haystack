@@ -92,7 +92,7 @@ class ProcessMemoryMapping(AMemoryMapping):
         array = self._base.read_array(address, basetype, count)
         return array
 
-    def isMmaped(self):
+    def is_mmaped(self):
         return not (self._local_mmap is None)
 
     def mmap(self):
@@ -105,12 +105,17 @@ class ProcessMemoryMapping(AMemoryMapping):
         # probably a bad cast statement on c_char_p
         # FIXME: the big perf increase is now gone. Howto cast pointer to bytes
         # into my_ctypes array ?
-        if not self.isMmaped():
+        if not self.is_mmaped():
             self._local_mmap_content = self._utils.bytes2array(self._process().read_bytes(self.start, len(self)), self._ctypes.c_ubyte)
             log.debug('type array %s' % (type(self._local_mmap_content)))
             self._local_mmap = LocalMemoryMapping.fromAddress(self, self._ctypes.addressof(self._local_mmap_content))
             self._base = self._local_mmap
         return self._local_mmap
+
+    def rebase(self, new_start_address):
+        super(ProcessMemoryMapping, self).rebase(new_start_address)
+        if self.is_mmaped():
+            self._base.rebase(new_start_address)
 
     def reset(self):
         """

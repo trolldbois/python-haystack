@@ -354,24 +354,16 @@ class WinHeapFinder(heapwalker.HeapFinder):
         old_start = mapping.start
         # start = kernel_ptr & 0xFFFFFFFFFFFF0000
         start = kernel_ptr & ((1 << bits) - 0x10000)
-        #print '[!] POSSIBLE KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
-        ## print hex(struct.unpack('I', mapping.read_bytes(address+offset, 4))[0])
-        # FIXME: rebase must be recursive on mappings
-        #import pdb
-        #pdb.set_trace()
         self._memory_handler.rebase_mapping(mapping, start)
-        ## print hex(struct.unpack('I', mapping.read_bytes(start+offset, 4))[0])
         heap = mapping.read_struct(start, heap_module.HEAP)
         # validator is (should be) then target-bound
         validator = self._validator_type()(self._memory_handler, constraints, target_platform, heap_module)
         load = validator.load_members(heap, 3)
         log.debug('HeapFinder._is_heap %s %s', mapping, load)
         if not load:
-            #import code
-            #code.interact(local=locals())
             self._memory_handler.rebase_mapping(mapping, old_start)
         else:
-            print '[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x' % (address, start)
+            log.debug('[!] KERNEL SPACE HEAP FOUND ! USER:0x%x => KERNEL:0x%x', address, start)
         return load
 
     def _get_heap_possible_kernel_pointer_from_heap(self, target_platform, heap):
