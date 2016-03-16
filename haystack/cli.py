@@ -26,7 +26,6 @@ SEARCH_DESC = 'Search for instance of a record_type in the allocated memory of a
 SHOW_DESC = 'Cast the bytes at this address into a record_type. '
 WATCH_DESC = 'Cast the bytes at this address into a record_type and refresh regularly. '
 DUMP_DESC = 'Extract the process dump from the OS memory dump in haystack format. '
-REVERSE_DESC = 'Reverse the data structure from the process memory'
 
 # some dumptype constants
 DUMPTYPE_BASE = 'haystack'
@@ -47,7 +46,7 @@ class HaystackError(Exception):
     pass
 
 
-def _get_memory_handler(opts):
+def get_memory_handler(opts):
     if opts.dumptype == DUMPTYPE_BASE:
         loader = dump_loader.ProcessMemoryDumpLoader(opts.dump_folder_name)
         memory_handler = loader.make_memory_handler()
@@ -68,7 +67,7 @@ def _get_memory_handler(opts):
     return memory_handler
 
 
-def _get_output(memory_handler, results, rtype):
+def get_output(memory_handler, results, rtype):
     if rtype == 'string':
         ret = api.output_to_string(memory_handler, results)
     elif rtype == 'python':
@@ -96,7 +95,7 @@ def dump_process(opts):
 def search_cmdline(args):
     """ Search for instance of a record_type in the allocated memory of a process. """
     # get the memory handler adequate for the type requested
-    memory_handler = _get_memory_handler(args)
+    memory_handler = get_memory_handler(args)
     # try to load constraints
     my_constraints = None
     if args.constraints_file:
@@ -115,7 +114,7 @@ def search_cmdline(args):
     results = api.search_record(memory_handler, record_type, my_constraints, extended_search=args.extended)
     # output handling
     try:
-        ret = _get_output(memory_handler, results, args.output)
+        ret = get_output(memory_handler, results, args.output)
         # print output on stdout
         print ret
     except Exception as e:
@@ -133,7 +132,7 @@ def show_cmdline(args):
     # we need an int
     memory_address = args.address
     # get the memory handler adequate for the type requested
-    memory_handler = _get_memory_handler(args)
+    memory_handler = get_memory_handler(args)
     # check the validity of the address
     heap = memory_handler.is_valid_address_value(memory_address)
     if not heap:
@@ -160,7 +159,7 @@ def show_cmdline(args):
     # output handling
     ret = None
     try:
-        ret = _get_output(memory_handler, results, args.output)
+        ret = get_output(memory_handler, results, args.output)
         # print output on stdout
         print ret
         if args.constraints_file:
@@ -207,7 +206,7 @@ def watch(args):
     refresh = args.refresh_rate
     varname = args.varname
     # get the memory handler adequate for the type requested
-    memory_handler = _get_memory_handler(args)
+    memory_handler = get_memory_handler(args)
     # check the validity of the address
     heap = memory_handler.is_valid_address_value(memory_address)
     if not heap:
@@ -254,16 +253,6 @@ def watch(args):
         # output handling
         output = api.output_to_python(memory_handler, results)
         py_obj = output[0][0]
-
-
-def reverse_cmdline(args):
-    """ Reverse """
-    from haystack.reverse import api as rapi
-    # get the memory handler adequate for the type requested
-    memory_handler = _get_memory_handler(args)
-    # do the search
-    rapi.reverse_instances(memory_handler)
-    return
 
 
 def base_argparser(program_name, description):
@@ -324,11 +313,6 @@ def dump_argparser(dump_parser):
     dump_parser.add_argument('output_folder_name', type=str, help='Output to this memory dump folder')
     dump_parser.set_defaults(func=dump_process)
     return dump_parser
-
-
-def reverse_argparser(reverse_parser):
-    reverse_parser.set_defaults(func=reverse_cmdline)
-    return reverse_parser
 
 
 def output_argparser(rootparser):
@@ -392,21 +376,6 @@ def main_show():
     rootparser.add_argument('dump_folder_name', type=argparse_utils.readable, help='Use this memory dump folder')
     show_argparser(rootparser)
     output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_BASE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def main_reverse():
-    argv = sys.argv[1:]
-    desc = REVERSE_DESC + DUMPTYPE_BASE_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_folder_name', type=argparse_utils.readable, help='Use this memory dump folder')
-    reverse_argparser(rootparser)
     opts = rootparser.parse_args(argv)
     opts.dumptype = DUMPTYPE_BASE
     # apply verbosity
@@ -557,21 +526,6 @@ def rekall_dump():
     dump_argparser(rootparser)
     opts = rootparser.parse_args(argv)
     opts.dumptype = DUMPTYPE_REKALL
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def minidump_reverse():
-    argv = sys.argv[1:]
-    desc = REVERSE_DESC + DUMPTYPE_MINIDUMP_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
-    reverse_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_MINIDUMP
     # apply verbosity
     set_logging_level(opts)
     # execute function
