@@ -10,6 +10,7 @@ import distutils.log
 import subprocess
 import sys
 
+
 class PyPrepTestsCommand(distutils.cmd.Command):
     """
     A custom command to build test sets.
@@ -43,8 +44,6 @@ class PyPrepTestsCommand(distutils.cmd.Command):
         # all dump files are in .tgz
         makeCmd = ['make', '-d']
         p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
-        #makeCmd = ['make', '-f', 'Makefile.prep']
-        #p = subprocess.Popen(makeCmd, stdout=sys.stdout, cwd='test/src/')
         p.wait()
         return p.returncode
 
@@ -65,9 +64,9 @@ setup(name="haystack",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",
         "Development Status :: 4 - Beta",
-        #"Development Status :: 5 - Production/Stable",
+        # "Development Status :: 5 - Production/Stable",
       ],
-      keywords=["memory","analysis","forensics","record","struct","ptrace","reverse","heap", "lfh", "lal"],
+      keywords=["memory", "analysis", "forensics", "record", "struct", "ptrace", "reverse", "heap", "lfh", "lal"],
       author="Loic Jaquemet",
       author_email="loic.jaquemet+python@gmail.com",
       packages=["haystack",
@@ -81,7 +80,7 @@ setup(name="haystack",
                 "haystack.allocators",
                 "haystack.allocators.libc",
                 "haystack.allocators.win32"],
-      #package_dir={"haystack.reverse": 'haystack/reverse'},
+      # package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={"haystack.reverse.heuristics": ['data/words.100'],
                     "haystack.allocators.win32": ['win7heap32.constraints',
                                                   'win7heap64.constraints',
@@ -115,11 +114,8 @@ setup(name="haystack",
               'haystack-minidump-reverse-hex = haystack.reverse.cli:minidump_reverse_hex',
           ]
       },
-      scripts=[ #"scripts/haystack",
+      scripts=[
                # "scripts/haystack-gui",
-               #"scripts/haystack-dump",
-               #"scripts/haystack-reverse",
-               #"scripts/haystack-find-heap.py"
                ],
       # reverse: numpy is a dependency for reverse.
       # https://github.com/numpy/numpy/issues/2434
@@ -130,25 +126,24 @@ setup(name="haystack",
       install_requires=["pefile>=1.2.10_139",
                         "construct",
                         # reverse need these.
-                        #"numpy",
-                        #"networkx",
-                        #"python-Levenshtein"
+                        # "numpy",
+                        # "networkx",
+                        # "python-Levenshtein"
                         ] + ["python-ptrace>=0.8.1"] if "win" not in sys.platform else []
                         + ["winappdbg"] if "win" in sys.platform else [],
-      dependency_links=[#"https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
+      dependency_links=[
+                        # "https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
                         "https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
-      test_suite= "test.alltests",
+      test_suite="test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
       # prep_test requires ctypeslib2
-      #tests_require=["volatility"],
+      # tests_require=["volatility"],
       # tests_require=["ctypeslib2>2.1.3"],
-      #entry_points = {'haystack.plugins':['haystack.model:register']},
       cmdclass={
           'preptests': PyPrepTestsCommand,
       },
 )
-
 

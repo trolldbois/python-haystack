@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/trolldbois/python-haystack.svg?branch=master)](https://travis-ci.org/trolldbois/python-haystack)
 [![Coverage Status](https://coveralls.io/repos/trolldbois/python-haystack/badge.svg?branch=master&service=github)](https://coveralls.io/github/trolldbois/python-haystack?branch=master)
-[![Code Health](https://landscape.io/github/trolldbois/python-haystack/development/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/master)
+[![Code Health](https://landscape.io/github/trolldbois/python-haystack/master/landscape.svg?style=flat)](https://landscape.io/github/trolldbois/python-haystack/master)
 [![pypi](https://img.shields.io/pypi/dm/haystack.svg)](https://pypi.python.org/pypi/haystack)
 
 Quick Start:
@@ -17,7 +17,7 @@ python-haystack is an heap analysis framework, focused on searching and reversin
 C structure in allcoated memory.
 
 The first function/API is the SEARCH function.
- - It gives the ability to search for known record types in a process memory dump (or live process's memory)
+ - It gives the ability to search for known record types in a process memory dump or live process's memory.
 
 The second function/API is the REVERSE function.
  - It aims at helping an analyst in reverse engineering the memory records types present in a process heap.
@@ -31,32 +31,40 @@ A few entry points exists to handle the format your memory dump.
 
 Memory dump folder produced by `haystack-live-dump`
 ---------------------------------------------------
+ - `haystack-find-heap` allows to show details on Windows HEAP.
  - `haystack-search` search CLI
  - `haystack-show` show CLI for specific record type at a specific address
- - `haystack-reverse` reverse CLI
+ - `haystack-reverse` reverse CLI - reverse all allocation chunks
+ - `haystack-reverse-show` show the reversed record at a specific address
+ - `haystack-reverse-hex` show a specific record hex bytes at a specific address
+ - `haystack-reverse-parents` show the records pointing to the allocated record at a specific address
 
-Memory dump folder produced by a Minidump tool
+Memory dump file produced by a Minidump tool
 ---------------------------------------------------
+ - `haystack-find-heap` allows to show details on Windows HEAP.
  - `haystack-minidump-search` search CLI
- - `haystack-minidump-show` show CLI
- - `haystack-minidump-reverse` reverse CLI
+ - `haystack-minidump-show` show a specific record type at a specific address
+ - `haystack-minidump-reverse` reverse CLI - reverse all allocation chunks
+ - `haystack-minidump-reverse-show` show the reversed record at a specific address
+ - `haystack-minidump-reverse-hex` show a specific record hex bytes at a specific address
+ - `haystack-minidump-reverse-parents` show the records pointing to the allocated record at a specific address
 
 For live processes
 ------------------
- - `haystack-live-dump` produce a process memory dump
- - `haystack-live-search` search CLI
- - `haystack-live-show` show CLI for a live process
+ - `haystack-live-dump` capture a process memory dump to a folder (haystack format)
+ - `haystack-live-search` search CLI in live process memory
+ - `haystack-live-show` show a specific record type at a specific addres in a live process memory
 
 For a Rekall memory dump
 ---------------------------
  - `haystack-rekall-search` search CLI for a specific process in a rekall dump
- - `haystack-rekall-show` show CLI
+ - `haystack-rekall-show` show a specific record type at a specific address
  - `haystack-rekall-dump` dump a specific process to a haystack process dump
 
 For a Volatility memory dump
 ---------------------------
  - `haystack-volatility-search`  search CLI for a specific process in a volatility dump
- - `haystack-volatility-show` show CLI
+ - `haystack-volatility-show` show a specific record type at a specific address
  - `haystack-volatility-dump` dump a specific process to a haystack process dump
 
 How to get a memory dump:
@@ -79,7 +87,7 @@ containing each memory map in a separate file :
 - memory content in a file named after it's start/end addresses ( 0x000700000-0x000800000 )
 - 'mappings' file containing memory mappings metadata.  ( mappings )
 
-Or you can write a `haystack.abc.IMemoryMapping` implementation for your favorite format.
+Or you can code a `haystack.abc.IMemoryMapping` implementation for your favorite format.
 
 Otherwise, if you already have a system memory dump from Volatility or Rekall, 
 you can use the `haystack-rekall-xxx` or `haystack-volatility-xxx` families of
@@ -157,9 +165,9 @@ For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
 Lets assume we have an ssh client or server as pid *4042*:
 
-    $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state search > instance.pickled
-    $ sudo haystack --pid 4042 --pickled sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
-    $ sudo haystack --pid xxxx --pickled <your ctypes Structure> search > instance.pickled
+    $ sudo haystack-live-search --pickled 4042 sslsnoop.ctypes_openssh.session_state search > instance.pickled
+    $ sudo haystack-live-search --pickled 4042 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
+    $ sudo haystack-live-search --pickled <pid> <your ctypes Structure> search
 
 
 Graphic example :
@@ -222,33 +230,18 @@ on fields types.
 A `<yourdumpfolder>/cache/graph.gexf` file is also produced to help you visualize
 instances links. It gets messy for any kind of serious application.
 
-Other outputs of the reverse CLI are listed below.
+- `*.headers_values.py` contains the list of heuristicly reversed record types.
+- `*.strings` contains the list of heuristicly typed strings field in reversed record.
 
-Show the list of heuristicly reversed record types:
+Other Entry points for reversing:
+--------------------------------
 
-    $ python haystack-reverse <yourdumpname> types
-
-Show the list of strings field in record:
-
-    $ python haystack-reverse <yourdumpname> strings
-
-Other related entry points are listed below.
-
-Show the record for a specific address:
-
-    $ haystack-show <yourdumpname> 0x00ab0000
-
-Show the bytes hexadecimal values for the record for a specific address:
-
-    $ python haystack-reverse <yourdumpname> hex 0x00ab0000
-
-Show the record, if any, that has a pointer to the record sitting at a specific address:
-
-    $ python haystack-reverse <yourdumpname> parents 0x00ab0000
-
-Clean the cache created :
-
-    $ python haystack-reverse <yourdumpname> clean 
+ - `haystack-reverse-show` show a specific record at a specific address
+ - `haystack-reverse-hex` show a specific record hex bytes at a specific address
+ - `haystack-reverse-parents` show the records pointing to the allocated record at a specific address
+ - `haystack-minidump-reverse-show` show a specific record at a specific address
+ - `haystack-minidump-reverse-hex` show a specific record hex bytes at a specific address
+ - `haystack-minidump-reverse-parents` show the records pointing to the allocated record at a specific address
 
 
 Extension examples :
