@@ -281,6 +281,7 @@ Other related work are mona.py from Immunity, some other Mandiant stuff...
 In a nutshell, this is probably not an original idea. But yet, I could
 not find a operational standalone lib for live memory extraction for my sslsnoop PoC, so....
 
+[Related work](https://github.com/trolldbois/python-haystack/wiki/State-of-art-reference)
 
 What are the dependencies ? :
 ----------------------------
