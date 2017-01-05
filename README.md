@@ -145,7 +145,7 @@ Example:
     myfield: [1,0xff]
     ptr_field: NotNull
 
-You can take a look a `haystack/structures/win32/winxpheap32.constraints`, where
+You can take a look a `haystack/allocators/win32/winxpheap32.constraints`, where
 the constraints of a Windows XP HEAP x32 are defined.
 
 Obviously, the more constraints, the better the results will be.
