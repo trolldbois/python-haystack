@@ -7,14 +7,14 @@
 
 Quick Start:
 ============
-[Quick usage guide](docs/Haystack basic usage.ipynb) in the docs/ folder.
+[Quick usage guide](docs/Haystack basic usage.ipynb) in the docs/ folder.  
 [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
 
 Introduction:
 =============
 
 python-haystack is an heap analysis framework, focused on searching and reversing of  
-C structure in allcoated memory.
+C structure in allocated memory.
 
 The first function/API is the SEARCH function.
  - It gives the ability to search for known record types in a process memory dump or live process's memory.
