@@ -7,8 +7,8 @@
 
 Quick Start:
 ============
-[Quick usage guide](docs/Haystack basic usage.ipynb) in the docs/ folder.
-[Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
+[Quick usage guide](docs/Haystack_basic_usage.ipynb) in the docs/ folder.
+[Haystack-reverse CLI](docs/Haystack_reverse_CLI.ipynb) in the docs/ folder.
 
 Introduction:
 =============

@@ -17,10 +17,11 @@ python:
 
 sudo: false
 
-addons:
-  apt:
-    packages:
-    - unzip
+# travis-ci upgrades it. so it is already there.
+#addons:
+#  apt:
+#    packages:
+#    - unzip
 
 # install any dependencies required
 install:
