@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from __future__ import print_function
 import os
 import logging
 import unittest
@@ -62,7 +63,7 @@ class TestKnownRecordTypeReverser(SrcTests):
         ## TODO enforce better constraints, and a dynamic Contraints engine
         results = krtr.get_search_results()
         for record_name, addresses in results.items():
-            print record_name, len(addresses)
+            print(record_name, len(addresses))
         pass
 
 
@@ -106,7 +107,7 @@ class TestDoubleLinkedReverser(SrcTests):
         # print mid.to_string()
         # reverse the list
         self.dllr.reverse()
-        print mid.to_string()
+        print(mid.to_string())
         size = len(mid)
         # there is a list for this size
         self.assertIn(size, self.dllr.lists)
@@ -690,17 +691,17 @@ class TestEnrichedPointerAnalyserReal(unittest.TestCase):
         # list goes from 0xccd28, 0xccd00 to 0x98268
         #_record = self._context.get_record_for_address(0xccd28)
         _record = self._context.get_record_for_address(0xccd00)
-        print _record.to_string()
+        print(_record.to_string())
         #_record.set_reverse_level(9)
         ##
         rev.reverse_record(self._context, _record)
 
-        print _record.to_string()
+        print(_record.to_string())
         n1 = self._context.get_record_for_address(0x000ccae8)
-        print n1.to_string()
+        print(n1.to_string())
         tail = self._context.get_record_for_address(0x98268)
-        print tail.to_string()
-        expected = [0xccd28,0xccd00L,0xccae8,0xcca50,0xcca28,0xcc428,0xc6878,0xdcbc8,0xdcb40,0xcd300,0xbbf78,0xbefd8,0xbecd8,0xbc560,0xbbee0,0xbbda8,0xbbb38,0xbbae0,0xa6518,0xb5d00,0xb5cd8,0xb5cb0,0xb5b70,0xb1aa8,0xa20b8,0x9e2f8,0xa1920,0xa1838,0x98268]
+        print(tail.to_string())
+        expected = [0xccd28,0xccd00,0xccae8,0xcca50,0xcca28,0xcc428,0xc6878,0xdcbc8,0xdcb40,0xcd300,0xbbf78,0xbefd8,0xbecd8,0xbc560,0xbbee0,0xbbda8,0xbbb38,0xbbae0,0xa6518,0xb5d00,0xb5cd8,0xb5cb0,0xb5b70,0xb1aa8,0xa20b8,0x9e2f8,0xa1920,0xa1838,0x98268]
         size_records = len(tail)
         # offset = 8
         offset = 8
@@ -739,16 +740,16 @@ class TestTypeReverser(unittest.TestCase):
         # list goes from 0xccd28, 0xccd00 to 0x98268
         #_record = self._context.get_record_for_address(0xccd28)
         _record = self._context.get_record_for_address(0xccd00)
-        print _record.to_string()
+        print(_record.to_string())
         _record.set_reverse_level(10)
         rev.reverse_context(self._context)
-        print _record.to_string()
+        print(_record.to_string())
         pass
 
     def test_otherlink(self):
         # 0xa6f40, 0xa6f70
         _record = self._context.get_record_for_address(0xccd00)
-        print _record.to_string()
+        print(_record.to_string())
         #import code
         #code.interact(local=locals())
 

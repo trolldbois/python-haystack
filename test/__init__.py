@@ -9,8 +9,9 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-from run_src_app import run_app_test
-from run_src_app import makeTests
+#from . import run_src_app
+#from run_src_app import run_app_test
+#from run_src_app import makeTests
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

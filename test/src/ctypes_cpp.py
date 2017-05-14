@@ -3,6 +3,7 @@
 
 """Expected testing allocators."""
 
+from __future__ import print_function
 import ctypes
 import logging
 import sys
@@ -86,7 +87,7 @@ def printSizeof(mini=-1):
         # and klass.__module__.endswith('%s_generated'%(__name__) ) :
         if isinstance(klass, type(ctypes.Structure)):
             if ctypes.sizeof(klass) > mini:
-                print '%s:' % name, ctypes.sizeof(klass)
+                print('%s:' % name, ctypes.sizeof(klass))
 
 e = E()
 

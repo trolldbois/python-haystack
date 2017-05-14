@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from __future__ import print_function
 import unittest
 import logging
 
@@ -402,7 +403,7 @@ class TestTextFieldCorrection(unittest.TestCase):
         self.assertTrue(fields[1].is_string())
         self.assertTrue(fields[2].is_zeroes())
 
-        print _record.to_string()
+        print(_record.to_string())
 
     def test_utf16_2(self):
         _record = self.heap_context.get_record_for_address(0xa4028)
@@ -413,7 +414,7 @@ class TestTextFieldCorrection(unittest.TestCase):
         rev.reverse_record(self.heap_context, _record)
         fields = _record.get_fields()
 
-        print _record.to_string()
+        print(_record.to_string())
 
 
 

@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from __future__ import print_function
 import logging
 import unittest
 
@@ -61,7 +62,7 @@ class TestField(SrcTests):
         g1 = fieldtypes.Field('gap_0', 0, fieldtypes.UNKNOWN, 1, False)
         self.assertEqual(len(g1), 1)
         self.assertTrue(g1.is_gap())
-        print g1.to_string('\x00\x00\x00\x00')
+        print(g1.to_string('\x00\x00\x00\x00'))
         self.assertIn('ctypes.c_ubyte*1 )', g1.to_string('\x00\x00\x00\x00'))
 
         g2 = fieldtypes.Field('gap_0', 0, fieldtypes.UNKNOWN, 2, False)
@@ -121,7 +122,7 @@ class TestField(SrcTests):
         self.assertIsInstance(f2.field_type, fieldtypes.FieldTypeStruct)
         self.assertEqual(f2.field_type.name, 'LIST_ENTRY')
 
-        print _record.to_string()
+        print(_record.to_string())
 
 
 if __name__ == '__main__':

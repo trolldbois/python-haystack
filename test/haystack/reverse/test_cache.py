@@ -6,6 +6,7 @@
 #
 #
 
+from __future__ import print_function
 
 def main():
     from haystack.reverse import context
@@ -99,9 +100,9 @@ def rec_add_child(graph, knowns, addr, t=''):
             return
         graph.add_edge(n(om[addr]), n(om[c]))
         childscount = len(om[c].children)
-        print 'c:', c, 'has', childscount, 'children'
+        print('c:', c, 'has', childscount, 'children')
         if childscount > 0:
-            print om[c]
+            print(om[c])
         # add rec
         if c in knowns:
             return
@@ -116,9 +117,9 @@ def rec_add_parent(graph, knowns, addr, t=''):
             return
         graph.add_edge(n(om[p]), n(om[addr]))
         childscount = len(om[p].parents)
-        print 'p:', p, 'has', childscount, 'parents'
+        print('p:', p, 'has', childscount, 'parents')
         if childscount > 0:
-            print om[p]
+            print(om[p])
         # add rec
         if p in knowns:
             return

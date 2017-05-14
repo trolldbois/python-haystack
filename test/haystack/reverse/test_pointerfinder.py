@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
+from __future__ import print_function
 import haystack.reverse.enumerators
 import haystack.reverse.matchers
 
@@ -141,12 +142,12 @@ class TestPointerEnumeratorReal(unittest.TestCase):
         res = [(v,k) for k,v, in mapdict.items()]
         res.sort()
         res.reverse()
-        print 'Most used mappings:'
+        print('Most used mappings:')
         for cnt,s in res:
             if cnt == 0:
                 continue
             m = self._memory_handler.get_mapping_for_address(s)
-            print cnt, m
+            print(cnt, m)
 
     def test_pointer_enumerators(self):
         """
@@ -179,13 +180,13 @@ class TestPointerEnumeratorReal(unittest.TestCase):
             sortby = 'cumulative'
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
-            print s.getvalue()
+            print(s.getvalue())
             ###
         else:
             heap_enum = enumerator1.search()
             ts1 = 0.0
         heap_addrs1, heap_values1 = zip(*heap_enum)
-        print 'WordAlignedEnumerator: %d pointers, timeit %0.2f' % (len(heap_addrs1), ts1)
+        print('WordAlignedEnumerator: %d pointers, timeit %0.2f' % (len(heap_addrs1), ts1))
 
         self._stats(heap_addrs1)
 
@@ -217,7 +218,7 @@ class TestPointerEnumeratorReal(unittest.TestCase):
             sortby = 'cumulative'
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
-            print s.getvalue()
+            print(s.getvalue())
             ###
         else:
             heap_enum2 = enumerator2.search()
@@ -257,9 +258,9 @@ class TestPointerEnumeratorReal(unittest.TestCase):
                 all_heaps_addrs.extend(heap_addrs2)
                 ##
                 if False:
-                    print "Pointers:"
+                    print("Pointers:")
                     for k,v in heap_enum2:
-                        print hex(k), hex(v)
+                        print(hex(k), hex(v))
 
         self._stats(all_heaps_addrs)
 
@@ -293,15 +294,15 @@ class TestPointerEnumeratorReal(unittest.TestCase):
                 all_heaps_addrs.extend(heap_addrs2)
                 ##
                 if False:
-                    print "Pointers:"
+                    print("Pointers:")
                     for k,v in heap_enum2:
-                        print hex(k), hex(v)
-                    print "Allocations:"
+                        print(hex(k), hex(v))
+                    print("Allocations:")
                     for addr, size in heap_walker.get_user_allocations():
-                        print hex(addr), '->', hex(addr+size), '(%x)'%size
-                    print "Free chunks:"
+                        print(hex(addr), '->', hex(addr+size), '(%x)'%size)
+                    print("Free chunks:")
                     for addr, size in heap_walker.get_free_chunks():
-                        print hex(addr), '->', hex(addr+size), '(%x)'%size
+                        print(hex(addr), '->', hex(addr+size), '(%x)'%size)
 
         self._stats(all_heaps_addrs)
 

@@ -23,7 +23,7 @@ class TestMapper(unittest.TestCase):
     def setUp(self):
         try:
             import volatility
-        except ImportError,e:
+        except ImportError as e:
             self.skipTest('Volatility not installed')
         pass
 

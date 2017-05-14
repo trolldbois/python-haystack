@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from __future__ import print_function
 import logging
 import unittest
 import sys
@@ -150,7 +151,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                     log.debug('UnusedBytes == 0x5, SegmentOffset == %d' % st._0._1._0.SegmentOffset)
 
                 # FIXME, in child of 0x005c0000. LFH. What are the flags already ?
-                print hex(chunk_addr)
+                print(hex(chunk_addr))
                 self.assertTrue(st._0._1.UnusedBytes & 0x80, 'UnusedBytes said this is a BACKEND chunk , Flags | 2')
                 allocs.append((chunk_addr, chunk_size))  # with header
 

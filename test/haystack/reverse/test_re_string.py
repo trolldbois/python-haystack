@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from __future__ import print_function
 import logging
 import unittest
 
@@ -163,7 +164,7 @@ class TestReString(unittest.TestCase):
         # len(self.test9) ))
         ##
         # self.assertEqual(0, re_string.rfind_utf16(self.test11, 0, 48, False, 4))
-        print re_string.rfind_utf16(self.test11, 0, 44, False, 4)
+        print(re_string.rfind_utf16(self.test11, 0, 44, False, 4))
 
     def test_find_ascii(self):
         self.assertEquals(

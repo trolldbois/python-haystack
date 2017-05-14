@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 import unittest
 
@@ -30,12 +31,12 @@ class TestReverseApi(unittest.TestCase):
         _record = api.get_record_at_address(self.memory_handler, addr)
         self.assertEqual(_record.address, addr)
         #self.assertEqual(len(_record.get_fields()), 3)
-        print _record.to_string()
+        print(_record.to_string())
         # FIXME - process must be reversed. Graph must be generated.
         pred = api.get_record_predecessors(self.memory_handler, _record)
-        print 'pred', pred
+        print('pred', pred)
         for p in pred:
-            print p.to_string()
+            print(p.to_string())
         pass
 
 if __name__ == '__main__':

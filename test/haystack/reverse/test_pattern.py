@@ -4,8 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
+from __future__ import print_function
 import logging
 import operator
 import unittest
@@ -17,6 +16,8 @@ from haystack import target
 from haystack.reverse import pattern
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 '''
 Testing pointer patterns recognition.
@@ -37,15 +38,15 @@ class SignatureTests(unittest.TestCase):
         # make a fake dir
         try:
             os.mkdir('test/reverse/')
-        except OSError,e:
+        except OSError as e:
             pass
         try:
             os.mkdir('test/reverse/fakedump')
-        except OSError,e:
+        except OSError as e:
             pass
         try:
             os.mkdir('test/reverse/fakedump/cache')
-        except OSError,e:
+        except OSError as e:
             pass
 
     def setUp(self):
@@ -100,7 +101,7 @@ class SignatureTests(unittest.TestCase):
             raise ValueError('error 1 on length dump %d ' % (len(dump)))
         dump2 = ''.join(dump)
         if len(dump) * word_size != len(dump2):
-            print dump
+            print(dump)
             raise ValueError(
                 'error 2 on length dump %d dump2 %d' %
                 (len(dump), len(dump2)))

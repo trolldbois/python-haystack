@@ -3,6 +3,7 @@
 
 """Tests haystack.utils ."""
 
+from __future__ import print_function
 import logging
 import mmap
 import struct
@@ -45,7 +46,7 @@ class TestMmapHack(unittest.TestCase):
         ret = [m for m in handler.get_mappings() if heapmap in m]
         if len(ret) == 0:
             for m in handler.get_mappings():
-                print m
+                print(m)
         # heapmap is a pointer value in local memory
         self.assertEquals(len(ret), 1)
         # heapmap is a pointer value to this executable?

@@ -426,7 +426,7 @@ class WinHeapValidator(listmodel.ListModel):
         if heap_bits != process_bits:
             special += ' (!%d bits heap!) ' % heap_bits
 
-        print(('[+] %sHEAP:0x%0.8x' % (special, addr), m))
+        print('[+] %sHEAP:0x%0.8x' % (special, addr), m)
         if not verbose:
             return
         #

@@ -136,7 +136,7 @@ def clean(digraph):
         for i, g1 in enumerate(graphs):
             for g2 in graphs[i + 1:]:
                 if networkx.is_isomorphic(g1, g2):
-                    print(('numNodes:%d graphs %d, %d are isomorphic' % (numNodes, i, i + 1)))
+                    print('numNodes:%d graphs %d, %d are isomorphic' % (numNodes, i, i + 1))
                     isoGraph.add_edge(g1, g2, {'isomorphic': True})
                     if g2 in todo:
                         todo.remove(g2)
@@ -170,9 +170,9 @@ def clean(digraph):
                            for addr in stack_addrs])  # new, no long
 
     stacknodes = list(set(bigGraph.nodes()) & stack_addrs_txt)
-    print(('stacknodes left', len(stacknodes)))
+    print('stacknodes left', len(stacknodes))
     orig = list(set(graph.nodes()) & stack_addrs_txt)
-    print(('stacknodes orig', len(orig)))
+    print('stacknodes orig', len(orig))
 
     # identify strongly referenced allocators
     degreesList = [(bigGraph.in_degree(node), node)
@@ -188,14 +188,14 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
     s1 = ctx.structures[addr]  # TODO FIXME RAISES
     # s1 = s1._load() #structure.cacheLoad(ctx, int(saddr,16))
     s1.decodeFields()
-    print((s1.to_string()))
+    print(s1.to_string())
     # strip the node from its predecessors, they are numerously too numerous
     impDiGraph = networkx.DiGraph()
     root = '%d nodes' % nb
     impDiGraph.add_edge(root, saddr)
     depthSubgraph(bigGraph, impDiGraph, [saddr], 2)
-    print(('important struct with %d structs pointing to it, %d pointerFields' % (
-    digraph.in_degree(saddr), digraph.out_degree(saddr))))
+    print('important struct with %d structs pointing to it, %d pointerFields' % (
+    digraph.in_degree(saddr), digraph.out_degree(saddr)))
     # print 'important struct with %d structs pointing to it, %d
     # pointerFields'%(impDiGraph.in_degree(saddr),
     # impDiGraph.out_degree(saddr))
@@ -212,7 +212,7 @@ def printImportant(ctx, digraph, degreesList, ind, bigGraph):
         st.resolvePointers()
         # st.pointerResolved=True
         # st._aggregateFields()
-        print((node, st.get_signature(text=True)))
+        print(node, st.get_signature(text=True))
     # clean and print
     # s1._aggregateFields()
     impDiGraph.remove_node(root)
