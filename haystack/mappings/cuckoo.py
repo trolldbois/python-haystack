@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """
 Cuckoo process dump backed memory_handler.
 """
@@ -142,7 +144,7 @@ if __name__ == '__main__':
     handler = mapper.make_memory_handler()
     finder = handler.get_heap_finder()
     heaps = finder.list_heap_walkers()
-    print "heaps", heaps
+    print("heaps", heaps)
 
     from haystack import api
     from haystack.allocators.win32.winxp_32 import struct__HEAP
@@ -192,9 +194,9 @@ if __name__ == '__main__':
             res = api.load_record(handler, struct__HEAP, m.start, heap_constraints)
             p, valid = api.output_to_python(handler, [res])[0]
             offset = m.offset
-            print m, "p.Signature", valid, hex(p.Signature), repr(m._backend[8+offset:12+offset]),
+            print(m, "p.Signature", valid, hex(p.Signature), repr(m._backend[8+offset:12+offset]),)
             v = api.validate_record(handler, res[0], heap_constraints)
-            print "validate", v
+            print("validate", v)
             if p.Signature == 0xeeffeeff:
                 possibles.append(m)
 
@@ -202,12 +204,12 @@ if __name__ == '__main__':
         code.interact(local=locals())
 
         for m in possibles:
-            print "trying m", m
+            print("trying m", m)
             logging.getLogger("basicmodel").setLevel(logging.INFO)
             res = api.load_record(handler, struct__HEAP, m.start, heap_constraints)
             logging.getLogger("basicmodel").setLevel(logging.DEBUG)
             v = api.validate_record(handler, res[0], heap_constraints)
-            print "that was", m
+            print("that was", m)
             import code
             code.interact(local=locals())
 

@@ -137,25 +137,25 @@ class MemoryMappingView(QtGui.QGraphicsView):
         # The max boundary that the centerPoint can be to
         bounds = QtCore.QRectF(boundX, boundY, boundWidth, boundHeight)
 
-        if (bounds.contains(centerPoint)):
+        if bounds.contains(centerPoint):
             # We are within the bounds
             self.CurrentCenterPoint = centerPoint
         else:
             # We need to clamp or use the center of the screen
-            if(visibleArea.contains(sceneBounds)):
+            if visibleArea.contains(sceneBounds):
                     # Use the center of scene ie. we can see the whole scene
                 self.CurrentCenterPoint = sceneBounds.center()
             else:
                 self.CurrentCenterPoint = centerPoint
                 # We need to clamp the center. The centerPoint is too large
-                if(centerPoint.x() > bounds.x() + bounds.width()):
+                if centerPoint.x() > bounds.x() + bounds.width():
                     self.CurrentCenterPoint.setX(bounds.x() + bounds.width())
-                elif (centerPoint.x() < bounds.x()):
+                elif centerPoint.x() < bounds.x():
                     self.CurrentCenterPoint.setX(bounds.x())
 
-                if(centerPoint.y() > bounds.y() + bounds.height()):
+                if centerPoint.y() > bounds.y() + bounds.height():
                     self.CurrentCenterPoint.setY(bounds.y() + bounds.height())
-                elif (centerPoint.y() < bounds.y()):
+                elif centerPoint.y() < bounds.y():
                     self.CurrentCenterPoint.setY(bounds.y())
 
         # Update the scrollbars
@@ -191,7 +191,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
             # parent item, check for haystack types
             log.debug('Mouse press on parent item ' + str(pitem))
             if hasattr(pitem, 'value') and model.isRegistered(pitem.value):
-                log.debug('showing info for %s' % (pitem))
+                log.debug('showing info for %s' % pitem)
                 # update info view
                 self.parent().showInfo(pitem)
             elif hasattr(pitem, 'onSelect'):
@@ -221,7 +221,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
   '''
 
     def mouseMoveEvent(self, event):
-        if (not self.LastPanPoint.isNull()):
+        if not self.LastPanPoint.isNull():
                 # Get how much we panned
             delta = self.mapToScene(
                 self.LastPanPoint) - self.mapToScene(event.pos())
@@ -245,7 +245,7 @@ class MemoryMappingView(QtGui.QGraphicsView):
 
         # Scale the view ie. do the zoom
         scaleFactor = 1.15  # How fast we zoom
-        if(event.delta() > 0):
+        if event.delta() > 0:
             # Zoom in
             self.scale(scaleFactor, scaleFactor)
         else:

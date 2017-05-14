@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
 from construct import *
 from time import mktime
 from datetime import datetime, timedelta
@@ -1135,9 +1136,9 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
 if __name__ == "__main__":
     import sys
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
-    print x
+    print(x)
     mapper = MDMP_Mapper(sys.argv[1], None, None)
     for m in mapper.mappings:
-        print m
+        print(m)
     import code
     code.interact(local=locals())

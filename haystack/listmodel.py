@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+from __future__ import print_function
+
 """
     Extension for list grammars.
 
@@ -388,7 +390,7 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
             _, _, gbl_sentinels = self.get_double_linked_list_type(field_record_type)
         else:
             import traceback
-            print traceback.print_stack()
+            print(traceback.print_stack())
             raise RuntimeError("Field %s was defined as linked link entry record type %s, but not registered" % (
                                 fieldname, field_record_type))
         # now that this is cleared, lets iterate.
@@ -643,10 +645,10 @@ class ListModel(basicmodel.CTypesRecordConstraintValidator):
                 # FIXME: choose if its a pointer to list or a list member
                 entry_iterator = self._iterate_list_from_field_with_link_info(record, link_info)
                 self._load_list_entries(record, entry_iterator, max_depth - 1)
-        except ValueError, e:
+        except ValueError as e:
             log.debug(e)
             return False
-        except RuntimeError, e: # for DEBUG
+        except RuntimeError as e: # for DEBUG
             log.debug(e)
             return False
         log.debug('-+ <%s> load_members END +-', record.__class__.__name__)

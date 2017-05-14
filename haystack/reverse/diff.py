@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """
 Utils to diff two heap memory record allocations
 
@@ -33,7 +35,7 @@ log = logging.getLogger('diff')
 
 
 def make(opts):
-    log.info('[+] Loading context of %s' % (opts.dump1))
+    log.info('[+] Loading context of %s' % opts.dump1)
     # '../../outputs/skype.1.a') # TODO
     ctx = context.get_context(opts.dump1)
     # refresh
@@ -52,11 +54,11 @@ def make(opts):
                 ctx.structures)))
     finder = ctx.get_memory_handler().get_heap_finder()
     heap1 = finder.list_heap_walkers()[0]
-    log.info('[+] Loading _memory_handler of %s' % (opts.dump2))
+    log.info('[+] Loading _memory_handler of %s' % opts.dump2)
     newmappings = dump_loader.load(opts.dump2)
     finder2 = newmappings.get_heap_finder()
     heap2 = finder2.list_heap_walkers()[0]
-    log.info('[+] finding diff values with %s' % (opts.dump2))
+    log.info('[+] finding diff values with %s' % opts.dump2)
     addrs = cmd_cmp(heap1, heap2, heap1.start)
 
     # now compare with allocators addresses
@@ -123,12 +125,12 @@ def print_diff_files(opts, context, newmappings, structures):
     d2out = config.Config.getCacheFilename(
         config.Config.DIFF_PY_HEADERS, '%s-%s' %
         (opts.dump1, opts.dump2))
-    f1 = file(d1out, 'w')
-    f2 = file(d2out, 'w')
+    f1 = open(d1out, 'w')
+    f2 = open(d2out, 'w')
     for st in structures:
         st2 = structure.remap_load(context, st.vaddr, newmappings)
         if st.bytes == st2.bytes:
-            print 'identic bit field !!!'
+            print('identic bit field !!!')
             return
         # get the fields
         # TODO FIXME , fix and leverage Field.getValue() to update from a changed mapping
@@ -148,7 +150,7 @@ def print_diff_files(opts, context, newmappings, structures):
         f2.write('\n')
         sys.stdout.write('.')
         sys.stdout.flush()
-    print
+    print()
     f1.close()
     f2.close()
     log.info('[+] diffed allocators dumped in %s %s' % (d1out, d2out))

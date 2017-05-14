@@ -143,7 +143,7 @@ class AbstractReverser(hri.IReverser):
 class WriteRecordToFile(AbstractReverser):
 
     def reverse_context(self, _context):
-        self._fout = file(_context.get_filename_cache_headers(), 'w')
+        self._fout = open(_context.get_filename_cache_headers(), 'w')
         self._towrite = []
         super(WriteRecordToFile, self).reverse_context(_context)
         self._write()

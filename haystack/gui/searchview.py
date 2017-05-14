@@ -85,7 +85,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
         elif currentTabIndex == 2:
             self.search_classics()
         else:
-            log.warning('Did not known that tab : %d' % (currentTabIndex))
+            log.warning('Did not known that tab : %d' % currentTabIndex)
         return
 
     def search_struct(self):
@@ -125,7 +125,7 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
                      ('guid', signature.GUIDRegexp),
                      ])
 
-        log.debug('Looking for a classic %s' % ('aa'))
+        log.debug('Looking for a classic %s' % 'aa')
         tab = self.parent().currentTab()
         if tab is None:
             return
@@ -138,9 +138,9 @@ class SearchStructDialog(QtGui.QDialog, Ui_Search_Structure):
         for choice in regs.keys():
             box, color = getattr(
                 self, 'checkBox_%s' %
-                (choice)), getattr(
+                      choice), getattr(
                 self, 'toolButton_%s' %
-                (choice))
+                      choice)
             # DEBUG TODO
             # pick the tooltip color picker color...
             color = random.randrange(len(colors))

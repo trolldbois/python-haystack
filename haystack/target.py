@@ -129,12 +129,12 @@ class TargetPlatform(interfaces.ITargetPlatform):
                 cls._detect_cpu_arch_pe(mappings)
                 scores['winxp'] += 1
                 scores['win7'] += 1
-            except NotImplementedError, e:
+            except NotImplementedError as e:
                 pass
             try:
                 cls._detect_cpu_arch_elf(mappings)
                 scores['linux'] += 1
-            except NotImplementedError, e:
+            except NotImplementedError as e:
                 pass
 
         log.debug('detect_os: scores linux:%d winxp:%d win7:%d', scores['linux'], scores['winxp'], scores['win7'])

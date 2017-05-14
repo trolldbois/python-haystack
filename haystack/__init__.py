@@ -59,7 +59,7 @@ try:
     # travis-ci says
     # maxnofile (64000, 64000)
     # maxnofile_after (64000, 64000)
-except ImportError, e:
+except ImportError as e:
     pass
 
 

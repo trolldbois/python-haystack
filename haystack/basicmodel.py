@@ -162,7 +162,7 @@ class CTypesRecordConstraintValidator(interfaces.IRecordConstraintsValidator):
         log.debug("constraints are on %s", record_constraints)
         _fieldsTuple = get_fields(record)
         myfields = dict(_fieldsTuple)
-        for attrname, _constraints in record_constraints.iteritems():
+        for attrname, _constraints in record_constraints.items():
             if attrname not in myfields:
                 log.warning('constraint check: field %s does not exists in record for %s',
                             attrname, record.__class__.__name__)

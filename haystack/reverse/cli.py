@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """Entry points related to reverse. """
 
 import os
@@ -50,9 +52,9 @@ def show_hex(args):
     ctx = process_context.get_context_for_address(args.address)
     try:
         st = ctx.get_record_at_address(args.address)
-        print repr(st.bytes)
+        print(repr(st.bytes))
     except ValueError as e:
-        print None
+        print(None)
     return
 
 
@@ -68,15 +70,15 @@ def show_predecessors_cmdline(args):
     try:
         child_record = ctx.get_record_at_address(args.address)
     except ValueError as e:
-        print None
+        print(None)
         return
 
     records = api.get_record_predecessors(memory_handler, child_record)
     if len(records) == 0:
-        print None
+        print(None)
     else:
         for p_record in records:
-            print '#0x%x\n%s\n' % (p_record.address, p_record.to_string())
+            print('#0x%x\n%s\n' % (p_record.address, p_record.to_string()))
     return
 
 
@@ -87,9 +89,9 @@ def reverse_show_cmdline(args):
     ctx = process_context.get_context_for_address(args.address)
     try:
         st = ctx.get_record_at_address(args.address)
-        print st.to_string()
+        print(st.to_string())
     except ValueError:
-        print None
+        print(None)
     return
 
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+
+from __future__ import print_function
+
 """Search for a known structure type in a process memory. """
 
 import logging
@@ -116,12 +120,12 @@ def search_cmdline(args):
     try:
         ret = get_output(memory_handler, results, args.output)
         # print output on stdout
-        print ret
+        print(ret)
     except Exception as e:
         log.error(e)
     finally:
         if args.interactive:
-            print 'results are local variable "results"'
+            print('results are local variable "results"')
             import code
             code.interact(local=locals())
     return
@@ -161,14 +165,14 @@ def show_cmdline(args):
     try:
         ret = get_output(memory_handler, results, args.output)
         # print output on stdout
-        print ret
+        print(ret)
         if args.constraints_file:
-            print 'Validated', validation
+            print('Validated', validation)
     except Exception as e:
         log.error(e)
     finally:
         if args.interactive:
-            print 'results are local variable "results"'
+            print('results are local variable "results"')
             import code
             code.interact(local=locals())
     return
@@ -238,12 +242,12 @@ def watch(args):
     # print as asked every n secs.
     while True:
         # clear terminal
-        print chr(27) + "[2J"
+        print(chr(27) + "[2J")
         #
         if varname is None:
-            print py_obj
+            print(py_obj)
         else:
-            print get_varname_value(varname, py_obj)
+            print(get_varname_value(varname, py_obj))
 
         if refresh == 0:
             break
@@ -343,7 +347,7 @@ def set_logging_level(opts):
         # FORMAT = '%(relativeCreated)d %(message)s'
         # logging.basicConfig(format=FORMAT, level=level, filename=flog, filemode='w')
         logging.basicConfig(level=level, filename=flog, filemode='w')
-        print ('[+] **** COMPLETE debug log to %s'%(flog))
+        print ('[+] **** COMPLETE debug log to %s' % flog)
     else:
         logging.basicConfig(level=level)
     # 2.6, 2.7 compat

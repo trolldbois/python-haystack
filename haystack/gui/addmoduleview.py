@@ -39,12 +39,12 @@ class AddModuleDialog(QtGui.QDialog, Ui_addModuleDialog):
         targetModule = str(self.lineEdit.text())
         if targetModule is None:
             return
-        log.debug('searching module %s....' % (targetModule))
+        log.debug('searching module %s....' % targetModule)
         try:
             mod = __import__(targetModule, globals(), locals(), [], -1)
         except ImportError:
-            log.warning('No such module in python path :%s' % (targetModule))
+            log.warning('No such module in python path :%s' % targetModule)
             self.reject()
         # done
-        log.info('module %s has been imported' % (targetModule))
+        log.info('module %s has been imported' % targetModule)
         return

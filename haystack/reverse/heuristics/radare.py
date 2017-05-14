@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #  git clone https://github.com/radare/radare2.git
+from __future__ import print_function
 import logging
 
 #import r2pipe
@@ -28,7 +29,7 @@ class RadareAnalysis(object):
         r2 = r2pipe.open(fname)
         r2.cmd("aaa")
         analysis = r2.cmd("afl")
-        print analysis
+        print(analysis)
         res = analysis.split('\n')
         log.debug("len %d - %d", len(analysis), len(res))
         #if len(analysis) > 40:

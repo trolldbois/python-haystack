@@ -10,7 +10,10 @@ This module holds some basic constraint class for the Haystack model.
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-import ConfigParser
+try:
+    import ConfigParser as configparser
+except ImportError as e:
+    import configparser
 import logging
 import sys
 
@@ -50,7 +53,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
         if not os.access(filename, os.F_OK):
             raise IOError("File not found")
         # read the constraint file
-        parser = ConfigParser.RawConfigParser()
+        parser = configparser.RawConfigParser()
         parser.optionxform = str
         parser.read(filename)
         # prepare the return object
@@ -64,7 +67,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
                 log.debug('%s: field %s ::= %s', struct_name, field, value)
                 try:
                     value = self._parse(value)
-                except ValueError, e:
+                except ValueError as e:
                     raise ValueError("%s: struct_name: %s Field: %s constraint: %s" % (
                                      e.message, struct_name, field, value))
                 # each field can only have one IConstraint (which can be a list of)
@@ -164,7 +167,7 @@ class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
             else:
                 # try an int
                 ret = int(_arg)
-        except ValueError, e:
+        except ValueError as e:
             ret = str(_arg)
         return ret
 

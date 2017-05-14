@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """Provide several memory mapping wrappers to handle different situations.
 
 Short story, the memory of a process is segmented in several memory
@@ -228,7 +230,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     self._memdump = None
                     # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
                     # this is a local memory hack, so
-                    heapmap = struct.unpack('L', (ctypes.c_ulong).from_address(
+                    heapmap = struct.unpack('L', ctypes.c_ulong.from_address(
                         id(self._local_mmap_bytebuffer) + 2 * (ctypes.sizeof(ctypes.c_ulong))))[0]
                     self._local_mmap_content = (ctypes.c_ubyte * (self.end - self.start)).from_address(int(heapmap))
                 else:  # fallback with no creepy hacks
@@ -243,7 +245,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
                     # we need an ctypes
                     self._local_mmap_content = utils.bytes2array(local_mmap_bytebuffer, ctypes.c_ubyte)
             else:  # dumpfile, file inside targz ... any read() API really
-                print self.__class__
+                print(self.__class__)
                 self._local_mmap_content = utils.bytes2array(self._memdump.read(), ctypes.c_ubyte)
                 self._memdump.close()
                 log.warning('MemoryHandler Mapping content copied to ctypes array : %s', self)
@@ -404,7 +406,7 @@ class FilenameBackedMemoryMapping(MemoryDumpMemoryMapping):
     def _mmap(self):
         #import code
         # code.interact(local=locals())
-        self._memdump = file(self._memdumpname, 'rb')
+        self._memdump = open(self._memdumpname, 'rb')
         # memdump is closed by super()
         return MemoryDumpMemoryMapping._mmap(self)
 
@@ -459,7 +461,7 @@ class LazyMmap:
         return self._get(start, size)
 
     def _get(self, offset, size):
-        memdump = file(self.memdump_name, 'rb')
+        memdump = open(self.memdump_name, 'rb')
         memdump.seek(offset)
         me = utils.bytes2array(memdump.read(size), ctypes.c_ubyte)
         memdump.close()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import itertools
 import ctypes
 import logging
@@ -264,11 +265,11 @@ class StructureSizeCache:
             long(addr)) for i, addr in enumerate(self._context._malloc_addresses)]
         # saving all sizes dictionary in files...
         for size, lst in arrays.items():
-            fout = os.path.sep.join([outdir, 'size.%0.4x' % (size)])
+            fout = os.path.sep.join([outdir, 'size.%0.4x' % size])
             arrays[size] = utils.int_array_save(fout, lst)
         # saved all sizes dictionaries.
         # tag it as done
-        file(
+        open(
             os.path.sep.join([outdir, config.CACHE_SIGNATURE_SIZES_DIR_TAG]), 'w')
         self._sizes = arrays
         return
@@ -463,8 +464,8 @@ def buildStructureGroup(context, sizeCache, optsize=None):
         if optsize is not None:
             if size != optsize:
                 continue  # ignore different size
-        log.debug("\t[-] Group signatures for allocators of size %d" % (size))
-        sgm = SignatureGroupMaker(context, 'structs.%x' % (size), lst)
+        log.debug("\t[-] Group signatures for allocators of size %d" % size)
+        sgm = SignatureGroupMaker(context, 'structs.%x' % size, lst)
         if sgm.isPersisted():
             sgm.load()
         else:
@@ -508,8 +509,8 @@ def printStructureGroups(context, chains, originAddr=None):
             record = context.get_record_for_address(addr)
             ##record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_record_for_address(addr).to_string()
-        print '#', '-' * 78
+            print(context.get_record_for_address(addr).to_string())
+        print('#', '-' * 78)
 
 
 def graphStructureGroups(context, chains, originAddr=None):
@@ -526,7 +527,7 @@ def graphStructureGroups(context, chains, originAddr=None):
             record = context.get_record_for_address(addr)
             ## record.decodeFields()  # can be long
             decoder.analyze_fields(record)
-            print context.get_record_for_address(addr).to_string()
+            print(context.get_record_for_address(addr).to_string())
             targets = set()
             _record = context.get_record_for_address(addr)
             pointer_fields = [f for f in _record.get_fields() if f.is_pointer()]
@@ -535,7 +536,7 @@ def graphStructureGroups(context, chains, originAddr=None):
                 child = context.get_record_at_address(addr)
                 targets.add(('%x' % addr, '%x' % child.address))
             graph.add_edges_from(targets)
-        print '#', '-' * 78
+        print('#', '-' * 78)
     networkx.readwrite.gexf.write_gexf(
         graph,
         config.get_cache_filename(
@@ -615,8 +616,8 @@ def makeGroupSignature(context, sizeCache):
         for size, lst in sizeCache:
             log.debug(
                 "[+] Group signatures for allocators of size %d" %
-                (size))
-            sgm = SignatureGroupMaker(context, 'structs.%x' % (size), lst)
+                size)
+            sgm = SignatureGroupMaker(context, 'structs.%x' % size, lst)
             sgm.make()
             sgm.persist()
             sgms.append(sgm)

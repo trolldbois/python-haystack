@@ -4,7 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
+from __future__ import print_function
 
 import ctypes
 import logging
@@ -12,6 +12,8 @@ import sys
 
 ''' insure ctypes basic types are subverted '''
 from haystack import model
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 log = logging.getLogger('ctypes_libdl')
 
@@ -44,7 +46,7 @@ def printSizeof(mini=-1):
         # and klass.__module__.endswith('%s_generated'%(__name__) ) :
         if isinstance(klass, type(ctypes.Structure)):
             if ctypes.sizeof(klass) > mini:
-                print '%s:' % name, ctypes.sizeof(klass)
+                print('%s:' % name, ctypes.sizeof(klass))
 
 import time
 import subprocess
@@ -56,7 +58,7 @@ from threading import Thread
 
 try:
     from Queue import Queue, Empty
-except ImportError:
+except ImportError as e:
     from queue import Queue, Empty  # python 3.x
 
 ON_POSIX = 'posix' in sys.builtin_module_names
@@ -107,37 +109,37 @@ def makeDumps():
     p = subprocess.Popen(cmd, bufsize=1, stdin=PIPE, stdout=PIPE)
     q, t = getOutput(p)
 
-    print '\n -- * init data 4 child pid:', p.pid
+    print('\n -- * init data 4 child pid:', p.pid)
     out = ''.join(readlines(q))
     while 'START' not in out:
         time.sleep(.1)
         out = ''.join(readlines(q))
     fname = dumpMemory(p.pid, 'test-ctypes2.dump.0')
-    print '[+] dumped clean state in', fname
-    dumps.append(file(fname, 'rb'))
+    print('[+] dumped clean state in', fname)
+    dumps.append(open(fname, 'rb'))
 
     stopMe = False
     i = 1
     while not stopMe:
-        print '[-] sending enter'
+        print('[-] sending enter')
         p.stdin.write('\n')
         out = ''.join(readlines(q))
         while 'OPEN' not in out:
             if 'END' in out:
-                print '[+] this is the END... the only END , my friend...'
+                print('[+] this is the END... the only END , my friend...')
                 stopMe = True
                 break
             time.sleep(.1)
             out = ''.join(readlines(q))
         if not stopMe:
-            fname = dumpMemory(p.pid, 'test-ctypes2.dump.%d' % (i))
-            print '[+] dumped', out.split(' ')[1].strip(), 'in', fname
-            dumps.append(file(fname, 'rb'))
+            fname = dumpMemory(p.pid, 'test-ctypes2.dump.%d' % i)
+            print('[+] dumped', out.split(' ')[1].strip(), 'in', fname)
+            dumps.append(open(fname, 'rb'))
         i += 1
 
     return dumps
 
-import md5
+from hashlib import md5
 
 
 def buildMappingsHashes(maps):
@@ -149,9 +151,9 @@ def getDiff(d1, d2):
     from haystack import dump_loader
     mappings1 = dump_loader.load(d1)
     mappings2 = dump_loader.load(d2)
-    log.debug('Building hashes for %s' % (d1.name))
+    log.debug('Building hashes for %s' % d1.name)
     m1 = dict(buildMappingsHashes(mappings1))
-    log.debug('Building hashes for %s' % (d2.name))
+    log.debug('Building hashes for %s' % d2.name)
     m2 = dict(buildMappingsHashes(mappings2))
 
     # new _memory_handler in d2
@@ -161,18 +163,18 @@ def getDiff(d1, d2):
     news = []
     for pathname in new2:
         news.extend(mappings2._get_mapping(pathname))
-    print 'new _memory_handler in %s:' % (d2.name)
+    print('new _memory_handler in %s:' % d2.name)
     for n in news:
-        print n
+        print(n)
     # believe in hash funcs.
     diff2 = set(m2.keys()) - set(m1.keys())
     diffs = []
     revm1 = dict((v, k) for k, v in m1.items())
-    print 'modified _memory_handler in %s:' % (d2.name)
+    print('modified _memory_handler in %s:' % d2.name)
     for h2 in diff2:
         m = m2[h2]
         if m.pathname in pnames1:
-            print m
+            print(m)
             diffs.append(m)
     return news, diffs
 
@@ -185,7 +187,7 @@ def main():
     logging.getLogger('ctypes_libdl').setLevel(logging.DEBUG)
 
     #dumps = makeDumps()
-    dumps = [file('test-ctypes2.dump.%d' % i, 'rb') for i in range(4)]
+    dumps = [open('test-ctypes2.dump.%d' % i, 'rb') for i in range(4)]
 
     #n1, diff1 = getDiff(dumps[0], dumps[1])
     #import code

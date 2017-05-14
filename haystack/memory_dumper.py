@@ -59,7 +59,7 @@ class MemoryDumper:
     def _dump_all_mappings_winapp(self, destdir):
         # TODO TEST
         # winappdbg
-        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
+        self.index = open(os.path.join(destdir, 'mappings'), 'w+')
         # test dump only the heap
         err = 0
         memory_maps = self.dbg.get_process().generate_memory_snaphost()
@@ -77,7 +77,7 @@ class MemoryDumper:
 
     def _dump_all_mappings(self, destdir):
         """Iterates on all _memory_handler and dumps them to file."""
-        self.index = file(os.path.join(destdir, 'mappings'), 'w+')
+        self.index = open(os.path.join(destdir, 'mappings'), 'w+')
         err = 0
         for m in self._memory_handler:
             try:

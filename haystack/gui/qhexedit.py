@@ -261,8 +261,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         chars_per_row = self.bytesPerRow()
         offset = self.verticalScrollBar().value() * chars_per_row
 
-        if (self.origin != 0):
-            if (offset > 0):
+        if self.origin != 0:
+            if offset > 0:
                 offset += self.origin
                 offset -= self.chars_per_row
 
@@ -271,25 +271,25 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         data_size = self.dataSize()
 
         # offset now refers to the first visible byte
-        while (offset < end):
-            if ((offset + chars_per_row) > start):
+        while offset < end:
+            if (offset + chars_per_row) > start:
                 self.data.seek(offset)
                 row_data = self.data.read(chars_per_row)
 
                 if not (row_data is None):
-                    if (self.show_address):
+                    if self.show_address:
                         address_rva = self.address_offset + offset
                         addressBuffer = self.formatAddress(address_rva)
                         ss += addressBuffer
                         ss += '|'
-                    if (show_hex_):
+                    if show_hex_:
                         self.drawHexDumpToBuffer(
                             ss,
                             offset,
                             data_size,
                             row_data)
                         ss += "|"
-                    if (show_ascii_):
+                    if show_ascii_:
                         self.drawAsciiDumpToBuffer(
                             ss,
                             offset,
@@ -321,7 +321,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def clear(self):
-        if (self.data != 0):
+        if self.data != 0:
             self.data.clear()
         self.repaint()
         return
@@ -352,7 +352,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def keyPressEvent(self, event):
-        if (event.modifiers() & Qt.ControlModifier):
+        if event.modifiers() & Qt.ControlModifier:
             key = event.key()
             if key == Qt.Key_A:
                 self.selectAll()
@@ -365,11 +365,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                 while True:
                     offset = self.verticalScrollBar().value() * \
                         self.bytesPerRow()
-                    if (self.origin != 0):
-                        if (offset > 0):
+                    if self.origin != 0:
+                        if offset > 0:
                             offset += self.origin
                             offset -= self.bytesPerRow()
-                    if(offset + 1 < self.dataSize()):
+                    if offset + 1 < self.dataSize():
                         self.scrollTo(offset + 1)
                     # return so we don't pass on the key event
                     return
@@ -377,11 +377,11 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                 while True:
                     offset = self.verticalScrollBar().value() * \
                         self.bytesPerRow()
-                    if(self.origin != 0):
-                        if(offset > 0):
+                    if self.origin != 0:
+                        if offset > 0:
                             offset += self.origin
                             offset -= self.bytesPerRow()
-                    if(offset > 0):
+                    if offset > 0:
                         self.scrollTo(offset - 1)
                     # return so we don't pass on the key event
                     return
@@ -394,7 +394,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def line3(self):
-        if(self.show_ascii):
+        if self.show_ascii:
             elements = self.bytesPerRow()
             return self.asciiDumpLeft() + (elements * self.font_width) + \
                 (self.font_width / 2)
@@ -407,7 +407,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def line2(self):
-        if(self.show_hex):
+        if self.show_hex:
             elements = self.row_width * (self.charsPerWord() + 1) - 1
             return self.hexDumpLeft() + (elements * self.font_width) + \
                 (self.font_width / 2)
@@ -420,7 +420,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def line1(self):
-        if(self.show_address):
+        if self.show_address:
             elements = self.addressLen()
             return (elements * self.font_width) + (self.font_width / 2)
         else:
@@ -499,7 +499,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
         self.updateScrollbars()
 
-        if(self.origin != 0):
+        if self.origin != 0:
             address += 1
         self.verticalScrollBar().setValue(address)
         self.repaint()
@@ -597,7 +597,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
             x -= self.line1()
 
             #// scale x/y down to character from pixels
-            if (x % self.font_width >= self.font_width / 2):
+            if x % self.font_width >= self.font_width / 2:
                 x = x / self.font_width + 1
             else:
                 x = x / self.font_width
@@ -625,15 +625,15 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         start_offset = self.verticalScrollBar().value() * self.bytesPerRow()
 
         #// take into account the origin
-        if(self.origin != 0):
-            if(start_offset > 0):
+        if self.origin != 0:
+            if start_offset > 0:
                 start_offset += self.origin
                 start_offset -= self.bytesPerRow()
 
         #// convert byte offset to word offset, rounding up
         start_offset /= self.word_width
 
-        if((self.origin % self.word_width) != 0):
+        if (self.origin % self.word_width) != 0:
             start_offset += 1
 
         word = ((y * self.row_width) + x) + start_offset
@@ -645,16 +645,16 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def mouseDoubleClickEvent(self, event):
-        if(event.button() == Qt.LeftButton):
+        if event.button() == Qt.LeftButton:
             x = event.x() + self.horizontalScrollBar().value() * \
                 self.font_width
             y = event.y()
-            if(x >= self.line1() and x < self.line2()):
+            if x >= self.line1() and x < self.line2():
                 self.highlighting = self.highlightingData
                 offset = self.pixelToWord(x, y)
                 byte_offset = offset * self.word_width
-                if(self.origin):
-                    if(self.origin % self.word_width):
+                if self.origin:
+                    if self.origin % self.word_width:
                         byte_offset -= self.word_width - \
                             (self.origin % self.word_width)
                 self.selection_start = byte_offset
@@ -667,23 +667,23 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def mousePressEvent(self, event):
-        if(event.button() == Qt.LeftButton):
+        if event.button() == Qt.LeftButton:
             x = event.x() + self.horizontalScrollBar().value() * \
                 self.font_width
             y = event.y()
 
-            if(x < self.line2()):
+            if x < self.line2():
                 self.highlighting = self.highlightingData
-            elif(x >= self.line2()):
+            elif x >= self.line2():
                 self.highlighting = self.highlightingAscii
 
             offset = self.pixelToWord(x, y)
             byte_offset = offset * self.word_width
-            if(self.origin):
-                if(self.origin % self.word_width):
+            if self.origin:
+                if self.origin % self.word_width:
                     byte_offset -= self.word_width - \
                         (self.origin % self.word_width)
-            if(offset < self.dataSize()):
+            if offset < self.dataSize():
                 self.selection_start = self.selection_end = byte_offset
             else:
                 self.selection_start = self.selection_end = -1
@@ -695,27 +695,27 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def mouseMoveEvent(self, event):
-        if(self.highlighting != self.highlightingNone):
+        if self.highlighting != self.highlightingNone:
             x = event.x() + self.horizontalScrollBar().value() * \
                 self.font_width
             y = event.y()
 
             offset = self.pixelToWord(x, y)
 
-            if(self.selection_start != -1):
-                if(offset == -1):
+            if self.selection_start != -1:
+                if offset == -1:
                     self.selection_end = (
                         self.row_width - self.selection_start) + self.selection_start
                 else:
                     byte_offset = (offset * self.word_width)
-                    if(self.origin):
-                        if(self.origin % self.word_width):
+                    if self.origin:
+                        if self.origin % self.word_width:
                             byte_offset -= self.word_width - \
                                 (self.origin % self.word_width)
                     self.selection_end = byte_offset
-                if(self.selection_end < 0):
+                if self.selection_end < 0:
                     self.selection_end = 0
-                if(not self.isInViewableArea(self.selection_end)):
+                if not self.isInViewableArea(self.selection_end):
                     #// TODO: scroll to an appropriate location
                     pass
             self.repaint()
@@ -726,7 +726,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def mouseReleaseEvent(self, event):
-        if(event.button() == Qt.LeftButton):
+        if event.button() == Qt.LeftButton:
             self.highlighting = self.highlightingNone
         return
 
@@ -746,7 +746,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
             d = buf
         else:
             d = data
-        if (d.isSequential() or not d.size()):
+        if d.isSequential() or not d.size():
             b = QBuffer()
             b.setData(d.readAll())
             b.open(QBuffer.ReadOnly)
@@ -780,9 +780,9 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
     def isSelected(self, index):
         ret = False
-        if(index < self.dataSize()):
-            if(self.selection_start != self.selection_end):
-                if(self.selection_start < self.selection_end):
+        if index < self.dataSize():
+            if self.selection_start != self.selection_end:
+                if self.selection_start < self.selection_end:
                     ret = (
                         index >= self.selection_start and index < self.selection_end)
                 else:
@@ -817,8 +817,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         chars_per_row = self.bytesPerRow()
         for i in range(0, chars_per_row):
             index = offset + i
-            if(index < size):
-                if(self.isSelected(index)):
+            if index < size:
+                if self.isSelected(index):
                     ch = row_data[i]
                     printable = ch in string.printable
                     if printable:
@@ -899,17 +899,17 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
             #// equal <=, not < because we want to test the END of the word we
             #// about to render, not the start, it's allowed to end at the very last
             #// byte
-            if(index + self.word_width <= size):
+            if index + self.word_width <= size:
                 byteBuffer = QString(
                     self.format_bytes(
                         row_data,
                         i *
                         self.word_width))
-                if(self.isSelected(index)):
+                if self.isSelected(index):
                     stream << byteBuffer
                 else:
                     stream << QString(byteBuffer.length(), ' ')
-                if(i != (self.row_width - 1)):
+                if i != (self.row_width - 1):
                     stream << ' '
             else:
                 break
@@ -928,7 +928,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
             #// equal <=, not < because we want to test the END of the word we
             #// about to render, not the start, it's allowed to end at the very last
             #// byte
-            if(index + self.word_width <= size):
+            if index + self.word_width <= size:
                 byteBuffer = QString(
                     self.format_bytes(
                         row_data,
@@ -936,7 +936,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                         self.word_width))
                 drawLeft = hex_dump_left + \
                     (i * (self.charsPerWord() + 1) * self.font_width)
-                if(self.isSelected(index)):
+                if self.isSelected(index):
                     painter.fillRect(
                         drawLeft,
                         row,
@@ -946,8 +946,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                     )
 
                     #// should be highlight the space between us and the next word?
-                    if(i != (self.row_width - 1)):
-                        if(self.isSelected(index + 1)):
+                    if i != (self.row_width - 1):
+                        if self.isSelected(index + 1):
                             painter.fillRect(
                                 drawLeft + self.font_width,
                                 row,
@@ -959,7 +959,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                         QPen(
                             self.palette().highlightedText().color()))
                 else:
-                    if (word_count & 1):
+                    if word_count & 1:
                         painter.setPen(QPen(self.even_word))
                         painter.setPen(QPen(self.palette().text().color()))
 
@@ -988,12 +988,12 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         chars_per_row = self.bytesPerRow()
         for i in range(0, chars_per_row):
             index = offset + i
-            if(index < size):
+            if index < size:
                 ch = row_data[i]
                 drawLeft = ascii_dump_left + i * self.font_width
                 printable = self.is_printable(ch)
                 #// drawing a selected character
-                if(self.isSelected(index)):
+                if self.isSelected(index):
                     painter.fillRect(
                         drawLeft,
                         row,
@@ -1043,8 +1043,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         #// current actual offset (in bytes)
         offset = self.verticalScrollBar().value() * chars_per_row
 
-        if(self.origin != 0):
-            if(offset > 0):
+        if self.origin != 0:
+            if offset > 0:
                 offset += self.origin
                 offset -= chars_per_row
             else:
@@ -1057,8 +1057,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         while(row + self.font_height < widget_height) and (offset < data_size):
             self.data.seek(offset)
             row_data = self.data.read(chars_per_row)
-            if(row_data is not None):  # != '' ?
-                if(self.show_address):
+            if row_data is not None:  # != '' ?
+                if self.show_address:
                     address_rva = self.address_offset + offset
                     addressBuffer = self.formatAddress(address_rva)
                     painter.setPen(QPen(self.address_color))
@@ -1071,7 +1071,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                         Qt.AlignTop,
                         addressBuffer)
 
-                if(self.show_hex):
+                if self.show_hex:
                     self.drawHexDump(
                         painter,
                         offset,
@@ -1079,7 +1079,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
                         data_size,
                         word_count,
                         row_data)
-                if(self.show_ascii):
+                if self.show_ascii:
                     self.drawAsciiDump(
                         painter,
                         offset,
@@ -1093,15 +1093,15 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
 
         painter.setPen(QPen(self.palette().shadow().color()))
 
-        if(self.show_address and self.show_line1):
+        if self.show_address and self.show_line1:
             line1_x = self.line1()
             painter.drawLine(line1_x, 0, line1_x, widget_height)
 
-        if(self.show_hex and self.show_line2):
+        if self.show_hex and self.show_line2:
             line2_x = self.line2()
             painter.drawLine(line2_x, 0, line2_x, widget_height)
 
-        if(self.show_ascii and self.show_line3):
+        if self.show_ascii and self.show_line3:
             line3_x = self.line3()
             painter.drawLine(line3_x, 0, line3_x, widget_height)
 
@@ -1138,7 +1138,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def selectedBytes(self):
-        if(self.hasSelectedText()):
+        if self.hasSelectedText():
             s = min(self.selection_start, self.selection_end)
             e = max(self.selection_start, self.selection_end)
             self.data.seek(s)
@@ -1158,7 +1158,7 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
   '''
 
     def selectedBytesSize(self):
-        if(self.selection_end > self.selection_start):
+        if self.selection_end > self.selection_start:
             ret = self.selection_end - self.selection_start
         else:
             ret = self.selection_start - self.selection_end
@@ -1234,8 +1234,8 @@ class QHexeditWidget(QtGui.QAbstractScrollArea):
         #// current actual offset (in bytes)
         chars_per_row = self.bytesPerRow()
         offset = self.verticalScrollBar().value() * chars_per_row
-        if(self.origin != 0):
-            if(offset > 0):
+        if self.origin != 0:
+            if offset > 0:
                 offset += self.origin
                 offset -= chars_per_row
         return offset + self.addressOffset()

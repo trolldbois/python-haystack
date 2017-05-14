@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import logging
 
 from haystack.abc import interfaces
@@ -35,7 +36,7 @@ def save_headers(heap_context, addrs=None):
             try:
                 fout.write('\n'.join(towrite))
             except UnicodeDecodeError as e:
-                print 'ERROR on ', anon
+                print('ERROR on ', anon)
             towrite = []
             fout.flush()
     fout.write('\n'.join(towrite))

@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from __future__ import print_function
 import logging
 
 log = logging.getLogger('widget')
@@ -63,7 +64,7 @@ class Structure(QtGui.QGraphicsItemGroup):
         rectItem = self._makeRectItem()  # no need to add to scene
         # if offset+xoff > width, draw first line to the end.
         # else, draw the rect and quit
-        if (x1 + size > width):
+        if x1 + size > width:
             rectItem.setRect(QtCore.QRectF(x1, y, width - x1, 1))
             log.debug(
                 'line %d : x:%d,y:%d,w:%d,h:%d first' %
@@ -81,7 +82,7 @@ class Structure(QtGui.QGraphicsItemGroup):
         log.debug(
             'yf:%d offset:%d size:%d width:%d y:%d' %
             (yf, offset, size, width, y))
-        if (yf > y + 1):
+        if yf > y + 1:
             for ya in xrange(y + 1, yf):
                 # make an item
                 rectItem = self._makeRectItem()  # no need to add to scene
@@ -100,7 +101,7 @@ class Structure(QtGui.QGraphicsItemGroup):
 
     def onSelect(self):
         ''' draw a rectangle around the boucingRect '''
-        log.debug('a structure %s' % (self.value))
+        log.debug('a structure %s' % self.value)
         # self.parent().currentTab().showInfo() # blabla
         pass
 
@@ -132,7 +133,7 @@ class Word(Structure):
 
     def onSelect(self):
         ''' draw a rectangle around the boucingRect '''
-        print 'onselect', self
+        print('onselect', self)
         # print 'onselect', super(Structure,self).onSelect
         # super(Structure,self).onSelect(self)
         # read mapping value
@@ -144,12 +145,12 @@ class Word(Structure):
         #addr = event.pos().y()* LINE_SIZE + event.pos().x()
         start = self.scene.mapping.start
         width = view.LINE_SIZE  # use PAGE_SIZE ?
-        x0 = (self.offset) % width
-        y0 = (self.offset) // width
+        x0 = self.offset % width
+        y0 = self.offset // width
         x1 = (self.value - start) % width
         y1 = (self.value - start) // width
         self.scene.addLine(x0, y0, x1, y1)
-        print self.offset, x0, y0, x1, y1
+        print(self.offset, x0, y0, x1, y1)
         # todo ise a path
         pass
 

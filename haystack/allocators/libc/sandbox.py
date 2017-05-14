@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 '''
     ( 'ptr_ext_lib' , ctypes.c_void_p ), # @ b6b3ef68 /usr/lib/libQtCore.so.4.7.2
@@ -55,7 +56,7 @@ def test1():
             os.path.sep) +
         1:libname.index('.so') +
         3]
-    print libname2
+    print(libname2)
     libqt = ctypes.CDLL(libname2)
 
     localmappings = getMappings()
@@ -65,19 +66,19 @@ def test1():
     myvaddr = qtmaps[0].start + offset
 
     ret = libdl.dladdr(myvaddr, ctypes.byref(info))
-    print 'filling dlinfo with', libname, info
+    print('filling dlinfo with', libname, info)
 
     signed_addr = libdl.dlsym(0, 'dladdr', 'xxx')
     vaddr_dladdr = struct.unpack('L', struct.pack('l', signed_addr))[0]
     ret = libdl.dladdr(vaddr_dladdr, ctypes.byref(info))
-    print 'dlsym test', info.dli_sname.string, info.dli_sname.string == 'dladdr'
+    print('dlsym test', info.dli_sname.string, info.dli_sname.string == 'dladdr')
 
 
 def test2():
     # now for the real deal.
     # we need to emulate ELF dl-addr.c
 
-    print ''
+    print('')
 
     #
     # define DL_LOOKUP_ADDRESS(addr) _dl_lookup_address (addr)
@@ -85,18 +86,18 @@ def test2():
     libssl = ctypes.CDLL('/usr/lib/libssl.so.0.9.8')
     localmappings = getMappings()
 
-    print 'libssl.ssl3_read by id() is @%x' % (id(libssl.ssl3_read))
-    print localmappings.get_mapping_for_address(id(libssl.ssl3_read))
+    print('libssl.ssl3_read by id() is @%x' % (id(libssl.ssl3_read)))
+    print(localmappings.get_mapping_for_address(id(libssl.ssl3_read)))
 
-    print ''
+    print('')
     signed_addr = libssl.dlsym(libssl._handle, 'ssl3_read', 'xxx')
     fnaddr = struct.unpack('L', struct.pack('l', signed_addr))[0]
-    print 'libssl.ssl3_read by dlsym is @%x' % (fnaddr)
-    print localmappings.get_mapping_for_address(fnaddr)
+    print('libssl.ssl3_read by dlsym is @%x' % (fnaddr))
+    print(localmappings.get_mapping_for_address(fnaddr))
 
     info = Dl_info()
     ret = libdl.dladdr(fnaddr, ctypes.byref(info))
-    print 'dladdr test', info.dli_sname.string, info.dli_sname.string == 'ssl3_read'
+    print('dladdr test', info.dli_sname.string, info.dli_sname.string == 'ssl3_read')
     '''
 libssl.ssl3_read by id() is @9528ecc
 0x0924a000 0x095d1000 rw-p 0x00000000 00:00 0000000 [heap]
@@ -105,13 +106,13 @@ libssl.ssl3_read by dlsym is @b6ddd9b0
 0xb6dc2000 0xb6e0c000 r-xp 0x00000000 08:04 7739090 /lib/libssl.so.0.9.8
 dladdr test ssl3_read True
   '''
-    print ''
+    print('')
 
     # testing low level
     # low level call
     #(const void *address, Dl_info *info,
     #      struct link_map **mapp, const ElfW(Sym) **symbolp)
-    print libdl._dl_addr(fnaddr, ctypes.byref(info), 0, 0)
+    print(libdl._dl_addr(fnaddr, ctypes.byref(info), 0, 0))
     # iterate the struct link_map
     # for (Lmid_t ns = 0; ns < GL(dl_nns); ++ns)
     #  for (struct link_map *l = GL(dl_ns)[ns]._ns_loaded; l; l = l->l_next)
@@ -143,7 +144,7 @@ def test3():
 
     dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'  # 23418'
     #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
-    print '[+] load context', dumpname
+    print('[+] load context', dumpname)
     ctx = context.get_context(dumpname)
     mappings = ctx.mappings
     ldso = dict()
@@ -154,14 +155,14 @@ def test3():
             except OSError as e:
                 IGNORES.append(m.pathname)
 
-    print '[+] context loaded'
+    print('[+] context loaded')
     # mmap_libdl = [ m for m in _memory_handler if 'ld-2.13' in m.pathname ] #and 'x' in m.permissions]
     #hptrs = ctx._pointers_values_heap
     # print '[+] %d pointers in heap to heap '%( len(hptrs) )
 
     # looking in [heap] pointing to elsewhere
     all_ptrs = ctx.listPointerValueInHeap()
-    print '[+] %d pointers in heap to elsewhere ' % (len(all_ptrs))
+    print('[+] %d pointers in heap to elsewhere ' % (len(all_ptrs)))
 
     localmappings = getMappings()
 
@@ -192,25 +193,25 @@ def test3():
                         #sym = libdl.dlsym( ldso[m.pathname]._handle, dl_name, 'xxx')
                         #fnaddr = struct.unpack('L',struct.pack('l', sym) )[0]
                         if fnaddr == caddr:  # reverse check
-                            print '[+] REBASE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
+                            print('[+] REBASE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
                                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions,
-                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr)
+                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr))
                             # yield (ptr, m, dl_name)
                         else:
                             # continue
-                            print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
+                            print('[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
                                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions,
-                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr)
+                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr))
                     else:
                         continue
-                        print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s ' % (
+                        print('FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s ' % (
                             ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions,
-                            m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name)
+                            m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name))
                         pass
                     break
             if not found:
                 continue
-                print '[+] not a fn pointer %x\n' % (ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str, localmaps))
+                print('[+] not a fn pointer %x\n' % (ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str, localmaps)))
     # pass
     for name, lib in ldso.items():
         ret = libdl.dlclose(lib._handle)
@@ -221,12 +222,12 @@ def test3():
 def test4():
     dumpname = '/home/jal/outputs/dumps/ssh/ssh.1'  # 23418'
     #dumpname = '/home/jal/outputs/dumps/skype/skype.1/skype.1.a'
-    print '[+] load context', dumpname
+    print('[+] load context', dumpname)
     ctx = context.get_context(dumpname)
     mappings = ctx.mappings
 
     for ptr, name in ctx._function_names.items():
-        print '@%x -> %s::%s' % (ptr, mappings.get_mapping_for_address(ptr).pathname, name)
+        print('@%x -> %s::%s' % (ptr, mappings.get_mapping_for_address(ptr).pathname, name))
 
 
 libdl = ctypes.CDLL('libdl.so')

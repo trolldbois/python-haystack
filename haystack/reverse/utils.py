@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """
 This module holds some basic utils function.
 """
@@ -21,7 +23,7 @@ log = logging.getLogger('utils')
 
 def int_array_cache(filename):
     if os.access(filename, os.F_OK):
-        f = file(filename, 'r')
+        f = open(filename, 'r')
         return numpy.load(f)
     #print 'int_array_cache'
     return None
@@ -29,7 +31,7 @@ def int_array_cache(filename):
 
 def int_array_save(filename, lst):
     my_array = numpy.asarray(lst)
-    numpy.save(file(filename, 'w'), my_array)
+    numpy.save(open(filename, 'w'), my_array)
     return my_array
 
 
@@ -56,7 +58,7 @@ def closestFloorValueNumpy(val, lst):
         if long(lst[ind]) == val:
             return long(lst[ind]), ind
     if ind == 0:
-        raise ValueError('Value %0x is under minimum' % (val))
+        raise ValueError('Value %0x is under minimum' % val)
     i = ind - 1
     return long(lst[i]), i
 
@@ -162,7 +164,7 @@ def cache_get_user_allocations(ctx, heap_walker):
 '''
 
 
-class SharedBytes():
+class SharedBytes:
 
     def __init__(self, src):
         self.src = src
@@ -239,14 +241,14 @@ def nextStructure(context, struct):
     if val not in context.structures:
         return None
     if struct.vaddr + len(struct) != val:
-        print '*** WARNING nextStruct is not concurrent to struct'
+        print('*** WARNING nextStruct is not concurrent to struct')
     return context.get_record_at_address[val]
 
 
 def printNext(ctx, s):
     s2 = nextStructure(ctx, s)
     s2.decodeFields()
-    print s2.toString()
+    print(s2.toString())
     return s2
 
 

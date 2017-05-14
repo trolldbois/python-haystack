@@ -211,7 +211,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
 
     def searchPointers(self):
         self.pointers = QtGui.QGraphicsItemGroup(scene=self.scene)
-        log.info('search %s mapping for pointer' % (self.mapping_name))
+        log.info('search %s mapping for pointer' % self.mapping_name)
         found = 0
         start = self.mapping.start
         searcher = searchers.PointerSearcher(self.mapping)
@@ -234,7 +234,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
 
     def searchNullWords(self):
         self.nullWords = QtGui.QGraphicsItemGroup(scene=self.scene)
-        log.info('search %s mapping for null words' % (self.mapping_name))
+        log.info('search %s mapping for null words' % self.mapping_name)
         found = 0
         tmpnull = []
         start = self.mapping.start
@@ -304,7 +304,7 @@ class MemoryMappingWidget(QtGui.QWidget, Ui_MemoryMappingWidget):
         # fill the scene
         log.debug('Found %d instances' % (len(instances)))
         # make the toolbox title and add the widget
-        searchName = 'Results for %s' % (structType)
+        searchName = 'Results for %s' % structType
         self.tab_search_structures.addItem(resultsViewer, searchName)
         nb = self.tab_search_structures.count()
         ##self.tab_search_structures.setItemEnabled(nb-1, True)
@@ -413,7 +413,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
         if dump_name in self.memorydump_tabs:
             # switch to tab
             # self.throw
-            log.info('dump %s is already opened' % (dump_name))
+            log.info('dump %s is already opened' % dump_name)
             return
 
         tab = MemoryMappingWidget(dump_name, self.tabWidget)
@@ -429,7 +429,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
                 QtGui.QApplication.UnicodeUTF8))
         nb = self.tabWidget.count()
         self.tabWidget.setCurrentIndex(nb - 1)
-        log.debug('Switched to tab %d' % (nb))
+        log.debug('Switched to tab %d' % nb)
         self.memorydump_tabs[dump_name] = tab
         log.debug('Populate the QGraphicsScene')
         tab.loadMapping(mapping, mappings)
@@ -446,7 +446,7 @@ class MyMain(QtGui.QMainWindow, Ui_MainWindow):
                 'Open memory dump..',
                 None,
                 QtGui.QApplication.UnicodeUTF8))
-        log.info('Opening %s' % (filename))
+        log.info('Opening %s' % filename)
         self._openDump(str(filename))
         log.info('Dump opened')
         return

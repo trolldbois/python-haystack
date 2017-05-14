@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from __future__ import print_function
 import logging
 import pickle
 import numbers
@@ -44,7 +45,7 @@ def cache_load(_context, address):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = make_filename_from_addr(_context, address)
-    p = pickle.load(file(fname, 'r'))
+    p = pickle.load(open(fname, 'r'))
     if p is None:
         return None
     p.set_memory_handler(_context.memory_handler)
@@ -57,7 +58,7 @@ def remap_load(_context, address, newmappings):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = make_filename_from_addr(_context, address)
-    p = pickle.load(file(fname, 'r'))
+    p = pickle.load(open(fname, 'r'))
     if p is None:
         return None
     # YES we do want to over-write _memory_handler and bytes
@@ -117,7 +118,7 @@ class CacheWrapper:
             if self.obj() is not None:  #
                 return self.obj()
         try:
-            p = pickle.load(file(self._fname, 'r'))
+            p = pickle.load(open(self._fname, 'r'))
         except EOFError as e:
             log.error('Could not load %s - removing it %s', self._fname, e)
             os.remove(self._fname)
@@ -198,7 +199,7 @@ class AnonymousRecord(object):
         :param name: name root for the record
         :return:
         """
-        print "setter"
+        print("setter")
         if name is None:
             self._name = self.__record_type.name
         else:
@@ -295,7 +296,7 @@ class AnonymousRecord(object):
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
             log.debug('saving to %s', fname)
-            pickle.dump(self, file(fname, 'w'))
+            pickle.dump(self, open(fname, 'w'))
         except pickle.PickleError as e:
             # self.struct must be cleaned.
             log.error("Pickling error, file %s removed", fname)
@@ -308,14 +309,14 @@ class AnonymousRecord(object):
             #code.interact(local=locals())
         except RuntimeError as e:
             log.error(e)
-            print self.to_string()
+            print(self.to_string())
             # FIXME: why silent removal igore
         except KeyboardInterrupt as e:
             # clean it, its stale
             os.remove(fname)
             log.warning('removing %s' % fname)
             ex = sys.exc_info()
-            raise ex[1], None, ex[2]
+            raise ex[1](None).with_traceback(ex[2])
         return
 
     def get_field_at_offset(self, offset):
@@ -504,7 +505,7 @@ class %s(%s):  # %s
         elif _field.is_pointer():
             data = self.bytes[_field.offset:_field.offset + word_size]
             if len(data) != word_size:
-                print repr(data), len(data)
+                print(repr(data), len(data))
                 import pdb
                 pdb.set_trace()
             val = self._target.get_target_ctypes_utils().unpackWord(data)
@@ -587,7 +588,7 @@ class ReversedType(ctypes.Structure):
         root = cls.getInstances().values()[0]
         # try:
         for f in root.get_fields():
-            print f, f.get_ctype()
+            print(f, f.get_ctype())
         cls._fields_ = [(f.get_name(), f.get_ctype()) for f in root.get_fields()]
         # except AttributeError,e:
         #  for f in root.getFields():

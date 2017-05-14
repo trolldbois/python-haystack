@@ -564,7 +564,7 @@ class ArrayFieldsReverser(model.AbstractReverser):
                 #log.debug('simple field:%s '%(field) )
             # array of subtructure DEBUG XXX TODO
             elif len(fieldTypesAndSizes) > 1:
-                log.debug('substructure with sig %s' % (fieldTypesAndSizes))
+                log.debug('substructure with sig %s' % fieldTypesAndSizes)
                 myelements = []
                 for i in range(nb):
                     fields = [ _record._fields.pop(0) for i in range(len(fieldTypesAndSizes))]  # nb-1 left

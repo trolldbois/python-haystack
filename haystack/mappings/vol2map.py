@@ -1,6 +1,7 @@
 # /bin/python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import sys
 import os
 
@@ -36,10 +37,10 @@ def main(filename):
             # rename file
             try:
                 os.rename(path, o_path)
-            except OSError, e:
+            except OSError as e:
                 sys.stderr.write('File rename error\n')
             # offset is unknown.
-            print '%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i)
+            print('%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i))
 
 
 if __name__ == '__main__':

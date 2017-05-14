@@ -16,8 +16,8 @@ import struct
 import itertools
 import collections
 import numbers
-
 import os
+from future.builtins import range
 
 from haystack import dump_loader
 from haystack.reverse import config
@@ -98,7 +98,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
         seqs = [
             sequence[
                 i:i +
-                seqlen] for i in xrange(
+                seqlen] for i in range(
                 0,
                 len(sequence) -
                 seqlen +
@@ -178,7 +178,7 @@ class PatternEncoder:
         # dict done
         self.sequence_norm = [self.dict[el] for el in self.sequence]
         self.sequence_text = ''.join(self.sequence_norm)
-        log.debug('done making pattern dictionnary %d' % (self.elSize))
+        log.debug('done making pattern dictionnary %d' % self.elSize)
         return
 
     def makePattern(self):
@@ -212,7 +212,7 @@ def make(opts):
     word_size = memory_handler.get_target_platform().get_word_size()
     ppMapper = PinnedPointersMapper(word_size)
     heap_sig = PointerIntervalSignature(memory_handler, '[heap]')
-    log.info('pinning offset list created for heap %s.' % (heap_sig))
+    log.info('pinning offset list created for heap %s.' % heap_sig)
     ppMapper.addSignature(heap_sig)
     # now do the others
     for dumpfile in opts.dumpfiles[1:]:
@@ -220,7 +220,7 @@ def make(opts):
         if memory_handler.get_target_platform().get_word_size() != word_size:
             log.error("Differing wordsize between samples")
         heap_sig = PointerIntervalSignature(memory_handler, '[heap]')
-        log.info('pinning offset list created for heap %s.' % (heap_sig))
+        log.info('pinning offset list created for heap %s.' % heap_sig)
         ppMapper.addSignature(heap_sig)
 
     log.info('Find similar vectors between pointers on all signatures.')
@@ -273,7 +273,7 @@ class PointerIntervalSignature:
         if sig is None:
             log.info(
                 "Signature has to be calculated for %s. It's gonna take a while." %
-                (self.name))
+                self.name)
             matcher = matchers.PointerSearcher(self.memory_handler)
             pointerSearcher = searchers.WordAlignedSearcher(self.mmap, matcher, self._feedback, self._word_size)
             #pointerSearcher = matchers.PointerSearcher(self.mmap)
@@ -299,20 +299,20 @@ class PointerIntervalSignature:
         # DO NOT SORT LIST. c'est des sequences. pas des sets.
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
         if os.access(myname, os.F_OK):
-            addressCache = pickle.load(file(myname, 'r'))
+            addressCache = pickle.load(open(myname, 'r'))
             log.debug(
                 "%d Signature addresses loaded from cache." %
                 (len(addressCache)))
             self.addressCache.update(addressCache)
         else:  # get at least 10 values
-            for i in xrange(0, len(self), len(self) / 10):
+            for i in range(0, len(self), len(self) / 10):
                 self.getAddressForPreviousPointer(i)
             self._saveAddressCache()
         return
 
     def _saveAddressCache(self):
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
-        pickle.dump(self.addressCache, file(myname, 'w'))
+        pickle.dump(self.addressCache, open(myname, 'w'))
 
     def getAddressForPreviousPointer(self, offset):
         '''
@@ -346,7 +346,7 @@ class PointerIntervalSignature:
         return len(self.sig)
 
     def __str__(self):
-        return "<PointerIntervalSignature '%s'>" % (self.name)
+        return "<PointerIntervalSignature '%s'>" % self.name
 
 
 class SequencesMaker:
@@ -382,7 +382,7 @@ class SequencesMaker:
         if not hasattr(self, 'seqs'):
             seqlen = self.size
             self.seqs = [tuple(self.seq[i:i + seqlen])
-                         for i in xrange(0, len(self.seq) - seqlen + 1)]
+                         for i in range(0, len(self.seq) - seqlen + 1)]
             seqs = self.seqs
             return seqs
 
@@ -391,7 +391,7 @@ class SequencesMaker:
 
     def __iter__(self):
         seqlen = self.size
-        for i in xrange(0, len(self.seq) - seqlen + 1):
+        for i in range(0, len(self.seq) - seqlen + 1):
             yield tuple(self.seq[i:i + seqlen])
         return
 
@@ -631,7 +631,7 @@ class PinnedPointersMapper:
         return
 
     def _findCommonSequences(self):
-        log.info('Looking for common sequence of length %d' % (self.length))
+        log.info('Looking for common sequence of length %d' % self.length)
         common = None
         # make len(sig) sub sequences of size <length> ( in .sets )
         for sig in self.signatures:
@@ -805,7 +805,7 @@ class PinnedPointersMapper:
         caches = self._makeCaches()
         pickle.dump(
             caches,
-            file(
+            open(
                 '/home/jal/Compil/python-haystack/outputs/caches',
                 'w'))
         self._pinResolved(caches)
@@ -820,19 +820,19 @@ class PinnedPointersMapper:
             resolved_for_sig = [pp for pp in self.resolved if pp.sig == sig]
             unresolved_for_sig = [
                 pp for pp in self.unresolved if pp.sig == sig]
-            log.debug('Pin anonymous allocators on %s' % (sig))
+            log.debug('Pin anonymous allocators on %s' % sig)
             pinned = [AnonymousStructRange(pp, self.word_size) for pp in resolved_for_sig]
-            log.debug('Create list of allocators addresses for %s' % (sig))
+            log.debug('Create list of allocators addresses for %s' % sig)
             pinned_start = [pp.getAddress() for pp in resolved_for_sig]
             # if sorted(pinned_start) != pinned_start:
             #  log.error('Damn !')
             #  raise ValueError('iscrewedupbadlyhere')
-            log.debug('Pin probable anonymous allocators on %s' % (sig))
+            log.debug('Pin probable anonymous allocators on %s' % sig)
             pinned_lightly = [
                 AnonymousStructRange(pp, self.word_size) for pp in unresolved_for_sig]
             log.debug(
                 'Create list of probable allocators addresses for %s' %
-                (sig))
+                sig)
             pinned_lightly_start = [pp.getAddress()
                                     for pp in unresolved_for_sig]
             # save it
@@ -945,10 +945,10 @@ class PinnedPointersMapper:
 
         log.debug(
             'We have found %d pointers to pinned structs' %
-            (startsWithPointer))
+            startsWithPointer)
         log.debug(
             'We have found %d pointers to pinned maybe-structs' %
-            (startsMaybeWithPointer))
+            startsMaybeWithPointer)
         return
 
     def _findNearestStruct(self, ptr, caches, sig):
@@ -962,7 +962,7 @@ class PinnedPointersMapper:
         first_addr_l, anonStruct_l = self._findFirstStruct(
             ptr, pinned_lightly_start, pinned_lightly)
         if first_addr == first_addr_l and first_addr == -1:
-            log.warning('No struct after ptr value 0x%x' % (ptr))
+            log.warning('No struct after ptr value 0x%x' % ptr)
             return -1, None
         if first_addr_l < first_addr:  # TODO ???
             ret = (anonStruct, first_addr)
@@ -975,7 +975,7 @@ class PinnedPointersMapper:
         if offset < 64:
             log.debug(
                 'Found a probable start of struct at %d bytes earlier' %
-                (offset))
+                offset)
         return ret
 
     def _findFirstStruct(self, ptr, addresses, anons):
@@ -1197,11 +1197,11 @@ class PinnedPointersMapper:
                         log.info(
                             'Found %d content-pointed struct (not start) in %s' %
                             (sub.count(tgtPtr), sig))
-                        log.info('   source pp was  %s' % (pp))
+                        log.info('   source pp was  %s' % pp)
                         for myrelatedPP in relatedPPs:
                             log.info(
                                 '   source related pp was  %s' %
-                                (myrelatedPP))
+                                myrelatedPP)
                         log.info(
                             '   -- got a ptr to %s (0x%x)' %
                             (found, tgtPtr - found.getAddress()))
@@ -1230,24 +1230,24 @@ class PinnedPointersMapper:
                         log.info(
                             'Found %d pointed struct in LIGHTLY %s' %
                             (sub.count(tgtPtr), sig))
-                        log.info('   source pp was  %s' % (pp))
+                        log.info('   source pp was  %s' % pp)
                         for myrelatedPP in relatedPPs:
                             log.info(
                                 '   source related pp was  %s' %
-                                (myrelatedPP))
-                        log.info('   source target pp was  %s' % (targetPP))
+                                myrelatedPP)
+                        log.info('   source target pp was  %s' % targetPP)
                         for mytargetPPrelated in relatedTargetPPs:
                             log.info(
                                 "   source's target's related pp was  %s" %
-                                (mytargetPPrelated))
-                        log.info('   got %s' % (found))
+                                mytargetPPrelated)
+                        log.info('   got %s' % found)
 
                         ok2 = True
                         break
                 if not ok2:
                     log.info(
                         'This one does not points anywhere to a common pinnedPointer struct  %s' %
-                        (sig))
+                        sig)
                     break
 
         # all sig have been parsed and we found a

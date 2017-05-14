@@ -54,7 +54,7 @@ class PointerSearcher(AbstractMatcher):
     def test_match(self, mapping, vaddr):
         try:
             word = mapping.read_word(vaddr)
-        except ValueError,e:
+        except ValueError as e:
             mapping = self._memory_handler.get_mapping_for_address(vaddr)
             word = mapping.read_word(vaddr)
         if self.is_valid_address_value(word):
@@ -69,7 +69,7 @@ class NullSearcher(AbstractMatcher):
     def test_match(self, mapping, vaddr):
         try:
             word = mapping.read_word(vaddr)
-        except ValueError, e:
+        except ValueError as e:
             # we fetch the proper mapping
             mapping = self._memory_handler.get_mapping_for_address(vaddr)
             word = mapping.read_word(vaddr)
@@ -86,7 +86,7 @@ class PointerEnumerator(AbstractMatcherWithValue):
     def test_match(self, mapping, vaddr):
         try:
             word = mapping.read_word(vaddr)
-        except ValueError, e:
+        except ValueError as e:
             # we fetch the proper mapping
             mapping = self._memory_handler.get_mapping_for_address(vaddr)
             word = mapping.read_word(vaddr)

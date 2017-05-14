@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import logging
 import pickle
 # import dill as pickle
@@ -170,7 +171,7 @@ class ProcessContext(object):
                 try:
                     fout.write('\n'.join(towrite))
                 except UnicodeDecodeError as e:
-                    print 'ERROR on ', r_type
+                    print('ERROR on ', r_type)
                 towrite = []
                 fout.flush()
         # add some stats
@@ -453,7 +454,7 @@ class HeapContext(object):
         config.create_cache_folder(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname, heap_addr)
         try:
-            with file(context_cache, 'r') as fin:
+            with open(context_cache, 'r') as fin:
                 ctx = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
@@ -472,9 +473,9 @@ class HeapContext(object):
         # cached records
         cache_context_filename = self.get_filename_cache_context()
         try:
-            with file(cache_context_filename, 'w') as fout:
+            with open(cache_context_filename, 'w') as fout:
                 pickle.dump(self, fout)
-        except pickle.PicklingError, e:
+        except pickle.PicklingError as e:
             log.error("Pickling error on %s, file removed", cache_context_filename)
             os.remove(cache_context_filename)
             raise e

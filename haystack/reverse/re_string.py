@@ -73,7 +73,7 @@ _py_encodings = set(['ascii',
                      ])
 
 
-class Nocopy():
+class Nocopy:
 
     def __init__(self, bytes, start, end):
         self.bytes = bytes
@@ -97,7 +97,7 @@ class Nocopy():
 
     # end defaults to int.max, not -1
     def __getslice__(self, start=0, end=-1, step=1):
-        if (end > self.end - self.start):  # len(self)
+        if end > self.end - self.start:  # len(self)
             end = self.end - self.start
         if step == 1:
             if start >= 0 and end >= 0:
@@ -127,7 +127,7 @@ def _rfind_utf16(bytesarray, longerThan=7):
         return -1
     i = len(bytesarray) - 2
     # give one shot 'x000'
-    if (bytesarray[i + 1] == '\x00' and bytesarray[i] == '\x00'):
+    if bytesarray[i + 1] == '\x00' and bytesarray[i] == '\x00':
         # print 'first', bytesarray[i]
         i -= 2
     while i >= 0 and (bytesarray[i + 1] == '\x00' and bytesarray[i] != '\x00'):
@@ -218,7 +218,7 @@ def try_decode_string(bytesarray, longerThan=3):
             for i, c in enumerate(chars):
                 # last , NULL terminated. Last because testEncodings should cut
                 # at '\x00'
-                if (c == '\x00'):
+                if c == '\x00':
                     break
                 if not is_printable(c):
                     skip = True
@@ -248,7 +248,7 @@ def try_decode_string(bytesarray, longerThan=3):
                         (codec, repr(
                             bytesarray[1])))
                     continue
-            log.debug('valid entry %s' % (chars))
+            log.debug('valid entry %s' % chars)
             valid_strings.append((size, codec, chars))
         if len(valid_strings) > 0:
             valid_strings.sort(reverse=True)
@@ -340,11 +340,11 @@ def testEncoding(bytesarray, encoding):
         # print repr(bytesarray)
         return -1, None
     except Exception as e:
-        log.error('Error using encoding %s' % (encoding))
+        log.error('Error using encoding %s' % encoding)
         raise e
     i = ustr.find('\x00')
     if i == -1:
-        log.debug('%s was ok - but no NULL' % (encoding))
+        log.debug('%s was ok - but no NULL' % encoding)
         end = len(ustr)
         # return -1, None
     else:
@@ -353,4 +353,4 @@ def testEncoding(bytesarray, encoding):
 
     slen = sizemultiplier * end
     log.debug('%s is ok - with len %d' % (encoding, slen))
-    return (slen, ustr[:end])
+    return slen, ustr[:end]

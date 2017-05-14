@@ -79,7 +79,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
         self.info_tableview.setObjectName(
             _fromUtf8(
                 "%s_info_tableview" %
-                (self)))
+                self))
         #self.gridLayout.addWidget(self.info_tableview, 2, 0, 1, 1)
         # add QSplitter
         self.splitter = QtGui.QSplitter(Qt.Vertical, self)
@@ -95,7 +95,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
         self.splitter.setObjectName(
             _fromUtf8(
                 "%s_splitter_search_info" %
-                (self)))
+                self))
         self.gridLayout.addWidget(self.splitter, 0, 0, 1, 2)
 
     def setupSignals(self):
@@ -139,7 +139,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
         return
 
     def _showInfo(self, structure):
-        log.info('show info on %s' % (structure))
+        log.info('show info on %s' % structure)
         pyObj = structure.value
         rows = [(k, str(v)) for k, v, typ in pyObj]
         log.debug('self.info_tableview populated with %d rows' % (len(rows)))
@@ -160,7 +160,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
         self.info_tableview.resizeColumnsToContents()
         # set row height
         nrows = len(rows)
-        for row in xrange(nrows):
+        for row in range(nrows):
             self.info_tableview.setRowHeight(row, 18)
         # enable sorting
         self.info_tableview.setSortingEnabled(True)
@@ -173,7 +173,7 @@ class SearchInfoView(QtGui.QWidget, Ui_SearchInfoStructWidget):
     def listview_clicked(self, qindex):
         log.info('clicked %d' % qindex.row())
         item = self.list_model.data(qindex, Qt.DisplayRole)
-        log.info('clicked %s' % (item))
+        log.info('clicked %s' % item)
         if self.showDetailledView:
             self._showInfo(self.results[qindex.row()])
         # change the hexview

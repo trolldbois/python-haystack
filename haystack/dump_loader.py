@@ -91,7 +91,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             if self._test_dir():
                 self._open_archive = lambda archive: archive
                 self._list_names = os.listdir
-                self._open_file = lambda archive, name: file(
+                self._open_file = lambda archive, name: open(
                     os.path.sep.join([archive, name]), 'rb')
                 return True
             log.error("_test_dir returned False")
