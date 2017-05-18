@@ -170,7 +170,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 for start, size in self._backend_allocs:
                     end = start + size
                     lfh_block = False
-                    for front_addr in front_allocs2:
+                    for front_addr, front_addr_size in front_allocs2:
                         if start <= front_addr < end:
                             lfh_block = True
                             break
