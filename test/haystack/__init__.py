@@ -26,8 +26,8 @@ class SrcTests(unittest.TestCase):
         offsets = dict()
         values = dict()
         sizes = dict()
-        for line in open('%s.stdout' %
-                         (dumpname[:-len('.dump')]), 'rb').readlines():
+        fin = open('%s.stdout' % (dumpname[:-len('.dump')]), 'rb')
+        for line in fin.readlines():
             if line.startswith(b's: '):
                 # start
                 fields = line[3:].split(b' ')
@@ -58,6 +58,7 @@ class SrcTests(unittest.TestCase):
         cls.values = values
         cls.offsets = offsets
         cls.sizes = sizes
+        fin.close()
         return
 
 if __name__ == '__main__':

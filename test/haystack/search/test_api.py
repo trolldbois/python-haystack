@@ -187,19 +187,19 @@ class Test6_x32(_ApiTest):
         # python
         usuals = haystack.output_to_python(self.memory_handler, [(results, validated)])
         usual, validated = usuals[0]
-        self.assertEquals(validated, True)
-        self.assertEquals(usual.val1, 0x0aaaaaaa)
-        self.assertEquals(usual.val2, 0x0ffffff0)
-        self.assertEquals(usual.txt, 'This a string with a test this is a test '
+        self.assertEqual(validated, True)
+        self.assertEqual(usual.val1, 0x0aaaaaaa)
+        self.assertEqual(usual.val2, 0x0ffffff0)
+        self.assertEqual(usual.txt, 'This a string with a test this is a test '
                                      'string')
 
         # so now we got python objects
         # that is node 1
         self.assertIsNotNone(usual.root.flink)
-        self.assertEquals(usual.root.flink, usual.root.blink)
+        self.assertEqual(usual.root.flink, usual.root.blink)
         #print usual.root.flink
         # that is node2
-        self.assertEquals(usual.root.blink.flink, usual.root.flink.flink)
+        self.assertEqual(usual.root.blink.flink, usual.root.flink.flink)
         # that is None (root.flink = root.blink)
         self.assertIsNone(usual.root.blink.blink)
         self.assertIsNone(usual.root.flink.blink)
@@ -210,24 +210,24 @@ class Test6_x32(_ApiTest):
         results, validated = haystack.search.api.load_record(self.memory_handler, self.node, self.address2)
         node1s = haystack.output_to_python(self.memory_handler, [(results, validated)])
         node1, validated = node1s[0]
-        self.assertEquals(validated, True)
-        self.assertEquals(node1.val1, 0xdeadbeef)
-        self.assertEquals(node1.val2, 0xffffffff)
+        self.assertEqual(validated, True)
+        self.assertEqual(node1.val1, 0xdeadbeef)
+        self.assertEqual(node1.val2, 0xffffffff)
 
         results, validated = haystack.search.api.load_record(self.memory_handler, self.node, self.address3)
         node2s = haystack.output_to_python(self.memory_handler, [(results, validated)])
         node2, validated = node2s[0]
-        self.assertEquals(validated, True)
-        self.assertEquals(node2.val1, 0xdeadbabe)
-        self.assertEquals(node2.val2, 0xffffffff)
+        self.assertEqual(validated, True)
+        self.assertEqual(node2.val1, 0xdeadbabe)
+        self.assertEqual(node2.val2, 0xffffffff)
 
         self.assertIsNotNone(usual.root.flink)
 
         # FIXME this was assertNotEquals. Why would the python obj be equals now ?
         # but we have different instances/references between calls to
         # show_dumpname
-        self.assertEquals(usual.root.flink, node1.list)
-        self.assertEquals(usual.root.blink.flink, node2.list)
+        self.assertEqual(usual.root.flink, node1.list)
+        self.assertEqual(usual.root.blink.flink, node2.list)
 
     def test_search(self):
         handler = constraints.ConstraintsConfigHandler()
@@ -236,19 +236,19 @@ class Test6_x32(_ApiTest):
         # 2 from test1
         # 3 from test_pointer_to_list
         # the rest have bad values in constrainged fields
-        self.assertEquals(len(results), 2 + 3)
+        self.assertEqual(len(results), 2 + 3)
         # FIXME: that is a weird idea, that allocations are ordered that way
         (node1, offset1), (node2, offset2) = results[:2]
-        self.assertEquals(node1.val1, 0xdeadbeef)
-        self.assertEquals(node1.val2, 0xffffffff)
-        self.assertEquals(node2.val1, 0xdeadbabe)
-        self.assertEquals(node2.val2, 0xffffffff)
+        self.assertEqual(node1.val1, 0xdeadbeef)
+        self.assertEqual(node1.val2, 0xffffffff)
+        self.assertEqual(node2.val1, 0xdeadbabe)
+        self.assertEqual(node2.val2, 0xffffffff)
 
         # FIXME there is a circular reference in json.
         #with self.assertRaises(ValueError):
         #    haystack.output_to_json(self.memory_handler, results)
-        #self.assertEquals(node2s['val1'], 0xdeadbabe)
-        #self.assertEquals(node2s['val2'], 0xffffffff)
+        #self.assertEqual(node2s['val1'], 0xdeadbabe)
+        #self.assertEqual(node2s['val2'], 0xffffffff)
         model = self.memory_handler.get_model()
         #import code
         #code.interact(local=locals())

@@ -319,7 +319,7 @@ class TestFunctions(unittest.TestCase):
             '''8z4I4z4I4T8z4I4z4I4T8z4I4z4I4T8z4I4z4u4z26336'''
         sig_res = 'P4 (I4){2}  (u4z4P4I4){21} u172z4 (I4T8z4I4z4){4} u4z26336'
 
-        self.assertEquals(pattern.findPatternText(sig, 2), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 2), sig_res)
 
     def test_findPattern_recursive_2(self):
         sig = '''P4i4i4u9z8i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4T5I4P4i4T5I4P4i4I4I4P4i4T5'''\
@@ -327,7 +327,7 @@ class TestFunctions(unittest.TestCase):
             '''I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4I4I4P4i4T5I4P4I4i4'''
         sig_res = 'P4 (i4){2} u9z8i4 (I4I4P4i4){7}  (T5I4P4i4){2}  (I4){2} P4i4T5I4P4i4 (I4I4P4i4){17} T5I4P4I4i4'
 
-        self.assertEquals(pattern.findPatternText(sig, 2), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 2), sig_res)
 
     def test_findPattern_recursive_3(self):
         sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
@@ -335,7 +335,7 @@ class TestFunctions(unittest.TestCase):
         # print pattern.findPatternText( sig,2)
         # self.assertRaises ( ValueError, pattern.findPatternText , sig,2) #
         # why ?
-        self.assertEquals(pattern.findPatternText(sig, 2), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 2), sig_res)
 
     # def test_findPattern_recursive_3b(self):
     #  sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z2'''
@@ -345,22 +345,22 @@ class TestFunctions(unittest.TestCase):
     def test_findPattern_recursive_4(self):
         sig = '''123321444567444567444567444567111123'''
         sig_res = '123321 (444567){4} 111123'
-        self.assertEquals(pattern.findPatternText(sig, 3), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 3), sig_res)
 
     def test_findPattern_recursive_5(self):
         sig = '''AAABABABABBAAABBBBABACBCBCBCBABCBABABC'''
         sig_res = ' (A){2}  (AB){4} B (A){3}  (B){3}  (BA){2}  (CB){3}  (CBAB){2} ABC'
-        self.assertEquals(pattern.findPatternText(sig, 1), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 1), sig_res)
 
     def test_findPattern_recursive_6(self):
         sig = '''aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'''
         sig_res = ' (a){5}  (1){4}  (b){3}  (c){2} d (a2){5}  (b1c){4}  (abcd){4} p (o){2}  (i){3}  (u){4}  (y){5} '
-        self.assertEquals(pattern.findPatternText(sig, 1), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 1), sig_res)
 
     def test_findPattern_recursive_7(self):
         sig = '''aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'''
         sig_res = ' (a){5}  (1){4}  (b){3} ccd (a2){5}  (b1c){4}  (abcd){4} poo (i){3}  (u){4}  (y){5} '
-        self.assertEquals(pattern.findPatternText(sig, 1, 3), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 1, 3), sig_res)
 
     # def test_findPattern_recursive_8(self):
     #  sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z12'''
@@ -370,12 +370,12 @@ class TestFunctions(unittest.TestCase):
     def test_findPattern_recursive_8b(self):
         sig = '''I4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4i4z1'''
         sig_res = 'I4 (i4){31} z1'
-        self.assertEquals(pattern.findPatternText(sig, 2, 4), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 2, 4), sig_res)
 
     def test_findPattern_recursive_9(self):
         sig = '''aaaaa1111bbbccda2a2a2a2a2b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuuyyyyy'''
         sig_res = ' (a){5} 1111bbbccd (a2){5} b1cb1cb1cb1cabcdabcdabcdabcdpooiiiuuuu (y){5} '
-        self.assertEquals(pattern.findPatternText(sig, 1, 5), sig_res)
+        self.assertEqual(pattern.findPatternText(sig, 1, 5), sig_res)
 
 
 class TestPatternEncoder(unittest.TestCase):
@@ -400,7 +400,7 @@ class TestPatternEncoder(unittest.TestCase):
                 'u4', 'z12', 'P4', 'I4']), (1, 'u172'), (1, 'z12'), (4, [
                     'I4', 'T8', 'z12', 'I4', 'z12']), (1, 'u4'), (1, 'z26336')]
 
-        self.assertEquals(encoder.makePattern(), sig_res)
+        self.assertEqual(encoder.makePattern(), sig_res)
 
 
 if __name__ == '__main__':

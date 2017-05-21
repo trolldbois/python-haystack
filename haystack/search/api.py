@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from past.builtins import long
 import logging
 import pickle
 
@@ -149,6 +150,7 @@ def load_record(memory_handler, struct_type, memory_address, load_constraints=No
     :param load_constraints: IModuleConstraints to be considered during loading
     :return: (ctypes record instance, validated_boolean)
     """
+    # FIXME, is number maybe ?
     if not isinstance(memory_address, long) and not isinstance(memory_address, int):
         raise TypeError('Feed me a long memory_address')
     # we need to give target_mappings so not to trigger a heap resolution

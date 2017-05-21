@@ -44,7 +44,7 @@ class TestMapper(unittest.TestCase):
         # PID 856 has 176 _memory_handler
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
-        self.assertEquals(len(memory_handler.get_mappings()), 176)
+        self.assertEqual(len(memory_handler.get_mappings()), 176)
 
         # testing that we can use the Mapper twice in a row, without breaking
         # volatility
@@ -52,13 +52,13 @@ class TestMapper(unittest.TestCase):
         # PID 676 has 118 _memory_handler
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
-        self.assertEquals(len(memory_handler.get_mappings()), 118)
+        self.assertEqual(len(memory_handler.get_mappings()), 118)
 
         pid = 1668
         # PID 1668 has 159 _memory_handler
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
-        self.assertEquals(len(memory_handler.get_mappings()), 159)
+        self.assertEqual(len(memory_handler.get_mappings()), 159)
 
     def test_is_heaps_1168(self):
         f = '/home/jal/outputs/vol/zeus.vmem'
@@ -67,7 +67,7 @@ class TestMapper(unittest.TestCase):
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
         walkers = finder.list_heap_walkers()
-        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        self.assertEqual(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
             heap_mapping = memory_handler.get_mapping_for_address(addr)
             heap_walker = finder.get_heap_walker(heap_mapping)
@@ -83,7 +83,7 @@ class TestMapper(unittest.TestCase):
         memory_handler = mapper.make_memory_handler()
         finder = memory_handler.get_heap_finder()
         walkers = finder.list_heap_walkers()
-        self.assertEquals(len(walkers), len(zeus_856_svchost_exe.known_heaps))
+        self.assertEqual(len(walkers), len(zeus_856_svchost_exe.known_heaps))
         for addr, size in zeus_856_svchost_exe.known_heaps:
             heap_walker = finder.get_heap_walker(addr)
             self.assertIsNotNone(heap_walker)
@@ -95,8 +95,8 @@ class TestMapper(unittest.TestCase):
         pid = 888  # wscntfy.exe
         mapper = VolatilityProcessMapper(f, "WinXPSP2x86", pid)
         memory_handler = mapper.make_memory_handler()
-        self.assertEquals(len(memory_handler.get_mappings()), 51)
-        self.assertEquals(memory_handler.get_target_platform().get_os_name(), 'winxp')
+        self.assertEqual(len(memory_handler.get_mappings()), 51)
+        self.assertEqual(memory_handler.get_target_platform().get_os_name(), 'winxp')
 
         ctypes = memory_handler.get_target_platform().get_target_ctypes()
         from haystack.allocators.win32 import winxp_32
@@ -108,7 +108,7 @@ class TestMapper(unittest.TestCase):
                 x = m.read_struct(m.start, winxp_32.HEAP)
                 #print x
 
-        self.assertEquals(ctypes.sizeof(x), 1416)
+        self.assertEqual(ctypes.sizeof(x), 1416)
         # print x
         finder = memory_handler.get_heap_finder()
         walkers = finder.list_heap_walkers()

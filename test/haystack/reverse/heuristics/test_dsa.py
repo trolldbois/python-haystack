@@ -113,101 +113,101 @@ class TestFieldAnalyser(unittest.TestCase):
 
     def test_zeroes(self):
         fields = self.zeroes.make_fields(self.test1, 0, len(self.test1))
-        self.assertEquals(len([_ for _ in fields]), 3)
-        self.assertEquals(fields[0].offset, 0)
-        self.assertEquals(fields[0].size, 4)
-        self.assertEquals(fields[1].offset, 8)
-        self.assertEquals(fields[1].size, 8)
-        self.assertEquals(fields[2].offset, 28)
-        self.assertEquals(fields[2].size, 4)
+        self.assertEqual(len([_ for _ in fields]), 3)
+        self.assertEqual(fields[0].offset, 0)
+        self.assertEqual(fields[0].size, 4)
+        self.assertEqual(fields[1].offset, 8)
+        self.assertEqual(fields[1].size, 8)
+        self.assertEqual(fields[2].offset, 28)
+        self.assertEqual(fields[2].size, 4)
 
         fields = self.zeroes.make_fields(self.test2, 0, len(self.test2))
-        self.assertEquals(len([_ for _ in fields]), 3)
-        self.assertEquals(fields[0].offset, 4)
-        self.assertEquals(fields[0].size, 4)
-        self.assertEquals(fields[1].offset, 12)
-        self.assertEquals(fields[1].size, 8)
-        self.assertEquals(fields[2].offset, 32)
-        self.assertEquals(fields[2].size, 4)
+        self.assertEqual(len([_ for _ in fields]), 3)
+        self.assertEqual(fields[0].offset, 4)
+        self.assertEqual(fields[0].size, 4)
+        self.assertEqual(fields[1].offset, 12)
+        self.assertEqual(fields[1].size, 8)
+        self.assertEqual(fields[2].offset, 32)
+        self.assertEqual(fields[2].size, 4)
 
         fields = self.zeroes.make_fields(self.test3, 0, len(self.test3))
-        self.assertEquals(len([_ for _ in fields]), 0)
+        self.assertEqual(len([_ for _ in fields]), 0)
 
         fields = self.zeroes.make_fields(self.test4, 0, len(self.test4))
-        self.assertEquals(len([_ for _ in fields]), 2)
+        self.assertEqual(len([_ for _ in fields]), 2)
 
         with self.assertRaises(AssertionError):  # unaligned offset
             fields = self.zeroes.make_fields(self.test4, 1, len(self.test4))
 
         fields = self.zeroes.make_fields(self.test4, 4, len(self.test4))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.zeroes.make_fields(self.test5, 0, len(self.test5))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
     def test_utf16(self):
         fields = self.utf16.make_fields(self.test1, 0, len(self.test1))
-        self.assertEquals(len([_ for _ in fields]), 0)  # no utf16
+        self.assertEqual(len([_ for _ in fields]), 0)  # no utf16
 
         fields = self.utf16.make_fields(self.test8, 0, len(self.test8))
-        self.assertEquals(len([_ for _ in fields]), 3)  # 3 utf-16
+        self.assertEqual(len([_ for _ in fields]), 3)  # 3 utf-16
 
         fields = self.utf16.make_fields(self.test6, 0, len(self.test6))
-        self.assertEquals(len([_ for _ in fields]), 0)
+        self.assertEqual(len([_ for _ in fields]), 0)
 
     def test_complex_utf(self):
         fields = self.utf16.make_fields(self.test9, 0, len(self.test9))
-        self.assertEquals(len([_ for _ in fields]), 2)
+        self.assertEqual(len([_ for _ in fields]), 2)
 
     def test_small_int(self):
         ''' we default to word_size == 4 '''
         smallints = ['\xff\xff\xff\xff', '\x02\xff\xff\xff', ]
         for bytes in smallints:
             fields = self.ints.make_fields(FS(bytes), 0, 4)
-            self.assertEquals(len([_ for _ in fields]), 1)
-            self.assertEquals(fields[0].endianess, '<')
+            self.assertEqual(len([_ for _ in fields]), 1)
+            self.assertEqual(fields[0].endianess, '<')
 
         smallints = ['\xff\xff\xff\x03', '\x00\x00\x00\x42',
                      '\x00\x00\x00\x01', '\x00\x00\x01\xaa', ]
         for bytes in smallints:
             fields = self.ints.make_fields(FS(bytes), 0, 4)
-            self.assertEquals(len([_ for _ in fields]), 1, repr(bytes))
-            self.assertEquals(fields[0].endianess, '>')
+            self.assertEqual(len([_ for _ in fields]), 1, repr(bytes))
+            self.assertEqual(fields[0].endianess, '>')
 
         not_smallints = ['\xfa\xff\xfb\xff', '\x01\xff\xff\x03', '\x02\xff\x42\xff',
                          '\x01\x00\x00\x01', '\x00\x12\x01\xaa', '\x00\xad\x00\x42',
                          '\x00\x41\x00\x41', '\x41\x00\x41\x00']
         for bytes in not_smallints:
             fields = self.ints.make_fields(FS(bytes), 0, 4)
-            self.assertEquals(len([_ for _ in fields]), 0)
+            self.assertEqual(len([_ for _ in fields]), 0)
 
     def test_ascii(self):
         fields = self.ascii.make_fields(self.test1, 0, len(self.test1))
-        self.assertEquals(len([_ for _ in fields]), 3)
+        self.assertEqual(len([_ for _ in fields]), 3)
 
         fields = self.ascii.make_fields(self.test1, 8, len(self.test1) - 8)
-        self.assertEquals(len([_ for _ in fields]), 2)
+        self.assertEqual(len([_ for _ in fields]), 2)
 
         fields = self.ascii.make_fields(self.test2, 0, len(self.test2))
-        self.assertEquals(len([_ for _ in fields]), 3)
+        self.assertEqual(len([_ for _ in fields]), 3)
 
         fields = self.ascii.make_fields(self.test3, 0, len(self.test3))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.ascii.make_fields(self.test4, 0, len(self.test4))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.ascii.make_fields(self.test3, 4, 12)
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.ascii.make_fields(self.test5, 0, len(self.test5))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.ascii.make_fields(self.test6, 0, len(self.test6))
-        self.assertEquals(len([_ for _ in fields]), 1)
+        self.assertEqual(len([_ for _ in fields]), 1)
 
         fields = self.ascii.make_fields(self.test8, 0, len(self.test8))
-        self.assertEquals(len([_ for _ in fields]), 0)
+        self.assertEqual(len([_ for _ in fields]), 0)
 
 
 class TestDSA(unittest.TestCase):
@@ -238,11 +238,11 @@ class TestDSA(unittest.TestCase):
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
-        self.assertEquals(len([_ for _ in fields]), 5)  # TODO should be 6 fields lllttp
-        self.assertEquals(fields[2].field_type, fieldtypes.STRING16)
+        self.assertEqual(len([_ for _ in fields]), 5)  # TODO should be 6 fields lllttp
+        self.assertEqual(fields[2].field_type, fieldtypes.STRING16)
         self.assertTrue(fields[2].is_string())
         # TODO fields[3] should start at offset 12, not 10.
-        self.assertEquals(fields[3].field_type, fieldtypes.STRING16)
+        self.assertEqual(fields[3].field_type, fieldtypes.STRING16)
         self.assertTrue(fields[3].is_string())
         #  print f
 
@@ -256,8 +256,8 @@ class TestDSA(unittest.TestCase):
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
-        self.assertEquals(len([_ for _ in fields]), 2)
-        self.assertEquals(fields[1].field_type, fieldtypes.STRING16)
+        self.assertEqual(len([_ for _ in fields]), 2)
+        self.assertEqual(fields[1].field_type, fieldtypes.STRING16)
         self.assertTrue(fields[1].is_string())
 
     def test_ascii_null_terminated_2(self):
@@ -270,8 +270,8 @@ class TestDSA(unittest.TestCase):
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
-        self.assertEquals(len([_ for _ in fields]), 5)
-        self.assertEquals(fields[3].field_type, fieldtypes.STRINGNULL)
+        self.assertEqual(len([_ for _ in fields]), 5)
+        self.assertEqual(fields[3].field_type, fieldtypes.STRINGNULL)
         self.assertTrue(fields[3].is_string())
 
     def test_utf_16_le_null_terminated_3(self):
@@ -284,8 +284,8 @@ class TestDSA(unittest.TestCase):
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
-        self.assertEquals(len([_ for _ in fields]), 2)  # should be 3 Lt0?
-        self.assertEquals(fields[0].field_type, fieldtypes.STRING16)
+        self.assertEqual(len([_ for _ in fields]), 2)  # should be 3 Lt0?
+        self.assertEqual(fields[0].field_type, fieldtypes.STRING16)
         self.assertTrue(fields[0].is_string())
 
     def test_big_block(self):
@@ -299,7 +299,7 @@ class TestDSA(unittest.TestCase):
         log.debug(st.to_string())
         fields = st.get_fields()
         self.assertLess(len([_ for _ in fields]), 879)
-        #self.assertEquals( fields[35].field_type.name, fieldtypes.STRINGNULL)
+        #self.assertEqual( fields[35].field_type.name, fieldtypes.STRINGNULL)
         #self.assertTrue( fields[35].isString())
         strfields = [f for f in st.get_fields() if f.is_string()]
         # for f in strfields:
@@ -316,8 +316,8 @@ class TestDSA(unittest.TestCase):
         # print repr(st.bytes)
         log.debug(st.to_string())
         fields = st.get_fields()
-        self.assertEquals(len([_ for _ in fields]), 3)
-        self.assertEquals(fields[1].field_type, fieldtypes.STRING16)
+        self.assertEqual(len([_ for _ in fields]), 3)
+        self.assertEqual(fields[1].field_type, fieldtypes.STRING16)
         self.assertTrue(fields[1].is_string())
 
         pass
@@ -333,7 +333,7 @@ class TestDSA(unittest.TestCase):
         log.debug(st.to_string())
         fields = st.get_fields()
         self.assertLess(len([_ for _ in fields]), 890)
-        #self.assertEquals( fields[35].field_type.name, fieldtypes.STRINGNULL)
+        #self.assertEqual( fields[35].field_type.name, fieldtypes.STRINGNULL)
         #self.assertTrue( fields[35].isString())
         fields = [f for f in st.get_fields() if f.is_string()]
         # for f in fields:

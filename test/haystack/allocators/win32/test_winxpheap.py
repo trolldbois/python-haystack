@@ -98,7 +98,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                     free_size_sum = 0
                     for addr, size in validator.HEAP_get_freelists(my_heap):
                         free_size_sum += size
-                    #self.assertEquals(free_size_sum, my_heap.TotalFreeSize*8*2) # FIXME magic values
+                    #self.assertEqual(free_size_sum, my_heap.TotalFreeSize*8*2) # FIXME magic values
                     self.assertTrue(False)
             else:
                 # good heaps
@@ -115,9 +115,9 @@ class TestWinXPHeapValidator(unittest.TestCase):
                     # except 0x5d09d000
                     # 0x5d09d000.FreeLists[0] has data, but 0 size
                     # 0x5d09d000.u2 has decommitcounts (not exceptional)
-                    self.assertEquals(free_size_sum, my_heap.TotalFreeSize*4)
+                    self.assertEqual(free_size_sum, my_heap.TotalFreeSize*4)
                 elif my_heap.FrontEndHeapType == 0:
-                    self.assertEquals(free_size_sum, 0)
+                    self.assertEqual(free_size_sum, 0)
         return
 
     def test_get_lal(self):
@@ -167,7 +167,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
                 free_size_sum = 0
                 for addr, size in validator.get_lookaside_chunks(my_heap):
                     free_size_sum += size
-                    #self.assertEquals(free_size_sum, my_heap.TotalFreeSize*8*2) # FIXME magic values
+                    #self.assertEqual(free_size_sum, my_heap.TotalFreeSize*8*2) # FIXME magic values
                     #self.assertTrue(False)
             else:
                 # good heaps
@@ -183,10 +183,10 @@ class TestWinXPHeapValidator(unittest.TestCase):
                     # except 0x5d09d000
                     # 0x5d09d000.FreeLists[0] has data, but 0 size
                     # 0x5d09d000.u2 has decommitcounts (not exceptional)
-                    #self.assertEquals(free_size_sum, my_heap.TotalFreeSize*4)
+                    #self.assertEqual(free_size_sum, my_heap.TotalFreeSize*4)
                     pass
                 elif my_heap.FrontEndHeapType == 0:
-                    #self.assertEquals(free_size_sum, 0)
+                    #self.assertEqual(free_size_sum, 0)
                     pass
                 #log.debug("HEAP type: %d", my_heap.FrontEndHeapType)
                 #log.debug("HEAP: 0x%x LAL free_size_sum: %x, my_heap.TotalFreeSize*4: %x", heap_addr, free_size_sum, my_heap.TotalFreeSize*4)
@@ -239,18 +239,18 @@ class TestWinXPHeapValidator(unittest.TestCase):
             # in this heap
             # heap.LastSegmentIndex should be i
             log.debug("HEAP.LastSegmentIndex: 0x%x SEGMENT i:0x%x", walker.get_heap().LastSegmentIndex, i)
-            self.assertEquals(walker.get_heap().LastSegmentIndex, i)
+            self.assertEqual(walker.get_heap().LastSegmentIndex, i)
         segments.sort()
-        self.assertEquals(segments, zeus_1668_vmtoolsd_exe.known_segments)
+        self.assertEqual(segments, zeus_1668_vmtoolsd_exe.known_segments)
         return
 
     def test_get_heaps(self):
         walkers = self._heap_finder.list_heap_walkers()
-        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        self.assertEqual(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
 
     def test_is_heaps(self):
         walkers = self._heap_finder.list_heap_walkers()
-        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        self.assertEqual(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         for addr, size in zeus_1668_vmtoolsd_exe.known_heaps:
             heap = self._memory_handler.get_mapping_for_address(addr)
             heap_walker = self._heap_finder.get_heap_walker(heap)

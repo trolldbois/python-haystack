@@ -104,7 +104,7 @@ class TestStructure(unittest.TestCase):
                 elif name in ['_dirty', '_AnonymousRecord__address', '_AnonymousRecord__record_type']:
                     self.assertTrue(value)
                 elif name in ['_fields']:
-                    self.assertEquals(value, list())
+                    self.assertEqual(value, list())
                 elif name in ['dumpname']:
                     self.assertTrue(os.access(value, os.F_OK))
                 else:

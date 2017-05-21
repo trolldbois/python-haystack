@@ -17,8 +17,8 @@ from haystack.abc import interfaces
 from test.testfiles import zeus_1668_vmtoolsd_exe
 from test.testfiles import putty_1_win7
 
-# FIXME move user_allocation test ssh.1 self.assertEquals(len(allocs), 2568)
-# FIXME move user_allocation test putty.1 self.assertEquals(len(allocs), 1733)
+# FIXME move user_allocation test ssh.1 self.assertEqual(len(allocs), 2568)
+# FIXME move user_allocation test putty.1 self.assertEqual(len(allocs), 1733)
 
 
 class TestWalkers(unittest.TestCase):
@@ -95,20 +95,20 @@ class TestWalkers(unittest.TestCase):
         win7_64_ctypes = self.win7_mh_64.get_target_platform().get_target_ctypes()
 
         # 32 bits
-        self.assertEquals(libc_32_ctypes.sizeof(libc_hf_32._heap_module.malloc_chunk), 8)
+        self.assertEqual(libc_32_ctypes.sizeof(libc_hf_32._heap_module.malloc_chunk), 8)
         # winXP
         walker = winxp_hf_32.list_heap_walkers()[0]
-        self.assertEquals(winxp_32_ctypes.sizeof(walker._heap_module.HEAP), 1416)
+        self.assertEqual(winxp_32_ctypes.sizeof(walker._heap_module.HEAP), 1416)
         # win7
         walker = win7_hf_32.list_heap_walkers()[0]
-        self.assertEquals(win7_32_ctypes.sizeof(walker._heap_module.HEAP), 520)# 0x138
+        self.assertEqual(win7_32_ctypes.sizeof(walker._heap_module.HEAP), 520)# 0x138
 
         # 64 bits
-        self.assertEquals(libc_64_ctypes.sizeof(libc_hf_64._heap_module.malloc_chunk), 16)
+        self.assertEqual(libc_64_ctypes.sizeof(libc_hf_64._heap_module.malloc_chunk), 16)
         walker = win7_hf_64.list_heap_walkers()[0]
-        self.assertEquals(win7_64_ctypes.sizeof(walker._heap_module.HEAP), 520)
+        self.assertEqual(win7_64_ctypes.sizeof(walker._heap_module.HEAP), 520)
         walker = winxp_hf_64.list_heap_walkers()[0]
-        self.assertEquals(winxp_64_ctypes.sizeof(walker._heap_module.HEAP), 2792) #   0xae8
+        self.assertEqual(winxp_64_ctypes.sizeof(walker._heap_module.HEAP), 2792) #   0xae8
 
 
 class TestHeapFinder(unittest.TestCase):
@@ -127,18 +127,18 @@ class TestHeapFinder(unittest.TestCase):
         walker = self.finder.list_heap_walkers()[0]
         self.assertTrue(isinstance(walker, interfaces.IHeapWalker))
         heap_0 = walker._heap_mapping
-        self.assertEquals(heap_0.start, 0xb84e0000)
-        self.assertEquals(heap_0.pathname, '[heap]')
+        self.assertEqual(heap_0.start, 0xb84e0000)
+        self.assertEqual(heap_0.pathname, '[heap]')
 
     def test_get_heaps(self):
         heaps = self.finder.list_heap_walkers()
-        self.assertEquals(len(heaps), 1)
+        self.assertEqual(len(heaps), 1)
 
     @unittest.skip("TODO linux get_stack code")
     def test_get_stack(self):
         # FIXME or BREAKME detection was made on pathname.
-        self.assertEquals(self.memory_handler.get_stack().start, 0xbff45000)
-        self.assertEquals(self.memory_handler.get_stack().pathname, '[stack]')
+        self.assertEqual(self.memory_handler.get_stack().start, 0xbff45000)
+        self.assertEqual(self.memory_handler.get_stack().pathname, '[stack]')
 
 
 class TestHeapFinder2(unittest.TestCase):
@@ -158,8 +158,8 @@ class TestHeapFinder2(unittest.TestCase):
         walker = self.finder.get_heap_walker(m)
         self.assertTrue(isinstance(walker, interfaces.IHeapWalker))
         heap_0 = walker.get_heap_mapping()
-        self.assertEquals(heap_0.start, 0x005c0000)
-        self.assertEquals(heap_0.pathname, 'None')
+        self.assertEqual(heap_0.start, 0x005c0000)
+        self.assertEqual(heap_0.pathname, 'None')
         buf = heap_0.read_bytes(heap_0.start, 500)
         win7heap = walker._heap_module
         x = win7heap.HEAP.from_buffer_copy(buf)
@@ -170,15 +170,15 @@ class TestHeapFinder2(unittest.TestCase):
 
     def test_get_heaps(self):
         heaps = self.finder.list_heap_walkers()
-        self.assertEquals(len(heaps), 17)
+        self.assertEqual(len(heaps), 17)
 
     @unittest.skip("TODO win32 get_stack code")
     def test_get_stack(self):
         # TODO win32 get_stack code
         # print ''.join(['%s\n'%(m) for m in _memory_handler])
         # print _memory_handler.get_stack() # no [stack]
-        self.assertEquals(self.memory_handler.get_stack().start, 0x00400000)
-        self.assertEquals(
+        self.assertEqual(self.memory_handler.get_stack().start, 0x00400000)
+        self.assertEqual(
             self.memory_handler.get_stack().pathname,
             '''C:\Program Files (x86)\PuTTY\putty.exe''')
 

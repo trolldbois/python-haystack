@@ -67,9 +67,9 @@ class TestApiWin32Dump(unittest.TestCase):
         # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)
-        self.assertEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(instance.FrontEndHeapType, 0)
+        self.assertEqual(instance.Signature, 0xeeffeeff)
+        self.assertEqual(instance.VirtualMemoryThreshold, 0xfe00)
+        self.assertEqual(instance.FrontEndHeapType, 0)
 
         # try a misalign read
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0] + 1)
@@ -78,9 +78,9 @@ class TestApiWin32Dump(unittest.TestCase):
         self.assertFalse(validated)
         self.assertIsInstance(instance, object)
         self.assertNotEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(instance.Signature, 0xeeffee)  # 1 byte off
+        self.assertEqual(instance.Signature, 0xeeffee)  # 1 byte off
         self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(instance.VirtualMemoryThreshold, 0xff0000fe)
+        self.assertEqual(instance.VirtualMemoryThreshold, 0xff0000fe)
 
         return
 

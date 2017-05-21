@@ -51,20 +51,20 @@ class TestTextOutput(SrcTests):
         # should not fail
         x = eval(out)
 
-        self.assertEquals(len(x.keys()), 15)  # 14 + padding
-        self.assertEquals(self.values['struct_d.a'], hex(x['a']))
-        self.assertEquals(len(x['b'].keys()), 9)
-        self.assertEquals(len(x['b2'].keys()), 8)
-        self.assertEquals(int(self.values['struct_d.b.e']), x['b']['e'])
-        self.assertEquals(int(self.values['struct_d.b2.e']), x['b2']['e'])
+        self.assertEqual(len(x.keys()), 15)  # 14 + padding
+        self.assertEqual(self.values['struct_d.a'], hex(x['a']))
+        self.assertEqual(len(x['b'].keys()), 9)
+        self.assertEqual(len(x['b2'].keys()), 8)
+        self.assertEqual(int(self.values['struct_d.b.e']), x['b']['e'])
+        self.assertEqual(int(self.values['struct_d.b2.e']), x['b2']['e'])
 
         for i in range(9):
-            self.assertEquals(
+            self.assertEqual(
                 int(self.values['struct_d.c[%d].a' % (i)]), x['c'][i]['a'])
-            self.assertEquals(
+            self.assertEqual(
                 int(self.values['struct_d.f[%d]' % (i)]), x['f'][i])
-        self.assertEquals(int(self.values['struct_d.e']), x['e'])
-        self.assertEquals(str(self.values['struct_d.i']), x['i'])
+        self.assertEqual(int(self.values['struct_d.e']), x['e'])
+        self.assertEqual(str(self.values['struct_d.i']), x['i'])
         return
 
 

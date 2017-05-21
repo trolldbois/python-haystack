@@ -19,8 +19,8 @@ class TestBasicFunctions(unittest.TestCase):
 
     def test_closestFloorValue(self):
         lst = numpy.asarray(range(0, 100, 10))
-        self.assertEquals(utils.closestFloorValue(41, lst), (40, 4))
-        self.assertEquals(utils.closestFloorValue(40, lst), (40, 4))
+        self.assertEqual(utils.closestFloorValue(41, lst), (40, 4))
+        self.assertEqual(utils.closestFloorValue(40, lst), (40, 4))
         with self.assertRaises(ValueError):
             utils.closestFloorValue(-1, lst)
 

@@ -45,7 +45,7 @@ class TestReString(unittest.TestCase):
         # self.skipTest('')
 
         size, codec, txt = re_string.startsWithNulTerminatedString(self.test1)
-        self.assertEquals(size, len(self.test1))
+        self.assertEqual(size, len(self.test1))
 
         pass
 
@@ -54,25 +54,25 @@ class TestReString(unittest.TestCase):
         # self.skipTest('')
 
         size, codec, txt = re_string.try_decode_string(self.test1)
-        self.assertEquals(size, len(self.test1))
+        self.assertEqual(size, len(self.test1))
 
         size, codec, txt = re_string.try_decode_string(self.test2)
-        self.assertEquals(size, len(self.test2))
+        self.assertEqual(size, len(self.test2))
 
         size, codec, txt = re_string.try_decode_string(self.test3)
-        self.assertEquals(size, len(self.test3))
+        self.assertEqual(size, len(self.test3))
 
         size, codec, txt = re_string.try_decode_string(self.test4)
-        self.assertEquals(size, len(self.test4) - 4)
+        self.assertEqual(size, len(self.test4) - 4)
 
         size, codec, txt = re_string.try_decode_string(self.test5)
-        self.assertEquals(size, len(self.test5) - 5)
+        self.assertEqual(size, len(self.test5) - 5)
 
         ret = re_string.try_decode_string(self.test7)
         self.assertFalse(ret)
 
         size, codec, txt = re_string.try_decode_string(self.test8)
-        self.assertEquals(size, len(self.test8))
+        self.assertEqual(size, len(self.test8))
 
         pass
 
@@ -81,17 +81,17 @@ class TestReString(unittest.TestCase):
 
         uni = self.test1
         size, encoded = re_string.testEncoding(uni, 'utf-16le')
-        self.assertEquals(size, len(uni))
+        self.assertEqual(size, len(uni))
 
         x3 = self.test2
         size, encoded = re_string.testEncoding(x3, 'utf-16le')
-        self.assertEquals(size, len(x3))
+        self.assertEqual(size, len(x3))
 
         size, encoded = re_string.testEncoding(self.test4, 'utf-16le')
-        self.assertEquals(size, -1)
+        self.assertEqual(size, -1)
 
         size, encoded = re_string.testEncoding(self.test4, 'utf-8')
-        self.assertEquals(size, len(self.test4))
+        self.assertEqual(size, len(self.test4))
 
         pass
 
@@ -102,20 +102,20 @@ class TestReString(unittest.TestCase):
         uni = self.test1
         solutions = re_string.testAllEncodings(uni)
         size, codec, encoded = solutions[0]
-        self.assertEquals(size, len(uni), '%s' % codec)
+        self.assertEqual(size, len(uni), '%s' % codec)
 
         x3 = self.test2
         solutions = re_string.testAllEncodings(x3)
         size, codec, encoded = solutions[0]
-        self.assertEquals(size, len(x3))
+        self.assertEqual(size, len(x3))
 
         solutions = re_string.testAllEncodings(self.test3)
         size, codec, encoded = solutions[0]
-        self.assertEquals(size, len(self.test3))
+        self.assertEqual(size, len(self.test3))
 
         solutions = re_string.testAllEncodings(self.test4)
         size, codec, encoded = solutions[0]
-        self.assertEquals(size, len(self.test4))
+        self.assertEqual(size, len(self.test4))
 
         pass
 
@@ -124,72 +124,72 @@ class TestReString(unittest.TestCase):
         s = '1234567890'
         x = re_string.Nocopy(s, 2, 9)
         x1 = s[2:9]
-        self.assertEquals(len(x), len(x1))
+        self.assertEqual(len(x), len(x1))
         for i in range(len(x)):
-            self.assertEquals(x[i], x1[i])
+            self.assertEqual(x[i], x1[i])
         #
         val = x[2:4]
-        self.assertEquals(val, '56')
-        self.assertEquals(val, x[2:4])
-        self.assertEquals(s[4:-1], x[2:])
-        self.assertEquals(s[2:-1], x[:16])
-        self.assertEquals(s[2:-1], x[:])
-        self.assertEquals(s[2:-1], x[0:])
-        self.assertEquals(s[2:-1], x)
+        self.assertEqual(val, '56')
+        self.assertEqual(val, x[2:4])
+        self.assertEqual(s[4:-1], x[2:])
+        self.assertEqual(s[2:-1], x[:16])
+        self.assertEqual(s[2:-1], x[:])
+        self.assertEqual(s[2:-1], x[0:])
+        self.assertEqual(s[2:-1], x)
 
-        self.assertEquals(re_string.Nocopy(s, 9, 10), s[9:10])
-        self.assertEquals(re_string.Nocopy(s, 9, 10), '0')
-        self.assertEquals(re_string.Nocopy(s, -2, -1), '9')
+        self.assertEqual(re_string.Nocopy(s, 9, 10), s[9:10])
+        self.assertEqual(re_string.Nocopy(s, 9, 10), '0')
+        self.assertEqual(re_string.Nocopy(s, -2, -1), '9')
 
         # self.assertRaises(re_string.Nocopy(s,9,11))
 
     def test_rfind_utf16(self):
         # print len(self.test1)
-        self.assertEquals(0, re_string.rfind_utf16(self.test1, 0, len(self.test1), True, 4))
-        self.assertEquals(0, re_string.rfind_utf16(self.test2, 0, len(self.test2), True, 4))
-        self.assertEquals(0, re_string.rfind_utf16(self.test3, 0, len(self.test3), True, 4))
-        self.assertEquals(-1, re_string.rfind_utf16(self.test4, 0, len(self.test4), True, 4))
-        self.assertEquals(-1, re_string.rfind_utf16(self.test5, 0, len(self.test5), True, 4))
-        self.assertEquals(-1, re_string.rfind_utf16(self.test6, 0, len(self.test6), True, 4))
-        self.assertEquals(-1, re_string.rfind_utf16(self.test7, 0, len(self.test7), True, 4))
+        self.assertEqual(0, re_string.rfind_utf16(self.test1, 0, len(self.test1), True, 4))
+        self.assertEqual(0, re_string.rfind_utf16(self.test2, 0, len(self.test2), True, 4))
+        self.assertEqual(0, re_string.rfind_utf16(self.test3, 0, len(self.test3), True, 4))
+        self.assertEqual(-1, re_string.rfind_utf16(self.test4, 0, len(self.test4), True, 4))
+        self.assertEqual(-1, re_string.rfind_utf16(self.test5, 0, len(self.test5), True, 4))
+        self.assertEqual(-1, re_string.rfind_utf16(self.test6, 0, len(self.test6), True, 4))
+        self.assertEqual(-1, re_string.rfind_utf16(self.test7, 0, len(self.test7), True, 4))
         # truncated last field
         # print repr(self.test8[120:])
-        self.assertEquals(122, re_string.rfind_utf16(self.test8, 0, len(self.test8), False, 4))
+        self.assertEqual(122, re_string.rfind_utf16(self.test8, 0, len(self.test8), False, 4))
         # find start with limited size
-        self.assertEquals(0, re_string.rfind_utf16(self.test8, 0, 64, True, 4))
+        self.assertEqual(0, re_string.rfind_utf16(self.test8, 0, 64, True, 4))
         # middle field ( 12+64 )
-        self.assertEquals(12, re_string.rfind_utf16(self.test8, 64, 58, True, 4))
+        self.assertEqual(12, re_string.rfind_utf16(self.test8, 64, 58, True, 4))
         # non aligned middle field ?
-        # TODO self.assertEquals( 4, re_string.rfind_utf16(self.test9, 0,
+        # TODO self.assertEqual( 4, re_string.rfind_utf16(self.test9, 0,
         # len(self.test9) ))
         ##
         # self.assertEqual(0, re_string.rfind_utf16(self.test11, 0, 48, False, 4))
         print(re_string.rfind_utf16(self.test11, 0, 44, False, 4))
 
     def test_find_ascii(self):
-        self.assertEquals(
+        self.assertEqual(
             (-1, -1), re_string.find_ascii(self.test1, 0, len(self.test1)))
-        self.assertEquals(
+        self.assertEqual(
             (0, 43), re_string.find_ascii(
                 self.test4, 0, len(
                     self.test4)))
-        self.assertEquals(
+        self.assertEqual(
             (0, 4), re_string.find_ascii(
                 self.test5, 0, len(
                     self.test5)))
-        self.assertEquals(
+        self.assertEqual(
             (0, 39), re_string.find_ascii(
                 self.test5, 5, len(
                     self.test5) - 5))
-        self.assertEquals(
+        self.assertEqual(
             (-1, -1), re_string.find_ascii(self.test6, 0, len(self.test6)))
-        self.assertEquals(
+        self.assertEqual(
             (0, 42), re_string.find_ascii(
                 self.test6, 1, len(
                     self.test6) - 1))
-        self.assertEquals(
+        self.assertEqual(
             (-1, -1), re_string.find_ascii(self.test10, 0, len(self.test10)))  # too small
-        self.assertEquals(
+        self.assertEqual(
             (0, 10), re_string.find_ascii(
                 self.test10, 3, len(
                     self.test10) - 3))

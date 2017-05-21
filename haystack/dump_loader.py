@@ -151,6 +151,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             pathname = ' '.join(fields[6:])
             # add to metaline
             self.metalines.append((mmap_fname, start, end, permissions, offset, major_device, minor_device, inode, pathname))
+        mappingsFile.close()
         return
 
     def _load_memory_mappings(self):

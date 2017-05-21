@@ -7,7 +7,7 @@
 
 # haystack-comment: used in structure.py:CacheWrapper
 
-from __future__ import print_function
+from __future__ import print_function, generators
 
 """a simple LRU (Least-Recently-Used) cache module
 
@@ -35,7 +35,6 @@ discarded. [1]_
 
 """
 
-from __future__ import generators
 import time
 from heapq import heappush, heappop, heapify
 
