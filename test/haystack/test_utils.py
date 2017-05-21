@@ -286,7 +286,7 @@ class TestHelpers(unittest.TestCase):
                           b'\x02' + 7 * b'\x00' +
                           7 * 8 * b'\x00', x)
 
-        a = (my_ctypes.c_char * 12).from_buffer_copy('1234567890AB')
+        a = (my_ctypes.c_char * 12).from_buffer_copy(b'1234567890AB')
         x = my_utils.array2bytes(a)
         self.assertEqual(b'1234567890AB', x)
 

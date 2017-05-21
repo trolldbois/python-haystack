@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 import struct
 import sys
 import time
 
-import os
-
 from haystack.reverse import config
 from haystack.reverse import context
-from haystack.reverse import structure
 from haystack.reverse import fieldtypes
-from haystack.reverse import utils
 from haystack.reverse import pattern
+from haystack.reverse import structure
+from haystack.reverse import utils
 from haystack.reverse.heuristics import model
 from haystack.reverse.heuristics import signature
+from past.builtins import long
 
 """
 BasicCachingReverser:

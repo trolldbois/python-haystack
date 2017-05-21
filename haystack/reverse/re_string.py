@@ -339,7 +339,7 @@ def testEncoding(bytesarray, encoding):
     ''' test for null bytes on even bytes
     this works only for western txt in utf-16
     '''
-    sizemultiplier = len(b'\x20'.encode(encoding))
+    sizemultiplier = len('\x20'.encode(encoding))
     #log.debug('size: %d encoding: %s'%(sizemultiplier, encoding))
     try:
         ustr = bytesarray.decode(encoding)

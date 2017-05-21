@@ -117,7 +117,7 @@ class TestProcessContext(unittest.TestCase):
 
         process_context.add_reversed_type(_record_type, [1,2,3])
 
-        r_types = process_context.list_reversed_types()
+        r_types = list(process_context.list_reversed_types())
         self.assertEqual(r_types[0].name, 'struct_test')
 
 

@@ -171,8 +171,8 @@ class Test6_x32(_ApiTest):
         #                                self.address1, rtype='string')
         self.assertIn(str(0x0aaaaaaa), retstr)  # 0xaaaaaaa/178956970L
         self.assertIn(str(0x0ffffff0), retstr)
-        self.assertIn('"val2b": 0L,', retstr)
-        self.assertIn('"val1b": 0L,', retstr)
+        self.assertIn('"val2b": 0', retstr)
+        self.assertIn('"val1b": 0', retstr)
 
         # usual->root.{f,b}link = &node1->list; # offset list is (wordsize) bytes
         ## TU results based on __book
