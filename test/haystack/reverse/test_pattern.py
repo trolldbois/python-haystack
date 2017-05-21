@@ -97,9 +97,9 @@ class SignatureTests(unittest.TestCase):
             else:
                 dump.append(struct.pack(fmt, 0x2e2e2e2e2e2e2e2e))
 
-        if len(dump) != mlength / word_size:
+        if len(dump) != mlength // word_size:
             raise ValueError('error 1 on length dump %d ' % (len(dump)))
-        dump2 = ''.join(dump)
+        dump2 = b''.join(dump)
         if len(dump) * word_size != len(dump2):
             print(dump)
             raise ValueError(

@@ -16,7 +16,7 @@ from haystack.mappings.file import LocalMemoryMapping
 from haystack import dump_loader
 from haystack.reverse import searchers
 
-import test_pattern
+from . import test_pattern
 
 from test.testfiles import zeus_856_svchost_exe
 

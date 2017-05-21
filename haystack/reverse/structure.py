@@ -14,7 +14,7 @@ import sys
 
 import os
 
-import lrucache
+from haystack.reverse import lrucache
 
 
 #

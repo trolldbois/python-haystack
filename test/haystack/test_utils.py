@@ -3,13 +3,6 @@
 """Tests haystack.utils ."""
 import haystack.model
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2013 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
 # init ctypes with a controlled type size
 import ctypes
 import logging
@@ -134,7 +127,7 @@ class TestHelpers(unittest.TestCase):
         self.assertEquals(x, 1)
         pass
         # endianness
-        two32 = 3 * b'\x00' + '\x02'
+        two32 = 3 * b'\x00' + b'\x02'
         x = my_utils.unpackWord(two32, '>')
         self.assertEquals(x, 2)
         pass
@@ -153,10 +146,10 @@ class TestHelpers(unittest.TestCase):
         i = X.from_buffer_copy(
             b'\xAA\xAA\xBB\xBB' +
             4 *
-            '\xBB' +
+            b'\xBB' +
             8 *
-            '\x11' +
-            '\xCC')
+            b'\x11' +
+            b'\xCC')
         a = my_utils.get_pointee_address(i.p)
         self.assertEquals(my_ctypes.sizeof(i.p), 8)
         self.assertNotEquals(a, 0)
@@ -165,10 +158,10 @@ class TestHelpers(unittest.TestCase):
         i = X.from_buffer_copy(
             b'\xAA\xAA\xBB\xBB' +
             4 *
-            '\xBB' +
+            b'\xBB' +
             8 *
-            '\x00' +
-            '\xCC')
+            b'\x00' +
+            b'\xCC')
         pnull = my_utils.get_pointee_address(i.p)
         self.assertEquals (my_utils.get_pointee_address(pnull), 0)
 
@@ -181,13 +174,13 @@ class TestHelpers(unittest.TestCase):
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
         self.assertEquals(my_ctypes.sizeof(Y), 9)
-        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x11' + '\xCC')
+        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * b'\x11' + b'\xCC')
         a = my_utils.get_pointee_address(i.p)
         self.assertEquals(my_ctypes.sizeof(i.p), 4)
         self.assertNotEquals(a, 0)
         self.assertEquals(a, 0x11111111)  # 4*'\x11'
         # null pointer
-        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x00' + '\xCC')
+        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * b'\x00' + b'\xCC')
         pnull = my_utils.get_pointee_address(i.p)
         self.assertEquals (my_utils.get_pointee_address(pnull), 0)
 
@@ -279,7 +272,7 @@ class TestHelpers(unittest.TestCase):
                           b'\x01' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
                           b'\x02' + 3 * b'\x00' +
-                          7 * 4 * '\x00', x)
+                          7 * 4 * b'\x00', x)
 
         my_ctypes = types.build_ctypes_proxy(8, 8, 16)
         my_utils = utils.Utils(my_ctypes)
@@ -291,7 +284,7 @@ class TestHelpers(unittest.TestCase):
                           b'\x01' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
                           b'\x02' + 7 * b'\x00' +
-                          7 * 8 * '\x00', x)
+                          7 * 8 * b'\x00', x)
 
         a = (my_ctypes.c_char * 12).from_buffer_copy('1234567890AB')
         x = my_utils.array2bytes(a)

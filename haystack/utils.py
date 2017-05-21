@@ -172,7 +172,7 @@ class Utils(interfaces.ICTypesUtils):
         typLen = self._ctypes.sizeof(typ)
         if len(bytes) % typLen != 0:
             raise ValueError('thoses bytes are not an array of %s' % (typ))
-        arrayLen = len(bytes) / typLen
+        arrayLen = len(bytes) // typLen
         array = (typ * arrayLen)()
         if arrayLen == 0:
             return array
@@ -238,7 +238,7 @@ def bytes2array(bytes, typ):
     typLen = ctypes.sizeof(typ)
     if len(bytes) % typLen != 0:
         raise ValueError('thoses bytes are not an array of %s' % (typ))
-    arrayLen = len(bytes) / typLen
+    arrayLen = len(bytes) // typLen
     array = (typ * arrayLen)()
     if arrayLen == 0:
         return array

@@ -94,7 +94,7 @@ def findPattern(sequence, elSize=1, minNbGroup=2):
         return []
 
     patterns = []
-    for seqlen in range(elSize, 1 + (len(sequence) / 2)):
+    for seqlen in range(elSize, 1 + (len(sequence) // 2)):
         seqs = [
             sequence[
                 i:i +
@@ -177,7 +177,7 @@ class PatternEncoder:
             self.dict_reverse[cod] = el
         # dict done
         self.sequence_norm = [self.dict[el] for el in self.sequence]
-        self.sequence_text = ''.join(self.sequence_norm)
+        self.sequence_text = b''.join(self.sequence_norm)
         log.debug('done making pattern dictionnary %d' % self.elSize)
         return
 
@@ -305,7 +305,7 @@ class PointerIntervalSignature:
                 (len(addressCache)))
             self.addressCache.update(addressCache)
         else:  # get at least 10 values
-            for i in range(0, len(self), len(self) / 10):
+            for i in range(0, len(self), len(self) // 10):
                 self.getAddressForPreviousPointer(i)
             self._saveAddressCache()
         return

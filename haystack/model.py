@@ -63,7 +63,7 @@ class Model(object):
         log.info('RESET MODEL')
         self.__book = dict()
         # FIXME: that is probably useless now.
-        for mod in sys.modules.keys():
+        for mod in list(sys.modules.keys()):
             if 'haystack.reverse' in mod:
                 del sys.modules[mod]
                 log.debug('de-imported %s',mod)
