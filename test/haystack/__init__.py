@@ -27,32 +27,32 @@ class SrcTests(unittest.TestCase):
         values = dict()
         sizes = dict()
         for line in open('%s.stdout' %
-                         (dumpname[:-len('.dump')]), 'rb').readlines():
-            if line.startswith(b's: '):
+                         (dumpname[:-len('.dump')]), 'r').readlines():
+            if line.startswith('s: '):
                 # start
-                fields = line[3:].split(b' ')
+                fields = line[3:].split(' ')
                 name = fields[0].strip()
-            elif line.startswith(b'o: '):
+            elif line.startswith('o: '):
                 # offset
-                fields = line[3:].split(b' ')
+                fields = line[3:].split(' ')
                 k, v = fields[0], int(fields[1].strip(), 16)
                 if k not in offsets:
                     offsets[k] = []
                 offsets[k].append(v)
-            elif line.startswith(b'v: '):
+            elif line.startswith('v: '):
                 # value of members
-                fields = line[3:].split(b' ')
-                k, v = fields[0], b' '.join(fields[1:]).strip()
-                n = b'%s.%s' % (name, k)
+                fields = line[3:].split(' ')
+                k, v = fields[0], ' '.join(fields[1:]).strip()
+                n = '%s.%s' % (name, k)
                 values[n] = v
-            elif line.startswith(b't: '):
+            elif line.startswith('t: '):
                 # sizeof
-                fields = line[3:].split(b' ')
+                fields = line[3:].split(' ')
                 k, v = fields[0], fields[1].strip()
                 sizes[name] = v
-            elif line.startswith(b'rs: '):
+            elif line.startswith('rs: '):
                 # sizeof record
-                fields = line[4:].split(b' ')
+                fields = line[4:].split(' ')
                 name, v = fields[0], int(fields[1].strip())
                 sizes[name] = v
         cls.values = values
