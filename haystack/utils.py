@@ -130,7 +130,7 @@ class Utils(interfaces.ICTypesUtils):
 
         This is a bad example of introspection.
         """
-        if isinstance(array, str):
+        if isinstance(array, str) or isinstance(array, bytes):
             # special case for c_char[]
             return array
         if not self._ctypes.is_array_of_basic_instance(array):
@@ -149,7 +149,7 @@ class Utils(interfaces.ICTypesUtils):
 
         This is a bad example of introspection.
         """
-        if isinstance(array, str):
+        if isinstance(array, str) or isinstance(array, bytes):
             # special case for c_char[]
             return array
         if self._ctypes.is_array_of_basic_instance(array):

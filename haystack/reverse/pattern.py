@@ -299,7 +299,7 @@ class PointerIntervalSignature:
         # DO NOT SORT LIST. c'est des sequences. pas des sets.
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
         if os.access(myname, os.F_OK):
-            addressCache = pickle.load(open(myname, 'r'))
+            addressCache = pickle.load(open(myname, 'rb'))
             log.debug(
                 "%d Signature addresses loaded from cache." %
                 (len(addressCache)))
@@ -312,7 +312,7 @@ class PointerIntervalSignature:
 
     def _saveAddressCache(self):
         myname = self.cacheFilenamePrefix + '.pinned.vaddr'
-        pickle.dump(self.addressCache, open(myname, 'w'))
+        pickle.dump(self.addressCache, open(myname, 'wb'))
 
     def getAddressForPreviousPointer(self, offset):
         '''
@@ -807,7 +807,7 @@ class PinnedPointersMapper:
             caches,
             open(
                 '/home/jal/Compil/python-haystack/outputs/caches',
-                'w'))
+                'wb'))
         self._pinResolved(caches)
         return
 

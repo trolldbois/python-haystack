@@ -62,7 +62,7 @@ class TestToPyObject(SrcTests):
             self.assertEqual(
                 int(self.values['struct_d.f[%d]' % i]), obj.f[i])
         self.assertEqual(int(self.values['struct_d.e']), obj.e)
-        self.assertEqual(str(self.values['struct_d.i']), obj.i)
+        self.assertEqual(self.values['struct_d.i'], obj.i)
 
         return
 

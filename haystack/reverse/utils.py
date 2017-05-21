@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from past.builtins import long
 
 """
 This module holds some basic utils function.

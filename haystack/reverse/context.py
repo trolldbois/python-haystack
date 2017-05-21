@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from past.builtins import long
+from builtins import map
 
 import logging
 import pickle
@@ -358,7 +359,7 @@ class HeapContext(object):
 
     def listPointerValueInHeap(self):
         '''Returns the list of pointers found in the heap'''
-        return map(long, self._pointers_values)
+        return list(map(long, self._pointers_values))
 
     def listStructuresAddrForPointerValue(self, ptr_value):
         '''Returns the list of allocators addresses with a member with this pointer value '''
@@ -371,13 +372,13 @@ class HeapContext(object):
                 for addr in self.listStructuresAddrForPointerValue(ptr_value)]
 
     def list_allocations_addresses(self):
-        return map(long, self._structures_addresses)
+        return list(map(long, self._structures_addresses))
 
     def list_allocations_sizes(self):
-        return map(long, self._structures_sizes)
+        return list(map(long, self._structures_sizes))
 
     def listStructuresAddresses(self):
-        return map(long, self._list_records().keys())
+        return list(map(long, self._list_records().keys()))
 
     def listStructures(self):
         return self._list_records().values()
