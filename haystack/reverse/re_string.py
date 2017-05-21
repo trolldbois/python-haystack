@@ -4,16 +4,14 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import encodings
+import logging
+import numbers
+import string
+
 """
 This module holds some basic utils function.
 """
-
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
-import logging
-import string
-
-import encodings
 
 log = logging.getLogger('re_string')
 
@@ -29,20 +27,28 @@ log = logging.getLogger('re_string')
 # control_chars = ''.join(map(unichr, range(0,32) + range(127,160)))
 
 def is_printable(c):
-    x = ord(c)
-    if 126 < x:
-        # if 159 < x: # ascii 8 bits... lets put it aside...
-        #  return True
-        return False
-    # else
-    if 31 < x:
+    if isinstance(c, numbers.Number):
+        c = chr(c)
+    if c in string.printable and c not in ['\x0b', '\x0c']:
         return True
-    if x == 9 or x == 10 or x == 13:
-        return True
-    # if x < 32:
     return False
 
-utf_valid_cc = ['\x00']
+# Replace with string.printable
+#def is_printable(c):
+#    x = ord(c)
+#    if 126 < x:
+#        # if 159 < x: # ascii 8 bits... lets put it aside...
+#        #  return True
+#        return False
+#    # else
+#    if 31 < x:
+#        return True
+#    if x == 9 or x == 10 or x == 13:
+#        return True
+#    # if x < 32:
+#    return False
+
+utf_valid_cc = [b'\x00']
 
 _py_encodings = set(encodings.aliases.aliases.values())
 #  except IOError: # TODO delete bz2 and gzip
@@ -73,6 +79,15 @@ _py_encodings = set(['ascii',
                      ])
 
 
+def _py3_byte_compat(c):
+    if isinstance(c, numbers.Number):
+        assert(0 <= c < 256)
+        c = chr(c).encode()
+    return c
+
+_w = _py3_byte_compat
+
+# FIXME, is that memoryview in Python3,2.7 ?
 class Nocopy:
 
     def __init__(self, bytes, start, end):
@@ -122,25 +137,20 @@ class Nocopy:
 
 
 def _rfind_utf16(bytesarray, longerThan=7):
-    '''@returns index of start string'''
+    """@returns index of start string"""
     if len(bytesarray) < 4:
         return -1
     i = len(bytesarray) - 2
     # give one shot 'x000'
-    if bytesarray[i + 1] == '\x00' and bytesarray[i] == '\x00':
-        # print 'first', bytesarray[i]
+    if _w(bytesarray[i + 1]) == b'\x00' and _w(bytesarray[i]) == b'\x00':
         i -= 2
-    while i >= 0 and (bytesarray[i + 1] == '\x00' and bytesarray[i] != '\x00'):
-        # print 'then %s and \\x00 '%bytesarray[i]
+    while i >= 0 and (_w(bytesarray[i + 1]) == b'\x00' and _w(bytesarray[i]) != b'\x00'):
         i -= 2
     # fix last row
     i += 2
     if i == len(bytesarray):
         return -1
-    # print 'bytearray i ',i, len(bytesarray)
     size = len(bytesarray) - i
-    #uni = bytesarray[i:]
-    #size = len(uni)
     if size > longerThan:
         return i
     return -1
@@ -191,7 +201,7 @@ def try_decode_string(bytesarray, longerThan=3):
     '''
     if len(bytesarray) <= longerThan:
         return False
-    i = bytesarray.find('\x00')
+    i = bytesarray.find(b'\x00')
     if i == -1:
         # find longuest readable
         for i, c in enumerate(bytesarray):
@@ -218,7 +228,7 @@ def try_decode_string(bytesarray, longerThan=3):
             for i, c in enumerate(chars):
                 # last , NULL terminated. Last because testEncodings should cut
                 # at '\x00'
-                if c == '\x00':
+                if c == b'\x00':
                     break
                 if not is_printable(c):
                     skip = True
@@ -233,7 +243,7 @@ def try_decode_string(bytesarray, longerThan=3):
                     # else: valid string, but shorter, non null terminated
                     # FIXME this is BUGGY, utf-16 can also considers single
                     # bytes.
-                    sizemultiplier = len('\x20'.encode(codec))
+                    sizemultiplier = len(b'\x20'.encode(codec))
                     slen = sizemultiplier * i
                     log.debug('shorten at %d - %s' % (slen, chars[:i]))
                     valid_strings.append((slen, codec, chars[:i]))
@@ -260,7 +270,7 @@ def startsWithNulTerminatedString(bytesarray, longerThan=3):
     ''' if there is no \x00 termination, its not a string
     that means that if we have a bad pointer in the middle of a string,
     the first part will not be understood as a string'''
-    i = bytesarray.find('\x00')
+    i = bytesarray.find(b'\x00')
     if i == -1:
         return False
     else:
@@ -329,7 +339,7 @@ def testEncoding(bytesarray, encoding):
     ''' test for null bytes on even bytes
     this works only for western txt in utf-16
     '''
-    sizemultiplier = len('\x20'.encode(encoding))
+    sizemultiplier = len(b'\x20'.encode(encoding))
     #log.debug('size: %d encoding: %s'%(sizemultiplier, encoding))
     try:
         ustr = bytesarray.decode(encoding)
@@ -342,7 +352,7 @@ def testEncoding(bytesarray, encoding):
     except Exception as e:
         log.error('Error using encoding %s' % encoding)
         raise e
-    i = ustr.find('\x00')
+    i = ustr.find(b'\x00')
     if i == -1:
         log.debug('%s was ok - but no NULL' % encoding)
         end = len(ustr)

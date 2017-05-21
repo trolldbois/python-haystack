@@ -213,11 +213,11 @@ class TargetPlatform(interfaces.ITargetPlatform):
 
     def _detect_ptr_size(self):
         # by default, we only handle this
-        return self.__cpu_bits/8
+        return self.__cpu_bits//8
 
     def _detect_word_size(self):
         # by default, we only handle this
-        return self.__cpu_bits/8
+        return self.__cpu_bits//8
 
     def _detect_ld_size(self):
         # win  32 bits, 4,4,8

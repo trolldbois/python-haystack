@@ -45,7 +45,7 @@ def cache_load(_context, address):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = make_filename_from_addr(_context, address)
-    p = pickle.load(open(fname, 'r'))
+    p = pickle.load(open(fname, 'rb'))
     if p is None:
         return None
     p.set_memory_handler(_context.memory_handler)
@@ -58,7 +58,7 @@ def remap_load(_context, address, newmappings):
     if not os.access(dumpname, os.F_OK):
         return None
     fname = make_filename_from_addr(_context, address)
-    p = pickle.load(open(fname, 'r'))
+    p = pickle.load(open(fname, 'rb'))
     if p is None:
         return None
     # YES we do want to over-write _memory_handler and bytes
@@ -118,7 +118,7 @@ class CacheWrapper:
             if self.obj() is not None:  #
                 return self.obj()
         try:
-            p = pickle.load(open(self._fname, 'r'))
+            p = pickle.load(open(self._fname, 'rb'))
         except EOFError as e:
             log.error('Could not load %s - removing it %s', self._fname, e)
             os.remove(self._fname)
@@ -149,8 +149,16 @@ class CacheWrapper:
     def __hash__(self):
         return hash(self.address)
 
-    def __cmp__(self, other):
-        return cmp(self.address, other.address)
+    def __lt__(self, other):
+        return self.address < other.address
+
+    def __len__(self):
+        if self.obj is None or self.obj() is None:  #
+            self._load()
+        return len(self.obj())
+
+    #def __cmp__(self, other):
+    #    return cmp(self.address, other.address)
 
     def __str__(self):
         return 'struct_%x' % self.address
@@ -296,7 +304,7 @@ class AnonymousRecord(object):
             # FIXME : loops create pickle loops
             # print self.__dict__.keys()
             log.debug('saving to %s', fname)
-            pickle.dump(self, open(fname, 'w'))
+            pickle.dump(self, open(fname, 'wb'))
         except pickle.PickleError as e:
             # self.struct must be cleaned.
             log.error("Pickling error, file %s removed", fname)
@@ -472,8 +480,8 @@ class %s(%s):  # %s
         if isinstance(my_bytes, str):
             bl = len(str(my_bytes))
             if bl >= max_len:
-                my_bytes = my_bytes[:max_len / 2] + '...' + \
-                    my_bytes[-(max_len / 2):]  # idlike to see the end
+                my_bytes = my_bytes[:max_len // 2] + '...' + \
+                    my_bytes[-(max_len // 2):]  # idlike to see the end
         return my_bytes
 
     def _get_value_for_field(self, _field, max_len=120):

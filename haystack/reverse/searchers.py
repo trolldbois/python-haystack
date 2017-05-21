@@ -79,7 +79,7 @@ class AbstractSearcher(object):
             i for i,o in enumerate(range(
                 start,
                 end,
-                (end - start) / steps))]  # py 3 compatible
+                (end - start) // steps))]  # py 3 compatible
         return
 
     def _check_steps(self, step):

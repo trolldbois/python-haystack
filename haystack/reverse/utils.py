@@ -23,15 +23,16 @@ log = logging.getLogger('utils')
 
 def int_array_cache(filename):
     if os.access(filename, os.F_OK):
-        f = open(filename, 'r')
-        return numpy.load(f)
-    #print 'int_array_cache'
+        # f = open(filename, 'r')
+        return numpy.load(filename)
+    # print 'int_array_cache'
     return None
 
 
 def int_array_save(filename, lst):
     my_array = numpy.asarray(lst)
-    numpy.save(open(filename, 'w'), my_array)
+    # numpy.save(open(filename, 'w'), my_array)
+    numpy.save(filename, my_array)
     return my_array
 
 

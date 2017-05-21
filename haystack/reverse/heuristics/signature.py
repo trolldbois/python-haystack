@@ -636,7 +636,7 @@ except ImportError:
         config.WORDS_FOR_REVERSE_TYPES_FILE)
 
 # global
-_NAMES = [s.strip() for s in _words.split('\n')[:-1]]
+_NAMES = [s.strip() for s in _words.split(b'\n')[:-1]]
 _NAMES_plen = 1
 
 

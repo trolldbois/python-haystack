@@ -1018,6 +1018,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
     def _init_mappings(self, construct_data):
         content_file = open(self.filename, 'rb')
         fsize = os.path.getsize(self.filename)
+        # FIXME, can't close it because we need fileno ? mmap usage
         mmap_content = mmap.mmap(
                     content_file.fileno(),
                     fsize,

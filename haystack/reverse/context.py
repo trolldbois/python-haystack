@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from past.builtins import long
+
 import logging
 import pickle
 # import dill as pickle
@@ -454,7 +456,7 @@ class HeapContext(object):
         config.create_cache_folder(dumpname)
         context_cache = config.get_cache_filename(config.CACHE_CONTEXT, dumpname, heap_addr)
         try:
-            with open(context_cache, 'r') as fin:
+            with open(context_cache, 'rb') as fin:
                 ctx = pickle.load(fin)
         except EOFError as e:
             os.remove(context_cache)
@@ -473,7 +475,7 @@ class HeapContext(object):
         # cached records
         cache_context_filename = self.get_filename_cache_context()
         try:
-            with open(cache_context_filename, 'w') as fout:
+            with open(cache_context_filename, 'wb') as fout:
                 pickle.dump(self, fout)
         except pickle.PicklingError as e:
             log.error("Pickling error on %s, file removed", cache_context_filename)

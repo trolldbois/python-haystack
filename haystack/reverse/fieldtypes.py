@@ -45,11 +45,8 @@ class FieldType(object):
     def signature(self):
         return self.__sig
 
-    def __cmp__(self, other):
-        try:
-            return cmp(self.id, other.id)
-        except AttributeError as e:
-            return -1
+    def __lt__(self, other):
+        return self.id < other.id
 
     def __hash__(self):
         return hash(self.id)
@@ -195,6 +192,11 @@ class Field(object):
     def __hash__(self):
         return hash((self.offset, self.size, self.field_type))
 
+    # FIXME python 3
+    def __lt__(self, other):
+        return self.offset < other.offset
+
+    # FIXME obselete
     def __cmp__(self, other):
         # XXX : Perf... cmp sux
         try:

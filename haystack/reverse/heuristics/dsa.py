@@ -4,12 +4,13 @@
 # Copyright (C) 2012 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-import logging
 import array
 import collections
+import logging
+import numbers
 
-from haystack.reverse import re_string
 from haystack.reverse import fieldtypes
+from haystack.reverse import re_string
 from haystack.reverse import structure
 from haystack.reverse.heuristics import model
 
@@ -17,6 +18,13 @@ log = logging.getLogger('dsa')
 
 # fieldtypes.Field analysis related functions and classes
 
+def _py3_byte_compat(c):
+    if isinstance(c, numbers.Number):
+        assert(0 <= c < 256)
+        c = chr(c).encode()
+    return c
+
+_w = _py3_byte_compat
 
 class ZeroFields(model.FieldAnalyser):
     """ checks for possible fields, aligned, with WORDSIZE zeros."""
@@ -24,7 +32,7 @@ class ZeroFields(model.FieldAnalyser):
         assert(offset % self._word_size == 0)  # vaddr and offset should be aligned
         # log.debug('checking Zeroes')
         self._typename = fieldtypes.ZEROES
-        self._zeroes = '\x00' * self._word_size
+        self._zeroes = b'\x00' * self._word_size
 
         ret = self._find_zeroes(_record, offset, size)
 
@@ -47,7 +55,7 @@ class ZeroFields(model.FieldAnalyser):
         for i in range(start, start + size, self._word_size):
             # PERF TODO: bytes or struct test ?
             # print repr(bytes[start+i:start+i+self._target_platform.get_word_size()])
-            if _bytes[start + i:start + i + self._word_size] == self._zeroes:
+            if _w(_bytes[start + i:start + i + self._word_size]) == self._zeroes:
                 matches.append(start + i)
                 # print matches
         # collate
@@ -105,7 +113,7 @@ class UTF16Fields(model.FieldAnalyser):
                 fields.append(f)
                 size = index  # reduce unknown field in prefix
             else:
-                size -= self._word_size  # reduce unkown field
+                size -= self._word_size  # reduce unknown field
         # look in head
         return fields
 
@@ -125,7 +133,8 @@ class PrintableAsciiFields(model.FieldAnalyser):
             index, ssize = re_string.find_ascii(_bytes, offset, size)
             if index == 0:
                 _offset = offset + index
-                if (ssize < size) and _bytes[offset + index + ssize] == '\x00':  # space for a \x00
+                # PY3 wrapper _w
+                if (ssize < size) and _w(_bytes[offset + index + ssize]) == b'\x00':  # space for a \x00
                     ssize += 1
                     f = fieldtypes.Field('strnull_%d' % _offset, _offset, fieldtypes.STRINGNULL, ssize, False)
                 else:

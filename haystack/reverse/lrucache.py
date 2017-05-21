@@ -108,8 +108,8 @@ class LRUCache(object):
             self.atime = timestamp
             self.mtime = self.atime
 
-        def __cmp__(self, other):
-            return cmp(self.atime, other.atime)
+        def __lt__(self, other):
+            return self.atime < other.atime
 
         def __repr__(self):
             return "<%s %s => %s (%s)>" % \
