@@ -13,7 +13,7 @@ import sys
 
 import os
 
-from file import MMapProcessMapping
+from haystack.mappings.file import MMapProcessMapping
 from haystack import target
 from haystack.abc import interfaces
 from haystack.mappings import base

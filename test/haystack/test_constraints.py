@@ -83,7 +83,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIn(1, field6)
         self.assertIn(constraints.RangeValue(2, 3), field6)
         self.assertIn(constraints.RangeValue(4, 5), field6)
-        self.assertIn(constraints.PerfectMatch('plop'), field6)
+        self.assertIn(constraints.PerfectMatch(b'plop'), field6)
 
         field7 = s2c['field7']
         self.assertTrue(isinstance(field7, list))

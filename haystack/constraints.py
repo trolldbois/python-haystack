@@ -4,26 +4,28 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+try:
+    import ConfigParser as configparser
+except ImportError as e:
+    import configparser
+import logging
+import numbers
+import os
+import re
+import sys
+
+from haystack.abc import interfaces
+
+
 """
 This module holds some basic constraint class for the Haystack model.
 """
 
 __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
-try:
-    import ConfigParser as configparser
-except ImportError as e:
-    import configparser
-import logging
-import sys
-
-import os
-import re
-
 log = logging.getLogger('constraints')
 
 
-from haystack.abc import interfaces
 
 
 class ConstraintsConfigHandler(interfaces.IConstraintsConfigHandler):
@@ -276,7 +278,10 @@ class RangeValue(interfaces.IConstraint):
     def __eq__(self, obj):
         if isinstance(obj, RangeValue):
             return self.low == obj.low and self.high == obj.high
-        return self.low <= obj <= self.high
+        elif isinstance(obj, numbers.Number):
+            return self.low <= obj <= self.high
+        else:
+            return False
 
 
 class NotValue(interfaces.IConstraint):

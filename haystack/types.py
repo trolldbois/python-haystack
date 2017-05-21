@@ -3,6 +3,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from past.builtins import long
 import ctypes
 import logging
 import sys

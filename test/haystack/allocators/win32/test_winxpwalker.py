@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from builtins import map
 import logging
 import unittest
 import sys
@@ -72,7 +73,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         # calcul cumulates
         for heap, children in child_heaps.items():
             # for each heap, look at all children
-            freeblocks = map(lambda x: x[0], heap_sums[heap])
+            freeblocks = list(map(lambda x: x[0], heap_sums[heap]))
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
             finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
             heap_walker = finder.get_heap_walker(heap)
@@ -80,7 +81,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
             log.debug('-- heap 0x%0.8x free:%0.5x expected: %0.5x', heap_addr, free_size, cheap.TotalFreeSize)
             total = free_size
             for child in children:
-                freeblocks = map(lambda x: x[0], heap_sums[child])
+                freeblocks = list(map(lambda x: x[0], heap_sums[child]))
                 self.assertEquals(len(freeblocks), len(set(freeblocks)))
                 # print heap_sums[child]
                 free_size = sum(map(lambda x: x[1], heap_sums[child]))
@@ -385,7 +386,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         #print ''
         #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
         #print [hex(x) for x in found]
-        self.assertEquals(map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps), found)
+        self.assertEquals(list(map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps)), found)
 
         return
 

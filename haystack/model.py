@@ -3,6 +3,12 @@
 # Copyright (C) 2011,2012,2013 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+import ctypes
+import inspect
+import sys
+import logging
+import importlib
+
 """
 Defines
         CTypesRecordConstraintValidator
@@ -24,11 +30,7 @@ __license__ = "GPL"
 __maintainer__ = "Loic Jaquemet"
 __status__ = "Production"
 
-import ctypes
-import inspect
-import sys
-import logging
-import importlib
+
 
 
 log = logging.getLogger('model')

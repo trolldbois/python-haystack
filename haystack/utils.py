@@ -4,10 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-"""This module holds several useful function helpers"""
-
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
+from past.builtins import long
 import ctypes
 import logging
 import struct
@@ -17,6 +14,10 @@ import os
 
 from haystack.abc import interfaces
 from haystack import types
+
+"""This module holds several useful function helpers"""
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 # never use ctypes import
 

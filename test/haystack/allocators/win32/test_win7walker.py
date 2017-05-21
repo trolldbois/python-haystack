@@ -348,7 +348,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                         e)
 
         found.sort()
-        self.assertEquals(map(lambda x: x[0], putty_1_win7.known_heaps), found)
+        self.assertEquals(list(map(lambda x: x[0], putty_1_win7.known_heaps)), found)
 
         return
 

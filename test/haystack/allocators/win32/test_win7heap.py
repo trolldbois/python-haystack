@@ -64,7 +64,7 @@ class TestWin7Heap(unittest.TestCase):
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
         h = self.memory_handler.get_mapping_for_address(0x005c0000)
         self.assertEquals(h.get_byte_buffer()[0:10],
-                          '\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
+                          b'\xc7\xf52\xbc\xc9\xaa\x00\x01\xee\xff')
         addr = h.start
         self.assertEquals(addr, 6029312)
         heap = walker.get_heap()

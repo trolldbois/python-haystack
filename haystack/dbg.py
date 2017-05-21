@@ -100,7 +100,7 @@ class MyPTraceProcess(IProcess):
         self.ptrace_process.cont()
 
     def get_mappings_line(self):
-        return linux_proc.openProc("%s/maps" % self.get_pid())
+        return linux_proc.openProc("%s/maps" % self.get_pid()).readlines()
 
     def read_word(self, address):
         return self.ptrace_process.readWord(address)

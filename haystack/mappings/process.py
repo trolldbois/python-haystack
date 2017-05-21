@@ -150,25 +150,21 @@ def make_process_memory_handler(process):
     mapsfile = process.get_mappings_line()
 
     mappings = []
-    try:
-        is_64 = False
-        # read the mappings
-        for line in mapsfile:
-            line = line.rstrip()
-            match = PROC_MAP_REGEX.match(line)
-            if not match:
-                raise IOError(process, "Unable to parse memory mapping: %r" % line)
-            if not is_64 and len(match.group(1)) > 8:
-                is_64 = True
-            #
-            log.debug('readProcessMappings %s' % (str(match.groups())))
-            _map = ProcessMemoryMapping(process, int(match.group(1), 16), int(match.group(2), 16),
-                                        match.group(3), int(match.group(4), 16), int(match.group(5), 16),
-                                        int(match.group(6), 16), int(match.group(7)), match.group(8))
-            mappings.append(_map)
-    finally:
-        if isinstance(mapsfile, file):
-            mapsfile.close()
+    is_64 = False
+    # read the mappings
+    for line in mapsfile:
+        line = line.rstrip()
+        match = PROC_MAP_REGEX.match(line)
+        if not match:
+            raise IOError(process, "Unable to parse memory mapping: %r" % line)
+        if not is_64 and len(match.group(1)) > 8:
+            is_64 = True
+        #
+        log.debug('readProcessMappings %s' % (str(match.groups())))
+        _map = ProcessMemoryMapping(process, int(match.group(1), 16), int(match.group(2), 16),
+                                    match.group(3), int(match.group(4), 16), int(match.group(5), 16),
+                                    int(match.group(6), 16), int(match.group(7)), match.group(8))
+        mappings.append(_map)
     # create the memory_handler for self
     import sys
     if 'linux' in sys.platform:

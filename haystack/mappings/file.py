@@ -29,6 +29,7 @@ This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor 
 Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
+from past.builtins import long
 import logging
 import struct
 import mmap
@@ -37,9 +38,9 @@ import os
 import ctypes
 
 # haystack
-import base
-from haystack import utils
 import haystack
+from haystack import utils
+from haystack.mappings import base
 from haystack.mappings.base import AMemoryMapping
 
 __author__ = "Loic Jaquemet"

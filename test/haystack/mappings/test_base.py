@@ -36,7 +36,7 @@ class TestMmapHack(unittest.TestCase):
 
         real_ctypes_long = my_ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
-        fin = file(fname)
+        fin = open(fname, 'rb')
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
@@ -63,7 +63,7 @@ class TestMmapHack(unittest.TestCase):
 
         real_ctypes_long = my_ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
-        fin = file(fname)
+        fin = open(fname, 'rb')
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
@@ -292,6 +292,7 @@ class TestReferenceBook(unittest.TestCase):
         self.assertTrue(self.memory_handler.hasRef(int, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(float, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(str, 0xcafecafe))
+        # FIXME, where does unicode comes from ?
         self.assertFalse(self.memory_handler.hasRef(unicode, 0xcafecafe))
         self.assertFalse(self.memory_handler.hasRef(int, 0xdeadbeef))
         me = self.memory_handler.getRefByAddr(0xcafecafe)

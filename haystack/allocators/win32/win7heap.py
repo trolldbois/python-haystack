@@ -309,7 +309,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             return None, None
         # Segments are running from after the lfh_block to the FreePointer
         subseg_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_SUBSEGMENT)
-        array_size = (fp - end)/subseg_size
+        # PY2+PY3 divisions
+        array_size = (fp - end)//subseg_size
         # in case the pointer is elsewhere
         memory_map = self._memory_handler.get_mapping_for_address(lfh_block_addr)
         return end, memory_map.read_struct(end, self.win_heap.HEAP_SUBSEGMENT*array_size)
