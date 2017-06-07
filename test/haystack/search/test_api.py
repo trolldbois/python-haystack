@@ -190,8 +190,7 @@ class Test6_x32(_ApiTest):
         self.assertEqual(validated, True)
         self.assertEqual(usual.val1, 0x0aaaaaaa)
         self.assertEqual(usual.val2, 0x0ffffff0)
-        self.assertEqual(usual.txt, 'This a string with a test this is a test '
-                                     'string')
+        self.assertEqual(usual.txt, b'This a string with a test this is a test string')
 
         # so now we got python objects
         # that is node 1

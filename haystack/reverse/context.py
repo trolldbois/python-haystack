@@ -200,6 +200,7 @@ class ProcessContext(object):
         predecessors_label = self.__record_graph.predecessors(hex(record.address))
         records = []
         for label in predecessors_label:
+            # FIXME, eradicate all L for PY3 migration
             if label[-1] == 'L':
                 label = label[:-1]
             record_addr = int(label, 16)
@@ -381,7 +382,7 @@ class HeapContext(object):
         return list(map(long, self._list_records().keys()))
 
     def listStructures(self):
-        return self._list_records().values()
+        return list(self._list_records().values())
 
     def is_known_address(self, address):
         return address in self._structures_addresses
@@ -459,10 +460,10 @@ class HeapContext(object):
         try:
             with open(context_cache, 'rb') as fin:
                 ctx = pickle.load(fin)
-        except EOFError as e:
+        except (ValueError, EOFError) as e:
             os.remove(context_cache)
             log.error('Error in the context file. File cleaned. Please restart.')
-            raise RuntimeError('Error in the context file. File cleaned. Please restart.')
+            raise IOError('Error in the context file. File cleaned. Please restart.')
         log.debug('\t[-] loaded my context from cache')
         ctx.config = config
         ctx.memory_handler = memory_handler

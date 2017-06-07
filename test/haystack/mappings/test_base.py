@@ -292,8 +292,6 @@ class TestReferenceBook(unittest.TestCase):
         self.assertTrue(self.memory_handler.hasRef(int, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(float, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(str, 0xcafecafe))
-        # FIXME, where does unicode comes from ?
-        self.assertFalse(self.memory_handler.hasRef(unicode, 0xcafecafe))
         self.assertFalse(self.memory_handler.hasRef(int, 0xdeadbeef))
         me = self.memory_handler.getRefByAddr(0xcafecafe)
         # multiple refs
