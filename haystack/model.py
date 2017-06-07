@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011,2012,2013 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
 
 import ctypes
 import inspect
@@ -23,17 +20,28 @@ Plain Old Python Objects from ctypes allocators modules.
     LoadException(Exception)
 """
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2013 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
-
-
 
 log = logging.getLogger('model')
+
+
+try:
+    import resource
+    # augment our file limit capacity to max
+    maxnofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+    # print 'maxnofile', maxnofile
+    resource.setrlimit(
+        resource.RLIMIT_NOFILE,
+        (maxnofile[1],
+         maxnofile[1]))
+    # maxnofile_after = resource.getrlimit(resource.RLIMIT_NOFILE)
+    # print 'maxnofile_after', maxnofile_after
+    # travis-ci says
+    # maxnofile (64000, 64000)
+    # maxnofile_after (64000, 64000)
+except ImportError as e:
+    pass
+
+
 
 
 class NotValid(Exception):

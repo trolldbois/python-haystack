@@ -49,7 +49,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.36",
+      version="0.40",
       description="Search C Structures in a process' memory",
       long_description=open("README.md").read(),
       url="http://packages.python.org/haystack/",
@@ -66,23 +66,19 @@ setup(name="haystack",
         "Development Status :: 4 - Beta",
         # "Development Status :: 5 - Production/Stable",
       ],
-      keywords=["memory", "analysis", "forensics", "record", "struct", "ptrace", "reverse", "heap", "lfh", "lal"],
+      keywords=["memory", "analysis", "forensics", "record", "struct", "ptrace", "heap", "lfh", "lal"],
       author="Loic Jaquemet",
       author_email="loic.jaquemet+python@gmail.com",
       packages=["haystack",
                 "haystack.abc",
-                "haystack.gui",
                 "haystack.mappings",
                 "haystack.outputters",
-                "haystack.reverse",
-                "haystack.reverse.heuristics",
                 "haystack.search",
                 "haystack.allocators",
                 "haystack.allocators.libc",
                 "haystack.allocators.win32"],
       # package_dir={"haystack.reverse": 'haystack/reverse'},
-      package_data={"haystack.reverse.heuristics": ['data/words.100'],
-                    "haystack.allocators.win32": ['win7heap32.constraints',
+      package_data={ "haystack.allocators.win32": ['win7heap32.constraints',
                                                   'win7heap64.constraints',
                                                   'winxpheap32.constraints',
                                                   'winxpheap64.constraints'],
@@ -104,31 +100,12 @@ setup(name="haystack",
               'haystack-volatility-dump = haystack.cli:volatility_dump',
               'haystack-minidump-search = haystack.cli:minidump_search',
               'haystack-minidump-show = haystack.cli:minidump_show',
-              'haystack-reverse = haystack.reverse.cli:main_reverse',
-              'haystack-minidump-reverse = haystack.reverse.cli:minidump_reverse',
-              'haystack-reverse-show = haystack.reverse.cli:main_reverse_show',
-              'haystack-reverse-parents = haystack.reverse.cli:main_reverse_parents',
-              'haystack-reverse-hex = haystack.reverse.cli:main_reverse_hex',
-              'haystack-minidump-reverse-show = haystack.reverse.cli:minidump_reverse_show',
-              'haystack-minidump-reverse-parents = haystack.reverse.cli:minidump_reverse_parents',
-              'haystack-minidump-reverse-hex = haystack.reverse.cli:minidump_reverse_hex',
           ]
       },
-      scripts=[
-               # "scripts/haystack-gui",
-               ],
-      # reverse: numpy is a dependency for reverse.
-      # https://github.com/numpy/numpy/issues/2434
-      # numpy is already installed in travis-ci
-      ## setup_requires=["numpy"],
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
       install_requires=["pefile>=1.2.10_139",
                         "construct",
-                        # reverse need these.
-                        # "numpy",
-                        # "networkx",
-                        # "python-Levenshtein"
                         ] + ["python-ptrace>=0.8.1"] if "win" not in sys.platform else []
                         + ["winappdbg"] if "win" in sys.platform else [],
       dependency_links=[

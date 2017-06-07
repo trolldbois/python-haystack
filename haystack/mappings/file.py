@@ -43,16 +43,9 @@ from haystack import utils
 from haystack.mappings import base
 from haystack.mappings.base import AMemoryMapping
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2012 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-__credits__ = ["Victor Skinner"]
-
 log = logging.getLogger('file')
 
+MMAP_HACK_ACTIVE = True
 
 class LocalMemoryMapping(AMemoryMapping):
 
@@ -219,7 +212,7 @@ class MemoryDumpMemoryMapping(AMemoryMapping):
             if hasattr(self._memdump, 'fileno'):  # normal file.
                 # XXX that is the most fucked up, non-portable fuck I ever
                 # wrote.
-                if haystack.MMAP_HACK_ACTIVE:
+                if MMAP_HACK_ACTIVE:
                     log.debug('Using MMAP_HACK: %s' % self)
                     # if self.pathname.startswith('/usr/lib'):
                     #    raise Exception
