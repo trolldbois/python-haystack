@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+from __future__ import print_function
+
 """
 Contains common code for winXP heap and win7 heap
 """
@@ -424,11 +426,11 @@ class WinHeapValidator(listmodel.ListModel):
         if heap_bits != process_bits:
             special += ' (!%d bits heap!) ' % heap_bits
 
-        print '[+] %sHEAP:0x%0.8x' % (special, addr), m
+        print('[+] %sHEAP:0x%0.8x' % (special, addr), m)
         if not verbose:
             return
         #
-        print '    FrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN')
+        print('    FrontEndHeapType:', heap.FrontEndHeapType, FrontEndHeapType.get(heap.FrontEndHeapType, 'UNKNOWN'))
 
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(m)
@@ -454,7 +456,7 @@ class WinHeapValidator(listmodel.ListModel):
         # look at children from free/allocations POV
         addr = heap._orig_address_
         m = self._memory_handler.get_mapping_for_address(addr)
-        print '[+] ', m
+        print('[+] ', m)
         finder = self._memory_handler.get_heap_finder()
         walker = finder.get_heap_walker(m)
         children = walker.list_used_mappings()
@@ -468,14 +470,14 @@ class WinHeapValidator(listmodel.ListModel):
         free, free_overhead = free_res.get(m, (0, 0))
         overhead = allocated_overhead + free_overhead
         sum_ = allocated + free + overhead
-        print "\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_)
+        print("\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_))
         for child in children:
-            print '\t[-] ', child
+            print('\t[-] ', child)
             allocated, allocated_overhead = occupied_res.get(child, (0, 0))
             free, free_overhead = free_res.get(child, (0, 0))
             overhead = allocated_overhead + free_overhead
             sum_ = allocated + free + overhead
-            print "\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_)
+            print("\ta:0x%0.8x \tf:0x%0.8x \to:0x%0.8x Sum:0x%0.8x" % (allocated, free, overhead, sum_))
         return
 
     def count_by_mapping(self, chunksize_tuple, overhead_size):

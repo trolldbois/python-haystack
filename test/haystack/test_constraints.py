@@ -51,31 +51,31 @@ class TestConstraints(unittest.TestCase):
         # erroneous. It should be a list. Always.
         field0 = s2c['field0']
         self.assertTrue(isinstance(field0, list))
-        self.assertEquals(field0, [-2, -3])
+        self.assertEqual(field0, [-2, -3])
 
         field1 = s2c['field1']
         self.assertTrue(isinstance(field1, list))
-        self.assertEquals(1, field1[0].low)
-        self.assertEquals(16, field1[0].high)
-        self.assertEquals('RangeValue', field1[0].__class__.__name__)
+        self.assertEqual(1, field1[0].low)
+        self.assertEqual(16, field1[0].high)
+        self.assertEqual('RangeValue', field1[0].__class__.__name__)
 
         field2 = s2c['field2']
         self.assertTrue(isinstance(field2, list))
-        self.assertEquals('IgnoreMember', field2[0].__name__)
+        self.assertEqual('IgnoreMember', field2[0].__name__)
 
         field3 = s2c['field3']
         self.assertTrue(isinstance(field3, list))
-        self.assertEquals(field3, [0, 1])
+        self.assertEqual(field3, [0, 1])
 
         field4 = s2c['field4']
         self.assertTrue(isinstance(field4, list))
         # no special character support
-        self.assertEquals('qwklqwfnkl\\x20+++[po-09', field4[0].seq)
-        self.assertEquals('BytesComparable', field4[0].__class__.__name__)
+        self.assertEqual('qwklqwfnkl\\x20+++[po-09', field4[0].seq)
+        self.assertEqual('BytesComparable', field4[0].__class__.__name__)
 
         field5 = s2c['field5']
         self.assertTrue(isinstance(field5, list))
-        self.assertEquals('NotNullComparable', field5[0].__class__.__name__)
+        self.assertEqual('NotNullComparable', field5[0].__class__.__name__)
 
         field6 = s2c['field6']
         self.assertTrue(isinstance(field6, list))
@@ -83,15 +83,15 @@ class TestConstraints(unittest.TestCase):
         self.assertIn(1, field6)
         self.assertIn(constraints.RangeValue(2, 3), field6)
         self.assertIn(constraints.RangeValue(4, 5), field6)
-        self.assertIn(constraints.PerfectMatch('plop'), field6)
+        self.assertIn(constraints.PerfectMatch(b'plop'), field6)
 
         field7 = s2c['field7']
         self.assertTrue(isinstance(field7, list))
-        self.assertEquals(field7, [-1, 0, 0.0, 1.02])
+        self.assertEqual(field7, [-1, 0, 0.0, 1.02])
 
         field8 = s2c['field8']
         self.assertTrue(isinstance(field8, list))
-        self.assertEquals(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
+        self.assertEqual(field8, [0x0, 0x1, 0xff, 0xffeeffee, -0x20])
 
 
 class TestConstraints6(SrcTests):

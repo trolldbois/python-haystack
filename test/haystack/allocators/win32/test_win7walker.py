@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from __future__ import print_function
 import logging
 import unittest
 import sys
@@ -61,7 +62,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                 if m not in heap_sums:
                     heap_sums[m] = []
                 heap_sums[m].append((x, s))
-            #self.assertEquals( free_size, walker.HEAP().TotalFreeSize)
+            #self.assertEqual( free_size, walker.HEAP().TotalFreeSize)
             # save mmap hierarchy
             child_heaps[heap] = walker.list_used_mappings()
 
@@ -77,11 +78,11 @@ class TestWin7HeapWalker(unittest.TestCase):
             total = free_size
             for child in children:
                 freeblocks = map(lambda x: x[0], heap_sums[child])
-                self.assertEquals(len(freeblocks), len(set(freeblocks)))
+                self.assertEqual(len(freeblocks), len(set(freeblocks)))
                 # print heap_sums[child]
                 free_size = sum(map(lambda x: x[1], heap_sums[child]))
                 log.debug('     \_ mmap 0x%0.8x   free:%0.5x ', child.start, free_size)
-                self.assertEquals(len(freeblocks), len(set(freeblocks)))
+                self.assertEqual(len(freeblocks), len(set(freeblocks)))
                 total += free_size
             log.debug('     \= total: free:%0.5x ', total)
 
@@ -92,7 +93,7 @@ class TestWin7HeapWalker(unittest.TestCase):
             # if cheap.FrontEndHeapType == 0:
             blocksize = walker.get_target_platform().get_word_size() * 2
             # ??
-            self.assertEquals(cheap.TotalFreeSize * blocksize, total)
+            self.assertEqual(cheap.TotalFreeSize * blocksize, total)
             # print hex(heap.start), cheap.TotalFreeSize * blocksize == total, cheap.TotalFreeSize * blocksize, total
             # else:
             #    # FIXME
@@ -105,7 +106,7 @@ class TestWin7HeapWalker(unittest.TestCase):
         # self.skipTest('known_ok')
         finder = win7heapwalker.Win7HeapFinder(self._memory_handler)
         walkers = finder.list_heap_walkers()
-        self.assertEquals(len(walkers), len(putty_1_win7.known_heaps))
+        self.assertEqual(len(walkers), len(putty_1_win7.known_heaps))
         last = 0
         for i, walker in enumerate(walkers):
             this = walker.get_heap_address()
@@ -142,7 +143,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                 if m != heap:
                     self.assertIn(m, heap_children)
                 # should be aligned
-                self.assertEquals(chunk_addr & 7, 0)  # page 40
+                self.assertEqual(chunk_addr & 7, 0)  # page 40
                 st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY) # HEAP_ENTRY
                 # st.UnusedBytes == 0x5    ?
                 if st._0._1.UnusedBytes == 0x05:
@@ -150,7 +151,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                     log.debug('UnusedBytes == 0x5, SegmentOffset == %d' % st._0._1._0.SegmentOffset)
 
                 # FIXME, in child of 0x005c0000. LFH. What are the flags already ?
-                print hex(chunk_addr)
+                print(hex(chunk_addr))
                 self.assertTrue(st._0._1.UnusedBytes & 0x80, 'UnusedBytes said this is a BACKEND chunk , Flags | 2')
                 allocs.append((chunk_addr, chunk_size))  # with header
 
@@ -162,7 +163,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                 if m != heap:
                     self.assertIn(m, heap_children)
                 # should be aligned
-                self.assertEquals(chunk_addr & 7, 0)  # page 40
+                self.assertEqual(chunk_addr & 7, 0)  # page 40
                 st = m.read_struct(chunk_addr, win7heap.HEAP_ENTRY)
                 # NextOffset in userblock gives same answer
 
@@ -202,7 +203,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                 self.fail(
                     'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
                     (m.start, m.end, addr, s, addr + s))
-            ##self.assertEquals(mapping, m)
+            ##self.assertEqual(mapping, m)
             # actually valid, if m is a children of mapping
             if m != walker._mapping:
                 self.assertIn(m, walker.list_used_mappings())
@@ -222,7 +223,7 @@ class TestWin7HeapWalker(unittest.TestCase):
 
         #self.skipTest('overallocation clearly not working')
 
-        self.assertEquals(self._memory_handler.get_target_system(), 'win32')
+        self.assertEqual(self._memory_handler.get_target_system(), 'win32')
 
         full = list()
         for heap in finder.list_heap_walkers():
@@ -256,17 +257,17 @@ class TestWin7HeapWalker(unittest.TestCase):
             my_chunks.extend(free_lists)
 
             myset = set(my_chunks)
-            self.assertEquals(
+            self.assertEqual(
                 len(myset),
                 len(my_chunks),
                 'NON unique referenced chunks found.')
 
             full.extend(my_chunks)
 
-        self.assertEquals(len(full), len(set(full)), 'duplicates allocs found')
+        self.assertEqual(len(full), len(set(full)), 'duplicates allocs found')
 
         addrs = [addr for addr, s in full]
-        self.assertEquals(
+        self.assertEqual(
             len(addrs), len(
                 set(addrs)), 'duplicates allocs found but different sizes')
 
@@ -347,7 +348,7 @@ class TestWin7HeapWalker(unittest.TestCase):
                         e)
 
         found.sort()
-        self.assertEquals(map(lambda x: x[0], putty_1_win7.known_heaps), found)
+        self.assertEqual(list(map(lambda x: x[0], putty_1_win7.known_heaps)), found)
 
         return
 

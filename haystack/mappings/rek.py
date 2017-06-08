@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 """
 rekall backed memory_handler.
 
@@ -189,7 +191,7 @@ def rekall_dump_to_haystack(filename, pid, output_folder_name):
     # get a renderer.
     renderer = json_renderer.JsonRenderer()
     task_plugin.render(renderer)
-    print renderer
+    print(renderer)
     maps = []
     # FIXME get stdout in here.
     with open(filename,'r') as fin:
@@ -208,9 +210,9 @@ def rekall_dump_to_haystack(filename, pid, output_folder_name):
             # rename file
             try:
                 os.rename(path, o_path)
-            except OSError, e:
+            except OSError as e:
                 sys.stderr.write('File rename error\n')
             # offset is unknown.
-            print '%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i)
+            print('%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i))
 
     pass

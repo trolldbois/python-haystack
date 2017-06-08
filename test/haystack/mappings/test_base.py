@@ -3,6 +3,7 @@
 
 """Tests haystack.utils ."""
 
+from __future__ import print_function
 import logging
 import mmap
 import struct
@@ -35,7 +36,7 @@ class TestMmapHack(unittest.TestCase):
 
         real_ctypes_long = my_ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
-        fin = file(fname)
+        fin = open(fname, 'rb')
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
@@ -45,11 +46,11 @@ class TestMmapHack(unittest.TestCase):
         ret = [m for m in handler.get_mappings() if heapmap in m]
         if len(ret) == 0:
             for m in handler.get_mappings():
-                print m
+                print(m)
         # heapmap is a pointer value in local memory
-        self.assertEquals(len(ret), 1)
+        self.assertEqual(len(ret), 1)
         # heapmap is a pointer value to this executable?
-        self.assertEquals(ret[0].pathname, fname)
+        self.assertEqual(ret[0].pathname, fname)
 
         self.assertIn('CTypesProxy-8:8:16', str(my_ctypes))
         fin.close()
@@ -62,7 +63,7 @@ class TestMmapHack(unittest.TestCase):
 
         real_ctypes_long = my_ctypes.get_real_ctypes_member('c_ulong')
         fname = os.path.normpath(os.path.abspath(__file__))
-        fin = file(fname)
+        fin = open(fname, 'rb')
         local_mmap_bytebuffer = mmap.mmap(fin.fileno(), 1024, access=mmap.ACCESS_READ)
         # yeap, that right, I'm stealing the pointer value. DEAL WITH IT.
         heapmap = struct.unpack('L', real_ctypes_long.from_address(id(local_mmap_bytebuffer) +
@@ -74,9 +75,9 @@ class TestMmapHack(unittest.TestCase):
         #    print m
         ret = [m for m in maps if heapmap in m]
         # heapmap is a pointer value in local memory
-        self.assertEquals(len(ret), 1)
+        self.assertEqual(len(ret), 1)
         # heapmap is a pointer value to this executable?
-        self.assertEquals(ret[0].pathname, fname)
+        self.assertEqual(ret[0].pathname, fname)
         self.assertIn('CTypesProxy-4:4:12', str(my_ctypes))
         fin.close()
         fin = None
@@ -94,13 +95,13 @@ class TestMappingsLinux(SrcTests):
         cls.memory_handler = None
 
     def test_get_mapping(self):
-        self.assertEquals(len(self.memory_handler._get_mapping('[heap]')), 1)
-        self.assertEquals(len(self.memory_handler._get_mapping('None')), 9)
+        self.assertEqual(len(self.memory_handler._get_mapping('[heap]')), 1)
+        self.assertEqual(len(self.memory_handler._get_mapping('None')), 9)
 
     def test_get_mapping_for_address(self):
         finder = self.memory_handler.get_heap_finder()
         walker = finder.list_heap_walkers()[0]
-        self.assertEquals(walker.get_heap_address(), self.memory_handler.get_mapping_for_address(0xb84e02d3).start)
+        self.assertEqual(walker.get_heap_address(), self.memory_handler.get_mapping_for_address(0xb84e02d3).start)
 
     def test_contains(self):
         for m in self.memory_handler:
@@ -108,7 +109,7 @@ class TestMappingsLinux(SrcTests):
             self.assertTrue((m.end - 1) in self.memory_handler)
 
     def test_len(self):
-        self.assertEquals(len(self.memory_handler), 70)
+        self.assertEqual(len(self.memory_handler), 70)
 
     def test_getitem(self):
         self.assertTrue(isinstance(self.memory_handler[0], AMemoryMapping))
@@ -120,7 +121,7 @@ class TestMappingsLinux(SrcTests):
     def test_iter(self):
         mps = [m for m in self.memory_handler]
         mps2 = [m for m in self.memory_handler.get_mappings()]
-        self.assertEquals(mps, mps2)
+        self.assertEqual(mps, mps2)
 
     def test_setitem(self):
         with self.assertRaises(NotImplementedError):
@@ -128,11 +129,11 @@ class TestMappingsLinux(SrcTests):
 
     def test_get_os_name(self):
         x = self.memory_handler.get_target_platform().get_os_name()
-        self.assertEquals(x, 'linux')
+        self.assertEqual(x, 'linux')
 
     def test_get_cpu_bits(self):
         x = self.memory_handler.get_target_platform().get_cpu_bits()
-        self.assertEquals(x, 32)
+        self.assertEqual(x, 32)
 
 
 class TestMappingsLinuxAddresses32(SrcTests):
@@ -206,14 +207,14 @@ class TestMappingsWin32(unittest.TestCase):
     def test_get_mapping(self):
         # FIXME: remove
         with self.assertRaises(IndexError):
-            self.assertEquals(len(self.memory_handler._get_mapping('[heap]')), 1)
-        self.assertEquals(len(self.memory_handler._get_mapping('None')), 71)
+            self.assertEqual(len(self.memory_handler._get_mapping('[heap]')), 1)
+        self.assertEqual(len(self.memory_handler._get_mapping('None')), 71)
 
     def test_get_mapping_for_address(self):
         m = self.memory_handler.get_mapping_for_address(0x005c0000)
         self.assertNotEquals(m, False)
-        self.assertEquals(m.start, 0x005c0000)
-        self.assertEquals(m.end, 0x00619000)
+        self.assertEqual(m.start, 0x005c0000)
+        self.assertEqual(m.end, 0x00619000)
 
     def test_contains(self):
         for m in self.memory_handler:
@@ -221,7 +222,7 @@ class TestMappingsWin32(unittest.TestCase):
             self.assertTrue((m.end - 1) in self.memory_handler)
 
     def test_len(self):
-        self.assertEquals(len(self.memory_handler), 403)
+        self.assertEqual(len(self.memory_handler), 403)
 
     def test_getitem(self):
         self.assertTrue(isinstance(self.memory_handler[0], AMemoryMapping))
@@ -233,7 +234,7 @@ class TestMappingsWin32(unittest.TestCase):
     def test_iter(self):
         mps = [m for m in self.memory_handler]
         mps2 = [m for m in self.memory_handler.get_mappings()]
-        self.assertEquals(mps, mps2)
+        self.assertEqual(mps, mps2)
 
     def test_setitem(self):
         with self.assertRaises(NotImplementedError):
@@ -241,11 +242,11 @@ class TestMappingsWin32(unittest.TestCase):
 
     def test_get_os_name(self):
         x = self.memory_handler.get_target_platform().get_os_name()
-        self.assertEquals(x, 'win7')
+        self.assertEqual(x, 'win7')
 
     def test_get_cpu_bits(self):
         x = self.memory_handler.get_target_platform().get_cpu_bits()
-        self.assertEquals(x, 32)
+        self.assertEqual(x, 32)
 
 
 
@@ -261,8 +262,8 @@ class TestReferenceBook(unittest.TestCase):
         self.memory_handler = None
 
     def test_keepRef(self):
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
 
         # same address, same type
         self.memory_handler.keepRef(1, int, 0xcafecafe)
@@ -270,18 +271,18 @@ class TestReferenceBook(unittest.TestCase):
         self.memory_handler.keepRef(3, int, 0xcafecafe)
         me = self.memory_handler.getRefByAddr(0xcafecafe)
         # only one ref ( the first)
-        self.assertEquals(len(me), 1)
+        self.assertEqual(len(me), 1)
 
         # different type, same address
         self.memory_handler.keepRef('4', str, 0xcafecafe)
         me = self.memory_handler.getRefByAddr(0xcafecafe)
         # multiple refs
-        self.assertEquals(len(me), 2)
+        self.assertEqual(len(me), 2)
         return
 
     def test_hasRef(self):
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
 
         # same address, different types
         self.memory_handler.keepRef(1, int, 0xcafecafe)
@@ -291,27 +292,26 @@ class TestReferenceBook(unittest.TestCase):
         self.assertTrue(self.memory_handler.hasRef(int, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(float, 0xcafecafe))
         self.assertTrue(self.memory_handler.hasRef(str, 0xcafecafe))
-        self.assertFalse(self.memory_handler.hasRef(unicode, 0xcafecafe))
         self.assertFalse(self.memory_handler.hasRef(int, 0xdeadbeef))
         me = self.memory_handler.getRefByAddr(0xcafecafe)
         # multiple refs
-        self.assertEquals(len(me), 3)
+        self.assertEqual(len(me), 3)
 
     def test_getRef(self):
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
         self.memory_handler.keepRef(1, int, 0xcafecafe)
         self.memory_handler.keepRef(2, float, 0xcafecafe)
 
-        self.assertEquals(self.memory_handler.getRef(int, 0xcafecafe), 1)
-        self.assertEquals(self.memory_handler.getRef(float, 0xcafecafe), 2)
+        self.assertEqual(self.memory_handler.getRef(int, 0xcafecafe), 1)
+        self.assertEqual(self.memory_handler.getRef(float, 0xcafecafe), 2)
         self.assertIsNone(self.memory_handler.getRef(str, 0xcafecafe))
         self.assertIsNone(self.memory_handler.getRef(str, 0xdeadbeef))
         self.assertIsNone(self.memory_handler.getRef(int, 0xdeadbeef))
 
     def test_delRef(self):
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
-        self.assertEquals(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xcafecafe)), 0)
+        self.assertEqual(len(self.memory_handler.getRefByAddr(0xdeadbeef)), 0)
 
         self.memory_handler.keepRef(1, int, 0xcafecafe)
         self.memory_handler.keepRef(2, float, 0xcafecafe)

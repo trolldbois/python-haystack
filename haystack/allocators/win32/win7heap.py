@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+from __future__ import print_function
+
 """
 Win 7 heap structure validation
 See docs/win32_heap for all supporting documentation.
@@ -307,7 +309,8 @@ class Win7HeapValidator(winheap.WinHeapValidator):
             return None, None
         # Segments are running from after the lfh_block to the FreePointer
         subseg_size = self._ctypes.sizeof(self.win_heap.struct__HEAP_SUBSEGMENT)
-        array_size = (fp - end)/subseg_size
+        # PY2+PY3 divisions
+        array_size = (fp - end)//subseg_size
         # in case the pointer is elsewhere
         memory_map = self._memory_handler.get_mapping_for_address(lfh_block_addr)
         return end, memory_map.read_struct(end, self.win_heap.HEAP_SUBSEGMENT*array_size)
@@ -423,20 +426,20 @@ class Win7HeapValidator(winheap.WinHeapValidator):
 
     def print_heap_analysis_details(self, heap):
         # size & space calculated from heap info
-        print '    Backend:'
+        print('    Backend:')
         ucrs = self.HEAP_get_UCRanges_list(heap)
         ucr_list = winheap.UCR_List(ucrs)
         # heap.Counters.TotalMemoryReserved.value == heap.LastValidEntry.value - heap.BaseAddress.value
         nb_ucr = heap.Counters.TotalUCRs
-        print '\tUCRList: %d/%d' % (len(ucrs), nb_ucr)
-        print ucr_list.to_string('\t\t')
+        print('\tUCRList: %d/%d' % (len(ucrs), nb_ucr))
+        print(ucr_list.to_string('\t\t'))
         # Virtual Allocations
         vallocs = self.HEAP_get_virtual_allocated_blocks_list(heap)
-        print '\tVAllocations: %d' % len(vallocs)
+        print('\tVAllocations: %d' % len(vallocs))
         for addr, c_size, r_size in vallocs:
             diff = '' if c_size == r_size else '!!'
             # print "vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
-            print "\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size)
+            print("\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size))
         return ucrs
 
     def print_segments_analysis(self, heap, walker, ucrs):
@@ -449,48 +452,48 @@ class Win7HeapValidator(winheap.WinHeapValidator):
         # get allocated/free stats by segment
         occupied_res2 = self.count_by_segment(segments, walker.get_backend_allocations(), overhead_size)
         free_res2 = self.count_by_segment(segments, walker.get_backend_free_chunks(), overhead_size)
-        print "\tSegmentList: %d/%d" % (len(segments), nb_segments)
+        print("\tSegmentList: %d/%d" % (len(segments), nb_segments))
         for segment in segments:
             p_segment = winheap.Segment(self._memory_handler, walker, segment)
             p_segment.set_ucr(ucr_list)
             p_segment.set_resource_usage(occupied_res2, free_res2)
-            print p_segment.to_string('\t\t')
+            print(p_segment.to_string('\t\t'))
             # if UCR, then
             ucrsegments = self.get_UCR_segment_list(heap)
             #print "\t\t\tUCRSegmentList: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments])))
-            print "\t\t\tUCRSegmentList: %d " % len(ucrsegments)
+            print("\t\t\tUCRSegmentList: %d " % len(ucrsegments))
             for ucr in ucrsegments:
                 _addr = self._utils.get_pointee_address(ucr.Address)
                 end = _addr + ucr.Size
-                print "\t\t\t\tUCRSegment 0x%0.8x-0x%0.8x size:0x%x" % (_addr, end, ucr.Size)
+                print("\t\t\t\tUCRSegment 0x%0.8x-0x%0.8x size:0x%x" % (_addr, end, ucr.Size))
             # print ".UCRSegmentList.Blink", hex(heap.UCRSegmentList.Blink.value)
 
     def print_frontend_analysis_details(self, heap):
         # Frontend Type == LFH
         if heap.FrontEndHeapType == 2:
-            print '    FrontEnd: LOW_FRAGMENTATION_HEAP'
+            print('    FrontEnd: LOW_FRAGMENTATION_HEAP')
             lfh_heap = self._get_lfh_heap(heap)
             lfh_blocks = [x for x in self._get_LFH_SubSegment_from_SubSegmentZones(lfh_heap)]
             blocks_2 = [b for b in self._get_LFH_SubSegment_from_CrtZone(lfh_heap)]
-            print '\t\tLFH Blocks %d/%d' % (len(lfh_blocks), len(blocks_2))
+            print('\t\tLFH Blocks %d/%d' % (len(lfh_blocks), len(blocks_2)))
             _c, _f = self.get_lfh_chunks(heap)
             c_size = sum([c[1] for c in _c])
             u_size = sum([c[2] for c in _c])
             f_size = sum([c[1] for c in _f])
-            print '\t\tLFH CommittedSize:0x%x FreeSize:0x%x Unused:0x%x' % (c_size, f_size, u_size)
+            print('\t\tLFH CommittedSize:0x%x FreeSize:0x%x Unused:0x%x' % (c_size, f_size, u_size))
             mappings = set()
             # we limit the search to UserBlocks, as heap_entries have to be on the same mapping
             for b in lfh_blocks:
                 total_size = 0
                 start, segments = self.get_lfh_subsegment(b)
                 if start is None:
-                    print '\t\t\tBlock 0x%0.8x SubSegments: 0' % b._orig_address_
+                    print('\t\t\tBlock 0x%0.8x SubSegments: 0' % b._orig_address_)
                     continue
-                print '\t\t\tBlock 0x%0.8x SubSegments: %d' % (b._orig_address_, len(segments))
+                print('\t\t\tBlock 0x%0.8x SubSegments: %d' % (b._orig_address_, len(segments)))
                 for segment in segments:
                     user_blocks_addr = self._utils.get_pointee_address(segment.UserBlocks)
                     if user_blocks_addr == 0:
-                        print '\t\t\t\tSubSegment->UserBlocks == NULL'
+                        print('\t\t\t\tSubSegment->UserBlocks == NULL')
                         continue
                     mappings.add(self._memory_handler.get_mapping_for_address(user_blocks_addr))
                     allocation_length = segment._3._0.BlockSize * self._word_size_x2
@@ -499,15 +502,15 @@ class Win7HeapValidator(winheap.WinHeapValidator):
                     # to the end of last chunk
                     end = user_blocks_addr + header_size + allocation_length * (block_count + 1)
                     size = end-user_blocks_addr
-                    print '\t\t\t\tSubSegment 0x%0.8x-0x%0.8x size:0x%x chunks: count:%d size:0x%x' % (user_blocks_addr, end, size, block_count, allocation_length)
+                    print('\t\t\t\tSubSegment 0x%0.8x-0x%0.8x size:0x%x chunks: count:%d size:0x%x' % (user_blocks_addr, end, size, block_count, allocation_length))
                     total_size += size
                     # occupied_res3 = self.count_by_segment(segments, walker.get_user_allocations(), overhead_size)
                     # free_res3 = self.count_by_segment(segments, walker.get_free_chunks(), overhead_size)
 
                 # sum of all user blocks for this subsegment
-                print '\t\t\tTotal_committed_size:0x%0.8x' % total_size
-            print '\t\tMappings used:'
+                print('\t\t\tTotal_committed_size:0x%0.8x' % total_size)
+            print('\t\tMappings used:')
             for m in sorted(mappings, key=lambda x: x.start):
-                print '\t\t\t%s' % m
+                print('\t\t\t%s' % m)
         return
 

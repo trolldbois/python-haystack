@@ -3,13 +3,6 @@
 """Tests haystack.utils ."""
 import haystack.model
 
-__author__ = "Loic Jaquemet"
-__copyright__ = "Copyright (C) 2013 Loic Jaquemet"
-__email__ = "loic.jaquemet+python@gmail.com"
-__license__ = "GPL"
-__maintainer__ = "Loic Jaquemet"
-__status__ = "Production"
-
 # init ctypes with a controlled type size
 import ctypes
 import logging
@@ -104,8 +97,8 @@ class TestHelpers(unittest.TestCase):
         x[2].a = 42
         ptr = my_ctypes.POINTER(X)(x[0])
         bytes_x = my_utils.pointer2bytes(ptr, nb)
-        self.assertEquals(len(bytes_x), my_ctypes.sizeof(x))
-        self.assertEquals(
+        self.assertEqual(len(bytes_x), my_ctypes.sizeof(x))
+        self.assertEqual(
             bytes_x,
             b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00*\x00\x00\x00\x00\x00\x00\x00')
         pass
@@ -115,10 +108,10 @@ class TestHelpers(unittest.TestCase):
         my_utils32 = utils.Utils(types.build_ctypes_proxy(4, 4, 8))
 
         x = my_utils64.formatAddress(0x12345678)
-        self.assertEquals('0x0000000012345678', x)
+        self.assertEqual(b'0x0000000012345678', x)
         # 32b
         x = my_utils32.formatAddress(0x12345678)
-        self.assertEquals('0x12345678', x)
+        self.assertEqual(b'0x12345678', x)
 
     def test_unpackWord(self):
         # 64b
@@ -126,17 +119,17 @@ class TestHelpers(unittest.TestCase):
 
         one = b'\x01' + 7 * b'\x00'
         x = my_utils.unpackWord(one)
-        self.assertEquals(x, 1)
+        self.assertEqual(x, 1)
         # 32b
         my_utils = utils.Utils(types.build_ctypes_proxy(4, 4, 8))
         one32 = b'\x01' + 3 * b'\x00'
         x = my_utils.unpackWord(one32)
-        self.assertEquals(x, 1)
+        self.assertEqual(x, 1)
         pass
         # endianness
-        two32 = 3 * b'\x00' + '\x02'
+        two32 = 3 * b'\x00' + b'\x02'
         x = my_utils.unpackWord(two32, '>')
-        self.assertEquals(x, 2)
+        self.assertEqual(x, 2)
         pass
 
     def test_get_pointee_address(self):
@@ -149,26 +142,26 @@ class TestHelpers(unittest.TestCase):
             _fields_ = [('a', my_ctypes.c_long),
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
-        self.assertEquals(my_ctypes.sizeof(X), 17)
+        self.assertEqual(my_ctypes.sizeof(X), 17)
         i = X.from_buffer_copy(
             b'\xAA\xAA\xBB\xBB' +
             4 *
-            '\xBB' +
+            b'\xBB' +
             8 *
-            '\x11' +
-            '\xCC')
+            b'\x11' +
+            b'\xCC')
         a = my_utils.get_pointee_address(i.p)
-        self.assertEquals(my_ctypes.sizeof(i.p), 8)
+        self.assertEqual(my_ctypes.sizeof(i.p), 8)
         self.assertNotEquals(a, 0)
-        self.assertEquals(a, 0x1111111111111111)  # 8*'\x11'
+        self.assertEqual(a, 0x1111111111111111)  # 8*'\x11'
         # null pointer
         i = X.from_buffer_copy(
             b'\xAA\xAA\xBB\xBB' +
             4 *
-            '\xBB' +
+            b'\xBB' +
             8 *
-            '\x00' +
-            '\xCC')
+            b'\x00' +
+            b'\xCC')
         pnull = my_utils.get_pointee_address(i.p)
         self.assertEquals (my_utils.get_pointee_address(pnull), 0)
 
@@ -180,14 +173,14 @@ class TestHelpers(unittest.TestCase):
             _fields_ = [('a', my_ctypes.c_long),
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
-        self.assertEquals(my_ctypes.sizeof(Y), 9)
-        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x11' + '\xCC')
+        self.assertEqual(my_ctypes.sizeof(Y), 9)
+        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * b'\x11' + b'\xCC')
         a = my_utils.get_pointee_address(i.p)
-        self.assertEquals(my_ctypes.sizeof(i.p), 4)
+        self.assertEqual(my_ctypes.sizeof(i.p), 4)
         self.assertNotEquals(a, 0)
-        self.assertEquals(a, 0x11111111)  # 4*'\x11'
+        self.assertEqual(a, 0x11111111)  # 4*'\x11'
         # null pointer
-        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * '\x00' + '\xCC')
+        i = Y.from_buffer_copy(b'\xAA\xAA\xBB\xBB' + 4 * b'\x00' + b'\xCC')
         pnull = my_utils.get_pointee_address(i.p)
         self.assertEquals (my_utils.get_pointee_address(pnull), 0)
 
@@ -211,7 +204,7 @@ class TestHelpers(unittest.TestCase):
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
         o = my_utils.offsetof(Y, 'b')
-        self.assertEquals(o, 8)
+        self.assertEqual(o, 8)
 
         my_ctypes = types.build_ctypes_proxy(8, 8, 16)
         my_utils = utils.Utils(my_ctypes)
@@ -222,7 +215,7 @@ class TestHelpers(unittest.TestCase):
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
         o = my_utils.offsetof(X, 'b')
-        self.assertEquals(o, 16)
+        self.assertEqual(o, 16)
 
         class X2(my_ctypes.Union):
             _pack_ = True
@@ -230,7 +223,7 @@ class TestHelpers(unittest.TestCase):
                         ('p', my_ctypes.POINTER(my_ctypes.c_int)),
                         ('b', my_ctypes.c_ubyte)]
         o = my_utils.offsetof(X2, 'b')
-        self.assertEquals(o, 0)
+        self.assertEqual(o, 0)
         pass
 
     def test_container_of(self):
@@ -249,7 +242,7 @@ class TestHelpers(unittest.TestCase):
         x.b = 2
         addr_b = my_ctypes.addressof(x) + 16  # a + p
         o = my_utils.container_of(addr_b, X, 'b')
-        self.assertEquals(my_ctypes.addressof(o), my_ctypes.addressof(x))
+        self.assertEqual(my_ctypes.addressof(o), my_ctypes.addressof(x))
 
         my_ctypes = types.build_ctypes_proxy(4, 4, 8)
         my_utils = utils.Utils(my_ctypes)
@@ -264,7 +257,7 @@ class TestHelpers(unittest.TestCase):
         y.b = 2
         addr_b = my_ctypes.addressof(y) + 8  # a + p
         o = my_utils.container_of(addr_b, Y, 'b')
-        self.assertEquals(my_ctypes.addressof(o), my_ctypes.addressof(y))
+        self.assertEqual(my_ctypes.addressof(o), my_ctypes.addressof(y))
         pass
 
     def test_array2bytes(self):
@@ -274,33 +267,33 @@ class TestHelpers(unittest.TestCase):
 
         a = (my_ctypes.c_long * 12)(4, 1, 1, 1, 2)
         x = my_utils.array2bytes(a)
-        self.assertEquals(b'\x04' + 3 * b'\x00' +
+        self.assertEqual(b'\x04' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
                           b'\x01' + 3 * b'\x00' +
                           b'\x02' + 3 * b'\x00' +
-                          7 * 4 * '\x00', x)
+                          7 * 4 * b'\x00', x)
 
         my_ctypes = types.build_ctypes_proxy(8, 8, 16)
         my_utils = utils.Utils(my_ctypes)
 
         a = (my_ctypes.c_long * 12)(4, 1, 1, 1, 2)
         x = my_utils.array2bytes(a)
-        self.assertEquals(b'\x04' + 7 * b'\x00' +
+        self.assertEqual(b'\x04' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
                           b'\x01' + 7 * b'\x00' +
                           b'\x02' + 7 * b'\x00' +
-                          7 * 8 * '\x00', x)
+                          7 * 8 * b'\x00', x)
 
-        a = (my_ctypes.c_char * 12).from_buffer_copy('1234567890AB')
+        a = (my_ctypes.c_char * 12).from_buffer_copy(b'1234567890AB')
         x = my_utils.array2bytes(a)
-        self.assertEquals(b'1234567890AB', x)
+        self.assertEqual(b'1234567890AB', x)
 
         # mimics what ctypes gives us on memory loading.
         a = b'1234567890AB'
         x = my_utils.array2bytes(a)
-        self.assertEquals(b'1234567890AB', x)
+        self.assertEqual(b'1234567890AB', x)
         pass
 
     def test_bytes2array(self):
@@ -311,8 +304,8 @@ class TestHelpers(unittest.TestCase):
         bytes = 4 * b'\xAA' + 4 * b'\xBB' + 4 * b'\xCC' + \
             4 * b'\xDD' + 4 * b'\xEE' + 4 * b'\xFF'
         array = my_utils.bytes2array(bytes, my_ctypes.c_ulong)
-        self.assertEquals(array[0], 0xAAAAAAAA)
-        self.assertEquals(len(array), 6)
+        self.assertEqual(array[0], 0xAAAAAAAA)
+        self.assertEqual(len(array), 6)
 
         my_ctypes = types.build_ctypes_proxy(8, 8, 16)
         my_utils = utils.Utils(my_ctypes)
@@ -320,8 +313,8 @@ class TestHelpers(unittest.TestCase):
         bytes = 4 * b'\xAA' + 4 * b'\xBB' + 4 * b'\xCC' + \
             4 * b'\xDD' + 4 * b'\xEE' + 4 * b'\xFF'
         array = my_utils.bytes2array(bytes, my_ctypes.c_ulong)
-        self.assertEquals(array[0], 0xBBBBBBBBAAAAAAAA)
-        self.assertEquals(len(array), 3)
+        self.assertEqual(array[0], 0xBBBBBBBBAAAAAAAA)
+        self.assertEqual(len(array), 3)
         pass
 
     def test_get_subtype(self):
@@ -331,14 +324,14 @@ class TestHelpers(unittest.TestCase):
         class X(my_ctypes.Structure):
             _fields_ = [('p', my_ctypes.POINTER(my_ctypes.c_long))]
         PX = my_ctypes.POINTER(X)
-        self.assertEquals(my_utils.get_subtype(PX), X)
+        self.assertEqual(my_utils.get_subtype(PX), X)
 
         my_ctypes = types.build_ctypes_proxy(4, 4, 8)  # different arch
 
         class Y(my_ctypes.Structure):
             _fields_ = [('p', my_ctypes.POINTER(my_ctypes.c_long))]
         PY = my_ctypes.POINTER(Y)
-        self.assertEquals(my_utils.get_subtype(PY), Y)
+        self.assertEqual(my_utils.get_subtype(PY), Y)
 
     def test_xrange(self):
         """tests home made xrange that handles big ints.
@@ -350,7 +343,7 @@ class TestHelpers(unittest.TestCase):
         while a < b:
             r2.append(a)
             a += 1
-        self.assertEquals(r, r2)
+        self.assertEqual(r, r2)
 
 
 if __name__ == '__main__':

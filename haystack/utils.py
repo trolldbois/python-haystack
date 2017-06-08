@@ -4,10 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
-"""This module holds several useful function helpers"""
-
-__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
-
+from past.builtins import long
 import ctypes
 import logging
 import struct
@@ -17,6 +14,10 @@ import os
 
 from haystack.abc import interfaces
 from haystack import types
+
+"""This module holds several useful function helpers"""
+
+__author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 
 # never use ctypes import
 
@@ -129,7 +130,7 @@ class Utils(interfaces.ICTypesUtils):
 
         This is a bad example of introspection.
         """
-        if isinstance(array, str):
+        if isinstance(array, str) or isinstance(array, bytes):
             # special case for c_char[]
             return array
         if not self._ctypes.is_array_of_basic_instance(array):
@@ -148,7 +149,7 @@ class Utils(interfaces.ICTypesUtils):
 
         This is a bad example of introspection.
         """
-        if isinstance(array, str):
+        if isinstance(array, str) or isinstance(array, bytes):
             # special case for c_char[]
             return array
         if self._ctypes.is_array_of_basic_instance(array):
@@ -171,7 +172,7 @@ class Utils(interfaces.ICTypesUtils):
         typLen = self._ctypes.sizeof(typ)
         if len(bytes) % typLen != 0:
             raise ValueError('thoses bytes are not an array of %s' % (typ))
-        arrayLen = len(bytes) / typLen
+        arrayLen = len(bytes) // typLen
         array = (typ * arrayLen)()
         if arrayLen == 0:
             return array
@@ -237,7 +238,7 @@ def bytes2array(bytes, typ):
     typLen = ctypes.sizeof(typ)
     if len(bytes) % typLen != 0:
         raise ValueError('thoses bytes are not an array of %s' % (typ))
-    arrayLen = len(bytes) / typLen
+    arrayLen = len(bytes) // typLen
     array = (typ * arrayLen)()
     if arrayLen == 0:
         return array

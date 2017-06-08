@@ -3,6 +3,7 @@
 
 """Tests for haystack.reverse.structure."""
 
+from builtins import map
 import logging
 import unittest
 import sys
@@ -65,14 +66,14 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 if m not in heap_sums:
                     heap_sums[m] = []
                 heap_sums[m].append((x, s))
-            #self.assertEquals( free_size, walker.HEAP().TotalFreeSize)
+            #self.assertEqual( free_size, walker.HEAP().TotalFreeSize)
             # save mmap hierarchy
             child_heaps[heap] = walker.list_used_mappings()
 
         # calcul cumulates
         for heap, children in child_heaps.items():
             # for each heap, look at all children
-            freeblocks = map(lambda x: x[0], heap_sums[heap])
+            freeblocks = list(map(lambda x: x[0], heap_sums[heap]))
             free_size = sum(map(lambda x: x[1], heap_sums[heap]))
             finder = winxpheapwalker.WinXPHeapFinder(self._memory_handler)
             heap_walker = finder.get_heap_walker(heap)
@@ -80,19 +81,19 @@ class TestWinXPHeapWalker(unittest.TestCase):
             log.debug('-- heap 0x%0.8x free:%0.5x expected: %0.5x', heap_addr, free_size, cheap.TotalFreeSize)
             total = free_size
             for child in children:
-                freeblocks = map(lambda x: x[0], heap_sums[child])
-                self.assertEquals(len(freeblocks), len(set(freeblocks)))
+                freeblocks = list(map(lambda x: x[0], heap_sums[child]))
+                self.assertEqual(len(freeblocks), len(set(freeblocks)))
                 # print heap_sums[child]
                 free_size = sum(map(lambda x: x[1], heap_sums[child]))
                 log.debug('     \_ mmap 0x%0.8x free:%0.5x ', child.start, free_size)
-                self.assertEquals(len(freeblocks), len(set(freeblocks)))
+                self.assertEqual(len(freeblocks), len(set(freeblocks)))
                 total += free_size
             log.debug('     \= total:  free:%0.5x ', total)
 
             maxlen = len(heap)
             cheap = heap_walker.get_heap()
             #print self.parser.parse(cheap)
-            #self.assertEquals(cheap.TotalFreeSize * 8, total)
+            #self.assertEqual(cheap.TotalFreeSize * 8, total)
             #log.debug(
             #    'heap: 0x%0.8x free: %0.5x    expected: %0.5x    mmap len:%0.5x',
             #    heap.start, total, cheap.TotalFreeSize, maxlen)
@@ -109,14 +110,14 @@ class TestWinXPHeapWalker(unittest.TestCase):
         walkers = finder.list_heap_walkers()
         #print [hex(x.start) for x in heaps]
         #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
-        self.assertEquals(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
+        self.assertEqual(len(walkers), len(zeus_1668_vmtoolsd_exe.known_heaps))
         last = 0
         for i, heap_walker in enumerate(walkers):
             heap_addr = heap_walker.get_heap_address()
             # this = heap_walker.get_heap().ProcessHeapsListIndex
             # log.debug('%d @%0.8x', this, heap_addr)
             this = heap_addr
-            # self.assertEquals(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
+            # self.assertEqual(finder._read_heap(m).ProcessHeapsListIndex, i + 1,
             self.assertGreaterEqual(this, last,'heaps are sorted by base address')
             last = this
         return
@@ -159,7 +160,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                     self.assertIn(m, heap_children)
 
                 # should be aligned
-                self.assertEquals(chunk_addr & 7, 0)  # page 40
+                self.assertEqual(chunk_addr & 7, 0)  # page 40
                 st = m.read_struct(chunk_addr, winxpheap.HEAP_ENTRY) # HEAP_ENTRY
                 # st.UnusedBytes == 0x5    ?
                 if st._0._1.UnusedBytes == 0x05:
@@ -181,7 +182,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 # st = st.decode(walker._heap) # returns sub Union struct
 
                 # log.debug(st)
-                #self.assertEquals(chunk_size, st.Size)
+                #self.assertEqual(chunk_size, st.Size)
 
                 allocs.append((chunk_addr, chunk_size))  # with header
 
@@ -194,7 +195,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 if m != heap:
                     self.assertIn(m, heap_children)
                 # should be aligned
-                self.assertEquals(chunk_addr & 7, 0)  # page 40
+                self.assertEqual(chunk_addr & 7, 0)  # page 40
                 st = m.read_struct(chunk_addr, winxpheap.HEAP_ENTRY)
                 # NextOffset in userblock gives same answer
 
@@ -238,7 +239,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
                 self.fail(
                     'OVERFLOW @%0.8x-@%0.8x, @%0.8x size:%d end:@%0.8x' %
                     (m.start, m.end, addr, s, addr + s))
-            ##self.assertEquals(mapping, m)
+            ##self.assertEqual(mapping, m)
             # actually valid, if m is a children of mapping
             if m != mapping:
                 self.assertIn(m, walker.list_used_mappings())
@@ -261,7 +262,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
         #self.skipTest('overallocation clearly not working')
 
-        self.assertEquals(self._memory_handler.get_target_platform().get_os_name(), 'winxp')
+        self.assertEqual(self._memory_handler.get_target_platform().get_os_name(), 'winxp')
 
         full = list()
         for heap in finder.list_heap_walkers():
@@ -296,22 +297,22 @@ class TestWinXPHeapWalker(unittest.TestCase):
             my_chunks.extend(free_lists)
 
             myset = set(my_chunks)
-            self.assertEquals(
+            self.assertEqual(
                 len(myset),
                 len(my_chunks),
                 'NON unique referenced chunks found.')
 
             full.extend(my_chunks)
 
-        self.assertEquals(len(full), len(set(full)), 'duplicates allocs found')
+        self.assertEqual(len(full), len(set(full)), 'duplicates allocs found')
 
         addrs = [addr for addr, s in full]
         #addrs.sort()
         #addrs2 = list(set(addrs))
         #addrs2.sort()
-        #self.assertEquals(
+        #self.assertEqual(
         #    addrs, addrs2)#, 'duplicates allocs found but different sizes')
-        self.assertEquals(
+        self.assertEqual(
             len(addrs), len(
                 set(addrs)), 'duplicates allocs found but different sizes')
 
@@ -385,7 +386,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
         #print ''
         #print [hex(x) for x,y in zeus_1668_vmtoolsd_exe.known_heaps]
         #print [hex(x) for x in found]
-        self.assertEquals(map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps), found)
+        self.assertEqual(list(map(lambda x: x[0], zeus_1668_vmtoolsd_exe.known_heaps)), found)
 
         return
 

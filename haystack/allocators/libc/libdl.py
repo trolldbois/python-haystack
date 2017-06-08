@@ -4,6 +4,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from __future__ import print_function
 import ctypes
 import logging
 
@@ -108,19 +109,20 @@ def reverseLocalFonctionPointerNames(context):
                             yield (ptr, dl_name)
                         else:
                             continue
-                            print '[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
+                            print('[-] MIDDLE 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s %s fn: %s @%x' % (
                                 ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions,
-                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr)
+                                m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name, fnaddr))
                     else:
                         continue
-                        print 'FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s ' % (
+                        print('FAIL REBASE (not public ?) 0x%x -> 0x%x p:%s|%s|=%s  off:%x|%x|=%s  %s fn: %s ' % (
                             ptr, caddr, m.permissions, localm.permissions, localm.permissions == m.permissions,
-                            m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name)
+                            m.offset, localm.offset, m.offset == localm.offset, m.pathname, dl_name))
                         pass
                     break
             if not found:
                 continue
-                print '[+] not a fn pointer %x\n' % (ptr), m, '\n   ---dump  Vs local ---- \n', '\n'.join(map(str, localmaps))
+                print('[+] not a fn pointer %x\n' % (ptr), m, '\n   ---dump  Vs local ---- \n',
+                      '\n'.join(map(str, localmaps)))
     # pass
     for name, lib in ldso.items():
         ret = libdl.dlclose(lib._handle)

@@ -2,6 +2,8 @@
 #
 
 
+from __future__ import print_function
+
 """
 WinXP HEAP
 
@@ -722,24 +724,24 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         # Heap's unuseduncommitted ranges
         # Heap.UnusedUnCommittedRanges
         # size & space calculated from heap info
-        print '    Backend:'
+        print('    Backend:')
         ucrs = self.HEAP_get_UCRanges_list(heap)
         ucr_list = winheap.UCR_List(ucrs)
-        print '\tUnused UCR: %d' % (len(ucrs))
-        print ucr_list.to_string('\t\t')
+        print('\tUnused UCR: %d' % (len(ucrs)))
+        print(ucr_list.to_string('\t\t'))
         # Heap.UCRSegments
         ucrsegments = self.get_UCR_segment_list(heap)
-        print "\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments])))
+        print("\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments]))))
         for ucr_segment in ucrsegments:
-            print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
+            print("\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size))
             # print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
         # Virtual Allocations
         vallocs = self.HEAP_get_virtual_allocated_blocks_list(heap)
-        print '\tVAllocations: %d' % len(vallocs)
+        print('\tVAllocations: %d' % len(vallocs))
         for addr, c_size, r_size in vallocs:
             diff = '' if c_size == r_size else '!!'
             # print "vallocBlock: @0x%0.8x commit: 0x%x reserved: 0x%x" % (
-            print "\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size)
+            print("\t\t%svalloc: 0x%0.8x-0x%0.8x size:0x%x requested:0x%x " % (diff, addr, addr+c_size, c_size, r_size))
         return ucrs
 
     def print_segments_analysis(self, heap, walker, ucrs):
@@ -752,7 +754,7 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
         occupied_res2 = self.count_by_segment(segments, walker.get_backend_allocations(), overhead_size)
         free_res2 = self.count_by_segment(segments, walker.get_backend_free_chunks(), overhead_size)
 
-        print "\tSegmentList: %d" % len(segments)
+        print("\tSegmentList: %d" % len(segments))
         for segment in segments:
             p_segment = winheap.Segment(self._memory_handler, walker, segment)
             # add segments's ucr
@@ -761,14 +763,14 @@ class WinXPHeapValidator(winheap.WinHeapValidator):
             ucr_list = winheap.UCR_List(ucrs)
             p_segment.set_ucr(ucr_list)
             p_segment.set_resource_usage(occupied_res2, free_res2)
-            print p_segment.to_string('\t\t')
+            print(p_segment.to_string('\t\t'))
             # if UCR, then
             # in XP, UCR segments are in HEAP.
             # ucrsegments = validator.get_UCR_segment_list(segment)
             ucrsegments = self.SEGMENT_get_UCR_list(segment)
-            print "\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments])))
+            print("\t\t\tUCRSegments: %d {%s}" % (len(ucrsegments), ','.join(sorted([hex(s._orig_address_) for s in ucrsegments]))))
             for ucr_segment in ucrsegments:
-                print "\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size)
+                print("\t\t\t\tUCRSegment: 0x%0.8x-0x%0.8x size:0x%x" % (ucr_segment.Address, ucr_segment.Address+ucr_segment.Size, ucr_segment.Size))
                 #print "\t\t\t\t.Segment.Next", hex(ucr_segment.Next.value)
             #
 

@@ -3,6 +3,7 @@
 # Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
 #
 
+from __future__ import print_function
 import ctypes
 import logging
 import struct
@@ -169,7 +170,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
                 for start, size in self._backend_allocs:
                     end = start + size
                     lfh_block = False
-                    for front_addr in front_allocs2:
+                    for front_addr, front_addr_size in front_allocs2:
                         if start <= front_addr < end:
                             lfh_block = True
                             break
@@ -182,7 +183,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
     def _check_sizes(self, chunks):
         for addr, size in chunks:
             if size <= 0:
-                print self._heap_mapping
+                print(self._heap_mapping)
                 raise ValueError("chunk size cannot be negative: 0x%x %d" % (addr,size))
 
     def _get_virtualallocations(self):

@@ -1,11 +1,11 @@
-pefile>=1.2.10_139
+pefile #>=1.2.10_139
 python-ptrace>=0.8.1 #; sys.platform != 'win32'
 # winappdbg
 networkx>=1.9.0
 python-Levenshtein>=0.12
 # lets try to use system package / will be install in setup
 numpy
-construct
+construct<2.8
 
 # preptest requires it, not install
 # ctypeslib2

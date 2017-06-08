@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import platform
 import struct
@@ -129,12 +130,12 @@ class TargetPlatform(interfaces.ITargetPlatform):
                 cls._detect_cpu_arch_pe(mappings)
                 scores['winxp'] += 1
                 scores['win7'] += 1
-            except NotImplementedError, e:
+            except NotImplementedError as e:
                 pass
             try:
                 cls._detect_cpu_arch_elf(mappings)
                 scores['linux'] += 1
-            except NotImplementedError, e:
+            except NotImplementedError as e:
                 pass
 
         log.debug('detect_os: scores linux:%d winxp:%d win7:%d', scores['linux'], scores['winxp'], scores['win7'])
@@ -212,11 +213,11 @@ class TargetPlatform(interfaces.ITargetPlatform):
 
     def _detect_ptr_size(self):
         # by default, we only handle this
-        return self.__cpu_bits/8
+        return self.__cpu_bits//8
 
     def _detect_word_size(self):
         # by default, we only handle this
-        return self.__cpu_bits/8
+        return self.__cpu_bits//8
 
     def _detect_ld_size(self):
         # win  32 bits, 4,4,8

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import logging
 import sys
 import argparse
@@ -46,22 +47,22 @@ def find_heap():
 
     # Show Target information
     if opts.bits or opts.osname:
-        print 'Forced target resolution:', memory_handler.get_target_platform()
+        print('Forced target resolution:', memory_handler.get_target_platform())
     else:
-        print 'Automatic target resolution:', memory_handler.get_target_platform()
+        print('Automatic target resolution:', memory_handler.get_target_platform())
 
     if opts.mappings:
         # show all memory mappings
-        print 'Process mappings:'
-        print '@start     @stop       File Offset M:m   '
+        print('Process mappings:')
+        print('@start     @stop       File Offset M:m   ')
         for m in memory_handler.get_mappings():
-            print m
+            print(m)
 
     if opts.address is not None:
         one_heap(opts, finder)
         return
 
-    print 'Probable Process HEAPS:'
+    print('Probable Process HEAPS:')
     for m in memory_handler.get_mappings():
         for addr in range(m.start, m.end, 0x1000):
             special = ''
@@ -71,10 +72,10 @@ def find_heap():
                 if signature == 0xeeffeeff:
                     if addr != m.start:
                         special = ' (!) '
-                    print '[+] %s %dbits  %s 0x%0.8x' % (os, bits, special, addr), m
+                    print('[+] %s %dbits  %s 0x%0.8x' % (os, bits, special, addr), m)
 
     # Then show heap analysis
-    print 'Found Heaps:'
+    print('Found Heaps:')
 
     for walker in finder.list_heap_walkers():
         validator = walker.get_heap_validator()
@@ -91,8 +92,8 @@ def one_heap(opts, finder):
     out = text.RecursiveTextOutputter(finder._memory_handler)
     # out = python.PythonOutputter(finder._memory_handler)
     if opts.heap:
-        print out.parse(ctypes_heap, depth=2)
-        print 'Valid =', valid
+        print(out.parse(ctypes_heap, depth=2))
+        print('Valid =', valid)
     if opts.frontend:
         heap_addr = ctypes_heap._orig_address_
         heap_m = memory_handler.get_mapping_for_address(heap_addr)
@@ -127,7 +128,7 @@ def one_heap(opts, finder):
         validator = finder.get_heap_walker(m).get_heap_validator()
         validator.print_heap_analysis(ctypes_heap, opts.verbose)
     else:
-        print "Could not load Heap for target", memory_handler.get_target_platform()
+        print("Could not load Heap for target", memory_handler.get_target_platform())
     return
 
 

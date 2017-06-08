@@ -69,12 +69,12 @@ class TestLibcHeapWalker(unittest.TestCase):
     def test_get_user_allocations(self):
         # we should have 3 allocators + 1 empty chunks
         allocs = self.walker.get_user_allocations()
-        self.assertEquals(len(allocs), 35 + 255 + 16 + 16 + 16 + 3 + 7)
+        self.assertEqual(len(allocs), 35 + 255 + 16 + 16 + 16 + 3 + 7)
 
     def test_get_free_chunks(self):
         # the empty chunk
         free = self.walker.get_free_chunks()
-        self.assertEquals(len(free), 1)
+        self.assertEqual(len(free), 1)
 
 
 class TestLibcHeapWalkerBigger(unittest.TestCase):
@@ -88,21 +88,21 @@ class TestLibcHeapWalkerBigger(unittest.TestCase):
         heap_finder = memory_handler.get_heap_finder()
         #
         walkers = heap_finder.list_heap_walkers()
-        self.assertEquals(len(walkers), 1)
+        self.assertEqual(len(walkers), 1)
         heap = walkers[0].get_heap_mapping()
         walker = heap_finder.get_heap_walker(heap)
         # test the number of allocations
         allocs = walker.get_user_allocations()
-        self.assertEquals(len(allocs), 2568)
+        self.assertEqual(len(allocs), 2568)
         # test the size of allocations
         size = sum([size for addr, size in allocs])
-        self.assertEquals(size, 105616)
+        self.assertEqual(size, 105616)
         # test the number of free chunks
         free = walker.get_free_chunks()
-        self.assertEquals(len(free), 7)
+        self.assertEqual(len(free), 7)
         # test the size of free chunks
         size = sum([size for addr, size in free])
-        self.assertEquals(size, 19252)
+        self.assertEqual(size, 19252)
 
         return
 

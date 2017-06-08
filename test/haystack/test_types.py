@@ -89,8 +89,8 @@ class TestReload(unittest.TestCase):
         # cd and ctypes share a cache
         self.assertIn(X, cd._pointer_type_cache.keys())
         # and cd.POINTER is actually ctypes.POINTER
-        self.assertEquals(cd.POINTER, ctypes.POINTER)
-        self.assertEquals(cd._pointer_type_cache, ctypes._pointer_type_cache)
+        self.assertEqual(cd.POINTER, ctypes.POINTER)
+        self.assertEqual(cd._pointer_type_cache, ctypes._pointer_type_cache)
 
         # but not other proxies
         self.assertNotIn(X, newarch._pointer_type_cache.keys())
@@ -112,8 +112,8 @@ class TestReload(unittest.TestCase):
         ctypes = types.build_ctypes_proxy(4, 4, 8)
         for name, value in make_types(ctypes).items():
             globals()[name] = value
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 4)
 
         import ctypes
         # no CString.
@@ -132,21 +132,21 @@ class TestReload(unittest.TestCase):
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         # default ctypes should be similar to host ctypes.
-        self.assertEquals(
+        self.assertEqual(
             ctypes.sizeof(arra1),
             4 *
             ctypes.sizeof(
                 ctypes.get_real_ctypes_member('c_long')))
-        self.assertEquals(
+        self.assertEqual(
             ctypes.sizeof(stp),
             ctypes.sizeof(
                 ctypes.get_real_ctypes_member('c_void_p')))
-        self.assertEquals(
+        self.assertEqual(
             ctypes.sizeof(arra1),
             4 *
             ctypes.sizeof(
                 ctypes.c_long))
-        self.assertEquals(ctypes.sizeof(stp), ctypes.sizeof(ctypes.c_void_p))
+        self.assertEqual(ctypes.sizeof(stp), ctypes.sizeof(ctypes.c_void_p))
         return
 
     def test_reload_ctypes(self):
@@ -155,36 +155,36 @@ class TestReload(unittest.TestCase):
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         # other arch
         ctypes = types.build_ctypes_proxy(4, 8, 8)
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(ctypes.sizeof(stp), 8)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(ctypes.sizeof(stp), 8)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         # other arch
         ctypes = types.build_ctypes_proxy(8, 4, 8)
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         # other arch
         ctypes = types.build_ctypes_proxy(8, 4, 16)
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(double), 16)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(double), 16)
 
         # other arch
         self.assertRaises(NotImplementedError, types.build_ctypes_proxy, 16, 8, 16)
@@ -201,37 +201,37 @@ class TestReload(unittest.TestCase):
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes, x32)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes, x32)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         ctypes = x64
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes, x64)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(stp), 8)
-        self.assertEquals(ctypes.sizeof(double), 16)
+        self.assertEqual(ctypes, x64)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(ctypes.sizeof(stp), 8)
+        self.assertEqual(ctypes.sizeof(double), 16)
 
         ctypes = win
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes, win)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(ctypes.sizeof(stp), 8)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes, win)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(ctypes.sizeof(stp), 8)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         ctypes = x32
         for name, value in make_types(ctypes).items():
             globals()[name] = value
         self.assertTrue(ctypes.proxy)
-        self.assertEquals(ctypes, x32)
-        self.assertEquals(ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(ctypes.sizeof(stp), 4)
-        self.assertEquals(ctypes.sizeof(double), 8)
+        self.assertEqual(ctypes, x32)
+        self.assertEqual(ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(ctypes.sizeof(stp), 4)
+        self.assertEqual(ctypes.sizeof(double), 8)
 
         return
 
@@ -358,7 +358,7 @@ class TestProxyCTypesAPI(unittest.TestCase):
         #''' Do not replace c_char_p '''
         ctypes = types.load_ctypes_default()
         from haystack import basicmodel
-        self.assertEquals(
+        self.assertEqual(
             ctypes.c_char_p.__name__,
             'c_char_p',
             'c_char_p should not be changed')
@@ -381,14 +381,14 @@ class TestProxyCTypesAPI(unittest.TestCase):
         if ctypes.sizeof(ctypes.c_void_p) != ctypes.sizeof(
                 ctypes.get_real_ctypes_member("c_void_p")):
             self.skipTest('cant cast memory pointer cross platform')
-        self.assertEquals(ctypes.addressof(i), a.value)
-        self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
+        self.assertEqual(ctypes.addressof(i), a.value)
+        self.assertEqual(ctypes.addressof(i), ctypes.addressof(p.contents))
 
         i = St()
         a = ctypes.c_void_p(ctypes.addressof(i))
         p = ctypes.cast(a, stp)
-        self.assertEquals(ctypes.addressof(i), a.value)
-        self.assertEquals(ctypes.addressof(i), ctypes.addressof(p.contents))
+        self.assertEqual(ctypes.addressof(i), a.value)
+        self.assertEqual(ctypes.addressof(i), ctypes.addressof(p.contents))
         # print fptr
         #x = fptr
         # print ctypes.is_pointer_type(fptr)
@@ -404,7 +404,7 @@ class TestProxyCTypesAPI(unittest.TestCase):
         #verify this is our proxy module
         self.assertTrue(hasattr(ctypes,'get_real_ctypes_member'))
         self.assertTrue(hasattr(ctypes,'CFUNCTYPE'))
-        self.assertEquals(ctypes.get_real_ctypes_member('CFUNCTYPE'),
+        self.assertEqual(ctypes.get_real_ctypes_member('CFUNCTYPE'),
                           ctypes.CFUNCTYPE)
 
 
@@ -426,14 +426,14 @@ class TestBasicFunctions32(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 4)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 4)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.POINTER(self._ctypes.c_int)), 4)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 4)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 4)
-        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 4)
-        self.assertEquals(self._ctypes.sizeof(double), 8)
-        self.assertEquals(self._ctypes.sizeof(fptr), 4)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_long), 4)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_void_p), 4)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.POINTER(self._ctypes.c_int)), 4)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_char_p), 4)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_wchar_p), 4)
+        self.assertEqual(self._ctypes.sizeof(arra1), 4 * 4)
+        self.assertEqual(self._ctypes.sizeof(double), 8)
+        self.assertEqual(self._ctypes.sizeof(fptr), 4)
 
         return
 
@@ -465,13 +465,13 @@ class TestBasicFunctionsWin(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
-        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(self._ctypes.sizeof(double), 8)
-        self.assertEquals(self._ctypes.sizeof(fptr), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_long), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
+        self.assertEqual(self._ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(self._ctypes.sizeof(double), 8)
+        self.assertEqual(self._ctypes.sizeof(fptr), 8)
         return
 
     def test_import(self):
@@ -502,13 +502,13 @@ class TestBasicFunctions64(TestBasicFunctions):
                       arra6, Union, ptrUnion]
 
     def test_sizes(self):
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_long), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
-        self.assertEquals(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
-        self.assertEquals(self._ctypes.sizeof(arra1), 4 * 8)
-        self.assertEquals(self._ctypes.sizeof(double), 16)
-        self.assertEquals(self._ctypes.sizeof(fptr), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_long), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_void_p), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_char_p), 8)
+        self.assertEqual(self._ctypes.sizeof(self._ctypes.c_wchar_p), 8)
+        self.assertEqual(self._ctypes.sizeof(arra1), 4 * 8)
+        self.assertEqual(self._ctypes.sizeof(double), 16)
+        self.assertEqual(self._ctypes.sizeof(fptr), 8)
         return
 
     def test_import(self):

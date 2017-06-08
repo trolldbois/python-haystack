@@ -46,23 +46,23 @@ class TestToPyObject(SrcTests):
         d, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_d, offset)
         self.assertTrue(validated)
 
-        self.assertEquals(int(self.sizes['struct_d']), my_ctypes.sizeof(d))
+        self.assertEqual(int(self.sizes['struct_d']), my_ctypes.sizeof(d))
 
         parser = python.PythonOutputter(self.memory_handler)
         obj = parser.parse(d)
         # check Ctypes values too
-        self.assertEquals(d.a.value, self.offsets['struct_d'][0])
-        self.assertEquals(d.b.value, self.offsets['struct_d.b'][0])
-        self.assertEquals(d.b2.value, self.offsets['struct_d.b2'][0])
+        self.assertEqual(d.a.value, self.offsets['struct_d'][0])
+        self.assertEqual(d.b.value, self.offsets['struct_d.b'][0])
+        self.assertEqual(d.b2.value, self.offsets['struct_d.b2'][0])
 
         # check python calues
         for i in range(9):
-            self.assertEquals(
+            self.assertEqual(
                 int(self.values['struct_d.c[%d].a' % i]), obj.c[i].a)
-            self.assertEquals(
+            self.assertEqual(
                 int(self.values['struct_d.f[%d]' % i]), obj.f[i])
-        self.assertEquals(int(self.values['struct_d.e']), obj.e)
-        self.assertEquals(str(self.values['struct_d.i']), obj.i)
+        self.assertEqual(int(self.values['struct_d.e']), obj.e)
+        self.assertEqual(self.values['struct_d.i'], obj.i)
 
         return
 
@@ -74,28 +74,28 @@ class TestToPyObject(SrcTests):
         ret, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_a, offset)
         self.assertTrue(validated)
 
-        self.assertEquals(int(self.sizes['struct_a']), my_ctypes.sizeof(ret))
+        self.assertEqual(int(self.sizes['struct_a']), my_ctypes.sizeof(ret))
 
         parser = python.PythonOutputter(self.memory_handler)
         a = parser.parse(ret)
 
-        self.assertEquals(int(self.values['struct_a.a']), a.a)
-        self.assertEquals(int(self.values['struct_a.b']), a.b)
-        self.assertEquals(int(self.values['struct_a.c']), a.c)
-        self.assertEquals(int(self.values['struct_a.d']), a.d)
-        self.assertEquals(int(self.values['struct_a.e']), a.e)
-        self.assertEquals(float(self.values['struct_a.f']), a.f)
-        self.assertEquals(float(self.values['struct_a.g']), a.g)
-        self.assertEquals(float(self.values['struct_a.h']), a.h)
+        self.assertEqual(int(self.values['struct_a.a']), a.a)
+        self.assertEqual(int(self.values['struct_a.b']), a.b)
+        self.assertEqual(int(self.values['struct_a.c']), a.c)
+        self.assertEqual(int(self.values['struct_a.d']), a.d)
+        self.assertEqual(int(self.values['struct_a.e']), a.e)
+        self.assertEqual(float(self.values['struct_a.f']), a.f)
+        self.assertEqual(float(self.values['struct_a.g']), a.g)
+        self.assertEqual(float(self.values['struct_a.h']), a.h)
 
         offset = self.offsets['union_au'][0]
         m = self.memory_handler.get_mapping_for_address(offset)
         au, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.union_au, offset)
         self.assertTrue(validated)
         au = parser.parse(au)
-        self.assertEquals(int(self.values['union_au.d']), au.d)
-        self.assertEquals(float(self.values['union_au.g']), au.g)
-        self.assertEquals(float(self.values['union_au.h']), au.h)
+        self.assertEqual(int(self.values['union_au.d']), au.d)
+        self.assertEqual(float(self.values['union_au.g']), au.g)
+        self.assertEqual(float(self.values['union_au.h']), au.h)
 
         return
 
@@ -110,13 +110,13 @@ class TestToPyObject(SrcTests):
         parser = python.PythonOutputter(self.memory_handler)
         b = parser.parse(ret)
 
-        self.assertEquals(int(self.values['union_b.a']), b.a)
-        self.assertEquals(int(self.values['union_b.b']), b.b)
-        self.assertEquals(int(self.values['union_b.c']), b.c)
-        self.assertEquals(int(self.values['union_b.d']), b.d)
-        self.assertEquals(int(self.values['union_b.e']), b.e)
+        self.assertEqual(int(self.values['union_b.a']), b.a)
+        self.assertEqual(int(self.values['union_b.b']), b.b)
+        self.assertEqual(int(self.values['union_b.c']), b.c)
+        self.assertEqual(int(self.values['union_b.d']), b.d)
+        self.assertEqual(int(self.values['union_b.e']), b.e)
         # char 251
-        self.assertEquals((self.values['union_b.g']), b.g)
+        self.assertEqual((self.values['union_b.g']), b.g)
 
         return
 
@@ -127,20 +127,21 @@ class TestToPyObject(SrcTests):
         my_ctypes = self.memory_handler.get_target_platform().get_target_ctypes()
         c, validated = api.load_record(self.memory_handler, self.ctypes5_gen32.struct_c, offset)
         self.assertTrue(validated)
-        self.assertEquals(int(self.sizes['struct_c']), my_ctypes.sizeof(c))
+        self.assertEqual(int(self.sizes['struct_c']), my_ctypes.sizeof(c))
 
         parser = python.PythonOutputter(self.memory_handler)
         c = parser.parse(c)
 
-        self.assertEquals(int(self.values['struct_c.a1']), c.a1)
-        self.assertEquals(int(self.values['struct_c.b1']), c.b1)
-        self.assertEquals(int(self.values['struct_c.c1']), c.c1)
-        self.assertEquals(int(self.values['struct_c.d1']), c.d1)
-        self.assertEquals(str(self.values['struct_c.a2']), c.a2)
-        self.assertEquals(int(self.values['struct_c.b2']), c.b2)
-        self.assertEquals(int(self.values['struct_c.c2']), c.c2)
-        self.assertEquals(int(self.values['struct_c.d2']), c.d2)
-        self.assertEquals(int(self.values['struct_c.h']), c.h)
+        self.assertEqual(int(self.values['struct_c.a1']), c.a1)
+        self.assertEqual(int(self.values['struct_c.b1']), c.b1)
+        self.assertEqual(int(self.values['struct_c.c1']), c.c1)
+        self.assertEqual(int(self.values['struct_c.d1']), c.d1)
+        # already a byte string
+        self.assertEqual(self.values['struct_c.a2'], c.a2)
+        self.assertEqual(int(self.values['struct_c.b2']), c.b2)
+        self.assertEqual(int(self.values['struct_c.c2']), c.c2)
+        self.assertEqual(int(self.values['struct_c.d2']), c.d2)
+        self.assertEqual(int(self.values['struct_c.h']), c.h)
 
         return
 

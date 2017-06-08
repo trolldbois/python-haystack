@@ -4,7 +4,7 @@ language: python
 
 python:
   - "2.7"
-#  - "3.5"
+  - "3.5"
 
 # we are using pre-dumped tests files
 # and not testing the dumping capacity of haystack.
@@ -16,6 +16,12 @@ python:
 # we can use containers.
 
 sudo: false
+
+# travis-ci upgrades it. so it is already there.
+#addons:
+#  apt:
+#    packages:
+#    - unzip
 
 # install any dependencies required
 install:
@@ -31,39 +37,39 @@ before_script:
   - mkdir -p test/dumps/vol
   - mkdir -p test/dumps/minidump
 # win7 x32
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.1.dump.zip
+  - wget https://www.dropbox.com/s/ez2t8u0ewzpvfay/putty.1.dump.zip
   - unzip -q putty.1.dump.zip
   - mv putty.1.dump test/dumps/putty/
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/putty.7124.dump.zip
+  - wget https://www.dropbox.com/s/heornlu0bljbegs/putty.7124.dump.zip
   - unzip -q putty.7124.dump.zip
   - mv putty.7124.dump test/dumps/putty/
 # win7 x64
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/keepass.test.zip
+  - wget https://www.dropbox.com/s/1b6xytpvbpabg7b/keepass.test.zip
   - unzip -q keepass.test.zip
   - mv keepass.test test/dumps/
 # linux
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.1.tgz
+  - wget https://www.dropbox.com/s/wprgq98hcv9kxsx/ssh.1.tgz
   - tar zxf ssh.1.tgz
   - mv ssh.1 test/dumps/ssh/
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/ssh.x64.6653.dump.tgz
+  - wget https://www.dropbox.com/s/oh227t9jzh9ydh1/ssh.x64.6653.dump.tgz
   - tar zxf ssh.x64.6653.dump.tgz
   - mv ssh.x64.6653.dump test/dumps/ssh/
 # process extracted from volatility
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.1668.dump.tgz
-  - tar zxf zeus.vmem.1668.dump.tgz
+  - wget https://www.dropbox.com/s/1g3ywwpqv5bg5za/zeus.vmem.1668.dump.zip
+  - unzip -P infected zeus.vmem.1668.dump.zip
   - mv zeus.vmem.1668.dump test/dumps/vol/
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/zeus.vmem.856.dump.tgz
-  - tar zxf zeus.vmem.856.dump.tgz
+  - wget https://www.dropbox.com/s/aj5sy48imxr9kwz/zeus.vmem.856.dump.zip
+  - unzip -P infected zeus.vmem.856.dump.zip
   - mv zeus.vmem.856.dump test/dumps/vol/
 # winxp 64
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/cmd.dmp.gz
+  - wget https://www.dropbox.com/s/8x28lgd6ljgjitl/cmd.dmp.gz
   - gunzip cmd.dmp.gz
   - mv cmd.dmp test/dumps/minidump
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/alg.dmp.gz
+  - wget https://www.dropbox.com/s/emj1mh86bdep51c/alg.dmp.gz
   - gunzip alg.dmp.gz
   - mv alg.dmp test/dumps/minidump
 # we need the simple memory tests.
-  - wget https://dl.dropboxusercontent.com/u/10222931/HAYSTACK/src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz
+  - wget https://www.dropbox.com/s/71meb0a1lck1u2c/src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz
   - tar zxf src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz -C test/
 
 

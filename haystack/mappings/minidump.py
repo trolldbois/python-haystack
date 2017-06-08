@@ -22,11 +22,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from construct import *
-from time import mktime
-from datetime import datetime, timedelta
+from __future__ import print_function
 
-import file
+from datetime import datetime, timedelta
+from time import mktime
+
+from construct import *
+
+from haystack.mappings import file
 
 
 def Hex(base):
@@ -416,14 +419,14 @@ def GUID(name):
                   )
 
 CV_RSDS_HEADER = Struct("CV_RSDS",
-                        Const(Field("Signature", 4), "RSDS"),
+                        Const(Field("Signature", 4), b"RSDS"),
                         GUID("GUID"),
                         ULInt32("Age"),
                         CString("Filename"),
                         )
 
 CV_NB10_HEADER = Struct("CV_NB10",
-                        Const(Field("Signature", 4), "NB10"),
+                        Const(Field("Signature", 4), b"NB10"),
                         ULInt32("Offset"),
                         ULInt32("Timestamp"),
                         ULInt32("Age"),
@@ -432,7 +435,7 @@ CV_NB10_HEADER = Struct("CV_NB10",
 
 CV_DATA = Struct("CvData",
                  Peek(Field("_Signature", 4)),
-                 IfThenElse("CV_DATA", lambda ctx: ctx._Signature == "RSDS",
+                 IfThenElse("CV_DATA", lambda ctx: ctx._Signature == b"RSDS",
                             Embed(CV_RSDS_HEADER),
                             Embed(CV_NB10_HEADER)
                             ),
@@ -956,7 +959,7 @@ MINIDUMP_DIRECTORY = Struct('MINIDUMP_DIRECTORY',
                             )
 
 MINIDUMP_HEADER = Debugger(Struct('MINIDUMP_HEADER',
-                                  Const(Field("Signature", 4), "MDMP"),
+                                  Const(Field("Signature", 4), b"MDMP"),
                                   ULInt16('Version'),
                                   ULInt16('ImplementationVersion'),
                                   ULInt32('NumberOfStreams'),
@@ -978,7 +981,6 @@ MINIDUMP_HEADER = Debugger(Struct('MINIDUMP_HEADER',
 # from haystack.mappings import FileMapping
 from haystack import target
 from haystack.abc import interfaces
-from haystack.mappings import cuckoo
 from haystack.mappings import base
 
 import os
@@ -1016,6 +1018,7 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
     def _init_mappings(self, construct_data):
         content_file = open(self.filename, 'rb')
         fsize = os.path.getsize(self.filename)
+        # FIXME, can't close it because we need fileno ? mmap usage
         mmap_content = mmap.mmap(
                     content_file.fileno(),
                     fsize,
@@ -1135,9 +1138,9 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
 if __name__ == "__main__":
     import sys
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
-    print x
+    print(x)
     mapper = MDMP_Mapper(sys.argv[1], None, None)
     for m in mapper.mappings:
-        print m
+        print(m)
     import code
     code.interact(local=locals())

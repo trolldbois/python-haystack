@@ -43,6 +43,12 @@ __status__ = "Production"
 log = logging.getLogger('dump_loader')
 
 
+# bad bad idea...
+MMAP_HACK_ACTIVE = True
+# do not load huge mmap
+MAX_MAPPING_SIZE_FOR_MMAP = 1024 * 1024 * 20
+
+
 class LazyLoadingException(Exception):
 
     def __init__(self, filename):
@@ -91,8 +97,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             if self._test_dir():
                 self._open_archive = lambda archive: archive
                 self._list_names = os.listdir
-                self._open_file = lambda archive, name: file(
-                    os.path.sep.join([archive, name]), 'rb')
+                self._open_file = lambda archive, name: open(
+                    os.path.sep.join([archive, name]), 'r')
                 return True
             log.error("_test_dir returned False")
         else:
@@ -151,6 +157,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
             pathname = ' '.join(fields[6:])
             # add to metaline
             self.metalines.append((mmap_fname, start, end, permissions, offset, major_device, minor_device, inode, pathname))
+        mappingsFile.close()
         return
 
     def _load_memory_mappings(self):
@@ -177,7 +184,7 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
                 mmap = AMemoryMapping(start, end, permissions, offset, major_device, minor_device, inode, pathname=pathname)
                 mmap = LocalMemoryMapping.fromBytebuffer(mmap, mmap_content_file.read())
             # use file mmap when file is too big
-            elif end - start > haystack.MAX_MAPPING_SIZE_FOR_MMAP:
+            elif end - start > MAX_MAPPING_SIZE_FOR_MMAP:
                 log.warning('Using a file backed memory mapping. no mmap in memory for this memorymap (%s).' % (pathname) +
                             ' Search will fail. Buffer is needed.')
                 mmap = FileBackedMemoryMapping(mmap_content_file.name, start, end, permissions, offset, major_device, minor_device, inode, pathname=pathname)

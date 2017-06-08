@@ -3,6 +3,7 @@
 
 """Tests haystack.utils ."""
 
+from __future__ import print_function
 import unittest
 import logging
 import shutil
@@ -53,8 +54,8 @@ class TestMemoryDumper(unittest.TestCase):
         srcDir = os.path.sep.join([os.getcwd(), 'test', 'src'])
         tgt = os.path.sep.join([srcDir, appname])
         if not os.access(tgt, os.F_OK):
-            print '\nCould not find test binaries', tgt
-            print 'HAVE YOU BUILD THEM ?'
+            print('\nCould not find test binaries', tgt)
+            print('HAVE YOU BUILD THEM ?')
             raise IOError
         return subprocess.Popen([tgt], stdout=stdout)
 
@@ -115,14 +116,14 @@ class TestMemoryDumper32(TestMemoryDumper):
     def test_mappings_file(self):
         '''Checks if memory_dumper make a _memory_handler index file'''
         tgt1 = self._make_tgt_dir()
-        self.devnull = file('/dev/null')
+        self.devnull = open('/dev/null')
         self.process = self.run_app_test('test1', stdout=self.devnull.fileno())
         time.sleep(0.1)
         # FIXME, heaponly is breaking machine detection.
         out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
-        self.assertIsNotNone(file('%s/_memory_handler' % out1))
+        self.assertIsNotNone(open('%s/_memory_handler' % out1))
         self.assertGreater(len(
-            file('%s/_memory_handler' % out1).readlines()), 15, 'the _memory_handler file looks too small')
+            open('%s/_memory_handler' % out1).readlines()), 15, 'the _memory_handler file looks too small')
 
     def test_dumptype_dir(self):
         '''Checks if dumping to folder works'''
@@ -130,19 +131,19 @@ class TestMemoryDumper32(TestMemoryDumper):
         tgt2 = self._make_tgt_dir()
         tgt3 = self._make_tgt_dir()
 
-        self.devnull = file('/dev/null')
+        self.devnull = open('/dev/null')
         self.process = self.run_app_test('test3', stdout=self.devnull.fileno())
         time.sleep(0.1)
         out1 = memory_dumper.dump(self.process.pid, tgt1, "dir", True)
-        self.assertEquals(out1, tgt1)  # same name
+        self.assertEqual(out1, tgt1)  # same name
 
         self._renew_process()
         out2 = memory_dumper.dump(self.process.pid, tgt2, "dir", True)
-        self.assertEquals(out2, tgt2)  # same name
+        self.assertEqual(out2, tgt2)  # same name
 
         self._renew_process()
         out3 = memory_dumper.dump(self.process.pid, tgt3, "dir", False)
-        self.assertEquals(out3, tgt3)  # same name
+        self.assertEqual(out3, tgt3)  # same name
 
         size1 = self.get_folder_size(tgt1)
         size2 = self.get_folder_size(tgt2)
@@ -183,13 +184,13 @@ class TestMemoryDumper32(TestMemoryDumper):
         pathnames1 = [m.pathname for m in mappings1]
         pathnames2 = [m.pathname for m in mappings2]
         pathnames3 = [m.pathname for m in mappings3]
-        self.assertEquals(pathnames1, pathnames2)
-        self.assertEquals(pathnames3, pathnames2)
+        self.assertEqual(pathnames1, pathnames2)
+        self.assertEqual(pathnames3, pathnames2)
 
         return
 
     def _setUp_known_pattern(self, compact=True):
-        self.devnull = file('/dev/null')
+        self.devnull = open('/dev/null')
         self.process = self.run_app_test('test3', stdout=subprocess.PIPE)
         time.sleep(0.1)
         tgt = self._make_tgt_dir()
@@ -211,7 +212,7 @@ class TestMemoryDumper32(TestMemoryDumper):
                 'test.src.ctypes3.struct_Node', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
-            self.assertEquals(instance.val1, 0xdeadbeef)
+            self.assertEqual(instance.val1, 0xdeadbeef)
             self.assertNotEquals(instance.ptr2, 0x0)
             pass
 
@@ -220,10 +221,10 @@ class TestMemoryDumper32(TestMemoryDumper):
                 'test.src.ctypes3.struct_test3', self.out, int(
                     offset, 16), rtype='python')
             self.assertTrue(found)
-            self.assertEquals(instance.val1, 0xdeadbeef)
-            self.assertEquals(instance.val1b, 0xdeadbeef)
-            self.assertEquals(instance.val2, 0x10101010)
-            self.assertEquals(instance.val2b, 0x10101010)
+            self.assertEqual(instance.val1, 0xdeadbeef)
+            self.assertEqual(instance.val1b, 0xdeadbeef)
+            self.assertEqual(instance.val2, 0x10101010)
+            self.assertEqual(instance.val2b, 0x10101010)
             pass
 
     def test_known_pattern_string(self):

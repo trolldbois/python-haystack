@@ -9,7 +9,6 @@ from haystack.search import api
 from haystack.search import searcher
 
 
-
 class TestApiWin32Dump(unittest.TestCase):
     """
     test if the API works for windows
@@ -54,7 +53,7 @@ class TestApiWin32Dump(unittest.TestCase):
 
         my_loader = searcher.RecordLoader(self.memory_handler)
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
-        res_p = haystack.output_to_python(self.memory_handler, [res])
+        res_p = api.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertFalse(validated)
@@ -62,28 +61,27 @@ class TestApiWin32Dump(unittest.TestCase):
         # now lets just use the win7heap constraints
         my_loader = searcher.RecordLoader(self.memory_handler, heapwalker._heap_module_constraints)
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0])
-        res_p = haystack.output_to_python(self.memory_handler, [res])
+        res_p = api.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         # no constraints loaded, subsegmentcode pointer went to is_valid
         self.assertTrue(validated)
         self.assertIsInstance(instance, object)
-        self.assertEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(instance.FrontEndHeapType, 0)
+        self.assertEqual(instance.Signature, 0xeeffeeff)
+        self.assertEqual(instance.VirtualMemoryThreshold, 0xfe00)
+        self.assertEqual(instance.FrontEndHeapType, 0)
 
         # try a misalign read
         res = my_loader.load(heapwalker._heap_module.HEAP, self.known_heaps[0][0] + 1)
-        res_p = haystack.output_to_python(self.memory_handler, [res])
+        res_p = api.output_to_python(self.memory_handler, [res])
         instance, validated = res_p[0]
         self.assertFalse(validated)
         self.assertIsInstance(instance, object)
         self.assertNotEquals(instance.Signature, 0xeeffeeff)
-        self.assertEquals(instance.Signature, 0xeeffee)  # 1 byte off
+        self.assertEqual(instance.Signature, 0xeeffee)  # 1 byte off
         self.assertNotEquals(instance.VirtualMemoryThreshold, 0xfe00)
-        self.assertEquals(instance.VirtualMemoryThreshold, 0xff0000fe)
+        self.assertEqual(instance.VirtualMemoryThreshold, 0xff0000fe)
 
         return
-
 
 
 if __name__ == '__main__':

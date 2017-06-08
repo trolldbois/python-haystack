@@ -58,11 +58,11 @@ class TestListStructTest6(SrcTests):
         # we know its a double linked list, so we can iterate it.
         dnodes = [el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_double_list, 'list')]
         # test that we have a list of two allocators in a list
-        self.assertEquals(len(dnodes), 3)
+        self.assertEqual(len(dnodes), 3)
         for el in dnodes:
             self.assertIsInstance(el, self.ctypes6_gen32.struct_Node)
         snodes = [el for el in self.x32_validator.iterate_list_from_pointer_field(root.ptr_to_single_node, 'entry')]
-        self.assertEquals(len(snodes), 3)
+        self.assertEqual(len(snodes), 3)
         for el in snodes:
             self.assertIsInstance(el, self.ctypes6_gen32.struct_single_node)
         return
@@ -73,7 +73,7 @@ class TestListStructTest6(SrcTests):
         self.assertTrue(self.x32_validator.load_members(usual, 10))
         # we want the list of 2 nodes
         dnodes_addrs = [ el for el in self.x32_validator.iterate_list_from_field(usual, 'root')]
-        self.assertEquals(len(dnodes_addrs), 2)
+        self.assertEqual(len(dnodes_addrs), 2)
         for el in self.x32_validator.iterate_list_from_field(usual, 'root'):
             self.assertIsInstance(el, self.ctypes6_gen32.struct_Node)
 
@@ -85,7 +85,7 @@ class TestListStructTest6(SrcTests):
         nodes_addrs = [
             el for el in self.x32_validator._iterate_double_linked_list(self.usual.root)]
         # test that we have a list of two allocators in a list
-        self.assertEquals(len(nodes_addrs), 2)
+        self.assertEqual(len(nodes_addrs), 2)
         return
 
     def test_iter_complex(self):
@@ -93,25 +93,25 @@ class TestListStructTest6(SrcTests):
         nodes_A = [
             el for el in self.x32_validator._iterate_double_linked_list(self.rootA.list)]
         # non repeat the root
-        self.assertEquals(len(nodes_A), 6)
+        self.assertEqual(len(nodes_A), 6)
         # no dups
-        self.assertEquals(len(nodes_A), len(set(nodes_A)))
+        self.assertEqual(len(nodes_A), len(set(nodes_A)))
         self.assertNotIn(self.o_rootA, nodes_A)
 
         nodes_B = [
             el for el in self.x32_validator._iterate_double_linked_list(self.rootB.list)]
         # blink and flink in a tree
-        self.assertEquals(len(nodes_B), 14)
+        self.assertEqual(len(nodes_B), 14)
         # no dups
-        self.assertEquals(len(nodes_B), len(set(nodes_B)))
+        self.assertEqual(len(nodes_B), len(set(nodes_B)))
         self.assertNotIn(self.o_rootB, nodes_B)
 
         nodes_C = [
             el for el in self.x32_validator._iterate_double_linked_list(self.rootC.list)]
         # blink and flink in a tree
-        self.assertEquals(len(nodes_C), 31)
+        self.assertEqual(len(nodes_C), 31)
         # no dups
-        self.assertEquals(len(nodes_C), len(set(nodes_C)))
+        self.assertEqual(len(nodes_C), len(set(nodes_C)))
         self.assertNotIn(self.o_rootC, nodes_C)
 
         return

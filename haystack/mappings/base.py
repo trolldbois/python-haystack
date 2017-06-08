@@ -27,6 +27,7 @@ This code first 150 lines is mostly inspired by python ptrace by Haypo / Victor 
 Its intended to be retrofittable with ptrace's memory _memory_handler.
 """
 
+from past.builtins import long
 import logging
 
 # haystack
@@ -131,7 +132,7 @@ class AMemoryMapping(interfaces.IMemoryMapping):
             if data == "":
                 break
             offset = data.find(bytestr)
-            if (offset == -1):
+            if offset == -1:
                 skip = requested - bytestr_len + 1
             else:
                 yield (covered + offset)
@@ -257,7 +258,7 @@ class MemoryHandler(interfaces.IMemoryHandler, interfaces.IMemoryCache):
         if len(self._mappings) >= 1:
             mmap = [m for m in self._mappings if m.pathname == pathname]
         if len(mmap) < 1:
-            raise IndexError('No mmap of pathname %s' % (pathname))
+            raise IndexError('No mmap of pathname %s' % pathname)
         return mmap
 
     def get_mappings(self):

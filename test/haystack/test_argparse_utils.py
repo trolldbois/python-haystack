@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
         self.assertRaises(ValueError, argparse_utils.readable, invalid)
 
         valid = sys.modules[__name__].__file__
-        self.assertEquals(argparse_utils.readable(valid), valid)
+        self.assertEqual(argparse_utils.readable(valid), valid)
         return
 
     def test_writeable(self):
@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
         self.assertRaises(ValueError, argparse_utils.writeable, invalid)
 
         valid = sys.modules[__name__].__file__
-        self.assertEquals(argparse_utils.writeable(valid), valid)
+        self.assertEqual(argparse_utils.writeable(valid), valid)
         return
 
     def test_int16(self):
@@ -38,7 +38,7 @@ class Test(unittest.TestCase):
         self.assertRaises(ValueError, argparse_utils.int16, invalid)
 
         valid = '0x01293'
-        self.assertEquals(argparse_utils.int16(valid), 0x01293)
+        self.assertEqual(argparse_utils.int16(valid), 0x01293)
         return
 
 
