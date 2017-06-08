@@ -8,21 +8,16 @@
 Quick Start:
 ============
 [Quick usage guide](docs/Haystack_basic_usage.ipynb) in the docs/ folder.
-[Haystack-reverse CLI](docs/Haystack_reverse_CLI.ipynb) in the docs/ folder.
 
 Introduction:
 =============
 
-python-haystack is an heap analysis framework, focused on searching and reversing of  
-C structure in allcoated memory.
+python-haystack is an heap analysis framework, focused on searching of C structure in allocated memory.
 
 The first function/API is the SEARCH function.
  - It gives the ability to search for known record types in a process memory dump or live process's memory.
 
-The second function/API is the REVERSE function.
- - It aims at helping an analyst in reverse engineering the memory records types present in a process heap.
-It focuses on reconstruction, classification of classic C structures from memory. 
-It attempts to recreate types definition.
+There is an extension to reverse memory structures in [python-haystack-reverse](https://github.com/trolldbois/python-haystack-reverse).
 
 Scripts & Entry Points:
 =======================
@@ -34,20 +29,12 @@ Memory dump folder produced by `haystack-live-dump`
  - `haystack-find-heap` allows to show details on Windows HEAP.
  - `haystack-search` search CLI
  - `haystack-show` show CLI for specific record type at a specific address
- - `haystack-reverse` reverse CLI - reverse all allocation chunks
- - `haystack-reverse-show` show the reversed record at a specific address
- - `haystack-reverse-hex` show a specific record hex bytes at a specific address
- - `haystack-reverse-parents` show the records pointing to the allocated record at a specific address
 
 Memory dump file produced by a Minidump tool
 ---------------------------------------------------
  - `haystack-find-heap` allows to show details on Windows HEAP.
  - `haystack-minidump-search` search CLI
  - `haystack-minidump-show` show a specific record type at a specific address
- - `haystack-minidump-reverse` reverse CLI - reverse all allocation chunks
- - `haystack-minidump-reverse-show` show the reversed record at a specific address
- - `haystack-minidump-reverse-hex` show a specific record hex bytes at a specific address
- - `haystack-minidump-reverse-parents` show the records pointing to the allocated record at a specific address
 
 For live processes
 ------------------
@@ -170,21 +157,12 @@ Lets assume we have an ssh client or server as pid *4042*:
     $ sudo haystack-live-search --pickled <pid> <your ctypes Structure> search
 
 
-Graphic example :
------------------
+Graphic user Interface (GUI):
+-----------------------------
 
+There is an attempt at a GUI in [python-haystack-gui](https://github.com/trolldbois/python-haystack-gui).
+ 
 **This is not working right now**
-
-There is also an attempt at a Graphical GUI ( Qt4 )
-Dump the process, then you can open it in the GUI::
-
-    $ haystack-gui # ( and Ctrl-O , click click)
-    $ haystack-gui --dumpname dumps/myssh.dump
-
-You can the search a structure from the heap of that memory mapping.
-
-You have to import your extensions before that to have them listed in
-the search dialog.
 
 
 python API example:
@@ -200,48 +178,6 @@ The most easy way is to use ctypeslib to generate ctypes records from
 C Headers.
 
 Or define your python ctypes record by hand.
-
-
-Heap analysis / forensics:
-==========================
-
-Quick info:
- - The `haystack-xxx-reverse` family of entry points parse the heap for 
- allocator structures, pointers values, small integers and text (ascii/utf).
- Given all the previous information, it can extract instances and helps you 
- in classifying and defining structures types.
-
-IPython notebook usage guide:
- - [Haystack-reverse CLI](docs/Haystack reverse CLI.ipynb) in the docs/ folder.
-
-Command line example:
---------------------
-The first step is to launch the analysis process with the `haystack-xxx-reverse` entry point.
-This will create several files in the `cache/` folder in the memory dump folder:
-
-    $ haystack-reverse haystack/test/src/test-ctypes6.64.dump
-    $ ls -l haystack/test/src/test-ctypes6.64.dump/cache
-    $ ls -l haystack/test/src/test-ctypes6.64.dump/cache/structs
-
-This will create a few files. The most interesting one being the `<yourdumpfolder>/cache/xxxxx.headers_values.py` that
-gives you an ctypes listing of all found structures, with guesstimates
-on fields types.
-
-A `<yourdumpfolder>/cache/graph.gexf` file is also produced to help you visualize
-instances links. It gets messy for any kind of serious application.
-
-- `*.headers_values.py` contains the list of heuristicly reversed record types.
-- `*.strings` contains the list of heuristicly typed strings field in reversed record.
-
-Other Entry points for reversing:
---------------------------------
-
- - `haystack-reverse-show` show a specific record at a specific address
- - `haystack-reverse-hex` show a specific record hex bytes at a specific address
- - `haystack-reverse-parents` show the records pointing to the allocated record at a specific address
- - `haystack-minidump-reverse-show` show a specific record at a specific address
- - `haystack-minidump-reverse-hex` show a specific record hex bytes at a specific address
- - `haystack-minidump-reverse-parents` show the records pointing to the allocated record at a specific address
 
 
 Extension examples :
