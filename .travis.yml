@@ -28,7 +28,7 @@ install:
 ## we need coveralls
   - pip -q install coveralls
 ## install with requirements
-  - pip install -r requirements.txt --use-mirrors
+  - pip install -r requirements.txt
 
 before_script:
 # we also need the large test files (memory dumps)

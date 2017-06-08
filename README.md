@@ -173,7 +173,7 @@ There is also an attempt at a Graphical UI [python-haystack-gui](https://github.
 python API example:
 -------------------
 
-See the [quick usage guide](docs/Haystack basic usage.ipynb)
+See the [quick usage guide](docs/Haystack_basic_usage.ipynb)
 
 
 How to define your own structures:
