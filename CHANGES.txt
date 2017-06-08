@@ -15,6 +15,9 @@ Changes to architecture.txt:
     + the IHeapWalker helpers
  - the memory l
 
+2017-05:
+ - Start porting to python3
+ - extract extensions (reverse, gui) and docs to other git repo
 
 2016-01:
  - Support Minidump format (Windows standard dump format with all memory options)
