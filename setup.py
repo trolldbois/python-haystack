@@ -19,21 +19,13 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
     description = 'Run tests and dumps memory'
     user_options = []
-    #    # The format is (long option, short option, description).
-    #    ('pylint-rcfile=', None, 'path to Pylint _target_platform file'),
-    # ]
 
     def initialize_options(self):
         """Set default values for options."""
-    #  # Each user option must be listed here with their default value.
-    #  self.pylint_rcfile = ''
         pass
 
     def finalize_options(self):
         """Post-process options."""
-    #  if self.pylint_rcfile:
-    #    assert os.path.exists(self.pylint_rcfile), (
-    #        'Pylint _target_platform file %s does not exist.' % self.pylint_rcfile)
         pass
 
     def run(self):
