@@ -1,4 +1,4 @@
-pefile>=1.2.10_139
+pefile
 construct<2.8
 python-ptrace>=0.8.1 #; sys.platform != 'win32'
 # winappdbg #; sys.platform == 'win32'

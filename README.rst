@@ -7,13 +7,13 @@
 
 Quick Start:
 ============
-[Quick usage guide](docs/Haystack_basic_usage.ipynb) in the docs/ folder.  
+[Quick usage guide](docs/Haystack_basic_usage.ipynb) in the docs/ folder.
 [Haystack-reverse CLI](docs/Haystack_reverse_CLI.ipynb) in the docs/ folder.
 
 Introduction:
 =============
 
-python-haystack is an heap analysis framework, focused on searching and reversing of  
+python-haystack is an heap analysis framework, focused on searching and reversing of
 C structure in allocated memory.
 
 The first function/API is the SEARCH function.
@@ -21,7 +21,7 @@ The first function/API is the SEARCH function.
 
 The second function/API is the REVERSE function in the extension [python-haystack-reverse](https://github.com/trolldbois/python-haystack-reverse)
  - It aims at helping an analyst in reverse engineering the memory records types present in a process heap.
-It focuses on reconstruction, classification of classic C structures from memory. 
+It focuses on reconstruction, classification of classic C structures from memory.
 It attempts to recreate types definition.
 
 Scripts & Entry Points:
@@ -62,9 +62,9 @@ For a Volatility memory dump
 How to get a memory dump:
 =========================
 
-On Windows, the most straightforward is to get a Minidump. The Microsoft Sysinternals 
+On Windows, the most straightforward is to get a Minidump. The Microsoft Sysinternals
 suite of tools provide either a CLI (procdump.exe) or a GUI (Process explorer).
-Using one of these (with full memory dump option) you will produce a file 
+Using one of these (with full memory dump option) you will produce a file
 that can be used with the `haystack-minidump-xxx` list of entry points.
 
 While technically you could use many third party tool, haystack actually
@@ -81,14 +81,14 @@ containing each memory map in a separate file :
 
 Or you can code a `haystack.abc.IMemoryMapping` implementation for your favorite format.
 
-Otherwise, if you already have a system memory dump from Volatility or Rekall, 
+Otherwise, if you already have a system memory dump from Volatility or Rekall,
 you can use the `haystack-rekall-xxx` or `haystack-volatility-xxx` families of
 entry points to extract a specific process memory into a file.
 
 Verifying Windows Heap attributes:
 ==================================
 
-The entry point `haystack-find-heap` allows to show details on Windows HEAP. 
+The entry point `haystack-find-heap` allows to show details on Windows HEAP.
 It should support:
 
 - Windows XP 32 bits
@@ -108,10 +108,10 @@ A [quick usage guide](docs/Haystack basic usage.ipynb) is available to go
 over the basic steps to go from a C Header file to a Python ctypes definition.
 Or you can do it yourself, with traditional Python ctypes records.
 
-The search api is available through the `haystack-xxx-search` family of scripts but 
-also in an API so that you can embed that search in your own code. 
+The search api is available through the `haystack-xxx-search` family of scripts but
+also in an API so that you can embed that search in your own code.
 
-In short, the haystack search will iterate over every offset of the program's 
+In short, the haystack search will iterate over every offset of the program's
 memory to try and find 'valid' offset for that specific record type.
 
 The validity of the record is determined by type constraints such as:
@@ -145,13 +145,13 @@ Obviously, the more constraints, the better the results will be.
 Dynamic constraints definition:
 -------------------------------
 You can also create more complex constraints using python code by implementing
-a `haystack.abc.interface.IRecordTypeDynamicConstraintsValidator` class and feeding it to 
-the `ModuleConstraints.set_dynamic_constraints` 
+a `haystack.abc.interface.IRecordTypeDynamicConstraintsValidator` class and feeding it to
+the `ModuleConstraints.set_dynamic_constraints`
 
 Command line example:
 ---------------------
 
-**sslsnoop repository needs an update to be compatible with releases > v0.30 - pending** 
+**sslsnoop repository needs an update to be compatible with releases > v0.30 - pending**
 
 For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
@@ -206,7 +206,7 @@ structures from memory/heap analysis.
 
 How do it knows that the structures is valid ? :
 ------------------------------------------------
-You add some constraints on the record fields expected values. 
+You add some constraints on the record fields expected values.
 Pointers are always constrained to valid memory space.
 
 Where does the idea comes from ? :

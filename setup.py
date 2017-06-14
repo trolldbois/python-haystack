@@ -41,9 +41,9 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.40",
+      version="0.41.dev",
       description="Search C Structures in a process' memory",
-      long_description=open("README.md").read(),
+      long_description=open("README.rst").read(),
       url="http://packages.python.org/haystack/",
       download_url="http://github.com/trolldbois/python-haystack/tree/master",
       license="GPL",
@@ -95,7 +95,7 @@ setup(name="haystack",
       },
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
-      install_requires=["pefile>=1.2.10_139",
+      install_requires=["pefile",#>=1.2.10_139",
                         "construct<2.8",
                         ] + ["python-ptrace>=0.8.1"] if "win" not in sys.platform else []
                         + ["winappdbg"] if "win" in sys.platform else [],
@@ -103,7 +103,8 @@ setup(name="haystack",
                         # "https://github.com/trolldbois/ctypeslib/tarball/dev#egg=ctypeslib2-2.4beta",
                         "https://github.com/volatilityfoundation/volatility/tarball/master#egg=volatility-trunk",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
-                        "https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"],
+                        #"https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"
+                        ],
       # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite="test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
