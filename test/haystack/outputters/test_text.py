@@ -52,7 +52,8 @@ class TestTextOutput(SrcTests):
         x = eval(out)
 
         self.assertEqual(len(x.keys()), 15)  # 14 + padding
-        self.assertEqual(self.values['struct_d.a'], hex(x['a']))
+        # its an byte string, that is a hex value.
+        self.assertEqual(self.values['struct_d.a'], hex(x['a']).encode())
         self.assertEqual(len(x['b'].keys()), 9)
         self.assertEqual(len(x['b2'].keys()), 8)
         self.assertEqual(int(self.values['struct_d.b.e']), x['b']['e'])
@@ -64,7 +65,7 @@ class TestTextOutput(SrcTests):
             self.assertEqual(
                 int(self.values['struct_d.f[%d]' % (i)]), x['f'][i])
         self.assertEqual(int(self.values['struct_d.e']), x['e'])
-        self.assertEqual(str(self.values['struct_d.i']), x['i'])
+        self.assertEqual(self.values['struct_d.i'], x['i'])
         return
 
 

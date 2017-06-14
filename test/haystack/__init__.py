@@ -28,6 +28,8 @@ class SrcTests(unittest.TestCase):
         sizes = dict()
         fin = open('%s.stdout' % (dumpname[:-len('.dump')]), 'rb')
         for line in fin.readlines():
+            # names/keys are decode() to unicode.
+            # but values ARE bytes.
             if line.startswith(b's: '):
                 # start
                 fields = line[3:].split(b' ')

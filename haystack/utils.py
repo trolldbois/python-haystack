@@ -33,9 +33,9 @@ class Utils(interfaces.ICTypesUtils):
 
     def formatAddress(self, addr):
         if self._ctypes.sizeof(self._ctypes.c_void_p) == 8:
-            return b'0x%016x' % addr
+            return '0x%016x' % addr
         else:
-            return b'0x%08x' % addr
+            return '0x%08x' % addr
 
     def unpackWord(self, bytes, endianess='@'):
         if self._ctypes.sizeof(self._ctypes.c_void_p) == 8:

@@ -108,10 +108,10 @@ class TestHelpers(unittest.TestCase):
         my_utils32 = utils.Utils(types.build_ctypes_proxy(4, 4, 8))
 
         x = my_utils64.formatAddress(0x12345678)
-        self.assertEqual(b'0x0000000012345678', x)
+        self.assertEqual('0x0000000012345678', x)
         # 32b
         x = my_utils32.formatAddress(0x12345678)
-        self.assertEqual(b'0x12345678', x)
+        self.assertEqual('0x12345678', x)
 
     def test_unpackWord(self):
         # 64b
