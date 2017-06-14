@@ -92,6 +92,7 @@ int test2(){
         ptr->b = -98;
         ptr->c = +99;
         ptr->e = -5;
+        ptr->g = 'x';
 
         printf("s: union_b\n");
 
@@ -179,7 +180,7 @@ int test4(){
         union au * ptrau;
         struct d * ptr;
 
-        printf("s: struct_d\n");
+        printf("s: struct_d.b\n");
         ptra = (struct a *) malloc(sizeof(struct a));
         ptra->e = 41;
         printf("v: e %llu\n", ptra->e);

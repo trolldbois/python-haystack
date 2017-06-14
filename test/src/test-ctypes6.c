@@ -356,13 +356,13 @@ void test_double_graph_iter(){
 int main(){
 
 
-  test1();
-  test_double_iter();
-  test_double_iter_with_head();
-  test_double_iter_loop_with_head();
-  test_double_iter_loop_with_head_insertion();
-  test_double_graph_iter();
-  test_pointer_to_list();
+  test1(); // 3 mallocs
+  test_double_iter(); // 255 mallocs
+  test_double_iter_with_head(); // 17 mallocs
+  test_double_iter_loop_with_head(); // 17 mallocs
+  test_double_iter_loop_with_head_insertion(); // 17 mallocs
+  test_double_graph_iter(); // 32 mallocs
+  test_pointer_to_list(); // 7 mallocs
 
   printf("pid %u\n",getpid());
   fflush(stdout);

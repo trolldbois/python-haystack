@@ -30,7 +30,7 @@ else:
     ctypes._pointer_t_type_cache = {}
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint32 
+        fake_ptr_base_type = ctypes.c_uint32
         # specific case for c_void_p
         if pointee is None: # VOID pointer type. c_void_p.
             pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
@@ -51,7 +51,7 @@ else:
                 raise TypeError('This is not a ctypes pointer.')
             def __init__(self, **args):
                 raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(4, clsname), (_T,),{}) 
+        _class = type('LP_%d_%s'%(4, clsname), (_T,),{})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
 
@@ -101,13 +101,14 @@ class struct_c(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
     ('a1', ctypes.c_uint32),
-    ('b1', ctypes.c_uint8, 4),
-    ('c1', ctypes.c_uint16, 10),
-    ('d1', ctypes.c_uint16, 2),
-    ('a2', ctypes.c_char),
-    ('b2', ctypes.c_uint8, 4),
-    ('PADDING_0', ctypes.c_uint8, 4),
-    ('c2', ctypes.c_uint16, 10),
+    ('b1', ctypes.c_uint32, 4),
+    ('c1', ctypes.c_uint32, 10),
+    ('d1', ctypes.c_uint32, 2),
+    ('a2', ctypes.c_uint32, 8),
+    # NOT allowed ('a2', ctypes.c_char, 8),
+    ('b2', ctypes.c_uint32, 4),
+    ('PADDING_0', ctypes.c_uint32, 4),
+    ('c2', ctypes.c_uint32, 10),
     ('d2', ctypes.c_uint32, 2),
     ('PADDING_1', ctypes.c_uint32, 20),
     ('h', ctypes.c_int32),
