@@ -82,11 +82,28 @@ class Model(object):
 
             Mandatory.
         """
+        # we don't want module level deps
+        from haystack.outputters import python
         _created = 0
+        # python 3 fix
+        # create the package module hierachy in this model
+        # use python.pyObj as module class object (lazyness)
+        _prev = None
+        for _hierarchy_module in targetmodule.__name__.split('.'):
+            # create intermediate module in haystack.model
+            _new = python.pyObj()
+            if _prev is not None:
+                # link child in parent
+                setattr(_prev, _hierarchy_module, _new)
+            else:
+                # set haystack.model.<root_hierarchy_module>
+                setattr(sys.modules[__name__], _hierarchy_module, _new)
+            _prev = _new
+        module_in_self = _prev
+        #
         for name, klass in inspect.getmembers(targetmodule, inspect.isclass):
             # we only need to create python classes for records
             if issubclass(klass, self._ctypes.Structure) or issubclass(klass, self._ctypes.Union):
-                from haystack.outputters import python
                 # we have to keep a local (model) ref because the class is being created here.
                 # and we have a targetmodule ref. because it's asked.
                 # and another ref on the real module for the basic type, because,
@@ -95,7 +112,10 @@ class Model(object):
                 if True:
                     # that creates a haystack.model.x.x.x.classname_py
                     kpy = type('%s.%s_py' % (targetmodule.__name__, name), (python.pyObj,), {})
+                    # PYTHON 2 only (just a name in module)
                     setattr(sys.modules[__name__], '%s.%s_py' % (targetmodule.__name__, name), kpy)
+                    # PYTHON 3 only (real module path)
+                    setattr(module_in_self, '%s_py' % name, kpy)
                     # because we use it from the target module in our code
                     setattr(targetmodule, '%s_py' % name, kpy)
                 ## partial namespace
@@ -134,8 +154,7 @@ class Model(object):
             return
         _registered = self.__create_POPO_classes(targetmodule)
         if _registered == 0:
-            log.warning(
-                'No class found. Maybe you need to model.copy_generated_classes ?')
+            log.warning('No class found. Maybe you need to model.copy_generated_classes ?')
         # register once per session.
         self.__book[module_name] = targetmodule
         log.debug('registered %d modules total', len(self.__book.keys()))

@@ -158,6 +158,24 @@ class Test6_x32(_ApiTest):
         self.address2 = None
         self.address3 = None
 
+    def test_weird_py3_bug(self):
+        # RESULT: PY3 pickling works if model includes all pythoned module hierachy
+
+        results, validated = api.load_record(self.memory_handler, self.usual, self.address1)
+        # check the string output
+        retstr = api.output_to_string(self.memory_handler, [(results, validated)])
+        self.assertTrue(isinstance(retstr, str))
+        ret = api.output_to_python(self.memory_handler, [(results, validated)])
+        model = self.memory_handler.get_model()
+        # check subclass in model module
+        # from haystack import model as mm
+        x = pickle.dumps(ret)
+        # Python 2
+        # self.assertIn(b'test.src.ctypes6_gen32.struct_usual_py', x)
+        # Python 3
+        self.assertIn(b'struct_usual_py', x)
+        return
+
     def test_refresh(self):
         #handler = constraints.ConstraintsConfigHandler()
         #my_constraints = handler.read('test/src/ctypes6.constraints')
