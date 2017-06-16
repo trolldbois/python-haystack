@@ -68,7 +68,6 @@ setup(name="haystack",
                 "haystack.allocators",
                 "haystack.allocators.libc",
                 "haystack.allocators.win32"],
-      # package_dir={"haystack.reverse": 'haystack/reverse'},
       package_data={ "haystack.allocators.win32": ['win7heap32.constraints',
                                                   'win7heap64.constraints',
                                                   'winxpheap32.constraints',
@@ -105,11 +104,10 @@ setup(name="haystack",
                         "https://github.com/google/rekall/tarball/master#egg=rekall-trunk",
                         #"https://github.com/erocarrera/pefile/archive/pefile-1.2.10-139.tar.gz"
                         ],
-      # build_test_requires = ["ctypeslib2>=2.1.3"],
       test_suite="test.alltests",
       # https://pythonhosted.org/setuptools/setuptools.html
       # prep_test requires ctypeslib2
-      # tests_require=["volatility"],
+      # build_test_requires = ["ctypeslib2>=2.1.3"],
       # tests_require=["ctypeslib2>2.1.3"],
       cmdclass={
           'preptests': PyPrepTestsCommand,
