@@ -41,7 +41,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.41.dev",
+      version="0.41",
       description="Search C Structures in a process' memory",
       long_description=open("README.rst").read(),
       url="http://packages.python.org/haystack/",
@@ -95,7 +95,7 @@ setup(name="haystack",
       },
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures
-      install_requires=["pefile",#>=1.2.10_139",
+      install_requires=["pefile", #>=1.2.10_139
                         "construct<2.8",
                         ] + ["python-ptrace>=0.8.1"] if "win" not in sys.platform else []
                         + ["winappdbg"] if "win" in sys.platform else [],
