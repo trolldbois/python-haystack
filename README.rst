@@ -5,8 +5,8 @@ python-haystack memory forensics
 
 Quick Start:
 ============
-`Quick usage guide <docs/Haystack_basic_usage.ipynb>` in the docs/ folder.
-`Haystack-reverse CLI <docs/Haystack_reverse_CLI.ipynb` in the docs/ folder.
+`Quick usage guide <docs/Haystack_basic_usage.ipynb>`_ in the docs/ folder.
+`Haystack-reverse CLI <docs/Haystack_reverse_CLI.ipynb`_ in the docs/ folder.
 
 Introduction:
 =============
@@ -17,7 +17,7 @@ C structure in allocated memory.
 The first function/API is the SEARCH function.
 It gives the ability to search for known record types in a process memory dump or live process's memory.
 
-The second function/API is the REVERSE function in the extension `python-haystack-reverse <https://github.com/trolldbois/python-haystack-reverse>`
+The second function/API is the REVERSE function in the extension `python-haystack-reverse <https://github.com/trolldbois/python-haystack-reverse>`_
 It aims at helping an analyst in reverse engineering the memory records types present in a process heap.
 It focuses on reconstruction, classification of classic C structures from memory.
 It attempts to recreate types definition.
@@ -68,6 +68,8 @@ that can be used with the ``haystack-minidump-xxx`` list of entry points.
 While technically you could use many third party tool, haystack actually
 need memory mapping information to work with.
 So there is a dumping tool included ``haystack-live-dump``:
+
+.. code-block:: bash
 
     # haystack-live-dump <pid> myproc.dump
 
@@ -130,6 +132,8 @@ The following constraints are supported:
 
 
 Example:
+
+.. code-block:: python
 
     [struct_name]
     myfield: [1,0xff]
@@ -209,7 +213,7 @@ Pointers are always constrained to valid memory space.
 
 Where does the idea comes from ? :
 ----------------------------------
-http://www.hsc.fr/ressources/breves/passe-partout.html.fr originally.
+`http://www.hsc.fr/ressources/breves/passe-partout.html.fr`_ originally.
 since I started in March 2011, I have uncovered several other related
 previous work.
 
@@ -220,7 +224,7 @@ Other related work are mona.py from Immunity, some other Mandiant stuff...
 In a nutshell, this is probably not an original idea. But yet, I could
 not find a operational standalone lib for live memory extraction for my sslsnoop PoC, so....
 
-`Related work <https://github.com/trolldbois/python-haystack/wiki/State-of-art-reference>`
+`Related work <https://github.com/trolldbois/python-haystack/wiki/State-of-art-reference>`_
 
 What are the dependencies ? :
 -----------------------------
