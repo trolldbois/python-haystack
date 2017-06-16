@@ -4,7 +4,7 @@ language: python
 
 python:
   - "2.7"
-#  - "3.5"
+  - "3.5"
 
 # we are using pre-dumped tests files
 # and not testing the dumping capacity of haystack.
@@ -69,8 +69,8 @@ before_script:
   - gunzip alg.dmp.gz
   - mv alg.dmp test/dumps/minidump
 # we need the simple memory tests.
-  - wget https://www.dropbox.com/s/71meb0a1lck1u2c/src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz
-  - tar zxf src-39ec8f580ac133a317fb746bb303b1263857d2f0.tgz -C test/
+  - wget https://www.dropbox.com/s/9w5ya3d7b4qaqc3/src-2978ba6eba0b8d31b183354fc20eb17e280143b0.tgz
+  - tar zxf src-2978ba6eba0b8d31b183354fc20eb17e280143b0.tgz -C test/
 
 
 script:
