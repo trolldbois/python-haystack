@@ -126,7 +126,9 @@ def output_to_json(memory_handler, results):
 
 def output_to_pickle(memory_handler, results):
     """
-    Transform ctypes results in a pickled format
+    Transform ctypes results in a pickled format.
+    To load the pickled objects, you need to have haystack in your path.
+    
     :param memory_handler: IMemoryHandler
     :param results: results from the search_record
     :return:
@@ -134,8 +136,6 @@ def output_to_pickle(memory_handler, results):
     if not isinstance(results, list):
         raise TypeError('Feed me a list of results')
     ret = output_to_python(memory_handler, results)
-    #import code
-    #code.interact(local=locals())
     return pickle.dumps(ret)
 
 

@@ -88,8 +88,9 @@ class Model(object):
         # python 3 fix
         # create the package module hierachy in this model
         # use python.pyObj as module class object (lazyness)
+        # need module class
         _prev = None
-        for _hierarchy_module in targetmodule.__name__.split('.'):
+        for i, _hierarchy_module in enumerate(targetmodule.__name__.split('.')):
             # create intermediate module in haystack.model
             _new = python.pyObj()
             if _prev is not None:
@@ -127,9 +128,7 @@ class Model(object):
                 # add the structure size to the class
                 setattr(kpy, '_len_', self._ctypes.sizeof(klass))
                 _created += 1
-        log.debug(
-            'created %d POPO types in %s' %
-            (_created, targetmodule.__name__))
+        log.debug('created %d POPO types in %s' % (_created, targetmodule.__name__))
         return _created
 
     def build_python_class_clones(self, targetmodule):

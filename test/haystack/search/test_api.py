@@ -166,14 +166,17 @@ class Test6_x32(_ApiTest):
         retstr = api.output_to_string(self.memory_handler, [(results, validated)])
         self.assertTrue(isinstance(retstr, str))
         ret = api.output_to_python(self.memory_handler, [(results, validated)])
-        model = self.memory_handler.get_model()
         # check subclass in model module
-        # from haystack import model as mm
         x = pickle.dumps(ret)
         # Python 2
         # self.assertIn(b'test.src.ctypes6_gen32.struct_usual_py', x)
         # Python 3
         self.assertIn(b'struct_usual_py', x)
+        # TODO TEST really, you should be able to load the pickled code as long as haystack.outputters.python is there
+        # and still be able to load the object graph.
+        obj = pickle.loads(x)
+        self.assertEqual(obj[0][0].root.blink, obj[0][0].root.flink)
+        self.assertEqual(obj[0][0].root.blink.flink, obj[0][0].root.flink.flink)
         return
 
     def test_refresh(self):

@@ -244,6 +244,30 @@ class pyObj(object):
             d['_ctype_'] = d['_ctype_'].__class__.__name__
         return d
 
+    def __reduce__(self):
+        """Explains how to rebuild this class once pickled."""
+        state = self.__dict__.copy()
+        if '_ctype_' in state:
+            state['_ctype_'] = state['_ctype_'].__class__.__name__
+        name = self.__class__.__name__
+        modulename = self.__module__
+        return (_pyObjBuilder(), # __call__
+                (modulename, name), # arg for builder
+                state
+                )
+
+
+class _pyObjBuilder:
+    """Builder of pickled instance of pyObj into properly named POPO"""
+    def __call__(self, modulename, classname):
+        # make a simple object which has no complex __init__ (this one will do)
+        obj = pyObj()
+        # class = getattr(containing_class, class_name)
+        # kpy = type('%s.%s' % (modulename, classname), (pyObj,), {})
+        kpy = type(classname, (pyObj,), {})
+        obj.__class__ = kpy
+        return obj
+
 
 def findCtypesInPyObj(memory_handler, obj):
     """ check function to help in unpickling errors correction """
