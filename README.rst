@@ -159,6 +159,8 @@ For example, this will dump the session_state structures + pointed
 children structures as an python object that we can play with.
 Lets assume we have an ssh client or server as pid *4042*:
 
+.. code-block:: bash
+
     $ sudo haystack-live-search --pickled 4042 sslsnoop.ctypes_openssh.session_state search > instance.pickled
     $ sudo haystack-live-search --pickled 4042 sslsnoop.ctypes_openssh.session_state refresh 0xb8b70d18 > instance.pickled
     $ sudo haystack-live-search --pickled <pid> <your ctypes Structure> search
