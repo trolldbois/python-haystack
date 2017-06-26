@@ -76,21 +76,22 @@ setup(name="haystack",
       entry_points={
           'console_scripts': [
               'haystack-find-heap = haystack.cliwin:find_heap',
-              'haystack-search = haystack.cli:main_search',
+              'haystack-search = haystack.cli:search',
               'haystack-show = haystack.cli:main_show',
               'haystack-live-dump = haystack.memory_dumper:main',
-              'haystack-live-search = haystack.cli:live_search',
-              'haystack-live-show = haystack.cli:live_show',
-              # 'haystack-live-watch = haystack.cli:live_watch',
-              'haystack-rekall-search = haystack.cli:rekall_search',
-              'haystack-rekall-show = haystack.cli:rekall_show',
+              'haystack-live-watch = haystack.cli:live_watch',
               'haystack-rekall-dump = haystack.cli:rekall_dump',
-              'haystack-volatility-search = haystack.cli:volatility_search',
-              'haystack-volatility-show = haystack.cli:volatility_show',
               'haystack-volatility-dump = haystack.cli:volatility_dump',
-              'haystack-minidump-search = haystack.cli:minidump_search',
-              'haystack-minidump-show = haystack.cli:minidump_show',
+          ],
+          # protocol
+          'haystack.mappings_loader': [
+              'dir = haystack.mappings.folder:FolderLoader',
+              'dmp = haystack.mappings.minidump:DMPLoader',
+              'volatility = haystack.mappings.vol:VolatilityLoader',
+              'rekall = haystack.mappings.rek:RekallLoader',
+              'live = haystack.mappings.process:ProcessLoader',
           ]
+
       },
       # search: install requires only pefile, python-ptrace for memory-dump
       # reverse: install requires networkx, numpy, Levenshtein for signatures

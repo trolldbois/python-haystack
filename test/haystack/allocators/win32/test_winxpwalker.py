@@ -3,16 +3,14 @@
 
 """Tests for haystack.reverse.structure."""
 
-from builtins import map
 import logging
 import unittest
-import sys
+from builtins import map
 
-from haystack import dump_loader
 from haystack.allocators.win32 import winxpheapwalker
-from haystack.outputters import text
 from haystack.outputters import python
-
+from haystack.outputters import text
+from mappings import folder
 from test.testfiles import zeus_1668_vmtoolsd_exe
 
 log = logging.getLogger('testwinxpwalker')
@@ -26,7 +24,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls._memory_handler = dump_loader.load(zeus_1668_vmtoolsd_exe.dumpname)
+        cls._memory_handler = folder.load(zeus_1668_vmtoolsd_exe.dumpname)
         return
 
     @classmethod
@@ -412,7 +410,7 @@ class TestWinXPHeapWalker(unittest.TestCase):
 class TestWinXPHeapFinder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls._memory_handler = dump_loader.load(zeus_1668_vmtoolsd_exe.dumpname)
+        cls._memory_handler = folder.load(zeus_1668_vmtoolsd_exe.dumpname)
         return
 
     @classmethod

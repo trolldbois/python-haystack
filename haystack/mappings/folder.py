@@ -264,4 +264,14 @@ def load(dumpname, cpu=None, os_name=None):
     return memory_handler
 
 
+class FolderLoader:
+    desc = 'Load a basic haystack folder memory dump'
+
+    def __init__(self, opts):
+        opts.dump_folder_name = opts.target.path
+        self.loader = ProcessMemoryDumpLoader(opts.dump_folder_name)
+
+    def get_memory_handler(self):
+        return self.loader.make_memory_handler()
+
 

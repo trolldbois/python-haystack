@@ -216,3 +216,15 @@ def rekall_dump_to_haystack(filename, pid, output_folder_name):
             print('%s %s r-xp %s 00:00 %d [vol_mapping_%03d]' % (fmt % start, fmt % end, fmt % 0, 0, i))
 
     pass
+
+
+class RekallLoader:
+    desc = 'Load a Rekall process memory dump'
+
+    def __init__(self, opts):
+        opts.dump_filename = opts.target.path
+        opts.pid = opts.target.path.split(':')[1]
+        self.loader = RekallProcessMapper(opts.dump_filename, opts.pid)
+
+    def get_memory_handler(self):
+        return self.loader.make_memory_handler()

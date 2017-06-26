@@ -4,12 +4,11 @@
 """Tests for haystack.reverse.structure."""
 
 import logging
-import unittest
 import sys
+import unittest
 
-from haystack import dump_loader
 from haystack.allocators.win32 import win7heapwalker
-
+from mappings import folder
 from test.testfiles import putty_1_win7
 
 log = logging.getLogger('testwin7heap')
@@ -19,7 +18,7 @@ class TestWin7Heap(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load(putty_1_win7.dumpname)
+        cls.memory_handler = folder.load(putty_1_win7.dumpname)
         return
 
     @classmethod

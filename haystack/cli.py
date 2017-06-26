@@ -1,26 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-
 from __future__ import print_function
 
-"""Search for a known structure type in a process memory. """
-
-import logging
-import time
-import sys
 import argparse
-
+import logging
 import os
+import sys
+import time
+
+import pkg_resources
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 from haystack import argparse_utils
 from haystack import basicmodel
 from haystack import constraints
-from haystack import dbg
-from haystack import dump_loader
-from haystack.mappings import vol
-from haystack.mappings import rek
 from haystack.search import api
 
 log = logging.getLogger('cli')
@@ -37,6 +35,42 @@ DUMPTYPE_VOLATILITY = 'volatility'
 DUMPTYPE_REKALL = 'rekall'
 DUMPTYPE_LIVE = 'live'
 DUMPTYPE_MINIDUMP = 'minidump'
+DUMPTYPE_FRIDA = 'frida'
+
+# from urlparse import urlparse
+# >>> o = urlparse('http://www.cwi.nl:80/%7Eguido/Python.html')
+#ParseResult(scheme='http', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+# URL_SCHEMES = {'dir': DUMPTYPE_BASE,
+#                'volatility': DUMPTYPE_VOLATILITY,
+#                'rekall': DUMPTYPE_REKALL,
+#                'live': DUMPTYPE_LIVE,
+#                'dmp': DUMPTYPE_MINIDUMP,
+#                'frida': DUMPTYPE_FRIDA}
+
+SUPPORTED_DUMP_URI = {}
+# populate SUPPORTED_DUMP_URI
+for entry_point in pkg_resources.iter_entry_points("haystack.mappings_loader"):
+    ep = entry_point.resolve()
+    SUPPORTED_DUMP_URI[entry_point.name] = entry_point.resolve()
+
+
+def url(u):
+    """Validates the argument is an url"""
+    # dont populate SUPPORTED_DUMP_URI here, otherwise API wont have it.
+    url = urlparse(u)
+    scheme = url.scheme.lower()
+    if scheme not in SUPPORTED_DUMP_URI.keys():
+        raise argparse.ArgumentTypeError("Target type {s}:// not supported".format(s=scheme))
+    path = url.path
+    if scheme in ['volatility', 'rekall']:
+        path = url.path.split(':')[0]
+    if scheme in ['dir', 'volatility', 'rekall', 'dmp']:
+        if not os.path.exists(path):
+            raise argparse.ArgumentTypeError("Target {p} does not exists".format(p=path))
+        # see url.netloc for host name, frida ? live ?
+    return url
+
+
 
 # the description of the dump type
 DUMPTYPE_BASE_DESC = 'The process dump is a folder produced by a haystack-dump script.'
@@ -51,24 +85,11 @@ class HaystackError(Exception):
 
 
 def get_memory_handler(opts):
-    if opts.dumptype == DUMPTYPE_BASE:
-        loader = dump_loader.ProcessMemoryDumpLoader(opts.dump_folder_name)
-        memory_handler = loader.make_memory_handler()
-    elif opts.dumptype == DUMPTYPE_VOLATILITY:
-        mapper = vol.VolatilityProcessMapper(opts.dump_filename, "WinXPSP2x86", opts.pid)
-        memory_handler = mapper.make_memory_handler()
-    elif opts.dumptype == DUMPTYPE_REKALL:
-        mapper = rek.RekallProcessMapper(opts.dump_filename, opts.pid)
-        memory_handler = mapper.make_memory_handler()
-    elif opts.dumptype == DUMPTYPE_LIVE:
-        memory_handler = dbg.make_local_process_memory_handler(pid=opts.pid, use_mmap=opts.mmap)
-    elif opts.dumptype == DUMPTYPE_MINIDUMP:
-        from haystack.mappings import minidump
-        loader = minidump.MDMP_Mapper(opts.dump_filename)
-        memory_handler = loader.make_memory_handler()
-    else:
-        raise RuntimeError('dump type has no case support. %s', opts.dumptype)
-    return memory_handler
+    dumptype = opts.target.scheme.lower()
+    if dumptype not in SUPPORTED_DUMP_URI.keys():
+        raise TypeError('dump type has no case support. %s' % dumptype)
+    loader = SUPPORTED_DUMP_URI[dumptype](opts)
+    return loader.get_memory_handler()
 
 
 def get_output(memory_handler, results, rtype):
@@ -268,6 +289,9 @@ def base_argparser(program_name, description):
     rootparser.add_argument('--interactive', dest='interactive', action='store_true',
                             help='drop to python command line after action')
     rootparser.add_argument('--nommap', dest='mmap', action='store_false', help='disable mmap()-ing')
+    text = '://, '.join(sorted(SUPPORTED_DUMP_URI.keys())) + '://'
+    help_desc = 'target file or process. Supported URL types: %s' % text
+    rootparser.add_argument('target', type=url, help=help_desc)
     return rootparser
 
 
@@ -312,7 +336,7 @@ def watch_argparser(watch_parser):
 
 def dump_argparser(dump_parser):
     """ Dumper function options argument parser """
-    # FIXME createthe rekall/vol dumpers.
+    # FIXME create the rekall/vol dumpers.
     # only useful for live PID. Not rekall/vol.
     dump_parser.add_argument('output_folder_name', type=str, help='Output to this memory dump folder')
     dump_parser.set_defaults(func=dump_process)
@@ -356,71 +380,6 @@ def set_logging_level(opts):
     return
 
 
-def main_search():
-    # sys.path.append(os.getcwd())
-    argv = sys.argv[1:]
-    desc = SEARCH_DESC + DUMPTYPE_BASE_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_folder_name', type=argparse_utils.readable, help='Use this memory dump folder')
-    search_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_BASE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def main_show():
-    argv = sys.argv[1:]
-    desc = SHOW_DESC + DUMPTYPE_BASE_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_folder_name', type=argparse_utils.readable, help='Use this memory dump folder')
-    show_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_BASE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def live_search():
-    argv = sys.argv[1:]
-    desc = SEARCH_DESC + DUMPTYPE_LIVE_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('pid', type=int, help='Target PID on the local system')
-    search_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_LIVE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def live_show():
-    argv = sys.argv[1:]
-    desc = SHOW_DESC + DUMPTYPE_LIVE_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('pid', type=int, help='Target PID on the local system')
-    show_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_LIVE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
 def live_watch():
     argv = sys.argv[1:]
     desc = WATCH_DESC + DUMPTYPE_LIVE_DESC
@@ -430,40 +389,6 @@ def live_watch():
     output_argparser(rootparser)
     opts = rootparser.parse_args(argv)
     opts.dumptype = DUMPTYPE_LIVE
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def volatility_search():
-    argv = sys.argv[1:]
-    desc = SEARCH_DESC + DUMPTYPE_VOL_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
-    rootparser.add_argument('pid', type=int, help='Target PID in the OS memory dump')
-    search_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_VOLATILITY
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def volatility_show():
-    argv = sys.argv[1:]
-    desc = SHOW_DESC + DUMPTYPE_VOL_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
-    rootparser.add_argument('pid', type=int, help='Target PID in the OS memory dump')
-    show_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_VOLATILITY
     # apply verbosity
     set_logging_level(opts)
     # execute function
@@ -487,40 +412,6 @@ def volatility_dump():
     return
 
 
-def rekall_search():
-    argv = sys.argv[1:]
-    desc = SEARCH_DESC + DUMPTYPE_REKALL_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
-    rootparser.add_argument('pid', type=int, help='Target PID in the OS memory dump')
-    search_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_REKALL
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
-def rekall_show():
-    argv = sys.argv[1:]
-    desc = SHOW_DESC + DUMPTYPE_REKALL_DESC
-    rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
-    rootparser.add_argument('pid', type=int, help='Target PID in the OS memory dump')
-    show_argparser(rootparser)
-    output_argparser(rootparser)
-    opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_REKALL
-    # apply verbosity
-    set_logging_level(opts)
-    # execute function
-    opts.func(opts)
-    return
-
-
 def rekall_dump():
     argv = sys.argv[1:]
     desc = DUMP_DESC + DUMPTYPE_REKALL_DESC
@@ -537,15 +428,13 @@ def rekall_dump():
     return
 
 
-def minidump_search():
+def search():
     argv = sys.argv[1:]
-    desc = SEARCH_DESC + DUMPTYPE_MINIDUMP_DESC
+    desc = SEARCH_DESC
     rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
     search_argparser(rootparser)
     output_argparser(rootparser)
     opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_MINIDUMP
     # apply verbosity
     set_logging_level(opts)
     # execute function
@@ -553,18 +442,19 @@ def minidump_search():
     return
 
 
-def minidump_show():
+def show():
     argv = sys.argv[1:]
-    desc = SHOW_DESC + DUMPTYPE_MINIDUMP_DESC
+    desc = SHOW_DESC
     rootparser = base_argparser(program_name=os.path.basename(sys.argv[0]), description=desc)
-    rootparser.add_argument('dump_filename', type=argparse_utils.readable, help='Use this memory dump file')
     show_argparser(rootparser)
     output_argparser(rootparser)
     opts = rootparser.parse_args(argv)
-    opts.dumptype = DUMPTYPE_MINIDUMP
     # apply verbosity
     set_logging_level(opts)
     # execute function
     opts.func(opts)
     return
 
+
+if '__main__' == __name__:
+    search()

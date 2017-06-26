@@ -10,12 +10,11 @@ __author__ = "Loic Jaquemet loic.jaquemet+python@gmail.com"
 import logging
 import unittest
 
-from haystack import dump_loader
-from haystack.allocators import heapwalker
 from haystack.abc import interfaces
-
-from test.testfiles import zeus_1668_vmtoolsd_exe
+from haystack.allocators import heapwalker
+from mappings import folder
 from test.testfiles import putty_1_win7
+
 
 # FIXME move user_allocation test ssh.1 self.assertEqual(len(allocs), 2568)
 # FIXME move user_allocation test putty.1 self.assertEqual(len(allocs), 1733)
@@ -27,13 +26,13 @@ class TestWalkers(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.libc_mh_64 = dump_loader.load('test/src/test-ctypes3.64.dump')
-        cls.libc_mh_32 = dump_loader.load('test/src/test-ctypes3.32.dump')
-        cls.winxp_mh_32 = dump_loader.load('test/dumps/minidump/cmd.dmp')
-        cls.winxp_mh_64 = dump_loader.load('test/dumps/minidump/alg.dmp')
-        cls.win7_mh_32 = dump_loader.load(putty_1_win7.dumpname)
+        cls.libc_mh_64 = folder.load('test/src/test-ctypes3.64.dump')
+        cls.libc_mh_32 = folder.load('test/src/test-ctypes3.32.dump')
+        cls.winxp_mh_32 = folder.load('test/dumps/minidump/cmd.dmp')
+        cls.winxp_mh_64 = folder.load('test/dumps/minidump/alg.dmp')
+        cls.win7_mh_32 = folder.load(putty_1_win7.dumpname)
         # FIXME, its loaded as a winxp
-        cls.win7_mh_64 = dump_loader.load('test/dumps/keepass.test')
+        cls.win7_mh_64 = folder.load('test/dumps/keepass.test')
 
     @classmethod
     def tearDownClass(cls):
@@ -114,7 +113,7 @@ class TestWalkers(unittest.TestCase):
 class TestHeapFinder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
+        cls.memory_handler = folder.load('test/dumps/ssh/ssh.1')
         cls.finder = cls.memory_handler.get_heap_finder()
 
     @classmethod
@@ -144,7 +143,7 @@ class TestHeapFinder(unittest.TestCase):
 class TestHeapFinder2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load(putty_1_win7.dumpname)
+        cls.memory_handler = folder.load(putty_1_win7.dumpname)
         cls.finder = cls.memory_handler.get_heap_finder()
 
     @classmethod

@@ -4,8 +4,8 @@
 import logging
 import unittest
 
-from haystack import dump_loader
 from haystack.outputters import text
+from mappings import folder
 from test.testfiles import zeus_1668_vmtoolsd_exe
 
 log = logging.getLogger('testwinxpheap')
@@ -16,7 +16,7 @@ class TestWinXPHeapValidator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls._memory_handler = dump_loader.load(zeus_1668_vmtoolsd_exe.dumpname)
+        cls._memory_handler = folder.load(zeus_1668_vmtoolsd_exe.dumpname)
         cls._utils = cls._memory_handler.get_target_platform().get_target_ctypes_utils()
         return
 

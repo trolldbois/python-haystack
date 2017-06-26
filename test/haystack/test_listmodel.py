@@ -4,15 +4,13 @@
 """Tests haystack.listmodel ."""
 
 import logging
-import unittest
 import sys
+import unittest
 
-from haystack import model
 from haystack import constraints
-from haystack import dump_loader
-
-from test.src import ctypes6
+from mappings import folder
 from test.haystack import SrcTests
+from test.src import ctypes6
 
 
 class TestListStructTest6(SrcTests):
@@ -20,7 +18,7 @@ class TestListStructTest6(SrcTests):
     """
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/src/test-ctypes6.32.dump')
+        self.memory_handler = folder.load('test/src/test-ctypes6.32.dump')
         self.memdumpname = 'test/src/test-ctypes6.32.dump'
         self._load_offsets_values(self.memdumpname)
         sys.path.append('test/src/')

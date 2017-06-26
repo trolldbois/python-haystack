@@ -6,7 +6,7 @@
 import logging
 import unittest
 
-from haystack import dump_loader
+from mappings import folder
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -27,21 +27,21 @@ class TestLibcHeapFinder(unittest.TestCase):
         pass
 
     def test_list_heap_walkers(self):
-        memory_handler = dump_loader.load('test/src/test-ctypes1.64.dump')
+        memory_handler = folder.load('test/src/test-ctypes1.64.dump')
         heap_finder = memory_handler.get_heap_finder()
         walkers = heap_finder.list_heap_walkers()
         self.assertEqual(len(walkers), 1)
         self.assertEqual(walkers[0].get_heap_mapping().pathname, '[heap]')
         memory_handler.reset_mappings()
 
-        memory_handler = dump_loader.load('test/src/test-ctypes3.64.dump')
+        memory_handler = folder.load('test/src/test-ctypes3.64.dump')
         heap_finder = memory_handler.get_heap_finder()
         walkers = heap_finder.list_heap_walkers()
         self.assertEqual(len(walkers), 1)
         self.assertEqual(walkers[0].get_heap_mapping().pathname, '[heap]')
         memory_handler.reset_mappings()
 
-        memory_handler = dump_loader.load('test/src/test-ctypes3.32.dump')
+        memory_handler = folder.load('test/src/test-ctypes3.32.dump')
         heap_finder = memory_handler.get_heap_finder()
         walkers = heap_finder.list_heap_walkers()
         self.assertEqual(len(walkers), 1)
@@ -52,7 +52,7 @@ class TestLibcHeapFinder(unittest.TestCase):
 class TestLibcHeapWalker(unittest.TestCase):
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/src/test-ctypes6.64.dump')
+        self.memory_handler = folder.load('test/src/test-ctypes6.64.dump')
         self.heap_finder = self.memory_handler.get_heap_finder()
         self.walkers = self.heap_finder.list_heap_walkers()
         self.walker = self.walkers[0]
@@ -87,7 +87,7 @@ class TestLibcHeapWalkerBigger(unittest.TestCase):
 
     def test_chunks_numbers(self):
         """ Count all user allocations and free chunks (10 sec)"""
-        memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
+        memory_handler = folder.load('test/dumps/ssh/ssh.1')
         heap_finder = memory_handler.get_heap_finder()
         #
         walkers = heap_finder.list_heap_walkers()

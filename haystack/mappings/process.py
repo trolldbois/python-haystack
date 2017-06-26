@@ -194,3 +194,15 @@ def make_local_memory_handler(force=False):
     if __LOCAL_MAPPINGS is None or force:
         __LOCAL_MAPPINGS = make_process_memory_handler(dbg.MyPTraceProcess(os.getpid(), None))
     return __LOCAL_MAPPINGS
+
+
+class ProcessLoader:
+    desc = 'Load a live process memory'
+
+    def __init__(self, opts):
+        opts.pid = opts.target.path
+        self.memory_handler = dbg.make_local_process_memory_handler(pid=opts.pid, use_mmap=opts.mmap)
+
+    def get_memory_handler(self):
+        return self.memory_handler
+

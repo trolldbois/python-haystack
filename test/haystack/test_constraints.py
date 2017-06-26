@@ -6,9 +6,9 @@
 import logging
 import unittest
 
-from haystack import constraints
-from haystack import dump_loader
 from haystack import basicmodel
+from haystack import constraints
+from mappings import folder
 from test.haystack import SrcTests
 from test.src import ctypes6
 
@@ -98,7 +98,7 @@ class TestConstraints6(SrcTests):
 
     def setUp(self):
         dumpname = 'test/src/test-ctypes6.64.dump'
-        self.memory_handler = dump_loader.load(dumpname)
+        self.memory_handler = folder.load(dumpname)
         self.my_model = self.memory_handler.get_model()
         self.ctypes_gen64 = self.my_model.import_module("test.src.ctypes6_gen64")
         # load TU values

@@ -4,18 +4,18 @@
 """Tests haystack.utils ."""
 
 from __future__ import print_function
+
 import logging
 import mmap
+import os
 import struct
 import unittest
 
-import os
-
-from haystack import dump_loader
 from haystack import listmodel
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import make_local_memory_handler
+from mappings import folder
 from test.haystack import SrcTests
 
 log = logging.getLogger('test_memory_mapping')
@@ -87,7 +87,7 @@ class TestMappingsLinux(SrcTests):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1')
+        cls.memory_handler = folder.load('test/dumps/ssh/ssh.1')
 
     @classmethod
     def tearDownClass(cls):
@@ -140,7 +140,7 @@ class TestMappingsLinuxAddresses32(SrcTests):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
+        cls.memory_handler = folder.load('test/src/test-ctypes5.32.dump')
         cls.my_target = cls.memory_handler.get_target_platform()
         cls.my_ctypes = cls.my_target.get_target_ctypes()
         cls.my_utils = cls.my_target.get_target_ctypes_utils()
@@ -191,7 +191,7 @@ class TestMappingsWin32(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load('test/dumps/putty/putty.1.dump')
+        cls.memory_handler = folder.load('test/dumps/putty/putty.1.dump')
         cls.my_target = cls.memory_handler.get_target_platform()
         cls.my_ctypes = cls.my_target.get_target_ctypes()
         cls.my_utils = cls.my_target.get_target_ctypes_utils()
@@ -255,7 +255,7 @@ class TestReferenceBook(unittest.TestCase):
     """Test the reference book."""
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/src/test-ctypes6.32.dump')
+        self.memory_handler = folder.load('test/src/test-ctypes6.32.dump')
 
     def tearDown(self):
         self.memory_handler.reset_mappings()

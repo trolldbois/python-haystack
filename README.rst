@@ -6,7 +6,8 @@ python-haystack memory forensics
 Quick Start:
 ============
 `Quick usage guide <docs/Haystack_basic_usage.ipynb>`_ in the docs/ folder.
-`Haystack-reverse CLI <docs/Haystack_reverse_CLI.ipynb`_ in the docs/ folder.
+
+`Haystack-reverse CLI <docs/Haystack_reverse_CLI.ipynb>`_ in the docs/ folder.
 
 Introduction:
 =============
@@ -28,7 +29,7 @@ Scripts & Entry Points:
 A few entry points exists to handle the format your memory dump.
 
 Memory dump folder produced by ``haystack-live-dump``
----------------------------------------------------
+-----------------------------------------------------
  - ``haystack-find-heap`` allows to show details on Windows HEAP.
  - ``haystack-search`` search CLI
  - ``haystack-show`` show CLI for specific record type at a specific address
@@ -119,6 +120,10 @@ The validity of the record is determined by type constraints such as:
 - user-defined type constraints (see 'Constraints file' section below)
 - etc..
 
+.. code-block:: bash
+
+ $ python haystack/cli.py dir:///home/jal/Compil/python-haystack/test/src/test-ctypes6.32.dump ctypes6_gen32.struct_usual
+
 Constraints file:
 -----------------
 
@@ -171,13 +176,13 @@ Graphic User Interface :
 
 **This is not working right now**
 
-There is also an attempt at a Graphical UI `python-haystack-gui <https://github.com/trolldbois/python-haystack-gui>`
+There is also an attempt at a Graphical UI `python-haystack-gui <https://github.com/trolldbois/python-haystack-gui>`_
 
 
 python API example:
 -------------------
 
-See the `quick usage guide <docs/Haystack_basic_usage.ipynb>`
+See the `quick usage guide <docs/Haystack_basic_usage.ipynb>`_
 
 
 How to define your own structures:
@@ -215,7 +220,7 @@ Pointers are always constrained to valid memory space.
 
 Where does the idea comes from ? :
 ----------------------------------
-`http://www.hsc.fr/ressources/breves/passe-partout.html.fr`_ originally.
+`passe-partout <http://www.hsc.fr/ressources/breves/passe-partout.html.fr>`_ originally.
 since I started in March 2011, I have uncovered several other related
 previous work.
 

@@ -4,11 +4,9 @@
 """Tests haystack.basicmodel ."""
 
 import logging
+import sys
 import unittest
 
-import os
-import subprocess
-import sys
 from haystack import cliwin
 from test.haystack import SrcTests
 

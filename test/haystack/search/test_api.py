@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import pickle
 import unittest
 
-import pickle
-
-import haystack
-from haystack import dump_loader
 from haystack import constraints
 from haystack.search import api
+from mappings import folder
 from test.haystack import SrcTests
 
 
@@ -32,7 +30,7 @@ class _ApiTest(SrcTests):
 
     @classmethod
     def setUpClass(cls):
-        cls.memory_handler = dump_loader.load(cls.memdumpname)
+        cls.memory_handler = folder.load(cls.memdumpname)
         cls.my_target = cls.memory_handler.get_target_platform()
         cls.my_ctypes = cls.my_target.get_target_ctypes()
         cls.my_utils = cls.my_target.get_target_ctypes_utils()

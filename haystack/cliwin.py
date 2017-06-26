@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-import logging
-import sys
-import argparse
 
-from haystack import dump_loader
+import argparse
+import logging
+import struct
+import sys
+
 from haystack import argparse_utils
 from haystack.outputters import text
-import struct
-
-
+from mappings import folder
 
 # from haystack.outputters import python
 
@@ -42,7 +41,7 @@ def find_heap():
     cli.set_logging_level(opts)
 
     #
-    memory_handler = dump_loader.load(opts.dumpname, os_name=opts.osname, cpu=opts.bits)
+    memory_handler = folder.load(opts.dumpname, os_name=opts.osname, cpu=opts.bits)
     finder = memory_handler.get_heap_finder()
 
     # Show Target information

@@ -7,8 +7,8 @@ import logging
 import unittest
 
 from haystack import basicmodel
-from haystack import dump_loader
 from haystack import target
+from mappings import folder
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"
@@ -25,7 +25,7 @@ class TestLoadMembers(SrcTests):
     """Basic types"""
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
+        self.memory_handler = folder.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
         self.my_target = target.TargetPlatform.make_target_linux_32()
         self.my_ctypes = self.my_target.get_target_ctypes()
@@ -137,7 +137,7 @@ class TestRealSSH(unittest.TestCase):
     """Basic types"""
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/dumps/ssh/ssh.1/')
+        self.memory_handler = folder.load('test/dumps/ssh/ssh.1/')
         self.my_target = self.memory_handler.get_target_platform()
         self.my_ctypes = self.my_target.get_target_ctypes()
         self.my_utils = self.my_target.get_target_ctypes_utils()

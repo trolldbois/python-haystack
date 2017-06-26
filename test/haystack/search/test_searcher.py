@@ -3,10 +3,10 @@
 
 import logging
 import unittest
-import haystack
-from haystack import dump_loader
+
 from haystack.search import api
 from haystack.search import searcher
+from mappings import folder
 
 
 class TestApiWin32Dump(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestApiWin32Dump(unittest.TestCase):
                             # from free stuf
                             (0x0061a000, 1200),
                             ]
-        self.memory_handler = dump_loader.load(self.memdumpname)
+        self.memory_handler = folder.load(self.memdumpname)
 
     def tearDown(self):
         self.memory_handler.reset_mappings()

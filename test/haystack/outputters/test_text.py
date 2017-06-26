@@ -4,12 +4,12 @@
 """Tests haystack.basicmodel ."""
 
 import logging
-import unittest
 import sys
+import unittest
 
-from haystack.search import api
-from haystack import dump_loader
 from haystack.outputters import text
+from haystack.search import api
+from mappings import folder
 from test.haystack import SrcTests
 
 __author__ = "Loic Jaquemet"
@@ -25,7 +25,7 @@ class TestTextOutput(SrcTests):
     """Basic types"""
 
     def setUp(self):
-        self.memory_handler = dump_loader.load('test/src/test-ctypes5.32.dump')
+        self.memory_handler = folder.load('test/src/test-ctypes5.32.dump')
         self._load_offsets_values('test/src/test-ctypes5.32.dump')
         sys.path.append('test/src/')
         my_model = self.memory_handler.get_model()

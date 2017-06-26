@@ -4,17 +4,16 @@
 """Tests haystack.utils ."""
 
 from __future__ import print_function
-import unittest
+
 import logging
+import os
 import shutil
-import tempfile
-import time
 import subprocess
 import sys
+import tempfile
+import time
+import unittest
 
-import os
-
-from haystack import model
 from haystack import memory_dumper
 
 __author__ = "Loic Jaquemet"
@@ -161,22 +160,22 @@ class TestMemoryDumper32(TestMemoryDumper):
         # print '-'*80
 
         # test opening by dump_loader
-        from haystack import dump_loader
+        from mappings import folder
         from haystack.mappings.base import MemoryHandler
         # PYDOC
         # NotImplementedError: MACHINE has not been found.
         # laoder should habe a cpu, os_name loading
-        mappings1 = dump_loader.load(
+        mappings1 = folder.load(
             out1,
             cpu=self.cpu_bits,
             os_name=self.os_name)
         self.assertIsInstance(mappings1, MemoryHandler)
 
-        mappings2 = dump_loader.load(
+        mappings2 = folder.load(
             out2,
             cpu=self.cpu_bits,
             os_name=self.os_name)
-        mappings3 = dump_loader.load(
+        mappings3 = folder.load(
             out3,
             cpu=self.cpu_bits,
             os_name=self.os_name)

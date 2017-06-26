@@ -1135,6 +1135,17 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
         return self._memory_handler
 
 
+class DMPLoader:
+    desc = 'Load a Minidump memory dump'
+
+    def __init__(self, opts):
+        opts.dump_filename = opts.target.path
+        self.loader = MDMP_Mapper(opts.dump_filename)
+
+    def get_memory_handler(self):
+        return self.loader.make_memory_handler()
+
+
 if __name__ == "__main__":
     import sys
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
