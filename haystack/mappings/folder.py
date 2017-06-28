@@ -275,3 +275,15 @@ class FolderLoader:
         return self.loader.make_memory_handler()
 
 
+# haystack-search dir:///home/jal/Compil/python-haystack/test/src/test-ctypes6.64.dump ctypes6_gen64.struct_usual
+if __name__ == '__main__':
+    mapper = ProcessMemoryDumpLoader('/home/jal/Compil/python-haystack/test/src/test-ctypes6.64.dump')
+    memory_handler = mapper.make_memory_handler()
+    m = memory_handler.get_mappings()[0]
+    print(m.read_bytes(m.start, 100).encode("hex"))
+    my_model = memory_handler.get_model()
+    import sys
+    sys.path.append('test/src/')
+    test6 = my_model.import_module("ctypes6_gen64")
+    from haystack.search import api
+    api.search_record(memory_handler, test6.struct_usual)

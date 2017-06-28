@@ -90,6 +90,7 @@ setup(name="haystack",
               'volatility = haystack.mappings.vol:VolatilityLoader',
               'rekall = haystack.mappings.rek:RekallLoader',
               'live = haystack.mappings.process:ProcessLoader',
+              'frida = haystack.mappings.fridaprocess:FridaLoader',
           ]
 
       },

@@ -200,7 +200,7 @@ class ProcessLoader:
     desc = 'Load a live process memory'
 
     def __init__(self, opts):
-        opts.pid = opts.target.path
+        opts.pid = int(opts.target.netloc)
         self.memory_handler = dbg.make_local_process_memory_handler(pid=opts.pid, use_mmap=opts.mmap)
 
     def get_memory_handler(self):
