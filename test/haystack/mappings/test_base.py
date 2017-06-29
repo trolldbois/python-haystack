@@ -15,7 +15,7 @@ from haystack import listmodel
 from haystack import target
 from haystack.mappings.base import AMemoryMapping
 from haystack.mappings.process import make_local_memory_handler
-from mappings import folder
+from haystack.mappings import folder
 from test.haystack import SrcTests
 
 log = logging.getLogger('test_memory_mapping')

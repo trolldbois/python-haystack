@@ -9,7 +9,7 @@ import unittest
 
 from haystack.outputters import python
 from haystack.search import api
-from mappings import folder
+from haystack.mappings import folder
 from test.haystack import SrcTests
 
 __author__ = "Loic Jaquemet"

@@ -10,7 +10,7 @@ import sys
 import unittest
 
 from haystack.allocators.win32 import win7heapwalker
-from mappings import folder
+from haystack.mappings import folder
 from test.testfiles import putty_1_win7
 
 log = logging.getLogger('testwin7walker')

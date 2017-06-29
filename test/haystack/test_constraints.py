@@ -8,7 +8,7 @@ import unittest
 
 from haystack import basicmodel
 from haystack import constraints
-from mappings import folder
+from haystack.mappings import folder
 from test.haystack import SrcTests
 from test.src import ctypes6
 

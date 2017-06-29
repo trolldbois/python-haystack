@@ -10,7 +10,7 @@ import sys
 
 from haystack import argparse_utils
 from haystack.outputters import text
-from mappings import folder
+from haystack.mappings import folder
 
 # from haystack.outputters import python
 

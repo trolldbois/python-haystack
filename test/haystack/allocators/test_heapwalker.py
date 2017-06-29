@@ -12,7 +12,7 @@ import unittest
 
 from haystack.abc import interfaces
 from haystack.allocators import heapwalker
-from mappings import folder
+from haystack.mappings import folder
 from test.testfiles import putty_1_win7
 
 

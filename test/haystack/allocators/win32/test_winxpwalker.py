@@ -10,7 +10,7 @@ from builtins import map
 from haystack.allocators.win32 import winxpheapwalker
 from haystack.outputters import python
 from haystack.outputters import text
-from mappings import folder
+from haystack.mappings import folder
 from test.testfiles import zeus_1668_vmtoolsd_exe
 
 log = logging.getLogger('testwinxpwalker')

@@ -30,7 +30,7 @@ class FridaMapper(interfaces.IMemoryLoader):
         #
         is_64 = False
         for _range in self.session.enumerate_ranges('r'):
-            log.debug("Mapping Frida ", _range)
+            log.debug("Mapping Frida %s", _range)
             start = _range.base_address
             end = _range.base_address + _range.size
             perms = _range.protection
@@ -143,7 +143,10 @@ if __name__ == '__main__':
     mapper = FridaMapper('test-ctypes6.64')
     memory_handler = mapper.make_memory_handler()
     m = memory_handler.get_mappings()[0]
-    print(m.read_bytes(m.start, 100).encode("hex"))
+    # py3
+    print(m.read_bytes(m.start, 100).hex())
+    # py2
+    #print(m.read_bytes(m.start, 100).encode("hex"))
     my_model = memory_handler.get_model()
     import sys
     sys.path.append('test/src/')

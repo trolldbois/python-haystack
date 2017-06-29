@@ -160,7 +160,7 @@ class TestMemoryDumper32(TestMemoryDumper):
         # print '-'*80
 
         # test opening by dump_loader
-        from mappings import folder
+        from haystack.mappings import folder
         from haystack.mappings.base import MemoryHandler
         # PYDOC
         # NotImplementedError: MACHINE has not been found.

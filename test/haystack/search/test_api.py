@@ -7,7 +7,7 @@ import unittest
 
 from haystack import constraints
 from haystack.search import api
-from mappings import folder
+from haystack.mappings import folder
 from test.haystack import SrcTests
 
 

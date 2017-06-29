@@ -6,7 +6,7 @@ import unittest
 
 from haystack.search import api
 from haystack.search import searcher
-from mappings import folder
+from haystack.mappings import folder
 
 
 class TestApiWin32Dump(unittest.TestCase):

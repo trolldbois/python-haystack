@@ -8,7 +8,7 @@ import unittest
 
 from haystack import basicmodel
 from haystack import target
-from mappings import folder
+from haystack.mappings import folder
 
 __author__ = "Loic Jaquemet"
 __copyright__ = "Copyright (C) 2012 Loic Jaquemet"

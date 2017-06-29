@@ -5,7 +5,7 @@ import logging
 import unittest
 
 from haystack.outputters import text
-from mappings import folder
+from haystack.mappings import folder
 from test.testfiles import zeus_1668_vmtoolsd_exe
 
 log = logging.getLogger('testwinxpheap')
