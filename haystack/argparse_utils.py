@@ -28,6 +28,9 @@ def writeable(f):
 
 def int16(s):
     """Validates an hexadecimal (0x...) value"""
-    i = int(s, 16)
+    try:
+        i = int(s, 16)
+    except Exception as e:
+        raise argparse.ArgumentTypeError(e)
     return i
 
