@@ -275,7 +275,7 @@ class FolderLoader:
         return self.loader.make_memory_handler()
 
 
-# haystack-search dir:///home/jal/Compil/python-haystack/test/src/test-ctypes6.64.dump ctypes6_gen64.struct_usual
+# haystack-search dir:///home/user/python-haystack/test/src/test-ctypes6.64.dump ctypes6_gen64.struct_usual
 if __name__ == '__main__':
     mapper = ProcessMemoryDumpLoader('/home/jal/Compil/python-haystack/test/src/test-ctypes6.64.dump')
     memory_handler = mapper.make_memory_handler()

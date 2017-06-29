@@ -122,7 +122,7 @@ The validity of the record is determined by type constraints such as:
 
 .. code-block:: bash
 
- $ python haystack/cli.py dir:///home/jal/Compil/python-haystack/test/src/test-ctypes6.32.dump ctypes6_gen32.struct_usual
+ $ python haystack/cli.py dir:///home/user/project/python-haystack/test/src/test-ctypes6.32.dump ctypes6_gen32.struct_usual
 
 Constraints file:
 -----------------
