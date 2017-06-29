@@ -23,8 +23,8 @@ It aims at helping an analyst in reverse engineering the memory records types pr
 It focuses on reconstruction, classification of classic C structures from memory.
 It attempts to recreate types definition.
 
-Scripts & Entry Points:
-=======================
+Scripts & Memory handler format:
+================================
 
 A few entry points exists to handle the format your memory dump.
 
@@ -34,29 +34,15 @@ Memory dump folder produced by ``haystack-live-dump``
  - ``haystack-search`` search CLI
  - ``haystack-show`` show CLI for specific record type at a specific address
 
-Memory dump file produced by a Minidump tool
---------------------------------------------
- - ``haystack-find-heap`` allows to show details on Windows HEAP.
- - ``haystack-minidump-search`` search CLI
- - ``haystack-minidump-show`` show a specific record type at a specific address
+You can use the following URL to designate your memory handler/dump:
 
-For live processes
-------------------
- - ``haystack-live-dump`` capture a process memory dump to a folder (haystack format)
- - ``haystack-live-search`` search CLI in live process memory
- - ``haystack-live-show`` show a specific record type at a specific addres in a live process memory
+ - ``dir:///path/to/my/haystack/fump/folder`` to use the haystack dump format
+ - ``dmp:///path/to/my/minidump/file`` use the minidump format (microsoft?)
+ - ``frida://name_or_pid_of_process_to_attach_to`` use frida to access a live process memory
+ - ``live://name_or_pid_of_process_to_attach_to`` ptrace a live process
+ - ``rekall://`` load a rekall image
+ - ``volatility://`` load a volatility image
 
-For a Rekall memory dump
-------------------------
- - ``haystack-rekall-search`` search CLI for a specific process in a rekall dump
- - ``haystack-rekall-show`` show a specific record type at a specific address
- - ``haystack-rekall-dump`` dump a specific process to a haystack process dump
-
-For a Volatility memory dump
-----------------------------
- - ``haystack-volatility-search``  search CLI for a specific process in a volatility dump
- - ``haystack-volatility-show`` show a specific record type at a specific address
- - ``haystack-volatility-dump`` dump a specific process to a haystack process dump
 
 How to get a memory dump:
 =========================
@@ -73,6 +59,18 @@ So there is a dumping tool included ``haystack-live-dump``:
 .. code-block:: bash
 
     # haystack-live-dump <pid> myproc.dump
+
+For live processes
+------------------
+ - ``haystack-live-dump`` capture a process memory dump to a folder (haystack format)
+
+For a Rekall memory dump
+------------------------
+ - ``haystack-rekall-dump`` dump a specific process to a haystack process dump
+
+For a Volatility memory dump
+----------------------------
+ - ``haystack-volatility-dump`` dump a specific process to a haystack process dump
 
 You can easily reproduce the format of the dump, its a folder/archive
 containing each memory map in a separate file :
