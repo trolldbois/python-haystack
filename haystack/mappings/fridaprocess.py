@@ -2,9 +2,6 @@
 
 import logging
 import struct
-import sys
-
-import frida
 
 # from haystack.mappings import FileMapping
 from haystack import target
@@ -19,6 +16,7 @@ class FridaMapper(interfaces.IMemoryLoader):
     """
 
     def __init__(self, process_name_or_pid, cpu=None, os_name=None):
+        import frida
         self.session = frida.attach(process_name_or_pid)
         self.name = process_name_or_pid
         self.cpu = cpu
