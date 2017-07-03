@@ -1,13 +1,15 @@
 python-haystack memory forensics
 ################################
 
-|travis| |coverage| |landscape| |pypi|
+|travis| |coverage| |landscape| |pypi| |docs|
 
 Quick Start:
 ============
 `Quick usage guide <docs/Haystack_basic_usage.ipynb>`_ in the docs/ folder.
 
 `Haystack-reverse CLI <docs/Haystack_reverse_CLI.ipynb>`_ in the docs/ folder.
+
+`More documentation <http://python-haystack.readthedocs.io/en/latest/>`_
 
 Introduction:
 =============
@@ -258,5 +260,9 @@ http://ntinfo.biz/ xntsv32
     :alt: Build status of the master branch on Mac/Linux
 
 .. |landscape| image:: https://landscape.io/github/trolldbois/python-haystack/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/trolldbois/python-haystack/master
-   :alt: Code Health
+    :target: https://landscape.io/github/trolldbois/python-haystack/master
+    :alt: Code Health
+
+.. |docs| image:: https://readthedocs.org/projects/python-haystack/badge/?version=latest
+    :target: https://readthedocs.org/projects/python-haystack/badge/?version=latest
+    :alt: Documentation status
