@@ -15,6 +15,14 @@ Changes to architecture.txt:
     + the IHeapWalker helpers
  - the memory l
 
+2017-06:
+ - Python 3 compatibility finalized
+ - using pkg_resources entry points for CLI, memory mapping loader
+ - setup pkg_resources entry points for HEAP parser
+ - Support frida as memory mappings loader technique
+ - add 'read the docs' documentation in .rst format
+ - normalize argument parsing around an URL format
+
 2017-05:
  - Start porting to python3
  - extract extensions (reverse, gui) and docs to other git repo

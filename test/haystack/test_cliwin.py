@@ -15,7 +15,7 @@ class TestCLI(SrcTests):
 
     def test_find_heap(self):
         # haystack-find-heap
-        args = ['haystack-find-heap', '-v', 'test/dumps/minidump/alg.dmp']
+        args = ['haystack-find-heap', '-v', 'dmp://./test/dumps/minidump/alg.dmp']
         sys.argv = args
         cliwin.find_heap()
         # self.assertIn('0x000d0000', ret)
