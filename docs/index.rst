@@ -44,9 +44,8 @@ Contents:
 
 .. toctree::
   installation
-  getting-started
-  capture-process-memory
   usage
+  capture-process-memory
 
 .. _python-haystack: https://github.com/trolldbois/python-haystack/
 .. _python-haystack-reverse: https://github.com/trolldbois/python-haystack-reverse/

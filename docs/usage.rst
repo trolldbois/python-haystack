@@ -1,7 +1,17 @@
-.. _command-line:
+.. _usage:
+
+Usage
+=====
+
+First you need to install python-haystack_. Please refer to the
+:ref:`installation` section of the documentation.
+
+Then you need a process memory dump. Please refer to the :ref:`capture-process-memory`
+section of the documentation.
+We will name the process memory dump `memory.dmp` for the rest of this documentation.
 
 Command line usage
-==================
+------------------
 
 A few entry points exists for different purposes
 
@@ -19,8 +29,12 @@ You can use the following URL to designate your memory handler/dump:
  - ``volatility://`` load a volatility image
 
 API usage
-=========
+---------
 
 .. automodule:: haystack.search.api
    :members:
 
+.. _python-haystack: https://github.com/trolldbois/python-haystack/
+.. _python-haystack-reverse: https://github.com/trolldbois/python-haystack-reverse/
+.. _python-haystack-gui: https://github.com/trolldbois/python-haystack-gui/
+.. _python-haystack-docs: https://github.com/trolldbois/python-haystack-docs/

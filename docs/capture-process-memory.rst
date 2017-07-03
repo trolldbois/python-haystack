@@ -45,7 +45,7 @@ Making your own memory mappings handler
 =======================================
 
 If you have a different technique to access a process memory, you can implement the
-``haystack.abc.IMemoryLoader`` and ``haystack.abc.IMemoryMapping`` interface for
+``haystack.abc.interfaces.IMemoryLoader`` and ``haystack.abc.interfaces.IMemoryMapping`` interface for
 your favorite technique.
 Check out the `Frida plugin <https://github.com/trolldbois/python-haystack/blob/master/haystack/mappings/fridaprocess.py>`_
 for example.
@@ -53,5 +53,12 @@ for example.
 Alternatively, if you can copy the process' memory mappings to file, you can "interface"
 with the basic, simple, haystack memory dump file format by doing the following:
 The basic format is a folder containing each memory mapping in a separate file :
-  - memory content in a file named after it's start/end addresses ( ex: 0x000700000-0x000800000 )
-  - a file named 'mappings' containing memory mappings metadata.  ( ex: mappings )
+ - memory content in a file named after it's start/end addresses ( ex: 0x000700000-0x000800000 )
+ - a file named 'mappings' containing memory mappings metadata.  ( ex: mappings )
+
+
+.. autoclass:: haystack.abc.interfaces.IMemoryLoader
+   :members:
+
+.. autoclass:: haystack.abc.interfaces.IMemoryMapping
+   :members:
