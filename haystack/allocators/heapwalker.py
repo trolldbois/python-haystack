@@ -13,7 +13,6 @@ SUPPORTED_ALLOCATORS = {}
 def _discover_supported_allocators():
     # TODO use it in memory dump discovery. Maybe add platform selectors to Finder interface
     for entry_point in pkg_resources.iter_entry_points("haystack.heap_finder"):
-        ep = entry_point.resolve()
         SUPPORTED_ALLOCATORS[entry_point.name] = entry_point.resolve()
 
 
