@@ -50,7 +50,6 @@ DUMPTYPE_FRIDA = 'frida'
 SUPPORTED_DUMP_URI = {}
 # populate SUPPORTED_DUMP_URI
 for entry_point in pkg_resources.iter_entry_points("haystack.mappings_loader"):
-    ep = entry_point.resolve()
     SUPPORTED_DUMP_URI[entry_point.name] = entry_point.resolve()
 
 
