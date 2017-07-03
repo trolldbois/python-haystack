@@ -41,7 +41,7 @@ class PyPrepTestsCommand(distutils.cmd.Command):
 
 
 setup(name="haystack",
-      version="0.41",
+      version="0.42",
       description="Search C Structures in a process' memory",
       long_description=open("README.rst").read(),
       url="http://packages.python.org/haystack/",
