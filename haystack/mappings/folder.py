@@ -255,7 +255,7 @@ def load(dumpname, cpu=None, os_name=None):
     elif os.path.isfile(dumpname):
         # try minidump
         from haystack.mappings import minidump
-        mapper = minidump.MDMP_Mapper(dumpname, cpu=cpu, os_name=os_name)
+        mapper = minidump.MinidumpLoader(dumpname, cpu=cpu, os_name=os_name)
     else:
         raise IOError('couldnt load %s' % dumpname)
     memory_handler = mapper.make_memory_handler()
@@ -264,14 +264,14 @@ def load(dumpname, cpu=None, os_name=None):
     return memory_handler
 
 
-class FolderLoader:
+class FolderLoader(interfaces.IMemoryLoader):
     desc = 'Load a basic haystack folder memory dump'
 
     def __init__(self, opts):
         opts.dump_folder_name = opts.target.path
         self.loader = ProcessMemoryDumpLoader(opts.dump_folder_name)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.loader.make_memory_handler()
 
 

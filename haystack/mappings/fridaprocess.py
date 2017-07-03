@@ -32,7 +32,7 @@ class FridaMapper(interfaces.IMemoryLoader):
             start = _range.base_address
             end = _range.base_address + _range.size
             perms = _range.protection
-            mappings.append(FridaMemoryMapping(self.session, start, end, perms, 0, 0, 0, 0, None))
+            mappings.append(FridaMemoryMapping(self.session, start, end, perms, None))
             if not is_64 and len(hex(start)) > 8:
                 is_64 = True
         #
@@ -82,18 +82,8 @@ class FridaMemoryMapping(AMemoryMapping):
          useful in list contexts
     """
 
-    def __init__(self, frida_session, start, end, permissions, offset,
-                 major_device, minor_device, inode, pathname):
-        AMemoryMapping.__init__(
-            self,
-            start,
-            end,
-            permissions,
-            offset,
-            major_device,
-            minor_device,
-            inode,
-            pathname)
+    def __init__(self, frida_session, start, end, permissions, pathname):
+        AMemoryMapping.__init__(self, start, end, permissions, 0, 0, 0, 0, pathname)
         self._session = frida_session
 
     def read_word(self, address):
@@ -125,13 +115,13 @@ class FridaMemoryMapping(AMemoryMapping):
         return d
 
 
-class FridaLoader:
+class FridaLoader(interfaces.IMemoryLoader):
     desc = 'Load a Minidump memory dump'
 
     def __init__(self, opts):
         self.loader = FridaMapper(opts.target.netloc)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.loader.make_memory_handler()
 
 

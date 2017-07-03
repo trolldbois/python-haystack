@@ -218,7 +218,7 @@ def rekall_dump_to_haystack(filename, pid, output_folder_name):
     pass
 
 
-class RekallLoader:
+class RekallLoader(interfaces.IMemoryLoader):
     desc = 'Load a Rekall process memory dump'
 
     def __init__(self, opts):
@@ -226,5 +226,5 @@ class RekallLoader:
         opts.pid = opts.target.path.split(':')[1]
         self.loader = RekallProcessMapper(opts.dump_filename, opts.pid)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.loader.make_memory_handler()

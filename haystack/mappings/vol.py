@@ -208,14 +208,14 @@ def my_render_text(mapper, cmd, outfd, data):
     mapper._memory_handler = memory_handler
 
 
-class VolatilityLoader:
-    desc = 'Load a Rekall process memory dump'
+class VolatilityLoader(interfaces.IMemoryLoader):
+    desc = 'Load a Volatility process memory dump'
 
     def __init__(self, opts):
         opts.dump_filename = opts.target.path
         opts.pid = opts.target.path.split(':')[1]
         self.loader = VolatilityProcessMapper(opts.dump_filename, "WinXPSP2x86", opts.pid)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.loader.make_memory_handler()
 

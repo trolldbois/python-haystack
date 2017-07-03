@@ -991,7 +991,7 @@ import logging
 log = logging.getLogger("minidump")
 
 
-class MDMP_Mapper(interfaces.IMemoryLoader):
+class MinidumpLoader(interfaces.IMemoryLoader):
     """Container:
             StreamType = 'Memory64ListStream'
             Location = Container:
@@ -1135,14 +1135,14 @@ class MDMP_Mapper(interfaces.IMemoryLoader):
         return self._memory_handler
 
 
-class DMPLoader:
+class DMPLoader(interfaces.IMemoryLoader):
     desc = 'Load a Minidump memory dump'
 
     def __init__(self, opts):
         opts.dump_filename = opts.target.path
-        self.loader = MDMP_Mapper(opts.dump_filename)
+        self.loader = MinidumpLoader(opts.dump_filename)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.loader.make_memory_handler()
 
 
@@ -1150,7 +1150,7 @@ if __name__ == "__main__":
     import sys
     x = MINIDUMP_HEADER.parse_stream(open(sys.argv[1], 'rb'))
     print(x)
-    mapper = MDMP_Mapper(sys.argv[1], None, None)
+    mapper = MinidumpLoader(sys.argv[1], None, None)
     for m in mapper.mappings:
         print(m)
     import code

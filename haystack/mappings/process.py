@@ -17,6 +17,7 @@ import re
 
 from haystack import dbg
 from haystack import target
+from haystack.abc import interfaces
 from haystack.mappings.base import MemoryHandler, AMemoryMapping
 from haystack.mappings.file import LocalMemoryMapping
 
@@ -196,13 +197,13 @@ def make_local_memory_handler(force=False):
     return __LOCAL_MAPPINGS
 
 
-class ProcessLoader:
+class ProcessLoader(interfaces.IMemoryLoader):
     desc = 'Load a live process memory'
 
     def __init__(self, opts):
         opts.pid = int(opts.target.netloc)
         self.memory_handler = dbg.make_local_process_memory_handler(pid=opts.pid, use_mmap=opts.mmap)
 
-    def get_memory_handler(self):
+    def make_memory_handler(self):
         return self.memory_handler
 

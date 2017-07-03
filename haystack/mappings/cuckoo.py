@@ -39,6 +39,16 @@ page_access = {
 }
 
 
+class CuckooProcessLoader(interfaces.IMemoryLoader):
+    desc = 'Load a Cuckoo memory dump'
+
+    def __init__(self, opts):
+        self.loader = CuckooProcessMapper(opts.target.netloc)
+
+    def make_memory_handler(self):
+        return self.loader.make_memory_handler()
+
+
 class CuckooProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, procdump_filename):
@@ -56,10 +66,7 @@ class CuckooProcessMapper(interfaces.IMemoryLoader):
     def _init_mappings(self):
         content_file = open(self.filename, 'rb')
         fsize = os.path.getsize(self.filename)
-        mmap_content = mmap.mmap(
-                    content_file.fileno(),
-                    fsize,
-                    access=mmap.ACCESS_READ)
+        mmap_content = mmap.mmap(content_file.fileno(), fsize, access=mmap.ACCESS_READ)
         log.debug("fsize: %d", fsize)
         maps = []
         # BUG ?

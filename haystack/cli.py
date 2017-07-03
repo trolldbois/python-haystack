@@ -84,12 +84,12 @@ class HaystackError(Exception):
     pass
 
 
-def get_memory_handler(opts):
+def make_memory_handler(opts):
     dumptype = opts.target.scheme.lower()
     if dumptype not in SUPPORTED_DUMP_URI.keys():
         raise TypeError('dump type has no case support. %s' % dumptype)
     loader = SUPPORTED_DUMP_URI[dumptype](opts)
-    return loader.get_memory_handler()
+    return loader.make_memory_handler()
 
 
 def get_output(memory_handler, results, rtype):
@@ -120,7 +120,7 @@ def dump_process(opts):
 def search_cmdline(args):
     """ Search for instance of a record_type in the allocated memory of a process. """
     # get the memory handler adequate for the type requested
-    memory_handler = get_memory_handler(args)
+    memory_handler = make_memory_handler(args)
     # try to load constraints
     my_constraints = None
     if args.constraints_file:
@@ -157,7 +157,7 @@ def show_cmdline(args):
     # we need an int
     memory_address = args.address
     # get the memory handler adequate for the type requested
-    memory_handler = get_memory_handler(args)
+    memory_handler = make_memory_handler(args)
     # check the validity of the address
     heap = memory_handler.is_valid_address_value(memory_address)
     if not heap:
@@ -231,7 +231,7 @@ def watch(args):
     refresh = args.refresh_rate
     varname = args.varname
     # get the memory handler adequate for the type requested
-    memory_handler = get_memory_handler(args)
+    memory_handler = make_memory_handler(args)
     # check the validity of the address
     heap = memory_handler.is_valid_address_value(memory_address)
     if not heap:
