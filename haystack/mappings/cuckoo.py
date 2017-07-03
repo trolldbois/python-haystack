@@ -43,7 +43,7 @@ class CuckooProcessLoader(interfaces.IMemoryLoader):
     desc = 'Load a Cuckoo memory dump'
 
     def __init__(self, opts):
-        self.loader = CuckooProcessMapper(opts.target.netloc)
+        self.loader = CuckooProcessMapper(opts.target.path)
 
     def make_memory_handler(self):
         return self.loader.make_memory_handler()
