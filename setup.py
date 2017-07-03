@@ -96,7 +96,7 @@ setup(name="haystack",
             ],
             # HEAP parsing haystack.abc.interfaces.IHeapFinder
             'haystack.heap_finder': [
-                'ptmalloc2 = haystack.allocators.libc.LibcHeapFinder',
+                'ptmalloc2 = haystack.allocators.libc.libcheapwalker.LibcHeapFinder',
                 'winxp = haystack.allocators.win32.winxpheapwalker.WinXPHeapFinder',
                 'win7 = haystack.allocators.win32.win7heapwalker.Win7HeapFinder',
             ]

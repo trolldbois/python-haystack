@@ -129,15 +129,15 @@ Attribute packed is not correct in ctypeslib
 
 Todo:
  - Add a struct beautifier for the string formatting. (hex vs int)
- - easy API
- - documented example
- - Rekall plugin
- - Rekall memorymap
+ - easy API  - done
+ - documented example  - done
+ - Rekall plugin - done
+ - Rekall memorymap  - done
  - make basicmodel:loadable members work with vtypes (vol/rekall) ?
  - Check why pdfbparse reports some gaps in structs gap_in_pdb_ofs_3C (HEAP)
  - pylint ignore W0212 in profiles.
  - add PyQt4 as dependency for optional functions
  - Add to ipython
- - Make reverse work againe
+ - Make reverse work again  - done
 
 
