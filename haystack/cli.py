@@ -39,7 +39,7 @@ DUMPTYPE_FRIDA = 'frida'
 
 # from urlparse import urlparse
 # >>> o = urlparse('http://www.cwi.nl:80/%7Eguido/Python.html')
-#ParseResult(scheme='http', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+# ParseResult(scheme='http', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
 # URL_SCHEMES = {'dir': DUMPTYPE_BASE,
 #                'volatility': DUMPTYPE_VOLATILITY,
 #                'rekall': DUMPTYPE_REKALL,
@@ -56,26 +56,25 @@ for entry_point in pkg_resources.iter_entry_points("haystack.mappings_loader"):
 def url(u):
     """Validates the argument is an url"""
     # dont populate SUPPORTED_DUMP_URI here, otherwise API wont have it.
-    url = urlparse(u)
-    scheme = url.scheme.lower()
+    _url = urlparse(u)
+    scheme = _url.scheme.lower()
     if scheme not in SUPPORTED_DUMP_URI.keys():
         raise argparse.ArgumentTypeError("Target type {s}:// not supported".format(s=scheme))
-    path = url.path
+    path = _url.path
     # be nice with relative path
-    if url.netloc.startswith('~'):
-        path = os.path.expanduser(os.path.sep.join([url.netloc, path]))
-        url = urlparse("%s://%s" % (scheme, path))
-    if url.netloc.startswith('.'):
-        path = os.path.abspath(os.path.sep.join([url.netloc, path]))
-        url = urlparse("%s://%s" % (scheme, path))
+    if _url.netloc.startswith('~'):
+        path = os.path.expanduser(os.path.sep.join([_url.netloc, path]))
+        _url = urlparse("%s://%s" % (scheme, path))
+    if _url.netloc.startswith('.'):
+        path = os.path.abspath(os.path.sep.join([_url.netloc, path]))
+        _url = urlparse("%s://%s" % (scheme, path))
     if scheme in ['volatility', 'rekall']:
-        path = url.path.split(':')[0]
+        path = _url.path.split(':')[0]
     if scheme in ['dir', 'volatility', 'rekall', 'dmp']:
         if not os.path.exists(path):
             raise argparse.ArgumentTypeError("Target {p} does not exists".format(p=path))
         # see url.netloc for host name, frida ? live ?
-    return url
-
+    return _url
 
 
 # the description of the dump type
@@ -134,13 +133,13 @@ def search_cmdline(args):
         my_constraints = handler.read(args.constraints_file.name)
     # get the python record type
     modulename, sep, classname = args.record_type_name.rpartition('.')
-    module = None
+    _module = None
     try:
-        module = memory_handler.get_model().import_module(modulename)
+        _module = memory_handler.get_model().import_module(modulename)
     except ImportError as e:
         log.error('sys.path is %s', sys.path)
         raise e
-    record_type = getattr(module, classname)
+    record_type = getattr(_module, classname)
     # do the search
     results = api.search_record(memory_handler, record_type, my_constraints, extended_search=args.extended)
     # output handling
@@ -171,13 +170,13 @@ def show_cmdline(args):
         raise ValueError("the address is not accessible in the memoryMap")
     # get the structure name
     modulename, sep, classname = args.record_type_name.rpartition('.')
-    module = None
+    _module = None
     try:
-        module = memory_handler.get_model().import_module(modulename)
+        _module = memory_handler.get_model().import_module(modulename)
     except ImportError as e:
         log.error('sys.path is %s', sys.path)
         raise e
-    record_type = getattr(module, classname)
+    record_type = getattr(_module, classname)
     # load the record
     result = api.load_record(memory_handler, record_type, memory_address)
     results = [result]
@@ -245,13 +244,13 @@ def watch(args):
         raise ValueError("the address is not accessible in the memoryMap")
     # get the structure name
     modulename, sep, classname = args.record_type_name.rpartition('.')
-    module = None
+    _module = None
     try:
-        module = memory_handler.get_model().import_module(modulename)
+        _module = memory_handler.get_model().import_module(modulename)
     except ImportError as e:
         log.error('sys.path is %s', sys.path)
         raise e
-    record_type = getattr(module, classname)
+    record_type = getattr(_module, classname)
     # verify target fieldcompliance
     if varname is not None:
         varname = varname.split('.')
@@ -379,7 +378,7 @@ def set_logging_level(opts):
         # FORMAT = '%(relativeCreated)d %(message)s'
         # logging.basicConfig(format=FORMAT, level=level, filename=flog, filemode='w')
         logging.basicConfig(level=level, filename=flog, filemode='w')
-        print ('[+] **** COMPLETE debug log to %s' % flog)
+        print('[+] **** COMPLETE debug log to %s' % flog)
     else:
         logging.basicConfig(level=level)
     # 2.6, 2.7 compat
