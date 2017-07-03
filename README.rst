@@ -44,6 +44,7 @@ You can use the following URL to designate your memory handler/dump:
  - ``live://name_or_pid_of_process_to_attach_to`` ptrace a live process
  - ``rekall://`` load a rekall image
  - ``volatility://`` load a volatility image
+ - ``cuckoo://`` load a memory dump produced by Cuckoo (beta might need patch)
 
 
 How to get a memory dump:

@@ -64,8 +64,8 @@ class MemoryDumpLoader(interfaces.IMemoryLoader):
     isValid and loadMapping should be implemented.
     """
 
-    def __init__(self, dumpname, cpu=None, os_name=None):
-        self._cpu_bits = cpu
+    def __init__(self, dumpname, bits=None, os_name=None):
+        self._cpu_bits = bits
         self._os_name = os_name
         self.dumpname = os.path.abspath(dumpname)
         self._memory_handler = None
@@ -201,8 +201,8 @@ class ProcessMemoryDumpLoader(MemoryDumpLoader):
 
 class LazyProcessMemoryDumpLoader(ProcessMemoryDumpLoader):
 
-    def __init__(self, dumpname, maps_to_load=None, cpu=None, os_name=None):
-        self._cpu_bits = cpu
+    def __init__(self, dumpname, maps_to_load=None, bits=None, os_name=None):
+        self._cpu_bits = bits
         self._os_name = os_name
         self.dumpname = os.path.abspath(dumpname)
         self._memory_handler = None
@@ -246,16 +246,17 @@ class VeryLazyProcessMemoryDumpLoader(LazyProcessMemoryDumpLoader):
         return
 
 
-def load(dumpname, cpu=None, os_name=None):
+# @obselete, use URL args instead
+def load(dumpname, bits=None, os_name=None):
     """Loads a process memory dump."""
     dumpname = os.path.abspath(dumpname)
     mapper = None
     if os.path.isdir(dumpname):
-        mapper = VeryLazyProcessMemoryDumpLoader(dumpname, cpu=cpu, os_name=os_name)
+        mapper = VeryLazyProcessMemoryDumpLoader(dumpname, bits=bits, os_name=os_name)
     elif os.path.isfile(dumpname):
         # try minidump
         from haystack.mappings import minidump
-        mapper = minidump.MinidumpLoader(dumpname, cpu=cpu, os_name=os_name)
+        mapper = minidump.MinidumpLoader(dumpname, bits=bits, os_name=os_name)
     else:
         raise IOError('couldnt load %s' % dumpname)
     memory_handler = mapper.make_memory_handler()
@@ -269,7 +270,7 @@ class FolderLoader(interfaces.IMemoryLoader):
 
     def __init__(self, opts):
         opts.dump_folder_name = opts.target.path
-        self.loader = ProcessMemoryDumpLoader(opts.dump_folder_name)
+        self.loader = ProcessMemoryDumpLoader(opts.dump_folder_name, bits=opts.bits, os_name=opts.osname)
 
     def make_memory_handler(self):
         return self.loader.make_memory_handler()

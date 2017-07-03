@@ -62,6 +62,13 @@ def url(u):
     if scheme not in SUPPORTED_DUMP_URI.keys():
         raise argparse.ArgumentTypeError("Target type {s}:// not supported".format(s=scheme))
     path = url.path
+    # be nice with relative path
+    if url.netloc.startswith('~'):
+        path = os.path.expanduser(os.path.sep.join([url.netloc, path]))
+        url = urlparse("%s://%s" % (scheme, path))
+    if url.netloc.startswith('.'):
+        path = os.path.abspath(os.path.sep.join([url.netloc, path]))
+        url = urlparse("%s://%s" % (scheme, path))
     if scheme in ['volatility', 'rekall']:
         path = url.path.split(':')[0]
     if scheme in ['dir', 'volatility', 'rekall', 'dmp']:
@@ -289,6 +296,8 @@ def base_argparser(program_name, description):
     rootparser.add_argument('--interactive', dest='interactive', action='store_true',
                             help='drop to python command line after action')
     rootparser.add_argument('--nommap', dest='mmap', action='store_false', help='disable mmap()-ing')
+    rootparser.add_argument('--osname', '-n', action='store', default=None, choices=['linux', 'winxp', 'win7'], help='Force a specific OS')
+    rootparser.add_argument('--bits', '-b', type=int, action='store', default=None, choices=[32, 64], help='Force a specific word size')
     text = '://, '.join(sorted(SUPPORTED_DUMP_URI.keys())) + '://'
     help_desc = 'target file or process. Supported URL types: %s' % text
     rootparser.add_argument('target', type=url, help=help_desc)

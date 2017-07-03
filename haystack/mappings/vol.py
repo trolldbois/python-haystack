@@ -214,6 +214,7 @@ class VolatilityLoader(interfaces.IMemoryLoader):
     def __init__(self, opts):
         opts.dump_filename = opts.target.path
         opts.pid = opts.target.path.split(':')[1]
+        # FIXME bits, os_name from args
         self.loader = VolatilityProcessMapper(opts.dump_filename, "WinXPSP2x86", opts.pid)
 
     def make_memory_handler(self):

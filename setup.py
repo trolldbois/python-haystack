@@ -91,6 +91,7 @@ setup(name="haystack",
               'rekall = haystack.mappings.rek:RekallLoader',
               'live = haystack.mappings.process:ProcessLoader',
               'frida = haystack.mappings.fridaprocess:FridaLoader',
+              'cuckoo = haystack.mappings.cuckoo:CuckooProcessLoader',
           ]
 
       },

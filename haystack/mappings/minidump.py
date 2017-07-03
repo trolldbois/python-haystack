@@ -1006,12 +1006,12 @@ class MinidumpLoader(interfaces.IMemoryLoader):
                         DataSize = 4096
     """
 
-    def __init__(self, filename, cpu=None, os_name=None):
+    def __init__(self, filename, bits=None, os_name=None):
         construct_data = MINIDUMP_HEADER.parse_stream(open(filename, 'rb'))
         #
         self.filename = os.path.abspath(filename)
         self.dumpname = os.path.basename(filename)
-        self.cpu = cpu
+        self.cpu = bits
         self.os_name = os_name
         self._init_mappings(construct_data)
 
@@ -1119,7 +1119,8 @@ class MinidumpLoader(interfaces.IMemoryLoader):
             self._target = target.TargetPlatform.make_target_win_32(self.os_name)
         elif self.cpu == 64:
             self._target = target.TargetPlatform.make_target_win_64(self.os_name)
-
+        else:
+            raise NotImplementedError('Unsupported cpu : %s' % self.cpu)
         #
         self.mappings = maps
         self.maps_info = maps_info
@@ -1140,7 +1141,7 @@ class DMPLoader(interfaces.IMemoryLoader):
 
     def __init__(self, opts):
         opts.dump_filename = opts.target.path
-        self.loader = MinidumpLoader(opts.dump_filename)
+        self.loader = MinidumpLoader(opts.dump_filename, bits=opts.bits, os_name=opts.osname)
 
     def make_memory_handler(self):
         return self.loader.make_memory_handler()

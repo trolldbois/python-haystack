@@ -224,6 +224,7 @@ class RekallLoader(interfaces.IMemoryLoader):
     def __init__(self, opts):
         opts.dump_filename = opts.target.path
         opts.pid = opts.target.path.split(':')[1]
+        # FIXME bits, os_name from args
         self.loader = RekallProcessMapper(opts.dump_filename, opts.pid)
 
     def make_memory_handler(self):

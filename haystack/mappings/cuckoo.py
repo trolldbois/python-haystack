@@ -51,6 +51,7 @@ class CuckooProcessLoader(interfaces.IMemoryLoader):
 
 class CuckooProcessMapper(interfaces.IMemoryLoader):
 
+    # FIXME cpu, os_name
     def __init__(self, procdump_filename):
         basename = os.path.basename(procdump_filename)
         # pid-1.dmp

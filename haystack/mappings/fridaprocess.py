@@ -15,11 +15,11 @@ class FridaMapper(interfaces.IMemoryLoader):
     """
     """
 
-    def __init__(self, process_name_or_pid, cpu=None, os_name=None):
+    def __init__(self, process_name_or_pid, bits=None, os_name=None):
         import frida
         self.session = frida.attach(process_name_or_pid)
         self.name = process_name_or_pid
-        self.cpu = cpu
+        self.cpu = bits
         self.os_name = os_name
         self._init_mappings()
 
@@ -43,6 +43,7 @@ class FridaMapper(interfaces.IMemoryLoader):
         self._target = None
         # create the memory_handler for self
 
+        # FIXME cpu, os_name from init param
         if 'linux' in sys.platform:
             os_name = target.TargetPlatform.LINUX
         else:  # sys.platform.startswith('win'):
@@ -119,7 +120,7 @@ class FridaLoader(interfaces.IMemoryLoader):
     desc = 'Load a Minidump memory dump'
 
     def __init__(self, opts):
-        self.loader = FridaMapper(opts.target.netloc)
+        self.loader = FridaMapper(opts.target.netloc, bits=opts.bits, os_name=opts.osname)
 
     def make_memory_handler(self):
         return self.loader.make_memory_handler()

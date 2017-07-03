@@ -8,6 +8,7 @@ import logging
 import struct
 import sys
 
+from haystack import cli
 from haystack import argparse_utils
 from haystack.outputters import text
 from haystack.mappings import folder
@@ -23,25 +24,19 @@ log = logging.getLogger('cliwin')
 
 def find_heap():
     argv = sys.argv[1:]
-    parser = argparse.ArgumentParser(prog='haystack-find-heap',
-                                          description="Find heaps in a dumpfile")
-    parser.add_argument('--osname', '-n', action='store', default=None, choices=['winxp', 'win7'], help='winxp,win7')
-    parser.add_argument('--bits', '-b', type=int, action='store', default=None, choices=[32, 64], help='32,64')
+    parser = cli.base_argparser('haystack-find-heap', "Find heaps in a dumpfile")
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose')
-    parser.add_argument('--quiet', action='store_true', help='Set verbosity to ERROR only')
-    parser.add_argument('--debug', '-d', action='store_true', help='Set verbosity to DEBUG')
     parser.add_argument('--mappings', '-m', action='store_true', help='Show mappings')
-    parser.add_argument('--heap', '-p', action='store_true', help='Show the heap content')
-    parser.add_argument('--frontend', '-f', action='store_true', help='Show the frontend heap content')
-    parser.add_argument('dumpname', type=argparse_utils.readable, help='process memory dump name')
-    parser.add_argument('address', nargs='?', type=argparse_utils.int16, default=None, help='Load Heap from address (hex)')
+    # only if address is present
+    group = parser.add_argument_group('For a specific HEAP')
+    group.add_argument('address', nargs='?', type=argparse_utils.int16, default=None, help='Load Heap from address (hex)')
+    group.add_argument('--heap', '-p', action='store_true', help='Show the heap content')
+    group.add_argument('--frontend', '-f', action='store_true', help='Show the frontend heap content')
 
     opts = parser.parse_args(argv)
-    from haystack import cli
     cli.set_logging_level(opts)
 
-    #
-    memory_handler = folder.load(opts.dumpname, os_name=opts.osname, cpu=opts.bits)
+    memory_handler = cli.make_memory_handler(opts)
     finder = memory_handler.get_heap_finder()
 
     # Show Target information
