@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2011 Loic Jaquemet loic.jaquemet+python@gmail.com
-#
+
 import logging
+import pkg_resources
 
 from haystack.abc import interfaces
 
 log = logging.getLogger('heapwalker')
+
+SUPPORTED_ALLOCATORS = {}
+
+# TODO use it in memory dump discovery. Maybe add platform selectors to Finder interface
+for entry_point in pkg_resources.iter_entry_points("haystack.heap_finder"):
+    ep = entry_point.resolve()
+    SUPPORTED_ALLOCATORS[entry_point.name] = entry_point.resolve()
 
 
 class HeapWalker(interfaces.IHeapWalker):
