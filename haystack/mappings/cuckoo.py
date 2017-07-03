@@ -56,7 +56,7 @@ class CuckooProcessMapper(interfaces.IMemoryLoader):
         basename = os.path.basename(procdump_filename)
         # pid-1.dmp
         pid = basename.split('-')[0]
-        log.debug("CuckooProcessMapper %s %p", basename, pid)
+        log.debug("CuckooProcessMapper %s %d", basename, pid)
         self.pid = pid
         log.debug("pid: %s", self.pid)
         self.filename = procdump_filename

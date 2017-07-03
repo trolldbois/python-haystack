@@ -127,7 +127,6 @@ def reverseLocalFonctionPointerNames(context):
     for name, lib in ldso.items():
         ret = libdl.dlclose(lib._handle)
 
-    import pickle
     pickle.dump(vtable, file(fsave, 'wb'))
 
     raise StopIteration

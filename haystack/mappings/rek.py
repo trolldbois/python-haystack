@@ -72,7 +72,7 @@ class RekallProcessMappingA(base.AMemoryMapping):
 class RekallProcessMapper(interfaces.IMemoryLoader):
 
     def __init__(self, imgname, pid):
-        log.debug("RekallProcessMapper %s %p",imgname, pid)
+        log.debug("RekallProcessMapper %s %d",imgname, pid)
         self.pid = pid
         self.imgname = imgname
         self._memory_handler = None
@@ -173,7 +173,7 @@ def rekall_dump_to_haystack(filename, pid, output_folder_name):
     # rek.py -f vol/zeus.vmem vaddump -p 856 --dump-dir vol/zeus.vmem.856.dump/ > vol/zeus.vmem.856.dump/mappings.vol
     # rek2map.py vol/zeus.vmem.856.dump/mappings.vol > vol/zeus.vmem.856.dump/mappings
     # vaddummp
-    log.debug("rekall_dump_to_haystack %s %p", filename, pid)
+    log.debug("rekall_dump_to_haystack %s %d", filename, pid)
     if not os.access(output_folder_name, os.F_OK):
         os.mkdir(output_folder_name)
     from rekall import session
