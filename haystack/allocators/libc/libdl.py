@@ -56,7 +56,7 @@ def reverseLocalFonctionPointerNames(context):
         context.config.CACHE_FUNCTION_NAMES,
         context.dumpname)
     if os.access(fsave, os.F_OK):
-        vtable = pickle.load(file(fsave, 'rb'))
+        vtable = pickle.load(open(fsave, 'rb'))
         for x in vtable.items():
             yield x
         raise StopIteration
