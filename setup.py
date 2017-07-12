@@ -93,6 +93,7 @@ setup(name="haystack",
                 'live = haystack.mappings.process:ProcessLoader',
                 'frida = haystack.mappings.fridaprocess:FridaLoader',
                 'cuckoo = haystack.mappings.cuckoo:CuckooProcessLoader',
+                'coredump = haystack.mappings.core:CoreLoader',
             ],
             # HEAP parsing haystack.abc.interfaces.IHeapFinder
             'haystack.heap_finder': [
