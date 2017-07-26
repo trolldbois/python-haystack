@@ -78,7 +78,7 @@ setup(name="haystack",
             'console_scripts': [
                 'haystack-find-heap = haystack.cliwin:find_heap',
                 'haystack-search = haystack.cli:search',
-                'haystack-show = haystack.cli:main_show',
+                'haystack-show = haystack.cli:show',
                 'haystack-live-dump = haystack.memory_dumper:main',
                 'haystack-live-watch = haystack.cli:live_watch',
                 'haystack-rekall-dump = haystack.cli:rekall_dump',

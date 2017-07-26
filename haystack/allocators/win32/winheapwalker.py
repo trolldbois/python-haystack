@@ -25,7 +25,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
     """
 
     def _init_heap(self):
-        log.debug('+ Heap @%0.8x size: %d # %s',self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
+        log.debug('+ Heap @%0.8x size: %d # %s', self._heap_mapping.start, len(self._heap_mapping), self._heap_mapping)
         # real allocations from the process pov
         self._user_allocs = None
         self._user_free_chunks = None
@@ -57,6 +57,7 @@ class WinHeapWalker(heapwalker.HeapWalker):
 
     def __contains__(self, address):
         """ Does the heap walker or its relevant segments contains this address"""
+        # FIXME
         raise NotImplementedError('Please implement all methods')
 
     def get_backend_allocations(self):

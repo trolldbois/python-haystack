@@ -438,6 +438,7 @@ class LazyMmap:
         self.size = memdump.tell()
         self.memdump_name = memdump.name
         memdump.seek(i)
+        # FIXME Why would you do that ?
         memdump.close()
 
     def __len__(self):
