@@ -13,6 +13,10 @@ try:
     from StringIO import StringIO
 except:
     from io import StringIO
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 
 @contextmanager
@@ -27,6 +31,12 @@ def captured_output():
 
 
 class TestCLI(SrcTests):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dumpname = 'dmp://./test/dumps/minidump/cmd.dmp'
+        cls.cache_dumpname = cls.dumpname[8:]+'.d'
+        # config.remove_cache_folder(cls.cache_dumpname)
 
     @unittest.skip('argparse kills the run')
     def test_cli_usage(self):
@@ -48,8 +58,16 @@ class TestCLI(SrcTests):
 
         return
 
+    def test_show(self):
+        testargs = ["haystack-show", self.dumpname, 'test.structures.stringarray.array_of_pointers', '0x543108']
+        with mock.patch.object(sys, 'argv', testargs):
+            # no exception
+            cli.show()
+
+        return
+
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     # logging.basicConfig(level=logging.INFO)
     unittest.main(verbosity=2)

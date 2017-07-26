@@ -127,7 +127,8 @@ class RecursiveTextOutputter(Outputter):
                     self._utils.get_pointee_address(
                         attr.ptr))
             else:
-                raise Exception('This CString was not in cache')
+                # FIXME: on show, if loading/tpe validation, then string will not be in cache
+                raise Exception('This CString was not in cache - record type validation failed maybe ?')
             s = '"%s" , # (%s)' % (s, attrtype.__name__)
         elif self._ctypes.is_pointer_type(attrtype):
             myaddress = self._utils.get_pointee_address(attr)

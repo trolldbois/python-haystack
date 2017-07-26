@@ -147,8 +147,8 @@ def search_cmdline(args):
         ret = get_output(memory_handler, results, args.output)
         # print output on stdout
         print(ret)
-    except Exception as e:
-        log.error(e)
+    # except Exception as e:
+    #     log.error(e)
     finally:
         if args.interactive:
             print('results are local variable "results"')
@@ -194,8 +194,8 @@ def show_cmdline(args):
         print(ret)
         if args.constraints_file:
             print('Validated', validation)
-    except Exception as e:
-        log.error(e)
+    # except Exception as e:
+    #     log.error(e)
     finally:
         if args.interactive:
             print('results are local variable "results"')

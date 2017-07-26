@@ -313,9 +313,9 @@ class CTypesProxy(object):
                 while True:
                     done = False
                     data = memoryMap.read_bytes(address, chunk_length)
-                    if '\0' in data:
+                    if b'\0' in data:
                         done = True
-                        data = data[:data.index('\0')]
+                        data = data[:data.index(b'\0')]
                     if max_size <= size + chunk_length:
                         data = data[:(max_size - size)]
                         string.append(data)
@@ -326,7 +326,7 @@ class CTypesProxy(object):
                         break
                     size += chunk_length
                     address += chunk_length
-                return ''.join(string), truncated
+                return b''.join(string), truncated
         # and there we have it. We can load basicmodel
         self.CString = CString
 
